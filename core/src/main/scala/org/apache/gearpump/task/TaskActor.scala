@@ -40,6 +40,11 @@ abstract class TaskActor(val conf : Map[String, Any], partitioner : Partitioner)
   }
 
   def handleMessage : Receive = {
+    //TODO: Add flow control
+    //maintain a sliding window when trying to push data to downstream
+    //When there is no more data flow in anymore(for example, for batch usage model) then we should call onStop()
+    //When it a flow message, we need to respond correctly
+    //When it is an ordinary message, then we should call onNext
     case _ => Unit
   }
 }
