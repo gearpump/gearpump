@@ -1,7 +1,7 @@
 package org.apache.gearpump.client
 
-import akka.actor.ActorSystem
-import org.apache.gearpump.{SubmitApplication, AppDescription, Configs}
+import akka.actor.{Props, ActorSystem}
+import org.apache.gearpump._
 import org.apache.gearpump.service.SimpleKVService
 
 /**
@@ -10,7 +10,7 @@ import org.apache.gearpump.service.SimpleKVService
 class Client {
 
   def start() : Unit = {
-    String appMasterURL = SimpleKVService.get("appMaster")
+    val appMasterURL = SimpleKVService.get("appMaster")
 
     val system = ActorSystem("worker", Configs.SYSTEM_DEFAULT_CONFIG)
 
@@ -20,7 +20,14 @@ class Client {
     appMaster ! SubmitApplication(app)
   }
 
-  def createApplication : AppDescription = {
+  def createApplication() : AppDescription = {
+    val config = Map()
+    val partitioner = new HashPartitioner()
+    val split = TaskDescription(Props(classOf[Split], config, partitioner))
+    val sum = TaskDescription(Props(classOf[Sum], config, partitioner))
+    val app = AppDescription("wordCount", Array(StageDescription(split, 1), StageDescription(sum, 1)))
+
+    app
 
   }
 }
@@ -28,7 +35,7 @@ class Client {
 object Client {
   def main(args: Array[String]) {
 
-    val kvService = argStrings(0);
+    val kvService = args(0);
     SimpleKVService.init(kvService)
 
     new Client().start();

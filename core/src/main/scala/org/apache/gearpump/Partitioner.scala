@@ -5,6 +5,6 @@ package org.apache.gearpump
  */
 trait Msg
 
-trait Partitioner {
-  def getPartition(msg : String) : Int
+trait Partitioner extends Serializable {
+  def getPartition(msg : String, partitionNum : Int) : Int
 }

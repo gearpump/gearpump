@@ -28,7 +28,7 @@ class Worker(master : ActorRef, private var resource : Int) extends Actor{
 
   def appMasterMsgHandler : Receive = {
     case launch : LaunchExecutor => {
-      LOG.info("LaunchExecutor ....")
+      LOG.info("LaunchExecutor ...." + launch.toString)
       if (resource < launch.slots) {
         sender ! ExecutorLaunchFailed(launch.executorId, "There is no free resource on this machine")
       } else {
@@ -46,8 +46,10 @@ class Worker(master : ActorRef, private var resource : Int) extends Actor{
     val workerPath = ActorUtil.getFullPath(context)
     val classPath = launch.executorContext.getClassPath().mkString(File.pathSeparator)
     val java = System.getenv("JAVA_HOME") + "/bin/java"
-    val command = List(java, "-cp", classPath, classOf[Executor].toString,
+    val command = List(java, "-cp", classPath, classOf[Executor].getName,
       launch.appId.toString, launch.executorId.toString, launch.slots.toString, workerPath, appMasterPath)
+
+    LOG.info("Starting executor ..." + command.mkString(" "))
     val pb = Process(command)
     pb.run(new ProcessLogRedirector(LOG))
   }

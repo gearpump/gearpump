@@ -16,11 +16,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class Executor(worker : ActorRef, master : ActorRef, executorId : Int, slots: Int)  extends Actor {
   import Executor._
   def receive : Receive = {
-    case LaunchTask(taskId, taskDescription, nextStageTaskIdRange) =>
-      LOG.info("Launching Task " + taskId + ", " + taskDescription.toString + ", " + nextStageTaskIdRange)
+    case LaunchTask(taskId, taskDescription, outputs) =>
+      LOG.info("Launching Task " + taskId + ", " + taskDescription.toString + ", " + outputs.toString())
+      val task = context.actorOf(taskDescription.task)
   }
 
   override def preStart : Unit = {
+    LOG.info("Registering Executor, id: " + executorId + ", slots: " + slots)
     worker ! RegisterExecutor(master, executorId, slots)
   }
 }
@@ -29,14 +31,13 @@ object Executor {
   private val LOG: Logger = LoggerFactory.getLogger(Executor.getClass)
 
   def main(args: Array[String]) {
-    val command = args.mkString("\n")
-    print("Starting executor...")
-    println(command)
+    val command = args.mkString(" ")
+    println("Starting executor..." + args.mkString(" "))
 
     val system = ActorSystem("executor", Configs.SYSTEM_DEFAULT_CONFIG)
 
-    val appId = args(0).toLong
-    val executorId = args(1).toLong
+    val appId = args(0).toInt
+    val executorId = args(1).toInt
     val slots = args(2).toInt
     val workerPath = args(3)
     val appMasterPath = args(4)
@@ -50,7 +51,7 @@ object Executor {
     val workerAndMaster = for {worker <- workerFuture
       master <- masterFuture} yield (worker, master)
 
-    LOG.info("executor process is started...");
+    LOG.info("executor process is starting...");
 
     workerAndMaster.onComplete {
       case Success((worker, master)) =>

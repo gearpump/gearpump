@@ -18,10 +18,11 @@ class AppMaster() extends Actor {
   def receive : Receive = clientMsgHandler
 
   def clientMsgHandler : Receive = {
-    case SubmitApplication(appDescription) =>
+    case SubmitApplication(app) =>
+      LOG.info("Application submitted " + app.name)
       //new Actor, actor handle Application
       val client = sender;
-      val app = context.actorOf(Props(new Application(appId, client, appDescription)))
+      val application = context.actorOf(Props(new Application(appId, client, app)), appId.toString)
       appId += 1
   }
 
@@ -37,9 +38,8 @@ class AppMaster() extends Actor {
     private val taskQueue = new Queue[(Int, TaskDescription, Range)]
 
     override def preStart : Unit = {
-
       var stageCount = appDescription.stages.length
-      var stageFirstTaskId = appDescription.stages.foldLeft(Array(0))((array, stage) => array :+ stage.parallism)
+      var stageFirstTaskId = appDescription.stages.foldLeft(Array(0))((array, stage) => array :+ (array.last + stage.parallism))
 
       val tasks = appDescription.stages.zipWithIndex.flatMap((stageInfo) => {
         val (stage, stageId) = stageInfo
@@ -63,13 +63,14 @@ class AppMaster() extends Actor {
 
     def masterMsgHandler : Receive = {
       case ResourceAllocated(resource) => {
-
+        LOG.info("Resource allocated " + resource.toString)
         //group resource by worker
         val groupedResource = resource.groupBy(_.worker).mapValues(_.foldLeft(0)((count, resource) => count + resource.slots)).toArray
 
         var executorId = 0;
         groupedResource.map((workerAndSlots) => {
           val (worker, slots) = workerAndSlots
+          LOG.info("Launching Executor ...appId: " + appId + ", executorId: " + executorId + ", slots: " + slots + " on worker " + worker.toString())
           worker ! LaunchExecutor(appId, executorId, slots, new DefaultExecutorContext)
           //TODO: Add timeout event if this executor fail to start
           executorId += 1

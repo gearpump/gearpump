@@ -5,7 +5,7 @@ import java.io.File
 /**
  * Created by xzhong10 on 2014/7/22.
  */
-trait ExecutorContext {
+trait ExecutorContext extends Serializable {
   def getClassPath() : Array[String]
 }
 
