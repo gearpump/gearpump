@@ -68,7 +68,7 @@ case class SubmitApplication(appDescription : AppDescription) extends ClientToAp
  */
 trait AppMasterToExecutor extends ClusterMessage
 case class LaunchTask(taskId : Int, taskDescription : TaskDescription, nextStageTaskId : Range) extends AppMasterToExecutor
-
+case class TaskLocation(taskId : Int, task : ActorRef)
 
 /**
  * Executor to AppMaster
@@ -77,6 +77,8 @@ trait ExecutorToAppMaster extends ClusterMessage
 
 sealed trait TaskStatus
 
-case class TaskLaunched(taskId : Int) extends ExecutorToAppMaster
+case class TaskLaunched(taskId : Int, task : ActorRef) extends ExecutorToAppMaster
 case object TaskSuccess extends ExecutorToAppMaster
 case class TaskFailed(taskId : Int, reason : String = null, ex : Exception = null) extends ExecutorToAppMaster
+
+case class GetTaskLocation(taskId : Int)

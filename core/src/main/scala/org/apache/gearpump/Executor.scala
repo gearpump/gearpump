@@ -18,7 +18,8 @@ class Executor(worker : ActorRef, master : ActorRef, executorId : Int, slots: In
   def receive : Receive = {
     case LaunchTask(taskId, taskDescription, outputs) =>
       LOG.info("Launching Task " + taskId + ", " + taskDescription.toString + ", " + outputs.toString())
-      val task = context.actorOf(taskDescription.task)
+      val task = context.actorOf(taskDescription.task, taskId.toString)
+      sender ! TaskLaunched(taskId, task)
   }
 
   override def preStart : Unit = {

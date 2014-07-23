@@ -3,6 +3,8 @@ package org.apache.gearpump
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import org.apache.gearpump.service.SimpleKVService
 import org.slf4j.{Logger, LoggerFactory}
+import scala.collection.mutable
+import scala.concurrent.Promise
 
 import scala.collection.mutable.Queue
 
@@ -36,6 +38,8 @@ class AppMaster() extends Actor {
   class Application (appId : Int, client : ActorRef, appDescription : AppDescription) extends Actor {
     private val name = appDescription.name
     private val taskQueue = new Queue[(Int, TaskDescription, Range)]
+    private var taskLocations = Map[Int, ActorRef]()
+    private var pendingTaskLocationQueries = new mutable.HashMap[Int, mutable.ListBuffer[ActorRef]]()
 
     override def preStart : Unit = {
       var stageCount = appDescription.stages.length
@@ -56,7 +60,8 @@ class AppMaster() extends Actor {
         })}).sortBy(_._2).map(_._1)
 
       taskQueue ++= tasks
-       master ! RequestResource(taskQueue.size)
+
+      master ! RequestResource(taskQueue.size)
    }
 
     override def receive : Receive = masterMsgHandler orElse  workerMsgHandler orElse  executorMsgHandler
@@ -79,8 +84,19 @@ class AppMaster() extends Actor {
     }
 
     def executorMsgHandler : Receive = {
-      case TaskLaunched(taskId) =>
+      case TaskLaunched(taskId, task) =>
         LOG.info("Task Launched " + taskId)
+        taskLocations += taskId -> task
+        pendingTaskLocationQueries.get(taskId).map((list) => list.foreach(_ ! TaskLocation(taskId, task)))
+        pendingTaskLocationQueries.remove(taskId)
+      case GetTaskLocation(taskId) => {
+        if (taskLocations.get(taskId).isDefined) {
+          sender ! TaskLocation(taskId, taskLocations.get(taskId).get)
+        } else {
+          val pendingQueries = pendingTaskLocationQueries.getOrElseUpdate(taskId, mutable.ListBuffer[ActorRef]())
+          pendingQueries += sender
+        }
+      }
       case TaskSuccess =>
       case TaskFailed(taskId, reason, ex) =>
         LOG.info("Task failed, taskId: " + taskId)
