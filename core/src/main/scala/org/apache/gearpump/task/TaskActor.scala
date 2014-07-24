@@ -128,6 +128,7 @@ abstract class TaskActor extends Actor  with Stash {
       msg match {
         case Send(taskId, seq) =>
           inputTaskLocations(taskId).tell(Ack(this.taskId, seq), ActorRef.noSender)
+          LOG.info("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
         case _ =>
           onNext(msg.asInstanceOf[String])
       }
@@ -143,6 +144,7 @@ abstract class TaskActor extends Actor  with Stash {
     case send : Send =>
       queue.add(send)
     case Ack(taskId, seq) =>
+      LOG.info("get ack from downstream, current: " + this.taskId + "downL: " + taskId + ", seq: " + seq + ", windows: " + outputWindow)
       outputWindow += seq - ackStatus(taskId.index)
       ackStatus(taskId.index) = seq
       doHandleMessage

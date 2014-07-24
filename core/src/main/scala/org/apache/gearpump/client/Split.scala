@@ -48,8 +48,7 @@ class Split extends TaskActor {
   }
 
   override def onNext(msg : String) : Unit = {
-    while(true) {
-      txt.lines.foreach((line) => line.split(" ").foreach(output(_)))
-    }
+    txt.lines.foreach((line) => line.split(" ").foreach(output(_)))
+    self ! "continue"
   }
 }
