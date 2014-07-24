@@ -117,22 +117,24 @@ abstract class TaskActor extends Actor  with Stash {
   }
 
   private def doHandleMessage : Unit = {
-    var msg = queue.poll()
-
     if (outputWindow <= 0) {
-      LOG.info("Touched Flow control, windows size: " + outputWindow)
+      LOG.debug("Touched Flow control, windows size: " + outputWindow)
     }
 
-
-    while (outputWindow > 0 && null != msg) {
-      msg match {
-        case Send(taskId, seq) =>
-          inputTaskLocations(taskId).tell(Ack(this.taskId, seq), ActorRef.noSender)
-          LOG.info("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
-        case _ =>
-          onNext(msg.asInstanceOf[String])
+    var done = false
+    while (outputWindow > 0 && !done) {
+      val msg = queue.poll()
+      if (msg != null) {
+        msg match {
+          case Send(taskId, seq) =>
+            inputTaskLocations(taskId).tell(Ack(this.taskId, seq), ActorRef.noSender)
+            LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
+          case _ =>
+            onNext(msg.asInstanceOf[String])
+        }
+      } else {
+        done = true
       }
-      msg = queue.poll()
     }
   }
 
@@ -144,7 +146,7 @@ abstract class TaskActor extends Actor  with Stash {
     case send : Send =>
       queue.add(send)
     case Ack(taskId, seq) =>
-      LOG.info("get ack from downstream, current: " + this.taskId + "downL: " + taskId + ", seq: " + seq + ", windows: " + outputWindow)
+      LOG.debug("get ack from downstream, current: " + this.taskId + "downL: " + taskId + ", seq: " + seq + ", windows: " + outputWindow)
       outputWindow += seq - ackStatus(taskId.index)
       ackStatus(taskId.index) = seq
       doHandleMessage
