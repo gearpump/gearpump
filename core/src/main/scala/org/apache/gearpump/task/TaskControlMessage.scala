@@ -1,5 +1,4 @@
-package org.apache.gearpump
-
+package org.apache.gearpump.task
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,8 +16,10 @@ package org.apache.gearpump
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-trait Msg
 
-trait Partitioner extends Serializable {
-  def getPartition(msg : String, partitionNum : Int) : Int
-}
+import akka.actor.ActorRef
+
+sealed trait TaskControlMessage
+
+case class Identity(taskId : Int)
+case class Ack(taskId : Int, seq : Int)
