@@ -26,7 +26,8 @@ import org.apache.gearpump.service.SimpleKVService
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.sys.process.{Process, ProcessLogger}
-
+import scala.concurrent.future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class Worker(master : ActorRef, private var resource : Int) extends Actor{
   import org.apache.gearpump.Worker._
@@ -60,12 +61,19 @@ class Worker(master : ActorRef, private var resource : Int) extends Actor{
     val workerPath = ActorUtil.getFullPath(context)
     val classPath = launch.executorContext.getClassPath().mkString(File.pathSeparator)
     val java = System.getenv("JAVA_HOME") + "/bin/java"
-    val command = List(java, "-cp", classPath, classOf[Executor].getName,
-      launch.appId.toString, launch.executorId.toString, launch.slots.toString, workerPath, appMasterPath)
+    val param = List(launch.appId.toString, launch.executorId.toString, launch.slots.toString, workerPath, appMasterPath)
 
-    LOG.info("Starting executor ..." + command.mkString(" "))
-    val pb = Process(command)
-    pb.run(new ProcessLogRedirector(LOG))
+    if (System.getProperty("LOCAL") != null) {
+      LOG.info("Starting executor in local mode... ")
+      future {
+         Executor.main(param.toArray)
+       }
+    } else {
+      val command : List[String] = List(java, "-cp", classPath, classOf[Executor].getName) ++ param
+      LOG.info("Starting executor ..." + command.mkString(" "))
+      val pb = Process(command)
+      pb.run(new ProcessLogRedirector(LOG))
+    }
   }
 
   def executorMsgHandler : Receive = {

@@ -18,6 +18,7 @@ package org.apache.gearpump
  */
 
 import akka.actor.ActorRef
+import org.apache.gearpump.task.TaskId
 
 sealed trait ClusterMessage
 
@@ -81,8 +82,8 @@ case class SubmitApplication(appDescription : AppDescription) extends ClientToAp
  * AppMaster to Executor
  */
 trait AppMasterToExecutor extends ClusterMessage
-case class LaunchTask(taskId : Int, taskDescription : TaskDescription, nextStageTaskId : Range) extends AppMasterToExecutor
-case class TaskLocation(taskId : Int, task : ActorRef)
+case class LaunchTask(taskId : TaskId, conf : Map[String, Any], taskDescription : TaskDescription, nextStageTaskId : StageParallism) extends AppMasterToExecutor
+case class TaskLocation(taskId : TaskId, task : ActorRef)
 
 /**
  * Executor to AppMaster
@@ -91,8 +92,8 @@ trait ExecutorToAppMaster extends ClusterMessage
 
 sealed trait TaskStatus
 
-case class TaskLaunched(taskId : Int, task : ActorRef) extends ExecutorToAppMaster
+case class TaskLaunched(taskId : TaskId, task : ActorRef) extends ExecutorToAppMaster
 case object TaskSuccess extends ExecutorToAppMaster
-case class TaskFailed(taskId : Int, reason : String = null, ex : Exception = null) extends ExecutorToAppMaster
+case class TaskFailed(taskId : TaskId, reason : String = null, ex : Exception = null) extends ExecutorToAppMaster
 
-case class GetTaskLocation(taskId : Int)
+case class GetTaskLocation(taskId : TaskId)

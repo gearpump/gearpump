@@ -35,11 +35,11 @@ class Client {
   }
 
   def createApplication() : AppDescription = {
-    val config = Map()
+    val config = Map[String, Any]()
     val partitioner = new HashPartitioner()
-    val split = TaskDescription(Props(classOf[Split], config, partitioner))
-    val sum = TaskDescription(Props(classOf[Sum], config, partitioner))
-    val app = AppDescription("wordCount", Array(StageDescription(split, 1), StageDescription(sum, 1)))
+    val split = TaskDescription(Props(classOf[Split]), partitioner)
+    val sum = TaskDescription(Props(classOf[Sum]), partitioner)
+    val app = AppDescription("wordCount", config, Array(StageDescription(split, 1), StageDescription(sum, 1)))
 
     app
 

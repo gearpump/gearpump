@@ -20,94 +20,171 @@ package org.apache.gearpump.task
 import java.util
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Props, ActorRef, Actor}
+import akka.actor.{Stash, Props, ActorRef, Actor}
+import com.google.common.collect.MinMaxPriorityQueue
 import org.apache.gearpump.task.TaskActor.AskForTaskLocations
-import org.apache.gearpump.{Partitioner, TaskLocation, GetTaskLocation}
+import org.apache.gearpump.{StageParallism, Partitioner, TaskLocation, GetTaskLocation}
 import org.slf4j.{LoggerFactory, Logger}
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.{Await, promise, Promise}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Success,Failure}
 
-case class TaskInit(taskId : Int, master : ActorRef, outputs : Range, conf : Map[String, Any], partitioner : Partitioner)
+case class TaskInit(taskId : TaskId, master : ActorRef, outputs : StageParallism, conf : Map[String, Any], partitioner : Partitioner)
 
-abstract class TaskActor extends Actor {
+abstract class TaskActor extends Actor  with Stash {
   import TaskActor._
 
-  private var outputTaskCount = 0
-  private var taskId = -1
+  private var taskId : TaskId = null
   private var outputTaskLocations : Array[ActorRef] = null
-  private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_QUEUE_SIZE)
+  private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
   private var conf : Map[String, Any] = null
   private var partitioner : Partitioner = null
-  private var inputTaskLocations = Map[Int, ActorRef]();
-  private var outputs : Range = null
-  private var outputStatus : Array[Int] = null
+  private var inputTaskLocations = Map[TaskId, ActorRef]();
+  private var outputs : StageParallism = null
+  private var outputStatus : Array[Long] = null
+  private var ackStatus : Array[Long] = null
+  private var outputWindow : Long = INITIAL_WINDOW_SIZE
 
   final def receive : Receive = init
 
-  def onNext(msg : String) : Unit = {}
+  final override def preStart() : Unit = {}
+
+  def onStart() : Unit
+
+  def onNext(msg : String) : Unit
 
   def onStop() : Unit = {}
 
   def output(msg : String) : Unit = {
-    val partition = partitioner.getPartition(msg, outputTaskCount)
-    outputTaskLocations(partition) ! msg
+
+    if (outputs.parallism == 0) {
+      return
+    }
+
+    outputWindow -= 1
+    val partition = partitioner.getPartition(msg, outputs.parallism)
+    outputStatus(partition) += 1
+    outputTaskLocations(partition).tell(msg, ActorRef.noSender)
+    if (outputStatus(partition) % FLOW_CONTROL_RATE == 0) {
+      outputTaskLocations(partition).tell(Send(taskId, outputStatus(partition)), ActorRef.noSender)
+    }
   }
 
   def init : Receive = {
     case TaskInit(taskId, master, outputs, conf, partitioner)  => {
-      val locations = Promise[Array[ActorRef]]()
+      LOG.info("TaskInit... taskId: " + taskId + ", ouput: " + outputs)
+
       this.taskId = taskId
       this.conf = conf
       this.partitioner = partitioner
       this.outputs = outputs
-      this.outputStatus = new Array[Int](outputs.size)
-      context.actorOf(Props(new AskForTaskLocations(master, outputs, locations)))
-      outputTaskLocations = Await.result[Array[ActorRef]](locations.future, Duration(30, TimeUnit.SECONDS))
-      outputTaskCount = outputTaskLocations.length
+      this.ackStatus = new Array[Long](outputs.parallism)
+      this.outputStatus = new Array[Long](outputs.parallism)
+      this.outputTaskLocations = new  Array[ActorRef](outputs.parallism)
 
-      //Send identiy of self to downstream
-      outputTaskLocations.foreach(_ ! Identity(taskId))
-      context.become(handleMessage)
+      if (outputs.parallism > 0) {
+        LOG.info("becoming wait for output task locations...." + taskId)
+        context.actorOf(Props(new AskForTaskLocations(master, outputs, self)))
+        context.become(waitForOutputTaskLocations)
+      } else {
+        LOG.info("becoming handleMessage...." + taskId)
+        context.become {
+          onStart
+          handleMessage
+        }
+      }
     }
   }
 
-  case class SenderInfo(sender : ActorRef, seq : Int)
+  def waitForOutputTaskLocations : Receive = {
+    case TaskLocations(locations) =>
+
+      for ((k, v) <- locations) {
+        val taskIndex = k.index
+        outputTaskLocations(taskIndex) = v
+      }
+
+      //Send identiy of self to downstream
+      outputTaskLocations.foreach(_ ! Identity(taskId))
+      context.become {
+        onStart
+        handleMessage
+      }
+      unstashAll()
+    case msg : Any =>
+      stash()
+  }
+
+  private def doHandleMessage : Unit = {
+    var msg = queue.poll()
+
+    if (outputWindow <= 0) {
+      LOG.info("Touched Flow control, windows size: " + outputWindow)
+    }
+
+
+    while (outputWindow > 0 && null != msg) {
+      msg match {
+        case Send(taskId, seq) =>
+          inputTaskLocations(taskId).tell(Ack(this.taskId, seq), ActorRef.noSender)
+        case _ =>
+          onNext(msg.asInstanceOf[String])
+      }
+      msg = queue.poll()
+    }
+  }
 
   def handleMessage : Receive = {
     case Identity(taskId) =>
+      LOG.info("get identity from upstream: " + taskId)
       val upStream = sender
       inputTaskLocations = inputTaskLocations + (taskId->upStream)
+    case send : Send =>
+      queue.add(send)
     case Ack(taskId, seq) =>
-      val offset = taskId - outputs.start
-      outputStatus(offset) = seq
-
+      outputWindow += seq - ackStatus(taskId.index)
+      ackStatus(taskId.index) = seq
+      doHandleMessage
     case msg : String =>
-      //TODO: push the data to queue
-
-      onNext(msg)
+      queue.add(msg)
+      doHandleMessage
     case other =>
-      LOG.error("Failed! Received unknown message " + other.toString)
+      LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
   }
 }
 
 object TaskActor {
   private val LOG: Logger = LoggerFactory.getLogger(TaskActor.getClass)
-  private val INITIAL_QUEUE_SIZE = 1024
+  val INITIAL_WINDOW_SIZE = 1024 * 16
+  val FLOW_CONTROL_RATE = 100
 
-  class AskForTaskLocations(master : ActorRef, outputTasks : Range, locations : Promise[Array[ActorRef]]) extends Actor {
+  class AskForTaskLocations(master : ActorRef, nextStage : StageParallism, parent : ActorRef) extends Actor {
+
+    LOG.info("Creating Ask task for ... " + parent.path)
+
     override def preStart() : Unit = {
-      outputTasks.foreach {
-        master ! GetTaskLocation(_)
-      }
+      0.until(nextStage.parallism).map((taskIndex) => {
+        val taskId = TaskId(nextStage.stageId, taskIndex)
+        master ! GetTaskLocation(taskId)
+      })
     }
 
-    def receive = waitForTaskLocation(Map[Int, ActorRef]())
+    def receive = waitForTaskLocation(Map[TaskId, ActorRef]())
 
-    def waitForTaskLocation(taskLocationMap : Map[Int, ActorRef]) : Receive = {
+    def waitForTaskLocation(taskLocationMap : Map[TaskId, ActorRef]) : Receive = {
       case TaskLocation(taskId, task) => {
+        LOG.info("Get task location, taskId: " + taskId)
+
         val newLocationMap = taskLocationMap.+((taskId, task))
-        if (newLocationMap.size == outputTasks.size) {
-          locations.success(newLocationMap.toArray.sortBy(_._1).map(_._2))
+
+        LOG.info("new Location Map: " + newLocationMap.toString())
+        LOG.info("output Task size: " + nextStage.parallism + ", location map size: " + newLocationMap.size)
+
+        if (newLocationMap.size == nextStage.parallism) {
+
+          parent ! TaskLocations(newLocationMap)
+          LOG.info("Sending task location to " + parent.path)
           context.stop(self)
         } else {
           waitForTaskLocation(newLocationMap)

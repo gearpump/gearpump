@@ -21,5 +21,6 @@ import akka.actor.ActorRef
 
 sealed trait TaskControlMessage
 
-case class Identity(taskId : Int)
-case class Ack(taskId : Int, seq : Int)
+case class Identity(taskId : TaskId)
+case class Send(taskId : TaskId, seq : Long)
+case class Ack(taskId : TaskId, seq : Long)

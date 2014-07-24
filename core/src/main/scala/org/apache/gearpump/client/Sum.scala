@@ -35,9 +35,9 @@ class Sum extends TaskActor {
   private val map : HashMap[String, Int] = new HashMap[String, Int]()
   private var scheduler : Cancellable = null
 
-  override def preStart() : Unit = {
+  override def onStart() : Unit = {
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(15, TimeUnit.SECONDS))(reportWordCount)
+      new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
   }
 
   override def onNext(msg : String) : Unit = {
@@ -54,9 +54,11 @@ class Sum extends TaskActor {
 
   def reportWordCount : Unit = {
     LOG.info("Reporting WordCount...")
+    val str = StringBuilder.newBuilder
     for (kv  <- map) {
-      LOG.info(kv.toString())
+      str.append(kv.toString()).append(" ")
     }
+    LOG.info(str.toString())
   }
 }
 

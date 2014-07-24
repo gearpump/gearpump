@@ -20,6 +20,7 @@ package org.apache.gearpump
 import java.util.concurrent.TimeUnit
 import akka.util._
 import akka.actor.{ActorRef, Actor, ActorSystem, Props}
+import org.apache.gearpump.task.TaskInit
 import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.Future
 import scala.util.{Success, Failure}
@@ -28,10 +29,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class Executor(worker : ActorRef, master : ActorRef, executorId : Int, slots: Int)  extends Actor {
   import Executor._
   def receive : Receive = {
-    case LaunchTask(taskId, taskDescription, outputs) =>
+    case LaunchTask(taskId, conf, taskDescription, outputs) =>
       LOG.info("Launching Task " + taskId + ", " + taskDescription.toString + ", " + outputs.toString())
-      val task = context.actorOf(taskDescription.task, taskId.toString)
+      val task = context.actorOf(taskDescription.task, "stage_" + taskId.stageId + "_task_" + taskId.index)
       sender ! TaskLaunched(taskId, task)
+
+      task ! TaskInit(taskId, master, outputs, conf, taskDescription.partitioner)
   }
 
   override def preStart : Unit = {

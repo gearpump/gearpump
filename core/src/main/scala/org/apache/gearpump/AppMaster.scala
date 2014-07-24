@@ -18,6 +18,7 @@ package org.apache.gearpump
  */
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import org.apache.gearpump.service.SimpleKVService
+import org.apache.gearpump.task.TaskId
 import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.mutable
 import scala.concurrent.Promise
@@ -51,27 +52,22 @@ class AppMaster() extends Actor {
 
   class Application (appId : Int, client : ActorRef, appDescription : AppDescription) extends Actor {
     private val name = appDescription.name
-    private val taskQueue = new Queue[(Int, TaskDescription, Range)]
-    private var taskLocations = Map[Int, ActorRef]()
-    private var pendingTaskLocationQueries = new mutable.HashMap[Int, mutable.ListBuffer[ActorRef]]()
+    private val taskQueue = new Queue[(TaskId, TaskDescription, StageParallism)]
+    private var taskLocations = Map[TaskId, ActorRef]()
+    private var pendingTaskLocationQueries = new mutable.HashMap[TaskId, mutable.ListBuffer[ActorRef]]()
 
     override def preStart : Unit = {
-      var stageCount = appDescription.stages.length
-      var stageFirstTaskId = appDescription.stages.foldLeft(Array(0))((array, stage) => array :+ (array.last + stage.parallism))
+      val stageParallisms = appDescription.stages.map(_.parallism).zipWithIndex.map((pair) => StageParallism(pair._2, pair._1)) :+ StageParallism(-1, 0)
+
 
       val tasks = appDescription.stages.zipWithIndex.flatMap((stageInfo) => {
         val (stage, stageId) = stageInfo
-        0.until(stage.parallism).map((seq : Int) => {
-          val sortOrder = seq * stageCount + stageId
-          val taskId = stageFirstTaskId(stageId) + seq
+        0.until(stage.parallism).map((taskIndex : Int) => {
+          val taskId = TaskId(stageId, taskIndex)
           val nextStageId = stageId + 1
-          val nextStageRange = if(nextStageId < stageCount) {
-            Range(stageFirstTaskId(nextStageId), stageFirstTaskId(nextStageId + 1))
-          } else {
-            Range(stageFirstTaskId(nextStageId), stageFirstTaskId(nextStageId))
-          }
-          ((taskId, stage.task, nextStageRange), sortOrder)
-        })}).sortBy(_._2).map(_._1)
+          val nextStageParallism = if (nextStageId >= stageParallisms.length) null else stageParallisms(nextStageId)
+          (taskId, stage.task, nextStageParallism)
+        })}).sortBy(_._1.index)
 
       taskQueue ++= tasks
 
@@ -104,9 +100,12 @@ class AppMaster() extends Actor {
         pendingTaskLocationQueries.get(taskId).map((list) => list.foreach(_ ! TaskLocation(taskId, task)))
         pendingTaskLocationQueries.remove(taskId)
       case GetTaskLocation(taskId) => {
+        LOG.info("Get Task Location " + taskId)
         if (taskLocations.get(taskId).isDefined) {
+          LOG.info("We got a location, sending back directly  " + taskId)
           sender ! TaskLocation(taskId, taskLocations.get(taskId).get)
         } else {
+          LOG.info("We don't have it right now, add to a pending list... ")
           val pendingQueries = pendingTaskLocationQueries.getOrElseUpdate(taskId, mutable.ListBuffer[ActorRef]())
           pendingQueries += sender
         }
@@ -120,9 +119,9 @@ class AppMaster() extends Actor {
       case ExecutorLaunched(executor, executorId, slots) => {
         def launchTask(remainSlots: Int): Unit = {
           if (remainSlots > 0 && !taskQueue.isEmpty) {
-            val (taskId, taskDescription, range) = taskQueue.dequeue()
+            val (taskId, taskDescription, nextStageParallism) = taskQueue.dequeue()
             //Launch task
-            executor ! LaunchTask(taskId, taskDescription, range)
+            executor ! LaunchTask(taskId, appDescription.conf, taskDescription, nextStageParallism)
             launchTask(remainSlots - 1)
           }
         }
