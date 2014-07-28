@@ -21,7 +21,8 @@ import java.util
 
 import akka.actor.{Actor, ActorRef, Props, Stash}
 import org.apache.gearpump.{Partitioner, StageParallism}
-import org.apache.gears.cluster.{GetTaskLocation, TaskLocation}
+import org.apache.gears.cluster.AppMasterToExecutor._
+import org.apache.gears.cluster.ExecutorToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
 case class TaskInit(taskId : TaskId, master : ActorRef, outputs : StageParallism, conf : Map[String, Any], partitioner : Partitioner)

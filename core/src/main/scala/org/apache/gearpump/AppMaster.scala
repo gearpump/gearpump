@@ -2,6 +2,12 @@ package org.apache.gearpump
 
 import akka.actor.{Actor, ActorRef, Props, Terminated}
 import org.apache.gearpump.task.TaskId
+import org.apache.gears.cluster.AppMasterToExecutor._
+import org.apache.gears.cluster.AppMasterToMaster._
+import org.apache.gears.cluster.AppMasterToWorker._
+import org.apache.gears.cluster.ExecutorToAppMaster._
+import org.apache.gears.cluster.MasterToAppMaster._
+import org.apache.gears.cluster.WorkerToAppMaster._
 import org.apache.gears.cluster._
 import org.slf4j.{Logger, LoggerFactory}
 

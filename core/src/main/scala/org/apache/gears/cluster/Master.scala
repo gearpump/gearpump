@@ -22,6 +22,11 @@ import akka.remote.RemoteScope
 import org.apache.gearpump._
 import org.apache.gearpump.service.SimpleKVService
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
+import org.apache.gears.cluster.AppMasterToMaster._
+import org.apache.gears.cluster.ClientToMaster._
+import org.apache.gears.cluster.MasterToAppMaster._
+import org.apache.gears.cluster.MasterToWorker._
+import org.apache.gears.cluster.WorkerToMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.Queue
@@ -31,7 +36,7 @@ object Master {
 }
 
 class Master extends Actor {
-  import Master._
+  import org.apache.gears.cluster.Master._
 
   private var resources = new Array[(ActorRef, Int)](0)
   private val resourceRequests = new Queue[(ActorRef, Int)]

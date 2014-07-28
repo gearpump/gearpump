@@ -18,6 +18,11 @@ package org.apache.gears.cluster
  * limitations under the License.
  */
 import akka.actor._
+import org.apache.gears.cluster.AppMasterToMaster._
+import org.apache.gears.cluster.AppMasterToWorker._
+import org.apache.gears.cluster.ClientToMaster._
+import org.apache.gears.cluster.MasterToAppMaster._
+import org.apache.gears.cluster.WorkerToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
 

@@ -20,6 +20,9 @@ package org.apache.gears.cluster
 
 import akka.actor.Actor
 import org.apache.gearpump.task.TaskInit
+import org.apache.gears.cluster.AppMasterToExecutor._
+import org.apache.gears.cluster.ExecutorToAppMaster._
+import org.apache.gears.cluster.ExecutorToWorker._
 import org.slf4j.{Logger, LoggerFactory}
 
 class Executor(config : Configs)  extends Actor {

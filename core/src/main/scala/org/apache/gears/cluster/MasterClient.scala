@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorRef}
 import akka.util.Timeout
+import org.apache.gears.cluster.ClientToMaster._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

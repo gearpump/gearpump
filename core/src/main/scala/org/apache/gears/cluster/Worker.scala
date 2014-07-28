@@ -23,7 +23,13 @@ import akka.remote.RemoteScope
 import org.apache.gearpump._
 import org.apache.gearpump.util.ActorSystemBooter.BindLifeCycle
 import org.apache.gearpump.util.ExecutorLauncher
+import org.apache.gears.cluster.AppMasterToWorker._
+import org.apache.gears.cluster.ExecutorToWorker._
+import org.apache.gears.cluster.MasterToWorker._
+import org.apache.gears.cluster.WorkerToAppMaster._
+import org.apache.gears.cluster.WorkerToMaster._
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class Worker(id : Int, master : ActorRef) extends Actor{

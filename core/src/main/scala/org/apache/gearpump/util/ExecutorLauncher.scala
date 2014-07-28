@@ -5,7 +5,7 @@ import java.io.File
 import akka.actor._
 import org.apache.gearpump.ActorUtil
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
-import org.apache.gears.cluster.LaunchExecutor
+import org.apache.gears.cluster.AppMasterToWorker._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{Future, Promise, promise}
