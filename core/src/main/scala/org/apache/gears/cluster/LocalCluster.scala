@@ -28,7 +28,7 @@ class LocalCluster {
   private var system : ActorSystem = null
   private val LOG: Logger = LoggerFactory.getLogger(classOf[LocalCluster])
 
-  def start(kvService : String) = {
+  def start(kvService : String, workerCount: Int) = {
     SimpleKVService.init(kvService)
     system = ActorSystem("cluster", Configs.SYSTEM_DEFAULT_CONFIG)
 
@@ -36,8 +36,8 @@ class LocalCluster {
     LOG.info("master is started...")
 
     val masterPath = ActorUtil.getSystemPath(system) + "/user/master"
+    SimpleKVService.set("master", masterPath)
 
-    val workerCount = 1
     //We are free
     0.until(workerCount).foreach(id => ActorSystemBooter.create.boot(classOf[Worker].getSimpleName + id , masterPath))
     this
@@ -48,9 +48,6 @@ class LocalCluster {
   }
 }
 
-object LocalCluster extends App {
-  def create = new LocalCluster()
-
-  val kvService = args(0);
-  create.start(kvService).awaitTermination
+object LocalCluster {
+  def create = new LocalCluster
 }

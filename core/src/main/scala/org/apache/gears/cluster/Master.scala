@@ -20,7 +20,6 @@ package org.apache.gears.cluster
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump._
-import org.apache.gearpump.service.SimpleKVService
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.ClientToMaster._
@@ -126,7 +125,6 @@ class Master extends Actor {
   override def preStart(): Unit = {
     val path = ActorUtil.getFullPath(context)
     LOG.info(s"master path is $path")
-    SimpleKVService.set("master", path)
     appManager = context.actorOf(Props[AppManager])
   }
 }

@@ -28,23 +28,21 @@ class WordCount  {
 
 object WordCount {
 
-  /**
-   * kvServiceURL example: http://127.0.0.1/kv
-   * We can get a value by GET http://127.0.0.1/kv?key={key}
-   * We can set a value by GET http://127.0.0.1/kv?key={key}&value={value}
-   */
   def main(args: Array[String]) = {
     val context = ClientContext()
-    val kvServiceURL = args(0)
-    context.init(kvServiceURL)
-    val appId = context.submit(getApplication())
-    System.out.println(s"We get application id: $appId")
+
+    args.toList match {
+      case ip::port::rest =>
+        val kvServiceURL = s"http://$ip:$port/kv"
+        context.init(kvServiceURL)
+        val appId = context.submit(getApplication())
+        System.out.println(s"We get application id: $appId")
 
 
-    val timeout = 60 * 10000; //60s
-    Thread.sleep(timeout)
-
-    context.shutdown(appId)
+        val timeout = 60 * 10000; //60s
+        Thread.sleep(timeout)
+        context.shutdown(appId)
+    }
   }
 
   def getApplication() : AppDescription = {

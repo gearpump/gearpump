@@ -22,14 +22,11 @@ import org.eclipse.jetty.server.handler.{HandlerCollection, ResourceHandler}
 import org.eclipse.jetty.server.{Handler, Server}
 import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
 
+class SimpleKVService {
+  private var server : Server = null
 
-object SimpleKVService {
-  private var url : String = null
-
-  def main (args: Array[String]) {
-    val port = args(0).toInt
-    val server = new Server(port)
-
+  def start(port : Int) = {
+    server = new Server(port)
     val resourceHandler = new ResourceHandler();
     resourceHandler.setDirectoriesListed(true);
     resourceHandler.setResourceBase(".");
@@ -41,9 +38,24 @@ object SimpleKVService {
     val handlerList = new HandlerCollection();
     handlerList.setHandlers(Array[Handler](servletContextHandler, resourceHandler));
     server.setHandler(handlerList);
+    server
+    server.start()
+    this
+  }
 
-    server.start();
+  def awaitTermination = {
     server.join()
+  }
+}
+
+object SimpleKVService {
+  private var url : String = null
+
+  def create = new SimpleKVService()
+
+  def main (args: Array[String]) {
+    val port = args(0).toInt
+    create.start(port).awaitTermination
   }
 
   /**
@@ -71,5 +83,4 @@ object SimpleKVService {
     httpClient.executeMethod(get)
     get.getResponseBodyAsString()
   }
-
 }
