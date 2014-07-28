@@ -11,27 +11,40 @@ Gears is a general resource scheduler, it is design to support multiple Heteroge
 GearPump is a data flow processing engine built on top of Gears.
 
 ###Local Mode
-1. Start a KV Service, on local port 80
+1. Start Local Cluster in same process
   ```bash
-  cd C:\myData\gearpump\core
-  mvn exec:java -Dexec.mainClass="org.apache.gearpump.service.SimpleKVService" -Dexec.args="80"
+  ## Create Cluster on port localhost:80, create 4 worker, 4 worker exists in same process
+  java -cp <classpath> org.apache.gears.cluster.Starter local -port 80 -sameprocess true -workernum 4
   ```
 
-2. Start a Local Cluster, this will start the local cluster.
+2. Start Local Cluster in different process
   ```bash
-  mvn exec:java -Dexec.mainClass="org.apache.gears.cluster.LocalCluster" -Dexec.args="http://127.0.0.1:80/kv"
+  ## Create Cluster on port localhost:80, create 4 worker, 4 worker exists in seperate process
+  java -cp <classpath> org.apache.gears.cluster.Starter local -port 80 -sameprocess false -workernum 4
   ```
-
-  To run in single process mode, add an extra system property
+3. Start Client Example Code
   ```bash
-  mvn exec:java -Dexec.mainClass="org.apache.gears.cluster.LocalCluster"  -DLOCAL -Dexec.args="http://127.0.0.1:80/kv"
-  ````
-3. Start a Application.
+  ## Create Application
+  java -cp <classpath> org.apache.gearpump.app.examples.wordcount.WordCount <master ip> <master port>
   ```
 
-  mvn exec:java -Dexec.mainClass="org.apache.gearpump.app.examples.wordcount.WordCount"  -Dexec.args="http://127.0.0.1:80/kv"
+
+###Cluster Mode
+1. On 1 node, Start Master
+
+  ```bash
+  ## Create Master on <master ip>:80, 
+  java -cp <classpath> master -port 80
   ```
 
-###Remoe Mode
-TODO
+2. On same or different machine, Start workers. If you want to start 3 worker, then you need to run this command 3 times.
 
+  ```bash
+  java -cp <classpath> worker -ip <master ip> -port <master port>
+  ```
+3. Start Client Example Code
+
+  ```bash
+  ## Create Application
+  java -cp <classpath> org.apache.gearpump.app.examples.wordcount.WordCount <master ip> <master port>
+  ```
