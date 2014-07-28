@@ -27,7 +27,8 @@ GearPump is a data flow processing engine built on top of Gears.
   mvn exec:java -Dexec.mainClass="org.apache.gears.cluster.LocalCluster"  -DLOCAL -Dexec.args="http://127.0.0.1:80/kv"
   ````
 3. Start a Application.
-  ```bash
+  ```
+
   mvn exec:java -Dexec.mainClass="org.apache.gearpump.app.examples.wordcount.WordCount"  -Dexec.args="http://127.0.0.1:80/kv"
   ```
 
