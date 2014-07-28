@@ -31,16 +31,15 @@ GearPump is a data flow processing engine built on top of Gears.
 
 ###Cluster Mode
 1. On 1 node, Start Master
-
   ```bash
   ## Create Master on <master ip>:80, 
-  java -cp <classpath> master -port 80
+  java -cp <classpath> org.apache.gears.cluster.Starter master -port 80
   ```
 
 2. On same or different machine, Start workers. If you want to start 3 worker, then you need to run this command 3 times.
 
   ```bash
-  java -cp <classpath> worker -ip <master ip> -port <master port>
+  java -cp <classpath> org.apache.gears.cluster.Starter worker -ip <master ip> -port <master port>
   ```
 3. Start Client Example Code
 
