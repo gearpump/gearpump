@@ -18,9 +18,8 @@ package org.apache.gearpump
  * limitations under the License.
  */
 
-import akka.actor.Props
-
-case class TaskDescription(task : Props, partitioner : Partitioner)
-case class StageDescription(task : TaskDescription, parallism : Int)
-case class AppDescription(name : String, conf : Map[String, Any], stages: Array[StageDescription]) extends org.apache.gears.cluster.Application
-
+class HashPartitioner extends Partitioner {
+  override def getPartition(msg : String, partitionNum : Int) : Int = {
+    msg.hashCode % partitionNum
+  }
+}

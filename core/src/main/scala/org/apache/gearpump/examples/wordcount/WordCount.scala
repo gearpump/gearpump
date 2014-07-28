@@ -1,4 +1,5 @@
-package org.apache.gearpump.client
+package org.apache.gearpump.app.examples.wordcount
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,41 +18,41 @@ package org.apache.gearpump.client
  * limitations under the License.
  */
 
-import akka.actor.{Props, ActorSystem}
-import org.apache.gearpump._
-import org.apache.gearpump.service.SimpleKVService
+import akka.actor.Props
+import org.apache.gearpump.{StageDescription, TaskDescription, AppDescription, HashPartitioner}
+import org.apache.gearpump.client.ClientContext
 
-class Client {
 
-  def start() : Unit = {
-    val appMasterURL = SimpleKVService.get("appMaster")
+class WordCount  {
+}
 
-    val system = ActorSystem("worker", Configs.SYSTEM_DEFAULT_CONFIG)
+object WordCount {
 
-    val appMaster = system.actorSelection(appMasterURL)
-    val app = createApplication()
+  /**
+   * kvServiceURL example: http://127.0.0.1/kv
+   * We can get a value by GET http://127.0.0.1/kv?key={key}
+   * We can set a value by GET http://127.0.0.1/kv?key={key}&value={value}
+   */
+  def main(args: Array[String]) = {
+    val context = ClientContext()
+    val kvServiceURL = args(0)
+    context.init(kvServiceURL)
+    val appId = context.submit(getApplication())
+    System.out.println(s"We get application id: $appId")
 
-    appMaster ! SubmitApplication(app)
+
+    val timeout = 60 * 10000; //60s
+    Thread.sleep(timeout)
+
+    context.shutdown(appId)
   }
 
-  def createApplication() : AppDescription = {
+  def getApplication() : AppDescription = {
     val config = Map[String, Any]()
     val partitioner = new HashPartitioner()
     val split = TaskDescription(Props(classOf[Split]), partitioner)
     val sum = TaskDescription(Props(classOf[Sum]), partitioner)
     val app = AppDescription("wordCount", config, Array(StageDescription(split, 1), StageDescription(sum, 1)))
-
     app
-
-  }
-}
-
-object Client {
-  def main(args: Array[String]) {
-
-    val kvService = args(0);
-    SimpleKVService.init(kvService)
-
-    new Client().start();
   }
 }

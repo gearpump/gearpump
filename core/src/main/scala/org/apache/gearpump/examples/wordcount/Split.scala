@@ -1,4 +1,5 @@
-package org.apache.gearpump.client
+package org.apache.gearpump.app.examples.wordcount
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,9 +18,7 @@ package org.apache.gearpump.client
  * limitations under the License.
  */
 
-import akka.actor.{Props, Actor}
 import org.apache.gearpump.task.TaskActor
-import org.apache.gearpump.Partitioner
 
 class Split extends TaskActor {
 

@@ -1,4 +1,5 @@
-package org.apache.gearpump
+package org.apache.gears.cluster
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,9 +18,14 @@ package org.apache.gearpump
  * limitations under the License.
  */
 
-import akka.actor.ActorRef
+import akka.actor.{Actor, ActorRef, Props}
 import org.apache.gearpump.task.TaskId
+import org.apache.gearpump.util.ExecutorLauncher.DaemonActorSystem
+import org.apache.gearpump.{StageParallism, TaskDescription}
 
+/**
+ * Clustering messages between Master, Worker, AppMaster, Executor, Task, Client
+ */
 sealed trait ClusterMessage
 
 /**
@@ -33,35 +39,37 @@ case object WorkerRegistered extends MasterToWorkerMsg
  */
 trait WorkerToMasterMsg extends ClusterMessage
 
-case object RegisterWorker extends WorkerToMasterMsg
-case class ResourceUpdate(slots : Int) extends WorkerToMasterMsg
+case class RegisterWorker(workerId : Int) extends WorkerToMasterMsg
+case class ResourceUpdate(workerId : Int,  slots : Int) extends WorkerToMasterMsg
 
 /**
  * Executor to Worker Message
  */
 trait ExecutorToWorker extends ClusterMessage
-case class RegisterExecutor(appMaster : ActorRef, executorId : Int, slots: Int)
+case class RegisterExecutor(appMaster : ActorRef, appId : Int, executorId : Int, slots: Int)
 case class ExecutorFailed(reason : String, appMaster : ActorRef, executorId : Int) extends ExecutorToWorker
 
 /**
  * AppMaster to Worker Message
  */
 trait AppMasterToWorker extends ClusterMessage
-case class LaunchExecutor(appId : Int, executorId : Int, slots : Int, executorContext : ExecutorContext) extends AppMasterToWorker
+case class LaunchExecutor(appId : Int, executorId : Int, slots : Int, executor : Props, executorContext : ExecutorContext) extends AppMasterToWorker
+
+case class LaunchExecutorOnSystem(appMaster : ActorRef, launch : LaunchExecutor, systemPath : DaemonActorSystem)
 
 /**
  * Worker to AppMaster Message
  */
 trait WorkerToAppMaster extends ClusterMessage
 case class ExecutorLaunched(executor : ActorRef, executorId : Int, slots: Int) extends WorkerToAppMaster
-case class ExecutorLaunchFailed(executorId : Int, reason : String = null, ex : Exception = null) extends WorkerToAppMaster
+case class ExecutorLaunchFailed(launch : LaunchExecutor, reason : String = null, ex : Throwable = null) extends WorkerToAppMaster
 
 
 /**
  * AppMater to Master
  */
 trait AppMasterToMaster extends ClusterMessage
-case class RequestResource(slots : Int) extends AppMasterToMaster
+case class RequestResource(appId : Int, slots : Int) extends AppMasterToMaster
 
 /**
  * Master to AppMaster
@@ -73,10 +81,12 @@ case class Resource(worker : ActorRef, slots : Integer)
 case class ResourceAllocated(resource : Array[Resource])
 
 /**
- * Client to App Master
+ * Client to Master
  */
 trait ClientToAppMaster extends ClusterMessage
-case class SubmitApplication(appDescription : AppDescription) extends ClientToAppMaster
+case class SubmitApplication(appMaster : Class[_ <: Actor], config : Configs, appDescription : Application) extends ClientToAppMaster
+case class ShutdownApplication(appId : Int) extends ClientToAppMaster
+case object Shutdown
 
 /**
  * AppMaster to Executor

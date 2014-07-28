@@ -1,4 +1,5 @@
-package org.apache.gearpump
+package org.apache.gears.cluster
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,44 +18,44 @@ package org.apache.gearpump
  * limitations under the License.
  */
 import akka.actor._
+import akka.remote.RemoteScope
+import org.apache.gearpump._
 import org.apache.gearpump.service.SimpleKVService
+import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.Queue
 
 object Master {
-  private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
-
-  def main(argStrings: Array[String]) {
-
-    val kvService = argStrings(0);
-    SimpleKVService.init(kvService)
-
-    val system = ActorSystem("master", Configs.SYSTEM_DEFAULT_CONFIG)
-
-    LOG.info("master process is started...");
-
-    val actor = system.actorOf(Props[Master], "master")
-
-    system.awaitTermination()
-    LOG.info("master process is shutdown...");
-  }
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[Master])
 }
 
 class Master extends Actor {
-  import org.apache.gearpump.Master._
+  import Master._
 
   private var resources = new Array[(ActorRef, Int)](0)
   private val resourceRequests = new Queue[(ActorRef, Int)]
 
-  override def receive : Receive = workerMsgHandler orElse  appMasterMsgHandler orElse  ActorUtil.defaultMsgHandler
+  private var appManager : ActorRef = null
+  private var workerId = 0;
+
+  override def receive : Receive = workerMsgHandler orElse appMasterMsgHandler orElse clientMsgHandler orElse  ActorUtil.defaultMsgHandler(self)
 
   def workerMsgHandler : Receive = {
-    case RegisterWorker =>
+    //create worker
+    case RegisterActorSystem(systemPath) =>
+      LOG.info(s"Received RegisterActorSystem $systemPath")
+      val systemAddress = AddressFromURIString(systemPath)
+      val workerConfig = Props(classOf[Worker], workerId, self).withDeploy(Deploy(scope = RemoteScope(systemAddress)))
+      val worker = context.actorOf(workerConfig, classOf[Worker].getSimpleName + workerId)
+      workerId += 1
+      sender ! BindLifeCycle(worker)
+    case RegisterWorker(id) =>
+      context.watch(sender)
       sender ! WorkerRegistered
-      LOG.info("Register Worker ....")
-    case ResourceUpdate(slots) =>
-      LOG.info("Resoource update ...." + slots)
+      LOG.info(s"Register Worker $id....")
+    case ResourceUpdate(id, slots) =>
+      LOG.info(s"Resource update id: $id, slots: $slots....")
       val current = sender;
       val index = resources.indexWhere((worker) => worker._1.equals(current), 0)
       if (index == -1) {
@@ -66,12 +67,29 @@ class Master extends Actor {
   }
 
   def appMasterMsgHandler : Receive = {
-    case RequestResource(slots) =>
-      LOG.info("Request resource: " + slots)
+    case RequestResource(appId, slots) =>
+      LOG.info(s"Request resource: appId: $appId, slots: $slots")
       val appMaster = sender
       resourceRequests.enqueue((appMaster, slots))
       allocateResource
   }
+
+  def clientMsgHandler : Receive = {
+    case app : SubmitApplication => {
+      LOG.info(s"Receive from client, SubmitApplication $app")
+      appManager.forward(app)
+    }
+    case app : ShutdownApplication => {
+      LOG.info(s"Receive from client, Shutting down Application ${app.appId}")
+      appManager.forward(app)
+    }
+    case Shutdown =>
+      LOG.info(s"Shutting down Master called from ${sender.toString}...")
+      context.stop(self)
+  }
+
+  // shutdown the hosting actor system
+  override def postStop(): Unit = context.system.shutdown()
 
   def allocateResource : Unit = {
     val length = resources.length
@@ -102,8 +120,9 @@ class Master extends Actor {
 
   override def preStart(): Unit = {
     val path = ActorUtil.getFullPath(context)
+    LOG.info(s"master path is $path")
     SimpleKVService.set("master", path)
-    LOG.info("master path is: " +  path)
+    appManager = context.actorOf(Props[AppManager])
   }
 }
 

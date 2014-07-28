@@ -1,4 +1,5 @@
-package org.apache.gearpump.client
+package org.apache.gearpump.app.examples.wordcount
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,17 +18,15 @@ package org.apache.gearpump.client
  * limitations under the License.
  */
 
-import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.task.TaskActor
-import org.apache.gearpump.Partitioner
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.HashMap
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.FiniteDuration
 
 class Sum extends TaskActor {
   import Sum._
@@ -63,5 +62,5 @@ class Sum extends TaskActor {
 }
 
 object Sum {
-  private val LOG: Logger = LoggerFactory.getLogger(Sum.getClass)
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[Sum])
 }

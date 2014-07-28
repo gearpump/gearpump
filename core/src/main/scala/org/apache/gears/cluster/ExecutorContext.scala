@@ -1,4 +1,5 @@
-package org.apache.gearpump.client
+package org.apache.gears.cluster
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,10 +18,16 @@ package org.apache.gearpump.client
  * limitations under the License.
  */
 
-import org.apache.gearpump.Partitioner
+import java.io.File
 
-class HashPartitioner extends Partitioner {
-  override def getPartition(msg : String, partitionNum : Int) : Int = {
-    msg.hashCode % partitionNum
+trait ExecutorContext extends Serializable {
+  def getClassPath() : Array[String]
+}
+
+class DefaultExecutorContext extends ExecutorContext {
+  def getClassPath() : Array[String] = {
+    val classpath = System.getProperty("java.class.path");
+    val classpathList = classpath.split(File.pathSeparator);
+    classpathList
   }
 }

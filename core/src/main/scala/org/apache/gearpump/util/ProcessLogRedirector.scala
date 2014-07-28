@@ -1,4 +1,11 @@
-package org.apache.gearpump
+package org.apache.gearpump.util
+
+import java.io.{Flushable, Closeable}
+
+import org.slf4j.LoggerFactory
+
+import scala.sys.process.ProcessLogger
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -8,7 +15,7 @@ package org.apache.gearpump
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,17 +23,12 @@ package org.apache.gearpump
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+class ProcessLogRedirector extends ProcessLogger with Closeable with Flushable {
+  private val LOG = LoggerFactory.getLogger("redirect")
 
-import java.io.File
-
-trait ExecutorContext extends Serializable {
-  def getClassPath() : Array[String]
-}
-
-class DefaultExecutorContext extends ExecutorContext {
-  def getClassPath() : Array[String] = {
-    val classpath = System.getProperty("java.class.path");
-    val classpathList = classpath.split(File.pathSeparator);
-    classpathList
-  }
+  def out(s: => String): Unit = LOG.info(s)
+  def err(s: => String): Unit = LOG.info(s)
+  def buffer[T](f: => T): T = f
+  def close(): Unit = Unit
+  def flush(): Unit = Unit
 }

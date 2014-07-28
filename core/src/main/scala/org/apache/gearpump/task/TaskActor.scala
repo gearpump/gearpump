@@ -18,22 +18,16 @@ package org.apache.gearpump.task
  */
 
 import java.util
-import java.util.concurrent.TimeUnit
 
-import akka.actor.{Stash, Props, ActorRef, Actor}
-import com.google.common.collect.MinMaxPriorityQueue
-import org.apache.gearpump.task.TaskActor.AskForTaskLocations
-import org.apache.gearpump.{StageParallism, Partitioner, TaskLocation, GetTaskLocation}
-import org.slf4j.{LoggerFactory, Logger}
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, promise, Promise}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Success,Failure}
+import akka.actor.{Actor, ActorRef, Props, Stash}
+import org.apache.gearpump.{Partitioner, StageParallism}
+import org.apache.gears.cluster.{GetTaskLocation, TaskLocation}
+import org.slf4j.{Logger, LoggerFactory}
 
 case class TaskInit(taskId : TaskId, master : ActorRef, outputs : StageParallism, conf : Map[String, Any], partitioner : Partitioner)
 
 abstract class TaskActor extends Actor  with Stash {
-  import TaskActor._
+  import org.apache.gearpump.task.TaskActor._
 
   private var taskId : TaskId = null
   private var outputTaskLocations : Array[ActorRef] = null
@@ -72,8 +66,8 @@ abstract class TaskActor extends Actor  with Stash {
   }
 
   def init : Receive = {
-    case TaskInit(taskId, master, outputs, conf, partitioner)  => {
-      LOG.info("TaskInit... taskId: " + taskId + ", ouput: " + outputs)
+    case TaskInit(taskId, appMaster, outputs, conf, partitioner)  => {
+      LOG.info(s"TaskInit... taskId: $taskId + ouput: $outputs")
 
       this.taskId = taskId
       this.conf = conf
@@ -85,7 +79,7 @@ abstract class TaskActor extends Actor  with Stash {
 
       if (outputs.parallism > 0) {
         LOG.info("becoming wait for output task locations...." + taskId)
-        context.actorOf(Props(new AskForTaskLocations(master, outputs, self)))
+        context.actorOf(Props(new AskForTaskLocations(appMaster, outputs, self)))
         context.become(waitForOutputTaskLocations)
       } else {
         LOG.info("becoming handleMessage...." + taskId)
@@ -159,7 +153,7 @@ abstract class TaskActor extends Actor  with Stash {
 }
 
 object TaskActor {
-  private val LOG: Logger = LoggerFactory.getLogger(TaskActor.getClass)
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[TaskActor])
   val INITIAL_WINDOW_SIZE = 1024 * 16
   val FLOW_CONTROL_RATE = 100
 

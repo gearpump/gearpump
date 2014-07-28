@@ -30,7 +30,6 @@ object SimpleKVService {
     val port = args(0).toInt
     val server = new Server(port)
 
-
     val resourceHandler = new ResourceHandler();
     resourceHandler.setDirectoriesListed(true);
     resourceHandler.setResourceBase(".");
@@ -47,6 +46,11 @@ object SimpleKVService {
     server.join()
   }
 
+  /**
+   * kvServiceURL: key value service URL
+   * To set a value, send a GET request to http://{kvServiceURL}?key={key}&value={value}
+   * to get a value, send a GET request to http://{kvServiceURL}?key={key}
+   */
   def init(url : String) {
     SimpleKVService.url = url
   }
