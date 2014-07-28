@@ -23,6 +23,7 @@ GearPump is a data flow processing engine built on top of Gears.
   java -cp <classpath> org.apache.gears.cluster.Starter local -port 80 -sameprocess false -workernum 4
   ```
 3. Start Client Example Code
+  
   ```bash
   ## Create Application
   java -cp <classpath> org.apache.gearpump.app.examples.wordcount.WordCount <master ip> <master port>
