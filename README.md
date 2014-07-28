@@ -10,10 +10,6 @@ It contains two part, Gears and GearPump.
 Gears is a general resource scheduler, it is design to support multiple Heterogeneous resource scheduling requirements.
 GearPump is a data flow processing engine built on top of Gears.
 
-
-How to run gear pump
-========
-
 ###Local Mode
 1. Start a KV Service, on local port 80
   ```bash
@@ -36,5 +32,5 @@ How to run gear pump
   ```
 
 ###Remoe Mode
-
+TODO
 
