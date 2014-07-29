@@ -41,6 +41,8 @@ GearPump is a data flow processing engine built on top of Gears.
 
 
 ###Cluster Mode
+0. Unpack gearpump-{version}.zip to all machines in the cluster
+
 1. On 1 node, Start Master
   ```bash
   ## Create Master on <master ip>:80, 
