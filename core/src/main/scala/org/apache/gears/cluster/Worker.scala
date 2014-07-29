@@ -44,7 +44,7 @@ class Worker(id : Int, master : ActorRef) extends Actor{
     case WorkerRegistered =>
       LOG.info(s"Worker $id Registered ....")
       sender ! ResourceUpdate(id, resource)
-      context.become(appMasterMsgHandler orElse executorMsgHandler orElse  ActorUtil.defaultMsgHandler(self))
+      context.become(appMasterMsgHandler orElse executorMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self))
   }
 
   def appMasterMsgHandler : Receive = {
@@ -85,11 +85,26 @@ class Worker(id : Int, master : ActorRef) extends Actor{
     }
   }
 
+  def terminationWatch : Receive = {
+    case Terminated(actor) => {
+      if (actor.compareTo(master) == 0) {
+        // parent is down, let's make suicide
+        LOG.info("parent master cannot be contacted, kill myself...")
+        context.stop(self)
+      }
+    }
+  }
+
   def actorNameFor(appId : Int, executorId : Int) = "app_" + appId + "_executor_" + executorId
 
   override def preStart() : Unit = {
     master ! RegisterWorker(id)
+    context.watch(master)
     LOG.info(s"Worker[$id] Sending master RegisterWorker")
+  }
+
+  override def postStop(): Unit = {
+    LOG.info(s"Worker $id is going down....")
   }
 }
 

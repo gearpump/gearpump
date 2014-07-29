@@ -84,7 +84,7 @@ abstract class TaskActor extends Actor  with Stash {
 
       if (outputs.parallism > 0) {
         LOG.info("becoming wait for output task locations...." + taskId)
-        context.actorOf(Props(new AskForTaskLocations(appMaster, outputs, self)))
+        context.actorOf(Props(new AskForTaskLocations(this.taskId, appMaster, outputs, self)))
         context.become(waitForOutputTaskLocations)
       } else {
         LOG.info("becoming handleMessage...." + taskId)
@@ -167,11 +167,11 @@ object TaskActor {
   val INITIAL_WINDOW_SIZE = 1024 * 16
   val FLOW_CONTROL_RATE = 100
 
-  class AskForTaskLocations(master : ActorRef, nextStage : StageParallism, parent : ActorRef) extends Actor {
+  class AskForTaskLocations(taskId : TaskId, master : ActorRef, nextStage : StageParallism, parent : ActorRef) extends Actor {
 
     context.setReceiveTimeout(FiniteDuration(10, TimeUnit.SECONDS))
 
-    LOG.info("Creating Ask task for ... " + parent.path)
+    LOG.info(s"[${this.taskId}] Creating Ask task for ... " + parent.path)
 
     override def preStart() : Unit = {
       0.until(nextStage.parallism).map((taskIndex) => {
@@ -184,17 +184,17 @@ object TaskActor {
 
     def waitForTaskLocation(taskLocationMap : Map[TaskId, ActorRef]) : Receive = {
       case TaskLocation(taskId, task) => {
-        LOG.info("Get task location, taskId: " + taskId)
+        LOG.info(s"[${this.taskId}] Get task location, taskId: " + taskId)
 
         val newLocationMap = taskLocationMap.+((taskId, task))
 
-        LOG.info("new Location Map: " + newLocationMap.toString())
-        LOG.info("output Task size: " + nextStage.parallism + ", location map size: " + newLocationMap.size)
+        LOG.debug(s"[${this.taskId}] new Location Map: " + newLocationMap.toString())
+        LOG.info(s"[${this.taskId}] output Task size: " + nextStage.parallism + ", location map size: " + newLocationMap.size)
 
         if (newLocationMap.size == nextStage.parallism) {
 
           parent ! Success(TaskLocations(newLocationMap))
-          LOG.info("Sending task location to " + parent.path)
+          LOG.info(s"[${this.taskId}] Sending task location to " + parent.path)
           context.stop(self)
         } else {
           context.become(waitForTaskLocation(newLocationMap))

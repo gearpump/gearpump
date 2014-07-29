@@ -46,7 +46,7 @@ class Master extends Actor {
   private var appManager : ActorRef = null
   private var workerId = 0;
 
-  override def receive : Receive = workerMsgHandler orElse appMasterMsgHandler orElse clientMsgHandler orElse  ActorUtil.defaultMsgHandler(self)
+  override def receive : Receive = workerMsgHandler orElse appMasterMsgHandler orElse clientMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self)
 
   def workerMsgHandler : Receive = {
     //create worker
@@ -93,6 +93,21 @@ class Master extends Actor {
     case ShutdownMaster =>
       LOG.info(s"Shutting down Master called from ${sender.toString}...")
       context.stop(self)
+  }
+
+  def terminationWatch : Receive = {
+    case t : Terminated => {
+      val actor = t.actor
+      LOG.info(s"worker ${actor.path} get terminated, is it due to network reason? ${t.getAddressTerminated()}")
+
+      LOG.info("Let's filter out dead resources...")
+
+      // filter out dead worker resource
+      resources = resources.filter { resource =>
+        val (worker, _) = resource
+        worker.compareTo(actor) != 0
+      }
+    }
   }
 
   // shutdown the hosting actor system

@@ -59,7 +59,7 @@ class Sum extends TaskActor {
 
   def reportWordCount : Unit = {
     val current : Long = System.currentTimeMillis()
-    LOG.info(s"Task $taskId Throughput: ${(wordCount - snapShotWordCount) / ((current - snapShotTime) / 1000)} words/second")
+    LOG.info(s"Task $taskId Throughput: ${((wordCount - snapShotWordCount), ((current - snapShotTime) / 1000))} (words, second)")
     snapShotWordCount = wordCount
     snapShotTime = current
   }

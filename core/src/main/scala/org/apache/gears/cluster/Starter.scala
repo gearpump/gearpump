@@ -35,6 +35,9 @@ object Starter extends App {
 
   def start = {
     val config = parse(args.toList)
+
+    Console.println(s"Configuration after parse $config")
+
     if (config.local) {
       local(config.port, config.workerCount, config.sameProcess)
     } else {
@@ -56,7 +59,7 @@ object Starter extends App {
 
       "master",
       "Start Master Node, the Master node must be started first",
-      "JAVA -CP <CLASSPATH> MASTER -PORT <PORT>",
+      "java -cp <CLASSPATH> master -port <port>",
 
       "worker",
       "Start Worker Node, It need to be started after Master",
@@ -89,8 +92,8 @@ object Starter extends App {
           config = config.copy(port = port.toInt)
           doParse(rest)
         }
-        case "-sameprocess" :: rest => {
-          config = config.copy(sameProcess = true)
+        case "-sameprocess" :: sameprocess :: rest  => {
+          config = config.copy(sameProcess = sameprocess.toBoolean)
           doParse(rest)
         }
         case "master" :: rest => {
@@ -129,8 +132,11 @@ object Starter extends App {
   }
 
   def master(port : Int): Unit = {
-    SimpleKVService.create.start(port)
     val url = s"http://127.0.0.1:$port/kv"
+    Console.out.println(s"kv service url: $url")
+
+    SimpleKVService.create.start(port)
+
     SimpleKVService.init(url)
     val system = ActorSystem("cluster", Configs.SYSTEM_DEFAULT_CONFIG)
 
