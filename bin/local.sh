@@ -1,3 +1,4 @@
+#!/bin/sh
 
 echo "Example: $0 -port <port> -sameprocess -workernum <4>"
 
