@@ -31,7 +31,12 @@ import scala.concurrent.duration.FiniteDuration
 class Sum extends TaskActor {
   import Sum._
 
-  private val map : HashMap[String, Int] = new HashMap[String, Int]()
+  private val map : HashMap[String, Long] = new HashMap[String, Long]()
+
+  private var wordCount : Long = 0
+  private var snapShotTime : Long = System.currentTimeMillis()
+  private var snapShotWordCount : Long = 0
+
   private var scheduler : Cancellable = null
 
   override def onStart() : Unit = {
@@ -43,7 +48,8 @@ class Sum extends TaskActor {
     if (null == msg) {
       return
     }
-    val current = map.getOrElse(msg, 0)
+    val current = map.getOrElse(msg, 0L)
+    wordCount += 1
     map.put(msg, current + 1)
   }
 
@@ -52,12 +58,10 @@ class Sum extends TaskActor {
   }
 
   def reportWordCount : Unit = {
-    LOG.info("Reporting WordCount...")
-    val str = StringBuilder.newBuilder
-    for (kv  <- map) {
-      str.append(kv.toString()).append(" ")
-    }
-    LOG.info(str.toString())
+    val current : Long = System.currentTimeMillis()
+    LOG.info(s"Task $taskId Throughput: ${(wordCount - snapShotWordCount) / ((current - snapShotTime) / 1000)} words/second")
+    snapShotWordCount = wordCount
+    snapShotTime = current
   }
 }
 

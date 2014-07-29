@@ -34,7 +34,7 @@ case class TaskInit(taskId : TaskId, master : ActorRef, outputs : StageParallism
 abstract class TaskActor extends Actor  with Stash {
   import org.apache.gearpump.task.TaskActor._
 
-  private var taskId : TaskId = null
+  protected var taskId : TaskId = null
   private var outputTaskLocations : Array[ActorRef] = null
   private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
   private var conf : Map[String, Any] = null
