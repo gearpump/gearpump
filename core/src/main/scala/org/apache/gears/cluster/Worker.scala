@@ -36,6 +36,8 @@ class Worker(id : Int, master : ActorRef) extends Actor{
   import org.apache.gears.cluster.Worker._
 
   private var resource = 100
+  private var allocatedResource = Map[ActorRef, Int]()
+
   override def receive : Receive = waitForMasterConfirm
 
   LOG.info(s"Worker $id is starting...")
@@ -63,7 +65,6 @@ class Worker(id : Int, master : ActorRef) extends Actor{
       if (resource < launch.slots) {
         sender ! ExecutorLaunchFailed(launch, "There is no free resource on this machine")
       } else {
-        resource = resource - launch.slots
         val appMaster = sender
         launchExecutor(context, self, appMaster, launch.copy(executorConfig = launch.executorConfig.
           withSlots(launch.slots).
@@ -75,6 +76,10 @@ class Worker(id : Int, master : ActorRef) extends Actor{
       val executorProps = Props(launch.executorClass, launch.executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(system.path))))
       val executor = context.actorOf(executorProps, actorNameFor(launch.appId, launch.executorId))
       system.daemonActor ! BindLifeCycle(executor)
+
+      resource = resource - launch.slots
+      allocatedResource = allocatedResource + (executor -> launch.slots)
+      context.watch(executor)
     }
   }
 
@@ -91,6 +96,14 @@ class Worker(id : Int, master : ActorRef) extends Actor{
         // parent is down, let's make suicide
         LOG.info("parent master cannot be contacted, kill myself...")
         context.stop(self)
+      } else {
+        // This should be a executor
+        LOG.info(s"[$id] An executor dies ${actor.path}...." )
+        allocatedResource.get(actor).map { slots =>
+          LOG.info(s"[$id] Reclaiming resource ${slots}...." )
+          allocatedResource = allocatedResource - actor
+          resource += slots
+        }
       }
     }
   }
