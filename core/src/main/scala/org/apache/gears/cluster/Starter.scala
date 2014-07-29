@@ -109,8 +109,7 @@ object Starter extends App {
           config = config.copy(ip = ip)
           doParse(rest)
         }
-        case arg :: rest => {
-          config = config.copy(arguments = config.arguments :+ arg)
+        case _ :: rest => {
           doParse(rest)
         }
       }
