@@ -23,11 +23,13 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{Actor, ActorRef}
 import akka.util.Timeout
 import org.apache.gears.cluster.ClientToMaster._
+import org.apache.gears.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import akka.pattern.ask
 import scala.concurrent.Future
+import scala.util.{Success,Failure}
 
 class MasterClient(master : ActorRef) {
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
@@ -37,13 +39,21 @@ class MasterClient(master : ActorRef) {
    * throw if anything wrong
    */
   def submitApplication(appMaster : Class[_ <: Actor], config : Configs, app : Application) : Int = {
-    Await.result( (master ? SubmitApplication(appMaster, config, app)).asInstanceOf[Future[Int]], Duration.Inf)
+    val result = Await.result( (master ? SubmitApplication(appMaster, config, app)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)
+    result.appId match {
+      case Success(appId) => appId
+      case Failure(ex) => throw(ex)
+    }
   }
 
   /**
    * Throw exception if fail to shutdown
    */
   def shutdownApplication(appId : Int) : Unit = {
-    Await.result(master ? ShutdownApplication(appId), Duration.Inf)
+    val result = Await.result((master ? ShutdownApplication(appId)).asInstanceOf[Future[ShutdownApplicationResult]], Duration.Inf)
+    result.appId match {
+      case Success(_) => Unit
+      case Failure(ex) => throw(ex)
+    }
   }
 }

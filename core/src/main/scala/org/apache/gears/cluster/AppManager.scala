@@ -22,8 +22,11 @@ import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.AppMasterToWorker._
 import org.apache.gears.cluster.ClientToMaster._
 import org.apache.gears.cluster.MasterToAppMaster._
+import org.apache.gears.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gears.cluster.WorkerToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.util.{Success, Failure}
 
 
 class AppManager() extends Actor {
@@ -38,11 +41,17 @@ class AppManager() extends Actor {
     case SubmitApplication(appMasterClass, config, app) =>
       LOG.info(s"AppManager Submiting Application $appId...")
       val appWatcher = context.actorOf(Props(classOf[AppMasterWatcher], appId, appMasterClass, config, app), appId.toString)
-      sender.tell(appId, context.parent)
+      sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
       appId += 1
     case ShutdownApplication(appId) =>
       LOG.info(s"App Manager Shutting down application $appId")
-      context.child(appId.toString).map(context.stop(_))
+      val child = context.child(appId.toString)
+      if (child.isEmpty) {
+        sender.tell(ShutdownApplicationResult(Failure(new Exception(s"App $appId not found"))), context.parent)
+      } else {
+        LOG.info(s"Shutting down  ${child.get.path}")
+        child.get.forward(ShutdownAppMaster)
+      }
   }
 }
 
@@ -50,7 +59,6 @@ object AppManager {
 
   //app master will always use executor id -1 to avoid conflict with executor
   private val masterExecutorId = -1
-
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppManager])
 
   class AppMasterWatcher(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
@@ -60,10 +68,9 @@ object AppManager {
       case ResourceAllocated(resource) => {
         LOG.info(s"Resource allocated for appMaster $appId")
         val Resource(worker, slots) = resource(0)
-        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withMaster(sender).withAppManager(self)
-        val appMaster = Props(appMasterClass, appMasterConfig)
+        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withMaster(sender).withAppManager(self).withExecutorId(masterExecutorId).withSlots(slots)
         LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
-        worker ! LaunchExecutor(appId, masterExecutorId, slots, appMaster, new DefaultExecutorContext)
+        worker ! LaunchExecutor(appId, masterExecutorId, slots, appMasterClass, appMasterConfig, new DefaultExecutorContext)
         context.become(waitForAppMasterToStart)
       }
     }
@@ -71,10 +78,33 @@ object AppManager {
     def waitForAppMasterToStart : Receive = {
       case ExecutorLaunched(executor, executorId, slots) => {
         LOG.info(s"Executor $executorId has been launched...")
-       context.watch(executor)
+        context.watch(executor)
+        context.become(waitForShutdownCommand(sender, executorId) orElse terminationWatch(executor))
       }
       case ExecutorLaunchFailed(launch, reason, ex) => {
         LOG.error(s"Executor Launch failed $launch, reason：$reason", ex)
+      }
+    }
+
+    def waitForShutdownCommand(worker : ActorRef, executorId : Int) : Receive = {
+      case ShutdownAppMaster => {
+
+        LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $executorId")
+
+        worker ! ShutdownExecutor(appId, executorId)
+        sender ! ShutdownApplicationResult(Success(appId))
+        //self myself
+        self ! PoisonPill
+      }
+    }
+
+    def terminationWatch(appMaster : ActorRef) : Receive = {
+      case terminate : Terminated => {
+        terminate.getAddressTerminated()
+        if (terminate.actor.compareTo(appMaster) == 0) {
+          LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
+          context.stop(self)
+        }
       }
     }
 

@@ -20,6 +20,6 @@ package org.apache.gearpump
 
 class HashPartitioner extends Partitioner {
   override def getPartition(msg : String, partitionNum : Int) : Int = {
-    msg.hashCode % partitionNum
+    (msg.hashCode & Integer.MAX_VALUE) % partitionNum
   }
 }

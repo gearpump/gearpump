@@ -17,6 +17,9 @@ package org.apache.gears.cluster
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump._
@@ -87,7 +90,7 @@ class Master extends Actor {
       LOG.info(s"Receive from client, Shutting down Application ${app.appId}")
       appManager.forward(app)
     }
-    case Shutdown =>
+    case ShutdownMaster =>
       LOG.info(s"Shutting down Master called from ${sender.toString}...")
       context.stop(self)
   }
@@ -125,7 +128,7 @@ class Master extends Actor {
   override def preStart(): Unit = {
     val path = ActorUtil.getFullPath(context)
     LOG.info(s"master path is $path")
-    appManager = context.actorOf(Props[AppManager])
+    appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
   }
 }
 

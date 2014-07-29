@@ -1,9 +1,14 @@
 package org.apache.gearpump.util
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
 import org.apache.gearpump.ActorUtil
 import org.apache.gears.cluster.Configs
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one

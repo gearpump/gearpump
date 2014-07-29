@@ -46,7 +46,10 @@ object WordCount extends App{
 
     Thread.sleep(config.runseconds * 1000)
 
+    System.out.println(s"Shutting down application $appId")
+
     context.shutdown(appId)
+    context.destroy()
   }
 
   def commandHelp = {

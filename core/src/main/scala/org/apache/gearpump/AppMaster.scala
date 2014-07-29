@@ -1,11 +1,12 @@
 package org.apache.gearpump
 
-import akka.actor.{Actor, ActorRef, Props, Terminated}
+import akka.actor.{Actor, ActorRef, Terminated}
 import org.apache.gearpump.task.TaskId
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.AppMasterToWorker._
 import org.apache.gears.cluster.ExecutorToAppMaster._
+import org.apache.gears.cluster.ExecutorToWorker.RegisterExecutor
 import org.apache.gears.cluster.MasterToAppMaster._
 import org.apache.gears.cluster.WorkerToAppMaster._
 import org.apache.gears.cluster._
@@ -34,8 +35,9 @@ import scala.collection.mutable.Queue
 class AppMaster (config : Configs) extends Actor {
   import org.apache.gearpump.AppMaster._
 
-  //executor Id 0 is reserved by master
-  var executorId = 0;
+  val masterExecutorId = config.executorId
+  var currentExecutorId = masterExecutorId + 1
+  val slots = config.slots
 
   private val appId = config.appId
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
@@ -48,9 +50,7 @@ class AppMaster (config : Configs) extends Actor {
   private var pendingTaskLocationQueries = new mutable.HashMap[TaskId, mutable.ListBuffer[ActorRef]]()
 
   override def preStart : Unit = {
-
-    //watch appManager
-    context.watch(appManager)
+    context.parent ! RegisterExecutor(appManager, appId, masterExecutorId, slots)
 
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
     Console.out.println("AppMaster is launched xxxxxxxxxxxxxxxxx")
@@ -82,13 +82,12 @@ class AppMaster (config : Configs) extends Actor {
 
       groupedResource.map((workerAndSlots) => {
         val (worker, slots) = workerAndSlots
-        LOG.info(s"Launching Executor ...appId: $appId, executorId: $executorId, slots: $slots on worker $worker")
+        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: $slots on worker $worker")
 
-        val executorConfig = config.withAppMaster(self).withExecutorId(executorId).withSlots(slots)
-        val executor = Props(classOf[Executor], executorConfig)
-        worker ! LaunchExecutor(appId, executorId, slots,  executor, new DefaultExecutorContext)
+        val executorConfig = config.withAppMaster(self).withExecutorId(currentExecutorId).withSlots(slots)
+        worker ! LaunchExecutor(appId, currentExecutorId, slots,  classOf[Executor], executorConfig, new DefaultExecutorContext)
         //TODO: Add timeout event if this executor fail to start
-        executorId += 1
+        currentExecutorId += 1
       })
     }
   }
@@ -142,8 +141,7 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def terminationWatch : Receive = {
-    case Terminated(actor) =>
-      actor.path.toString.contains("master")
+    case Terminated(actor) => Unit
   }
 }
 

@@ -18,7 +18,7 @@ package org.apache.gears.cluster
  * limitations under the License.
  */
 
-import akka.actor.Actor
+import akka.actor.{Terminated, Actor}
 import org.apache.gearpump.task.TaskInit
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.ExecutorToAppMaster._
@@ -36,15 +36,26 @@ class Executor(config : Configs)  extends Actor {
 
   override def preStart : Unit = {
     context.parent ! RegisterExecutor(appMaster, appId, executorId, slots)
+    context.watch(appMaster)
   }
 
-  def receive : Receive = {
+  def receive : Receive = appMasterMsgHandler orElse terminationWatch
+
+  def appMasterMsgHandler : Receive = {
     case LaunchTask(taskId, conf, taskDescription, outputs) => {
       LOG.info(s"Launching Task $taskId for app: $appId, $taskDescription, $outputs")
       val task = context.actorOf(taskDescription.task, "stage_" + taskId.stageId + "_task_" + taskId.index)
       sender ! TaskLaunched(taskId, task)
 
       task ! TaskInit(taskId, appMaster, outputs, conf, taskDescription.partitioner)
+    }
+  }
+
+  def terminationWatch : Receive = {
+    case Terminated(actor) => {
+      if (actor.compareTo(appMaster) == 0) {
+        context.stop(self)
+      }
     }
   }
 }

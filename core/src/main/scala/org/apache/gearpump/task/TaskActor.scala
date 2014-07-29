@@ -18,12 +18,16 @@ package org.apache.gearpump.task
  */
 
 import java.util
+import java.util.concurrent.{TimeUnit, TimeoutException}
 
-import akka.actor.{Actor, ActorRef, Props, Stash}
+import akka.actor._
 import org.apache.gearpump.{Partitioner, StageParallism}
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.ExecutorToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{Failure, Success}
 
 case class TaskInit(taskId : TaskId, master : ActorRef, outputs : StageParallism, conf : Map[String, Any], partitioner : Partitioner)
 
@@ -93,8 +97,12 @@ abstract class TaskActor extends Actor  with Stash {
   }
 
   def waitForOutputTaskLocations : Receive = {
-    case TaskLocations(locations) =>
-
+    case _ : Failure[TaskLocations] => {
+      LOG.error(s"failed to get all task locations, stop current task $taskId")
+      context.stop(self)
+    }
+    case taskLocation : Success[TaskLocations] => {
+      val TaskLocations(locations) = taskLocation.get
       for ((k, v) <- locations) {
         val taskIndex = k.index
         outputTaskLocations(taskIndex) = v
@@ -107,7 +115,8 @@ abstract class TaskActor extends Actor  with Stash {
         handleMessage
       }
       unstashAll()
-    case msg : Any =>
+    }
+    case msg: Any =>
       stash()
   }
 
@@ -160,6 +169,8 @@ object TaskActor {
 
   class AskForTaskLocations(master : ActorRef, nextStage : StageParallism, parent : ActorRef) extends Actor {
 
+    context.setReceiveTimeout(FiniteDuration(10, TimeUnit.SECONDS))
+
     LOG.info("Creating Ask task for ... " + parent.path)
 
     override def preStart() : Unit = {
@@ -182,13 +193,18 @@ object TaskActor {
 
         if (newLocationMap.size == nextStage.parallism) {
 
-          parent ! TaskLocations(newLocationMap)
+          parent ! Success(TaskLocations(newLocationMap))
           LOG.info("Sending task location to " + parent.path)
           context.stop(self)
         } else {
-          waitForTaskLocation(newLocationMap)
+          context.become(waitForTaskLocation(newLocationMap))
         }
       }
+      case ReceiveTimeout =>
+        LOG.error("AskForTaskLocations timeout! We have not gathered enough task location to continue...")
+        parent ! Failure(new TimeoutException(s"Failed to get all task locations, we want we already get ${nextStage.parallism}, but can only get " +
+          s"${taskLocationMap.keySet.size}, details: $taskLocationMap"))
+        context.stop(self)
     }
   }
 }

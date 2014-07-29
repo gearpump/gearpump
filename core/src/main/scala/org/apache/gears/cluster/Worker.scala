@@ -44,10 +44,20 @@ class Worker(id : Int, master : ActorRef) extends Actor{
     case WorkerRegistered =>
       LOG.info(s"Worker $id Registered ....")
       sender ! ResourceUpdate(id, resource)
-      context.become(appMasterMsgHandler orElse  ActorUtil.defaultMsgHandler(self))
+      context.become(appMasterMsgHandler orElse executorMsgHandler orElse  ActorUtil.defaultMsgHandler(self))
   }
 
   def appMasterMsgHandler : Receive = {
+    case ShutdownExecutor(appId, executorId) => {
+      val actorName = actorNameFor(appId, executorId)
+      LOG.info(s"Worker shutting down executor: $actorName")
+      if (context.child(actorName).isDefined) {
+        LOG.info(s"Shuttting down child: ${context.child(actorName).get.path.toString}")
+        context.stop(context.child(actorName).get)
+      } else {
+        LOG.info(s"There is no child $actorName, ignore this message")
+      }
+    }
     case launch : LaunchExecutor => {
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
       if (resource < launch.slots) {
@@ -55,20 +65,27 @@ class Worker(id : Int, master : ActorRef) extends Actor{
       } else {
         resource = resource - launch.slots
         val appMaster = sender
-        launchExecutor(context, self, appMaster, launch)
+        launchExecutor(context, self, appMaster, launch.copy(executorConfig = launch.executorConfig.
+          withSlots(launch.slots).
+          withExecutorId(launch.executorId)))
       }
     }
     case LaunchExecutorOnSystem(appMaster, launch, system) => {
       LOG.info(s"Worker[$id] LaunchExecutorOnSystem ...$system")
-      val executorProps = launch.executor.withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(system.path))))
-      val executor = context.actorOf(executorProps, "app_" + launch.appId + "_executor_" + launch.executorId)
+      val executorProps = Props(launch.executorClass, launch.executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(system.path))))
+      val executor = context.actorOf(executorProps, actorNameFor(launch.appId, launch.executorId))
       system.daemonActor ! BindLifeCycle(executor)
     }
+  }
+
+  def executorMsgHandler : Receive = {
     case RegisterExecutor(appMaster, appId, executorId, slots) => {
-      LOG.info("Register Executor...")
+      LOG.info(s"Register Executor for $appId, $executorId to ${appMaster.path.toString}...")
       appMaster ! ExecutorLaunched(sender, executorId, slots)
     }
   }
+
+  def actorNameFor(appId : Int, executorId : Int) = "app_" + appId + "_executor_" + executorId
 
   override def preStart() : Unit = {
     master ! RegisterWorker(id)

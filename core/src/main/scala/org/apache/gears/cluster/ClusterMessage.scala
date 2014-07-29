@@ -18,11 +18,13 @@ package org.apache.gears.cluster
  * limitations under the License.
  */
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.task.TaskId
 import org.apache.gearpump.util.ExecutorLauncher.DaemonActorSystem
 import org.apache.gearpump.{StageParallism, TaskDescription}
 import org.apache.gears.cluster.AppMasterToWorker.LaunchExecutor
+
+import scala.util.Try
 
 
 /**
@@ -44,7 +46,12 @@ object MasterToWorker {
 object ClientToMaster {
   case class SubmitApplication(appMaster: Class[_ <: Actor], config: Configs, appDescription: Application)
   case class ShutdownApplication(appId: Int)
-  case object Shutdown
+  case object ShutdownMaster
+}
+
+object MasterToClient {
+  case class SubmitApplicationResult(appId : Try[Int])
+  case class ShutdownApplicationResult(appId : Try[Int])
 }
 
 object ExecutorToWorker {
@@ -56,14 +63,17 @@ object AppMasterToMaster {
   case class RequestResource(appId: Int, slots: Int)
 }
 
+case class Resource(worker: ActorRef, slots: Integer)
+
 object MasterToAppMaster {
-  case class Resource(worker: ActorRef, slots: Integer)
   case class ResourceAllocated(resource: Array[Resource])
+  case object ShutdownAppMaster
 }
 
 object AppMasterToWorker {
-  case class LaunchExecutor(appId: Int, executorId: Int, slots: Int, executor: Props, executorContext: ExecutorContext)
+  case class LaunchExecutor(appId: Int, executorId: Int, slots: Int, executorClass: Class[_ <: Actor], executorConfig : Configs, executorContext: ExecutorContext)
   case class LaunchExecutorOnSystem(appMaster: ActorRef, launch: LaunchExecutor, systemPath: DaemonActorSystem)
+  case class ShutdownExecutor(appId : Int, executorId : Int)
 }
 
 object WorkerToAppMaster {
