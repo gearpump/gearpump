@@ -19,38 +19,97 @@ package org.apache.gearpump.app.examples.wordcount
  */
 
 import akka.actor.Props
-import org.apache.gearpump.{StageDescription, TaskDescription, AppDescription, HashPartitioner}
 import org.apache.gearpump.client.ClientContext
+import org.apache.gearpump.{AppDescription, HashPartitioner, StageDescription, TaskDescription}
 
 
 class WordCount  {
 }
 
-object WordCount {
+object WordCount extends App{
 
-  def main(args: Array[String]) = {
+  case class Config(ip : String = "", port : Int = -1, split: Int = 1, sum : Int = 1, runseconds : Int = 60)
+
+  start
+
+  def start = {
+    val config = parse(args.toList)
+
     val context = ClientContext()
+    val kvServiceURL = s"http://${config.ip}:${config.port}/kv"
 
-    args.toList match {
-      case ip::port::rest =>
-        val kvServiceURL = s"http://$ip:$port/kv"
-        context.init(kvServiceURL)
-        val appId = context.submit(getApplication())
-        System.out.println(s"We get application id: $appId")
+    Console.out.println("Init KV Service: " + kvServiceURL)
 
+    context.init(kvServiceURL)
+    val appId = context.submit(getApplication(config.split, config.sum))
+    System.out.println(s"We get application id: $appId")
 
-        val timeout = 60 * 10000; //60s
-        Thread.sleep(timeout)
-        context.shutdown(appId)
+    Thread.sleep(config.runseconds * 1000)
+
+    context.shutdown(appId)
+  }
+
+  def commandHelp = {
+    val command = List(
+      "wordcount",
+      "Start a wordcount",
+      "java -cp <classpath> -ip <ip> -port <port> -split <split number> -sum <sum number> -runseconds <how many seconds to run>"
+)
+
+    Console.println("GearPump")
+    Console.println("=============================\n")
+
+    command.grouped(3).foreach{array =>
+      array match {
+        case command::description::example::_ =>
+          Console.println(s"  [$command] $description")
+          Console.println(s"  $example")
+          Console.println("--")
+      }
     }
   }
 
-  def getApplication() : AppDescription = {
+  def parse(args: List[String]) :Config = {
+    var config = Config()
+
+    def doParse(argument : List[String]) : Unit = {
+      argument match {
+        case Nil => true // true if everything processed successfully
+        case "-port" :: port :: rest => {
+          config = config.copy(port = port.toInt)
+          doParse(rest)
+        }
+        case "-ip" :: ip :: rest => {
+          config = config.copy(ip = ip)
+          doParse(rest)
+        }
+        case "-split" :: split :: rest => {
+          config = config.copy(split = split.toInt)
+          doParse(rest)
+        }
+        case "-sum" :: sum :: rest => {
+          config = config.copy(sum = sum.toInt)
+          doParse(rest)
+        }
+        case "-runseconds":: runseconds :: rest => {
+          config = config.copy(runseconds = runseconds.toInt)
+          doParse(rest)
+        }
+        case _ :: rest => {
+          doParse(rest)
+        }
+      }
+    }
+    doParse(args)
+    config
+  }
+
+  def getApplication(splitNum : Int, sumNum : Int) : AppDescription = {
     val config = Map[String, Any]()
     val partitioner = new HashPartitioner()
     val split = TaskDescription(Props(classOf[Split]), partitioner)
     val sum = TaskDescription(Props(classOf[Sum]), partitioner)
-    val app = AppDescription("wordCount", config, Array(StageDescription(split, 1), StageDescription(sum, 1)))
+    val app = AppDescription("wordCount", config, Array(StageDescription(split, splitNum), StageDescription(sum, sumNum)))
     app
   }
 }

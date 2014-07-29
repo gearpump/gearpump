@@ -36,7 +36,7 @@ GearPump is a data flow processing engine built on top of Gears.
   
   ```bash
   ## Create Application
-  wordcount.sh <master ip> <master port>
+  wordcount.sh <master ip> <master port> <split number> <sum number> <runseconds>
   ```
 
 
@@ -58,5 +58,5 @@ GearPump is a data flow processing engine built on top of Gears.
 
   ```bash
   ## Create Application
-  wordcount.sh <master ip> <master port>
+  wordcount.sh <master ip> <master port>  <split number> <sum number> <runseconds>
   ```
