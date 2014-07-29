@@ -20,7 +20,7 @@ GearPump is a data flow processing engine built on top of Gears.
 
 ###Local Mode
 0. Unpack gearpump-{version}.zip to some place in your system
-1. 
+
 1. Start Local Cluster in same process
   ```bash
   ## Create Cluster on port localhost:80, create 4 worker, 4 worker exists in same process
