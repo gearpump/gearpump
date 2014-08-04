@@ -5,5 +5,5 @@ split=$3
 sum=$4
 runseconds=$5
 
-echo java -cp "lib/*" org.apache.gearpump.app.examples.wordcount.WordCount  -ip $ip -port $port -split $split -sum $sum -runseconds $runseconds
-java -cp "lib/*" org.apache.gearpump.app.examples.wordcount.WordCount  -ip $ip -port $port -split $split -sum $sum -runseconds $runseconds
+echo java -cp "lib/*" org.apache.gearpump.examples.wordcount.WordCount  -ip $ip -port $port -split $split -sum $sum -runseconds $runseconds
+java -cp "lib/*" org.apache.gearpump.examples.wordcount.WordCount  -ip $ip -port $port -split $split -sum $sum -runseconds $runseconds
