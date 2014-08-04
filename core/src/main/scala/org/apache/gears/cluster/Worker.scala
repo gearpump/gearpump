@@ -50,9 +50,9 @@ class Worker(id : Int, master : ActorRef) extends Actor{
   }
 
   def appMasterMsgHandler : Receive = {
-    case ShutdownExecutor(appId, executorId) => {
+    case ShutdownExecutor(appId, executorId, reason : String) => {
       val actorName = actorNameFor(appId, executorId)
-      LOG.info(s"Worker shutting down executor: $actorName")
+      LOG.info(s"Worker shutting down executor: $actorName due to: $reason")
       if (context.child(actorName).isDefined) {
         LOG.info(s"Shuttting down child: ${context.child(actorName).get.path.toString}")
         context.stop(context.child(actorName).get)

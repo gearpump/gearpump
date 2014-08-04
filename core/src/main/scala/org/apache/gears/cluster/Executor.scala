@@ -54,6 +54,9 @@ class Executor(config : Configs)  extends Actor {
   def terminationWatch : Receive = {
     case Terminated(actor) => {
       if (actor.compareTo(appMaster) == 0) {
+
+        LOG.info(s"AppMaster ${appMaster.path.toString} is terminated, shutting down current executor $appId, $executorId")
+
         context.stop(self)
       }
     }

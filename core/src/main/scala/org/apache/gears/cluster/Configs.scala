@@ -27,6 +27,10 @@ class Configs(val config: Map[String, _])  extends Serializable{
     Configs(config + (key->value))
   }
 
+  def getInt(key : String) = {
+    config.getInt(key)
+  }
+
   def withAppId(appId : Int) = withValue(APPID, appId)
   def appId : Int = config.getInt(APPID)
 

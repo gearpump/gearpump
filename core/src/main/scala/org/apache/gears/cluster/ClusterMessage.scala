@@ -73,7 +73,7 @@ object MasterToAppMaster {
 object AppMasterToWorker {
   case class LaunchExecutor(appId: Int, executorId: Int, slots: Int, executorClass: Class[_ <: Actor], executorConfig : Configs, executorContext: ExecutorContext)
   case class LaunchExecutorOnSystem(appMaster: ActorRef, launch: LaunchExecutor, systemPath: DaemonActorSystem)
-  case class ShutdownExecutor(appId : Int, executorId : Int)
+  case class ShutdownExecutor(appId : Int, executorId : Int, reason : String)
 }
 
 object WorkerToAppMaster {

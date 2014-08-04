@@ -91,7 +91,7 @@ object AppManager {
 
         LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $executorId")
 
-        worker ! ShutdownExecutor(appId, executorId)
+        worker ! ShutdownExecutor(appId, executorId, s"AppMaster $appId shutdown requested by master...")
         sender ! ShutdownApplicationResult(Success(appId))
         //self myself
         self ! PoisonPill
