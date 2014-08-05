@@ -126,7 +126,7 @@ object SOL extends App{
 
     var computation : Any = spout ~ partitioner ~> bolt
     computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
-      c ~ partitioner ~> bolt.clone()
+      c ~ partitioner ~> bolt.copy()
     }
 
     val dag = Graph[TaskDescription, Partitioner](computation)
