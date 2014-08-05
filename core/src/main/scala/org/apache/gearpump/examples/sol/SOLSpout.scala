@@ -23,7 +23,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class SOLSpout(sizeInBytes : Int)  extends TaskActor {
+class SOLSpout(conf : Configs) extends TaskActor(conf) {
+  private val sizeInBytes = conf.getInt(SOLSpout.BYTES_PER_MESSAGE)
+
   private var messages : Array[String] = null
   private var rand : Random = null
   private var messageCount : Long = 0
@@ -56,4 +58,8 @@ class SOLSpout(sizeInBytes : Int)  extends TaskActor {
 
     self ! "continue"
   }
+}
+
+object SOLSpout{
+  val BYTES_PER_MESSAGE = "bytesPerMessage"
 }

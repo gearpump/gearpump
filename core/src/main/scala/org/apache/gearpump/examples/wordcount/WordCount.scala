@@ -20,8 +20,11 @@ package org.apache.gearpump.app.examples.wordcount
 
 import akka.actor.Props
 import org.apache.gearpump.client.ClientContext
-import org.apache.gearpump.{AppDescription, HashPartitioner, StageDescription, TaskDescription}
-
+import org.apache.gearpump.{AppDescription, HashPartitioner, TaskDescription}
+import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.Graph._
+import org.apache.gears.cluster.Configs
 
 class WordCount  {
 }
@@ -108,11 +111,11 @@ object WordCount extends App{
   }
 
   def getApplication(splitNum : Int, sumNum : Int) : AppDescription = {
-    val config = Map[String, Any]()
+    val config = Configs.empty
     val partitioner = new HashPartitioner()
-    val split = TaskDescription(Props(classOf[Split]), partitioner)
-    val sum = TaskDescription(Props(classOf[Sum]), partitioner)
-    val app = AppDescription("wordCount", config, Array(StageDescription(split, splitNum), StageDescription(sum, sumNum)))
+    val split = TaskDescription(classOf[Split], splitNum)
+    val sum = TaskDescription(classOf[Sum], sumNum)
+    val app = AppDescription("wordCount", config, Graph(split ~ partitioner ~> sum))
     app
   }
 }

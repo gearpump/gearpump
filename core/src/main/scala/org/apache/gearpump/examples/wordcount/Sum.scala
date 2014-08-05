@@ -22,13 +22,14 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.task.TaskActor
+import org.apache.gears.cluster.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
-class Sum extends TaskActor {
+class Sum (conf : Configs) extends TaskActor(conf) {
   import Sum._
 
   private val map : HashMap[String, Long] = new HashMap[String, Long]()

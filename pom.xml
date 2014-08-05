@@ -46,6 +46,7 @@
 
     <java.version>1.6</java.version>
 
+    <jgrapht.version>0.9.0</jgrapht.version>
     <scala.version>2.10.4</scala.version>
     <scala.binary.version>2.10</scala.binary.version>
     <mesos.version>0.18.1</mesos.version>
@@ -171,6 +172,12 @@
         <artifactId>jetty-plus</artifactId>
         <version>${jetty.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.jgrapht</groupId>
+        <artifactId>jgrapht-core</artifactId>
+        <version>${jgrapht.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
@@ -420,6 +427,7 @@
           </exclusion>
         </exclusions>
       </dependency>
+	  
       <dependency>
         <groupId>org.apache.hadoop</groupId>
         <artifactId>hadoop-client</artifactId>

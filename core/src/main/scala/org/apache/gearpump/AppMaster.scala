@@ -1,5 +1,5 @@
 package org.apache.gearpump
-
+import org.apache.gearpump.util.{DAG, Graph}
 import akka.actor.{Actor, ActorRef, Terminated}
 import org.apache.gearpump.task.TaskId
 import org.apache.gears.cluster.AppMasterToExecutor._
@@ -14,7 +14,8 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 import scala.collection.mutable.Queue
-
+import org.jgrapht.traverse.TopologicalOrderIterator;
+import scala.collection.JavaConversions._
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -45,9 +46,10 @@ class AppMaster (config : Configs) extends Actor {
   private val appManager = config.appManager
 
   private val name = appDescription.name
-  private val taskQueue = new Queue[(TaskId, TaskDescription, StageParallism)]
+  private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
   private var taskLocations = Map[TaskId, ActorRef]()
   private var pendingTaskLocationQueries = new mutable.HashMap[TaskId, mutable.ListBuffer[ActorRef]]()
+
 
   override def preStart : Unit = {
     context.parent ! RegisterExecutor(appManager, appId, masterExecutorId, slots)
@@ -55,17 +57,16 @@ class AppMaster (config : Configs) extends Actor {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
     Console.out.println("AppMaster is launched xxxxxxxxxxxxxxxxx")
 
-    val stageParallisms = appDescription.stages.map(_.parallism).zipWithIndex.map((pair) => StageParallism(pair._2, pair._1)) :+ StageParallism(-1, 0)
+    val dag = DAG(appDescription.dag)
 
-
-    val tasks = appDescription.stages.zipWithIndex.flatMap((stageInfo) => {
-      val (stage, stageId) = stageInfo
+    //scheduler the task fairly on every machine
+    val tasks = dag.tasks.flatMap { stageInfo =>
+      val (stageId, stage) = stageInfo
       0.until(stage.parallism).map((taskIndex : Int) => {
         val taskId = TaskId(stageId, taskIndex)
         val nextStageId = stageId + 1
-        val nextStageParallism = if (nextStageId >= stageParallisms.length) null else stageParallisms(nextStageId)
-        (taskId, stage.task, nextStageParallism)
-      })}).sortBy(_._1.index)
+        (taskId, stage, dag.subGraph(stageId))
+      })}.toArray.sortBy(_._1.index)
 
     taskQueue ++= tasks
     LOG.info(s"App Master $appId request Resource ${taskQueue.size}")
@@ -83,8 +84,7 @@ class AppMaster (config : Configs) extends Actor {
       groupedResource.map((workerAndSlots) => {
         val (worker, slots) = workerAndSlots
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: $slots on worker $worker")
-
-        val executorConfig = config.withAppMaster(self).withExecutorId(currentExecutorId).withSlots(slots)
+        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withSlots(slots)
         worker ! LaunchExecutor(appId, currentExecutorId, slots,  classOf[Executor], executorConfig, new DefaultExecutorContext)
         //TODO: Add timeout event if this executor fail to start
         currentExecutorId += 1
@@ -122,14 +122,15 @@ class AppMaster (config : Configs) extends Actor {
 
       def launchTask(remainSlots: Int): Unit = {
         if (remainSlots > 0 && !taskQueue.isEmpty) {
-          val (taskId, taskDescription, nextStageParallism) = taskQueue.dequeue()
+          val (taskId, taskDescription, dag) = taskQueue.dequeue()
           //Launch task
 
           LOG.info("Sending Launch Task to executor: " + executor.toString())
 
           val executorByPath = context.actorSelection("../app_0_executor_0")
 
-          executor ! LaunchTask(taskId, appDescription.conf, taskDescription, nextStageParallism)
+          val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
+          executor ! LaunchTask(taskId, config, taskDescription.taskClass)
           launchTask(remainSlots - 1)
         }
       }
@@ -147,4 +148,6 @@ class AppMaster (config : Configs) extends Actor {
 
 object AppMaster {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMaster])
+
+  case class TaskData(taskDescription : TaskDescription, dag : DAG) extends Task
 }

@@ -1,5 +1,7 @@
 package org.apache.gearpump
 
+import java.util.Random
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,4 +24,23 @@ class HashPartitioner extends Partitioner {
   override def getPartition(msg : String, partitionNum : Int) : Int = {
     (msg.hashCode & Integer.MAX_VALUE) % partitionNum
   }
+}
+
+class ShufflePartitioner extends Partitioner {
+  private var mySeed = 0
+  private var count = 0
+
+
+  override def getPartition(msg : String, partitionNum : Int) : Int = {
+
+    if (mySeed == 0) {
+      mySeed = newSeed
+    }
+
+    val result = ((count + mySeed) & Integer.MAX_VALUE) % partitionNum
+    count = count + 1
+    result
+  }
+
+  def newSeed = new Random().nextInt()
 }

@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.task.TaskActor
+import org.apache.gears.cluster.Configs
 import org.slf4j.{LoggerFactory, Logger}
 
 import scala.concurrent.duration.FiniteDuration
@@ -26,7 +27,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class SOLBolt extends TaskActor {
+class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SOLBolt])
 
   private var msgCount : Long = 0

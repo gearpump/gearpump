@@ -2,6 +2,8 @@ package org.apache.gears.cluster
 
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.task.TaskId
+import org.apache.gearpump.util.DAG
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -31,6 +33,7 @@ class Configs(val config: Map[String, _])  extends Serializable{
     config.getInt(key)
   }
 
+
   def withAppId(appId : Int) = withValue(APPID, appId)
   def appId : Int = config.getInt(APPID)
 
@@ -52,6 +55,13 @@ class Configs(val config: Map[String, _])  extends Serializable{
 
   def withAppManager(appManager : ActorRef) = withValue(APP_MANAGER, appManager)
   def appManager : ActorRef = config.getAnyRef(APP_MANAGER).asInstanceOf[ActorRef]
+
+  def withTaskId(taskId : TaskId) =  withValue(TASK_ID, taskId)
+  def taskId : TaskId = config.getAnyRef(TASK_ID).asInstanceOf[TaskId]
+
+  def withDag(taskDag : DAG) = withValue(TASK_DAG, taskDag)
+  def dag : DAG = config.getAnyRef(TASK_DAG).asInstanceOf[DAG]
+
 }
 
 object Configs {
@@ -66,6 +76,9 @@ object Configs {
   val APP_MASTER = "appMaster"
   val EXECUTOR_ID = "executorId"
   val SLOTS = "slots"
+
+  val TASK_ID = "taskId"
+  val TASK_DAG = "taskDag"
 
   def empty = new Configs(Map.empty[String, Any])
 

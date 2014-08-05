@@ -23,6 +23,7 @@ import java.util.concurrent.{TimeUnit, TimeoutException}
 import akka.actor._
 import org.apache.gearpump.{Partitioner, StageParallism}
 import org.apache.gears.cluster.AppMasterToExecutor._
+import org.apache.gears.cluster.Configs
 import org.apache.gears.cluster.ExecutorToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -31,13 +32,16 @@ import scala.util.{Failure, Success}
 
 case class TaskInit(taskId : TaskId, master : ActorRef, outputs : StageParallism, conf : Map[String, Any], partitioner : Partitioner)
 
-abstract class TaskActor extends Actor  with Stash {
+abstract class TaskActor(conf : Configs) extends Actor  with Stash {
   import org.apache.gearpump.task.TaskActor._
+  import org.apache.gearpump.util.Graph._
 
-  protected var taskId : TaskId = null
+  protected val taskId : TaskId =  conf.taskId
+  private val appMaster : ActorRef = conf.appMaster
+
+
   private var outputTaskLocations : Array[ActorRef] = null
   private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
-  private var conf : Map[String, Any] = null
   private var partitioner : Partitioner = null
   private var inputTaskLocations = Map[TaskId, ActorRef]();
   private var outputs : StageParallism = null
@@ -45,9 +49,12 @@ abstract class TaskActor extends Actor  with Stash {
   private var ackStatus : Array[Long] = null
   private var outputWindow : Long = INITIAL_WINDOW_SIZE
 
-  final def receive : Receive = init
+  //We will set this in preStart
+  final def receive : Receive = {
+    case _ => Unit
+  }
 
-  final override def preStart() : Unit = {}
+
 
   def onStart() : Unit
 
@@ -57,7 +64,7 @@ abstract class TaskActor extends Actor  with Stash {
 
   def output(msg : String) : Unit = {
 
-    if (outputs.parallism == 0) {
+    if (null == outputs || outputs.parallism == 0) {
       return
     }
 
@@ -70,28 +77,36 @@ abstract class TaskActor extends Actor  with Stash {
     }
   }
 
-  def init : Receive = {
-    case TaskInit(taskId, appMaster, outputs, conf, partitioner)  => {
-      LOG.info(s"TaskInit... taskId: $taskId + ouput: $outputs")
+  final override def preStart() : Unit = {
+    LOG.info(s"TaskInit... taskId: $taskId + ouput: $outputs")
 
-      this.taskId = taskId
-      this.conf = conf
+    val outDegree = conf.dag.graph.outDegreeOf(taskId.stageId)
+    if (1 < outDegree) {
+      LOG.error(s"Currently we only support 0 or 1 outter degree....,task: $taskId, dag: ${conf.dag.graph}")
+      context.stop(self)
+      return
+    }
+
+    if (outDegree == 1) {
+      val node1~partitioner~>node2 = conf.dag.graph.outgoingEdgesOf(taskId.stageId).next()
       this.partitioner = partitioner
-      this.outputs = outputs
+      this.outputs = StageParallism(node2, conf.dag.tasks.get(node2).get.parallism)
       this.ackStatus = new Array[Long](outputs.parallism)
+
       this.outputStatus = new Array[Long](outputs.parallism)
       this.outputTaskLocations = new  Array[ActorRef](outputs.parallism)
 
-      if (outputs.parallism > 0) {
-        LOG.info("becoming wait for output task locations...." + taskId)
-        context.actorOf(Props(new AskForTaskLocations(this.taskId, appMaster, outputs, self)))
-        context.become(waitForOutputTaskLocations)
-      } else {
-        LOG.info("becoming handleMessage...." + taskId)
-        context.become {
-          onStart
-          handleMessage
-        }
+      LOG.info("becoming wait for output task locations...." + taskId)
+      context.actorOf(Props(new AskForTaskLocations(this.taskId, appMaster, outputs, self)))
+      context.become(waitForOutputTaskLocations)
+    } else {
+      //outDegree == 0
+      //There is no valid output
+      this.outputs = null
+      LOG.info("becoming handleMessage...." + taskId)
+      context.become {
+        onStart
+        handleMessage
       }
     }
   }

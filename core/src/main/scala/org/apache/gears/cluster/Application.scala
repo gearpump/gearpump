@@ -18,6 +18,8 @@ package org.apache.gears.cluster
  * limitations under the License.
  */
 
+trait Task
+
 /**
  * Subtype this for user defined application
  */

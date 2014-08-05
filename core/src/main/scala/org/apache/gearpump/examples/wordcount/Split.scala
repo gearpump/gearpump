@@ -19,8 +19,9 @@ package org.apache.gearpump.app.examples.wordcount
  */
 
 import org.apache.gearpump.task.TaskActor
+import org.apache.gears.cluster.Configs
 
-class Split extends TaskActor {
+class Split(conf : Configs) extends TaskActor(conf) {
 
   private val txt =
     """

@@ -82,7 +82,7 @@ object WorkerToAppMaster {
 }
 
 object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, conf: Map[String, Any], taskDescription: TaskDescription, nextStageTaskId: StageParallism)
+  case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
   case class TaskLocation(taskId: TaskId, task: ActorRef)
 }
 

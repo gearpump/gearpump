@@ -20,15 +20,18 @@ package org.apache.gearpump.examples.sol
 
 import akka.actor.Props
 import org.apache.gearpump.client.ClientContext
-import org.apache.gearpump.{AppDescription, HashPartitioner, StageDescription, TaskDescription}
-
+import org.apache.gearpump._
+import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.Graph._
+import org.apache.gears.cluster.Configs
 
 class SOL  {
 }
 
 object SOL extends App{
 
-  case class Config(ip : String = "", port : Int = -1, spout: Int = 1, bolt : Int = 1, runseconds : Int = 60, bytesPerMessage : Int = 100)
+
+  case class Config(ip : String = "", port : Int = -1, spout: Int = 1, stages: Int = 2, bolt : Int = 1, runseconds : Int = 60, bytesPerMessage : Int = 100)
 
   start
 
@@ -41,7 +44,7 @@ object SOL extends App{
     Console.out.println("Init KV Service: " + kvServiceURL)
 
     context.init(kvServiceURL)
-    val appId = context.submit(getApplication(config.spout, config.bolt, config.bytesPerMessage))
+    val appId = context.submit(getApplication(config.spout, config.bolt, config.bytesPerMessage, config.stages))
     System.out.println(s"We get application id: $appId")
 
     Thread.sleep(config.runseconds * 1000)
@@ -90,6 +93,10 @@ object SOL extends App{
           config = config.copy(spout = spout.toInt)
           doParse(rest)
         }
+        case "-stages"::stages::rest => {
+          config = config.copy(stages = stages.toInt)
+          doParse(rest)
+        }
         case "-bolt" :: bolt :: rest => {
           config = config.copy(bolt = bolt.toInt)
           doParse(rest)
@@ -111,12 +118,19 @@ object SOL extends App{
     config
   }
 
-  def getApplication(spoutNum : Int, boltNum : Int, bytesPerMessage : Int) : AppDescription = {
-    val config = Map[String, Any]()
-    val partitioner = new HashPartitioner()
-    val spout = TaskDescription(Props(classOf[SOLSpout], bytesPerMessage), partitioner)
-    val bolt = TaskDescription(Props(classOf[SOLBolt]), partitioner)
-    val app = AppDescription("sol", config, Array(StageDescription(spout, spoutNum), StageDescription(bolt, boltNum)))
+  def getApplication(spoutNum : Int, boltNum : Int, bytesPerMessage : Int, stages : Int) : AppDescription = {
+    val config = Configs.empty.withValue(SOLSpout.BYTES_PER_MESSAGE, bytesPerMessage)
+    val partitioner = new ShufflePartitioner()
+    val spout = TaskDescription(classOf[SOLSpout], spoutNum)
+    val bolt = TaskDescription(classOf[SOLBolt], boltNum)
+
+    var computation : Any = spout ~ partitioner ~> bolt
+    computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
+      c ~ partitioner ~> bolt.clone()
+    }
+
+    val dag = Graph[TaskDescription, Partitioner](computation)
+    val app = AppDescription("sol", config, dag)
     app
   }
 }
