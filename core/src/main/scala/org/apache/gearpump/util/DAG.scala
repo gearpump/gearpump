@@ -1,21 +1,4 @@
-package org.apache.gearpump.util
-
-import org.apache.gearpump.{Partitioner, TaskDescription}
-import java.util.Random
-import org.apache.gearpump.task.TaskId
-import org.apache.gearpump.{Partitioner, TaskDescription}
-import org.jgrapht.Graphs
-
-import scala.collection.JavaConversions._
-import org.apache.gearpump.util.Graph.{Edge}
-import org.jgrapht.graph.{AbstractBaseGraph, DefaultDirectedGraph, DefaultEdge}
-
-import scala.collection.mutable.HashMap
-import scala.reflect.ClassTag
-import org.jgrapht.traverse.TopologicalOrderIterator
-import org.jgrapht.Graphs
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,7 +7,7 @@ import org.jgrapht.Graphs
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,9 +16,13 @@ import org.jgrapht.Graphs
  * limitations under the License.
  */
 
-object DAG {
+package org.apache.gearpump.util
 
-  import Graph._
+import org.apache.gearpump.{Partitioner, TaskDescription}
+
+import scala.collection.JavaConversions._
+
+object DAG {
 
   def apply (graph : Graph[TaskDescription, Partitioner]) : DAG = {
     val iter = graph.topoIter
@@ -48,8 +35,8 @@ object DAG {
     }
 
     graph.edges.foreach { edge =>
-      val node1 ~ partitioner ~> node2 = edge
-      outputGraph.addEdge(getTaskId(tasks, node1), getTaskId(tasks, node2), partitioner)
+      val (node1, partitioner, node2) = edge
+      outputGraph.addEdge(getTaskId(tasks, node1), partitioner, getTaskId(tasks, node2))
     }
 
     new DAG(tasks, outputGraph)
@@ -63,17 +50,22 @@ object DAG {
   }
 }
 
-class DAG(val tasks : Map[Int, TaskDescription], val graph : Graph[Int, Partitioner]) extends Serializable {
-  import Graph._
 
+case class DAG(val tasks : Map[Int, TaskDescription], val graph : Graph[Int, Partitioner]) extends Serializable {
+
+  /**
+   *
+   */
   def subGraph(stageId : Int) = {
     var newGraph = Graph.empty[Int, Partitioner]
     graph.edgesOf(stageId).foreach { edge =>
-      val node1 ~ partitioner ~> node2 = edge
-      newGraph.addEdge(node1, node2, partitioner)
+      val (node1, partitioner, node2) = edge
+      newGraph.addEdge(node1, partitioner, node2)
     }
     val newMap = newGraph.vertex.foldLeft(Map.empty[Int, TaskDescription]){ (map, vertex) =>
       val task = tasks.get(vertex).get
+
+      //clean out other indegree and out-degree tasks' data except the task parallism
       map + (vertex -> task.copy(null, task.parallism))
     }
     new DAG(newMap, newGraph)

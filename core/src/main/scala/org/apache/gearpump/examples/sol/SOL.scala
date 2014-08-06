@@ -1,6 +1,4 @@
-package org.apache.gearpump.examples.sol
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,10 +16,11 @@ package org.apache.gearpump.examples.sol
  * limitations under the License.
  */
 
-import akka.actor.Props
-import org.apache.gearpump.client.ClientContext
+package org.apache.gearpump.examples.sol
+
 import org.apache.gearpump._
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.client.ClientContext
+import org.apache.gearpump.util.{ShufflePartitioner, Graph}
 import org.apache.gearpump.util.Graph._
 import org.apache.gears.cluster.Configs
 

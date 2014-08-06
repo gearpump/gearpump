@@ -1,6 +1,4 @@
-package org.apache.gearpump.app.examples.wordcount
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,6 +16,8 @@ package org.apache.gearpump.app.examples.wordcount
  * limitations under the License.
  */
 
+package org.apache.gearpump.app.examples.wordcount
+
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
@@ -30,7 +30,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
 class Sum (conf : Configs) extends TaskActor(conf) {
-  import Sum._
+  import org.apache.gearpump.app.examples.wordcount.Sum._
 
   private val map : HashMap[String, Long] = new HashMap[String, Long]()
 

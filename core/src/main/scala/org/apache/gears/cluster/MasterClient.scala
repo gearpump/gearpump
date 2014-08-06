@@ -1,6 +1,4 @@
-package org.apache.gears.cluster
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -9,7 +7,7 @@ package org.apache.gears.cluster
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +16,19 @@ package org.apache.gears.cluster
  * limitations under the License.
  */
 
+package org.apache.gears.cluster
+
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorRef}
+import akka.pattern.ask
 import akka.util.Timeout
 import org.apache.gears.cluster.ClientToMaster._
 import org.apache.gears.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
-import akka.pattern.ask
-import scala.concurrent.Future
-import scala.util.{Success,Failure}
+import scala.util.{Failure, Success}
 
 class MasterClient(master : ActorRef) {
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)

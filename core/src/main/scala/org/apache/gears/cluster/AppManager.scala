@@ -1,6 +1,4 @@
-package org.apache.gears.cluster
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,6 +15,9 @@ package org.apache.gears.cluster
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.gears.cluster
+
 import akka.actor._
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.AppMasterToWorker._
@@ -26,9 +27,11 @@ import org.apache.gears.cluster.MasterToClient.{ShutdownApplicationResult, Submi
 import org.apache.gears.cluster.WorkerToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.util.{Success, Failure}
+import scala.util.{Failure, Success}
 
-
+/**
+ * AppManager is dedicated part of Master to manager applicaitons
+ */
 class AppManager() extends Actor {
   import org.apache.gears.cluster.AppManager._
 
@@ -61,6 +64,9 @@ object AppManager {
   private val masterExecutorId = -1
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppManager])
 
+  /**
+   * Start and watch Single AppMaster's lifecycle
+   */
   class AppMasterWatcher(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
     def receive : Receive = waitForResourceAllocation
 

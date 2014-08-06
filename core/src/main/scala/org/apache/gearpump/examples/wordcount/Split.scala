@@ -1,6 +1,4 @@
-package org.apache.gearpump.app.examples.wordcount
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,6 +15,8 @@ package org.apache.gearpump.app.examples.wordcount
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.gearpump.app.examples.wordcount
 
 import org.apache.gearpump.task.TaskActor
 import org.apache.gears.cluster.Configs

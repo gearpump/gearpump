@@ -1,6 +1,4 @@
-package org.apache.gears.cluster
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,6 +15,8 @@ package org.apache.gears.cluster
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.gears.cluster
 
 import akka.actor._
 import akka.remote.RemoteScope
@@ -51,7 +51,7 @@ class Worker(id : Int, master : ActorRef) extends Actor{
 
   def appMasterMsgHandler : Receive = {
     case ShutdownExecutor(appId, executorId, reason : String) => {
-      val actorName = actorNameFor(appId, executorId)
+      val actorName = actorNameForExecutor(appId, executorId)
       LOG.info(s"Worker shutting down executor: $actorName due to: $reason")
       if (context.child(actorName).isDefined) {
         LOG.info(s"Shuttting down child: ${context.child(actorName).get.path.toString}")
@@ -74,7 +74,7 @@ class Worker(id : Int, master : ActorRef) extends Actor{
     case LaunchExecutorOnSystem(appMaster, launch, system) => {
       LOG.info(s"Worker[$id] LaunchExecutorOnSystem ...$system")
       val executorProps = Props(launch.executorClass, launch.executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(system.path))))
-      val executor = context.actorOf(executorProps, actorNameFor(launch.appId, launch.executorId))
+      val executor = context.actorOf(executorProps, actorNameForExecutor(launch.appId, launch.executorId))
       system.daemonActor ! BindLifeCycle(executor)
 
       resource = resource - launch.slots
@@ -108,7 +108,7 @@ class Worker(id : Int, master : ActorRef) extends Actor{
     }
   }
 
-  def actorNameFor(appId : Int, executorId : Int) = "app_" + appId + "_executor_" + executorId
+  private def actorNameForExecutor(appId : Int, executorId : Int) = "app_" + appId + "_executor_" + executorId
 
   override def preStart() : Unit = {
     master ! RegisterWorker(id)

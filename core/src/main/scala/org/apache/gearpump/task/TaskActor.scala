@@ -1,5 +1,4 @@
-package org.apache.gearpump.task
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,6 +16,8 @@ package org.apache.gearpump.task
  * limitations under the License.
  */
 
+package org.apache.gearpump.task
+
 import java.util
 import java.util.concurrent.{TimeUnit, TimeoutException}
 
@@ -30,11 +31,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-case class TaskInit(taskId : TaskId, master : ActorRef, outputs : StageParallism, conf : Map[String, Any], partitioner : Partitioner)
-
 abstract class TaskActor(conf : Configs) extends Actor  with Stash {
   import org.apache.gearpump.task.TaskActor._
-  import org.apache.gearpump.util.Graph._
 
   protected val taskId : TaskId =  conf.taskId
   private val appMaster : ActorRef = conf.appMaster
@@ -54,8 +52,6 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
     case _ => Unit
   }
 
-
-
   def onStart() : Unit
 
   def onNext(msg : String) : Unit
@@ -63,7 +59,6 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
   def onStop() : Unit = {}
 
   def output(msg : String) : Unit = {
-
     if (null == outputs || outputs.parallism == 0) {
       return
     }
@@ -73,7 +68,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
     outputStatus(partition) += 1
     outputTaskLocations(partition).tell(msg, ActorRef.noSender)
     if (outputStatus(partition) % FLOW_CONTROL_RATE == 0) {
-      outputTaskLocations(partition).tell(Send(taskId, outputStatus(partition)), ActorRef.noSender)
+      outputTaskLocations(partition).tell(AckRequest(taskId, outputStatus(partition)), ActorRef.noSender)
     }
   }
 
@@ -88,7 +83,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
     }
 
     if (outDegree == 1) {
-      val node1~partitioner~>node2 = conf.dag.graph.outgoingEdgesOf(taskId.stageId).next()
+      val (node1, partitioner, node2) = conf.dag.graph.outgoingEdgesOf(taskId.stageId).next()
       this.partitioner = partitioner
       this.outputs = StageParallism(node2, conf.dag.tasks.get(node2).get.parallism)
       this.ackStatus = new Array[Long](outputs.parallism)
@@ -145,7 +140,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
       val msg = queue.poll()
       if (msg != null) {
         msg match {
-          case Send(taskId, seq) =>
+          case AckRequest(taskId, seq) =>
             inputTaskLocations(taskId).tell(Ack(this.taskId, seq), ActorRef.noSender)
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
           case _ =>
@@ -162,8 +157,9 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
       LOG.info("get identity from upstream: " + taskId)
       val upStream = sender
       inputTaskLocations = inputTaskLocations + (taskId->upStream)
-    case send : Send =>
-      queue.add(send)
+    case ackRequest : AckRequest =>
+      //enqueue to handle the ackRequest and send back ack later
+      queue.add(ackRequest)
     case Ack(taskId, seq) =>
       LOG.debug("get ack from downstream, current: " + this.taskId + "downL: " + taskId + ", seq: " + seq + ", windows: " + outputWindow)
       outputWindow += seq - ackStatus(taskId.index)

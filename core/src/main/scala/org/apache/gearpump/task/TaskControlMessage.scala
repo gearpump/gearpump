@@ -1,5 +1,4 @@
-package org.apache.gearpump.task
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,10 +16,9 @@ package org.apache.gearpump.task
  * limitations under the License.
  */
 
-import akka.actor.ActorRef
-
+package org.apache.gearpump.task
 sealed trait TaskControlMessage
 
 case class Identity(taskId : TaskId)
-case class Send(taskId : TaskId, seq : Long)
+case class AckRequest(taskId : TaskId, seq : Long)
 case class Ack(taskId : TaskId, seq : Long)

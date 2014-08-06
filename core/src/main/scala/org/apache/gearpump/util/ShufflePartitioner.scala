@@ -18,12 +18,26 @@
 
 package org.apache.gearpump.util
 
-trait ReferenceEqual extends AnyRef {
+import java.util.Random
 
-  /**
-   * Equal based on reference Id
-   */
-  override def equals(other : Any) : Boolean = {
-    this.eq(other.asInstanceOf[AnyRef])
+/**
+ * Round Robin partition the data.
+ */
+class ShufflePartitioner extends Partitioner {
+  private var seed = 0
+  private var count = 0
+
+
+  override def getPartition(msg : String, partitionNum : Int) : Int = {
+
+    if (seed == 0) {
+      seed = newSeed
+    }
+
+    val result = ((count + seed) & Integer.MAX_VALUE) % partitionNum
+    count = count + 1
+    result
   }
+
+  def newSeed = new Random().nextInt()
 }

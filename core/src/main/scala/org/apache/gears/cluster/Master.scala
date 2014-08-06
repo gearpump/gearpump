@@ -1,6 +1,4 @@
-package org.apache.gears.cluster
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,7 +16,7 @@ package org.apache.gears.cluster
  * limitations under the License.
  */
 
-import java.util.concurrent.TimeUnit
+package org.apache.gears.cluster
 
 import akka.actor._
 import akka.remote.RemoteScope

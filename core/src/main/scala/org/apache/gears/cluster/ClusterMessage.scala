@@ -1,6 +1,4 @@
-package org.apache.gears.cluster
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,10 +16,11 @@ package org.apache.gears.cluster
  * limitations under the License.
  */
 
+package org.apache.gears.cluster
+
 import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.task.TaskId
-import org.apache.gearpump.util.ExecutorLauncher.DaemonActorSystem
-import org.apache.gearpump.{StageParallism, TaskDescription}
+import org.apache.gearpump.util.ExecutorLauncher.DaemonedActorSystem
 import org.apache.gears.cluster.AppMasterToWorker.LaunchExecutor
 
 import scala.util.Try
@@ -72,7 +71,7 @@ object MasterToAppMaster {
 
 object AppMasterToWorker {
   case class LaunchExecutor(appId: Int, executorId: Int, slots: Int, executorClass: Class[_ <: Actor], executorConfig : Configs, executorContext: ExecutorContext)
-  case class LaunchExecutorOnSystem(appMaster: ActorRef, launch: LaunchExecutor, systemPath: DaemonActorSystem)
+  case class LaunchExecutorOnSystem(appMaster: ActorRef, launch: LaunchExecutor, systemPath: DaemonedActorSystem)
   case class ShutdownExecutor(appId : Int, executorId : Int, reason : String)
 }
 
@@ -87,8 +86,7 @@ object AppMasterToExecutor {
 }
 
 object ExecutorToAppMaster {
-  sealed trait TaskStatus
-  case class TaskLaunched(taskId: TaskId, task: ActorRef)
+    case class TaskLaunched(taskId: TaskId, task: ActorRef)
   case object TaskSuccess
   case class TaskFailed(taskId: TaskId, reason: String = null, ex: Exception = null)
   case class GetTaskLocation(taskId: TaskId)

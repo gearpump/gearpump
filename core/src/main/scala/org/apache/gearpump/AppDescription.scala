@@ -1,6 +1,4 @@
-package org.apache.gearpump
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,8 +16,10 @@ package org.apache.gearpump
  * limitations under the License.
  */
 
-import akka.actor.{Actor, Props}
-import org.apache.gearpump.util.{ReferenceEqual, Graph}
+package org.apache.gearpump
+
+import akka.actor.Actor
+import org.apache.gearpump.util.{Graph, ReferenceEqual}
 import org.apache.gears.cluster.Configs
 
 case class TaskDescription(taskClass: Class[_ <: Actor], parallism : Int) extends ReferenceEqual

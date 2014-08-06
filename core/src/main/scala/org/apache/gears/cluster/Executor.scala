@@ -1,6 +1,4 @@
-package org.apache.gears.cluster
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,9 +16,9 @@ package org.apache.gears.cluster
  * limitations under the License.
  */
 
-import akka.actor.{Props, Terminated, Actor}
-import org.apache.gearpump.AppMaster.TaskData
-import org.apache.gearpump.task.TaskInit
+package org.apache.gears.cluster
+
+import akka.actor.{Actor, Props, Terminated}
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.ExecutorToAppMaster._
 import org.apache.gears.cluster.ExecutorToWorker._
