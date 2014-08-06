@@ -25,5 +25,4 @@ import org.apache.gears.cluster.Configs
 case class TaskDescription(taskClass: Class[_ <: Actor], parallism : Int) extends ReferenceEqual
 //case class StageDescription(task : TaskDescription, parallism : Int)
 
-case class AppDescription(name : String, conf : Configs, dag: Graph[TaskDescription, Partitioner]) extends org.apache.gears.cluster.Application with ReferenceEqual
-
+case class AppDescription(name : String, conf : Configs, dag: Graph[TaskDescription, Partitioner]) extends org.apache.gears.cluster.Application

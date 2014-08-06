@@ -20,6 +20,6 @@ package org.apache.gearpump.task
 
 import akka.actor.ActorRef
 
-case class TaskId(stageId : Int, index : Int)
+case class TaskId(groupId : Int, index : Int)
 
 case class TaskLocations(address : Map[TaskId, ActorRef])

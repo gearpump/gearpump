@@ -59,12 +59,12 @@ class AppMaster (config : Configs) extends Actor {
     val dag = DAG(appDescription.dag)
 
     //scheduler the task fairly on every machine
-    val tasks = dag.tasks.flatMap { stageInfo =>
-      val (stageId, stage) = stageInfo
-      0.until(stage.parallism).map((taskIndex : Int) => {
-        val taskId = TaskId(stageId, taskIndex)
-        val nextStageId = stageId + 1
-        (taskId, stage, dag.subGraph(stageId))
+    val tasks = dag.tasks.flatMap { params =>
+      val (taskGroupId, taskDescription) = params
+      0.until(taskDescription.parallism).map((taskIndex : Int) => {
+        val taskId = TaskId(taskGroupId, taskIndex)
+        val nextGroupId = taskGroupId + 1
+        (taskId, taskDescription, dag.subGraph(taskGroupId))
       })}.toArray.sortBy(_._1.index)
 
     taskQueue ++= tasks
@@ -98,9 +98,9 @@ class AppMaster (config : Configs) extends Actor {
       pendingTaskLocationQueries.get(taskId).map((list) => list.foreach(_ ! TaskLocation(taskId, task)))
       pendingTaskLocationQueries.remove(taskId)
     case GetTaskLocation(taskId) => {
-      LOG.info(s"Get Task $taskId Location for app $appId")
+      LOG.info(s"Ask for Task Location, taskId: $taskId, app: $appId, sender: ${sender.path.name}")
       if (taskLocations.get(taskId).isDefined) {
-        LOG.info(s"App: $appId, We got a location for task $taskId, sending back directly  ")
+        LOG.info(s"App: $appId, We found location for task $taskId, sending it back to sender ${sender.path.name} directly  ")
         sender ! TaskLocation(taskId, taskLocations.get(taskId).get)
       } else {
         LOG.info(s"App[$appId] We don't have the task location right now, add to a pending list... ")

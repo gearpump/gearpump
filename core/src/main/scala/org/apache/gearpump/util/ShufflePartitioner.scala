@@ -20,6 +20,8 @@ package org.apache.gearpump.util
 
 import java.util.Random
 
+import org.apache.gearpump.Partitioner
+
 /**
  * Round Robin partition the data.
  */

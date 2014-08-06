@@ -35,17 +35,18 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
   import org.apache.gearpump.task.TaskActor._
 
   protected val taskId : TaskId =  conf.taskId
-  private val appMaster : ActorRef = conf.appMaster
+  private[this] val appMaster : ActorRef = conf.appMaster
 
+  private[this] val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
+  private[this] var partitioner : MergedPartitioner = null
+  private[this] var inputTaskLocations = Map[TaskId, ActorRef]()
 
-  private var outputTaskLocations : Array[ActorRef] = null
-  private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
-  private var partitioner : Partitioner = null
-  private var inputTaskLocations = Map[TaskId, ActorRef]();
-  private var outputs : StageParallism = null
-  private var outputStatus : Array[Long] = null
-  private var ackStatus : Array[Long] = null
-  private var outputWindow : Long = INITIAL_WINDOW_SIZE
+  private[this] var outputTaskIds : Array[TaskId] = null
+  private[this] var outputTaskLocations : Array[ActorRef] = null
+  private[this] var outputWaterMark : Array[Long] = null
+  private[this] var ackRequestWaterMark : Array[Long] = null
+  private[this] var ackWaterMark : Array[Long] = null
+  private[this] var outputWindow : Long = INITIAL_WINDOW_SIZE
 
   //We will set this in preStart
   final def receive : Receive = {
@@ -59,46 +60,74 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
   def onStop() : Unit = {}
 
   def output(msg : String) : Unit = {
-    if (null == outputs || outputs.parallism == 0) {
+    if (null == outputTaskIds) {
       return
     }
 
-    outputWindow -= 1
-    val partition = partitioner.getPartition(msg, outputs.parallism)
-    outputStatus(partition) += 1
-    outputTaskLocations(partition).tell(msg, ActorRef.noSender)
-    if (outputStatus(partition) % FLOW_CONTROL_RATE == 0) {
-      outputTaskLocations(partition).tell(AckRequest(taskId, outputStatus(partition)), ActorRef.noSender)
+    val partitions = partitioner.getPartitions(msg)
+    outputWindow -= partitions.length
+
+    var start = 0
+    while (start < partitions.length) {
+      val partition = partitions(start)
+      outputTaskLocations(partition).tell(msg, ActorRef.noSender)
+      outputWaterMark(partition) += 1
+
+      if (outputWaterMark(partition) > ackRequestWaterMark(partition) + FLOW_CONTROL_RATE) {
+        outputTaskLocations(partition).tell(AckRequest(taskId, outputWaterMark(partition)), ActorRef.noSender)
+        ackRequestWaterMark(partition) = outputWaterMark(partition)
+      }
+      start = start + 1
     }
   }
 
   final override def preStart() : Unit = {
-    LOG.info(s"TaskInit... taskId: $taskId + ouput: $outputs")
 
-    val outDegree = conf.dag.graph.outDegreeOf(taskId.stageId)
-    if (1 < outDegree) {
-      LOG.error(s"Currently we only support 0 or 1 outter degree....,task: $taskId, dag: ${conf.dag.graph}")
-      context.stop(self)
-      return
-    }
+    val graph = conf.dag.graph
+    LOG.info(s"TaskInit... taskId: $taskId")
+    val outDegree = conf.dag.graph.outDegreeOf(taskId.groupId)
+    if (outDegree > 0) {
 
-    if (outDegree == 1) {
-      val (node1, partitioner, node2) = conf.dag.graph.outgoingEdgesOf(taskId.stageId).next()
-      this.partitioner = partitioner
-      this.outputs = StageParallism(node2, conf.dag.tasks.get(node2).get.parallism)
-      this.ackStatus = new Array[Long](outputs.parallism)
+      val edges = graph.outgoingEdgesOf(taskId.groupId)
 
-      this.outputStatus = new Array[Long](outputs.parallism)
-      this.outputTaskLocations = new  Array[ActorRef](outputs.parallism)
+      LOG.info(s"task: $taskId out degree is $outDegree, edge length: ${edges.length}")
+
+      this.partitioner = edges.foldLeft(MergedPartitioner.empty) { (mergedPartitioner, nodeEdgeNode) =>
+        val (_, partitioner, taskgroupId) = nodeEdgeNode
+        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallism
+        mergedPartitioner.add(partitioner, taskParallism)
+      }
+
+      LOG.info(s"task: $taskId partitioner: ${partitioner}")
+
+
+
+      outputTaskIds = edges.flatMap {nodeEdgeNode =>
+        val (_, _, taskgroupId) = nodeEdgeNode
+        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallism
+
+        LOG.info(s"get output taskIds, groupId: $taskgroupId, parallism: $taskParallism")
+
+        0.until(taskParallism).map { taskIndex =>
+          TaskId(taskgroupId, taskIndex)
+        }
+      }.toArray
+
+      this.ackWaterMark = new Array[Long](outputTaskIds.length)
+      this.outputWaterMark = new Array[Long](outputTaskIds.length)
+      this.ackRequestWaterMark = new Array[Long](outputTaskIds.length)
+      this.outputTaskLocations = new  Array[ActorRef](outputTaskIds.length)
 
       LOG.info("becoming wait for output task locations...." + taskId)
-      context.actorOf(Props(new AskForTaskLocations(this.taskId, appMaster, outputs, self)))
+
+      context.actorOf(Props(new AskForTaskLocations(this.taskId, appMaster, outputTaskIds, self)))
       context.become(waitForOutputTaskLocations)
+
     } else {
-      //outDegree == 0
-      //There is no valid output
-      this.outputs = null
-      LOG.info("becoming handleMessage...." + taskId)
+      //outer degree == 0
+      this.partitioner = null
+      this.outputTaskIds = null
+
       context.become {
         onStart
         handleMessage
@@ -162,8 +191,8 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
       queue.add(ackRequest)
     case Ack(taskId, seq) =>
       LOG.debug("get ack from downstream, current: " + this.taskId + "downL: " + taskId + ", seq: " + seq + ", windows: " + outputWindow)
-      outputWindow += seq - ackStatus(taskId.index)
-      ackStatus(taskId.index) = seq
+      outputWindow += seq - ackWaterMark(taskId.index)
+      ackWaterMark(taskId.index) = seq
       doHandleMessage
     case msg : String =>
       queue.add(msg)
@@ -178,34 +207,30 @@ object TaskActor {
   val INITIAL_WINDOW_SIZE = 1024 * 16
   val FLOW_CONTROL_RATE = 100
 
-  class AskForTaskLocations(taskId : TaskId, master : ActorRef, nextStage : StageParallism, parent : ActorRef) extends Actor {
+  class AskForTaskLocations(taskId : TaskId, master : ActorRef, taskIds : Array[TaskId], parent : ActorRef) extends Actor {
 
     context.setReceiveTimeout(FiniteDuration(10, TimeUnit.SECONDS))
 
-    LOG.info(s"[${this.taskId}] Creating Ask task for ... " + parent.path)
+    LOG.info(s"[${this.taskId}] Ask task location for ${taskIds.mkString}")
 
     override def preStart() : Unit = {
-      0.until(nextStage.parallism).map((taskIndex) => {
-        val taskId = TaskId(nextStage.stageId, taskIndex)
-        master ! GetTaskLocation(taskId)
-      })
+      taskIds.foreach{master ! GetTaskLocation(_)}
     }
 
     def receive = waitForTaskLocation(Map[TaskId, ActorRef]())
 
     def waitForTaskLocation(taskLocationMap : Map[TaskId, ActorRef]) : Receive = {
       case TaskLocation(taskId, task) => {
-        LOG.info(s"[${this.taskId}] Get task location, taskId: " + taskId)
+        LOG.info(s"[${this.taskId}] We received a task location, taskId: " + taskId)
 
         val newLocationMap = taskLocationMap.+((taskId, task))
 
         LOG.debug(s"[${this.taskId}] new Location Map: " + newLocationMap.toString())
-        LOG.info(s"[${this.taskId}] output Task size: " + nextStage.parallism + ", location map size: " + newLocationMap.size)
+        LOG.info(s"[${this.taskId}] output Task size: " + taskIds.length + ", location map size: " + newLocationMap.size)
 
-        if (newLocationMap.size == nextStage.parallism) {
-
+        if (newLocationMap.size == taskIds.length) {
           parent ! Success(TaskLocations(newLocationMap))
-          LOG.info(s"[${this.taskId}] Sending task location to " + parent.path)
+          LOG.info(s"[${this.taskId}] We have collected all downstream task locations, send them to ${parent.path.name} ...")
           context.stop(self)
         } else {
           context.become(waitForTaskLocation(newLocationMap))
@@ -213,9 +238,41 @@ object TaskActor {
       }
       case ReceiveTimeout =>
         LOG.error("AskForTaskLocations timeout! We have not gathered enough task location to continue...")
-        parent ! Failure(new TimeoutException(s"Failed to get all task locations, we want we already get ${nextStage.parallism}, but can only get " +
+        parent ! Failure(new TimeoutException(s"Failed to get all task locations, we want we already get ${taskIds.length}, but can only get " +
           s"${taskLocationMap.keySet.size}, details: $taskLocationMap"))
         context.stop(self)
     }
+  }
+
+  class MergedPartitioner(partitioners : Array[Partitioner], partitionStart : Array[Int], partitionStop : Array[Int]) {
+
+    def length = partitioners.length
+
+    override def toString = {
+
+      partitioners.mkString("partitioners: ", ",", "") + "\n" + partitionStart.mkString("start partitions:" , "," ,"") + "\n" + partitionStop.mkString("stopPartitions:" , "," ,"")
+
+    }
+
+    def add(partitioner : Partitioner, partitionNum : Int) = {
+      val newPartitionStart = if (partitionStart.isEmpty) Array[Int](0) else { partitionStart :+ partitionStop.last }
+      val newPartitionEnd = if (partitionStop.isEmpty) Array[Int](partitionNum) else {partitionStop :+ (partitionStop.last + partitionNum)}
+      new MergedPartitioner(partitioners :+ partitioner, newPartitionStart, newPartitionEnd)
+    }
+
+    def getPartitions(msg : String) : Array[Int] = {
+      var start = 0
+      val length = partitioners.length
+      val result = new Array[Int](length)
+      while (start < length) {
+        result(start) = partitioners(start).getPartition(msg, partitionStop(start) - partitionStart(start)) + partitionStart(start)
+        start += 1
+      }
+      result
+    }
+  }
+
+  object MergedPartitioner {
+    def empty = new MergedPartitioner(Array.empty[Partitioner], Array.empty[Int], Array.empty[Int])
   }
 }

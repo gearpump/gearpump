@@ -44,16 +44,16 @@ class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) e
     graph.addVertex(vertex)
   }
 
-  def vertex : Iterator[N] = {
-    graph.vertexSet().iterator()
+  def vertex : Iterable[N] = {
+    graph.vertexSet()
   }
 
   def outDegreeOf(node : N) = {
     graph.outDegreeOf(node)
   }
 
-  def outgoingEdgesOf(node : N) : Iterator[(N, E,  N)] = {
-    toEdgeIterator(graph.outgoingEdgesOf(node))
+  def outgoingEdgesOf(node : N)  = {
+    toEdgeArray(graph.outgoingEdgesOf(node))
   }
 
   def addEdge(node1 : N, edge: E, node2: N) = {
@@ -62,20 +62,20 @@ class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) e
     graph.addEdge(node1, node2, Edge(edge))
   }
 
-  def edgesOf(node : N) : Iterator[(N, E,  N)]= {
-    toEdgeIterator(graph.edgesOf(node))
+  def edgesOf(node : N) = {
+    toEdgeArray(graph.edgesOf(node))
   }
 
-  private def toEdgeIterator(edges: Iterable[Edge[E]])  : Iterator[(N, E,  N)] = {
+  private def toEdgeArray(edges: Iterable[Edge[E]])  : Array[(N, E,  N)] = {
     edges.map { edge =>
       val node1 = graph.getEdgeSource(edge)
       val node2 = graph.getEdgeTarget(edge)
       (node1, edge.edge, node2)
-    }.iterator
+    }.toArray
   }
 
-  def edges : Iterator[(N, E,  N)] = {
-    toEdgeIterator(graph.edgeSet())
+  def edges = {
+    toEdgeArray(graph.edgeSet())
   }
 
   def addGraph(other : Graph[N, E]) : Graph[N, E] = {
@@ -87,7 +87,7 @@ class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) e
   /**
    * Return an iterator of vertex in topological order
    */
-  def topoIter = {
+  def topologicalOrderIterator = {
     new TopologicalOrderIterator[N, Edge[E]](graph)
   }
 
@@ -178,7 +178,7 @@ object Graph {
       case _ ~> _ => {
         var result = toArray(element, Array.empty[Any]).reverse
 
-        0.until(result.length, 2).foldLeft(Array.empty[GraphElement]) { (output, index) =>
+        0.until(result.length - 1, 2).foldLeft(Array.empty[GraphElement]) { (output, index) =>
           val node1 = result(index)
           val edge = result(index + 1)
           val node2 = result(index + 2)

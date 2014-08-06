@@ -43,7 +43,7 @@ class Executor(config : Configs)  extends Actor {
   def appMasterMsgHandler : Receive = {
     case LaunchTask(taskId, config, taskClass) => {
       LOG.info(s"Launching Task $taskId for app: $appId, $taskClass")
-      val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)), "stage_" + taskId.stageId + "_task_" + taskId.index)
+      val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)), "group_" + taskId.groupId + "_task_" + taskId.index)
       sender ! TaskLaunched(taskId, task)
 
      // task ! TaskInit(taskId, appMaster, outputs, conf, taskDescription.partitioner)

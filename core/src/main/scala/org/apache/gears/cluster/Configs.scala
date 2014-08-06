@@ -23,6 +23,9 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.task.TaskId
 import org.apache.gearpump.util.DAG
 
+/**
+ * Immutable configuration
+ */
 class Configs(val config: Map[String, _])  extends Serializable{
   import org.apache.gears.cluster.Configs._
 

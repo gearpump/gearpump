@@ -25,13 +25,13 @@ import scala.collection.JavaConversions._
 object DAG {
 
   def apply (graph : Graph[TaskDescription, Partitioner]) : DAG = {
-    val iter = graph.topoIter
+    val iter = graph.topologicalOrderIterator
 
     val outputGraph = Graph.empty[Int, Partitioner]
-    val (_, tasks) = iter.foldLeft((0, Map.empty[Int, TaskDescription])) { (stage, task) =>
-      val (stageId, map) = stage
-      outputGraph.addVertex(stageId)
-      (stageId + 1, map + (stageId -> task))
+    val (_, tasks) = iter.foldLeft((0, Map.empty[Int, TaskDescription])) { (first, task) =>
+      val (taskId, tasks) = first
+      outputGraph.addVertex(taskId)
+      (taskId + 1, tasks + (taskId -> task))
     }
 
     graph.edges.foreach { edge =>
@@ -50,15 +50,14 @@ object DAG {
   }
 }
 
-
 case class DAG(val tasks : Map[Int, TaskDescription], val graph : Graph[Int, Partitioner]) extends Serializable {
 
   /**
    *
    */
-  def subGraph(stageId : Int) = {
+  def subGraph(task : Int) = {
     var newGraph = Graph.empty[Int, Partitioner]
-    graph.edgesOf(stageId).foreach { edge =>
+    graph.edgesOf(task).foreach { edge =>
       val (node1, partitioner, node2) = edge
       newGraph.addEdge(node1, partitioner, node2)
     }
