@@ -44,6 +44,15 @@
                 <include>*</include>
             </includes>
         </fileSet>
+
+        <fileSet>
+            <directory>${project.basedir}/../../conf</directory>
+            <outputDirectory>/conf</outputDirectory>
+            <includes>
+                <include>*</include>
+            </includes>
+        </fileSet>
+
         
     </fileSets>
 

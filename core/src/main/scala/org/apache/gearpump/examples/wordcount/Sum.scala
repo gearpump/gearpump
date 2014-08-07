@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.app.examples.wordcount
+package org.apache.gearpump.examples.wordcount
 
 import java.util.concurrent.TimeUnit
 
@@ -30,7 +30,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
 class Sum (conf : Configs) extends TaskActor(conf) {
-  import org.apache.gearpump.app.examples.wordcount.Sum._
+  import Sum._
 
   private val map : HashMap[String, Long] = new HashMap[String, Long]()
 

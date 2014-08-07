@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.app.examples.wordcount
+package org.apache.gearpump.examples.wordcount
 
 import org.apache.gearpump.client.ClientContext
 import org.apache.gearpump.util.{HashPartitioner, Graph}

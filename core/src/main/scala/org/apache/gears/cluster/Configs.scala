@@ -88,7 +88,14 @@ object Configs {
 
   def apply(config : Map[String, _]) = new Configs(config)
 
-  val SYSTEM_DEFAULT_CONFIG = ConfigFactory.parseString(
+  /**
+   * Configuration Effective order:
+   * 1. Java properties
+   * 2. Internal Config here
+   * 3. application.conf
+   * 4. reference.conf
+   */
+  val SYSTEM_DEFAULT_CONFIG = ConfigFactory.load(ConfigFactory.parseString(
     """
      akka {
        actor {
@@ -101,7 +108,7 @@ object Configs {
          }
        }
      }
-    """)
+    """).withFallback(ConfigFactory.load()))
 
   private implicit class MapHelper(config: Map[String, _]) {
     def getInt(key : String) : Int = {

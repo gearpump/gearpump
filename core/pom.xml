@@ -104,14 +104,7 @@
       <groupId>org.xerial.snappy</groupId>
       <artifactId>snappy-java</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.twitter</groupId>
-      <artifactId>chill_${scala.binary.version}</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.twitter</groupId>
-      <artifactId>chill-java</artifactId>
-    </dependency>
+
     <dependency>
       <groupId>commons-net</groupId>
       <artifactId>commons-net</artifactId>
@@ -120,6 +113,12 @@
       <groupId>${akka.group}</groupId>
       <artifactId>akka-remote_${scala.binary.version}</artifactId>
     </dependency>
+<!--	
+	<dependency>
+        <groupId>com.github.romix.akka</groupId>
+        <artifactId>akka-kryo-serialization_${scala.binary.version}</artifactId>
+	</dependency>	
+-->	
     <dependency>
       <groupId>${akka.group}</groupId>
       <artifactId>akka-slf4j_${scala.binary.version}</artifactId>

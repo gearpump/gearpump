@@ -28,4 +28,4 @@ do
 done
 
 echo java -cp "lib/*" org.apache.gears.cluster.Starter local -port $port -sameprocess $sameprocess -workernum $workernum
-java -cp "lib/*" org.apache.gears.cluster.Starter local -port $port -sameprocess $sameprocess -workernum $workernum
+java -cp "conf:lib/*" org.apache.gears.cluster.Starter local -port $port -sameprocess $sameprocess -workernum $workernum
