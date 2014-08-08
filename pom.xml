@@ -68,10 +68,7 @@
     <codahale.metrics.version>3.0.0</codahale.metrics.version>
     <avro.version>1.7.6</avro.version>
     <jets3t.version>0.7.1</jets3t.version>
-    
- <!--
     <akka.kryo.version>0.3.2</akka.kryo.version>
--->
     <PermGen>64m</PermGen>
     <MaxPermGen>512m</MaxPermGen>
   </properties>
@@ -264,7 +261,7 @@
         <artifactId>protobuf-java</artifactId>
         <version>${protobuf.version}</version>
       </dependency>
-<!--      
+      
       <dependency>
         <groupId>com.github.romix.akka</groupId>
         <artifactId>akka-kryo-serialization_${scala.binary.version}</artifactId>
@@ -280,7 +277,7 @@
           </exclusion>
         </exclusions>
       </dependency>
--->
+
       <dependency>
         <groupId>${akka.group}</groupId>
         <artifactId>akka-actor_${scala.binary.version}</artifactId>
