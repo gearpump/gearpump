@@ -16,13 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump
+package org.apache.gearpump.util
 
-import akka.actor.Actor
-import org.apache.gearpump.util.{Graph, ReferenceEqual}
-import org.apache.gears.cluster.Configs
+import java.util.Random
 
-case class TaskDescription(taskClass: Class[_ <: Actor], parallism : Int) extends ReferenceEqual
-//case class StageDescription(task : TaskDescription, parallism : Int)
+import org.apache.gearpump.Partitioner
 
-case class AppDescription(name : String, conf : Configs, dag: Graph[TaskDescription, Partitioner]) extends org.apache.gears.cluster.Application
+/**
+ * Round Robin partition the data.
+ */
+class ShufflePartitioner extends Partitioner {
+  private var seed = 0
+  private var count = 0
+
+
+  override def getPartition(msg : String, partitionNum : Int) : Int = {
+
+    if (seed == 0) {
+      seed = newSeed
+    }
+
+    val result = ((count + seed) & Integer.MAX_VALUE) % partitionNum
+    count = count + 1
+    result
+  }
+
+  def newSeed = new Random().nextInt()
+}

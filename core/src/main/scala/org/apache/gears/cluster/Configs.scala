@@ -1,11 +1,4 @@
-package org.apache.gears.cluster
-
-import akka.actor.ActorRef
-import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.task.TaskId
-import org.apache.gearpump.util.DAG
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -14,13 +7,24 @@ import org.apache.gearpump.util.DAG
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ */
+
+package org.apache.gears.cluster
+
+import akka.actor.ActorRef
+import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.task.TaskId
+import org.apache.gearpump.util.DAG
+
+/**
+ * Immutable configuration
  */
 class Configs(val config: Map[String, _])  extends Serializable{
   import org.apache.gears.cluster.Configs._
@@ -84,7 +88,14 @@ object Configs {
 
   def apply(config : Map[String, _]) = new Configs(config)
 
-  val SYSTEM_DEFAULT_CONFIG = ConfigFactory.parseString(
+  /**
+   * Configuration Effective order:
+   * 1. Java properties
+   * 2. Internal Config here
+   * 3. application.conf
+   * 4. reference.conf
+   */
+  val SYSTEM_DEFAULT_CONFIG = ConfigFactory.load(ConfigFactory.parseString(
     """
      akka {
        actor {
@@ -97,7 +108,7 @@ object Configs {
          }
        }
      }
-    """)
+    """).withFallback(ConfigFactory.load()))
 
   private implicit class MapHelper(config: Map[String, _]) {
     def getInt(key : String) : Int = {

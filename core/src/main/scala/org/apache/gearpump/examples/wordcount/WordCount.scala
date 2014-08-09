@@ -1,6 +1,4 @@
-package org.apache.gearpump.app.examples.wordcount
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,12 +16,12 @@ package org.apache.gearpump.app.examples.wordcount
  * limitations under the License.
  */
 
-import akka.actor.Props
+package org.apache.gearpump.examples.wordcount
+
 import org.apache.gearpump.client.ClientContext
-import org.apache.gearpump.{AppDescription, HashPartitioner, TaskDescription}
-import org.apache.gearpump.util.Graph
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.{HashPartitioner, Graph}
 import org.apache.gearpump.util.Graph._
+import org.apache.gearpump.{AppDescription, TaskDescription}
 import org.apache.gears.cluster.Configs
 
 class WordCount  {

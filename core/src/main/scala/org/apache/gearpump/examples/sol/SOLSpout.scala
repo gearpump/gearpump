@@ -1,12 +1,4 @@
-package org.apache.gearpump.examples.sol
-
-import java.util.Random
-
-import org.apache.gearpump.task.TaskActor
-import org.apache.gears.cluster.Configs
-import scala.concurrent.ExecutionContext.Implicits.global
-
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +7,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +15,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.gearpump.examples.sol
+
+import java.util.Random
+
+import org.apache.gearpump.task.TaskActor
+import org.apache.gears.cluster.Configs
+
 class SOLSpout(conf : Configs) extends TaskActor(conf) {
   private val sizeInBytes = conf.getInt(SOLSpout.BYTES_PER_MESSAGE)
 
@@ -31,6 +31,11 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
   private var messageCount : Long = 0
 
   override def onStart() : Unit = {
+    prepareRandomMessage
+    self ! "start"
+  }
+
+  private def prepareRandomMessage = {
     rand = new Random()
     val differentMessages = 100;
     messages = new Array(differentMessages)
@@ -43,13 +48,8 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
         sb.append(rand.nextInt(9));
       }
       messages(index) = sb.toString();
-
-      Console.println(s"Writing ${messages(index)}")
     }
-
-    self ! "start"
   }
-
 
   override def onNext(msg : String) : Unit = {
     val message = messages(rand.nextInt(messages.length))

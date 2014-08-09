@@ -1,7 +1,25 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.gearpump
-import org.apache.gearpump.util.{DAG, Graph}
 import akka.actor.{Actor, ActorRef, Terminated}
 import org.apache.gearpump.task.TaskId
+import org.apache.gearpump.util.DAG
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.AppMasterToWorker._
@@ -14,25 +32,6 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 import scala.collection.mutable.Queue
-import org.jgrapht.traverse.TopologicalOrderIterator;
-import scala.collection.JavaConversions._
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 class AppMaster (config : Configs) extends Actor {
   import org.apache.gearpump.AppMaster._
 
@@ -60,12 +59,12 @@ class AppMaster (config : Configs) extends Actor {
     val dag = DAG(appDescription.dag)
 
     //scheduler the task fairly on every machine
-    val tasks = dag.tasks.flatMap { stageInfo =>
-      val (stageId, stage) = stageInfo
-      0.until(stage.parallism).map((taskIndex : Int) => {
-        val taskId = TaskId(stageId, taskIndex)
-        val nextStageId = stageId + 1
-        (taskId, stage, dag.subGraph(stageId))
+    val tasks = dag.tasks.flatMap { params =>
+      val (taskGroupId, taskDescription) = params
+      0.until(taskDescription.parallism).map((taskIndex : Int) => {
+        val taskId = TaskId(taskGroupId, taskIndex)
+        val nextGroupId = taskGroupId + 1
+        (taskId, taskDescription, dag.subGraph(taskGroupId))
       })}.toArray.sortBy(_._1.index)
 
     taskQueue ++= tasks
@@ -99,9 +98,9 @@ class AppMaster (config : Configs) extends Actor {
       pendingTaskLocationQueries.get(taskId).map((list) => list.foreach(_ ! TaskLocation(taskId, task)))
       pendingTaskLocationQueries.remove(taskId)
     case GetTaskLocation(taskId) => {
-      LOG.info(s"Get Task $taskId Location for app $appId")
+      LOG.info(s"Ask for Task Location, taskId: $taskId, app: $appId, sender: ${sender.path.name}")
       if (taskLocations.get(taskId).isDefined) {
-        LOG.info(s"App: $appId, We got a location for task $taskId, sending back directly  ")
+        LOG.info(s"App: $appId, We found location for task $taskId, sending it back to sender ${sender.path.name} directly  ")
         sender ! TaskLocation(taskId, taskLocations.get(taskId).get)
       } else {
         LOG.info(s"App[$appId] We don't have the task location right now, add to a pending list... ")
@@ -141,6 +140,7 @@ class AppMaster (config : Configs) extends Actor {
     }
   }
 
+  //TODO: We an task is down, we need to recover
   def terminationWatch : Receive = {
     case Terminated(actor) => Unit
   }

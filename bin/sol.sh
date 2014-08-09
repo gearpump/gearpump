@@ -7,4 +7,4 @@ runseconds=$5
 bytespermsg=$6
 
 echo java -cp "lib/*" org.apache.gearpump.examples.sol.SOL  -ip $ip -port $port -spout $spout -bolt $bolt -runseconds $runseconds -bytesPerMessage $bytespermsg
-java -cp "lib/*" org.apache.gearpump.examples.sol.SOL  -ip $ip -port $port -spout $spout -bolt $bolt -runseconds $runseconds -bytesPerMessage $bytespermsg
+java -cp "conf:lib/*" org.apache.gearpump.examples.sol.SOL  -ip $ip -port $port -spout $spout -bolt $bolt -runseconds $runseconds -bytesPerMessage $bytespermsg -stages 2
