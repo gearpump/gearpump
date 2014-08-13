@@ -23,5 +23,5 @@ IF NOT "%1"=="" (
     GOTO :loop
 )
 
-echo java -cp "lib/*" org.apache.gears.cluster.Starter local -port %port% -sameprocess %sameprocess% -workernum %workernum%
-java -cp "lib/*" org.apache.gears.cluster.Starter local -port %port% -sameprocess %sameprocess% -workernum %workernum%
+echo java -cp "target/scala-2.10/gearpump-assembly-0.4-SNAPSHOT.jar" org.apache.gears.cluster.Starter local -port %port% -sameprocess %sameprocess% -workernum %workernum%
+java -cp "target/scala-2.10/gearpump-assembly-0.4-SNAPSHOT.jar" org.apache.gears.cluster.Starter local -port %port% -sameprocess %sameprocess% -workernum %workernum%

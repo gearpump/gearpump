@@ -5,5 +5,5 @@ SET split=%3
 SET sum=%4
 SET runseconds=%5
 
-echo java -cp "lib/*" org.apache.gearpump.examples.wordcount.WordCount -ip %ip% -port %port% -split %split% -sum %sum% -runseconds %runseconds%
-java -cp "lib/*" org.apache.gearpump.examples.wordcount.WordCount -ip %ip% -port %port% -split %split% -sum %sum% -runseconds %runseconds%
+echo java -cp "target/scala-2.10/gearpump-assembly-0.4-SNAPSHOT.jar" org.apache.gearpump.examples.wordcount.WordCount -ip %ip% -port %port% -split %split% -sum %sum% -runseconds %runseconds%
+java -cp "target/scala-2.10/gearpump-assembly-0.4-SNAPSHOT.jar" org.apache.gearpump.examples.wordcount.WordCount -ip %ip% -port %port% -split %split% -sum %sum% -runseconds %runseconds%

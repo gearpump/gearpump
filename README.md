@@ -13,50 +13,46 @@ GearPump is a data flow processing engine built on top of Gears.
 ###How to Build
   ```bash
   ## Build Gearpump
-  mvn package
+  sbt clean assembly
   ```
-  You can find the gearpump-{version}.zip under gearpump-dist/binary/target/. The source zip can be found at: gearpump-dist/source/target/
+  This will generate target/scala-2.10/gearpump-assembly-0.4-SNAPSHOT.jar
 
 
 ###Local Mode
-0. Unpack gearpump-{version}.zip to some place in your system
-
 1. Start Local Cluster in same process
   ```bash
-  ## Create Cluster on port localhost:80, create 4 worker, 4 worker exists in same process
-  gearpump_local.sh -port 80 -sameprocess -workernum 4
+  ## Create Cluster on port localhost:8092, create 4 worker, 4 worker exists in same process
+  bin/local.sh -port 8092 -sameprocess -workernum 4
   ```
 
 2. Start Local Cluster in different process
   ```bash
-  ## Create Cluster on port localhost:80, create 4 worker, 4 worker exists in seperate process
-  gearpump_local -port 80 -workernum 4
+  ## Create Cluster on port localhost:8092, create 4 worker, 4 worker exists in seperate process
+  bin/local -port 8092 -workernum 4
   ```
 3. Start Client Example Code
   
   ```bash
   ## Create Application
-  wordcount.sh <master ip> <master port> <split number> <sum number> <runseconds>
+  bin/wordcount.sh <master ip> <master port> <split number> <sum number> <runseconds>
   ```
 
 
 ###Cluster Mode
-0. Unpack gearpump-{version}.zip to all machines in the cluster
-
 1. On 1 node, Start Master
   ```bash
-  ## Create Master on <master ip>:80, 
-  gearpump_master.sh 80
+  ## Create Master on <master ip>:8092, 
+  bin/master.sh 8092
   ```
 
 2. On same or different machine, Start workers. If you want to start 3 worker, then you need to run this command 3 times.
 
   ```bash
-  gearpump_worker.sh <master ip> <master port>
+  bin/worker.sh <master ip> <master port>
   ```
 3. Start Client Example Code
 
   ```bash
   ## Create Application
-  wordcount.sh <master ip> <master port>  <split number> <sum number> <runseconds>
+  bin/wordcount.sh <master ip> <master port>  <split number> <sum number> <runseconds>
   ```

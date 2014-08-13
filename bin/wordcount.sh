@@ -5,5 +5,5 @@ split=$3
 sum=$4
 runseconds=$5
 
-echo java -cp "lib/*" org.apache.gearpump.examples.wordcount.WordCount  -ip $ip -port $port -split $split -sum $sum -runseconds $runseconds
-java -cp "conf:lib/*" org.apache.gearpump.examples.wordcount.WordCount  -ip $ip -port $port -split $split -sum $sum -runseconds $runseconds
+echo java -cp "target/scala-2.10/gearpump-assembly-0.4-SNAPSHOT.jar" org.apache.gearpump.examples.wordcount.WordCount  -ip $ip -port $port -split $split -sum $sum -runseconds $runseconds
+java -cp "target/scala-2.10/gearpump-assembly-0.4-SNAPSHOT.jar" org.apache.gearpump.examples.wordcount.WordCount  -ip $ip -port $port -split $split -sum $sum -runseconds $runseconds
