@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SimpleKVHandler extends HttpServlet {
-    private ConcurrentHashMap<String, String> kvs = new ConcurrentHashMap<String, String>();
+    private ConcurrentHashMap<String, String> kvs = new ConcurrentHashMap<>();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException

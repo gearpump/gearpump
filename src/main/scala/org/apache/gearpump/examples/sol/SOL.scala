@@ -34,7 +34,7 @@ object SOL extends App{
 
   start
 
-  def start = {
+  def start: Unit = {
     val config = parse(args.toList)
 
     val context = ClientContext()
@@ -54,7 +54,7 @@ object SOL extends App{
     context.destroy()
   }
 
-  def commandHelp = {
+  def commandHelp: Unit = {
     val command = List(
       "wordcount",
       "Start a wordcount",
