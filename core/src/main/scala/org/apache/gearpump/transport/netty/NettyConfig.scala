@@ -16,11 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.task
+package org.apache.gearpump.transport.netty
 
-import akka.actor.ActorRef
-import org.apache.gearpump.transport.ExpressAddress
+class NettyConfig(conf: Map[String, Any]) {
 
-case class TaskId(groupId : Int, index : Int)
+  val buffer_size = 5242880
+  val max_retries = 30
+  val base_sleep_ms = 100
+  val max_sleep_ms = 1000
+  val messageBatchSize = 262144
+  val flushCheckInterval = 10
 
-case class TaskLocations(address : Map[TaskId, ExpressAddress])
+}

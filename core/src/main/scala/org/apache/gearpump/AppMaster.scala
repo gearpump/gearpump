@@ -19,6 +19,7 @@
 package org.apache.gearpump
 import akka.actor.{Actor, ActorRef, Terminated}
 import org.apache.gearpump.task.TaskId
+import org.apache.gearpump.transport.ExpressAddress
 import org.apache.gearpump.util.DAG
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.AppMasterToMaster._
@@ -46,7 +47,7 @@ class AppMaster (config : Configs) extends Actor {
 
   private val name = appDescription.name
   private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
-  private var taskLocations = Map[TaskId, ActorRef]()
+  private var taskLocations = Map[TaskId, ExpressAddress]()
   private var pendingTaskLocationQueries = new mutable.HashMap[TaskId, mutable.ListBuffer[ActorRef]]()
 
 

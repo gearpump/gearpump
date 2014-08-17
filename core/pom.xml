@@ -114,6 +114,10 @@
       <artifactId>akka-remote_${scala.binary.version}</artifactId>
     </dependency>
     <dependency>
+      <groupId>${akka.group}</groupId>
+      <artifactId>akka-agent_${scala.binary.version}</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.github.romix.akka</groupId>
       <artifactId>akka-kryo-serialization_${scala.binary.version}</artifactId>
     </dependency>	

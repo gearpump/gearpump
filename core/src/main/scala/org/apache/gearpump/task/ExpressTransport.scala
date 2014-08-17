@@ -18,9 +18,14 @@
 
 package org.apache.gearpump.task
 
-import akka.actor.ActorRef
-import org.apache.gearpump.transport.ExpressAddress
+import org.apache.gearpump.transport.Express
+import org.apache.gears.cluster.ExecutorToAppMaster.TaskLaunched
 
-case class TaskId(groupId : Int, index : Int)
+trait ExpressTransport {
+  this: TaskActor =>
 
-case class TaskLocations(address : Map[TaskId, ExpressAddress])
+  val express = Express(context.system)
+
+  //report to appMaster with my address
+  val local = express.registerActor(self)
+}

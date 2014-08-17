@@ -20,6 +20,7 @@ package org.apache.gears.cluster
 
 import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.task.TaskId
+import org.apache.gearpump.transport.ExpressAddress
 import org.apache.gearpump.util.ExecutorLauncher.DaemonedActorSystem
 import org.apache.gears.cluster.AppMasterToWorker.LaunchExecutor
 
@@ -82,11 +83,11 @@ object WorkerToAppMaster {
 
 object AppMasterToExecutor {
   case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
-  case class TaskLocation(taskId: TaskId, task: ActorRef)
+  case class TaskLocation(taskId: TaskId, task: ExpressAddress)
 }
 
 object ExecutorToAppMaster {
-    case class TaskLaunched(taskId: TaskId, task: ActorRef)
+  case class TaskLaunched(taskId: TaskId, task: ExpressAddress)
   case object TaskSuccess
   case class TaskFailed(taskId: TaskId, reason: String = null, ex: Exception = null)
   case class GetTaskLocation(taskId: TaskId)

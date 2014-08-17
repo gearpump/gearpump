@@ -17,8 +17,11 @@
  */
 
 package org.apache.gearpump.task
+
+import org.apache.gearpump.transport.ExpressAddress
+
 sealed trait TaskControlMessage
 
-case class Identity(taskId : TaskId)
+case class Identity(taskId : TaskId, address : ExpressAddress)
 case class AckRequest(taskId : TaskId, seq : Long)
 case class Ack(taskId : TaskId, seq : Long)

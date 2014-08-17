@@ -87,7 +87,7 @@ object Starter extends App {
 
     def doParse(argument : List[String]) : Unit = {
       argument match {
-        case Nil => true // true if everything processed successfully
+        case Nil => Unit // true if everything processed successfully
         case "local" :: rest => {
           config = config.copy(local = true)
           doParse(rest)

@@ -16,11 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.task
+package org.apache.gearpump.transport.netty
+
+import java.util.Map
 
 import akka.actor.ActorRef
-import org.apache.gearpump.transport.ExpressAddress
+import org.apache.gearpump.transport.{HostPort, ActorLookupById}
 
-case class TaskId(groupId : Int, index : Int)
+trait IContext {
 
-case class TaskLocations(address : Map[TaskId, ExpressAddress])
+  def bind(name: String, lookupActor : ActorLookupById) : Int
+
+  /**
+   * connect to a remote host
+   */
+  def connect(hostPort: HostPort): ActorRef
+
+  def term
+}

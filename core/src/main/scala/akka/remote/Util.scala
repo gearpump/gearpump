@@ -16,11 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.task
+package akka.remote
 
-import akka.actor.ActorRef
-import org.apache.gearpump.transport.ExpressAddress
+import akka.actor.ActorSystem
 
-case class TaskId(groupId : Int, index : Int)
+object Util {
 
-case class TaskLocations(address : Map[TaskId, ExpressAddress])
+  def getDispatcherName(system : ActorSystem) = {
+    RARP(system).provider.remoteSettings.Dispatcher match {
+      case "" ⇒ None
+      case dispatcherName ⇒ Some(dispatcherName)
+    }
+  }
+}

@@ -46,7 +46,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>${project.basedir}/../../conf</directory>
+            <directory>${project.basedir}/../../core/src/main/resources</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
                 <include>*</include>
@@ -66,5 +66,6 @@
             <source>${project.basedir}/../../README.md</source>
             <outputDirectory>/</outputDirectory>
         </file>
+		
     </files>
 </assembly>

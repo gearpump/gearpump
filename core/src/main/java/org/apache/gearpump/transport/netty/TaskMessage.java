@@ -15,12 +15,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.transport.netty;
 
-package org.apache.gearpump.task
+import java.nio.ByteBuffer;
 
-import akka.actor.ActorRef
-import org.apache.gearpump.transport.ExpressAddress
+public class TaskMessage {
+  private int _task;
+  private byte[] _message;
 
-case class TaskId(groupId : Int, index : Int)
+  public TaskMessage(int task, byte[] message) {
+    _task = task;
+    _message = message;
+  }
 
-case class TaskLocations(address : Map[TaskId, ExpressAddress])
+  public int task() {
+    return _task;
+  }
+
+  public byte[] message() {
+    return _message;
+  }
+
+  public ByteBuffer serialize() {
+    ByteBuffer bb = ByteBuffer.allocate(_message.length + 2);
+    bb.putShort((short) _task);
+    bb.put(_message);
+    return bb;
+  }
+
+  public void deserialize(ByteBuffer packet) {
+    if (packet == null) return;
+    _task = packet.getShort();
+    _message = new byte[packet.limit() - 2];
+    packet.get(_message);
+  }
+
+}

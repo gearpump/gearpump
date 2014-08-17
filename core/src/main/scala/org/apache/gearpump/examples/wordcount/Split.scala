@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.examples.wordcount
 
-import org.apache.gearpump.task.TaskActor
+import org.apache.gearpump.task.{Message, TaskActor}
 import org.apache.gears.cluster.Configs
 
 class Split(conf : Configs) extends TaskActor(conf) {
@@ -44,11 +44,11 @@ class Split(conf : Configs) extends TaskActor(conf) {
 
 
   override def onStart() : Unit = {
-    self ! "start"
+    self ! Message(System.currentTimeMillis(), "start")
   }
 
   override def onNext(msg : String) : Unit = {
     txt.lines.foreach((line) => line.split(" ").foreach(output(_)))
-    self ! "continue"
+    self ! Message(System.currentTimeMillis(), "continue")
   }
 }
