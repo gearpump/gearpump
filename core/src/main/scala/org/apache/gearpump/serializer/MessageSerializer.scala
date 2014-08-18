@@ -19,8 +19,9 @@
 package org.apache.gearpump.serializer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
-import org.apache.gearpump.task.{Ack, TaskId, AckRequest, Message}
+import org.apache.gearpump.task._
 import com.esotericsoftware.kryo.{Kryo, Serializer}
+import org.apache.gearpump.transport.{HostPort, ExpressAddress}
 
 class MessageSerializer extends Serializer[Message] {
   override def write(kryo: Kryo, output: Output, obj: Message) = {
@@ -35,34 +36,80 @@ class MessageSerializer extends Serializer[Message] {
   }
 }
 
+class TaskIdSerializer  extends Serializer[TaskId] {
+  override def write(kryo: Kryo, output: Output, obj: TaskId) = {
+    output.writeInt(obj.groupId)
+    output.writeInt(obj.index)
+  }
+
+  override def read(kryo: Kryo, input: Input, typ: Class[TaskId]): TaskId = {
+    val groupId = input.readInt()
+    val index = input.readInt()
+    return new TaskId(groupId, index)
+  }
+}
+
 class AckRequestSerializer extends Serializer[AckRequest] {
+  val taskIdSerialzer = new TaskIdSerializer()
+
   override def write(kryo: Kryo, output: Output, obj: AckRequest) = {
-    output.writeInt(obj.taskId.groupId)
-    output.writeInt(obj.taskId.index)
+    taskIdSerialzer.write(kryo, output, obj.taskId)
     output.writeLong(obj.seq)
   }
 
   override def read(kryo: Kryo, input: Input, typ: Class[AckRequest]): AckRequest = {
-    val groupId = input.readInt()
-    val index = input.readInt()
+    val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
     val seq = input.readLong()
-
-    return new AckRequest(TaskId(groupId, index), seq)
+    return new AckRequest(taskId, seq)
   }
 }
 
 class AckSerializer extends Serializer[Ack] {
+  val taskIdSerialzer = new TaskIdSerializer()
+
   override def write(kryo: Kryo, output: Output, obj: Ack) = {
-    output.writeInt(obj.taskId.groupId)
-    output.writeInt(obj.taskId.index)
+    taskIdSerialzer.write(kryo, output, obj.taskId)
     output.writeLong(obj.seq)
   }
 
   override def read(kryo: Kryo, input: Input, typ: Class[Ack]): Ack = {
-    val groupId = input.readInt()
-    val index = input.readInt()
+    val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
     val seq = input.readLong()
 
-    return new Ack(TaskId(groupId, index), seq)
+    return new Ack(taskId, seq)
+  }
+}
+
+class ExpressAddressSerializer extends Serializer[ExpressAddress] {
+
+  override def write(kryo: Kryo, output: Output, obj: ExpressAddress) = {
+    output.writeString(obj.hostPort.host)
+    output.writeInt(obj.hostPort.port)
+    output.writeInt(obj.id)
+  }
+
+  override def read(kryo: Kryo, input: Input, typ: Class[ExpressAddress]): ExpressAddress = {
+    val host = input.readString()
+    val port = input.readInt()
+    val id =  input.readInt()
+
+    return new ExpressAddress(HostPort(host, port), id)
+  }
+}
+
+
+class IdentitySerializer extends Serializer[Identity] {
+  val taskIdSerialzer = new TaskIdSerializer()
+  val expressAddressSerializer = new ExpressAddressSerializer()
+
+  override def write(kryo: Kryo, output: Output, obj: Identity) = {
+    taskIdSerialzer.write(kryo, output, obj.taskId)
+    expressAddressSerializer.write(kryo, output, obj.address)
+  }
+
+  override def read(kryo: Kryo, input: Input, typ: Class[Identity]): Identity = {
+    val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
+    val expressAddress = expressAddressSerializer.read(kryo, input, classOf[ExpressAddress])
+    return new Identity(taskId, expressAddress)
   }
 }

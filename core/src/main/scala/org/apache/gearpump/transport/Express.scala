@@ -18,24 +18,17 @@
 
 package org.apache.gearpump.transport
 
-import java.util
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
 import akka.agent.Agent
-import akka.remote.WireFormats.SerializedMessage
-import akka.serialization.SerializationExtension
 import akka.util.Timeout
-import com.google.protobuf.ByteString
-import org.apache.gearpump.serializer.Serialization
-import org.apache.gearpump.transport.netty.{Context, IContext, TaskMessage}
+import org.apache.gearpump.transport.netty.{Context, TaskMessage}
 import org.slf4j.{Logger, LoggerFactory}
 
-
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.FiniteDuration
 
 
 case class HostPort(host: String, port: Int)
@@ -43,10 +36,10 @@ case class HostPort(host: String, port: Int)
 case class ExpressAddress(hostPort: HostPort, id: Int)
 
 trait ActorLookupById {
-  def lookupActor(id : Int) : Option[ActorRef]
+  def lookupActor(id: Int): Option[ActorRef]
 }
 
-class Express(val system: ExtendedActorSystem) extends Extension with ActorLookupById{
+class Express(val system: ExtendedActorSystem) extends Extension with ActorLookupById {
 
   import org.apache.gearpump.transport.Express._
 
@@ -58,9 +51,9 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   val conf = Map.empty[String, Any]
 
 
-  var context : Context = null
+  var context: Context = null
   var serverPort = -1
-  var localHost : HostPort = null
+  var localHost: HostPort = null
 
   lazy val init = {
     context = new Context(system, conf)
@@ -86,42 +79,31 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     ExpressAddress(localHost, id)
   }
 
-  def lookupActor(id : Int) = localActorMap.get().get(id)
+  def lookupActor(id: Int) = localActorMap.get().get(id)
 
+  def lookupLocalActor(remote: ExpressAddress): Option[ActorRef] = {
+    if (remote.hostPort == localHost) {
+      lookupActor(remote.id)
+    } else {
+      None
+    }
+  }
 
-  def transport(msg: AnyRef, remotes: ExpressAddress*): Unit = {
-
-    var serializedMessage : Array[Byte] = null
-    remotes.foreach { remote =>
-      if (remote.hostPort == localHost) {
-        //Local
-        val localActor = localActorMap().get(remote.id)
-        if (localActor.isDefined) {
-          localActor.get.tell(msg, Actor.noSender)
-        } else {
-          LOG.error(s"Failed to deliver msg $msg to $remote, ActorRef not found!")
-        }
-      } else {
-        //remote
-        if (null == serializedMessage) {
-          serializedMessage = Serialization.serialize(system, msg)
-        }
-        val taskMessage = new TaskMessage(remote.id, serializedMessage)
-        val expressActor = expressMap.get.get(remote.hostPort)
+  //transport to remote address
+  def transport(taskMessage: TaskMessage, remote: ExpressAddress): Unit = {
+    val expressActor = expressMap.get.get(remote.hostPort)
+    if (expressActor.isDefined) {
+      expressActor.get.tell(taskMessage, Actor.noSender)
+    } else {
+      expressMap.send { map =>
+        val expressActor = map.get(remote.hostPort)
         if (expressActor.isDefined) {
           expressActor.get.tell(taskMessage, Actor.noSender)
+          map
         } else {
-          expressMap.send { map =>
-            val expressActor = map.get(remote.hostPort)
-            if (expressActor.isDefined) {
-              expressActor.get.tell(taskMessage, Actor.noSender)
-              map
-            } else {
-              val actor = context.connect(remote.hostPort)
-              actor.tell(taskMessage, Actor.noSender)
-              map + (remote.hostPort -> actor)
-            }
-          }
+          val actor = context.connect(remote.hostPort)
+          actor.tell(taskMessage, Actor.noSender)
+          map + (remote.hostPort -> actor)
         }
       }
     }

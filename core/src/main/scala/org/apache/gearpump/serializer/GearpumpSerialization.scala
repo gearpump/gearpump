@@ -19,13 +19,14 @@
 package org.apache.gearpump.serializer
 
 import com.esotericsoftware.kryo.Kryo
-import org.apache.gearpump.task.{Ack, AckRequest, Message}
+import org.apache.gearpump.task.{Identity, Ack, AckRequest, Message}
 
 class GearpumpSerialization {
   def customize(kryo: Kryo): Unit  = {
     kryo.register(classOf[Message], new MessageSerializer)
     kryo.register(classOf[AckRequest], new AckRequestSerializer)
     kryo.register(classOf[Ack], new AckSerializer)
+    kryo.register(classOf[Identity], new IdentitySerializer)
     kryo.setReferences(false)
   }
 }

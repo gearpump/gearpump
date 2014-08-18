@@ -18,14 +18,40 @@
 
 package org.apache.gearpump.task
 
-import org.apache.gearpump.transport.Express
-import org.apache.gears.cluster.ExecutorToAppMaster.TaskLaunched
+import akka.actor.{ExtendedActorSystem, Actor}
+import org.apache.gearpump.serializer.{FastKryoSerializer}
+import org.apache.gearpump.transport.netty.TaskMessage
+import org.apache.gearpump.transport.{ExpressAddress, Express}
 
 trait ExpressTransport {
   this: TaskActor =>
 
   val express = Express(context.system)
 
+  val system = context.system.asInstanceOf[ExtendedActorSystem]
+  val serializer = new FastKryoSerializer(system)
+
   //report to appMaster with my address
   val local = express.registerActor(self)
+
+
+
+  def transport(msg: AnyRef, remotes: ExpressAddress*)  = {
+    var serializedMessage : Array[Byte] = null
+
+    remotes.foreach { remote =>
+      val localActor = express.lookupLocalActor(remote)
+      if (localActor.isDefined) {
+        //local
+        localActor.get.tell(msg, Actor.noSender)
+      } else {
+        //remote
+        if (null == serializedMessage) {
+          serializedMessage = serializer.serialize(msg)
+        }
+        val taskMessage = new TaskMessage(remote.id, serializedMessage)
+        express.transport(taskMessage, remote)
+      }
+    }
+  }
 }

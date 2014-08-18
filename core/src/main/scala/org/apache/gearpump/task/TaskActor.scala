@@ -84,13 +84,13 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
     while (start < partitions.length) {
       val partition = partitions(start)
 
-      express.transport(Message(System.currentTimeMillis(), msg), outputTaskLocations(partition))
+      transport(Message(System.currentTimeMillis(), msg), outputTaskLocations(partition))
 
       outputWaterMark(partition) += 1
 
       if (outputWaterMark(partition) > ackRequestWaterMark(partition) + FLOW_CONTROL_RATE) {
 
-        express.transport(AckRequest(taskId, outputWaterMark(partition)), outputTaskLocations(partition))
+        transport(AckRequest(taskId, outputWaterMark(partition)), outputTaskLocations(partition))
         ackRequestWaterMark(partition) = outputWaterMark(partition)
       }
       start = start + 1
@@ -172,7 +172,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
 
       //Send identiy of self to downstream
       outputTaskLocations.foreach { remote =>
-        express.transport(Identity(taskId, local), remote)
+        transport(Identity(taskId, local), remote)
       }
       context.become {
         onStart
@@ -196,7 +196,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
         msg match {
           case AckRequest(taskId, seq) =>
 
-            express.transport(Ack(this.taskId, seq), inputTaskLocations(taskId))
+            transport(Ack(this.taskId, seq), inputTaskLocations(taskId))
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
           case Message(timestamp, msg) =>
             windowSize.update(outputWindow)

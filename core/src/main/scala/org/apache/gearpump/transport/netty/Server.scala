@@ -24,7 +24,7 @@ import akka.actor.{ExtendedActorSystem, Actor, ActorRef}
 import akka.remote.WireFormats.SerializedMessage
 import akka.serialization.SerializationExtension
 import com.google.protobuf.ByteString
-import org.apache.gearpump.serializer.Serialization
+import org.apache.gearpump.serializer.{FastKryoSerializer}
 import org.apache.gearpump.transport.ActorLookupById
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
@@ -40,6 +40,8 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
   val allChannels: ChannelGroup = new DefaultChannelGroup("storm-server")
 
   val system = context.system.asInstanceOf[ExtendedActorSystem]
+
+  val serializer = new FastKryoSerializer(system)
 
 
   def receive = msgHandler orElse channelManager
@@ -63,7 +65,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
         if (actor.isEmpty) {
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
-          val msg = Serialization.deserialize(system, taskMessage.message())
+          val msg = serializer.deserialize(taskMessage.message())
           actor.get.tell(msg, Actor.noSender)
         }
       }
