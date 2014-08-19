@@ -19,7 +19,8 @@
 package org.apache.gearpump.task
 
 import akka.actor.ActorRef
+import org.apache.gearpump.transport.ExpressAddress
 
 case class TaskId(groupId : Int, index : Int)
 
-case class TaskLocations(address : Map[TaskId, ActorRef])
+case class TaskLocations(address : Map[TaskId, ExpressAddress])

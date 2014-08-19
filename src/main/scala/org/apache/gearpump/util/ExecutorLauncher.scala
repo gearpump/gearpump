@@ -60,7 +60,10 @@ private class ExecutorLauncher(daemonSystem: Promise[DaemonedActorSystem], launc
     } else {
       val java = System.getenv("JAVA_HOME") + "/bin/java"
       val classPath = launch.executorContext.getClassPath().mkString(File.pathSeparator)
-      val command: List[String] = List(java, "-cp", classPath, classOf[ActorSystemBooter].getName, id(launch), selfPath)
+
+      val jvmArguments = launch.executorContext.getJvmArguments()
+
+      val command = List(java) ++ jvmArguments ++ List("-cp", classPath, classOf[ActorSystemBooter].getName, id(launch), selfPath)
       LOG.info(s"Starting executor process $command...")
 
       val process = Process(command)

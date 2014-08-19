@@ -20,10 +20,15 @@ package org.apache.gearpump.examples.sol
 
 import java.util.Random
 
-import org.apache.gearpump.task.TaskActor
+import akka.remote.WireFormats.SerializedMessage
+import akka.serialization.SerializationExtension
+import com.google.protobuf.ByteString
+import org.apache.gearpump.task.{Message, TaskActor}
 import org.apache.gears.cluster.Configs
 
 class SOLSpout(conf : Configs) extends TaskActor(conf) {
+  import SOLSpout._
+
   private val sizeInBytes = conf.getInt(SOLSpout.BYTES_PER_MESSAGE)
 
   private var messages : Array[String] = null
@@ -32,7 +37,14 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
 
   override def onStart() : Unit = {
     prepareRandomMessage
-    self ! "start"
+    self ! Start
+    val s = SerializationExtension(context.system)
+    val serializer = s.findSerializerFor("hello")
+    val serialized = serializer.toBinary("hello")
+
+    Console.println(s"Active serialization for string is: $serializer")
+
+
   }
 
   private def prepareRandomMessage = {
@@ -56,10 +68,13 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     output(message)
     messageCount = messageCount + 1L
 
-    self ! "continue"
+    self ! Continue
   }
 }
 
 object SOLSpout{
   val BYTES_PER_MESSAGE = "bytesPerMessage"
+
+  val Start = Message(0, "start")
+  val Continue = Message(0, "continue")
 }

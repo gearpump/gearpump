@@ -78,7 +78,7 @@ object WordCount extends App{
 
     def doParse(argument : List[String]) : Unit = {
       argument match {
-        case Nil => true // true if everything processed successfully
+        case Nil => Unit // true if everything processed successfully
         case "-port" :: port :: rest => {
           config = config.copy(port = port.toInt)
           doParse(rest)

@@ -15,26 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.transport.netty;
 
-package org.apache.gears.cluster
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 
-import java.io.File
+public class MessageEncoder extends OneToOneEncoder {
+  @Override
+  protected Object encode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
+    if (obj instanceof ControlMessage) {
+      return ((ControlMessage) obj).buffer();
+    }
 
-trait ExecutorContext extends Serializable {
-  def getClassPath() : Array[String]
+    if (obj instanceof MessageBatch) {
+      return ((MessageBatch) obj).buffer();
+    }
 
-  def getJvmArguments() : Array[String]
-}
-
-class DefaultExecutorContext extends ExecutorContext {
-  def getClassPath() : Array[String] = {
-    val classpath = System.getProperty("java.class.path");
-    val classpathList = classpath.split(File.pathSeparator);
-    classpathList
+    throw new RuntimeException("Unsupported encoding of object of class " + obj.getClass().getName());
   }
 
-  def getJvmArguments() : Array[String] = {
-    val arguments = "-server -Xms1024M -Xmx4096M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -XX:NewSize=512m"
-    arguments.split(" ")
-  }
+
 }

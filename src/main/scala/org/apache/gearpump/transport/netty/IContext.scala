@@ -16,25 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gears.cluster
+package org.apache.gearpump.transport.netty
 
-import java.io.File
+import java.util.Map
 
-trait ExecutorContext extends Serializable {
-  def getClassPath() : Array[String]
+import akka.actor.ActorRef
+import org.apache.gearpump.transport.{HostPort, ActorLookupById}
 
-  def getJvmArguments() : Array[String]
-}
+trait IContext {
 
-class DefaultExecutorContext extends ExecutorContext {
-  def getClassPath() : Array[String] = {
-    val classpath = System.getProperty("java.class.path");
-    val classpathList = classpath.split(File.pathSeparator);
-    classpathList
-  }
+  def bind(name: String, lookupActor : ActorLookupById) : Int
 
-  def getJvmArguments() : Array[String] = {
-    val arguments = "-server -Xms1024M -Xmx4096M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -XX:NewSize=512m"
-    arguments.split(" ")
-  }
+  /**
+   * connect to a remote host
+   */
+  def connect(hostPort: HostPort): ActorRef
+
+  def term
 }

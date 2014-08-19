@@ -15,26 +15,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.transport.netty;
 
-package org.apache.gears.cluster
+import java.nio.ByteBuffer;
 
-import java.io.File
+public class TaskMessage {
+  private int _task;
+  private byte[] _message;
 
-trait ExecutorContext extends Serializable {
-  def getClassPath() : Array[String]
-
-  def getJvmArguments() : Array[String]
-}
-
-class DefaultExecutorContext extends ExecutorContext {
-  def getClassPath() : Array[String] = {
-    val classpath = System.getProperty("java.class.path");
-    val classpathList = classpath.split(File.pathSeparator);
-    classpathList
+  public TaskMessage(int task, byte[] message) {
+    _task = task;
+    _message = message;
   }
 
-  def getJvmArguments() : Array[String] = {
-    val arguments = "-server -Xms1024M -Xmx4096M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -XX:NewSize=512m"
-    arguments.split(" ")
+  public int task() {
+    return _task;
   }
+
+  public byte[] message() {
+    return _message;
+  }
+
+  public ByteBuffer serialize() {
+    ByteBuffer bb = ByteBuffer.allocate(_message.length + 2);
+    bb.putShort((short) _task);
+    bb.put(_message);
+    return bb;
+  }
+
+  public void deserialize(ByteBuffer packet) {
+    if (packet == null) return;
+    _task = packet.getShort();
+    _message = new byte[packet.limit() - 2];
+    packet.get(_message);
+  }
+
 }

@@ -20,6 +20,7 @@ package org.apache.gearpump
 
 import akka.actor.Actor.Receive
 import akka.actor._
+import akka.remote.{AliasActorRefProvider, AliasRemoteActorRefProvider}
 import org.slf4j.{Logger, LoggerFactory}
 
 object ActorUtil {
@@ -38,6 +39,16 @@ object ActorUtil {
      case msg : Any =>
        LOG.error(s"Cannot find a matching message, ${msg.getClass.toString}, forwarded from $actor")
    }
+
+  def getAliasActorRef(context : ActorContext, ref : ActorRef) = {
+    val provider = context.system.asInstanceOf[ExtendedActorSystem].provider
+
+    if(provider.isInstanceOf[AliasActorRefProvider]) {
+      provider.asInstanceOf[AliasActorRefProvider].getAliasActorRef(ref)
+    } else {
+      ref
+    }
+  }
 
   def printActorSystemTree(system : ActorSystem) : Unit = {
     val extendedSystem = system.asInstanceOf[ExtendedActorSystem]

@@ -16,25 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.gears.cluster
+package akka.remote
 
-import java.io.File
+import akka.actor.ActorSystem
 
-trait ExecutorContext extends Serializable {
-  def getClassPath() : Array[String]
+object Util {
 
-  def getJvmArguments() : Array[String]
-}
-
-class DefaultExecutorContext extends ExecutorContext {
-  def getClassPath() : Array[String] = {
-    val classpath = System.getProperty("java.class.path");
-    val classpathList = classpath.split(File.pathSeparator);
-    classpathList
-  }
-
-  def getJvmArguments() : Array[String] = {
-    val arguments = "-server -Xms1024M -Xmx4096M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -XX:NewSize=512m"
-    arguments.split(" ")
+  def getDispatcherName(system : ActorSystem) = {
+    RARP(system).provider.remoteSettings.Dispatcher match {
+      case "" ⇒ None
+      case dispatcherName ⇒ Some(dispatcherName)
+    }
   }
 }

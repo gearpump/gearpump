@@ -88,27 +88,8 @@ object Configs {
 
   def apply(config : Map[String, _]) = new Configs(config)
 
-  /**
-   * Configuration Effective order:
-   * 1. Java properties
-   * 2. Internal Config here
-   * 3. application.conf
-   * 4. reference.conf
-   */
-  val SYSTEM_DEFAULT_CONFIG = ConfigFactory.load(ConfigFactory.parseString(
-    """
-     akka {
-       actor {
-         provider = "akka.remote.RemoteActorRefProvider"
-       }
-       remote {
-         enabled-transports = ["akka.remote.netty.tcp"]
-         netty.tcp {
-           port = 0
-         }
-       }
-     }
-    """).withFallback(ConfigFactory.load()))
+  //for production
+  val SYSTEM_DEFAULT_CONFIG = ConfigFactory.load()
 
   private implicit class MapHelper(config: Map[String, _]) {
     def getInt(key : String) : Int = {
