@@ -16,8 +16,6 @@ GearPump is a data flow processing engine built on top of Gears.
   sbt clean pack
   ```
   This will generate scripts under target/pack/bin
-<<<<<<< HEAD
-=======
 
 ##How to Package for distribution
   ```bash
@@ -33,8 +31,6 @@ GearPump is a data flow processing engine built on top of Gears.
   sudo make install PREFIX="/usr/local"
   ```
   This will install scripts to /usr/local/bin and jars to /usr/local/lib
->>>>>>> kam
-
 
 ###Local Mode
 1. Start Local Cluster in same process
