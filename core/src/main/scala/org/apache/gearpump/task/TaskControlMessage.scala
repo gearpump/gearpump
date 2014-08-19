@@ -23,5 +23,6 @@ import org.apache.gearpump.transport.ExpressAddress
 sealed trait TaskControlMessage
 
 case class Identity(taskId : TaskId, address : ExpressAddress)
-case class AckRequest(taskId : TaskId, seq : Long)
-case class Ack(taskId : TaskId, seq : Long)
+case class Seq(id : Int, seq : Long)
+case class AckRequest(taskId : TaskId, seq : Seq)
+case class Ack(taskId : TaskId, seq : Seq)

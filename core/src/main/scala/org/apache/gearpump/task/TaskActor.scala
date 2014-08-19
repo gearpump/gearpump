@@ -30,10 +30,11 @@ import org.apache.gears.cluster.Configs
 import org.apache.gears.cluster.ExecutorToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressTransport {
+abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
   import org.apache.gearpump.task.TaskActor._
 
   protected val taskId : TaskId =  conf.taskId
@@ -42,10 +43,10 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
   private val latencies = metrics.histogram(s"task[$taskId] latency: ")
   private val windowSize = metrics.histogram(s"task[$taskId] window size:")
 
-  val reporter = Slf4jReporter.forRegistry(metrics)
-                  .convertRatesTo(TimeUnit.SECONDS)
-                  .convertDurationsTo(TimeUnit.MILLISECONDS)
-                  .build()
+//  val reporter = Slf4jReporter.forRegistry(metrics)
+//                  .convertRatesTo(TimeUnit.SECONDS)
+//                  .convertDurationsTo(TimeUnit.MILLISECONDS)
+//                  .build()
 
   private[this] val appMaster : ActorRef = conf.appMaster
 
@@ -60,6 +61,8 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
   private[this] var ackWaterMark : Array[Long] = null
   private[this] var outputWindow : Long = INITIAL_WINDOW_SIZE
 
+
+  private val stashMessage = new ArrayBuffer[Any](0)
 
   //We will set this in preStart
   final def receive : Receive = {
@@ -90,7 +93,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
 
       if (outputWaterMark(partition) > ackRequestWaterMark(partition) + FLOW_CONTROL_RATE) {
 
-        transport(AckRequest(taskId, outputWaterMark(partition)), outputTaskLocations(partition))
+        transport(AckRequest(taskId, Seq(partition, outputWaterMark(partition))), outputTaskLocations(partition))
         ackRequestWaterMark(partition) = outputWaterMark(partition)
       }
       start = start + 1
@@ -98,7 +101,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
   }
 
   final override def postStop : Unit = {
-    reporter.stop()
+//    reporter.stop()
   }
 
   final override def preStart() : Unit = {
@@ -109,7 +112,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
     LOG.info(s"TaskInit... taskId: $taskId")
     val outDegree = conf.dag.graph.outDegreeOf(taskId.groupId)
 
-    reporter.start(10, TimeUnit.SECONDS)
+//    reporter.start(10, TimeUnit.SECONDS)
 
     if (outDegree > 0) {
 
@@ -178,10 +181,19 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
         onStart
         handleMessage
       }
-      unstashAll()
+      unstashAll(handleMessage)
     }
     case msg: Any =>
-      stash()
+      stash(msg)
+  }
+
+  private def stash(msg : Any) {
+    stashMessage += msg
+  }
+
+  private def unstashAll(handleMessage : Receive) {
+    stashMessage.foreach(msg => handleMessage.applyOrElse(msg, unhandled))
+    stashMessage.clear()
   }
 
   private def doHandleMessage : Unit = {
@@ -199,11 +211,11 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
             transport(Ack(this.taskId, seq), inputTaskLocations(taskId))
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
           case Message(timestamp, msg) =>
-            windowSize.update(outputWindow)
+//            windowSize.update(outputWindow)
             onNext(msg)
           case msg : String =>
             onNext(msg)
-            windowSize.update(outputWindow)
+//            windowSize.update(outputWindow)
         }
       } else {
         done = true
@@ -220,12 +232,14 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash with ExpressT
       queue.add(ackRequest)
     case Ack(taskId, seq) =>
       LOG.debug("get ack from downstream, current: " + this.taskId + "downL: " + taskId + ", seq: " + seq + ", windows: " + outputWindow)
-      outputWindow += seq - ackWaterMark(taskId.index)
-      ackWaterMark(taskId.index) = seq
+      outputWindow += seq.seq - ackWaterMark(seq.id)
+      ackWaterMark(seq.id) = seq
       doHandleMessage
     case msg : Message =>
       queue.add(msg)
-      latencies.update(System.currentTimeMillis() - msg.timestamp)
+      //if (msg.timestamp != 0) {
+      //   latencies.update(System.currentTimeMillis() - msg.timestamp)
+      //}
       doHandleMessage
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)

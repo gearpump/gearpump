@@ -27,6 +27,8 @@ import org.apache.gearpump.task.{Message, TaskActor}
 import org.apache.gears.cluster.Configs
 
 class SOLSpout(conf : Configs) extends TaskActor(conf) {
+  import SOLSpout._
+
   private val sizeInBytes = conf.getInt(SOLSpout.BYTES_PER_MESSAGE)
 
   private var messages : Array[String] = null
@@ -35,8 +37,7 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
 
   override def onStart() : Unit = {
     prepareRandomMessage
-    self ! Message(System.currentTimeMillis(), "start")
-
+    self ! Start
     val s = SerializationExtension(context.system)
     val serializer = s.findSerializerFor("hello")
     val serialized = serializer.toBinary("hello")
@@ -67,10 +68,13 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     output(message)
     messageCount = messageCount + 1L
 
-    self ! Message(System.currentTimeMillis(), "continue")
+    self ! Continue
   }
 }
 
 object SOLSpout{
   val BYTES_PER_MESSAGE = "bytesPerMessage"
+
+  val Start = Message(0, "start")
+  val Continue = Message(0, "continue")
 }

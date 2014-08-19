@@ -79,7 +79,8 @@ import Context.toCloseable
   }
 
   def connect(hostPort : HostPort) : ActorRef = {
-    val client = system.actorOf(Props(classOf[Client], conf, clientChannelFactory, hostPort))
+    val nettyDispatcher = system.settings.config.getString("gearpump.netty-dispatcher")
+    val client = system.actorOf(Props(classOf[Client], conf, clientChannelFactory, hostPort).withDispatcher(nettyDispatcher))
     closeHandler.add { () =>
 
       LOG.info("closing Client actor....")
