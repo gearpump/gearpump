@@ -45,7 +45,7 @@ trait Starter {
     def doParse(argument : List[String]) : Unit = {
       argument match {
         case Nil => Unit // true if everything processed successfully
-        case "-port" :: port :: rest =>
+        case "-port" :: port :: rest => 
           config = config.copy(port = port.toInt)
           doParse(rest)
         case "-sameprocess" :: sameprocess :: rest  =>
