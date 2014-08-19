@@ -21,16 +21,15 @@ package org.apache.gears.cluster
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump._
+import org.apache.gearpump.kvservice.SimpleKVService
 import org.apache.gearpump.util.ActorSystemBooter.BindLifeCycle
-import org.apache.gearpump.util.ExecutorLauncher
+import org.apache.gearpump.util.{ActorSystemBooter, ExecutorLauncher}
 import org.apache.gears.cluster.AppMasterToWorker._
 import org.apache.gears.cluster.ExecutorToWorker._
 import org.apache.gears.cluster.MasterToWorker._
 import org.apache.gears.cluster.WorkerToAppMaster._
 import org.apache.gears.cluster.WorkerToMaster._
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class Worker(id : Int, master : ActorRef) extends Actor{
   import org.apache.gears.cluster.Worker._
@@ -50,7 +49,7 @@ class Worker(id : Int, master : ActorRef) extends Actor{
   }
 
   def appMasterMsgHandler : Receive = {
-    case ShutdownExecutor(appId, executorId, reason : String) => {
+    case ShutdownExecutor(appId, executorId, reason : String) =>
       val actorName = actorNameForExecutor(appId, executorId)
       LOG.info(s"Worker shutting down executor: $actorName due to: $reason")
       if (context.child(actorName).isDefined) {
@@ -59,19 +58,17 @@ class Worker(id : Int, master : ActorRef) extends Actor{
       } else {
         LOG.info(s"There is no child $actorName, ignore this message")
       }
-    }
-    case launch : LaunchExecutor => {
+    case launch : LaunchExecutor =>
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
       if (resource < launch.slots) {
         sender ! ExecutorLaunchFailed(launch, "There is no free resource on this machine")
       } else {
-        val appMaster = sender
+        val appMaster = sender()
         launchExecutor(context, self, appMaster, launch.copy(executorConfig = launch.executorConfig.
           withSlots(launch.slots).
           withExecutorId(launch.executorId)))
       }
-    }
-    case LaunchExecutorOnSystem(appMaster, launch, system) => {
+    case LaunchExecutorOnSystem(appMaster, launch, system) =>
       LOG.info(s"Worker[$id] LaunchExecutorOnSystem ...$system")
       val executorProps = Props(launch.executorClass, launch.executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(system.path))))
       val executor = context.actorOf(executorProps, actorNameForExecutor(launch.appId, launch.executorId))
@@ -80,18 +77,16 @@ class Worker(id : Int, master : ActorRef) extends Actor{
       resource = resource - launch.slots
       allocatedResource = allocatedResource + (executor -> launch.slots)
       context.watch(executor)
-    }
   }
 
   def executorMsgHandler : Receive = {
-    case RegisterExecutor(appMaster, appId, executorId, slots) => {
+    case RegisterExecutor(appMaster, appId, executorId, slots) =>
       LOG.info(s"Register Executor for $appId, $executorId to ${appMaster.path.toString}...")
-      appMaster ! ExecutorLaunched(sender, executorId, slots)
-    }
+      appMaster ! ExecutorLaunched(sender(), executorId, slots)
   }
 
   def terminationWatch : Receive = {
-    case Terminated(actor) => {
+    case Terminated(actor) =>
       if (actor.compareTo(master) == 0) {
         // parent is down, let's make suicide
         LOG.info("parent master cannot be contacted, kill myself...")
@@ -100,12 +95,11 @@ class Worker(id : Int, master : ActorRef) extends Actor{
         // This should be a executor
         LOG.info(s"[$id] An executor dies ${actor.path}...." )
         allocatedResource.get(actor).map { slots =>
-          LOG.info(s"[$id] Reclaiming resource ${slots}...." )
+          LOG.info(s"[$id] Reclaiming resource $slots...." )
           allocatedResource = allocatedResource - actor
           resource += slots
         }
       }
-    }
   }
 
   private def actorNameForExecutor(appId : Int, executorId : Int) = "app_" + appId + "_executor_" + executorId
@@ -121,14 +115,48 @@ class Worker(id : Int, master : ActorRef) extends Actor{
   }
 }
 
-object Worker {
+object Worker extends App with Starter {
   val LOG : Logger = LoggerFactory.getLogger(classOf[Worker])
+  def usage = List(
+    "Start Worker after Master",
+    "java org.apache.gears.cluster.Worker -ip <master ip> -port <master port>")
+
+  def uuid = java.util.UUID.randomUUID.toString
+
+  def start() = {
+    val config = parse(args.toList)
+    Console.println(s"Configuration after parse $config")
+    validate(config)
+    worker(config.ip, config.port)
+  }
+
+  def validate(config: Config): Unit = {
+    if(config.port == -1) {
+      commandHelp()
+      System.exit(-1)
+    }
+    if(config.ip.length == 0) {
+      commandHelp()
+      System.exit(-1)
+    }
+  }
+
+  def worker(ip : String, port : Int): Unit = {
+    val kvService = s"http://$ip:$port/kv"
+    SimpleKVService.init(kvService)
+    val master = SimpleKVService.get("master")
+    ActorSystemBooter.create.boot(uuid, master).awaitTermination
+  }
 
   def launchExecutor(context : ActorRefFactory, self : ActorRef, appMaster : ActorRef, launch : LaunchExecutor) : Unit = {
-    val newSystemPath = ExecutorLauncher.launch(context, launch).map(system => {
+    import context.dispatcher
+    ExecutorLauncher.launch(context, launch).map(system => {
       self ! LaunchExecutorOnSystem(appMaster, launch, system)
     }).onFailure {
       case ex => self ! ExecutorLaunchFailed(launch, "failed to new system path", ex)
     }
   }
+
+  start()
+
 }

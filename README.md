@@ -13,28 +13,28 @@ GearPump is a data flow processing engine built on top of Gears.
 ###How to Build
   ```bash
   ## Build Gearpump
-  sbt clean assembly
+  sbt clean pack
   ```
-  This will generate target/scala-2.10/gearpump-assembly-0.4-SNAPSHOT.jar
+  This will generate scripts under target/pack/bin
 
 
 ###Local Mode
 1. Start Local Cluster in same process
   ```bash
   ## Create Cluster on port localhost:8092, create 4 worker, 4 worker exists in same process
-  bin/local.sh -port 8092 -sameprocess -workernum 4
+  target/pack/bin/local -port 8092 -sameprocess -workernum 4
   ```
 
 2. Start Local Cluster in different process
   ```bash
   ## Create Cluster on port localhost:8092, create 4 worker, 4 worker exists in seperate process
-  bin/local -port 8092 -workernum 4
+  target/pack/bin/local -port 8092 -workernum 4
   ```
 3. Start Client Example Code
   
   ```bash
   ## Create Application
-  bin/wordcount.sh <master ip> <master port> <split number> <sum number> <runseconds>
+  target/pack/bin/wordcount <master ip> <master port> <split number> <sum number> <runseconds>
   ```
 
 
@@ -42,7 +42,7 @@ GearPump is a data flow processing engine built on top of Gears.
 1. On 1 node, Start Master
   ```bash
   ## Create Master on <master ip>:8092, 
-  bin/master.sh 8092
+  target/pack/bin/master -port 8092
   ```
 
 2. On same or different machine, Start workers. If you want to start 3 worker, then you need to run this command 3 times.

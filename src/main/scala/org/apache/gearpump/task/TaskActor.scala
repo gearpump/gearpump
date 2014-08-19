@@ -22,31 +22,47 @@ import java.util
 import java.util.concurrent.{TimeUnit, TimeoutException}
 
 import akka.actor._
+import com.codahale.metrics.{Slf4jReporter, ConsoleReporter, JmxReporter, MetricRegistry}
+import org.apache.gearpump.transport.ExpressAddress
 import org.apache.gearpump.{Partitioner, StageParallism}
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.Configs
 import org.apache.gears.cluster.ExecutorToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
-abstract class TaskActor(conf : Configs) extends Actor  with Stash {
+abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
   import org.apache.gearpump.task.TaskActor._
 
   protected val taskId : TaskId =  conf.taskId
+
+  private val metrics = new MetricRegistry()
+  private val latencies = metrics.histogram(s"task[$taskId] latency: ")
+  private val windowSize = metrics.histogram(s"task[$taskId] window size:")
+
+//  val reporter = Slf4jReporter.forRegistry(metrics)
+//                  .convertRatesTo(TimeUnit.SECONDS)
+//                  .convertDurationsTo(TimeUnit.MILLISECONDS)
+//                  .build()
+
   private[this] val appMaster : ActorRef = conf.appMaster
 
   private[this] val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
   private[this] var partitioner : MergedPartitioner = null
-  private[this] var inputTaskLocations = Map[TaskId, ActorRef]()
+  private[this] var inputTaskLocations = Map[TaskId, ExpressAddress]()
 
   private[this] var outputTaskIds : Array[TaskId] = null
-  private[this] var outputTaskLocations : Array[ActorRef] = null
+  private[this] var outputTaskLocations : Array[ExpressAddress] = null
   private[this] var outputWaterMark : Array[Long] = null
   private[this] var ackRequestWaterMark : Array[Long] = null
   private[this] var ackWaterMark : Array[Long] = null
   private[this] var outputWindow : Long = INITIAL_WINDOW_SIZE
+
+
+  private val stashMessage = new ArrayBuffer[Any](0)
 
   //We will set this in preStart
   final def receive : Receive = {
@@ -70,22 +86,34 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
     var start = 0
     while (start < partitions.length) {
       val partition = partitions(start)
-      outputTaskLocations(partition).tell(msg, ActorRef.noSender)
+
+      transport(Message(System.currentTimeMillis(), msg), outputTaskLocations(partition))
+
       outputWaterMark(partition) += 1
 
       if (outputWaterMark(partition) > ackRequestWaterMark(partition) + FLOW_CONTROL_RATE) {
-        outputTaskLocations(partition).tell(AckRequest(taskId, outputWaterMark(partition)), ActorRef.noSender)
+
+        transport(AckRequest(taskId, Seq(partition, outputWaterMark(partition))), outputTaskLocations(partition))
         ackRequestWaterMark(partition) = outputWaterMark(partition)
       }
       start = start + 1
     }
   }
 
+  final override def postStop : Unit = {
+//    reporter.stop()
+  }
+
   final override def preStart() : Unit = {
+
+    appMaster ! TaskLaunched(taskId, local)
 
     val graph = conf.dag.graph
     LOG.info(s"TaskInit... taskId: $taskId")
     val outDegree = conf.dag.graph.outDegreeOf(taskId.groupId)
+
+//    reporter.start(10, TimeUnit.SECONDS)
+
     if (outDegree > 0) {
 
       val edges = graph.outgoingEdgesOf(taskId.groupId)
@@ -99,8 +127,6 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
       }
 
       LOG.info(s"task: $taskId partitioner: ${partitioner}")
-
-
 
       outputTaskIds = edges.flatMap {nodeEdgeNode =>
         val (_, _, taskgroupId) = nodeEdgeNode
@@ -116,7 +142,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
       this.ackWaterMark = new Array[Long](outputTaskIds.length)
       this.outputWaterMark = new Array[Long](outputTaskIds.length)
       this.ackRequestWaterMark = new Array[Long](outputTaskIds.length)
-      this.outputTaskLocations = new  Array[ActorRef](outputTaskIds.length)
+      this.outputTaskLocations = new  Array[ExpressAddress](outputTaskIds.length)
 
       LOG.info("becoming wait for output task locations...." + taskId)
 
@@ -148,15 +174,26 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
       }
 
       //Send identiy of self to downstream
-      outputTaskLocations.foreach(_ ! Identity(taskId))
+      outputTaskLocations.foreach { remote =>
+        transport(Identity(taskId, local), remote)
+      }
       context.become {
         onStart
         handleMessage
       }
-      unstashAll()
+      unstashAll(handleMessage)
     }
     case msg: Any =>
-      stash()
+      stash(msg)
+  }
+
+  private def stash(msg : Any) {
+    stashMessage += msg
+  }
+
+  private def unstashAll(handleMessage : Receive) {
+    stashMessage.foreach(msg => handleMessage.applyOrElse(msg, unhandled))
+    stashMessage.clear()
   }
 
   private def doHandleMessage : Unit = {
@@ -170,10 +207,15 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
       if (msg != null) {
         msg match {
           case AckRequest(taskId, seq) =>
-            inputTaskLocations(taskId).tell(Ack(this.taskId, seq), ActorRef.noSender)
+
+            transport(Ack(this.taskId, seq), inputTaskLocations(taskId))
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
-          case _ =>
-            onNext(msg.asInstanceOf[String])
+          case Message(timestamp, msg) =>
+//            windowSize.update(outputWindow)
+            onNext(msg)
+          case msg : String =>
+            onNext(msg)
+//            windowSize.update(outputWindow)
         }
       } else {
         done = true
@@ -182,20 +224,22 @@ abstract class TaskActor(conf : Configs) extends Actor  with Stash {
   }
 
   def handleMessage : Receive = {
-    case Identity(taskId) =>
+    case Identity(taskId, upStream) =>
       LOG.info("get identity from upstream: " + taskId)
-      val upStream = sender
       inputTaskLocations = inputTaskLocations + (taskId->upStream)
     case ackRequest : AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
       queue.add(ackRequest)
     case Ack(taskId, seq) =>
       LOG.debug("get ack from downstream, current: " + this.taskId + "downL: " + taskId + ", seq: " + seq + ", windows: " + outputWindow)
-      outputWindow += seq - ackWaterMark(taskId.index)
-      ackWaterMark(taskId.index) = seq
+      outputWindow += seq.seq - ackWaterMark(seq.id)
+      ackWaterMark(seq.id) = seq.seq
       doHandleMessage
-    case msg : String =>
+    case msg : Message =>
       queue.add(msg)
+      //if (msg.timestamp != 0) {
+      //   latencies.update(System.currentTimeMillis() - msg.timestamp)
+      //}
       doHandleMessage
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
@@ -217,9 +261,9 @@ object TaskActor {
       taskIds.foreach{master ! GetTaskLocation(_)}
     }
 
-    def receive = waitForTaskLocation(Map[TaskId, ActorRef]())
+    def receive = waitForTaskLocation(Map[TaskId, ExpressAddress]())
 
-    def waitForTaskLocation(taskLocationMap : Map[TaskId, ActorRef]) : Receive = {
+    def waitForTaskLocation(taskLocationMap : Map[TaskId, ExpressAddress]) : Receive = {
       case TaskLocation(taskId, task) => {
         LOG.info(s"[${this.taskId}] We received a task location, taskId: " + taskId)
 

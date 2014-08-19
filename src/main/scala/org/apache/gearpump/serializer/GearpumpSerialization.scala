@@ -16,25 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.gears.cluster
+package org.apache.gearpump.serializer
 
-import java.io.File
+import com.esotericsoftware.kryo.Kryo
+import org.apache.gearpump.task.{Identity, Ack, AckRequest, Message}
 
-trait ExecutorContext extends Serializable {
-  def getClassPath() : Array[String]
-
-  def getJvmArguments() : Array[String]
-}
-
-class DefaultExecutorContext extends ExecutorContext {
-  def getClassPath() : Array[String] = {
-    val classpath = System.getProperty("java.class.path");
-    val classpathList = classpath.split(File.pathSeparator);
-    classpathList
-  }
-
-  def getJvmArguments() : Array[String] = {
-    val arguments = "-server -Xms1024M -Xmx4096M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -XX:NewSize=512m"
-    arguments.split(" ")
+class GearpumpSerialization {
+  def customize(kryo: Kryo): Unit  = {
+    kryo.register(classOf[Message], new MessageSerializer)
+    kryo.register(classOf[AckRequest], new AckRequestSerializer)
+    kryo.register(classOf[Ack], new AckSerializer)
+    kryo.register(classOf[Identity], new IdentitySerializer)
+    kryo.setReferences(false)
   }
 }

@@ -34,7 +34,7 @@ object SOL extends App{
 
   start
 
-  def start: Unit = {
+  def start = {
     val config = parse(args.toList)
 
     val context = ClientContext()
@@ -54,7 +54,7 @@ object SOL extends App{
     context.destroy()
   }
 
-  def commandHelp: Unit = {
+  def commandHelp = {
     val command = List(
       "wordcount",
       "Start a wordcount",
@@ -79,7 +79,7 @@ object SOL extends App{
 
     def doParse(argument : List[String]) : Unit = {
       argument match {
-        case Nil => true // true if everything processed successfully
+        case Nil => Unit // true if everything processed successfully
         case "-port" :: port :: rest => {
           config = config.copy(port = port.toInt)
           doParse(rest)

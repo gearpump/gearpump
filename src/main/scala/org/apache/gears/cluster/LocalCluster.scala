@@ -32,7 +32,7 @@ class LocalCluster {
     SimpleKVService.init(kvService)
     system = ActorSystem("cluster", Configs.SYSTEM_DEFAULT_CONFIG)
 
-    val master = system.actorOf(Props[Master], "master")
+    system.actorOf(Props[Master], "master")
     LOG.info("master is started...")
 
     val masterPath = ActorUtil.getSystemPath(system) + "/user/master"
@@ -43,11 +43,44 @@ class LocalCluster {
     this
   }
 
-  def awaitTermination = {
+  def awaitTermination() = {
     system.awaitTermination()
   }
 }
 
 object LocalCluster {
   def create = new LocalCluster
+}
+
+object Local extends App with Starter {
+  def uuid = java.util.UUID.randomUUID.toString
+
+  def usage = List(
+    "Start a local cluster",
+    "java org.apache.gears.cluster.Local -port <port> [-sameprocess <true|false>] [-workernum <number of workers>]")
+
+  def validate(config: Config): Unit = {
+    if(config.port == -1) {
+      commandHelp()
+      System.exit(-1)
+    }
+  }
+
+  def start() = {
+    val config = parse(args.toList)
+    Console.println(s"Configuration after parse $config")
+    validate(config)
+    local(config.port, config.workerCount, config.sameProcess)
+  }
+
+  def local(port : Int, workerCount : Int, sameProcess : Boolean) : Unit = {
+    if (sameProcess) {
+      System.setProperty("LOCAL", "true")
+    }
+    SimpleKVService.create.start(port)
+    val url = s"http://127.0.0.1:$port/kv"
+    LocalCluster.create.start(url, workerCount).awaitTermination()
+  }
+
+  start()
 }

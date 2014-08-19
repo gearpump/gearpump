@@ -16,25 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.gears.cluster
+package org.apache.gearpump.serializer
 
-import java.io.File
+import akka.actor.ExtendedActorSystem
+import akka.remote.WireFormats.SerializedMessage
+import akka.serialization.SerializationExtension
+import com.google.protobuf.ByteString
+import com.romix.akka.serialization.kryo.KryoSerializer
 
-trait ExecutorContext extends Serializable {
-  def getClassPath() : Array[String]
+/**
+ * Copied from akka.remote.MessageSerializer
+ */
 
-  def getJvmArguments() : Array[String]
-}
+class FastKryoSerializer(system: ExtendedActorSystem) {
 
-class DefaultExecutorContext extends ExecutorContext {
-  def getClassPath() : Array[String] = {
-    val classpath = System.getProperty("java.class.path");
-    val classpathList = classpath.split(File.pathSeparator);
-    classpathList
+  private val serializer = new KryoSerializer(system).serializerPool.fetch()
+
+  def serialize(message: AnyRef) : Array[Byte] = {
+    serializer.toBinary(message)
   }
 
-  def getJvmArguments() : Array[String] = {
-    val arguments = "-server -Xms1024M -Xmx4096M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -XX:NewSize=512m"
-    arguments.split(" ")
+  def deserialize(msg : Array[Byte]): AnyRef = {
+    serializer.fromBinary(msg)
   }
 }

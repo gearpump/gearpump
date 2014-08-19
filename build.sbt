@@ -1,15 +1,22 @@
-import AssemblyKeys._
-
-organization := "com.github.intel-hadoop"
-
 name := "gearpump"
 
 version := "0.4-SNAPSHOT"
 
+organization := "com.github.intel-hadoop"
+
 scalaVersion := "2.10.4"
+
+packSettings
+
+packMain := Map("local" -> "org.apache.gears.cluster.Local",
+                "master" -> "org.apache.gears.cluster.Master",
+                "worker" -> "org.apache.gears.cluster.Worker",
+                "SOL" -> "org.apache.gearpump.examples.sol.SOL",
+                "wordcount" -> "org.apache.gearpump.examples.wordcount.WordCount")
 
 resolvers ++= Seq(
   "maven-repo" at "http://repo.maven.apache.org/maven2",
+  "maven1-repo" at "http://repo1.maven.org/maven2",
   "apache-repo" at "https://repository.apache.org/content/repositories/releases",
   "jboss-repo" at "https://repository.jboss.org/nexus/content/repositories/releases",
   "mqtt-repo" at "https://repo.eclipse.org/content/repositories/paho-releases",
@@ -20,13 +27,15 @@ resolvers ++= Seq(
 
 parallelExecution in Test := false
 
-val jettyVersion = "8.1.14.v20131031"
-val jgraphtVersion = "0.9.0"
-val guavaVersion = "14.0.1"
 val akkaVersion = "2.3.4"
-val slf4jVersion = "1.7.5"
+val kyroVersion = "0.3.2"
+val codahaleVersion = "3.0.2"
 val commonsLangVersion = "3.3.2"
 val commonsHttpVersion = "3.1"
+val guavaVersion = "14.0.1"
+val jettyVersion = "8.1.14.v20131031"
+val jgraphtVersion = "0.9.0"
+val slf4jVersion = "1.7.5"
 
 libraryDependencies ++= Seq(
   ("org.eclipse.jetty" % "jetty-plus" % jettyVersion).
@@ -40,6 +49,7 @@ libraryDependencies ++= Seq(
   exclude("org.eclipse.jetty.orbit", "javax.mail.glassfish").
   exclude("org.eclipse.jetty.orbit", "javax.activation"),
   "com.google.guava" % "guava" % guavaVersion,
+  "com.codahale.metrics" % "metrics-core" % codahaleVersion,
   "org.slf4j" % "slf4j-api" % slf4jVersion,
   "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
   "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
@@ -48,32 +58,7 @@ libraryDependencies ++= Seq(
   "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-remote" % akkaVersion,
-  "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
+  "com.typesafe.akka" %% "akka-agent" % akkaVersion,
+  "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+  "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion
 )
-
-seq(assemblySettings: _*)
-
-mergeStrategy in assembly := { 
-  case n if n.startsWith("META-INF/eclipse.inf") => MergeStrategy.discard
-  case n if n.startsWith("META-INF/ECLIPSEF.RSA") => MergeStrategy.discard
-  case n if n.startsWith("META-INF/ECLIPSE_.RSA") => MergeStrategy.discard
-  case n if n.startsWith("META-INF/ECLIPSEF.SF") => MergeStrategy.discard
-  case n if n.startsWith("META-INF/ECLIPSE_.SF") => MergeStrategy.discard
-  case n if n.startsWith("META-INF/MANIFEST.MF") => MergeStrategy.discard
-  case n if n.startsWith("META-INF/NOTICE.txt") => MergeStrategy.discard
-  case n if n.startsWith("META-INF/NOTICE") => MergeStrategy.discard
-  case n if n.startsWith("META-INF/LICENSE.txt") => MergeStrategy.discard
-  case n if n.startsWith("META-INF/LICENSE") => MergeStrategy.discard
-  case n if n.startsWith("rootdoc.txt") => MergeStrategy.discard
-  case n if n.startsWith("readme.html") => MergeStrategy.discard
-  case n if n.startsWith("readme.txt") => MergeStrategy.discard
-  case n if n.startsWith("library.properties") => MergeStrategy.discard
-  case n if n.startsWith("plugin.properties") => MergeStrategy.discard
-  case n if n.startsWith("license.html") => MergeStrategy.discard
-  case n if n.startsWith("about.html") => MergeStrategy.discard
-  case n if n.startsWith("org/apache/commons/logging/impl/SimpleLog.class") => MergeStrategy.last
-  case n if n.startsWith("reference.conf") => MergeStrategy.concat
-  case n if n.startsWith("org/apache/commons/logging") => MergeStrategy.last
-  case _ => MergeStrategy.deduplicate
-}
-

@@ -25,7 +25,6 @@ import org.apache.gearpump.task.TaskActor
 import org.apache.gears.cluster.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
 class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) {
@@ -37,6 +36,7 @@ class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) {
   private var snapShotTime : Long = 0
 
   override def onStart() : Unit = {
+    import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
     snapShotTime = System.currentTimeMillis()
