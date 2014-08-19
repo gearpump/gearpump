@@ -28,8 +28,6 @@ import org.apache.gearpump.transport.netty.{Context, TaskMessage}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-
 
 case class HostPort(host: String, port: Int)
 
@@ -43,6 +41,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   import org.apache.gearpump.transport.Express._
 
+  import system.dispatcher
   val localActorMap = Agent(Map.empty[Int, ActorRef])
   val expressMap = Agent(Map.empty[HostPort, ActorRef])
 

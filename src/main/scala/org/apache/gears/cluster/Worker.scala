@@ -30,8 +30,6 @@ import org.apache.gears.cluster.WorkerToAppMaster._
 import org.apache.gears.cluster.WorkerToMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 class Worker(id : Int, master : ActorRef) extends Actor{
   import org.apache.gears.cluster.Worker._
 
@@ -125,6 +123,7 @@ object Worker {
   val LOG : Logger = LoggerFactory.getLogger(classOf[Worker])
 
   def launchExecutor(context : ActorRefFactory, self : ActorRef, appMaster : ActorRef, launch : LaunchExecutor) : Unit = {
+    import context.dispatcher
     val newSystemPath = ExecutorLauncher.launch(context, launch).map(system => {
       self ! LaunchExecutorOnSystem(appMaster, launch, system)
     }).onFailure {

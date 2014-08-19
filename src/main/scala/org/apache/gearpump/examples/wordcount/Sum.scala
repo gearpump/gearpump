@@ -26,7 +26,6 @@ import org.apache.gears.cluster.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.HashMap
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
 class Sum (conf : Configs) extends TaskActor(conf) {
@@ -41,6 +40,7 @@ class Sum (conf : Configs) extends TaskActor(conf) {
   private var scheduler : Cancellable = null
 
   override def onStart() : Unit = {
+    import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
   }
