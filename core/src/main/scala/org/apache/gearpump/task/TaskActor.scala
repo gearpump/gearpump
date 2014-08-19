@@ -233,7 +233,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
     case Ack(taskId, seq) =>
       LOG.debug("get ack from downstream, current: " + this.taskId + "downL: " + taskId + ", seq: " + seq + ", windows: " + outputWindow)
       outputWindow += seq.seq - ackWaterMark(seq.id)
-      ackWaterMark(seq.id) = seq
+      ackWaterMark(seq.id) = seq.seq
       doHandleMessage
     case msg : Message =>
       queue.add(msg)
