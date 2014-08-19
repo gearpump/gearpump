@@ -11,7 +11,7 @@ packSettings
 packMain := Map("local" -> "org.apache.gears.cluster.Local",
                 "master" -> "org.apache.gears.cluster.Master",
                 "worker" -> "org.apache.gears.cluster.Worker",
-                "SOL" -> "org.apache.gearpump.examples.sol.SOL",
+                "sol" -> "org.apache.gearpump.examples.sol.SOL",
                 "wordcount" -> "org.apache.gearpump.examples.wordcount.WordCount")
 
 resolvers ++= Seq(

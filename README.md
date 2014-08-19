@@ -16,6 +16,24 @@ GearPump is a data flow processing engine built on top of Gears.
   sbt clean pack
   ```
   This will generate scripts under target/pack/bin
+<<<<<<< HEAD
+=======
+
+##How to Package for distribution
+  ```bash
+  ## Package Gearpump
+  sbt clean pack-archive
+  ```
+  This will produce target/gearpump${version}.tar.gz which contains the ./bin and ./lib files.
+
+##How to Install to /usr/local
+  ```bash
+  ## Run Build step above
+  cd target/pack
+  sudo make install PREFIX="/usr/local"
+  ```
+  This will install scripts to /usr/local/bin and jars to /usr/local/lib
+>>>>>>> kam
 
 
 ###Local Mode
