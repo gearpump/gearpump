@@ -31,7 +31,6 @@ import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.JavaConversions._
 import scala.concurrent.future
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) extends Actor {
 
@@ -49,6 +48,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
   def channelManager : Receive = {
     case AddChannel(channel) => allChannels.add(channel)
     case CloseChannel(channel) => {
+      import context.dispatcher
       future {
         channel.close.awaitUninterruptibly
         allChannels.remove(channel)

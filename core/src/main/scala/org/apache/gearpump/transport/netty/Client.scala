@@ -34,7 +34,6 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.implicitConversions
 
 class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) extends Actor {
@@ -68,6 +67,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
         batch.clear()
         self ! flush
       } else {
+        import context.dispatcher
         context.system.scheduler.scheduleOnce(new FiniteDuration(5, TimeUnit.MILLISECONDS))(self ! flush)
       }
     }
@@ -112,6 +112,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
       } fail { (current, ex) =>
         LOG.error(s"failed to connect to $name", ex)
         current.close()
+        import context.dispatcher
         context.system.scheduler.scheduleOnce(new FiniteDuration(getSleepTimeMs(tries), TimeUnit.MILLISECONDS))(self ! Connect(tries + 1))
       }
     } else {
