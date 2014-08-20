@@ -13,6 +13,8 @@ packMain := Map("local" -> "org.apache.gears.cluster.Local",
                 "worker" -> "org.apache.gears.cluster.Worker",
                 "sol" -> "org.apache.gearpump.examples.sol.SOL",
                 "wordcount" -> "org.apache.gearpump.examples.wordcount.WordCount")
+				
+packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")				
 
 resolvers ++= Seq(
   "maven-repo" at "http://repo.maven.apache.org/maven2",
