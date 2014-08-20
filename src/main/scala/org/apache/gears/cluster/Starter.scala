@@ -21,8 +21,9 @@ package org.apache.gears.cluster
 /**
  * Command line tool to start master, worker, client, and local mode
  */
+
 trait Starter {
-  class Config {
+  trait Config {
     var port: Int = -1
   }
 
