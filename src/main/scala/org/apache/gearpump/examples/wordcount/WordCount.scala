@@ -36,15 +36,17 @@ class WordCount  {
 }
 
 object WordCount extends App with Starter {
-  val config: Config = parse(args.toList)
+  case class Config(var ip: String = "", var split: Int = 1, var sum : Int = 1, var runseconds : Int = 60) extends super.Config
 
   def uuid = java.util.UUID.randomUUID.toString
 
-  def usage = List("java org.apache.gearpump.examples.wordcount.WordCount -ip <ip> -port <port> -split <split number> -sum <sum number> -runseconds <how many seconds to run>")
+  def usage = List("java org.apache.gearpump.examples.wordcount.WordCount-port <port> -ip <ip> -split <split number> -sum <sum number> -runseconds <how many seconds to run>")
 
-  override def start(): Unit = {
+  def start(): Unit = {
+    val config: Config = Config()
+    parse(args.toList, config)
+    validate(config)
     val context = ClientContext()
-    validate()
     val kvServiceURL = s"http://${config.ip}:${config.port}/kv"
 
     Console.out.println("Init KV Service: " + kvServiceURL)
@@ -61,36 +63,31 @@ object WordCount extends App with Starter {
     context.destroy()
   }
 
-  override def parse(args: List[String]) :Config = {
-    var config = Config()
-
+  def parse(args: List[String], config: Config):Unit = {
+    super.parse(args, config)
     def doParse(argument : List[String]) : Unit = {
       argument match {
         case Nil => Unit // true if everything processed successfully
-        case "-port" :: port :: rest =>
-          config = config.copy(port = port.toInt)
-          doParse(rest)
         case "-ip" :: ip :: rest =>
-          config = config.copy(ip = ip)
+          config.ip = ip
           doParse(rest)
         case "-split" :: split :: rest =>
-          config = config.copy(split = split.toInt)
+          config.split = split.toInt
           doParse(rest)
         case "-sum" :: sum :: rest =>
-          config = config.copy(sum = sum.toInt)
+          config.sum = sum.toInt
           doParse(rest)
         case "-runseconds":: runseconds :: rest =>
-          config = config.copy(runseconds = runseconds.toInt)
+          config.runseconds = runseconds.toInt
           doParse(rest)
         case _ :: rest =>
           doParse(rest)
       }
     }
     doParse(args)
-    config
   }
 
-  def validate(): Unit = {
+  def validate(config: Config): Unit = {
     if(config.port == -1) {
       commandHelp()
       System.exit(-1)

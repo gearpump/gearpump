@@ -141,20 +141,20 @@ class Master extends Actor {
 
 object Master extends App with Starter {
   private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
-  val config: Config = parse(args.toList)
+  case class Config() extends super.Config
 
   def uuid = java.util.UUID.randomUUID.toString
 
-  def usage = List("The Master node must be started first",
-    "java org.apache.gears.cluster.Master -port <port>")
+  def usage = List("java org.apache.gears.cluster.Master -port <port>")
 
   def start() = {
-    Console.println(s"Configuration after parse $config")
-    validate()
+    val config = Config()
+    parse(args.toList, config)
+    validate(config)
     master(config.port)
   }
 
-  def validate(): Unit = {
+  def validate(config: Config): Unit = {
     if(config.port == -1) {
       commandHelp()
       System.exit(-1)

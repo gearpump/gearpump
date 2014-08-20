@@ -22,10 +22,9 @@ package org.apache.gears.cluster
  * Command line tool to start master, worker, client, and local mode
  */
 trait Starter {
-  case class Config(local : Boolean = false, port : Int = -1,
-                    sameProcess : Boolean = false, role : String = "",
-                    split: Int = 1, sum : Int = 1, runseconds : Int = 60,
-                    workerCount : Int = 1, ip : String = "", arguments : Array[String] = null)
+  class Config {
+    var port: Int = -1
+  }
 
   def usage: List[String]
 
@@ -38,32 +37,25 @@ trait Starter {
     usage.foreach(Console.println(_))
   }
 
-  def validate(): Unit
+  def validate(config: Config): Unit = {
+    if(config.port == -1) {
+      commandHelp()
+      System.exit(-1)
+    }
+  }
 
-  def parse(args: List[String]) :Config = {
-    var config = Config()
-
+  def parse(args: List[String], config: Config) :Unit = {
     def doParse(argument : List[String]) : Unit = {
       argument match {
         case Nil => Unit // true if everything processed successfully
         case "-port" :: port :: rest => 
-          config = config.copy(port = port.toInt)
-          doParse(rest)
-        case "-sameprocess" :: sameprocess :: rest  =>
-          config = config.copy(sameProcess = sameprocess.toBoolean)
-          doParse(rest)
-        case "-workernum" :: worker :: rest =>
-          config = config.copy(workerCount = worker.toInt)
-          doParse(rest)
-        case "-ip" :: ip :: rest =>
-          config = config.copy(ip = ip)
+          config.port = port.toInt
           doParse(rest)
         case _ :: rest =>
           doParse(rest)
       }
     }
     doParse(args)
-    config
   }
 
 }

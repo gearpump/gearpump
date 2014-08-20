@@ -117,21 +117,35 @@ class Worker(id : Int, master : ActorRef) extends Actor{
 
 object Worker extends App with Starter {
   val LOG : Logger = LoggerFactory.getLogger(classOf[Worker])
-  val config: Config = parse(args.toList)
+  case class Config(var workerCount : Int = 1, var ip: String = "") extends super.Config
 
-  def usage = List(
-    "Start Worker after Master",
-    "java org.apache.gears.cluster.Worker -ip <master ip> -port <master port>")
+  def usage = List("java org.apache.gears.cluster.Worker -ip <master ip> -port <master port>")
 
   def uuid = java.util.UUID.randomUUID.toString
 
   def start() = {
-    Console.println(s"Configuration after parse $config")
-    validate()
+    val config = new Config()
+    parse(args.toList, config)
+    validate(config)
     worker(config.ip, config.port)
   }
 
-  def validate(): Unit = {
+  def parse(args: List[String], config: Config):Unit = {
+    super.parse(args, config)
+    def doParse(argument : List[String]) : Unit = {
+      argument match {
+        case Nil => Unit // true if everything processed successfully
+        case "-ip" :: ip :: rest =>
+          config.ip = ip
+          doParse(rest)
+        case _ :: rest =>
+          doParse(rest)
+      }
+    }
+    doParse(args)
+  }
+
+  def validate(config: Config): Unit = {
     if(config.port == -1) {
       commandHelp()
       System.exit(-1)

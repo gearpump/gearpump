@@ -53,25 +53,43 @@ object LocalCluster {
 }
 
 object Local extends App with Starter {
-  val config: Config = parse(args.toList)
+  case class Config(var sameProcess: Boolean = false, var workerCount : Int = 1) extends super.Config
 
   def uuid = java.util.UUID.randomUUID.toString
 
-  def usage = List(
-    "Start a local cluster",
-    "java org.apache.gears.cluster.Local -port <port> [-sameprocess <true|false>] [-workernum <number of workers>]")
+  def usage = List("java org.apache.gears.cluster.Local -port <port> [-sameprocess <true|false>] [-workernum <number of workers>]")
 
-  def validate(): Unit = {
+  def start() = {
+    val config = Config()
+    parse(args.toList, config)
+    Console.println(s"Configuration after parse $config")
+    validate(config)
+    local(config.port, config.workerCount, config.sameProcess)
+  }
+
+  def parse(args: List[String], config: Config) :Unit = {
+    super.parse(args, config)
+    def doParse(argument : List[String]) : Unit = {
+      argument match {
+        case Nil => Unit // true if everything processed successfully
+        case "-sameprocess" :: sameprocess :: rest  =>
+          config.sameProcess = sameprocess.toBoolean
+          doParse(rest)
+        case "-workernum" :: worker :: rest =>
+          config.workerCount = worker.toInt
+          doParse(rest)
+        case _ :: rest =>
+          doParse(rest)
+      }
+    }
+    doParse(args)
+  }
+
+  def validate(config: Config): Unit = {
     if(config.port == -1) {
       commandHelp()
       System.exit(-1)
     }
-  }
-
-  def start() = {
-    Console.println(s"Configuration after parse $config")
-    validate()
-    local(config.port, config.workerCount, config.sameProcess)
   }
 
   def local(port : Int, workerCount : Int, sameProcess : Boolean) : Unit = {

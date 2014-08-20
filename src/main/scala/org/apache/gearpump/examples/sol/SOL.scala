@@ -22,20 +22,23 @@ import org.apache.gearpump._
 import org.apache.gearpump.client.ClientContext
 import org.apache.gearpump.util.{ShufflePartitioner, Graph}
 import org.apache.gearpump.util.Graph._
-import org.apache.gears.cluster.Configs
+import org.apache.gears.cluster.{Starter, Configs}
 
 class SOL  {
 }
 
-object SOL extends App{
+object SOL extends App with Starter {
+  case class Config(var ip: String = "", var spout: Int = 1, var stages: Int = 2, var bolt : Int = 1, var bytesPerMessage : Int = 100, var runseconds : Int = 60) extends super.Config
 
+  val usage = List(
+    "java -port <port> -ip <ip> -spout <spout number> -bolt <bolt number> -runseconds <how many seconds to run> - -bytesPerMessage <bytes for each message>")
 
-  case class Config(ip : String = "", port : Int = -1, spout: Int = 1, stages: Int = 2, bolt : Int = 1, runseconds : Int = 60, bytesPerMessage : Int = 100)
+  def uuid = java.util.UUID.randomUUID.toString
 
-  start
-
-  def start = {
-    val config = parse(args.toList)
+  def start() = {
+    val config = Config()
+    parse(args.toList, config)
+    validate(config)
 
     val context = ClientContext()
     val kvServiceURL = s"http://${config.ip}:${config.port}/kv"
@@ -54,67 +57,45 @@ object SOL extends App{
     context.destroy()
   }
 
-  def commandHelp = {
-    val command = List(
-      "wordcount",
-      "Start a wordcount",
-      "java -cp <classpath> -ip <ip> -port <port> -spout <spout number> -bolt <bolt number> -runseconds <how many seconds to run> - -bytesPerMessage <bytes for each message>"
-)
-
-    Console.println("GearPump")
-    Console.println("=============================\n")
-
-    command.grouped(3).foreach{array =>
-      array match {
-        case command::description::example::_ =>
-          Console.println(s"  [$command] $description")
-          Console.println(s"  $example")
-          Console.println("--")
-      }
-    }
-  }
-
-  def parse(args: List[String]) :Config = {
-    var config = Config()
-
+  def parse(args: List[String], config: Config):Unit = {
+    super.parse(args, config)
     def doParse(argument : List[String]) : Unit = {
       argument match {
         case Nil => Unit // true if everything processed successfully
-        case "-port" :: port :: rest => {
-          config = config.copy(port = port.toInt)
+        case "-ip" :: ip :: rest =>
+          config.ip = ip
           doParse(rest)
-        }
-        case "-ip" :: ip :: rest => {
-          config = config.copy(ip = ip)
+        case "-spout" :: spout :: rest =>
+          config.spout = spout.toInt
           doParse(rest)
-        }
-        case "-spout" :: spout :: rest => {
-          config = config.copy(spout = spout.toInt)
+        case "-stages"::stages::rest =>
+          config.stages = stages.toInt
           doParse(rest)
-        }
-        case "-stages"::stages::rest => {
-          config = config.copy(stages = stages.toInt)
+        case "-bolt" :: bolt :: rest =>
+          config.bolt = bolt.toInt
           doParse(rest)
-        }
-        case "-bolt" :: bolt :: rest => {
-          config = config.copy(bolt = bolt.toInt)
+        case "-runseconds":: runseconds :: rest =>
+          config.runseconds = runseconds.toInt
           doParse(rest)
-        }
-        case "-runseconds":: runseconds :: rest => {
-          config = config.copy(runseconds = runseconds.toInt)
+        case "-bytesPerMessage"::bytesPerMessage::rest =>
+          config.bytesPerMessage = bytesPerMessage.toInt
           doParse(rest)
-        }
-        case "-bytesPerMessage"::bytesPerMessage::rest => {
-          config = config.copy(bytesPerMessage = bytesPerMessage.toInt)
+        case _ :: rest =>
           doParse(rest)
-        }
-        case _ :: rest => {
-          doParse(rest)
-        }
       }
     }
     doParse(args)
-    config
+  }
+
+  def validate(config: Config): Unit = {
+    if(config.port == -1) {
+      commandHelp()
+      System.exit(-1)
+    }
+    if(config.ip.length == 0) {
+      commandHelp()
+      System.exit(-1)
+    }
   }
 
   def getApplication(spoutNum : Int, boltNum : Int, bytesPerMessage : Int, stages : Int) : AppDescription = {
@@ -132,4 +113,6 @@ object SOL extends App{
     val app = AppDescription("sol", config, dag)
     app
   }
+
+  start()
 }
