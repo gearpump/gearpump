@@ -53,13 +53,15 @@ object LocalCluster {
 }
 
 object Local extends App with Starter {
+  val config: Config = parse(args.toList)
+
   def uuid = java.util.UUID.randomUUID.toString
 
   def usage = List(
     "Start a local cluster",
     "java org.apache.gears.cluster.Local -port <port> [-sameprocess <true|false>] [-workernum <number of workers>]")
 
-  def validate(config: Config): Unit = {
+  def validate(): Unit = {
     if(config.port == -1) {
       commandHelp()
       System.exit(-1)
@@ -67,9 +69,8 @@ object Local extends App with Starter {
   }
 
   def start() = {
-    val config = parse(args.toList)
     Console.println(s"Configuration after parse $config")
-    validate(config)
+    validate()
     local(config.port, config.workerCount, config.sameProcess)
   }
 

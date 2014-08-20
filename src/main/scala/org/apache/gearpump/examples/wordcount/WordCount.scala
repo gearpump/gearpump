@@ -19,30 +19,38 @@
 package org.apache.gearpump.examples.wordcount
 
 import org.apache.gearpump.client.ClientContext
-import org.apache.gearpump.util.{HashPartitioner, Graph}
 import org.apache.gearpump.util.Graph._
+import org.apache.gearpump.util.{Graph, HashPartitioner}
 import org.apache.gearpump.{AppDescription, TaskDescription}
-import org.apache.gears.cluster.Configs
+import org.apache.gears.cluster.{Configs, Starter}
 
 class WordCount  {
+  def getApplication(splitNum : Int, sumNum : Int) : AppDescription = {
+    val config = Configs.empty
+    val partitioner = new HashPartitioner()
+    val split = TaskDescription(classOf[Split], splitNum)
+    val sum = TaskDescription(classOf[Sum], sumNum)
+    val app = AppDescription("wordCount", config, Graph(split ~ partitioner ~> sum))
+    app
+  }
 }
 
-object WordCount extends App{
+object WordCount extends App with Starter {
+  val config: Config = parse(args.toList)
 
-  case class Config(ip : String = "", port : Int = -1, split: Int = 1, sum : Int = 1, runseconds : Int = 60)
+  def uuid = java.util.UUID.randomUUID.toString
 
-  start
+  def usage = List("java org.apache.gearpump.examples.wordcount.WordCount -ip <ip> -port <port> -split <split number> -sum <sum number> -runseconds <how many seconds to run>")
 
-  def start = {
-    val config = parse(args.toList)
-
+  override def start(): Unit = {
     val context = ClientContext()
+    validate()
     val kvServiceURL = s"http://${config.ip}:${config.port}/kv"
 
     Console.out.println("Init KV Service: " + kvServiceURL)
 
     context.init(kvServiceURL)
-    val appId = context.submit(getApplication(config.split, config.sum))
+    val appId = context.submit(new WordCount().getApplication(config.split, config.sum))
     System.out.println(s"We get application id: $appId")
 
     Thread.sleep(config.runseconds * 1000)
@@ -53,67 +61,47 @@ object WordCount extends App{
     context.destroy()
   }
 
-  def commandHelp = {
-    val command = List(
-      "wordcount",
-      "Start a wordcount",
-      "java -cp <classpath> -ip <ip> -port <port> -split <split number> -sum <sum number> -runseconds <how many seconds to run>"
-)
-
-    Console.println("GearPump")
-    Console.println("=============================\n")
-
-    command.grouped(3).foreach{array =>
-      array match {
-        case command::description::example::_ =>
-          Console.println(s"  [$command] $description")
-          Console.println(s"  $example")
-          Console.println("--")
-      }
-    }
-  }
-
-  def parse(args: List[String]) :Config = {
+  override def parse(args: List[String]) :Config = {
     var config = Config()
 
     def doParse(argument : List[String]) : Unit = {
       argument match {
         case Nil => Unit // true if everything processed successfully
-        case "-port" :: port :: rest => {
+        case "-port" :: port :: rest =>
           config = config.copy(port = port.toInt)
           doParse(rest)
-        }
-        case "-ip" :: ip :: rest => {
+        case "-ip" :: ip :: rest =>
           config = config.copy(ip = ip)
           doParse(rest)
-        }
-        case "-split" :: split :: rest => {
+        case "-split" :: split :: rest =>
           config = config.copy(split = split.toInt)
           doParse(rest)
-        }
-        case "-sum" :: sum :: rest => {
+        case "-sum" :: sum :: rest =>
           config = config.copy(sum = sum.toInt)
           doParse(rest)
-        }
-        case "-runseconds":: runseconds :: rest => {
+        case "-runseconds":: runseconds :: rest =>
           config = config.copy(runseconds = runseconds.toInt)
           doParse(rest)
-        }
-        case _ :: rest => {
+        case _ :: rest =>
           doParse(rest)
-        }
       }
     }
     doParse(args)
     config
   }
 
-  def getApplication(splitNum : Int, sumNum : Int) : AppDescription = {
-    val config = Configs.empty
-    val partitioner = new HashPartitioner()
-    val split = TaskDescription(classOf[Split], splitNum)
-    val sum = TaskDescription(classOf[Sum], sumNum)
-    val app = AppDescription("wordCount", config, Graph(split ~ partitioner ~> sum))
-    app
+  def validate(): Unit = {
+    if(config.port == -1) {
+      commandHelp()
+      System.exit(-1)
+    }
+    if(config.ip.length == 0) {
+      commandHelp()
+      System.exit(-1)
+    }
   }
+
+  start()
+
 }
+

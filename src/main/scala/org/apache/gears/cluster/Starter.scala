@@ -24,6 +24,7 @@ package org.apache.gears.cluster
 trait Starter {
   case class Config(local : Boolean = false, port : Int = -1,
                     sameProcess : Boolean = false, role : String = "",
+                    split: Int = 1, sum : Int = 1, runseconds : Int = 60,
                     workerCount : Int = 1, ip : String = "", arguments : Array[String] = null)
 
   def usage: List[String]
@@ -37,7 +38,7 @@ trait Starter {
     usage.foreach(Console.println(_))
   }
 
-  def validate(config: Config): Unit
+  def validate(): Unit
 
   def parse(args: List[String]) :Config = {
     var config = Config()

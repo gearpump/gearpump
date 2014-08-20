@@ -62,11 +62,11 @@ GearPump is a data flow processing engine built on top of Gears.
 2. On same or different machine, Start workers. If you want to start 3 worker, then you need to run this command 3 times.
 
   ```bash
-  bin/worker.sh <master ip> <master port>
+  target/pack/bin/worker -ip <master ip> -port <master port>
   ```
 3. Start Client Example Code
 
   ```bash
   ## Create Application
-  bin/wordcount.sh <master ip> <master port>  <split number> <sum number> <runseconds>
+  target/pack/bin/wordcount -ip <master ip> -port <master port> -split <split number> -sum <sum number> -runseconds <runseconds>
   ```
