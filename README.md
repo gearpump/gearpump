@@ -70,3 +70,16 @@ GearPump is a data flow processing engine built on top of Gears.
   ## Create Application
   target/pack/bin/wordcount -ip <master ip> -port <master port> -split <split number> -sum <sum number> -runseconds <runseconds>
   ```
+
+###Metrics and Dashboard
+Gearpump use Graphite for the metrics dashboard. You need to install a graphite to get the metrics. 
+
+After than, you need to configure the conf/application.conf
+
+    ```
+	gearpump.metrics.enabled = true
+	gearpump.metrics.graphite.host = "your actual graphite host name or ip"  
+	gearpump.metrics.graphite.port = 2003   ## Your graphite port
+	gearpump.metrics.sample.rate = 10        ## this means we will sample 1 message for every 10 messages
+	```
+For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in [dashboard/README.md](dashboard/README.md)
