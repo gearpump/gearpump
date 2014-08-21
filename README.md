@@ -82,4 +82,4 @@ After than, you need to configure the conf/application.conf
 	gearpump.metrics.graphite.port = 2003   ## Your graphite port
 	gearpump.metrics.sample.rate = 10        ## this means we will sample 1 message for every 10 messages
 	```
-For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in dashboard/README.md
+For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in [dashboard/README.md!](dashboard/README.md)
