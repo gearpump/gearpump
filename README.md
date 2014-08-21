@@ -74,7 +74,7 @@ GearPump is a data flow processing engine built on top of Gears.
 ###Metrics and Dashboard
 Gearpump use Graphite for the metrics dashboard. You need to install a graphite to get the metrics. 
 
-After than, you need to configure the application.conf
+After than, you need to configure the conf/application.conf
 
     ```
 	gearpump.metrics.enabled = true
