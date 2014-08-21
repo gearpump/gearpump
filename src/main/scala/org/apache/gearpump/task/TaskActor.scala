@@ -22,7 +22,8 @@ import java.util
 import java.util.concurrent.{TimeUnit, TimeoutException}
 
 import akka.actor._
-import com.codahale.metrics.{Slf4jReporter, ConsoleReporter, JmxReporter, MetricRegistry}
+import com.codahale.metrics._
+import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.transport.ExpressAddress
 import org.apache.gearpump.{Partitioner, StageParallism}
 import org.apache.gears.cluster.AppMasterToExecutor._
@@ -37,16 +38,12 @@ import scala.util.{Failure, Success}
 abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
   import org.apache.gearpump.task.TaskActor._
 
+  private val appId = conf.appId
   protected val taskId : TaskId =  conf.taskId
 
-  private val metrics = new MetricRegistry()
-  private val latencies = metrics.histogram(s"task[$taskId] latency: ")
-  private val windowSize = metrics.histogram(s"task[$taskId] window size:")
-
-//  val reporter = Slf4jReporter.forRegistry(metrics)
-//                  .convertRatesTo(TimeUnit.SECONDS)
-//                  .convertDurationsTo(TimeUnit.MILLISECONDS)
-//                  .build()
+  private val metricName = s"app$appId.task${taskId.groupId}_${taskId.index}"
+  private val latencies = Metrics(context.system).histogram(s"$metricName.latency")
+  private val throughput = Metrics(context.system).meter(s"$metricName.throughput")
 
   private[this] val appMaster : ActorRef = conf.appMaster
 
@@ -84,6 +81,9 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
     outputWindow -= partitions.length
 
     var start = 0
+
+    throughput.mark(partitions.length)
+
     while (start < partitions.length) {
       val partition = partitions(start)
 
@@ -101,7 +101,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
   }
 
   final override def postStop : Unit = {
-//    reporter.stop()
+
   }
 
   final override def preStart() : Unit = {
@@ -111,8 +111,6 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
     val graph = conf.dag.graph
     LOG.info(s"TaskInit... taskId: $taskId")
     val outDegree = conf.dag.graph.outDegreeOf(taskId.groupId)
-
-//    reporter.start(10, TimeUnit.SECONDS)
 
     if (outDegree > 0) {
 
@@ -211,11 +209,9 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
             transport(Ack(this.taskId, seq), inputTaskLocations(taskId))
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
           case Message(timestamp, msg) =>
-//            windowSize.update(outputWindow)
             onNext(msg)
           case msg : String =>
             onNext(msg)
-//            windowSize.update(outputWindow)
         }
       } else {
         done = true
@@ -237,9 +233,9 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
       doHandleMessage
     case msg : Message =>
       queue.add(msg)
-      //if (msg.timestamp != 0) {
-      //   latencies.update(System.currentTimeMillis() - msg.timestamp)
-      //}
+      if (msg.timestamp != 0) {
+        latencies.update(System.currentTimeMillis() - msg.timestamp)
+      }
       doHandleMessage
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
