@@ -14,7 +14,9 @@ packMain := Map("local" -> "org.apache.gears.cluster.Local",
                 "sol" -> "org.apache.gearpump.examples.sol.SOL",
                 "wordcount" -> "org.apache.gearpump.examples.wordcount.WordCount")
 				
-packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")				
+packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
+		
+packExtraClasspath := Map("conf" -> Seq("${PROG_HOME}/conf"))
 
 resolvers ++= Seq(
   "maven-repo" at "http://repo.maven.apache.org/maven2",
@@ -24,10 +26,12 @@ resolvers ++= Seq(
   "mqtt-repo" at "https://repo.eclipse.org/content/repositories/paho-releases",
   "cloudera-repo" at "https://repository.cloudera.com/artifactory/cloudera-repos",
   "mapr-repo" at "http://repository.mapr.com/maven",
-  "spring-releases" at "http://repo.spring.io/libs-release"
+  "spring-releases" at "http://repo.spring.io/libs-release",
+  "sonatype" at "https://oss.sonatype.org/content/repositories/releases"
 )
 
 parallelExecution in Test := false
+
 
 val akkaVersion = "2.3.4"
 val kyroVersion = "0.3.2"
@@ -52,6 +56,7 @@ libraryDependencies ++= Seq(
   exclude("org.eclipse.jetty.orbit", "javax.activation"),
   "com.google.guava" % "guava" % guavaVersion,
   "com.codahale.metrics" % "metrics-core" % codahaleVersion,
+  "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
   "org.slf4j" % "slf4j-api" % slf4jVersion,
   "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
   "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
