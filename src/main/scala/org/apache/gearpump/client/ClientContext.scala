@@ -21,13 +21,21 @@ package org.apache.gearpump.client
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.io.IO
+import akka.pattern.ask
 import akka.util.Timeout
 import org.apache.gearpump.AppMaster
-import org.apache.gearpump.kvservice.SimpleKVService
+import org.apache.gearpump.services.RegistrationActor.Registered
 import org.apache.gears.cluster.{Application, Configs, MasterClient}
+import org.slf4j.{Logger, LoggerFactory}
+import spray.can.Http
+import spray.http.HttpMethods._
+import spray.http.{HttpRequest, HttpResponse, Uri}
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 
-import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 
 /**
@@ -44,8 +52,9 @@ import scala.concurrent.duration.Duration
  */
 
 class ClientContext {
+  private val LOG: Logger = LoggerFactory.getLogger(ClientContext.getClass)
 
-  private var system : ActorSystem = null
+  private implicit var system : ActorSystem = null
   private var master : ActorRef = null
 
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
@@ -55,13 +64,19 @@ class ClientContext {
    * To set a value, send a GET request to http://{kvServiceURL}?key={key}&value={value}
    * to get a value, send a GET request to http://{kvServiceURL}?key={key}
    */
-  def init(kvServiceURL : String) : Unit = {
-    SimpleKVService.init(kvServiceURL)
+  def init(masterURL : String) : Unit = {
+    system = ActorSystem("worker", Configs.SYSTEM_DEFAULT_CONFIG)
+    implicit val context = system.dispatcher
+    implicit val registeredFormat = jsonFormat1(Registered)
 
-    val masterURL = SimpleKVService.get("master")
+    val responseFuture: Future[HttpResponse] =
+      (IO(Http) ? HttpRequest(GET, Uri(masterURL))).mapTo[HttpResponse]
 
-    this.system = ActorSystem("worker", Configs.SYSTEM_DEFAULT_CONFIG)
-    this.master = Await.result(system.actorSelection(masterURL).resolveOne(), Duration.Inf)
+    val response = Await.result(responseFuture, Duration.Inf)
+    val source = response.entity.data.asString
+    val registered = source.parseJson.convertTo[Registered]
+    LOG.info("entity data = " + registered.url)
+    master = Await.result(system.actorSelection(registered.url).resolveOne(), Duration.Inf)
   }
 
   def submit(app : Application) : Int = {

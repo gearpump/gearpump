@@ -18,10 +18,15 @@
 
 package org.apache.gears.cluster
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
+import akka.io.IO
+import akka.pattern.ask
 import akka.remote.RemoteScope
+import akka.util.Timeout
 import org.apache.gearpump._
-import org.apache.gearpump.kvservice.SimpleKVService
+import org.apache.gearpump.services.RegistrationActor.Registered
 import org.apache.gearpump.util.ActorSystemBooter.BindLifeCycle
 import org.apache.gearpump.util.{ActorSystemBooter, ExecutorLauncher}
 import org.apache.gears.cluster.AppMasterToWorker._
@@ -30,8 +35,16 @@ import org.apache.gears.cluster.MasterToWorker._
 import org.apache.gears.cluster.WorkerToAppMaster._
 import org.apache.gears.cluster.WorkerToMaster._
 import org.slf4j.{Logger, LoggerFactory}
+import spray.can.Http
+import spray.http.HttpMethods._
+import spray.http.{HttpRequest, HttpResponse, Uri}
+import spray.json.DefaultJsonProtocol._
+import spray.json._
+
+import scala.concurrent.Future
 
 class Worker(id : Int, master : ActorRef) extends Actor{
+  val LOG : Logger = LoggerFactory.getLogger(classOf[Worker])
   import org.apache.gears.cluster.Worker._
 
   private var resource = 100
@@ -116,7 +129,6 @@ class Worker(id : Int, master : ActorRef) extends Actor{
 }
 
 object Worker extends App with Starter {
-  val LOG : Logger = LoggerFactory.getLogger(classOf[Worker])
   case class Config(var workerCount : Int = 1, var ip: String = "") extends super.Config
 
   def usage = List("java org.apache.gears.cluster.Worker -ip <master ip> -port <master port>")
@@ -157,10 +169,20 @@ object Worker extends App with Starter {
   }
 
   def worker(ip : String, port : Int): Unit = {
-    val kvService = s"http://$ip:$port/kv"
-    SimpleKVService.init(kvService)
-    val master = SimpleKVService.get("master")
-    ActorSystemBooter.create.boot(uuid, master).awaitTermination
+    implicit val system = ActorSystem(uuid, Configs.SYSTEM_DEFAULT_CONFIG)
+    import system.dispatcher
+    implicit val registeredFormat = jsonFormat1(Registered)
+    implicit val timeout = Timeout(5, TimeUnit.SECONDS)
+
+    val masterURL = s"http://$ip:$port/master"
+    val response: Future[HttpResponse] =
+      (IO(Http) ? HttpRequest(GET, Uri(masterURL))).mapTo[HttpResponse]
+
+    response.map(r => {
+      val source = r.entity.data.asString
+      val registered = source.parseJson.convertTo[Registered]
+      ActorSystemBooter.create.boot(uuid, system, registered.url).awaitTermination
+    })
   }
 
   def launchExecutor(context : ActorRefFactory, self : ActorRef, appMaster : ActorRef, launch : LaunchExecutor) : Unit = {

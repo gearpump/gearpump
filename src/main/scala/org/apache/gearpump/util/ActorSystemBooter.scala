@@ -41,6 +41,14 @@ class ActorSystemBooter {
     this
   }
 
+  def boot(name: String, system : ActorSystem, reportBackActor : String) : ActorSystemBooter = {
+    this.system = system
+    // daemon path: http://{system}@{ip}:{port}/daemon
+    system.actorOf(Props(classOf[Daemon], name, reportBackActor), "daemon")
+    LOG.info(s"Booting Actor System $name reporting back url: $reportBackActor")
+    this
+  }
+
   def awaitTermination : Unit = {
     system.awaitTermination()
   }
@@ -81,7 +89,9 @@ object ActorSystemBooter  {
 
     override def preStart : Unit = {
       val reportBackActor = context.actorSelection(reportBack)
-      reportBackActor ! RegisterActorSystem(ActorUtil.getSystemPath(context.system))
+      val workerURL = ActorUtil.getSystemPath(context.system)
+      LOG.info("sending RegisterActorSystem to master " + workerURL)
+      reportBackActor ! RegisterActorSystem(workerURL)
     }
   }
 }
