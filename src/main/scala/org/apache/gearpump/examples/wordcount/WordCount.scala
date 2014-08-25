@@ -47,11 +47,9 @@ object WordCount extends App with Starter {
     parse(args.toList, config)
     validate(config)
     val context = ClientContext()
-    val kvServiceURL = s"http://${config.ip}:${config.port}/kv"
+    val masterURL = s"http://${config.ip}:${config.port}/master"
 
-    Console.out.println("Init KV Service: " + kvServiceURL)
-
-    context.init(kvServiceURL)
+    context.init(masterURL)
     val appId = context.submit(new WordCount().getApplication(config.split, config.sum))
     System.out.println(s"We get application id: $appId")
 
