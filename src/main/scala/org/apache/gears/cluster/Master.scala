@@ -19,9 +19,11 @@
 package org.apache.gears.cluster
 
 import akka.actor._
+import akka.io.IO
 import akka.remote.RemoteScope
 import org.apache.gearpump._
-import org.apache.gearpump.kvservice.SimpleKVService
+import org.apache.gearpump.services.RegistrationActor.Register
+import org.apache.gearpump.services.{RegistrationActor, RegistrationService, RoutedHttpService}
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.ClientToMaster._
@@ -29,11 +31,12 @@ import org.apache.gears.cluster.MasterToAppMaster._
 import org.apache.gears.cluster.MasterToWorker._
 import org.apache.gears.cluster.WorkerToMaster._
 import org.slf4j.{Logger, LoggerFactory}
+import spray.can.Http
 
 import scala.collection.mutable
 
 class Master extends Actor {
-  import org.apache.gears.cluster.Master._
+  private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
 
   private var resources = new Array[(ActorRef, Int)](0)
   private val resourceRequests = new mutable.Queue[(ActorRef, Int)]
@@ -46,7 +49,7 @@ class Master extends Actor {
   def workerMsgHandler : Receive = {
     //create worker
     case RegisterActorSystem(systemPath) =>
-      LOG.info(s"Received RegisterActorSystem $systemPath")
+      //LOG.info(s"Received RegisterActorSystem $systemPath")
       val systemAddress = AddressFromURIString(systemPath)
       val workerConfig = Props(classOf[Worker], workerId, self).withDeploy(Deploy(scope = RemoteScope(systemAddress)))
       val worker = context.actorOf(workerConfig, classOf[Worker].getSimpleName + workerId)
@@ -133,14 +136,11 @@ class Master extends Actor {
   }
 
   override def preStart(): Unit = {
-    val path = ActorUtil.getFullPath(context)
-    LOG.info(s"master path is $path")
     appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
   }
 }
 
 object Master extends App with Starter {
-  private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
   case class Config() extends super.Config
 
   def uuid = java.util.UUID.randomUUID.toString
@@ -162,22 +162,17 @@ object Master extends App with Starter {
   }
 
   def master(port : Int): Unit = {
-    val url = s"http://127.0.0.1:$port/kv"
-    Console.out.println(s"kv service url: $url")
-
-    SimpleKVService.create.start(port)
-
-    SimpleKVService.init(url)
     val system = ActorSystem("cluster", Configs.SYSTEM_DEFAULT_CONFIG)
-
     system.actorOf(Props[Master], "master")
-    LOG.info("master is started...")
+    import system.dispatcher
+    val registryActor = system.actorOf(Props[RegistrationActor], "registry")
+    val rootService = system.actorOf(Props(new RoutedHttpService(new RegistrationService(registryActor).route )))
+    IO(Http)(system) ! Http.Bind(rootService, "0.0.0.0", port = port)
 
     val masterPath = ActorUtil.getSystemPath(system) + "/user/master"
-    SimpleKVService.set("master", masterPath)
+    registryActor ! Register("master", masterPath)
     system.awaitTermination()
   }
-
   start()
 
 }

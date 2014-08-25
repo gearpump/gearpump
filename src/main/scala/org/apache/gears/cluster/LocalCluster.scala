@@ -18,33 +18,43 @@
 
 package org.apache.gears.cluster
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{ActorSystem, Props}
+import akka.io.IO
+import akka.util.Timeout
 import org.apache.gearpump.ActorUtil
-import org.apache.gearpump.kvservice.SimpleKVService
+import org.apache.gearpump.services.RegistrationActor.Register
+import org.apache.gearpump.services.{RegistrationActor, RegistrationService, RoutedHttpService}
 import org.apache.gearpump.util.ActorSystemBooter
 import org.slf4j.{Logger, LoggerFactory}
+import spray.can.Http
+import akka.pattern.ask
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 
 class LocalCluster {
-  private var system : ActorSystem = null
   private val LOG: Logger = LoggerFactory.getLogger(classOf[LocalCluster])
+  private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
-  def start(kvService : String, workerCount: Int) = {
-    SimpleKVService.init(kvService)
-    system = ActorSystem("cluster", Configs.SYSTEM_DEFAULT_CONFIG)
-
+  def start(port : Int, workerCount: Int) = {
+    val system = ActorSystem("cluster", Configs.SYSTEM_DEFAULT_CONFIG)
     system.actorOf(Props[Master], "master")
-    LOG.info("master is started...")
+    import system.dispatcher
+    val registryActor = system.actorOf(Props[RegistrationActor], "registry")
+    val rootService = system.actorOf(Props(new RoutedHttpService(new RegistrationService(registryActor).route )))
+    IO(Http)(system) ! Http.Bind(rootService, "0.0.0.0", port = port)
 
     val masterPath = ActorUtil.getSystemPath(system) + "/user/master"
-    SimpleKVService.set("master", masterPath)
-
+    val registered = registryActor ? Register("master", masterPath)
+    Await.result(registered, Duration.Inf)
     //We are free
     0.until(workerCount).foreach(id => ActorSystemBooter.create.boot(classOf[Worker].getSimpleName + id , masterPath))
-    this
-  }
 
-  def awaitTermination() = {
     system.awaitTermination()
+
   }
 }
 
@@ -62,7 +72,6 @@ object Local extends App with Starter {
   def start() = {
     val config = Config()
     parse(args.toList, config)
-    Console.println(s"Configuration after parse $config")
     validate(config)
     local(config.port, config.workerCount, config.sameProcess)
   }
@@ -96,9 +105,7 @@ object Local extends App with Starter {
     if (sameProcess) {
       System.setProperty("LOCAL", "true")
     }
-    SimpleKVService.create.start(port)
-    val url = s"http://127.0.0.1:$port/kv"
-    LocalCluster.create.start(url, workerCount).awaitTermination()
+    LocalCluster.create.start(port, workerCount)
   }
 
   start()

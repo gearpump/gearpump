@@ -41,11 +41,9 @@ object SOL extends App with Starter {
     validate(config)
 
     val context = ClientContext()
-    val kvServiceURL = s"http://${config.ip}:${config.port}/kv"
+    val masterURL = s"http://${config.ip}:${config.port}/master"
 
-    Console.out.println("Init KV Service: " + kvServiceURL)
-
-    context.init(kvServiceURL)
+    context.init(masterURL)
     val appId = context.submit(getApplication(config.spout, config.bolt, config.bytesPerMessage, config.stages))
     System.out.println(s"We get application id: $appId")
 
