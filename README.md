@@ -9,6 +9,8 @@ GearPump
 
 A Actor Driven event processing framework.
 
+A initial benchmarks shows that we can process 2million messages/second (100 bytes per message) with latency around 30ms on a cluster of 4 nodes.
+
 
 ###How to Build
   ```bash
