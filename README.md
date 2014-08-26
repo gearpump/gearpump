@@ -1,9 +1,10 @@
+#####This is an on-going effort, and not mature yet. We will update the wiki about the status, the design, and the plan in weeks.
+
+
 GearPump
 ========
 
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/project/logo/logo.png)
-
-This is an on-going effort, and not mature yet. We will update the wiki about the status, the design, and the plan in weeks.
 
 
 A Actor Driven event processing framework.
