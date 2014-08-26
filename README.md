@@ -1,4 +1,4 @@
-#####This is an on-going effort, and not mature yet. We will update the wiki about the status, the design, and the plan in weeks.
+#####This is an on-going effort, and not mature yet. There is no HA feature, fault-tolerance, load balance yet, though we want to build support for those in weeks. We will update the wiki about the detailed status, the design, and the plan as soon as possible.
 
 
 GearPump
