@@ -12,6 +12,9 @@ A Actor Driven event processing framework.
 A initial benchmarks shows that we can process 2million messages/second (100 bytes per message) with latency around 30ms on a cluster of 4 nodes.
 
 
+###Actor Hierarchy
+![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/actor_hierachy.png)
+
 ###How to Build
   ```bash
   ## Build Gearpump
