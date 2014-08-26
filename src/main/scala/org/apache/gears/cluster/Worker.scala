@@ -21,9 +21,8 @@ package org.apache.gears.cluster
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump._
-import org.apache.gearpump.kvservice.SimpleKVService
 import org.apache.gearpump.util.ActorSystemBooter.BindLifeCycle
-import org.apache.gearpump.util.{ActorSystemBooter, ExecutorLauncher}
+import org.apache.gearpump.util.ExecutorLauncher
 import org.apache.gears.cluster.AppMasterToWorker._
 import org.apache.gears.cluster.ExecutorToWorker._
 import org.apache.gears.cluster.MasterToWorker._
@@ -32,7 +31,8 @@ import org.apache.gears.cluster.WorkerToMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
 class Worker(id : Int, master : ActorRef) extends Actor{
-  import org.apache.gears.cluster.Worker._
+
+  val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
 
   private var resource = 100
   private var allocatedResource = Map[ActorRef, Int]()
@@ -64,7 +64,7 @@ class Worker(id : Int, master : ActorRef) extends Actor{
         sender ! ExecutorLaunchFailed(launch, "There is no free resource on this machine")
       } else {
         val appMaster = sender()
-        launchExecutor(context, self, appMaster, launch.copy(executorConfig = launch.executorConfig.
+        Worker.launchExecutor(context, self, appMaster, launch.copy(executorConfig = launch.executorConfig.
           withSlots(launch.slots).
           withExecutorId(launch.executorId)))
       }
@@ -115,54 +115,7 @@ class Worker(id : Int, master : ActorRef) extends Actor{
   }
 }
 
-object Worker extends App with Starter {
-  val LOG : Logger = LoggerFactory.getLogger(classOf[Worker])
-  case class Config(var workerCount : Int = 1, var ip: String = "") extends super.Config
-
-  def usage = List("java org.apache.gears.cluster.Worker -ip <master ip> -port <master port>")
-
-  def uuid = java.util.UUID.randomUUID.toString
-
-  def start() = {
-    val config = new Config()
-    parse(args.toList, config)
-    validate(config)
-    worker(config.ip, config.port)
-  }
-
-  def parse(args: List[String], config: Config):Unit = {
-    super.parse(args, config)
-    def doParse(argument : List[String]) : Unit = {
-      argument match {
-        case Nil => Unit // true if everything processed successfully
-        case "-ip" :: ip :: rest =>
-          config.ip = ip
-          doParse(rest)
-        case _ :: rest =>
-          doParse(rest)
-      }
-    }
-    doParse(args)
-  }
-
-  def validate(config: Config): Unit = {
-    if(config.port == -1) {
-      commandHelp()
-      System.exit(-1)
-    }
-    if(config.ip.length == 0) {
-      commandHelp()
-      System.exit(-1)
-    }
-  }
-
-  def worker(ip : String, port : Int): Unit = {
-    val kvService = s"http://$ip:$port/kv"
-    SimpleKVService.init(kvService)
-    val master = SimpleKVService.get("master")
-    ActorSystemBooter.create.boot(uuid, master).awaitTermination
-  }
-
+object Worker {
   def launchExecutor(context : ActorRefFactory, self : ActorRef, appMaster : ActorRef, launch : LaunchExecutor) : Unit = {
     import context.dispatcher
     ExecutorLauncher.launch(context, launch).map(system => {
@@ -171,7 +124,5 @@ object Worker extends App with Starter {
       case ex => self ! ExecutorLaunchFailed(launch, "failed to new system path", ex)
     }
   }
-
-  start()
-
 }
+

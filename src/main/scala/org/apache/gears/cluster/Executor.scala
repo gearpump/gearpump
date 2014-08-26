@@ -19,10 +19,7 @@
 package org.apache.gears.cluster
 
 import akka.actor.{Actor, Props, Terminated}
-import org.apache.gearpump.ActorUtil
-import org.apache.gearpump.task.ExpressTransport
 import org.apache.gears.cluster.AppMasterToExecutor._
-import org.apache.gears.cluster.ExecutorToAppMaster._
 import org.apache.gears.cluster.ExecutorToWorker._
 import org.slf4j.{Logger, LoggerFactory}
 

@@ -22,7 +22,8 @@ import org.apache.gearpump.client.ClientContext
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, HashPartitioner}
 import org.apache.gearpump.{AppDescription, TaskDescription}
-import org.apache.gears.cluster.{Configs, Starter}
+import org.apache.gears.cluster.Configs
+import org.apache.gears.cluster.main.ArgumentsParser
 
 class WordCount  {
   def getApplication(splitNum : Int, sumNum : Int) : AppDescription = {
@@ -35,27 +36,26 @@ class WordCount  {
   }
 }
 
-object WordCount extends App with Starter {
-  case class Config(var ip: String = "", var split: Int = 1, var sum : Int = 1, var runseconds : Int = 60) extends super.Config
+object WordCount extends App with ArgumentsParser {
 
-  def uuid = java.util.UUID.randomUUID.toString
-
-  def usage = List("java org.apache.gearpump.examples.wordcount.WordCount-port <port> -ip <ip> -split <split number> -sum <sum number> -runseconds <how many seconds to run>")
+  override val options = Array("ip" -> "master ip", "port"-> "master port", "split" -> "how many split tasks", "sum" -> "how many sum tasks", "runseconds"-> "how long to run this example")
+  val config = parse(args)
 
   def start(): Unit = {
-    val config: Config = Config()
-    parse(args.toList, config)
-    validate(config)
-    val context = ClientContext()
-    val kvServiceURL = s"http://${config.ip}:${config.port}/kv"
 
-    Console.out.println("Init KV Service: " + kvServiceURL)
+    val ip = config.getString("ip")
+    val port = config.getInt("port")
 
-    context.init(kvServiceURL)
-    val appId = context.submit(new WordCount().getApplication(config.split, config.sum))
+    val masterURL = s"akka.tcp://${Configs.MASTER}@$ip:$port/user/${Configs.MASTER}"
+
+    Console.out.println("Master URL: " + masterURL)
+
+    val context = ClientContext(masterURL)
+
+    val appId = context.submit(new WordCount().getApplication(config.getInt("split"), config.getInt("sum")))
     System.out.println(s"We get application id: $appId")
 
-    Thread.sleep(config.runseconds * 1000)
+    Thread.sleep(config.getInt("runseconds") * 1000)
 
     System.out.println(s"Shutting down application $appId")
 
@@ -63,42 +63,6 @@ object WordCount extends App with Starter {
     context.destroy()
   }
 
-  def parse(args: List[String], config: Config):Unit = {
-    super.parse(args, config)
-    def doParse(argument : List[String]) : Unit = {
-      argument match {
-        case Nil => Unit // true if everything processed successfully
-        case "-ip" :: ip :: rest =>
-          config.ip = ip
-          doParse(rest)
-        case "-split" :: split :: rest =>
-          config.split = split.toInt
-          doParse(rest)
-        case "-sum" :: sum :: rest =>
-          config.sum = sum.toInt
-          doParse(rest)
-        case "-runseconds":: runseconds :: rest =>
-          config.runseconds = runseconds.toInt
-          doParse(rest)
-        case _ :: rest =>
-          doParse(rest)
-      }
-    }
-    doParse(args)
-  }
-
-  def validate(config: Config): Unit = {
-    if(config.port == -1) {
-      commandHelp()
-      System.exit(-1)
-    }
-    if(config.ip.length == 0) {
-      commandHelp()
-      System.exit(-1)
-    }
-  }
-
   start()
-
 }
 

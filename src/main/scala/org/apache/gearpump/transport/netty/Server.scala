@@ -18,17 +18,15 @@
 
 package org.apache.gearpump.transport.netty
 
-import java.util.{List, Map}
+import java.util.List
 
-import akka.actor.{ExtendedActorSystem, Actor, ActorRef}
-import akka.remote.WireFormats.SerializedMessage
-import akka.serialization.SerializationExtension
-import com.google.protobuf.ByteString
-import org.apache.gearpump.serializer.{FastKryoSerializer}
+import akka.actor.{Actor, ActorRef, ExtendedActorSystem}
+import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.ActorLookupById
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.collection.JavaConversions._
 import scala.concurrent.future
 

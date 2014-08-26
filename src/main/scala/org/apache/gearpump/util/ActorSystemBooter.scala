@@ -19,22 +19,23 @@
 package org.apache.gearpump.util
 
 import akka.actor._
+import com.typesafe.config.Config
 import org.apache.gearpump.ActorUtil
 import org.apache.gears.cluster.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
- * Start a actor system, and will send the system adress to createActor
- * Example usage: main creatorActorPath
+ * Start a actor system, and will send the system adress to report back actor
+ * Example usage: main reportBackActorPath
  */
 
-class ActorSystemBooter {
+class ActorSystemBooter(config : Config) {
   import org.apache.gearpump.util.ActorSystemBooter._
 
   var system : ActorSystem = null
 
   def boot(name : String, reportBackActor : String) : ActorSystemBooter = {
-    system = ActorSystem(name, Configs.SYSTEM_DEFAULT_CONFIG)
+    system = ActorSystem(name, config)
     // daemon path: http://{system}@{ip}:{port}/daemon
     system.actorOf(Props(classOf[Daemon], name, reportBackActor), "daemon")
     LOG.info(s"Booting Actor System $name reporting back url: $reportBackActor")
@@ -49,12 +50,13 @@ class ActorSystemBooter {
 object ActorSystemBooter  {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[ActorSystemBooter])
 
-  def create : ActorSystemBooter = new ActorSystemBooter()
+  def create(config : Config) : ActorSystemBooter = new ActorSystemBooter(config)
 
   def main (args: Array[String]) {
     val name = args(0)
     val reportBack = args(1)
-    create.boot(name, reportBack).awaitTermination
+    val config = Configs.SYSTEM_DEFAULT_CONFIG
+    create(config).boot(name, reportBack).awaitTermination
   }
 
   case class BindLifeCycle(actor : ActorRef)

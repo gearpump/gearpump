@@ -18,10 +18,10 @@
 
 package org.apache.gearpump.task
 
-import akka.actor.{ExtendedActorSystem, Actor}
-import org.apache.gearpump.serializer.{FastKryoSerializer}
+import akka.actor.{Actor, ExtendedActorSystem}
+import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.netty.TaskMessage
-import org.apache.gearpump.transport.{ExpressAddress, Express}
+import org.apache.gearpump.transport.{Express, ExpressAddress}
 
 trait ExpressTransport {
   this: TaskActor =>

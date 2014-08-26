@@ -19,14 +19,10 @@
 package org.apache.gearpump.transport.netty
 
 import java.net.{ConnectException, InetSocketAddress}
-import java.util
 import java.util.Random
-import java.util.concurrent.{ScheduledExecutorService, TimeUnit}
+import java.util.concurrent.TimeUnit
 
-import akka.actor.{ExtendedActorSystem, Actor}
-import akka.remote.WireFormats.SerializedMessage
-import akka.serialization.SerializationExtension
-import com.google.protobuf.ByteString
+import akka.actor.Actor
 import org.apache.gearpump.transport.HostPort
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._

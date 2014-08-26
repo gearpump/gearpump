@@ -74,6 +74,7 @@ object Configs {
   val APPID = "appId"
   val APP_DESCRIPTION =  "appDescription"
   val MASTER = "master"
+  val WORKER = "worker"
   val APP_MANAGER = "appManager"
 
   //config for construction of executor
@@ -90,6 +91,24 @@ object Configs {
 
   //for production
   val SYSTEM_DEFAULT_CONFIG = ConfigFactory.load()
+
+  val MASTER_CONFIG = {
+    val config = SYSTEM_DEFAULT_CONFIG
+    if (config.hasPath(MASTER)) {
+      config.getConfig(MASTER).withFallback(config)
+    } else {
+      config
+    }
+  }
+
+  val WORKER_CONFIG = {
+    val config = SYSTEM_DEFAULT_CONFIG
+    if (config.hasPath(WORKER)) {
+      config.getConfig(WORKER).withFallback(config)
+    } else {
+      config
+    }
+  }
 
   private implicit class MapHelper(config: Map[String, _]) {
     def getInt(key : String) : Int = {

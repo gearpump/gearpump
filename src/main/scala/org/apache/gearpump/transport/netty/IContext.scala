@@ -18,10 +18,8 @@
 
 package org.apache.gearpump.transport.netty
 
-import java.util.Map
-
 import akka.actor.ActorRef
-import org.apache.gearpump.transport.{HostPort, ActorLookupById}
+import org.apache.gearpump.transport.{ActorLookupById, HostPort}
 
 trait IContext {
 
@@ -29,6 +27,7 @@ trait IContext {
 
   /**
    * connect to a remote host
+   * return a ActorRef which you can send message TaskMessage to..
    */
   def connect(hostPort: HostPort): ActorRef
 

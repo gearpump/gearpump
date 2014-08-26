@@ -20,20 +20,14 @@ package org.apache.gearpump.metrics
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
-import akka.agent.Agent
-import akka.util.Timeout
-import com.codahale.metrics.graphite.{GraphiteReporter, Graphite}
-import com.codahale.metrics.{MetricFilter, ScheduledReporter, MetricRegistry}
-import org.apache.gearpump.transport.netty.{TaskMessage, Context}
-import org.slf4j.{LoggerFactory, Logger}
-
-import scala.concurrent.Await
+import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
+import com.codahale.metrics.{MetricFilter, MetricRegistry, ScheduledReporter}
+import org.slf4j.{Logger, LoggerFactory}
 
 class Metrics(val system: ExtendedActorSystem) extends Extension {
-import Metrics._
+import org.apache.gearpump.metrics.Metrics._
 
   private var sampleRate = 1
   lazy val metrics = {

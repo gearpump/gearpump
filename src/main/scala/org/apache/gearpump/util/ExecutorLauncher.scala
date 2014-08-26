@@ -25,6 +25,7 @@ import org.apache.gearpump.ActorUtil
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import org.apache.gearpump.util.ExecutorLauncher.DaemonedActorSystem
 import org.apache.gears.cluster.AppMasterToWorker._
+import org.apache.gears.cluster.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{Future, Promise, promise}
@@ -43,7 +44,7 @@ object ExecutorLauncher {
 }
 
 private class ExecutorLauncher(daemonSystem: Promise[DaemonedActorSystem], launch: LaunchExecutor) extends Actor {
-  import ExecutorLauncher._
+  import org.apache.gearpump.util.ExecutorLauncher._
 
   override def preStart: Unit = bootActorSystem
 
@@ -56,7 +57,7 @@ private class ExecutorLauncher(daemonSystem: Promise[DaemonedActorSystem], launc
     val selfPath = ActorUtil.getFullPath(context)
 
     if (System.getProperty("LOCAL") != null) {
-      ActorSystemBooter.create.boot(id(launch), selfPath)
+      ActorSystemBooter.create(Configs.SYSTEM_DEFAULT_CONFIG).boot(id(launch), selfPath)
     } else {
       val java = System.getenv("JAVA_HOME") + "/bin/java"
       val classPath = launch.executorContext.getClassPath().mkString(File.pathSeparator)

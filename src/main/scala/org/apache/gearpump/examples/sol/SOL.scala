@@ -20,82 +20,42 @@ package org.apache.gearpump.examples.sol
 
 import org.apache.gearpump._
 import org.apache.gearpump.client.ClientContext
-import org.apache.gearpump.util.{ShufflePartitioner, Graph}
 import org.apache.gearpump.util.Graph._
-import org.apache.gears.cluster.{Starter, Configs}
+import org.apache.gearpump.util.{Graph, ShufflePartitioner}
+import org.apache.gears.cluster.Configs
+import org.apache.gears.cluster.main.ArgumentsParser
 
-class SOL  {
-}
+object SOL extends App with ArgumentsParser {
 
-object SOL extends App with Starter {
-  case class Config(var ip: String = "", var spout: Int = 1, var stages: Int = 2, var bolt : Int = 1, var bytesPerMessage : Int = 100, var runseconds : Int = 60) extends super.Config
+  override val options = Array("ip" -> "master ip", "port" -> "master port",
+    "spout"->"spout number", "bolt"->"bolt number", "runseconds" -> "run seconds", "bytesPerMessage" -> "sze of each message", "stages"->"how many stages to run")
 
-  val usage = List(
-    "java -port <port> -ip <ip> -spout <spout number> -bolt <bolt number> -runseconds <how many seconds to run> - -bytesPerMessage <bytes for each message>")
+  start
 
-  def uuid = java.util.UUID.randomUUID.toString
+  def start = {
+    val config = parse(args)
 
-  def start() = {
-    val config = Config()
-    parse(args.toList, config)
-    validate(config)
+    val ip = config.getString("ip")
+    val port = config.getInt("port")
+    val spout = config.getInt("spout")
+    val bolt = config.getInt("bolt")
+    val bytesPerMessage = config.getInt("bytesPerMessage")
+    val stages = config.getInt("stages")
+    val runseconds = config.getInt("runseconds")
 
-    val context = ClientContext()
-    val kvServiceURL = s"http://${config.ip}:${config.port}/kv"
+    val masterURL = s"akka.tcp://${Configs.MASTER}@$ip:$port/user/${Configs.MASTER}"
+    Console.out.println("Master URL: " + masterURL)
+    val context = ClientContext(masterURL)
 
-    Console.out.println("Init KV Service: " + kvServiceURL)
-
-    context.init(kvServiceURL)
-    val appId = context.submit(getApplication(config.spout, config.bolt, config.bytesPerMessage, config.stages))
+    val appId = context.submit(getApplication(spout, bolt, bytesPerMessage, stages))
     System.out.println(s"We get application id: $appId")
 
-    Thread.sleep(config.runseconds * 1000)
+    Thread.sleep(runseconds * 1000)
 
     System.out.println(s"Shutting down application $appId")
 
     context.shutdown(appId)
     context.destroy()
-  }
-
-  def parse(args: List[String], config: Config):Unit = {
-    super.parse(args, config)
-    def doParse(argument : List[String]) : Unit = {
-      argument match {
-        case Nil => Unit // true if everything processed successfully
-        case "-ip" :: ip :: rest =>
-          config.ip = ip
-          doParse(rest)
-        case "-spout" :: spout :: rest =>
-          config.spout = spout.toInt
-          doParse(rest)
-        case "-stages"::stages::rest =>
-          config.stages = stages.toInt
-          doParse(rest)
-        case "-bolt" :: bolt :: rest =>
-          config.bolt = bolt.toInt
-          doParse(rest)
-        case "-runseconds":: runseconds :: rest =>
-          config.runseconds = runseconds.toInt
-          doParse(rest)
-        case "-bytesPerMessage"::bytesPerMessage::rest =>
-          config.bytesPerMessage = bytesPerMessage.toInt
-          doParse(rest)
-        case _ :: rest =>
-          doParse(rest)
-      }
-    }
-    doParse(args)
-  }
-
-  def validate(config: Config): Unit = {
-    if(config.port == -1) {
-      commandHelp()
-      System.exit(-1)
-    }
-    if(config.ip.length == 0) {
-      commandHelp()
-      System.exit(-1)
-    }
   }
 
   def getApplication(spoutNum : Int, boltNum : Int, bytesPerMessage : Int, stages : Int) : AppDescription = {
@@ -113,6 +73,4 @@ object SOL extends App with Starter {
     val app = AppDescription("sol", config, dag)
     app
   }
-
-  start()
 }

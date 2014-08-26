@@ -22,10 +22,9 @@ import java.util
 import java.util.concurrent.{TimeUnit, TimeoutException}
 
 import akka.actor._
-import com.codahale.metrics._
+import org.apache.gearpump.Partitioner
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.transport.ExpressAddress
-import org.apache.gearpump.{Partitioner, StageParallism}
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.Configs
 import org.apache.gears.cluster.ExecutorToAppMaster._

@@ -21,12 +21,12 @@ package org.apache.gearpump.transport.netty
 import java.io.Closeable
 import java.util.concurrent._
 
-import akka.actor.{ActorRef, Props, ActorSystem}
-import org.apache.gearpump.transport.{ActorLookupById, HostPort}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import org.apache.gearpump.transport.netty.Server.ServerPipelineFactory
-import org.jboss.netty.channel.{Channel, ChannelFactory}
+import org.apache.gearpump.transport.{ActorLookupById, HostPort}
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 
@@ -39,8 +39,7 @@ object Context {
 }
 
 class Context(system : ActorSystem, conf: NettyConfig) extends IContext {
-import Context.toCloseable
-  import Context._
+import org.apache.gearpump.transport.netty.Context._
 
   def this(system : ActorSystem, conf : Map[String, Any]) {
     this(system, new NettyConfig(conf))

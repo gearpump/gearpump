@@ -18,8 +18,6 @@
 
 package org.apache.gearpump
 
-import java.util.Random
-
 trait Msg
 
 trait Partitioner extends Serializable {

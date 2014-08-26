@@ -29,7 +29,7 @@ import scala.collection.mutable.HashMap
 import scala.concurrent.duration.FiniteDuration
 
 class Sum (conf : Configs) extends TaskActor(conf) {
-  import Sum._
+  import org.apache.gearpump.examples.wordcount.Sum._
 
   private val map : HashMap[String, Long] = new HashMap[String, Long]()
 

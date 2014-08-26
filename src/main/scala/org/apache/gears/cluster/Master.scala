@@ -21,7 +21,6 @@ package org.apache.gears.cluster
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump._
-import org.apache.gearpump.kvservice.SimpleKVService
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.ClientToMaster._
@@ -33,8 +32,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.mutable
 
 class Master extends Actor {
-  import org.apache.gears.cluster.Master._
 
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[Master])
   private var resources = new Array[(ActorRef, Int)](0)
   private val resourceRequests = new mutable.Queue[(ActorRef, Int)]
 
@@ -138,48 +137,3 @@ class Master extends Actor {
     appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
   }
 }
-
-object Master extends App with Starter {
-  private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
-  case class Config() extends super.Config
-
-  def uuid = java.util.UUID.randomUUID.toString
-
-  def usage = List("java org.apache.gears.cluster.Master -port <port>")
-
-  def start() = {
-    val config = Config()
-    parse(args.toList, config)
-    validate(config)
-    master(config.port)
-  }
-
-  def validate(config: Config): Unit = {
-    if(config.port == -1) {
-      commandHelp()
-      System.exit(-1)
-    }
-  }
-
-  def master(port : Int): Unit = {
-    val url = s"http://127.0.0.1:$port/kv"
-    Console.out.println(s"kv service url: $url")
-
-    SimpleKVService.create.start(port)
-
-    SimpleKVService.init(url)
-    val system = ActorSystem("cluster", Configs.SYSTEM_DEFAULT_CONFIG)
-
-    system.actorOf(Props[Master], "master")
-    LOG.info("master is started...")
-
-    val masterPath = ActorUtil.getSystemPath(system) + "/user/master"
-    SimpleKVService.set("master", masterPath)
-    system.awaitTermination()
-  }
-
-  start()
-
-}
-
-

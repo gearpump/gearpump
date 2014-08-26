@@ -19,9 +19,6 @@
 package org.apache.gearpump.serializer
 
 import akka.actor.ExtendedActorSystem
-import akka.remote.WireFormats.SerializedMessage
-import akka.serialization.SerializationExtension
-import com.google.protobuf.ByteString
 import com.romix.akka.serialization.kryo.KryoSerializer
 
 /**

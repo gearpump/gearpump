@@ -1,18 +1,23 @@
+import sbt.Keys._
+
 name := "gearpump"
 
-version := "0.4-SNAPSHOT"
+version := "0.1-SNAPSHOT"
 
 organization := "com.github.intel-hadoop"
 
-scalaVersion := "2.10.4"
+val scalaVersionNumber = "2.10.4"
+
+scalaVersion := scalaVersionNumber
 
 packSettings
 
-packMain := Map("local" -> "org.apache.gears.cluster.Local",
-                "master" -> "org.apache.gears.cluster.Master",
-                "worker" -> "org.apache.gears.cluster.Worker",
+packMain := Map("local" -> "org.apache.gears.cluster.main.Local",
+                "master" -> "org.apache.gears.cluster.main.Master",
+                "worker" -> "org.apache.gears.cluster.main.Worker",
                 "sol" -> "org.apache.gearpump.examples.sol.SOL",
-                "wordcount" -> "org.apache.gearpump.examples.wordcount.WordCount")
+                "wordcount" -> "org.apache.gearpump.examples.wordcount.WordCount",
+                "shell" -> "org.apache.gears.cluster.main.Shell")
 				
 packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
 		
@@ -67,5 +72,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-remote" % akkaVersion,
   "com.typesafe.akka" %% "akka-agent" % akkaVersion,
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+  "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
+  "org.scala-lang" % "jline" % scalaVersionNumber,
   "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion
 )

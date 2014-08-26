@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.task
 
-import akka.actor.ActorRef
 import org.apache.gearpump.transport.ExpressAddress
 
 case class TaskId(groupId : Int, index : Int)

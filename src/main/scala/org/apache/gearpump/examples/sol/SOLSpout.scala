@@ -20,14 +20,12 @@ package org.apache.gearpump.examples.sol
 
 import java.util.Random
 
-import akka.remote.WireFormats.SerializedMessage
 import akka.serialization.SerializationExtension
-import com.google.protobuf.ByteString
 import org.apache.gearpump.task.{Message, TaskActor}
 import org.apache.gears.cluster.Configs
 
 class SOLSpout(conf : Configs) extends TaskActor(conf) {
-  import SOLSpout._
+  import org.apache.gearpump.examples.sol.SOLSpout._
 
   private val sizeInBytes = conf.getInt(SOLSpout.BYTES_PER_MESSAGE)
 

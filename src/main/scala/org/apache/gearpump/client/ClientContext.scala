@@ -23,46 +23,20 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import org.apache.gearpump.AppMaster
-import org.apache.gearpump.kvservice.SimpleKVService
 import org.apache.gears.cluster.{Application, Configs, MasterClient}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-
-/**
- * Example usage:
- * val context = ClientContext
- * val url = "http://127.0.0.1/kv"
- * context.init(url)
- * val wordCount = new WordCount
- * val appId = context.submit(wordCount)
- *
- * ...
- * // let the job runnning, shutdown the application when it is finished.
- * context.shutdown(appId) *
- */
-
-class ClientContext {
+class ClientContext(masterActorPath : String) {
 
   private var system : ActorSystem = null
   private var master : ActorRef = null
 
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
-  /**
-   * kvServiceURL: key value service URL
-   * To set a value, send a GET request to http://{kvServiceURL}?key={key}&value={value}
-   * to get a value, send a GET request to http://{kvServiceURL}?key={key}
-   */
-  def init(kvServiceURL : String) : Unit = {
-    SimpleKVService.init(kvServiceURL)
-
-    val masterURL = SimpleKVService.get("master")
-
-    this.system = ActorSystem("worker", Configs.SYSTEM_DEFAULT_CONFIG)
-    this.master = Await.result(system.actorSelection(masterURL).resolveOne(), Duration.Inf)
-  }
+  this.system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG)
+  this.master = Await.result(system.actorSelection(masterActorPath).resolveOne(), Duration.Inf)
 
   def submit(app : Application) : Int = {
     val client = new MasterClient(master)
@@ -80,5 +54,5 @@ class ClientContext {
 }
 
 object ClientContext {
-  def apply() = new ClientContext()
+  def apply(masterActorPath : String) = new ClientContext(masterActorPath)
 }

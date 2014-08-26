@@ -5,10 +5,7 @@ GearPump
 
 
 A Actor Driven event processing framework.
-It contains two part, Gears and GearPump.
 
-Gears is a general resource scheduler, it is design to support multiple Heterogeneous resource scheduling requirements.
-GearPump is a data flow processing engine built on top of Gears.
 
 ###How to Build
   ```bash

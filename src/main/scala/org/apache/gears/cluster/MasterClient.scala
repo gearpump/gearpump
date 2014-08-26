@@ -26,8 +26,8 @@ import akka.util.Timeout
 import org.apache.gears.cluster.ClientToMaster._
 import org.apache.gears.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 class MasterClient(master : ActorRef) {

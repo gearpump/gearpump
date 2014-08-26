@@ -16,16 +16,27 @@
  * limitations under the License.
  */
 
-package akka.remote
+package org.apache.gears.cluster.main
 
-import akka.actor.ActorSystem
+import org.apache.gearpump.util.ActorSystemBooter
+import org.apache.gears.cluster.Configs
+import org.slf4j.{Logger, LoggerFactory}
 
-object Util {
+object Worker extends App with ArgumentsParser {
+  val LOG : Logger = LoggerFactory.getLogger(Worker.getClass)
 
-  def getDispatcherName(system : ActorSystem) = {
-    RARP(system).provider.remoteSettings.Dispatcher match {
-      case "" ⇒ None
-      case dispatcherName ⇒ Some(dispatcherName)
-    }
+  def uuid = java.util.UUID.randomUUID.toString
+
+  val options = Array("ip"->"master ip", "port"-> "master port")
+
+  def start() = {
+    worker(parse(args).getString("ip"), parse(args).getInt("port"))
   }
+
+  def worker(ip : String, port : Int): Unit = {
+    val masterURL = s"akka.tcp://${Configs.MASTER}@$ip:$port/user/${Configs.MASTER}"
+    ActorSystemBooter.create(Configs.WORKER_CONFIG).boot(uuid, masterURL).awaitTermination
+  }
+
+  start()
 }

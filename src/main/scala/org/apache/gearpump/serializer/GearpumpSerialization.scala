@@ -19,7 +19,7 @@
 package org.apache.gearpump.serializer
 
 import com.esotericsoftware.kryo.Kryo
-import org.apache.gearpump.task.{Identity, Ack, AckRequest, Message}
+import org.apache.gearpump.task.{Ack, AckRequest, Identity, Message}
 
 class GearpumpSerialization {
   def customize(kryo: Kryo): Unit  = {
