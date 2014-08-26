@@ -20,8 +20,6 @@ package org.apache.gears.cluster
 
 import java.io.File
 
-import akka.actor.ActorContext
-
 trait ExecutorContext extends Serializable {
   def getClassPath() : Array[String]
 
@@ -38,13 +36,5 @@ class DefaultExecutorContext extends ExecutorContext {
   def getJvmArguments() : Array[String] = {
     val arguments = "-server -Xms1024M -Xmx4096M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -XX:NewSize=512m"
     arguments.split(" ")
-  }
-}
-
-class WorkerExecutorContext(jvmargs: String) extends DefaultExecutorContext {
-
-  override def getJvmArguments() : Array[String] = {
-    val defaults = super.getJvmArguments()
-    defaults ++ jvmargs.split(" ")
   }
 }

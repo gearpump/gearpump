@@ -18,16 +18,16 @@
 
 package org.apache.gearpump
 
-import java.io.{Closeable, Flushable}
+import java.io.{Flushable, Closeable, File}
 
 import akka.actor._
 import akka.remote.{AliasActorRefProvider, RemoteScope}
-import org.apache.gearpump.util.ActorSystemBooter
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gears.cluster.Configs
+import org.apache.gearpump.util.{ActorSystemBooter}
+import org.apache.gears.cluster.{DefaultExecutorContext, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.sys.process.ProcessLogger
+import scala.sys.process.{ProcessLogger, Process}
 
 object AliasActorRefProviderTest {
   private val LOG: Logger = LoggerFactory.getLogger(AliasActorRefProviderTest.getClass)

@@ -85,10 +85,7 @@ class AppMaster (config : Configs) extends Actor {
         val (worker, slots) = workerAndSlots
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: $slots on worker $worker")
         val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withSlots(slots)
-        val workerContext = new WorkerExecutorContext(context.system.settings.config.getString("gearpump.worker.jvmargs"))
-        val jvmargs = workerContext.getJvmArguments().mkString(" ")
-        LOG.info(s"args = $jvmargs")
-        worker ! LaunchExecutor(appId, currentExecutorId, slots,  classOf[Executor], executorConfig, workerContext)
+        worker ! LaunchExecutor(appId, currentExecutorId, slots,  classOf[Executor], executorConfig, new DefaultExecutorContext)
         //TODO: Add timeout event if this executor fail to start
         currentExecutorId += 1
       })
