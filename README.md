@@ -92,4 +92,4 @@ For guide about how to install and configure Graphite, please check the Graphite
 
 Acknowledge
 ========================
-The transport code work is based on apache storm. Thanks to apache storm contributors.
+The netty transport code work is based on apache storm. Thanks to apache storm contributors.
