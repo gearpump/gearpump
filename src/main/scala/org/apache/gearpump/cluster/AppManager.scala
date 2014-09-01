@@ -26,12 +26,12 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.ActorUtil
+import org.apache.gearpump.util.ActorSystemBooter.{CreateActor, BindLifeCycle, RegisterActorSystem}
+import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.{Failure, Success}
-
+import org.apache.gearpump.util.Util
 /**
  * AppManager is dedicated part of Master to manager applicaitons
  */
@@ -62,8 +62,6 @@ private[cluster] class AppManager() extends Actor {
 }
 
 private[cluster] object AppManager {
-
-  //app master will always use executor id -1 to avoid conflict with executor
   private val masterExecutorId = -1
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppManager])
 
@@ -71,6 +69,11 @@ private[cluster] object AppManager {
    * Start and watch Single AppMaster's lifecycle
    */
   class AppMasterWatcher(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
+
+    val master = context.actorSelection("../../")
+    master ! RequestResource(appId, 1)
+    LOG.info(s"AppManager asking Master for resource for app $appId...")
+
     def receive : Receive = waitForResourceAllocation
 
     def waitForResourceAllocation : Receive = {
@@ -80,18 +83,24 @@ private[cluster] object AppManager {
         val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withMaster(sender).withAppManager(self).withExecutorId(masterExecutorId).withSlots(slots)
         LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
         val name = actorNameForExecutor(appId, masterExecutorId)
-        val myPath = ActorUtil.getFullPath(context)
-        worker ! LaunchExecutor(appId, masterExecutorId, slots, new DefaultExecutorContext(Array(name, myPath)))
-        context.become(waitForActorSystemToStart(appMasterConfig))
+        val selfPath = ActorUtil.getFullPath(context)
+
+        val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString("gearpump.streaming.appmaster.vmargs").split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
+
+        worker ! LaunchExecutor(appId, masterExecutorId, slots,executionContext)
+        context.become(waitForActorSystemToStart(worker, appMasterConfig))
       }
     }
 
-    def waitForActorSystemToStart(masterConfig : Configs) : Receive = {
+    def waitForActorSystemToStart(worker : ActorRef, masterConfig : Configs) : Receive = {
       case RegisterActorSystem(systemPath) =>
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
-        val executorProps = Props(appMasterClass, masterConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
-        val executor = context.actorOf(executorProps, masterExecutorId.toString)
-        sender ! BindLifeCycle(executor)
+        val masterProps = Props(appMasterClass, masterConfig)
+
+        sender ! CreateActor(masterProps, "appmaster")
+
+        //bind lifecycle with worker
+        sender ! BindLifeCycle(worker)
         context.become(waitForAppMasterToStart)
     }
 
@@ -103,8 +112,8 @@ private[cluster] object AppManager {
         context.watch(master)
         context.become(waitForShutdownCommand(sender, executorId) orElse terminationWatch(master))
       }
-      case ExecutorLaunchFailed(launch, reason, ex) => {
-        LOG.error(s"Executor Launch failed $launch, reason：$reason", ex)
+      case ExecutorLaunchFailed(reason, ex) => {
+        LOG.error(s"Executor Launch failed reason：$reason", ex)
       }
     }
 
@@ -128,12 +137,6 @@ private[cluster] object AppManager {
           context.stop(self)
         }
       }
-    }
-
-    override def preStart : Unit = {
-      val master = context.actorSelection("../../")
-      master ! RequestResource(appId, 1)
-      LOG.info(s"AppManager asking Master for resource for app $appId...")
     }
   }
 }

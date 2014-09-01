@@ -82,9 +82,6 @@ private[cluster] class Master extends Actor {
     case app : ShutdownApplication =>
       LOG.info(s"Receive from client, Shutting down Application ${app.appId}")
       appManager.forward(app)
-    case ShutdownMaster =>
-      LOG.info(s"Shutting down Master called from ${sender().toString()}...")
-      context.stop(self)
   }
 
   def terminationWatch : Receive = {

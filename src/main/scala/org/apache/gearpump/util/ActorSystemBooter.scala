@@ -59,6 +59,7 @@ object ActorSystemBooter  {
   }
 
   case class BindLifeCycle(actor : ActorRef)
+  case class CreateActor(props : Props, name : String)
   case class RegisterActorSystem(systemPath : String)
 
   class Daemon(name : String, reportBack : String) extends Actor {
@@ -68,6 +69,10 @@ object ActorSystemBooter  {
         LOG.info(s"ActorSystem $name Binding life cycle with actor: $actor")
         context.watch(actor)
       // Send PoisonPill to the daemon to kill the actorsystem
+
+      case CreateActor(props : Props, name : String) =>
+        LOG.info(s"creating actor $name")
+        context.actorOf(props, name)
       case PoisonPill =>
         context.stop(self)
       case Terminated(actor) =>

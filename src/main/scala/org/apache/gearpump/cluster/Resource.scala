@@ -15,11 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.gearpump.cluster
 
-import java.io.File
+import akka.actor.ActorRef
 
-import org.apache.gearpump.util.ActorSystemBooter
-
-case class ExecutorContext(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String])
+case class Resource(worker: ActorRef, slots: Integer)

@@ -66,7 +66,7 @@ private[cluster] class Worker(id : Int, master : ActorRef) extends Actor{
     case launch : LaunchExecutor =>
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
       if (resource < launch.slots) {
-        sender ! ExecutorLaunchFailed(launch, "There is no free resource on this machine")
+        sender ! ExecutorLaunchFailed("There is no free resource on this machine")
       } else {
         val actorName = actorNameForExecutor(launch.appId, launch.executorId)
 

@@ -34,8 +34,6 @@ trait ExpressTransport {
   //report to appMaster with my address
   val local = express.registerActor(self)
 
-
-
   def transport(msg: AnyRef, remotes: ExpressAddress*)  = {
     var serializedMessage : Array[Byte] = null
 

@@ -42,7 +42,6 @@ object MasterToWorker {
 object ClientToMaster {
   case class SubmitApplication(appMaster: Class[_ <: Actor], config: Configs, appDescription: Application)
   case class ShutdownApplication(appId: Int)
-  case object ShutdownMaster
 }
 
 object MasterToClient {
@@ -52,11 +51,8 @@ object MasterToClient {
 
 object AppMasterToMaster {
   case class RegisterMaster(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int)
-
   case class RequestResource(appId: Int, slots: Int)
 }
-
-case class Resource(worker: ActorRef, slots: Integer)
 
 object MasterToAppMaster {
   case class ResourceAllocated(resource: Array[Resource])
@@ -70,6 +66,6 @@ object AppMasterToWorker {
 
 object WorkerToAppMaster {
   case class ExecutorLaunched(executor: ActorRef, executorId: Int, slots: Int)
-  case class ExecutorLaunchFailed(launch: LaunchExecutor, reason: String = null, ex: Throwable = null)
+  case class ExecutorLaunchFailed(reason: String = null, ex: Throwable = null)
 }
 

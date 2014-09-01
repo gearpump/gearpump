@@ -30,7 +30,7 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.transport.ExpressAddress
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.{ActorUtil, DAG}
+import org.apache.gearpump.util.{ActorSystemBooter, Util, ActorUtil, DAG}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
@@ -146,8 +146,8 @@ class AppMaster (config : Configs) extends Actor {
       }
       launchTask(slots)
     }
-    case ExecutorLaunchFailed(launch, reason, ex) => {
-      LOG.error(s"Executor Launch failed $launch, reason：$reason", ex)
+    case ExecutorLaunchFailed(reason, ex) => {
+      LOG.error(s"Executor Launch failed reason：$reason", ex)
     }
   }
 
@@ -167,8 +167,9 @@ object AppMaster {
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
     val name = actorNameForExecutor(appId, executorId)
-    val myPath = ActorUtil.getFullPath(context)
-    val launch = new DefaultExecutorContext(Array(name, myPath))
+    val selfPath = ActorUtil.getFullPath(context)
+
+    val launch = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString("gearpump.streaming.executor.vmargs").split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
 
     worker ! LaunchExecutor(appId, executorId,slots, launch)
 
