@@ -40,7 +40,6 @@ trait ActorLookupById {
 class Express(val system: ExtendedActorSystem) extends Extension with ActorLookupById {
 
   import org.apache.gearpump.transport.Express._
-
   import system.dispatcher
   val localActorMap = Agent(Map.empty[Int, ActorRef])
   val expressMap = Agent(Map.empty[HostPort, ActorRef])

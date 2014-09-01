@@ -12,12 +12,12 @@ scalaVersion := scalaVersionNumber
 
 packSettings
 
-packMain := Map("local" -> "org.apache.gears.cluster.main.Local",
-                "master" -> "org.apache.gears.cluster.main.Master",
-                "worker" -> "org.apache.gears.cluster.main.Worker",
-                "sol" -> "org.apache.gearpump.examples.sol.SOL",
-                "wordcount" -> "org.apache.gearpump.examples.wordcount.WordCount",
-                "shell" -> "org.apache.gears.cluster.main.Shell")
+packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
+                "master" -> "org.apache.gearpump.cluster.main.Master",
+                "worker" -> "org.apache.gearpump.cluster.main.Worker",
+                "sol" -> "org.apache.gearpump.streaming.examples.sol.SOL",
+                "wordcount" -> "org.apache.gearpump.streaming.examples.wordcount.WordCount",
+                "shell" -> "org.apache.gearpump.cluster.main.Shell")
 				
 packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
 		

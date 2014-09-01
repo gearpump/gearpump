@@ -16,18 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.serializer
+package org.apache.gearpump.streaming.task
 
-import com.esotericsoftware.kryo.Kryo
-import org.apache.gearpump.streaming.{IdentitySerializer, AckSerializer, AckRequestSerializer, MessageSerializer}
-import org.apache.gearpump.streaming.task.{Ack, AckRequest, Identity, Message}
+import org.apache.gearpump.transport.ExpressAddress
 
-class GearpumpSerialization {
-  def customize(kryo: Kryo): Unit  = {
-    kryo.register(classOf[Message], new MessageSerializer)
-    kryo.register(classOf[AckRequest], new AckRequestSerializer)
-    kryo.register(classOf[Ack], new AckSerializer)
-    kryo.register(classOf[Identity], new IdentitySerializer)
-    kryo.setReferences(false)
-  }
-}
+case class TaskId(groupId : Int, index : Int)
+
+case class TaskLocations(address : Map[TaskId, ExpressAddress])

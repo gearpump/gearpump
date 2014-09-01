@@ -16,18 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.serializer
+package org.apache.gearpump.streaming
 
-import com.esotericsoftware.kryo.Kryo
-import org.apache.gearpump.streaming.{IdentitySerializer, AckSerializer, AckRequestSerializer, MessageSerializer}
-import org.apache.gearpump.streaming.task.{Ack, AckRequest, Identity, Message}
+import akka.actor.Actor
+import org.apache.gearpump.cluster.Configs
+import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.util.{Graph, ReferenceEqual}
 
-class GearpumpSerialization {
-  def customize(kryo: Kryo): Unit  = {
-    kryo.register(classOf[Message], new MessageSerializer)
-    kryo.register(classOf[AckRequest], new AckRequestSerializer)
-    kryo.register(classOf[Ack], new AckSerializer)
-    kryo.register(classOf[Identity], new IdentitySerializer)
-    kryo.setReferences(false)
-  }
-}
+case class TaskDescription(taskClass: Class[_ <: Actor], parallism : Int) extends ReferenceEqual
+//case class StageDescription(task : TaskDescription, parallism : Int)
+
+case class AppDescription(name : String, conf : Configs, dag: Graph[TaskDescription, Partitioner]) extends org.apache.gearpump.cluster.Application
