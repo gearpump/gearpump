@@ -21,7 +21,6 @@ package org.apache.gears.cluster
 import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.task.TaskId
 import org.apache.gearpump.transport.ExpressAddress
-import org.apache.gearpump.util.ExecutorLauncher.DaemonedActorSystem
 import org.apache.gears.cluster.AppMasterToWorker.LaunchExecutor
 
 import scala.util.Try
@@ -56,6 +55,7 @@ object MasterToClient {
 
 object ExecutorToWorker {
   case class RegisterExecutor(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int)
+  case class RegisterMaster(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int)
   case class ExecutorFailed(reason: String, appMaster: ActorRef, executorId: Int)
 }
 
@@ -71,8 +71,7 @@ object MasterToAppMaster {
 }
 
 object AppMasterToWorker {
-  case class LaunchExecutor(appId: Int, executorId: Int, slots: Int, executorClass: Class[_ <: Actor], executorConfig : Configs, executorContext: ExecutorContext)
-  case class LaunchExecutorOnSystem(appMaster: ActorRef, launch: LaunchExecutor, systemPath: DaemonedActorSystem)
+  case class LaunchExecutor(appId: Int, executorId: Int, slots: Int, executorContext: ExecutorContext)
   case class ShutdownExecutor(appId : Int, executorId : Int, reason : String)
 }
 

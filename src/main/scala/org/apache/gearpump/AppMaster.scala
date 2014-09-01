@@ -17,15 +17,17 @@
  */
 
 package org.apache.gearpump
-import akka.actor.{Actor, ActorRef, Terminated}
+import akka.actor._
+import akka.remote.RemoteScope
 import org.apache.gearpump.task.TaskId
 import org.apache.gearpump.transport.ExpressAddress
+import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util.DAG
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.AppMasterToWorker._
 import org.apache.gears.cluster.ExecutorToAppMaster._
-import org.apache.gears.cluster.ExecutorToWorker.RegisterExecutor
+import org.apache.gears.cluster.ExecutorToWorker.{RegisterMaster, RegisterExecutor}
 import org.apache.gears.cluster.MasterToAppMaster._
 import org.apache.gears.cluster.WorkerToAppMaster._
 import org.apache.gears.cluster._
@@ -52,7 +54,7 @@ class AppMaster (config : Configs) extends Actor {
 
 
   override def preStart : Unit = {
-    context.parent ! RegisterExecutor(appManager, appId, masterExecutorId, slots)
+    context.parent ! RegisterMaster(appManager, appId, masterExecutorId, slots)
 
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
     Console.out.println("AppMaster is launched xxxxxxxxxxxxxxxxx")
@@ -73,7 +75,7 @@ class AppMaster (config : Configs) extends Actor {
     master ! RequestResource(appId, taskQueue.size)
   }
 
-  override def receive : Receive = masterMsgHandler orElse  workerMsgHandler orElse  executorMsgHandler orElse terminationWatch
+  override def receive : Receive = masterMsgHandler orElse selfMsgHandler orElse  workerMsgHandler orElse  executorMsgHandler orElse terminationWatch
 
   def masterMsgHandler : Receive = {
     case ResourceAllocated(resource) => {
@@ -85,12 +87,14 @@ class AppMaster (config : Configs) extends Actor {
         val (worker, slots) = workerAndSlots
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: $slots on worker $worker")
         val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withSlots(slots)
-        worker ! LaunchExecutor(appId, currentExecutorId, slots,  classOf[Executor], executorConfig, new DefaultExecutorContext)
-        //TODO: Add timeout event if this executor fail to start
+
+
+        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, slots, executorConfig))
         currentExecutorId += 1
       })
     }
   }
+
 
   def executorMsgHandler : Receive = {
     case TaskLaunched(taskId, task) =>
@@ -112,6 +116,12 @@ class AppMaster (config : Configs) extends Actor {
     case TaskSuccess =>
     case TaskFailed(taskId, reason, ex) =>
       LOG.info(s"Task failed, taskId: $taskId for app $appId")
+  }
+
+  def selfMsgHandler : Receive = {
+    case LaunchExecutorActor(conf : Props, executorId : Int, daemon : ActorRef) =>
+      val executor = context.actorOf(conf, executorId.toString)
+      daemon ! BindLifeCycle(executor)
   }
 
   def workerMsgHandler : Receive = {
@@ -151,4 +161,29 @@ object AppMaster {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMaster])
 
   case class TaskData(taskDescription : TaskDescription, dag : DAG) extends Task
+
+  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, slots : Int, executorConfig : Configs) extends Actor {
+
+    private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
+
+    val name = actorNameForExecutor(appId, executorId)
+    val myPath = ActorUtil.getFullPath(context)
+    val launch = new DefaultExecutorContext(Array(name, myPath))
+
+    worker ! LaunchExecutor(appId, executorId,slots, launch)
+
+    def receive : Receive = waitForActorSystemToStart
+
+
+    def waitForActorSystemToStart : Receive = {
+      case RegisterActorSystem(systemPath) =>
+        LOG.info(s"Received RegisterActorSystem $systemPath for app master")
+        val executorProps = Props(classOf[Executor], executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
+        sender ! BindLifeCycle(worker)
+        context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender)
+        context.stop(self)
+    }
+  }
+
+  case class LaunchExecutorActor(executorConfig : Props, executorId : Int, daemon: ActorRef)
 }

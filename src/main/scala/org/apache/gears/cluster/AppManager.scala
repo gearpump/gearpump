@@ -19,9 +19,13 @@
 package org.apache.gears.cluster
 
 import akka.actor._
+import akka.remote.RemoteScope
+import org.apache.gearpump.ActorUtil
+import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.AppMasterToWorker._
 import org.apache.gears.cluster.ClientToMaster._
+import org.apache.gears.cluster.ExecutorToWorker.RegisterMaster
 import org.apache.gears.cluster.MasterToAppMaster._
 import org.apache.gears.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gears.cluster.WorkerToAppMaster._
@@ -76,16 +80,29 @@ object AppManager {
         val Resource(worker, slots) = resource(0)
         val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withMaster(sender).withAppManager(self).withExecutorId(masterExecutorId).withSlots(slots)
         LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
-        worker ! LaunchExecutor(appId, masterExecutorId, slots, appMasterClass, appMasterConfig, new DefaultExecutorContext)
-        context.become(waitForAppMasterToStart)
+        val name = actorNameForExecutor(appId, masterExecutorId)
+        val myPath = ActorUtil.getFullPath(context)
+        worker ! LaunchExecutor(appId, masterExecutorId, slots, new DefaultExecutorContext(Array(name, myPath)))
+        context.become(waitForActorSystemToStart(appMasterConfig))
       }
     }
 
+    def waitForActorSystemToStart(masterConfig : Configs) : Receive = {
+      case RegisterActorSystem(systemPath) =>
+        LOG.info(s"Received RegisterActorSystem $systemPath for app master")
+        val executorProps = Props(appMasterClass, masterConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
+        val executor = context.actorOf(executorProps, masterExecutorId.toString)
+        sender ! BindLifeCycle(executor)
+        context.become(waitForAppMasterToStart)
+    }
+
+    private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
+
     def waitForAppMasterToStart : Receive = {
-      case ExecutorLaunched(executor, executorId, slots) => {
-        LOG.info(s"Executor $executorId has been launched...")
-        context.watch(executor)
-        context.become(waitForShutdownCommand(sender, executorId) orElse terminationWatch(executor))
+      case RegisterMaster(master, appId, executorId, slots) => {
+        LOG.info(s"Master $executorId has been launched...")
+        context.watch(master)
+        context.become(waitForShutdownCommand(sender, executorId) orElse terminationWatch(master))
       }
       case ExecutorLaunchFailed(launch, reason, ex) => {
         LOG.error(s"Executor Launch failed $launch, reason：$reason", ex)
@@ -99,7 +116,7 @@ object AppManager {
 
         worker ! ShutdownExecutor(appId, executorId, s"AppMaster $appId shutdown requested by master...")
         sender ! ShutdownApplicationResult(Success(appId))
-        //self myself
+        //kill myself
         self ! PoisonPill
       }
     }

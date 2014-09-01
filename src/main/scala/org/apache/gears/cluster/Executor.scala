@@ -21,6 +21,7 @@ package org.apache.gears.cluster
 import akka.actor.{Actor, Props, Terminated}
 import org.apache.gears.cluster.AppMasterToExecutor._
 import org.apache.gears.cluster.ExecutorToWorker._
+import org.apache.gears.cluster.WorkerToAppMaster.ExecutorLaunched
 import org.slf4j.{Logger, LoggerFactory}
 
 class Executor(config : Configs)  extends Actor {
@@ -33,7 +34,7 @@ class Executor(config : Configs)  extends Actor {
   val appId = config.appId
 
   override def preStart : Unit = {
-    context.parent ! RegisterExecutor(appMaster, appId, executorId, slots)
+    context.parent ! ExecutorLaunched(self, executorId, slots)
     context.watch(appMaster)
   }
 

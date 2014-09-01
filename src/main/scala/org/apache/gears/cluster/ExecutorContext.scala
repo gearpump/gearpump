@@ -20,21 +20,25 @@ package org.apache.gears.cluster
 
 import java.io.File
 
-trait ExecutorContext extends Serializable {
-  def getClassPath() : Array[String]
+import org.apache.gearpump.util.ActorSystemBooter
 
-  def getJvmArguments() : Array[String]
-}
+case class ExecutorContext(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String])
 
-class DefaultExecutorContext extends ExecutorContext {
-  def getClassPath() : Array[String] = {
+class DefaultExecutorContext(arguments : Array[String]) extends ExecutorContext(
+  classPath = {
     val classpath = System.getProperty("java.class.path");
     val classpathList = classpath.split(File.pathSeparator);
     classpathList
-  }
+  },
 
-  def getJvmArguments() : Array[String] = {
-    val arguments = "-server -Xms1024M -Xmx4096M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -XX:NewSize=512m"
+//  jvmArguments = {
+//    val arguments = "-server -Xms1024M -Xmx4096M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -XX:NewSize=512m"
+//    arguments.split(" ")
+//  },
+  jvmArguments = {
+    val arguments = "-server -Xms512M -Xmx1024M -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3"
     arguments.split(" ")
-  }
-}
+  },
+  mainClass = classOf[ActorSystemBooter].getName,
+  arguments
+)
