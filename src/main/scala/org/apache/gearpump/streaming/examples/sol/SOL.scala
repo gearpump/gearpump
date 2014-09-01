@@ -18,14 +18,13 @@
 
 package org.apache.gearpump.streaming.examples.sol
 
-import org.apache.gearpump._
-import org.apache.gearpump.partitioner.{ShufflePartitioner, Partitioner}
-import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.{TaskDescription, AppDescription}
-import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.Graph
 import org.apache.gearpump.cluster.Configs
 import org.apache.gearpump.cluster.main.ArgumentsParser
+import org.apache.gearpump.partitioner.{Partitioner, ShufflePartitioner}
+import org.apache.gearpump.streaming.client.ClientContext
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.Graph._
 
 object SOL extends App with ArgumentsParser {
 

@@ -20,8 +20,8 @@ package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
-import org.apache.gearpump.util.{ActorUtil, ActorSystemBooter}
 import org.apache.gearpump.cluster.{Configs, Master, Worker}
+import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 

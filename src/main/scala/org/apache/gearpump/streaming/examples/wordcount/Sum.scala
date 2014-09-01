@@ -21,8 +21,8 @@ package org.apache.gearpump.streaming.examples.wordcount
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
-import org.apache.gearpump.streaming.task.TaskActor
 import org.apache.gearpump.cluster.Configs
+import org.apache.gearpump.streaming.task.TaskActor
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.HashMap

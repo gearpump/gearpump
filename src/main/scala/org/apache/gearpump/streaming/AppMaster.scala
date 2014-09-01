@@ -26,7 +26,6 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, TaskLocation}
-import org.apache.gearpump.streaming.Executor
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.transport.ExpressAddress
@@ -37,7 +36,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.mutable
 import scala.collection.mutable.Queue
 class AppMaster (config : Configs) extends Actor {
-  import AppMaster._
+  import org.apache.gearpump.streaming.AppMaster._
 
   val masterExecutorId = config.executorId
   var currentExecutorId = masterExecutorId + 1

@@ -18,8 +18,8 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
-import org.apache.gearpump.streaming.task.{Message, TaskActor}
 import org.apache.gearpump.cluster.Configs
+import org.apache.gearpump.streaming.task.{Message, TaskActor}
 
 class Split(conf : Configs) extends TaskActor(conf) {
 

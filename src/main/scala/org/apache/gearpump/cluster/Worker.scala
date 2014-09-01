@@ -22,13 +22,12 @@ import java.io.File
 
 import akka.actor._
 import akka.pattern.pipe
-import org.apache.gearpump._
-import org.apache.gearpump.util.{ActorUtil, ProcessLogRedirector}
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
+import org.apache.gearpump.util.{ActorUtil, ProcessLogRedirector}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.{Future, future}

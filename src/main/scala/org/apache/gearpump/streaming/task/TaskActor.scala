@@ -22,13 +22,12 @@ import java.util
 import java.util.concurrent.{TimeUnit, TimeoutException}
 
 import akka.actor._
-import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.{ExecutorToAppMaster, AppMasterToExecutor}
-import AppMasterToExecutor._
-import ExecutorToAppMaster._
-import org.apache.gearpump.metrics.Metrics
-import org.apache.gearpump.transport.ExpressAddress
 import org.apache.gearpump.cluster.Configs
+import org.apache.gearpump.metrics.Metrics
+import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.AppMasterToExecutor._
+import org.apache.gearpump.streaming.ExecutorToAppMaster._
+import org.apache.gearpump.transport.ExpressAddress
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.ArrayBuffer

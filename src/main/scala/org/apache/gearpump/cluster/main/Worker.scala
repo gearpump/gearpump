@@ -18,8 +18,8 @@
 
 package org.apache.gearpump.cluster.main
 
-import org.apache.gearpump.util.ActorSystemBooter
 import org.apache.gearpump.cluster.Configs
+import org.apache.gearpump.util.ActorSystemBooter
 import org.slf4j.{Logger, LoggerFactory}
 
 object Worker extends App with ArgumentsParser {
