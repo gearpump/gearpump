@@ -25,9 +25,9 @@ import akka.actor._
 import org.apache.gearpump.Partitioner
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.transport.ExpressAddress
-import org.apache.gears.cluster.AppMasterToExecutor._
+import org.apache.gearpump.AppMasterToExecutor._
 import org.apache.gears.cluster.Configs
-import org.apache.gears.cluster.ExecutorToAppMaster._
+import org.apache.gearpump.ExecutorToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.ArrayBuffer

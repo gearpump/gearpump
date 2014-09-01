@@ -25,7 +25,6 @@ import org.apache.gears.cluster.AppMasterToWorker.LaunchExecutor
 
 import scala.util.Try
 
-
 /**
  * Cluster Bootup Flow
  */
@@ -53,13 +52,9 @@ object MasterToClient {
   case class ShutdownApplicationResult(appId : Try[Int])
 }
 
-object ExecutorToWorker {
-  case class RegisterExecutor(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int)
-  case class RegisterMaster(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int)
-  case class ExecutorFailed(reason: String, appMaster: ActorRef, executorId: Int)
-}
-
 object AppMasterToMaster {
+  case class RegisterMaster(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int)
+
   case class RequestResource(appId: Int, slots: Int)
 }
 
@@ -80,14 +75,3 @@ object WorkerToAppMaster {
   case class ExecutorLaunchFailed(launch: LaunchExecutor, reason: String = null, ex: Throwable = null)
 }
 
-object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
-  case class TaskLocation(taskId: TaskId, task: ExpressAddress)
-}
-
-object ExecutorToAppMaster {
-  case class TaskLaunched(taskId: TaskId, task: ExpressAddress)
-  case object TaskSuccess
-  case class TaskFailed(taskId: TaskId, reason: String = null, ex: Exception = null)
-  case class GetTaskLocation(taskId: TaskId)
-}

@@ -25,7 +25,6 @@ import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorS
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.AppMasterToWorker._
 import org.apache.gears.cluster.ClientToMaster._
-import org.apache.gears.cluster.ExecutorToWorker.RegisterMaster
 import org.apache.gears.cluster.MasterToAppMaster._
 import org.apache.gears.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gears.cluster.WorkerToAppMaster._
@@ -36,7 +35,7 @@ import scala.util.{Failure, Success}
 /**
  * AppManager is dedicated part of Master to manager applicaitons
  */
-class AppManager() extends Actor {
+private[gears] class AppManager() extends Actor {
   import org.apache.gears.cluster.AppManager._
 
   private var master : ActorRef = null
@@ -62,7 +61,7 @@ class AppManager() extends Actor {
   }
 }
 
-object AppManager {
+private[gears] object AppManager {
 
   //app master will always use executor id -1 to avoid conflict with executor
   private val masterExecutorId = -1

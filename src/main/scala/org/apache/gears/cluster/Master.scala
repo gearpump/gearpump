@@ -31,7 +31,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class Master extends Actor {
+private[gears] class Master extends Actor {
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Master])
   private var resources = new Array[(ActorRef, Int)](0)

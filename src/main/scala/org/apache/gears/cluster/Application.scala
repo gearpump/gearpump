@@ -18,7 +18,6 @@
 
 package org.apache.gears.cluster
 
-trait Task
 
 /**
  * Subtype this for user defined application

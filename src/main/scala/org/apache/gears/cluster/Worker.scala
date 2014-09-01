@@ -26,7 +26,6 @@ import org.apache.gearpump._
 import org.apache.gearpump.util.ActorSystemBooter.{RegisterActorSystem, BindLifeCycle}
 import org.apache.gearpump.util.{ProcessLogRedirector, ActorSystemBooter}
 import org.apache.gears.cluster.AppMasterToWorker._
-import org.apache.gears.cluster.ExecutorToWorker._
 import org.apache.gears.cluster.MasterToWorker._
 import org.apache.gears.cluster.Worker.ExecutorWatcher
 import org.apache.gears.cluster.WorkerToAppMaster._
@@ -40,7 +39,7 @@ import scala.concurrent.Future
 
 import scala.util.{Try, Success, Failure}
 
-class Worker(id : Int, master : ActorRef) extends Actor{
+private[gears] class Worker(id : Int, master : ActorRef) extends Actor{
 
   val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
 
@@ -83,23 +82,7 @@ class Worker(id : Int, master : ActorRef) extends Actor{
 
         context.watch(executor)
       }
-//    case LaunchExecutorOnSystem(appMaster, launch, system) =>
-//      LOG.info(s"Worker[$id] LaunchExecutorOnSystem ...$system")
-//      val executorProps = Props(launch.executorClass, launch.executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(system.path))))
-//      val executor = context.actorOf(executorProps, actorNameForExecutor(launch.appId, launch.executorId))
-//      system.daemonActor ! BindLifeCycle(executor)
-//
-//      resource = resource - launch.slots
-//      allocatedResource = allocatedResource + (executor -> launch.slots)
-//      context.watch(executor)
   }
-
-//  def executorMsgHandler : Receive = {
-//
-//    case RegisterExecutor(appMaster, appId, executorId, slots) =>
-//      LOG.info(s"Register Executor for $appId, $executorId to ${appMaster.path.toString}...")
-//      appMaster ! ExecutorLaunched(sender(), executorId, slots)
-//  }
 
   def terminationWatch : Receive = {
     case Terminated(actor) =>
@@ -130,17 +113,8 @@ class Worker(id : Int, master : ActorRef) extends Actor{
   }
 }
 
-object Worker {
+private[gears] object Worker {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Worker])
-
-//  def launchExecutor(context : ActorRefFactory, self : ActorRef, appMaster : ActorRef, launch : LaunchExecutor) : Unit = {
-//    import context.dispatcher
-//    ExecutorLauncher.launch(context, launch).map(system => {
-//      self ! LaunchExecutorOnSystem(appMaster, launch, system)
-//    }).onFailure {
-//      case ex => self ! ExecutorLaunchFailed(launch, "failed to new system path", ex)
-//    }
-//  }
 
   case class ExecutorResult(result : Try[Int])
 

@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.gears.cluster
+package org.apache.gearpump
 
 import akka.actor.{Actor, Props, Terminated}
-import org.apache.gears.cluster.AppMasterToExecutor._
-import org.apache.gears.cluster.ExecutorToWorker._
+import org.apache.gearpump.AppMasterToExecutor._
+import org.apache.gears.cluster.Configs
 import org.apache.gears.cluster.WorkerToAppMaster.ExecutorLaunched
 import org.slf4j.{Logger, LoggerFactory}
 

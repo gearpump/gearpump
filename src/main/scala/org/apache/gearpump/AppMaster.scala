@@ -19,15 +19,16 @@
 package org.apache.gearpump
 import akka.actor._
 import akka.remote.RemoteScope
+import org.apache.gearpump.ExecutorToAppMaster._
+import org.apache.gearpump.AppMasterToExecutor._
 import org.apache.gearpump.task.TaskId
 import org.apache.gearpump.transport.ExpressAddress
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util.DAG
-import org.apache.gears.cluster.AppMasterToExecutor._
+
 import org.apache.gears.cluster.AppMasterToMaster._
 import org.apache.gears.cluster.AppMasterToWorker._
-import org.apache.gears.cluster.ExecutorToAppMaster._
-import org.apache.gears.cluster.ExecutorToWorker.{RegisterMaster, RegisterExecutor}
+
 import org.apache.gears.cluster.MasterToAppMaster._
 import org.apache.gears.cluster.WorkerToAppMaster._
 import org.apache.gears.cluster._
@@ -160,7 +161,7 @@ class AppMaster (config : Configs) extends Actor {
 object AppMaster {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMaster])
 
-  case class TaskData(taskDescription : TaskDescription, dag : DAG) extends Task
+  case class TaskData(taskDescription : TaskDescription, dag : DAG)
 
   class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, slots : Int, executorConfig : Configs) extends Actor {
 
