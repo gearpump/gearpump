@@ -54,6 +54,9 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
   private[this] var ackWaterMark : Array[Long] = null
   private[this] var outputWindow : Long = INITIAL_WINDOW_SIZE
 
+  //report to appMaster with my address
+  express.registerLocalActor(TaskId.toLong(taskId), self)
+
   //We will set this in preStart
   final def receive : Receive = {
     case _ => Unit

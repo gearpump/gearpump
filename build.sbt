@@ -1,4 +1,6 @@
+import sbt._
 import sbt.Keys._
+import xerial.sbt.Pack._
 
 name := "gearpump"
 
@@ -21,7 +23,12 @@ packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
 				
 packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
 		
-packExtraClasspath := Map("conf" -> Seq("${PROG_HOME}/conf"))
+packExtraClasspath := Map("local" -> Seq("${PROG_HOME}/conf"),
+                          "master" -> Seq("${PROG_HOME}/conf"),
+						  "worker" -> Seq("${PROG_HOME}/conf"),
+						  "sol" -> Seq("${PROG_HOME}/conf"),
+						  "wordcount" -> Seq("${PROG_HOME}/conf"),
+						  "shell" -> Seq("${PROG_HOME}/conf"))
 
 resolvers ++= Seq(
   "maven-repo" at "http://repo.maven.apache.org/maven2",

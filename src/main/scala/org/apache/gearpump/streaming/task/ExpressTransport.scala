@@ -22,19 +22,16 @@ import akka.actor.{Actor, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.netty.TaskMessage
 import org.apache.gearpump.transport.{Express}
+import org.slf4j.{LoggerFactory, Logger}
 
 trait ExpressTransport {
   this: TaskActor =>
 
-  val express = Express(context.system)
-  val sendLater = context.actorSelection("../sendlater")
-  val system = context.system.asInstanceOf[ExtendedActorSystem]
-  val serializer = new FastKryoSerializer(system)
-
-  //report to appMaster with my address
-  express.registerLocalActor(TaskId.toLong(taskId), self)
-
-  def local = express.localHost
+  final val express = Express(context.system)
+  final val sendLater = context.actorSelection("../sendlater")
+  final val system = context.system.asInstanceOf[ExtendedActorSystem]
+  final val serializer = new FastKryoSerializer(system)
+  final def local = express.localHost
 
   def transport(msg : AnyRef, remotes : TaskId *) = {
 

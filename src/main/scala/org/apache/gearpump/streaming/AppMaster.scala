@@ -52,7 +52,9 @@ class AppMaster (config : Configs) extends Actor {
   private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
 
   private var taskLocations = Map.empty[HostPort, Set[TaskId]]
+
   private var startedTasks = Set.empty[TaskId]
+  private var totalTaskCount = 0
 
   private var pendingTaskLocationQueries = new mutable.HashMap[TaskId, mutable.ListBuffer[ActorRef]]()
 
@@ -75,6 +77,7 @@ class AppMaster (config : Configs) extends Actor {
       })
     }.toArray.sortBy(_._1.index)
 
+    totalTaskCount = tasks.size
     taskQueue ++= tasks
     LOG.info(s"App Master $appId request Resource ${taskQueue.size}")
     master ! RequestResource(appId, taskQueue.size)
@@ -109,8 +112,10 @@ class AppMaster (config : Configs) extends Actor {
       taskLocations += host -> taskIds
       startedTasks += taskId
 
-      if (startedTasks.size == taskQueue.size) {
+      LOG.info(s" started task size: ${startedTasks.size}, taskQueue size: ${totalTaskCount}")
+      if (startedTasks.size == totalTaskCount) {
         context.children.foreach { executor =>
+          LOG.info(s"Sending Task locations to executor ${executor.path.name}")
           executor ! TaskLocations(taskLocations)
         }
       }

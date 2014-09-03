@@ -46,21 +46,19 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   val conf = Map.empty[String, Any]
 
-
-  var context: Context = null
-  var serverPort = -1
-  var localHost: HostPort = null
+  lazy val (context, serverPort, localHost) = init
 
   lazy val init = {
-    context = new Context(system, conf)
-    serverPort = context.bind("netty-server", this)
-    localHost = HostPort(system.provider.getDefaultAddress.host.get, serverPort)
+    LOG.info(s"Start Express init ...${system.name}")
+    val context = new Context(system, conf)
+    val serverPort = context.bind("netty-server", this)
+    val localHost = HostPort(system.provider.getDefaultAddress.host.get, serverPort)
     LOG.info(s"bining to netty server $localHost")
 
     system.registerOnTermination(new Runnable {
       override def run = context.term
     })
-    Unit
+    (context, serverPort, localHost)
   }
 
   def unregisterLocalActor(id : Long) : Unit = {
@@ -68,6 +66,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   }
 
   def registerLocalActor(id : Long, actor: ActorRef): Unit = {
+    LOG.info(s"RegisterLocalActor: $id")
     init
     localActorMap.sendOff(_ + (id -> actor))
   }
@@ -78,6 +77,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   //transport to remote address
   def transport(taskMessage: TaskMessage, remote: HostPort): Unit = {
+
     val remoteClient = remoteClientMap.get.get(remote)
     if (remoteClient.isDefined) {
       remoteClient.get.tell(taskMessage, Actor.noSender)
