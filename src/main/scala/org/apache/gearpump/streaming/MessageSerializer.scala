@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.transport.{ExpressAddress, HostPort}
+import org.apache.gearpump.transport.{HostPort}
 
 class MessageSerializer extends Serializer[Message] {
   override def write(kryo: Kryo, output: Output, obj: Message) = {
@@ -80,39 +80,5 @@ class AckSerializer extends Serializer[Ack] {
     val id = input.readInt()
     val seq = input.readLong()
     return new Ack(taskId, Seq(id, seq))
-  }
-}
-
-class ExpressAddressSerializer extends Serializer[ExpressAddress] {
-
-  override def write(kryo: Kryo, output: Output, obj: ExpressAddress) = {
-    output.writeString(obj.hostPort.host)
-    output.writeInt(obj.hostPort.port)
-    output.writeInt(obj.id)
-  }
-
-  override def read(kryo: Kryo, input: Input, typ: Class[ExpressAddress]): ExpressAddress = {
-    val host = input.readString()
-    val port = input.readInt()
-    val id =  input.readInt()
-
-    return new ExpressAddress(HostPort(host, port), id)
-  }
-}
-
-
-class IdentitySerializer extends Serializer[Identity] {
-  val taskIdSerialzer = new TaskIdSerializer()
-  val expressAddressSerializer = new ExpressAddressSerializer()
-
-  override def write(kryo: Kryo, output: Output, obj: Identity) = {
-    taskIdSerialzer.write(kryo, output, obj.taskId)
-    expressAddressSerializer.write(kryo, output, obj.address)
-  }
-
-  override def read(kryo: Kryo, input: Input, typ: Class[Identity]): Identity = {
-    val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
-    val expressAddress = expressAddressSerializer.read(kryo, input, classOf[ExpressAddress])
-    return new Identity(taskId, expressAddress)
   }
 }

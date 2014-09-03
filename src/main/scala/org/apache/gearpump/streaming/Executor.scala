@@ -22,6 +22,7 @@ import akka.actor.{Actor, Props, Terminated}
 import org.apache.gearpump.cluster.Configs
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunched
 import org.apache.gearpump.streaming.AppMasterToExecutor._
+import org.apache.gearpump.streaming.task.TaskLocations
 import org.slf4j.{Logger, LoggerFactory}
 
 class Executor(config : Configs)  extends Actor {
@@ -33,10 +34,10 @@ class Executor(config : Configs)  extends Actor {
   val slots = config.slots
   val appId = config.appId
 
-  override def preStart : Unit = {
-    context.parent ! ExecutorLaunched(self, executorId, slots)
-    context.watch(appMaster)
-  }
+  context.parent ! ExecutorLaunched(self, executorId, slots)
+  context.watch(appMaster)
+
+  val sendLater = context.actorOf(Props[SendLater], "sendlater")
 
   def receive : Receive = appMasterMsgHandler orElse terminationWatch
 
@@ -46,6 +47,8 @@ class Executor(config : Configs)  extends Actor {
       val taskDispatcher = context.system.settings.config.getString("gearpump.task-dispatcher")
       val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }
+
+    case taskLocations : TaskLocations => sendLater.forward(taskLocations)
   }
 
   def terminationWatch : Receive = {

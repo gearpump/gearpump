@@ -25,10 +25,10 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, TaskLocation}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.streaming.task.TaskId
-import org.apache.gearpump.transport.ExpressAddress
+import org.apache.gearpump.streaming.task.{TaskLocations, TaskId}
+import org.apache.gearpump.transport.{HostPort}
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util.{ActorSystemBooter, Util, ActorUtil, DAG}
 import org.slf4j.{Logger, LoggerFactory}
@@ -36,6 +36,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.mutable
 import scala.collection.mutable.Queue
 class AppMaster (config : Configs) extends Actor {
+
   import org.apache.gearpump.streaming.AppMaster._
 
   val masterExecutorId = config.executorId
@@ -49,11 +50,14 @@ class AppMaster (config : Configs) extends Actor {
 
   private val name = appDescription.name
   private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
-  private var taskLocations = Map[TaskId, ExpressAddress]()
+
+  private var taskLocations = Map.empty[HostPort, Set[TaskId]]
+  private var startedTasks = Set.empty[TaskId]
+
   private var pendingTaskLocationQueries = new mutable.HashMap[TaskId, mutable.ListBuffer[ActorRef]]()
 
 
-  override def preStart : Unit = {
+  override def preStart: Unit = {
     context.parent ! RegisterMaster(appManager, appId, masterExecutorId, slots)
 
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
@@ -64,20 +68,21 @@ class AppMaster (config : Configs) extends Actor {
     //scheduler the task fairly on every machine
     val tasks = dag.tasks.flatMap { params =>
       val (taskGroupId, taskDescription) = params
-      0.until(taskDescription.parallism).map((taskIndex : Int) => {
+      0.until(taskDescription.parallism).map((taskIndex: Int) => {
         val taskId = TaskId(taskGroupId, taskIndex)
         val nextGroupId = taskGroupId + 1
         (taskId, taskDescription, dag.subGraph(taskGroupId))
-      })}.toArray.sortBy(_._1.index)
+      })
+    }.toArray.sortBy(_._1.index)
 
     taskQueue ++= tasks
     LOG.info(s"App Master $appId request Resource ${taskQueue.size}")
     master ! RequestResource(appId, taskQueue.size)
   }
 
-  override def receive : Receive = masterMsgHandler orElse selfMsgHandler orElse  workerMsgHandler orElse  executorMsgHandler orElse terminationWatch
+  override def receive: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch
 
-  def masterMsgHandler : Receive = {
+  def masterMsgHandler: Receive = {
     case ResourceAllocated(resource) => {
       LOG.info(s"AppMaster $appId received ResourceAllocated $resource")
       //group resource by worker
@@ -95,27 +100,42 @@ class AppMaster (config : Configs) extends Actor {
     }
   }
 
-
-  def executorMsgHandler : Receive = {
-    case TaskLaunched(taskId, task) =>
+  def executorMsgHandler: Receive = {
+    case TaskLaunched(taskId, host) => {
       LOG.info(s"Task $taskId has been Launched for app $appId")
-      taskLocations += taskId -> task
-      pendingTaskLocationQueries.get(taskId).map((list) => list.foreach(_ ! TaskLocation(taskId, task)))
-      pendingTaskLocationQueries.remove(taskId)
-    case GetTaskLocation(taskId) => {
-      LOG.info(s"Ask for Task Location, taskId: $taskId, app: $appId, sender: ${sender.path.name}")
-      if (taskLocations.get(taskId).isDefined) {
-        LOG.info(s"App: $appId, We found location for task $taskId, sending it back to sender ${sender.path.name} directly  ")
-        sender ! TaskLocation(taskId, taskLocations.get(taskId).get)
-      } else {
-        LOG.info(s"App[$appId] We don't have the task location right now, add to a pending list... ")
-        val pendingQueries = pendingTaskLocationQueries.getOrElseUpdate(taskId, mutable.ListBuffer[ActorRef]())
-        pendingQueries += sender
+
+      var taskIds = taskLocations.get(host).getOrElse(Set.empty[TaskId])
+      taskIds += taskId
+      taskLocations += host -> taskIds
+      startedTasks += taskId
+
+      if (startedTasks.size == taskQueue.size) {
+        context.children.foreach { executor =>
+          executor ! TaskLocations(taskLocations)
+        }
       }
     }
-    case TaskSuccess =>
-    case TaskFailed(taskId, reason, ex) =>
-      LOG.info(s"Task failed, taskId: $taskId for app $appId")
+    case task: TaskFinished => {
+      val taskId = task.taskId
+      LOG.info(s"Task ${taskId} has been finished for app $appId")
+
+      taskLocations.keys.foreach { host =>
+        if (taskLocations.contains(host)) {
+          var set = taskLocations.get(host).get
+          if (set.contains(taskId)) {
+            set -= taskId
+            taskLocations += host -> set
+          }
+        }
+      }
+
+      task match {
+        case TaskSuccess(taskId) => Unit
+        case TaskFailed(taskId, reason, ex) =>
+          LOG.info(s"Task failed, taskId: $taskId for app $appId")
+          //TODO: Reschedule the task to other nodes
+      }
+    }
   }
 
   def selfMsgHandler : Receive = {

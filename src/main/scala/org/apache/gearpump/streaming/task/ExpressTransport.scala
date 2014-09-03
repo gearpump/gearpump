@@ -21,34 +21,44 @@ package org.apache.gearpump.streaming.task
 import akka.actor.{Actor, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.netty.TaskMessage
-import org.apache.gearpump.transport.{Express, ExpressAddress}
+import org.apache.gearpump.transport.{Express}
 
 trait ExpressTransport {
   this: TaskActor =>
 
   val express = Express(context.system)
-
+  val sendLater = context.actorSelection("../sendlater")
   val system = context.system.asInstanceOf[ExtendedActorSystem]
   val serializer = new FastKryoSerializer(system)
 
   //report to appMaster with my address
-  val local = express.registerActor(self)
+  express.registerLocalActor(TaskId.toLong(taskId), self)
 
-  def transport(msg: AnyRef, remotes: ExpressAddress*)  = {
+  def local = express.localHost
+
+  def transport(msg : AnyRef, remotes : TaskId *) = {
+
     var serializedMessage : Array[Byte] = null
 
     remotes.foreach { remote =>
-      val localActor = express.lookupLocalActor(remote)
+      val transportId = TaskId.toLong(remote)
+      val localActor = express.lookupLocalActor(transportId)
       if (localActor.isDefined) {
         //local
         localActor.get.tell(msg, Actor.noSender)
       } else {
-        //remote
+      //remote
         if (null == serializedMessage) {
           serializedMessage = serializer.serialize(msg)
         }
-        val taskMessage = new TaskMessage(remote.id, serializedMessage)
-        express.transport(taskMessage, remote)
+        val taskMessage = new TaskMessage(transportId, serializedMessage)
+
+        val remoteAddress = express.lookupRemoteAddress(transportId)
+        if (remoteAddress.isDefined) {
+          express.transport(taskMessage, remoteAddress.get)
+        } else {
+          sendLater ! taskMessage
+        }
       }
     }
   }

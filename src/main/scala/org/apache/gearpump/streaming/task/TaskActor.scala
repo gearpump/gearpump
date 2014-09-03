@@ -27,7 +27,6 @@ import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.transport.ExpressAddress
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.ArrayBuffer
@@ -48,17 +47,12 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
 
   private[this] val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
   private[this] var partitioner : MergedPartitioner = null
-  private[this] var inputTaskLocations = Map[TaskId, ExpressAddress]()
 
   private[this] var outputTaskIds : Array[TaskId] = null
-  private[this] var outputTaskLocations : Array[ExpressAddress] = null
   private[this] var outputWaterMark : Array[Long] = null
   private[this] var ackRequestWaterMark : Array[Long] = null
   private[this] var ackWaterMark : Array[Long] = null
   private[this] var outputWindow : Long = INITIAL_WINDOW_SIZE
-
-
-  private val stashMessage = new ArrayBuffer[Any](0)
 
   //We will set this in preStart
   final def receive : Receive = {
@@ -86,13 +80,13 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
     while (start < partitions.length) {
       val partition = partitions(start)
 
-      transport(Message(System.currentTimeMillis(), msg), outputTaskLocations(partition))
+      transport(Message(System.currentTimeMillis(), msg), outputTaskIds(partition))
 
       outputWaterMark(partition) += 1
 
       if (outputWaterMark(partition) > ackRequestWaterMark(partition) + FLOW_CONTROL_RATE) {
 
-        transport(AckRequest(taskId, Seq(partition, outputWaterMark(partition))), outputTaskLocations(partition))
+        transport(AckRequest(taskId, Seq(partition, outputWaterMark(partition))), outputTaskIds(partition))
         ackRequestWaterMark(partition) = outputWaterMark(partition)
       }
       start = start + 1
@@ -139,58 +133,15 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
       this.ackWaterMark = new Array[Long](outputTaskIds.length)
       this.outputWaterMark = new Array[Long](outputTaskIds.length)
       this.ackRequestWaterMark = new Array[Long](outputTaskIds.length)
-      this.outputTaskLocations = new  Array[ExpressAddress](outputTaskIds.length)
-
-      LOG.info("becoming wait for output task locations...." + taskId)
-
-      context.actorOf(Props(new AskForTaskLocations(this.taskId, appMaster, outputTaskIds, self)))
-      context.become(waitForOutputTaskLocations)
-
     } else {
       //outer degree == 0
       this.partitioner = null
       this.outputTaskIds = null
-
-      context.become {
-        onStart
-        handleMessage
-      }
     }
-  }
-
-  def waitForOutputTaskLocations : Receive = {
-    case _ : Failure[TaskLocations] => {
-      LOG.error(s"failed to get all task locations, stop current task $taskId")
-      context.stop(self)
+    context.become {
+      onStart
+      handleMessage
     }
-    case taskLocation : Success[TaskLocations] => {
-      val TaskLocations(locations) = taskLocation.get
-      for ((k, v) <- locations) {
-        val taskIndex = k.index
-        outputTaskLocations(taskIndex) = v
-      }
-
-      //Send identiy of self to downstream
-      outputTaskLocations.foreach { remote =>
-        transport(Identity(taskId, local), remote)
-      }
-      context.become {
-        onStart
-        handleMessage
-      }
-      unstashAll(handleMessage)
-    }
-    case msg: Any =>
-      stash(msg)
-  }
-
-  private def stash(msg : Any) {
-    stashMessage += msg
-  }
-
-  private def unstashAll(handleMessage : Receive) {
-    stashMessage.foreach(msg => handleMessage.applyOrElse(msg, unhandled))
-    stashMessage.clear()
   }
 
   private def doHandleMessage : Unit = {
@@ -204,8 +155,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
       if (msg != null) {
         msg match {
           case AckRequest(taskId, seq) =>
-
-            transport(Ack(this.taskId, seq), inputTaskLocations(taskId))
+            transport(Ack(this.taskId, seq), taskId)
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
           case Message(timestamp, msg) =>
             onNext(msg)
@@ -219,9 +169,6 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
   }
 
   def handleMessage : Receive = {
-    case Identity(taskId, upStream) =>
-      LOG.info("get identity from upstream: " + taskId)
-      inputTaskLocations = inputTaskLocations + (taskId->upStream)
     case ackRequest : AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
       queue.add(ackRequest)
@@ -245,43 +192,6 @@ object TaskActor {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[TaskActor])
   val INITIAL_WINDOW_SIZE = 1024 * 16
   val FLOW_CONTROL_RATE = 100
-
-  class AskForTaskLocations(taskId : TaskId, master : ActorRef, taskIds : Array[TaskId], parent : ActorRef) extends Actor {
-
-    context.setReceiveTimeout(FiniteDuration(10, TimeUnit.SECONDS))
-
-    LOG.info(s"[${this.taskId}] Ask task location for ${taskIds.mkString}")
-
-    override def preStart() : Unit = {
-      taskIds.foreach{master ! GetTaskLocation(_)}
-    }
-
-    def receive = waitForTaskLocation(Map[TaskId, ExpressAddress]())
-
-    def waitForTaskLocation(taskLocationMap : Map[TaskId, ExpressAddress]) : Receive = {
-      case TaskLocation(taskId, task) => {
-        LOG.info(s"[${this.taskId}] We received a task location, taskId: " + taskId)
-
-        val newLocationMap = taskLocationMap.+((taskId, task))
-
-        LOG.debug(s"[${this.taskId}] new Location Map: " + newLocationMap.toString())
-        LOG.info(s"[${this.taskId}] output Task size: " + taskIds.length + ", location map size: " + newLocationMap.size)
-
-        if (newLocationMap.size == taskIds.length) {
-          parent ! Success(TaskLocations(newLocationMap))
-          LOG.info(s"[${this.taskId}] We have collected all downstream task locations, send them to ${parent.path.name} ...")
-          context.stop(self)
-        } else {
-          context.become(waitForTaskLocation(newLocationMap))
-        }
-      }
-      case ReceiveTimeout =>
-        LOG.error("AskForTaskLocations timeout! We have not gathered enough task location to continue...")
-        parent ! Failure(new TimeoutException(s"Failed to get all task locations, we want we already get ${taskIds.length}, but can only get " +
-          s"${taskLocationMap.keySet.size}, details: $taskLocationMap"))
-        context.stop(self)
-    }
-  }
 
   class MergedPartitioner(partitioners : Array[Partitioner], partitionStart : Array[Int], partitionStop : Array[Int]) {
 

@@ -18,8 +18,13 @@
 
 package org.apache.gearpump.streaming.task
 
-import org.apache.gearpump.transport.ExpressAddress
+import org.apache.gearpump.transport.{HostPort}
 
 case class TaskId(groupId : Int, index : Int)
 
-case class TaskLocations(address : Map[TaskId, ExpressAddress])
+object TaskId {
+  def toLong(id : TaskId) = (id.groupId.toLong << 32) + id.index
+  def fromLong(id : Long) = TaskId(((id >> 32) & 0xFFFFFFFF).toInt, (id & 0xFFFFFFFF).toInt)
+}
+
+case class TaskLocations(locations : Map[HostPort, Set[TaskId]])
