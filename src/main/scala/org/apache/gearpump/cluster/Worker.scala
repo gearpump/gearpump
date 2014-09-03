@@ -163,7 +163,6 @@ private[cluster] object Worker {
     }
 
     override def preStart: Unit = {
-      LOG.info("Worker preStart!!!")
       executorHandler.exitValue.map(ExecutorResult(_)).pipeTo(self)
     }
 
