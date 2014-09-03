@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.gearpump.transport.netty;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -27,17 +28,15 @@ import java.util.List;
 
 public class MessageDecoder extends FrameDecoder {
   /*
-   * Each ControlMessage is encoded as:
-   *  code (<0) ... short(2)
    * Each TaskMessage is encoded as:
-   *  task (>=0) ... short(2)
+   *  task (>=0) ... short(8)
    *  len ... int(4)
    *  payload ... byte[]     *
    */
   protected Object decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buf) throws Exception {
     // Make sure that we have received at least a short
     long available = buf.readableBytes();
-    if (available < 2) {
+    if (available < 8) {
       //need more data
       return null;
     }
@@ -45,7 +44,7 @@ public class MessageDecoder extends FrameDecoder {
     List<Object> ret = new ArrayList<Object>();
 
     // Use while loop, try to decode as more messages as possible in single call
-    while (available >= 2) {
+    while (available >= 8) {
 
       // Mark the current buffer position before reading task/len field
       // because the whole frame might not be in the buffer yet.
@@ -53,23 +52,9 @@ public class MessageDecoder extends FrameDecoder {
       // there's not enough bytes in the buffer.
       buf.markReaderIndex();
 
-      // read the short field
-      short code = buf.readShort();
-      available -= 2;
+      available -= 8;
 
-      // case 1: Control message
-      ControlMessage ctrl_msg = ControlMessage.mkMessage(code);
-      if (ctrl_msg != null) {
-
-        if (ctrl_msg == ControlMessage.EOB_MESSAGE) {
-          continue;
-        } else {
-          return ctrl_msg;
-        }
-      }
-
-      // case 2: task Message
-      short task = code;
+      long task = buf.readLong();
 
       // Make sure that we have received at least an integer (length)
       if (available < 4) {

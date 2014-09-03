@@ -58,7 +58,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
     case MsgBatch(msgs) => {
       msgs.groupBy(_.task()).map { taskBatch =>
         val (taskId, taskMessages) = taskBatch
-        val actor = lookupActor.lookupActor(taskId)
+        val actor = lookupActor.lookupLocalActor(taskId)
 
         if (actor.isEmpty) {
           LOG.error(s"Cannot find actor for id: $taskId...")

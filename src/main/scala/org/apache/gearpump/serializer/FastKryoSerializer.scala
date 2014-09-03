@@ -21,10 +21,6 @@ package org.apache.gearpump.serializer
 import akka.actor.ExtendedActorSystem
 import com.romix.akka.serialization.kryo.KryoSerializer
 
-/**
- * Copied from akka.remote.MessageSerializer
- */
-
 class FastKryoSerializer(system: ExtendedActorSystem) {
 
   private val serializer = new KryoSerializer(system).serializerPool.fetch()

@@ -20,8 +20,8 @@ package org.apache.gearpump.util
 
 import java.io.ObjectOutputStream
 
-import org.apache.gearpump.TaskDescription
-import org.apache.gearpump.examples.sol.SOLBolt
+import org.apache.gearpump.streaming.TaskDescription
+import org.apache.gearpump.streaming.examples.sol.SOLBolt
 import org.apache.gearpump.util.Graph.Edge
 import org.jgrapht.Graphs
 import org.jgrapht.graph.DefaultDirectedGraph

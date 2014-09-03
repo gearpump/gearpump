@@ -18,15 +18,27 @@
 
 package org.apache.gearpump.serializer
 
-import com.esotericsoftware.kryo.Kryo
-import org.apache.gearpump.task.{Ack, AckRequest, Identity, Message}
+import com.esotericsoftware.kryo.{Kryo, Serializer}
+import org.apache.gearpump.cluster.Configs
 
 class GearpumpSerialization {
+  val config = Configs.SYSTEM_DEFAULT_CONFIG
+
   def customize(kryo: Kryo): Unit  = {
-    kryo.register(classOf[Message], new MessageSerializer)
-    kryo.register(classOf[AckRequest], new AckRequestSerializer)
-    kryo.register(classOf[Ack], new AckSerializer)
-    kryo.register(classOf[Identity], new IdentitySerializer)
+
+    val serializationMap: Map[String, String] = configToMap("gearpump.serializers")
+
+    serializationMap.foreach { kv =>
+      val (key, value) = kv
+      val keyClass = Class.forName(key)
+      val valueClass = Class.forName(value)
+      kryo.register(keyClass, valueClass.newInstance().asInstanceOf[Serializer[_]])
+    }
     kryo.setReferences(false)
+  }
+
+  private final def configToMap(path: String): Map[String, String] = {
+    import scala.collection.JavaConverters._
+    config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k -> v.toString) }
   }
 }

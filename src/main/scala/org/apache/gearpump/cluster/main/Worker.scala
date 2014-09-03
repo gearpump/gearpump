@@ -16,21 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.transport.netty;
+package org.apache.gearpump.cluster.main
 
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+import org.apache.gearpump.cluster.Configs
+import org.apache.gearpump.util.ActorSystemBooter
+import org.slf4j.{Logger, LoggerFactory}
 
-public class MessageEncoder extends OneToOneEncoder {
-  @Override
-  protected Object encode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
-    if (obj instanceof MessageBatch) {
-      return ((MessageBatch) obj).buffer();
-    }
+object Worker extends App with ArgumentsParser {
+  val LOG : Logger = LoggerFactory.getLogger(Worker.getClass)
 
-    throw new RuntimeException("Unsupported encoding of object of class " + obj.getClass().getName());
+  def uuid = java.util.UUID.randomUUID.toString
+
+  val options = Array("ip"->"master ip", "port"-> "master port")
+
+  def start() = {
+    worker(parse(args).getString("ip"), parse(args).getInt("port"))
   }
 
+  def worker(ip : String, port : Int): Unit = {
+    val masterURL = s"akka.tcp://${Configs.MASTER}@$ip:$port/user/${Configs.MASTER}"
+    ActorSystemBooter.create(Configs.WORKER_CONFIG).boot(uuid, masterURL).awaitTermination
+  }
 
+  start()
 }

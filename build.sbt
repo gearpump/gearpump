@@ -1,4 +1,6 @@
+import sbt._
 import sbt.Keys._
+import xerial.sbt.Pack._
 
 name := "gearpump"
 
@@ -12,16 +14,21 @@ scalaVersion := scalaVersionNumber
 
 packSettings
 
-packMain := Map("local" -> "org.apache.gears.cluster.main.Local",
-                "master" -> "org.apache.gears.cluster.main.Master",
-                "worker" -> "org.apache.gears.cluster.main.Worker",
-                "sol" -> "org.apache.gearpump.examples.sol.SOL",
-                "wordcount" -> "org.apache.gearpump.examples.wordcount.WordCount",
-                "shell" -> "org.apache.gears.cluster.main.Shell")
+packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
+                "master" -> "org.apache.gearpump.cluster.main.Master",
+                "worker" -> "org.apache.gearpump.cluster.main.Worker",
+                "sol" -> "org.apache.gearpump.streaming.examples.sol.SOL",
+                "wordcount" -> "org.apache.gearpump.streaming.examples.wordcount.WordCount",
+                "shell" -> "org.apache.gearpump.cluster.main.Shell")
 				
 packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
 		
-packExtraClasspath := Map("conf" -> Seq("${PROG_HOME}/conf"))
+packExtraClasspath := Map("local" -> Seq("${PROG_HOME}/conf"),
+                          "master" -> Seq("${PROG_HOME}/conf"),
+						  "worker" -> Seq("${PROG_HOME}/conf"),
+						  "sol" -> Seq("${PROG_HOME}/conf"),
+						  "wordcount" -> Seq("${PROG_HOME}/conf"),
+						  "shell" -> Seq("${PROG_HOME}/conf"))
 
 resolvers ++= Seq(
   "maven-repo" at "http://repo.maven.apache.org/maven2",

@@ -16,21 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.transport.netty;
+package org.apache.gearpump.streaming
 
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+import akka.actor.Actor
+import org.apache.gearpump.cluster.Configs
+import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.transport.{HostPort}
 
-public class MessageEncoder extends OneToOneEncoder {
-  @Override
-  protected Object encode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
-    if (obj instanceof MessageBatch) {
-      return ((MessageBatch) obj).buffer();
-    }
+object AppMasterToExecutor {
+  case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
+}
 
-    throw new RuntimeException("Unsupported encoding of object of class " + obj.getClass().getName());
+object ExecutorToAppMaster {
+  case class TaskLaunched(taskId: TaskId, task: HostPort)
+
+  trait TaskFinished {
+    def taskId : TaskId
   }
 
-
+  case class TaskSuccess(taskId : TaskId) extends TaskFinished
+  case class TaskFailed(taskId: TaskId, reason: String = null, ex: Exception = null) extends TaskFinished
 }

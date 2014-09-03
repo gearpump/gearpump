@@ -62,9 +62,8 @@ import org.apache.gearpump.transport.netty.Context._
 
 
   def bind(name: String, lookupActor : ActorLookupById): Int = {
-    val serverName = s"netty-server-$name"
     val taskDispatcher = system.settings.config.getString("gearpump.task-dispatcher")
-    val server = system.actorOf(Props(classOf[Server], serverName, conf, lookupActor).withDispatcher(taskDispatcher), serverName)
+    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor).withDispatcher(taskDispatcher), name)
     val (port, channel) = NettyUtil.newNettyServer(name, new ServerPipelineFactory(server), 5242880)
     val factory = channel.getFactory
     closeHandler.add{ () =>

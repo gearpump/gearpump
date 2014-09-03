@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.gearpump.transport.netty;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -31,7 +32,7 @@ public class MessageBatch {
   MessageBatch(int buffer_size) {
     this.buffer_size = buffer_size;
     msgs = new ArrayList<TaskMessage>();
-    encoded_length = ControlMessage.EOB_MESSAGE.encodeLength();
+    encoded_length = 0;
   }
 
   void add(TaskMessage obj) {
@@ -64,7 +65,7 @@ public class MessageBatch {
   private int msgEncodeLength(TaskMessage taskMsg) {
     if (taskMsg == null) return 0;
 
-    int size = 6; //INT + SHORT
+    int size = 12; //LONG + INT
     if (taskMsg.message() != null)
       size += taskMsg.message().length;
     return size;
@@ -106,9 +107,6 @@ public class MessageBatch {
     for (TaskMessage msg : msgs)
       writeTaskMessage(bout, msg);
 
-    //add a END_OF_BATCH indicator
-    ControlMessage.EOB_MESSAGE.write(bout);
-
     bout.close();
 
     return bout.buffer();
@@ -118,7 +116,7 @@ public class MessageBatch {
    * write a TaskMessage into a stream
    * <p/>
    * Each TaskMessage is encoded as:
-   * task ... short(2)
+   * task ... long(8)
    * len ... int(4)
    * payload ... byte[]     *
    */
@@ -127,11 +125,9 @@ public class MessageBatch {
     if (message.message() != null)
       payload_len = message.message().length;
 
-    int task_id = message.task();
-    if (task_id > Short.MAX_VALUE)
-      throw new RuntimeException("Task ID should not exceed " + Short.MAX_VALUE);
+    long task_id = message.task();
 
-    bout.writeShort((short) task_id);
+    bout.writeLong(task_id);
     bout.writeInt(payload_len);
     if (payload_len > 0)
       bout.write(message.message());
