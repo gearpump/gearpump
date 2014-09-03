@@ -123,7 +123,14 @@ private[cluster] object Worker {
           override def destroy = Unit // we cannot forcefully terminate a future by scala limit
           override def exitValue : Future[Try[Int]] = future {
               try {
-                Class.forName(context.mainClass).newInstance.asInstanceOf[ {def main(args: Array[String]): Unit}].main(context.arguments)
+                import scala.reflect.runtime._
+                val rootMirror = scala.reflect.runtime.currentMirror
+                val clazz = Class.forName(context.mainClass)
+                var classSymbol = rootMirror.classSymbol(clazz)
+                val moduleSymbol = classSymbol.companionSymbol.asModule
+                val moduleMirror = rootMirror.reflectModule(moduleSymbol)
+                val instance = moduleMirror.instance
+                instance.asInstanceOf[ {def main(args: Array[String]): Unit}].main(context.arguments)
                 Success(0)
               } catch {
                 case e => Failure(e)
@@ -155,7 +162,10 @@ private[cluster] object Worker {
       }
     }
 
-    override def preStart: Unit = executorHandler.exitValue.map(ExecutorResult(_)).pipeTo(self)
+    override def preStart: Unit = {
+      LOG.info("Worker preStart!!!")
+      executorHandler.exitValue.map(ExecutorResult(_)).pipeTo(self)
+    }
 
     override def receive: Receive = {
       case ShutdownExecutor(appId, executorId, reason : String) =>
