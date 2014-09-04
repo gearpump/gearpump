@@ -18,25 +18,39 @@
 
 package org.apache.gearpump.cluster.main
 
+abstract class CLIOptionType(val description:String, val req: Boolean) {
+  def defaultValue :Any
+}
+
+case class CLIOption[T] (d:String = "",required: Boolean = false, defaultValue: T = null) extends CLIOptionType(description=d, req=required)
+
 class ParseResult(optionMap : Map[String, String], remainArguments : Array[String]) {
   def getInt(key : String) = optionMap.get(key).get.toInt
 
-  def getString (key : String) = optionMap.get(key).get
+  def getString (key : String) = optionMap.get(key).get.toString
+
+  def getBoolean (key : String) = optionMap.get(key).get.toBoolean
 
   def exists(key : String) = optionMap.get(key).isDefined
 
   def remainArgs = this.remainArguments
 }
 
+
 trait ArgumentsParser {
 
-  def help = {
+  def help:Unit = {
     Console.println("Usage:")
-    val usage = List(s"java ${this.getClass} " + options.map(kv => s"-${kv._1} <${kv._2}>").mkString(" ") + " " + remainArgs.map(k => s"<$k>").mkString(" "))
+    var usage = List(s"java ${this.getClass} " + options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") + " " + remainArgs.map(k => s"<$k>").mkString(" "))
+    options.map(kv => if(kv._2.req) {
+      usage = usage :+ s"-${kv._1}  (required:${kv._2.req})"
+    } else {
+      usage = usage :+ s"-${kv._1}  (required:${kv._2.req}, default:${kv._2.defaultValue.toString})"
+    })
     usage.foreach(Console.println(_))
   }
 
-  val options : Array[(String, String)]
+  val options : Array[(String, CLIOptionType)]
   val remainArgs : Array[String] = Array.empty[String]
 
   def parse(args: Array[String]) : ParseResult = {
@@ -48,7 +62,7 @@ trait ArgumentsParser {
       argument match {
         case Nil => Unit // true if everything processed successfully
 
-        case key :: value :: rest if (key.startsWith("-") && !value.startsWith("-")) =>
+        case key :: value :: rest if key.startsWith("-") && !value.startsWith("-") =>
           val fixedKey = key.substring(1)
           config += fixedKey -> value
           if (!options.map(_._1).contains(fixedKey)) {
@@ -73,10 +87,16 @@ trait ArgumentsParser {
     }
     doParse(args.toList)
 
+    options.foreach(pair =>
+      if(!config.contains(pair._1) && !pair._2.req) {
+        config += pair._1 -> pair._2.defaultValue.toString
+      }
+    )
+
     if (remainArgs.length != this.remainArgs.length ||
     options.length != config.keySet.size) {
       help
-      Console.println(s"fail to parse arguments...")
+      Console.println(s"Failed to parse arguments...")
       System.exit(-1)
     }
 

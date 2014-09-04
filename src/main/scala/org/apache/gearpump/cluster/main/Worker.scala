@@ -27,7 +27,9 @@ object Worker extends App with ArgumentsParser {
 
   def uuid = java.util.UUID.randomUUID.toString
 
-  val options = Array("ip"->"master ip", "port"-> "master port")
+  val options:Array[(String, CLIOptionType)] = Array(
+    "ip"-> CLIOption("<master ip>", required = true, defaultValue = "127.0.0.1"),
+    "port"-> CLIOption("<master port>", required = true, defaultValue = 8092))
 
   def start() = {
     worker(parse(args).getString("ip"), parse(args).getInt("port"))
