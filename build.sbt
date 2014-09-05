@@ -45,7 +45,7 @@ resolvers ++= Seq(
 parallelExecution in Test := false
 
 
-val akkaVersion = "2.3.4"
+val akkaVersion = "2.3.5"
 val kyroVersion = "0.3.2"
 val codahaleVersion = "3.0.2"
 val commonsLangVersion = "3.3.2"
@@ -78,6 +78,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-remote" % akkaVersion,
   "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
+  "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
   "com.typesafe.akka" %% "akka-agent" % akkaVersion,
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
   "org.scala-lang" % "scala-compiler" % scalaVersionNumber,

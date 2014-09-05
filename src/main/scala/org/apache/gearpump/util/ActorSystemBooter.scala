@@ -31,18 +31,12 @@ import org.slf4j.{Logger, LoggerFactory}
 class ActorSystemBooter(config : Config) {
   import org.apache.gearpump.util.ActorSystemBooter._
 
-  var system : ActorSystem = null
-
-  def boot(name : String, reportBackActor : String) : ActorSystemBooter = {
-    system = ActorSystem(name, config)
+  def boot(name : String, reportBackActor : String) : ActorSystem = {
+    val system = ActorSystem(name, config)
     // daemon path: http://{system}@{ip}:{port}/daemon
     system.actorOf(Props(classOf[Daemon], name, reportBackActor), "daemon")
     LOG.info(s"Booting Actor System $name reporting back url: $reportBackActor")
-    this
-  }
-
-  def awaitTermination : Unit = {
-    system.awaitTermination()
+    system
   }
 }
 

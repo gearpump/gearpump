@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster
 
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.pattern.pipe
@@ -30,26 +31,30 @@ import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.util.{ActorUtil, ProcessLogRedirector}
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.concurrent.duration._
 import scala.concurrent.{Future, future}
 import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
 
-private[cluster] class Worker(id : Int, master : ActorRef) extends Actor{
+private[cluster] class Worker(id : Int, masterProxy : ActorRef) extends Actor{
 
   val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
 
   private var resource = 100
   private var allocatedResource = Map[ActorRef, Int]()
 
-  override def receive : Receive = waitForMasterConfirm
+  override def receive : Receive = null
 
   LOG.info(s"Worker $id is starting...")
 
-  def waitForMasterConfirm : Receive = {
+  def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
     case WorkerRegistered =>
+      killSelf.cancel()
+      val master = sender
+      context.watch(master)
       LOG.info(s"Worker $id Registered ....")
       sender ! ResourceUpdate(id, resource)
-      context.become(appMasterMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self))
+      context.become(appMasterMsgHandler orElse terminationWatch(master) orElse ActorUtil.defaultMsgHandler(self))
   }
 
   def appMasterMsgHandler : Receive = {
@@ -79,32 +84,34 @@ private[cluster] class Worker(id : Int, master : ActorRef) extends Actor{
       }
   }
 
-  def terminationWatch : Receive = {
+  def terminationWatch(master : ActorRef) : Receive = {
     case Terminated(actor) =>
       if (actor.compareTo(master) == 0) {
         // parent is down, let's make suicide
-        LOG.info("parent master cannot be contacted, kill myself...")
-        context.stop(self)
-      } else if (actor.path.parent == self.path) {
-        LOG.info(s"[$id] An executor dies ${actor.path}...." )
-        allocatedResource.get(actor).map { slots =>
-          LOG.info(s"[$id] Reclaiming resource $slots...." )
-          allocatedResource = allocatedResource - actor
-          resource += slots
-        }
+        LOG.info("parent master cannot be contacted, find a new master ...")
+
+        masterProxy ! RegisterWorker(id)
+        context.become(waitForMasterConfirm(suicideAfter(30)))
       }
+    case PoisonPill =>
+      context.stop(self)
   }
 
   private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
+
+  import context.dispatcher
   override def preStart() : Unit = {
-    master ! RegisterWorker(id)
-    context.watch(master)
+    masterProxy ! RegisterWorker(id)
     LOG.info(s"Worker[$id] Sending master RegisterWorker")
+    context.become(waitForMasterConfirm(suicideAfter(30)))
   }
 
-  override def postStop(): Unit = {
+  private def suicideAfter(seconds: Int) = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
+
+  override def postStop : Unit = {
     LOG.info(s"Worker $id is going down....")
+    context.system.shutdown()
   }
 }
 
