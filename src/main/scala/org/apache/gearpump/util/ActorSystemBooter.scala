@@ -20,8 +20,7 @@ package org.apache.gearpump.util
 
 import akka.actor._
 import com.typesafe.config.Config
-import org.apache.gearpump.ActorUtil
-import org.apache.gears.cluster.Configs
+import org.apache.gearpump.cluster.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
@@ -32,18 +31,12 @@ import org.slf4j.{Logger, LoggerFactory}
 class ActorSystemBooter(config : Config) {
   import org.apache.gearpump.util.ActorSystemBooter._
 
-  var system : ActorSystem = null
-
-  def boot(name : String, reportBackActor : String) : ActorSystemBooter = {
-    system = ActorSystem(name, config)
+  def boot(name : String, reportBackActor : String) : ActorSystem = {
+    val system = ActorSystem(name, config)
     // daemon path: http://{system}@{ip}:{port}/daemon
     system.actorOf(Props(classOf[Daemon], name, reportBackActor), "daemon")
     LOG.info(s"Booting Actor System $name reporting back url: $reportBackActor")
-    this
-  }
-
-  def awaitTermination : Unit = {
-    system.awaitTermination()
+    system
   }
 }
 
@@ -60,6 +53,7 @@ object ActorSystemBooter  {
   }
 
   case class BindLifeCycle(actor : ActorRef)
+  case class CreateActor(props : Props, name : String)
   case class RegisterActorSystem(systemPath : String)
 
   class Daemon(name : String, reportBack : String) extends Actor {
@@ -69,6 +63,10 @@ object ActorSystemBooter  {
         LOG.info(s"ActorSystem $name Binding life cycle with actor: $actor")
         context.watch(actor)
       // Send PoisonPill to the daemon to kill the actorsystem
+
+      case CreateActor(props : Props, name : String) =>
+        LOG.info(s"creating actor $name")
+        context.actorOf(props, name)
       case PoisonPill =>
         context.stop(self)
       case Terminated(actor) =>

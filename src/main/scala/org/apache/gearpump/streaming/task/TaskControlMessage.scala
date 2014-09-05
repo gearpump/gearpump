@@ -16,21 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.transport.netty;
+package org.apache.gearpump.streaming.task
 
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+sealed trait TaskControlMessage
 
-public class MessageEncoder extends OneToOneEncoder {
-  @Override
-  protected Object encode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
-    if (obj instanceof MessageBatch) {
-      return ((MessageBatch) obj).buffer();
-    }
-
-    throw new RuntimeException("Unsupported encoding of object of class " + obj.getClass().getName());
-  }
-
-
-}
+case class Seq(id : Int, seq : Long)
+case class AckRequest(taskId : TaskId, seq : Seq)
+case class Ack(taskId : TaskId, seq : Seq)

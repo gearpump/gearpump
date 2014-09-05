@@ -15,20 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.gearpump.transport.netty;
 
 import java.nio.ByteBuffer;
 
 public class TaskMessage {
-  private int _task;
+  private long _task;
   private byte[] _message;
 
-  public TaskMessage(int task, byte[] message) {
+  public TaskMessage(long task, byte[] message) {
     _task = task;
     _message = message;
   }
 
-  public int task() {
+  public long task() {
     return _task;
   }
 
@@ -37,16 +38,16 @@ public class TaskMessage {
   }
 
   public ByteBuffer serialize() {
-    ByteBuffer bb = ByteBuffer.allocate(_message.length + 2);
-    bb.putShort((short) _task);
+    ByteBuffer bb = ByteBuffer.allocate(_message.length + 8);
+    bb.putLong(_task);
     bb.put(_message);
     return bb;
   }
 
   public void deserialize(ByteBuffer packet) {
     if (packet == null) return;
-    _task = packet.getShort();
-    _message = new byte[packet.limit() - 2];
+    _task = packet.getLong();
+    _message = new byte[packet.limit() - 8];
     packet.get(_message);
   }
 

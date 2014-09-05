@@ -18,7 +18,8 @@
 
 package org.apache.gearpump.util
 
-import org.apache.gearpump.{Partitioner, TaskDescription}
+import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.TaskDescription
 
 import scala.collection.JavaConversions._
 

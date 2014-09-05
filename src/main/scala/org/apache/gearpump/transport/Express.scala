@@ -18,91 +18,73 @@
 
 package org.apache.gearpump.transport
 
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor._
 import akka.agent.Agent
-import akka.util.Timeout
 import org.apache.gearpump.transport.netty.{Context, TaskMessage}
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.Await
-
 case class HostPort(host: String, port: Int)
 
-case class ExpressAddress(hostPort: HostPort, id: Int)
-
 trait ActorLookupById {
-  def lookupActor(id: Int): Option[ActorRef]
+  def lookupLocalActor(id: Long): Option[ActorRef]
 }
 
 class Express(val system: ExtendedActorSystem) extends Extension with ActorLookupById {
 
   import org.apache.gearpump.transport.Express._
-
   import system.dispatcher
-  val localActorMap = Agent(Map.empty[Int, ActorRef])
-  val expressMap = Agent(Map.empty[HostPort, ActorRef])
+  val localActorMap = Agent(Map.empty[Long, ActorRef])
+  val remoteAddressMap = Agent(Map.empty[Long, HostPort])
 
-  val localActorCount = new AtomicInteger(0)
+  val remoteClientMap = Agent(Map.empty[HostPort, ActorRef])
 
   val conf = Map.empty[String, Any]
 
-
-  var context: Context = null
-  var serverPort = -1
-  var localHost: HostPort = null
+  lazy val (context, serverPort, localHost) = init
 
   lazy val init = {
-    context = new Context(system, conf)
-    serverPort = context.bind("netty-server", this)
-    localHost = HostPort(system.provider.getDefaultAddress.host.get, serverPort)
+    LOG.info(s"Start Express init ...${system.name}")
+    val context = new Context(system, conf)
+    val serverPort = context.bind("netty-server", this)
+    val localHost = HostPort(system.provider.getDefaultAddress.host.get, serverPort)
     LOG.info(s"bining to netty server $localHost")
 
     system.registerOnTermination(new Runnable {
       override def run = context.term
     })
-    Unit
+    (context, serverPort, localHost)
   }
 
-  def registerActor(actor: ActorRef): ExpressAddress = {
+  def unregisterLocalActor(id : Long) : Unit = {
+    localActorMap.sendOff(_ - id)
+  }
+
+  def registerLocalActor(id : Long, actor: ActorRef): Unit = {
+    LOG.info(s"RegisterLocalActor: $id")
     init
-
-    val id = localActorCount.incrementAndGet()
-
-    //we use a dedicated thread here to avoid potential actor dead lock
     localActorMap.sendOff(_ + (id -> actor))
-
-    Await.result(localActorMap.future(), Timeout(5, TimeUnit.SECONDS).duration)
-    ExpressAddress(localHost, id)
   }
 
-  def lookupActor(id: Int) = localActorMap.get().get(id)
+  def lookupLocalActor(id: Long) = localActorMap.get().get(id)
 
-  def lookupLocalActor(remote: ExpressAddress): Option[ActorRef] = {
-    if (remote.hostPort == localHost) {
-      lookupActor(remote.id)
-    } else {
-      None
-    }
-  }
+  def lookupRemoteAddress(id : Long) = remoteAddressMap.get().get(id)
 
   //transport to remote address
-  def transport(taskMessage: TaskMessage, remote: ExpressAddress): Unit = {
-    val expressActor = expressMap.get.get(remote.hostPort)
-    if (expressActor.isDefined) {
-      expressActor.get.tell(taskMessage, Actor.noSender)
+  def transport(taskMessage: TaskMessage, remote: HostPort): Unit = {
+
+    val remoteClient = remoteClientMap.get.get(remote)
+    if (remoteClient.isDefined) {
+      remoteClient.get.tell(taskMessage, Actor.noSender)
     } else {
-      expressMap.send { map =>
-        val expressActor = map.get(remote.hostPort)
+      remoteClientMap.send { map =>
+        val expressActor = map.get(remote)
         if (expressActor.isDefined) {
           expressActor.get.tell(taskMessage, Actor.noSender)
           map
         } else {
-          val actor = context.connect(remote.hostPort)
+          val actor = context.connect(remote)
           actor.tell(taskMessage, Actor.noSender)
-          map + (remote.hostPort -> actor)
+          map + (remote -> actor)
         }
       }
     }
