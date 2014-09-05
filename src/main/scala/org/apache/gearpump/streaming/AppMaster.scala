@@ -56,9 +56,6 @@ class AppMaster (config : Configs) extends Actor {
   private var startedTasks = Set.empty[TaskId]
   private var totalTaskCount = 0
 
-  private var pendingTaskLocationQueries = new mutable.HashMap[TaskId, mutable.ListBuffer[ActorRef]]()
-
-
   override def preStart: Unit = {
     context.parent ! RegisterMaster(appManager, appId, masterExecutorId, slots)
 

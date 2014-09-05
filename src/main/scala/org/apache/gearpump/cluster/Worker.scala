@@ -123,7 +123,9 @@ private[cluster] object Worker {
           override def destroy = Unit // we cannot forcefully terminate a future by scala limit
           override def exitValue : Future[Try[Int]] = future {
               try {
-                Class.forName(context.mainClass).newInstance.asInstanceOf[ {def main(args: Array[String]): Unit}].main(context.arguments)
+                val clazz = Class.forName(context.mainClass)
+                val main = clazz.getMethod("main", classOf[Array[String]])
+                  main.invoke(null, context.arguments)
                 Success(0)
               } catch {
                 case e => Failure(e)
