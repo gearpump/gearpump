@@ -43,17 +43,12 @@ private[cluster] class Master extends Actor {
   override def receive : Receive = workerMsgHandler orElse appMasterMsgHandler orElse clientMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self)
 
   def workerMsgHandler : Receive = {
-    //create worker
-    case RegisterActorSystem(systemPath) =>
-      LOG.info(s"Received RegisterActorSystem $systemPath")
-      val systemAddress = AddressFromURIString(systemPath)
-      val workerConfig = Props(classOf[Worker], workerId, self).withDeploy(Deploy(scope = RemoteScope(systemAddress)))
-      val worker = context.actorOf(workerConfig, classOf[Worker].getSimpleName + workerId)
+    case RegisterNewWorker =>
+      self forward RegisterWorker(workerId)
       workerId += 1
-      sender ! BindLifeCycle(worker)
     case RegisterWorker(id) =>
       context.watch(sender())
-      sender ! WorkerRegistered
+      sender ! WorkerRegistered(id)
       LOG.info(s"Register Worker $id....")
     case ResourceUpdate(id, slots) =>
       LOG.info(s"Resource update id: $id, slots: $slots....")

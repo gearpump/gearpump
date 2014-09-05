@@ -39,12 +39,13 @@ object Worker extends App with ArgumentsParser {
   def worker(): Unit = {
     val config = Configs.WORKER_CONFIG
 
-    val system = ActorSystem(uuid, config)
+    val id = uuid
+    val system = ActorSystem(id, config)
 
     val masterAddress = config.getStringList("gearpump.cluster.masters").asScala
     val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), Configs.MASTER_PROXY)
 
-    val worker = system.actorOf(Props(classOf[Worker], uuid, masterProxy), classOf[Worker].getSimpleName + uuid)
+    val worker = system.actorOf(Props(classOf[Worker], masterProxy), classOf[Worker].getSimpleName + id)
 
     system.awaitTermination
   }

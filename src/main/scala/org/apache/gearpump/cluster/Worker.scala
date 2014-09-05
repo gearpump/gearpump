@@ -36,19 +36,18 @@ import scala.concurrent.{Future, future}
 import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
 
-private[cluster] class Worker(id : Int, masterProxy : ActorRef) extends Actor{
+private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
   val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
 
   private var resource = 100
   private var allocatedResource = Map[ActorRef, Int]()
-
+  private var id = -1
   override def receive : Receive = null
 
-  LOG.info(s"Worker $id is starting...")
-
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
-    case WorkerRegistered =>
+    case WorkerRegistered(id) =>
+      this.id = id
       killSelf.cancel()
       val master = sender
       context.watch(master)
@@ -102,7 +101,7 @@ private[cluster] class Worker(id : Int, masterProxy : ActorRef) extends Actor{
 
   import context.dispatcher
   override def preStart() : Unit = {
-    masterProxy ! RegisterWorker(id)
+    masterProxy ! RegisterNewWorker
     LOG.info(s"Worker[$id] Sending master RegisterWorker")
     context.become(waitForMasterConfirm(suicideAfter(30)))
   }

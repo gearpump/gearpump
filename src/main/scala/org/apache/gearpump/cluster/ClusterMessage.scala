@@ -26,12 +26,13 @@ import scala.util.Try
  * Cluster Bootup Flow
  */
 object WorkerToMaster {
+  case object RegisterNewWorker
   case class RegisterWorker(workerId: Int)
   case class ResourceUpdate(workerId: Int, slots: Int)
 }
 
 object MasterToWorker {
-  case object WorkerRegistered
+  case class WorkerRegistered(workerId : Int)
 }
 
 /**
