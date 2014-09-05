@@ -123,17 +123,12 @@ private[cluster] object Worker {
           override def destroy = Unit // we cannot forcefully terminate a future by scala limit
           override def exitValue : Future[Try[Int]] = future {
               try {
-                import scala.reflect.runtime._
-                val rootMirror = scala.reflect.runtime.currentMirror
                 val clazz = Class.forName(context.mainClass)
-                var classSymbol = rootMirror.classSymbol(clazz)
-                val moduleSymbol = classSymbol.companionSymbol.asModule
-                val moduleMirror = rootMirror.reflectModule(moduleSymbol)
-                val instance = moduleMirror.instance
-                instance.asInstanceOf[ {def main(args: Array[String]): Unit}].main(context.arguments)
+                val main = clazz.getMethod("main", classOf[Array[String]])
+                main.invoke(null, context.arguments)
                 Success(0)
               } catch {
-                case e => Failure(e)
+                case e: Throwable => Failure(e)
               }
             }
         }
@@ -170,13 +165,12 @@ private[cluster] object Worker {
       case ShutdownExecutor(appId, executorId, reason : String) =>
         executorHandler.destroy
         context.stop(self)
-      case ExecutorResult(executorResult) => {
+      case ExecutorResult(executorResult) =>
         executorResult match {
           case Success(exit) => LOG.info("Executor exit normally with exit value " + exit)
           case Failure(e) => LOG.error("Executor exit with errors", e)
         }
         context.stop(self)
-      }
     }
   }
 
