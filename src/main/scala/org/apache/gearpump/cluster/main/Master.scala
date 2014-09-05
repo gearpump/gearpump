@@ -27,7 +27,7 @@ import org.slf4j.{Logger, LoggerFactory}
 object Master extends App with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
 
-  val options = Array("port"->"master port")
+  val options: Array[(String, CLIOptionType)] = Array("port"->CLIOption("<master port>",required = true))
 
   val config = parse(args)
 
