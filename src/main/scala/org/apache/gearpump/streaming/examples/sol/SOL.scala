@@ -29,13 +29,13 @@ import org.apache.gearpump.util.Graph._
 object SOL extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOptionType)] = Array(
-    "ip" -> CLIOption[String]("<master ip>", required = true, defaultValue = "127.0.0.1"),
-    "port" -> CLIOption[Int]("<master port>", required = true, defaultValue = 8092),
-    "spout"-> CLIOption[Int]("<spout number>", required = true, defaultValue = 1),
-    "bolt"-> CLIOption[Int]("<bolt number>", required = true, defaultValue = 1),
-    "runseconds" -> CLIOption[Int]("<run seconds>", required = true, defaultValue = 60),
-    "bytesPerMessage" -> CLIOption[Int]("<sze of each message>", required = true, defaultValue = 200),
-    "stages"-> CLIOption[Int]("<how many stages to run>", required = true, defaultValue = 2))
+    "ip" -> CLIOption[String]("<master ip>", required = true),
+    "port" -> CLIOption[Int]("<master port>", required = true),
+    "spout"-> CLIOption[Int]("<spout number>", required = true, defaultValue = Some(1)),
+    "bolt"-> CLIOption[Int]("<bolt number>", required = true, defaultValue = Some(1)),
+    "runseconds" -> CLIOption[Int]("<run seconds>", required = true, defaultValue = Some(60)),
+    "bytesPerMessage" -> CLIOption[Int]("<sze of each message>", required = true, defaultValue = Some(200)),
+    "stages"-> CLIOption[Int]("<how many stages to run>", required = true, defaultValue = Some(2)))
 
   start()
 

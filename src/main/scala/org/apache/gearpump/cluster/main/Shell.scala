@@ -28,8 +28,8 @@ object Shell extends App with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
 
   override val options: Array[(String, CLIOptionType)] = Array(
-    "ip"-> CLIOption("<master ip>", required = false, defaultValue = "127.0.0.1"),
-    "port"-> CLIOption("<master port>", required = true, defaultValue = -1))
+    "ip"-> CLIOption("<master ip>", required = true),
+    "port"-> CLIOption("<master port>", required = true))
 
   val config = parse(args)
 

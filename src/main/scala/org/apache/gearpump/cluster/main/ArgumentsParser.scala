@@ -18,16 +18,14 @@
 
 package org.apache.gearpump.cluster.main
 
-abstract class CLIOptionType(val description:String, val req: Boolean) {
-  def defaultValue :Any
-}
+abstract class CLIOptionType(val description:String, val required: Boolean, val defaultValue: Option[Any])
 
-case class CLIOption[T] (d:String = "",required: Boolean = false, defaultValue: T = null) extends CLIOptionType(description=d, req=required)
+case class CLIOption[T] (desc:String = "", override val required: Boolean = false, override val defaultValue: Option[T] = None) extends CLIOptionType(desc, required, defaultValue)
 
 class ParseResult(optionMap : Map[String, String], remainArguments : Array[String]) {
   def getInt(key : String) = optionMap.get(key).get.toInt
 
-  def getString (key : String) = optionMap.get(key).get.toString
+  def getString (key : String) = optionMap.get(key).get
 
   def getBoolean (key : String) = optionMap.get(key).get.toBoolean
 
@@ -42,10 +40,10 @@ trait ArgumentsParser {
   def help:Unit = {
     Console.println("Usage:")
     var usage = List(s"java ${this.getClass} " + options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") + " " + remainArgs.map(k => s"<$k>").mkString(" "))
-    options.map(kv => if(kv._2.req) {
-      usage = usage :+ s"-${kv._1}  (required:${kv._2.req})"
+    options.map(kv => if(kv._2.required) {
+      usage = usage :+ s"-${kv._1}  (required:${kv._2.required})"
     } else {
-      usage = usage :+ s"-${kv._1}  (required:${kv._2.req}, default:${kv._2.defaultValue.toString})"
+      usage = usage :+ s"-${kv._1}  (required:${kv._2.required}, default:${kv._2.defaultValue.getOrElse("")})"
     })
     usage.foreach(Console.println(_))
   }
@@ -87,16 +85,18 @@ trait ArgumentsParser {
     }
     doParse(args.toList)
 
-    options.foreach(pair =>
-      if(!config.contains(pair._1) && !pair._2.req) {
-        config += pair._1 -> pair._2.defaultValue.toString
+    options.foreach(pair => {
+      val (key, option) = pair
+      if (!config.contains(key) && !option.required) {
+        config += key -> option.defaultValue.getOrElse("").toString
       }
+    }
     )
 
     if (remainArgs.length != this.remainArgs.length ||
     options.length != config.keySet.size) {
       help
-      Console.println(s"Failed to parse arguments...")
+      Console.println(s"Unknown or missing arguments...")
       System.exit(-1)
     }
 

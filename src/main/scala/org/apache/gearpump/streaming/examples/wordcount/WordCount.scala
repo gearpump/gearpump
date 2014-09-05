@@ -40,11 +40,11 @@ class WordCount  {
 object WordCount extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOptionType)] = Array(
-    "ip" -> CLIOption[String]("<master ip>", required = true, defaultValue = "127.0.0.1"),
-    "port"-> CLIOption[Int]("<master port>", required = true, defaultValue = 8092),
-    "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = 4),
-    "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = 4),
-    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = 60))
+    "ip" -> CLIOption[String]("<master ip>", required = true),
+    "port"-> CLIOption[Int]("<master port>", required = true),
+    "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
+    "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
+    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
   val config = parse(args)
 
   def start(): Unit = {
