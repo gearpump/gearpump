@@ -18,16 +18,10 @@
 
 package org.apache.gearpump.transport
 
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor._
 import akka.agent.Agent
-import akka.util.Timeout
 import org.apache.gearpump.transport.netty.{Context, TaskMessage}
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.concurrent.Await
 
 case class HostPort(host: String, port: Int)
 

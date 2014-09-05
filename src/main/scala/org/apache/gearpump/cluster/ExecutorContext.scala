@@ -18,8 +18,4 @@
 
 package org.apache.gearpump.cluster
 
-import java.io.File
-
-import org.apache.gearpump.util.ActorSystemBooter
-
 case class ExecutorContext(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String])

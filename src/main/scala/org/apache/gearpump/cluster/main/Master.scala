@@ -18,12 +18,13 @@
 
 package org.apache.gearpump.cluster.main
 
-import akka.actor.{PoisonPill, ActorSystem, Props}
-import akka.contrib.pattern.{ClusterSingletonProxy, ClusterSingletonManager}
+import akka.actor.{ActorSystem, PoisonPill, Props}
+import akka.contrib.pattern.{ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.{Configs, Master => MasterClass}
 import org.apache.gearpump.util.ActorUtil
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.collection.JavaConverters._
 
 object Master extends App with ArgumentsParser {

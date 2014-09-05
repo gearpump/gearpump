@@ -19,19 +19,17 @@
 package org.apache.gearpump.cluster
 
 import akka.actor._
-import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.util.ActorSystemBooter.{CreateActor, BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil}
+import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, CreateActor, RegisterActorSystem}
+import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Util}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.{Failure, Success}
-import org.apache.gearpump.util.Util
 /**
  * AppManager is dedicated part of Master to manager applicaitons
  */

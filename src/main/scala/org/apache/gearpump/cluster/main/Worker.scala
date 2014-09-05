@@ -18,11 +18,11 @@
 
 package org.apache.gearpump.cluster.main
 
-import akka.actor.{Deploy, ActorSystem, Props}
-import akka.remote.RemoteScope
-import org.apache.gearpump.cluster.{Worker, Configs}
-import org.apache.gearpump.util.{MasterProxy, ActorSystemBooter}
+import akka.actor.{ActorSystem, Props}
+import org.apache.gearpump.cluster.{Configs, Worker}
+import org.apache.gearpump.util.MasterProxy
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.collection.JavaConverters._
 
 object Worker extends App with ArgumentsParser {

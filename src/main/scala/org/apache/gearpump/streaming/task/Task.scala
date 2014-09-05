@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.task
 
-import org.apache.gearpump.transport.{HostPort}
+import org.apache.gearpump.transport.HostPort
 
 case class TaskId(groupId : Int, index : Int)
 

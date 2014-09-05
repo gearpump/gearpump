@@ -19,7 +19,6 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 
 import scala.util.Try
 

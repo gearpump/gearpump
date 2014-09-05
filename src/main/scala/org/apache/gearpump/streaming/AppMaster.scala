@@ -25,15 +25,14 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask}
+import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.streaming.task.{TaskLocations, TaskId}
-import org.apache.gearpump.transport.{HostPort}
+import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
+import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.{ActorSystemBooter, Util, ActorUtil, DAG}
+import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, DAG, Util}
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable
 import scala.collection.mutable.Queue
 class AppMaster (config : Configs) extends Actor {
 

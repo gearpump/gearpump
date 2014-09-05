@@ -19,19 +19,13 @@
 package org.apache.gearpump.streaming.task
 
 import java.util
-import java.util.concurrent.{TimeUnit, TimeoutException}
 
 import akka.actor._
 import org.apache.gearpump.cluster.Configs
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.duration.FiniteDuration
-import scala.util.{Failure, Success}
 
 abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
   import org.apache.gearpump.streaming.task.TaskActor._

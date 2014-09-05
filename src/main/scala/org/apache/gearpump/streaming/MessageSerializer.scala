@@ -21,7 +21,6 @@ package org.apache.gearpump.streaming
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.transport.{HostPort}
 
 class MessageSerializer extends Serializer[Message] {
   override def write(kryo: Kryo, output: Output, obj: Message) = {
