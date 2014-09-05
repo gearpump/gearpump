@@ -42,6 +42,8 @@ private[cluster] class Master extends Actor {
 
   override def receive : Receive = workerMsgHandler orElse appMasterMsgHandler orElse clientMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self)
 
+  LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
+
   def workerMsgHandler : Receive = {
     case RegisterNewWorker =>
       self forward RegisterWorker(workerId)
