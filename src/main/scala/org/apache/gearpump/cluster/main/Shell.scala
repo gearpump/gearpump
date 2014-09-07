@@ -27,7 +27,7 @@ object Shell extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
 
-  override val options: Array[(String, CLIOptionType)] = Array(
+  override val options: Array[(String, CLIOption[Any])] = Array(
     "ip"-> CLIOption("<master ip>", required = true),
     "port"-> CLIOption("<master port>", required = true))
 
@@ -42,7 +42,7 @@ object Shell extends App with ArgumentsParser {
     val java = System.getenv("JAVA_HOME") + "/bin/java"
     val scalaHome = System.getenv("SCALA_HOME")
     if (null == scalaHome || "" == scalaHome) {
-      Console.println("Please set SCALA_HOME env")
+      LOG.info("Please set SCALA_HOME env")
       System.exit(-1)
     }
 
@@ -65,8 +65,8 @@ object Shell extends App with ArgumentsParser {
   }
 
   def getClassPath(scalaHome : String) = {
-    val classpath = System.getProperty("java.class.path");
-    var classpathList = classpath.split(File.pathSeparator);
+    val classpath = System.getProperty("java.class.path")
+    var classpathList = classpath.split(File.pathSeparator)
     classpathList :+= scalaHome + "/lib/*"
     classpathList.mkString(File.pathSeparator)
   }

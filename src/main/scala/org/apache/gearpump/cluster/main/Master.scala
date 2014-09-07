@@ -27,7 +27,7 @@ import org.slf4j.{Logger, LoggerFactory}
 object Master extends App with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
 
-  val options: Array[(String, CLIOptionType)] = Array("port"->CLIOption("<master port>",required = true))
+  val options: Array[(String, CLIOption[Any])] = Array("port"->CLIOption("<master port>",required = true))
 
   val config = parse(args)
 
@@ -39,7 +39,7 @@ object Master extends App with ArgumentsParser {
 
     val system = ActorSystem(Configs.MASTER, Configs.MASTER_CONFIG.withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)))
 
-    val master = system.actorOf(Props[MasterClass], Configs.MASTER)
+    system.actorOf(Props[MasterClass], Configs.MASTER)
     val masterPath = ActorUtil.getSystemPath(system) + s"/user/${Configs.MASTER}"
     LOG.info(s"master is started at $masterPath")
     system.awaitTermination()

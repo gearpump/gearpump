@@ -39,7 +39,7 @@ class WordCount  {
 
 object WordCount extends App with ArgumentsParser {
 
-  override val options: Array[(String, CLIOptionType)] = Array(
+  override val options: Array[(String, CLIOption[Any])] = Array(
     "ip" -> CLIOption[String]("<master ip>", required = true),
     "port"-> CLIOption[Int]("<master port>", required = true),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),

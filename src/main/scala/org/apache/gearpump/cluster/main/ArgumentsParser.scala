@@ -18,9 +18,7 @@
 
 package org.apache.gearpump.cluster.main
 
-abstract class CLIOptionType(val description:String, val required: Boolean, val defaultValue: Option[Any])
-
-case class CLIOption[T] (desc:String = "", override val required: Boolean = false, override val defaultValue: Option[T] = None) extends CLIOptionType(desc, required, defaultValue)
+case class CLIOption[+T] (description:String = "", required: Boolean = false, defaultValue: Option[T] = None)
 
 class ParseResult(optionMap : Map[String, String], remainArguments : Array[String]) {
   def getInt(key : String) = optionMap.get(key).get.toInt
@@ -48,7 +46,7 @@ trait ArgumentsParser {
     usage.foreach(Console.println(_))
   }
 
-  val options : Array[(String, CLIOptionType)]
+  val options : Array[(String, CLIOption[Any])]
   val remainArgs : Array[String] = Array.empty[String]
 
   def parse(args: Array[String]) : ParseResult = {
