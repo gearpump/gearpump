@@ -18,25 +18,35 @@
 
 package org.apache.gearpump.cluster.main
 
+case class CLIOption[+T] (description:String = "", required: Boolean = false, defaultValue: Option[T] = None)
+
 class ParseResult(optionMap : Map[String, String], remainArguments : Array[String]) {
   def getInt(key : String) = optionMap.get(key).get.toInt
 
   def getString (key : String) = optionMap.get(key).get
+
+  def getBoolean (key : String) = optionMap.get(key).get.toBoolean
 
   def exists(key : String) = optionMap.get(key).isDefined
 
   def remainArgs = this.remainArguments
 }
 
+
 trait ArgumentsParser {
 
-  def help = {
+  def help:Unit = {
     Console.println("Usage:")
-    val usage = List(s"java ${this.getClass} " + options.map(kv => s"-${kv._1} <${kv._2}>").mkString(" ") + " " + remainArgs.map(k => s"<$k>").mkString(" "))
+    var usage = List(s"java ${this.getClass} " + options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") + " " + remainArgs.map(k => s"<$k>").mkString(" "))
+    options.map(kv => if(kv._2.required) {
+      usage = usage :+ s"-${kv._1}  (required:${kv._2.required})"
+    } else {
+      usage = usage :+ s"-${kv._1}  (required:${kv._2.required}, default:${kv._2.defaultValue.getOrElse("")})"
+    })
     usage.foreach(Console.println(_))
   }
 
-  val options : Array[(String, String)]
+  val options : Array[(String, CLIOption[Any])]
   val remainArgs : Array[String] = Array.empty[String]
 
   def parse(args: Array[String]) : ParseResult = {
@@ -48,7 +58,7 @@ trait ArgumentsParser {
       argument match {
         case Nil => Unit // true if everything processed successfully
 
-        case key :: value :: rest if (key.startsWith("-") && !value.startsWith("-")) =>
+        case key :: value :: rest if key.startsWith("-") && !value.startsWith("-") =>
           val fixedKey = key.substring(1)
           config += fixedKey -> value
           if (!options.map(_._1).contains(fixedKey)) {
@@ -73,10 +83,18 @@ trait ArgumentsParser {
     }
     doParse(args.toList)
 
+    options.foreach(pair => {
+      val (key, option) = pair
+      if (!config.contains(key) && !option.required) {
+        config += key -> option.defaultValue.getOrElse("").toString
+      }
+    }
+    )
+
     if (remainArgs.length != this.remainArgs.length ||
     options.length != config.keySet.size) {
       help
-      Console.println(s"fail to parse arguments...")
+      Console.println(s"Unknown or missing arguments...")
       System.exit(-1)
     }
 
