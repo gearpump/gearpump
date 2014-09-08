@@ -39,7 +39,8 @@ resolvers ++= Seq(
   "cloudera-repo" at "https://repository.cloudera.com/artifactory/cloudera-repos",
   "mapr-repo" at "http://repository.mapr.com/maven",
   "spring-releases" at "http://repo.spring.io/libs-release",
-  "sonatype" at "https://oss.sonatype.org/content/repositories/releases"
+  "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
+  "clockfly" at "http://dl.bintray.com/clockfly/maven"
 )
 
 parallelExecution in Test := false
@@ -83,5 +84,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
   "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
   "org.scala-lang" % "jline" % scalaVersionNumber,
-  "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion
+  "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion,
+  "com.github.patriknw" %% "akka-data-replication" % "0.4"
 )

@@ -73,9 +73,10 @@ object Configs {
   //config for construction of appMaster
   val APPID = "appId"
   val APP_DESCRIPTION =  "appDescription"
-  val SINGLETON_MANAGER = "singletonmanager"
+  val SINGLETON_MANAGER = "singleton"
   val MASTER_PROXY = "masterproxy"
   val MASTER = "master"
+  val MASTER_WATCHER = "masterwatcher"
 
   val WORKER = "worker"
   val APP_MANAGER = "appManager"

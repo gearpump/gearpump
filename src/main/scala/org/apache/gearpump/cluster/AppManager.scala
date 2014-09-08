@@ -18,7 +18,11 @@
 
 package org.apache.gearpump.cluster
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
+import akka.contrib.datareplication.{GSet, DataReplication}
+import akka.contrib.datareplication.Replicator._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
@@ -29,22 +33,110 @@ import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, CreateActor, R
 import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Util}
 import org.slf4j.{Logger, LoggerFactory}
 
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{Actor, ActorLogging, Props, _}
+import akka.cluster.ClusterEvent._
+import akka.cluster.{Cluster, Member, MemberStatus}
+import akka.contrib.datareplication.Replicator._
+import akka.contrib.pattern.ClusterSingletonManager
+import com.typesafe.config.ConfigFactory
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+import scala.concurrent.duration._
+import akka.actor.ActorLogging
+import akka.cluster.Cluster
+import akka.actor.Actor
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
+import akka.actor.Props
+import akka.contrib.datareplication.{GSet, DataReplication}
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 /**
  * AppManager is dedicated part of Master to manager applicaitons
  */
-private[cluster] class AppManager() extends Actor {
+
+class ApplicationState(val appId : Int, val attemptId : Int, val state : Any) extends Serializable {
+
+  override def equals(other: Any): Boolean = {
+    if (other.isInstanceOf[ApplicationState]) {
+      val that = other.asInstanceOf[ApplicationState]
+      if (appId == that.appId && attemptId == that.attemptId) {
+        return true
+      } else {
+        return false
+      }
+    } else {
+      return false
+    }
+  }
+
+  override def hashCode: Int = {
+    import akka.routing.MurmurHash._
+    extendHash(appId, attemptId, startMagicA, startMagicB)
+  }
+}
+
+private[cluster] class AppManager() extends Actor with Stash {
   import org.apache.gearpump.cluster.AppManager._
 
   private var master : ActorRef = null
   private var executorCount : Int = 0;
   private var appId : Int = 0;
-  def receive : Receive = clientMsgHandler
+
+  private val systemconfig = context.system.settings.config
+
+  def receive : Receive = null
+
+  private val STATE = "masterstate"
+  private val TIMEOUT = Duration(5, TimeUnit.SECONDS)
+  private val replicator = DataReplication(context.system).replicator
+
+  //TODO: We can use this state for appmaster HA to recover a new App master
+  private var state : Set[ApplicationState] = Set.empty[ApplicationState]
+
+  val masterClusterSize = systemconfig.getStringList("gearpump.cluster.masters").size()
+
+  //optimize write path, we can tollerate one master down for recovery.
+  val writeQuorum = Math.min(2, masterClusterSize / 2 + 1)
+  val readQuorum = masterClusterSize + 1 - writeQuorum
+
+  replicator ! new Get(STATE, ReadFrom(readQuorum), TIMEOUT, None)
+  LOG.info("Recoving application state....")
+  context.become(waitForMasterState)
+
+  def waitForMasterState : Receive = {
+    case GetSuccess(_, replicatedState : GSet, _) =>
+      state = replicatedState.getValue().asScala.foldLeft(state) { (set, appState) =>
+        set + appState.asInstanceOf[ApplicationState]
+      }
+      appId = state.map(_.appId).size
+      LOG.info(s"Successfully recoeved application states for ${state.map(_.appId)}, nextAppId: ${appId}....")
+      context.become(clientMsgHandler)
+      unstashAll()
+    case x : GetFailure =>
+      LOG.info("GetFailure We cannot find any exisitng state, start a fresh one...")
+      context.become(clientMsgHandler)
+      unstashAll()
+    case x : NotFound =>
+      LOG.info("We cannot find any exisitng state, start a fresh one...")
+      context.become(clientMsgHandler)
+      unstashAll()
+    case msg =>
+      LOG.info(s"Get information ${msg.getClass.getSimpleName}")
+      stash()
+  }
 
   def clientMsgHandler : Receive = {
-    case SubmitApplication(appMasterClass, config, app) =>
+    case submitApp @ SubmitApplication(appMasterClass, config, app) =>
       LOG.info(s"AppManager Submiting Application $appId...")
       val appWatcher = context.actorOf(Props(classOf[AppMasterWatcher], appId, appMasterClass, config, app), appId.toString)
+      replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + new ApplicationState(appId, 0, submitApp))
       sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
       appId += 1
     case ShutdownApplication(appId) =>

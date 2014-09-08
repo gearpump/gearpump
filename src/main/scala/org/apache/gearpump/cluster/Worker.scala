@@ -88,12 +88,9 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       if (actor.compareTo(master) == 0) {
         // parent is down, let's make suicide
         LOG.info("parent master cannot be contacted, find a new master ...")
-
         masterProxy ! RegisterWorker(id)
         context.become(waitForMasterConfirm(suicideAfter(30)))
       }
-    case PoisonPill =>
-      context.stop(self)
   }
 
   private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
@@ -102,7 +99,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
   import context.dispatcher
   override def preStart() : Unit = {
     masterProxy ! RegisterNewWorker
-    LOG.info(s"Worker[$id] Sending master RegisterWorker")
+    LOG.info(s"Worker[$id] Sending master RegisterNewWorker")
     context.become(waitForMasterConfirm(suicideAfter(30)))
   }
 

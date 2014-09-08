@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.cluster
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToMaster._
@@ -29,25 +31,38 @@ import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorS
 import org.apache.gearpump.util.ActorUtil
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.concurrent.duration.Duration
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
-private[cluster] class Master extends Actor {
+private[cluster] class Master extends Actor with Stash {
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Master])
+
+  // resources and resourceRequests can be dynamically constructed by
+  // heartbeat of worker and appmaster when master singleton is migrated.
+  // we don't need to persist them in cluster
   private var resources = new Array[(ActorRef, Int)](0)
   private val resourceRequests = new mutable.Queue[(ActorRef, Int)]
 
   private var appManager : ActorRef = null
-  private var workerId = 0
-
-  override def receive : Receive = workerMsgHandler orElse appMasterMsgHandler orElse clientMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self)
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
 
+  override def receive : Receive = workerMsgHandler orElse appMasterMsgHandler orElse clientMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self)
+
+  final val undefinedUid = 0
+  @tailrec final def newUid(): Int = {
+    val uid = ThreadLocalRandom.current.nextInt()
+    if (uid == undefinedUid) newUid
+    else uid
+  }
+
   def workerMsgHandler : Receive = {
     case RegisterNewWorker =>
+      val workerId = newUid
       self forward RegisterWorker(workerId)
-      workerId += 1
     case RegisterWorker(id) =>
       context.watch(sender())
       sender ! WorkerRegistered(id)
@@ -94,9 +109,6 @@ private[cluster] class Master extends Actor {
         worker.compareTo(actor) != 0
       }
   }
-
-  // shutdown the hosting actor system
-  override def postStop(): Unit = context.system.shutdown()
 
   def allocateResource(): Unit = {
     val length = resources.length
