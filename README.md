@@ -126,6 +126,9 @@ After than, you need to configure the conf/application.conf
 	```
 For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in [dashboard/README.md](dashboard/README.md)
 
+Here is how it looks like for grafana dashboard:
+
+![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/dashboard.png)
 
 Acknowledge
 ========================
