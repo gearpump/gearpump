@@ -41,11 +41,11 @@ class ActorSystemBooter(config : Config) {
 }
 
 object ActorSystemBooter  {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[ActorSystemBooter])
+  val LOG: Logger = LoggerFactory.getLogger(classOf[ActorSystemBooter])
 
   def create(config : Config) : ActorSystemBooter = new ActorSystemBooter(config)
 
-  def main (args: Array[String]) {
+   def main (args: Array[String]) {
     val name = args(0)
     val reportBack = args(1)
     val config = Configs.SYSTEM_DEFAULT_CONFIG

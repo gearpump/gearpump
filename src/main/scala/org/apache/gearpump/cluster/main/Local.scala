@@ -29,7 +29,10 @@ object Local extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
 
-  override val options = Array("port"-> "master port", "sameprocess" -> "whether to start executor in same process of worker", "workernum"->"how many workers to start")
+  override val options: Array[(String, CLIOption[Any])] = Array(
+    "port"-> CLIOption[Int]("<master port>", required = true),
+    "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
+    "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(4)))
 
   val config = parse(args)
 

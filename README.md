@@ -7,7 +7,7 @@ GearPump
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/project/logo/logo.png)
 
 
-A Actor Driven event processing framework.
+A Actor Driven streaming framework.
 
 A initial benchmarks shows that we can process 2million messages/second (100 bytes per message) with latency around 30ms on a cluster of 4 nodes.
 
@@ -88,3 +88,8 @@ After than, you need to configure the conf/application.conf
 	gearpump.metrics.sample.rate = 10        ## this means we will sample 1 message for every 10 messages
 	```
 For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in [dashboard/README.md](dashboard/README.md)
+
+
+Acknowledge
+========================
+The netty transport code work is based on apache storm. Thanks to apache storm contributors.

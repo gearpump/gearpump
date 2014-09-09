@@ -27,12 +27,19 @@ import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.Constants._
 object SOL extends App with ArgumentsParser {
 
-  override val options = Array("ip" -> "master ip", "port" -> "master port",
-    "spout"->"spout number", "bolt"->"bolt number", "runseconds" -> "run seconds", "bytesPerMessage" -> "sze of each message", "stages"->"how many stages to run")
+  override val options: Array[(String, CLIOption[Any])] = Array(
+    "ip" -> CLIOption[String]("<master ip>", required = true),
+    "port" -> CLIOption[Int]("<master port>", required = true),
+    "spout"-> CLIOption[Int]("<spout number>", required = true, defaultValue = Some(1)),
+    "bolt"-> CLIOption[Int]("<bolt number>", required = true, defaultValue = Some(1)),
+    "runseconds" -> CLIOption[Int]("<run seconds>", required = true, defaultValue = Some(60)),
+    "bytesPerMessage" -> CLIOption[Int]("<sze of each message>", required = true, defaultValue = Some(200)),
+    "stages"-> CLIOption[Int]("<how many stages to run>", required = true, defaultValue = Some(2)))
 
-  start
+  start()
 
-  def start = {
+  def start(): Unit = {
+
     val config = parse(args)
 
     val ip = config.getString("ip")
