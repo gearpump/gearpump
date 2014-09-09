@@ -137,7 +137,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       stash()
   }
 
-  def receiveHandler = appMasterMessage orElse appMasterMessage orElse terminationWatch
+  def receiveHandler = clientMsgHandler orElse appMasterMessage orElse terminationWatch
 
   def clientMsgHandler : Receive = {
     case submitApp @ SubmitApplication(appMasterClass, config, app) =>
@@ -148,22 +148,17 @@ private[cluster] class AppManager() extends Actor with Stash {
       appId += 1
     case ShutdownApplication(appId) =>
       LOG.info(s"App Manager Shutting down application $appId")
-      val child = context.child(appId.toString)
-      if (child.isEmpty) {
-        sender.tell(ShutdownApplicationResult(Failure(new Exception(s"App $appId not found"))), context.parent)
-      } else {
-        val data = appMasterRegistry.get(appId)
-        if (data.isDefined) {
-          val worker = data.get.worker
-          LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $masterExecutorId")
-          worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
-          sender ! ShutdownApplicationResult(Success(appId))
-        }
-        else {
-          val errorMsg = s"Find to find regisration information for appId: $appId"
-          LOG.error(errorMsg)
-          sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
-        }
+      val data = appMasterRegistry.get(appId)
+      if (data.isDefined) {
+        val worker = data.get.worker
+        LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $masterExecutorId")
+        worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
+        sender ! ShutdownApplicationResult(Success(appId))
+      }
+      else {
+        val errorMsg = s"Find to find regisration information for appId: $appId"
+        LOG.error(errorMsg)
+        sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
   }
 
@@ -235,6 +230,7 @@ private[cluster] object AppManager {
           val hostAndPort = address.split(":")
           HostPort(hostAndPort(0), hostAndPort(1).toInt)
         }
+        LOG.info(s"Create master proxy on target actor system ${systemPath}")
         val masterProxyConfig = Props(classOf[MasterProxy], masterAddress)
         sender ! CreateActor(masterProxyConfig, "masterproxy")
         context.become(waitForMasterProxyToStart(masterConfig))
@@ -242,8 +238,12 @@ private[cluster] object AppManager {
 
     def waitForMasterProxyToStart(masterConfig : Configs) : Receive = {
       case ActorCreated(masterProxy, "masterproxy") =>
+        LOG.info(s"Master proxy is created, create appmaster...")
         val masterProps = Props(appMasterClass, masterConfig.withMasterProxy(masterProxy))
         sender ! CreateActor(masterProps, "appmaster")
+
+        //my job has completed. kill myself
+        self ! PoisonPill
     }
 
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
