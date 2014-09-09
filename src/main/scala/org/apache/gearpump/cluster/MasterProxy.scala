@@ -22,9 +22,12 @@ import akka.actor._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Configs
 import org.apache.gearpump.util.Constants._
+import org.slf4j.{LoggerFactory, Logger}
 
 class MasterProxy(masters: Iterable[HostPort])
   extends Actor with Stash with ActorLogging {
+
+  import MasterProxy._
 
   val contacts = masters.map { master =>
     s"akka.tcp://${MASTER}@${master.host}:${master.port}/user/${MASTER_PROXY}"
@@ -33,6 +36,8 @@ class MasterProxy(masters: Iterable[HostPort])
   }
 
   contacts foreach { _ ! Identify(None) }
+
+  LOG.info("Master Proxy is started...")
 
   override def postStop(): Unit = {
     super.postStop()
@@ -48,7 +53,9 @@ class MasterProxy(masters: Iterable[HostPort])
       unstashAll()
       context.become(active(receptionist))
     case ActorIdentity(_, None) => // ok, use another instead
-    case msg => stash()
+    case msg =>
+      LOG.info(s"get unknown message , stashing ${msg.getClass.getSimpleName}")
+      stash()
   }
 
   def active(receptionist: ActorRef): Actor.Receive = {
@@ -59,4 +66,8 @@ class MasterProxy(masters: Iterable[HostPort])
     case _: ActorIdentity ⇒ // ok, from previous establish, already handled
     case msg => receptionist forward msg
   }
+}
+
+object MasterProxy {
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[MasterProxy])
 }

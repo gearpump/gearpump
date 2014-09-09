@@ -29,6 +29,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
+import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Configs, ActorSystemBooter, ActorUtil, Util}
@@ -230,7 +231,10 @@ private[cluster] object AppManager {
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
         //bind lifecycle with worker
         sender ! BindLifeCycle(worker)
-        val masterAddress = systemConfig.getStringList("gearpump.cluster.masters").asScala
+        val masterAddress = systemConfig.getStringList("gearpump.cluster.masters").asScala.map { address =>
+          val hostAndPort = address.split(":")
+          HostPort(hostAndPort(0), hostAndPort(1).toInt)
+        }
         val masterProxyConfig = Props(classOf[MasterProxy], masterAddress)
         sender ! CreateActor(masterProxyConfig, "masterproxy")
         context.become(waitForMasterProxyToStart(masterConfig))
