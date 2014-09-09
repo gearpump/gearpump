@@ -19,10 +19,9 @@
 package org.apache.gearpump.cluster.main
 
 import java.io.{File, PrintWriter}
-
-import org.apache.gearpump.cluster.Configs
+import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
-
+import org.apache.gearpump.util.Constants._
 object Shell extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
@@ -33,7 +32,7 @@ object Shell extends App with ArgumentsParser {
 
   val ip = config.getString("ip")
   val port = config.getInt("port")
-  val masterURL = s"akka.tcp://${Configs.MASTER}@$ip:$port/user/${Configs.MASTER}"
+  val masterURL = s"akka.tcp://${MASTER}@$ip:$port/user/${MASTER}"
   Console.out.println("Master URL: " + masterURL)
 
   def start() = {

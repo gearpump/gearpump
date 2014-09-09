@@ -30,7 +30,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, CreateActor, RegisterActorSystem}
-import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Util}
+import org.apache.gearpump.util.{Configs, ActorSystemBooter, ActorUtil, Util}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.concurrent.TimeUnit
@@ -140,7 +140,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   def clientMsgHandler : Receive = {
     case submitApp @ SubmitApplication(appMasterClass, config, app) =>
       LOG.info(s"AppManager Submiting Application $appId...")
-      val appWatcher = context.actorOf(Props(classOf[AppMasterWatcher], appId, appMasterClass, config, app), appId.toString)
+      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app), appId.toString)
       replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + new ApplicationState(appId, 0, submitApp))
       sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
       appId += 1
@@ -197,7 +197,7 @@ private[cluster] object AppManager {
   /**
    * Start and watch Single AppMaster's lifecycle
    */
-  class AppMasterWatcher(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
+  class AppMasterStarter(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
 
     val master = context.actorSelection("../../")
     master ! RequestResource(appId, 1)
@@ -207,7 +207,7 @@ private[cluster] object AppManager {
 
     def waitForResourceAllocation : Receive = {
       case ResourceAllocated(resource) => {
-        LOG.info(s"Resource allocated for appMaster $appId")
+        LOG.info(s"Resource allocated for appMaster $app Id")
         val Resource(worker, slots) = resource(0)
         val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withMaster(sender).withAppMasterRegisterData(AppMasterInfo(worker)).withExecutorId(masterExecutorId).withSlots(slots)
         LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
@@ -242,8 +242,8 @@ private[cluster] object AppManager {
       }
       case ExecutorLaunchFailed(reason, ex) => {
         LOG.error(s"Executor Launch failed reason：$reason", ex)
-        //TODO: restart this process, ask for resources
-        //
+        //TODO: restart this process, ask for resources instead of stopping myself
+        context.stop(self)
       }
     }
   }

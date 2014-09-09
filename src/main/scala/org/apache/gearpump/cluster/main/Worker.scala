@@ -19,10 +19,10 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
-import org.apache.gearpump.cluster.{Configs, Worker}
-import org.apache.gearpump.util.MasterProxy
+import org.apache.gearpump.cluster.Worker
+import org.apache.gearpump.util.{Configs, MasterProxy}
 import org.slf4j.{Logger, LoggerFactory}
-
+import org.apache.gearpump.util.Constants._
 import scala.collection.JavaConverters._
 
 object Worker extends App with ArgumentsParser {
@@ -43,7 +43,7 @@ object Worker extends App with ArgumentsParser {
     val system = ActorSystem(id, config)
 
     val masterAddress = config.getStringList("gearpump.cluster.masters").asScala
-    val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), Configs.MASTER_PROXY)
+    val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER_PROXY)
 
     val worker = system.actorOf(Props(classOf[Worker], masterProxy), classOf[Worker].getSimpleName + id)
 

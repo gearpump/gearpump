@@ -25,6 +25,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.util.Configs
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}

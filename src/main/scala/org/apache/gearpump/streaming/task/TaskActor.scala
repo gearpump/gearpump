@@ -21,10 +21,10 @@ package org.apache.gearpump.streaming.task
 import java.util
 
 import akka.actor._
-import org.apache.gearpump.cluster.Configs
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
+import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {

@@ -16,12 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming
+package org.apache.gearpump.util
 
-import akka.actor.Actor
-import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.util.{Configs, Graph, ReferenceEqual}
+object Constants {
 
-case class TaskDescription(taskClass: Class[_ <: Actor], parallism : Int) extends ReferenceEqual
+  //config for construction of appMaster
+  val APPID = "appId"
+  val APP_DESCRIPTION =  "appDescription"
+  val SINGLETON_MANAGER = "singleton"
+  val MASTER_PROXY = "masterproxy"
+  val MASTER = "master"
+  val MASTER_WATCHER = "masterwatcher"
 
-case class AppDescription(name : String, conf : Configs, dag: Graph[TaskDescription, Partitioner]) extends org.apache.gearpump.cluster.Application
+  val WORKER = "worker"
+
+  val APP_MASTER_REGISTER_DATA = "appmasterregisterdata"
+
+  //config for construction of executor
+  val APP_MASTER = "appMaster"
+  val EXECUTOR_ID = "executorId"
+  val SLOTS = "slots"
+
+  val TASK_ID = "taskId"
+  val TASK_DAG = "taskDag"
+}

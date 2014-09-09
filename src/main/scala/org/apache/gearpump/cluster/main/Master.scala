@@ -21,8 +21,8 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.contrib.pattern.{ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
-import org.apache.gearpump.cluster.{Configs, Master => MasterClass}
-import org.apache.gearpump.util.ActorUtil
+import org.apache.gearpump.cluster.{Master => MasterClass}
+import org.apache.gearpump.util.{Configs, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
@@ -48,7 +48,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.Props
 import akka.contrib.datareplication.{GSet, DataReplication}
 import scala.collection.JavaConverters._
-
+import org.apache.gearpump.util.Constants._
 object Master extends App with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
 
@@ -76,29 +76,29 @@ object Master extends App with ArgumentsParser {
       System.exit(-1)
     }
 
-    val masterList = masters.map(master => s"akka.tcp://${Configs.MASTER}@$master").toList.asJava
+    val masterList = masters.map(master => s"akka.tcp://${MASTER}@$master").toList.asJava
     val quorum = masterList.size() /2  + 1
     masterConfig = masterConfig.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
       withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip)).
       withValue("akka.cluster.seed-nodes", ConfigValueFactory.fromAnyRef(masterList)).
-      withValue(s"akka.cluster.role.${Configs.MASTER}.min-nr-of-members", ConfigValueFactory.fromAnyRef(quorum))
+      withValue(s"akka.cluster.role.${MASTER}.min-nr-of-members", ConfigValueFactory.fromAnyRef(quorum))
 
-    val system = ActorSystem(Configs.MASTER, masterConfig)
+    val system = ActorSystem(MASTER, masterConfig)
 
     //start singleton manager
     val singletonManager = system.actorOf(ClusterSingletonManager.props(
-      singletonProps = Props(classOf[MasterWatcher], Configs.MASTER),
-      singletonName = Configs.MASTER_WATCHER,
+      singletonProps = Props(classOf[MasterWatcher], MASTER),
+      singletonName = MASTER_WATCHER,
       terminationMessage = PoisonPill,
-      role = Some(Configs.MASTER)),
-      name = Configs.SINGLETON_MANAGER)
+      role = Some(MASTER)),
+      name = SINGLETON_MANAGER)
 
     //start master proxy
     val masterProxy = system.actorOf(ClusterSingletonProxy.props(
-      singletonPath = s"/user/${Configs.SINGLETON_MANAGER}/${Configs.MASTER_WATCHER}/${Configs.MASTER}",
-      role = Some(Configs.MASTER)),
-      name = Configs.MASTER_PROXY)
+      singletonPath = s"/user/${SINGLETON_MANAGER}/${MASTER_WATCHER}/${MASTER}",
+      role = Some(MASTER)),
+      name = MASTER_PROXY)
 
     LOG.info(s"master proxy is started at ${masterProxy.path}")
 

@@ -21,8 +21,8 @@ package org.apache.gearpump.streaming.examples.sol
 import java.util.Random
 
 import akka.serialization.SerializationExtension
-import org.apache.gearpump.cluster.Configs
 import org.apache.gearpump.streaming.task.{Message, TaskActor}
+import org.apache.gearpump.util.Configs
 
 class SOLSpout(conf : Configs) extends TaskActor(conf) {
   import org.apache.gearpump.streaming.examples.sol.SOLSpout._

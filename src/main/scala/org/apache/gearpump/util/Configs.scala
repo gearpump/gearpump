@@ -16,18 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.util
 
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
 import org.apache.gearpump.streaming.task.TaskId
-import org.apache.gearpump.util.DAG
+import org.apache.gearpump.util.Constants._
 
 /**
  * Immutable configuration
  */
 class Configs(val config: Map[String, _])  extends Serializable{
-  import org.apache.gearpump.cluster.Configs._
+  import org.apache.gearpump.util.Configs._
 
   def withValue(key: String, value: Any) = {
     Configs(config + (key->value))
@@ -69,27 +70,6 @@ class Configs(val config: Map[String, _])  extends Serializable{
 }
 
 object Configs {
-
-  //config for construction of appMaster
-  val APPID = "appId"
-  val APP_DESCRIPTION =  "appDescription"
-  val SINGLETON_MANAGER = "singleton"
-  val MASTER_PROXY = "masterproxy"
-  val MASTER = "master"
-  val MASTER_WATCHER = "masterwatcher"
-
-  val WORKER = "worker"
-
-  val APP_MASTER_REGISTER_DATA = "appmasterregisterdata"
-
-  //config for construction of executor
-  val APP_MASTER = "appMaster"
-  val EXECUTOR_ID = "executorId"
-  val SLOTS = "slots"
-
-  val TASK_ID = "taskId"
-  val TASK_DAG = "taskDag"
-
   def empty = new Configs(Map.empty[String, Any])
 
   def apply(config : Map[String, _]) = new Configs(config)

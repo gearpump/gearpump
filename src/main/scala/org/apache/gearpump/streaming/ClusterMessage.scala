@@ -19,9 +19,9 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.{ActorRef, Actor}
-import org.apache.gearpump.cluster.Configs
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.Configs
 
 object AppMasterToExecutor {
   case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])

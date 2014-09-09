@@ -22,8 +22,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
-import org.apache.gearpump.cluster.{Application, Configs, MasterClient}
+import org.apache.gearpump.cluster.{Application, MasterClient}
 import org.apache.gearpump.streaming.AppMaster
+import org.apache.gearpump.util.Configs
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
