@@ -45,7 +45,8 @@ class AppMaster (config : Configs) extends Actor {
   private val appId = config.appId
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
   private val master = config.master
-  private val appManager = config.appManager
+
+  private val registerData = config.appMasterRegisterData
 
   private val name = appDescription.name
   private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
@@ -56,7 +57,7 @@ class AppMaster (config : Configs) extends Actor {
   private var totalTaskCount = 0
 
   override def preStart: Unit = {
-    context.parent ! RegisterMaster(appManager, appId, masterExecutorId, slots)
+    master ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData)
 
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
     Console.out.println("AppMaster is launched xxxxxxxxxxxxxxxxx")
@@ -100,7 +101,7 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def executorMsgHandler: Receive = {
-    case TaskLaunched(taskId, host) => {
+    case RegisterTask(taskId, host) => {
       LOG.info(s"Task $taskId has been Launched for app $appId")
 
       var taskIds = taskLocations.get(host).getOrElse(Set.empty[TaskId])
@@ -146,7 +147,7 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def workerMsgHandler : Receive = {
-    case ExecutorLaunched(executor, executorId, slots) => {
+    case RegisterExecutor(executor, executorId, slots) => {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)

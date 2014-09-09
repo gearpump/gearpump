@@ -96,7 +96,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
 
   final override def preStart() : Unit = {
 
-    appMaster ! TaskLaunched(taskId, local)
+    appMaster ! RegisterTask(taskId, local)
 
     val graph = conf.dag.graph
     LOG.info(s"TaskInit... taskId: $taskId")

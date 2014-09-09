@@ -36,6 +36,9 @@ import scala.concurrent.{Future, future}
 import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
 
+/**
+ * masterProxy is used to resolve the master
+ */
 private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
   val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
@@ -44,12 +47,13 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
   private var allocatedResource = Map[ActorRef, Int]()
   private var id = -1
   override def receive : Receive = null
+  var master : ActorRef = null
 
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
     case WorkerRegistered(id) =>
       this.id = id
       killSelf.cancel()
-      val master = sender
+      master = sender
       context.watch(master)
       LOG.info(s"Worker $id Registered ....")
       sender ! ResourceUpdate(id, resource)
@@ -78,6 +82,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
         resource = resource - launch.slots
         allocatedResource = allocatedResource + (executor -> launch.slots)
+        master ! ResourceUpdate(id, resource)
 
         context.watch(executor)
       }
@@ -90,7 +95,28 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         LOG.info("parent master cannot be contacted, find a new master ...")
         masterProxy ! RegisterWorker(id)
         context.become(waitForMasterConfirm(suicideAfter(30)))
+      } else if (isChildActorPath(actor)) {
+        //one executor is down,
+        LOG.info(s"Executor is down ${actor.path.name}")
+
+        val allocated = allocatedResource.get(actor)
+        if (allocated.isDefined) {
+          resource = resource + allocated.get
+          allocatedResource = allocatedResource - actor
+          master ! ResourceUpdate(id, resource)
+        }
       }
+  }
+
+  private def isChildActorPath(actor : ActorRef) : Boolean = {
+    if (null != actor) {
+      val name = actor.path.name
+      val child = context.child(name)
+      if (child.isDefined) {
+        return child.get.path == actor.path
+      }
+    }
+    return false
   }
 
   private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId

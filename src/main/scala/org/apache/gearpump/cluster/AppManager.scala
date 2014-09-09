@@ -93,6 +93,9 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   def receive : Receive = null
 
+  //from appid to appMaster data
+  private var appMasterRegistry = Map.empty[Int, AppMasterInfo]
+
   private val STATE = "masterstate"
   private val TIMEOUT = Duration(5, TimeUnit.SECONDS)
   private val replicator = DataReplication(context.system).replicator
@@ -117,20 +120,22 @@ private[cluster] class AppManager() extends Actor with Stash {
       }
       appId = state.map(_.appId).size
       LOG.info(s"Successfully recoeved application states for ${state.map(_.appId)}, nextAppId: ${appId}....")
-      context.become(clientMsgHandler)
+      context.become(receiveHandler)
       unstashAll()
     case x : GetFailure =>
       LOG.info("GetFailure We cannot find any exisitng state, start a fresh one...")
-      context.become(clientMsgHandler)
+      context.become(receiveHandler)
       unstashAll()
     case x : NotFound =>
       LOG.info("We cannot find any exisitng state, start a fresh one...")
-      context.become(clientMsgHandler)
+      context.become(receiveHandler)
       unstashAll()
     case msg =>
       LOG.info(s"Get information ${msg.getClass.getSimpleName}")
       stash()
   }
+
+  def receiveHandler = appMasterMessage orElse appMasterMessage orElse terminationWatch
 
   def clientMsgHandler : Receive = {
     case submitApp @ SubmitApplication(appMasterClass, config, app) =>
@@ -145,11 +150,45 @@ private[cluster] class AppManager() extends Actor with Stash {
       if (child.isEmpty) {
         sender.tell(ShutdownApplicationResult(Failure(new Exception(s"App $appId not found"))), context.parent)
       } else {
-        LOG.info(s"Shutting down  ${child.get.path}")
-        child.get.forward(ShutdownAppMaster)
+        //TODO: find worker, executorId,
+
+        val data = appMasterRegistry.get(appId)
+        if (data.isDefined) {
+          val worker = data.get.worker
+          LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $masterExecutorId")
+          worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
+          sender ! ShutdownApplicationResult(Success(appId))
+        }
+        else {
+          val errorMsg = s"Find to find regisration information for appId: $appId"
+          LOG.error(errorMsg)
+          sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
+        }
       }
+
+  }
+
+  def appMasterMessage : Receive = {
+    case RegisterAppMaster(master, appId, executorId, slots, registerData : AppMasterInfo) => {
+      LOG.info(s"Master $executorId has been launched...")
+      context.watch(master)
+      appMasterRegistry += appId -> registerData
+    }
+  }
+
+  def terminationWatch : Receive = {
+    //TODO: fix this
+    case terminate : Terminated => {
+      terminate.getAddressTerminated()
+      //TODO: Check whether this belongs to a app master
+      LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
+
+      //TODO: decide whether it is a normal terminaiton, or abnormal. and implement appMaster HA
+    }
   }
 }
+
+case class AppMasterInfo(worker : ActorRef) extends AppMasterRegisterData
 
 private[cluster] object AppManager {
   private val masterExecutorId = -1
@@ -170,7 +209,7 @@ private[cluster] object AppManager {
       case ResourceAllocated(resource) => {
         LOG.info(s"Resource allocated for appMaster $appId")
         val Resource(worker, slots) = resource(0)
-        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withMaster(sender).withAppManager(self).withExecutorId(masterExecutorId).withSlots(slots)
+        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withMaster(sender).withAppMasterRegisterData(AppMasterInfo(worker)).withExecutorId(masterExecutorId).withSlots(slots)
         LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
         val name = actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
@@ -197,35 +236,14 @@ private[cluster] object AppManager {
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
     def waitForAppMasterToStart : Receive = {
-      case RegisterMaster(master, appId, executorId, slots) => {
-        LOG.info(s"Master $executorId has been launched...")
-        context.watch(master)
-        context.become(waitForShutdownCommand(sender, executorId) orElse terminationWatch(master))
+      case ExecutorLaunched(appId, executorId, slots) => {
+        LOG.info("Successfully launched executor on worker, my mission is completed, close myself...")
+        context.stop(self)
       }
       case ExecutorLaunchFailed(reason, ex) => {
         LOG.error(s"Executor Launch failed reason：$reason", ex)
-      }
-    }
-
-    def waitForShutdownCommand(worker : ActorRef, executorId : Int) : Receive = {
-      case ShutdownAppMaster => {
-
-        LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $executorId")
-
-        worker ! ShutdownExecutor(appId, executorId, s"AppMaster $appId shutdown requested by master...")
-        sender ! ShutdownApplicationResult(Success(appId))
-        //kill myself
-        self ! PoisonPill
-      }
-    }
-
-    def terminationWatch(appMaster : ActorRef) : Receive = {
-      case terminate : Terminated => {
-        terminate.getAddressTerminated()
-        if (terminate.actor.compareTo(appMaster) == 0) {
-          LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
-          context.stop(self)
-        }
+        //TODO: restart this process, ask for resources
+        //
       }
     }
   }

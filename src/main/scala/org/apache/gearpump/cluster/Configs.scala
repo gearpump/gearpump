@@ -57,8 +57,8 @@ class Configs(val config: Map[String, _])  extends Serializable{
   def withSlots(slots : Int) = withValue(SLOTS, slots)
   def slots = config.getInt(SLOTS)
 
-  def withAppManager(appManager : ActorRef) = withValue(APP_MANAGER, appManager)
-  def appManager : ActorRef = config.getAnyRef(APP_MANAGER).asInstanceOf[ActorRef]
+  def withAppMasterRegisterData(data : AppMasterRegisterData) = withValue(APP_MASTER_REGISTER_DATA, data)
+  def appMasterRegisterData : AppMasterRegisterData = config.getAnyRef(APP_MASTER_REGISTER_DATA).asInstanceOf[AppMasterRegisterData]
 
   def withTaskId(taskId : TaskId) =  withValue(TASK_ID, taskId)
   def taskId : TaskId = config.getAnyRef(TASK_ID).asInstanceOf[TaskId]
@@ -79,7 +79,8 @@ object Configs {
   val MASTER_WATCHER = "masterwatcher"
 
   val WORKER = "worker"
-  val APP_MANAGER = "appManager"
+
+  val APP_MASTER_REGISTER_DATA = "appmasterregisterdata"
 
   //config for construction of executor
   val APP_MASTER = "appMaster"

@@ -85,6 +85,9 @@ private[cluster] class Master extends Actor with Stash {
       val appMaster = sender()
       resourceRequests.enqueue((appMaster, slots))
       allocateResource()
+    case registerAppMaster : RegisterAppMaster =>
+      //forward to appmaster watcher
+      context.actorSelection(s"${appManager.path.name}/${registerAppMaster.appId}").forward(registerAppMaster)
   }
 
   def clientMsgHandler : Receive = {

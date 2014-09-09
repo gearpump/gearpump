@@ -49,8 +49,10 @@ object MasterToClient {
   case class ShutdownApplicationResult(appId : Try[Int])
 }
 
+trait AppMasterRegisterData
+
 object AppMasterToMaster {
-  case class RegisterMaster(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int)
+  case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int, registerData : AppMasterRegisterData)
   case class RequestResource(appId: Int, slots: Int)
 }
 
@@ -65,7 +67,7 @@ object AppMasterToWorker {
 }
 
 object WorkerToAppMaster {
-  case class ExecutorLaunched(executor: ActorRef, executorId: Int, slots: Int)
+  case class ExecutorLaunched(appId: Int, executorId: Int, slots: Int)
   case class ExecutorLaunchFailed(reason: String = null, ex: Throwable = null)
 }
 

@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming
 
-import akka.actor.Actor
+import akka.actor.{ActorRef, Actor}
 import org.apache.gearpump.cluster.Configs
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.transport.HostPort
@@ -28,7 +28,9 @@ object AppMasterToExecutor {
 }
 
 object ExecutorToAppMaster {
-  case class TaskLaunched(taskId: TaskId, task: HostPort)
+  case class RegisterExecutor(executor: ActorRef, executorId: Int, slots: Int)
+
+  case class RegisterTask(taskId: TaskId, task: HostPort)
 
   trait TaskFinished {
     def taskId : TaskId
