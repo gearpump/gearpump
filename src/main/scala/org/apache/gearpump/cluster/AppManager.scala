@@ -167,7 +167,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       LOG.info(s"Master $executorId has been launched...")
       context.watch(appMaster)
       appMasterRegistry += appId -> registerData
-      sender ! AppMasterRegistered(appId, self)
+      sender ! AppMasterRegistered(appId, context.parent)
   }
 
   def terminationWatch : Receive = {
