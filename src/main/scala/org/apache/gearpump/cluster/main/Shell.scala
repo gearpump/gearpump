@@ -27,15 +27,13 @@ object Shell extends App with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "ip"-> CLIOption("<master ip>", required = true),
+    "masters"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
     "port"-> CLIOption("<master port>", required = true))
 
   val config = parse(args)
 
-  val ip = config.getString("ip")
-  val port = config.getInt("port")
-  val masterURL = s"akka.tcp://${MASTER}@$ip:$port/user/${MASTER}"
-  Console.out.println("Master URL: " + masterURL)
+  val masters = config.getString("masters")
+  Console.out.println("Master URL: " + masters)
 
   def start() = {
     val java = System.getenv("JAVA_HOME") + "/bin/java"
@@ -48,7 +46,7 @@ object Shell extends App with ArgumentsParser {
     System.setProperty("scala.home", scalaHome)
     System.setProperty("scala.usejavacp", "true")
 
-    System.setProperty("masterActorPath", masterURL)
+    System.setProperty("masterActorPath", masters)
 
     val file = File.createTempFile("scala_shell", ".scala")
 

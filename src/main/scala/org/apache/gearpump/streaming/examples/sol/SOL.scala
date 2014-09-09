@@ -28,8 +28,7 @@ import org.apache.gearpump.util.Constants._
 object SOL extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "ip" -> CLIOption[String]("<master ip>", required = true),
-    "port" -> CLIOption[Int]("<master port>", required = true),
+    "masters" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "spout"-> CLIOption[Int]("<spout number>", required = true, defaultValue = Some(1)),
     "bolt"-> CLIOption[Int]("<bolt number>", required = true, defaultValue = Some(1)),
     "runseconds" -> CLIOption[Int]("<run seconds>", required = true, defaultValue = Some(60)),
@@ -42,17 +41,15 @@ object SOL extends App with ArgumentsParser {
 
     val config = parse(args)
 
-    val ip = config.getString("ip")
-    val port = config.getInt("port")
+    val masters = config.getString("masters")
     val spout = config.getInt("spout")
     val bolt = config.getInt("bolt")
     val bytesPerMessage = config.getInt("bytesPerMessage")
     val stages = config.getInt("stages")
     val runseconds = config.getInt("runseconds")
 
-    val masterURL = s"akka.tcp://${MASTER}@$ip:$port/user/${MASTER}"
-    Console.out.println("Master URL: " + masterURL)
-    val context = ClientContext(masterURL)
+    Console.out.println("Master URL: " + masters)
+    val context = ClientContext(masters)
 
     val appId = context.submit(getApplication(spout, bolt, bytesPerMessage, stages))
     System.out.println(s"We get application id: $appId")

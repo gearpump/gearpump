@@ -40,7 +40,7 @@ class WordCount  {
 object WordCount extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "ip" -> CLIOption[String]("<master ip>", required = true),
+    "masters" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "port"-> CLIOption[Int]("<master port>", required = true),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
@@ -49,14 +49,10 @@ object WordCount extends App with ArgumentsParser {
 
   def start(): Unit = {
 
-    val ip = config.getString("ip")
-    val port = config.getInt("port")
+    val masters = config.getString("masters")
+    Console.out.println("Master URL: " + masters)
 
-    val masterURL = s"akka.tcp://${MASTER}@$ip:$port/user/${MASTER}"
-
-    Console.out.println("Master URL: " + masterURL)
-
-    val context = ClientContext(masterURL)
+    val context = ClientContext(masters)
 
     val appId = context.submit(new WordCount().getApplication(config.getInt("split"), config.getInt("sum")))
     System.out.println(s"We get application id: $appId")
