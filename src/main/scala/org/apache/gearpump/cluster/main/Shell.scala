@@ -27,8 +27,7 @@ object Shell extends App with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
-    "port"-> CLIOption("<master port>", required = true))
+    "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true))
 
   val config = parse(args)
 

@@ -1,4 +1,4 @@
-#####This is an on-going effort, and not mature yet. There is no at least once or exactly once, load balance yet, though we want to build support for those in weeks. We will update the wiki about the detailed status, the design, and the plan as soon as possible.
+#####This is an on-going effort, and not mature yet. There is no at least once or exactly once, load balance yet, though we want to build support for those in weeks. We will update the wiki about the detailed status, th e design, and the plan as soon as possible.
 
 
 GearPump
@@ -94,7 +94,7 @@ We allow to start master on multiple nodes. For example, if we start master on 5
   gearpump {
    ...
   cluster {
-    masters = ["node1:3000, node2:3000, node3:3000"]
+    masters = ["node1:3000", "node2:3000", "node3:3000"]
   }
   }
   ```
