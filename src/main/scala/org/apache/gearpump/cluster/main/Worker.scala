@@ -31,7 +31,7 @@ object Worker extends App with ArgumentsParser {
 
   def uuid = java.util.UUID.randomUUID.toString
 
-  val options = Array.empty[(String, String)]
+  val options = Array.empty[(String, CLIOption[Any])]
 
   def start() = {
     worker()

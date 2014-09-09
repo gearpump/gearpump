@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.examples.sol
 
-import org.apache.gearpump.cluster.main.ArgumentsParser
+import org.apache.gearpump.cluster.main.{CLIOption, ArgumentsParser}
 import org.apache.gearpump.partitioner.{Partitioner, ShufflePartitioner}
 import org.apache.gearpump.streaming.client.ClientContext
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
