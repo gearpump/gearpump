@@ -52,9 +52,8 @@ import org.apache.gearpump.util.Constants._
 object Master extends App with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
 
-  val options = Array("ip"->"master ip address", "port"->"master port")
   val options: Array[(String, CLIOption[Any])] = 
-    Array("ip"->CLIOption[String]("<master ip address>",required = true)
+    Array("ip"->CLIOption[String]("<master ip address>",required = true),
       "port"->CLIOption("<master port>",required = true))
 
 
