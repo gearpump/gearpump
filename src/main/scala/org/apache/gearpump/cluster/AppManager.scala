@@ -165,7 +165,6 @@ private[cluster] class AppManager() extends Actor with Stash {
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
         }
       }
-
   }
 
   def appMasterMessage : Receive = {
@@ -230,17 +229,17 @@ private[cluster] object AppManager {
 
         //bind lifecycle with worker
         sender ! BindLifeCycle(worker)
-        context.become(waitForAppMasterToStart)
+        context.become(waitForAppMasterLaunchAccepted)
     }
 
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
-    def waitForAppMasterToStart : Receive = {
-      case ExecutorLaunched(appId, executorId, slots) => {
+    def waitForAppMasterLaunchAccepted : Receive = {
+      case ExecutorLaunchAccepted(appId, executorId, slots) => {
         LOG.info("Successfully launched executor on worker, my mission is completed, close myself...")
         context.stop(self)
       }
-      case ExecutorLaunchFailed(reason, ex) => {
+      case ExecutorLaunchRejected(reason, ex) => {
         LOG.error(s"Executor Launch failed reason：$reason", ex)
         //TODO: restart this process, ask for resources instead of stopping myself
         context.stop(self)

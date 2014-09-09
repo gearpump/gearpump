@@ -68,7 +68,6 @@ object AppMasterToWorker {
 }
 
 object WorkerToAppMaster {
-  case class ExecutorLaunched(appId: Int, executorId: Int, slots: Int)
-  case class ExecutorLaunchFailed(reason: String = null, ex: Throwable = null)
+  case class ExecutorLaunchAccepted(appId: Int, executorId: Int, slots: Int)
+  case class ExecutorLaunchRejected(reason: String = null, ex: Throwable = null)
 }
-

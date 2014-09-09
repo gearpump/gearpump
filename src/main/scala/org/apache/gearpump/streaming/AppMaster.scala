@@ -168,7 +168,7 @@ class AppMaster (config : Configs) extends Actor {
       }
       launchTask(slots)
     }
-    case ExecutorLaunchFailed(reason, ex) => {
+    case ExecutorLaunchRejected(reason, ex) => {
       LOG.error(s"Executor Launch failed reason：$reason", ex)
     }
   }
