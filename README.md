@@ -58,7 +58,7 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
 
 
 ###Cluster Mode
-1. modify conf/application.conf, set gearpump.clusters to a list of master node.
+1. modify target/pack/conf/application.conf, set gearpump.clusters to a list of master node.
   ```
   gearpump {
    ...
