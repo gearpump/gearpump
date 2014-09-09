@@ -36,7 +36,7 @@ class ClientContext(masters: Iterable[HostPort]) {
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
   val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG)
 
-  val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER_PROXY)
+  val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
 
   def submit(app : Application) : Int = {
     val client = new MasterClient(master)

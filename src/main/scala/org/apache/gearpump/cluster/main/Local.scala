@@ -29,23 +29,27 @@ object Local extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
 
-  override val options: Array[(String, CLIOption[Any])] = Array(
-    "port"-> CLIOption[Int]("<master port>", required = true),
-    "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
-    "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(4)))
+  override val options: Array[(String, CLIOption[Any])] =
+    Array("ip"->CLIOption[String]("<master ip address>",required = false, defaultValue = Some("127.0.0.1")),
+          "port"->CLIOption("<master port>",required = true),
+          "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
+          "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(4)))
 
   val config = parse(args)
 
   def start() = {
-    local(config.getInt("port"), config.getInt("workernum"), config.exists("sameprocess"))
+    local(config.getString("ip"),  config.getInt("port"), config.getInt("workernum"), config.exists("sameprocess"))
   }
 
-  def local(port : Int, workerCount : Int, sameProcess : Boolean) : Unit = {
+  def local(ip : String, port : Int, workerCount : Int, sameProcess : Boolean) : Unit = {
     if (sameProcess) {
       System.setProperty("LOCAL", "true")
     }
 
-    val system = ActorSystem(MASTER, Configs.MASTER_CONFIG.withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)))
+    val system = ActorSystem(MASTER, Configs.MASTER_CONFIG.
+      withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
+      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip))
+    )
     val master = system.actorOf(Props[Master], MASTER)
     val masterPath = ActorUtil.getSystemPath(system) + s"/user/${MASTER}"
 

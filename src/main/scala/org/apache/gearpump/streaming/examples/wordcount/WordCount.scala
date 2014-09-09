@@ -40,7 +40,7 @@ class WordCount  {
 object WordCount extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "masters" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
+    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
     "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
@@ -48,7 +48,7 @@ object WordCount extends App with ArgumentsParser {
 
   def start(): Unit = {
 
-    val masters = config.getString("masters")
+    val masters = config.getString("master")
     Console.out.println("Master URL: " + masters)
 
     val context = ClientContext(masters)

@@ -30,7 +30,7 @@ class MasterProxy(masters: Iterable[HostPort])
   import MasterProxy._
 
   val contacts = masters.map { master =>
-    s"akka.tcp://${MASTER}@${master.host}:${master.port}/user/${MASTER_PROXY}"
+    s"akka.tcp://${MASTER}@${master.host}:${master.port}/user/${MASTER}"
   }.map { url =>
     context.actorSelection(url)
   }

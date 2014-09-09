@@ -47,7 +47,7 @@ object Worker extends App with ArgumentsParser {
       val hostAndPort = address.split(":")
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
     }
-    val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER_PROXY)
+    val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER)
 
     val worker = system.actorOf(Props(classOf[Worker], masterProxy), classOf[Worker].getSimpleName + id)
 

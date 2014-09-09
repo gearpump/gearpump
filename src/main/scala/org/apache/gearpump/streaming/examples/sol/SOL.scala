@@ -28,7 +28,7 @@ import org.apache.gearpump.util.Constants._
 object SOL extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "masters" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
+    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "spout"-> CLIOption[Int]("<spout number>", required = true, defaultValue = Some(1)),
     "bolt"-> CLIOption[Int]("<bolt number>", required = true, defaultValue = Some(1)),
     "runseconds" -> CLIOption[Int]("<run seconds>", required = true, defaultValue = Some(60)),
@@ -41,7 +41,7 @@ object SOL extends App with ArgumentsParser {
 
     val config = parse(args)
 
-    val masters = config.getString("masters")
+    val masters = config.getString("master")
     val spout = config.getInt("spout")
     val bolt = config.getInt("bolt")
     val bytesPerMessage = config.getInt("bytesPerMessage")

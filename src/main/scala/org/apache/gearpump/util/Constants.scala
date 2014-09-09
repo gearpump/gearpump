@@ -24,7 +24,6 @@ object Constants {
   val APPID = "appId"
   val APP_DESCRIPTION =  "appDescription"
   val SINGLETON_MANAGER = "singleton"
-  val MASTER_PROXY = "masterproxy"
   val MASTER = "master"
   val MASTER_WATCHER = "masterwatcher"
 

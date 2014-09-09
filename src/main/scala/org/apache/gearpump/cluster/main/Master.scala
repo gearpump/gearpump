@@ -101,7 +101,7 @@ object Master extends App with ArgumentsParser {
     val masterProxy = system.actorOf(ClusterSingletonProxy.props(
       singletonPath = s"/user/${SINGLETON_MANAGER}/${MASTER_WATCHER}/${MASTER}",
       role = Some(MASTER)),
-      name = MASTER_PROXY)
+      name = MASTER)
 
     LOG.info(s"master proxy is started at ${masterProxy.path}")
 

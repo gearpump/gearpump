@@ -34,60 +34,87 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
   ## Run Build step above
   cd target/pack
   sudo make install PREFIX="/usr/local"
+  This will install scripts to /usr/local/bin and jars to /usr/local/lib.
   ```
-  This will install scripts to /usr/local/bin and jars to /usr/local/lib
 
 ###Local Mode
+
 1. Start Local Cluster in same process
   ```bash
-  ## Create Cluster on port localhost:8092, create 4 worker, 4 worker exists in same process
-  target/pack/bin/local -port 8092 -sameprocess -workernum 4
+  ## By default, it will create 4 workers
+  target/pack/bin/local -port 3000
   ```
 
-2. Start Local Cluster in different process
-  ```bash
-  ## Create Cluster on port localhost:8092, create 4 worker, 4 worker exists in seperate process
-  target/pack/bin/local -port 8092 -workernum 4
-  ```
-3. Start Client Example Code
+2. Start WordCount Example
   
   ```bash
   ## Create Application
-  target/pack/bin/wordcount <master ip> <master port> <split number> <sum number> <runseconds>
+  target/pack/bin/wordcount -master 127.0.0.1:3000
   ```
 
 
 ###Cluster Mode
-1. modify target/pack/conf/application.conf, set gearpump.clusters to a list of master node.
+
+1. modify target/pack/conf/application.conf, set "gearpump.cluster.masters" to a list of master nodes. The target/pack/conf/application.conf must be synchronized on all nodes in the cluster.
+
   ```
   gearpump {
    ...
   cluster {
-    masters = ["127.0.0.1:3000"]
+    masters = ["node1:3000"]
   }
   }
   ```
   
-2. On 1 node, Start Master
+2. On node1, Start Master
   ```bash
-  ## Create Master on <master ip>:8092, 
-  target/pack/bin/master -ip 127.0.0.1 -port 3000
+  ## on node1
+  target/pack/bin/master -ip node1 -port 3000  
   ```
 
-3. On same or different machine, Start workers. If you want to start 3 worker, then you need to run this command 3 times.
+3. On any machine, Start workers. You can start multiple workers on same on different machines. Worker will read the master location information "gearpump.cluster.masters" from target/pack/conf/application.conf
 
   ```bash
   target/pack/bin/worker
   ```
+  
 4. Start Client Example Code
-
   ```bash
   ## Create Application
-  target/pack/bin/wordcount -masters 127.0.0.1:3000 -split <split number> -sum <sum number> -runseconds <runseconds>
+  target/pack/bin/wordcount -master 127.0.0.1:3000
   ```
 
+###Master HA
+
+We allow to start master on multiple nodes. For example, if we start master on 5 nodes, then we can at most tolerate 2 master nodes failure. 
+
+1. modify target/pack/conf/application.conf, set "gearpump.cluster.masters" to a list of master nodes. The target/pack/conf/application.conf must be synchronized on all nodes in the cluster.
+
+  ```
+  gearpump {
+   ...
+  cluster {
+    masters = ["node1:3000, node2:3000, node3:3000"]
+  }
+  }
+  ```
+
+2. On node1, node2, node3, Start Master
+  ```bash
+  ## on node1
+  target/pack/bin/master -ip node1 -port 3000  
+  
+  ## on node2
+  target/pack/bin/master -ip node2 -port 3000  
+  
+  ## on node3
+  target/pack/bin/master -ip node3 -port 3000  
+  ```  
+
+3. You can kill any node, the master HA will take effect. It can take up to 15 seconds for master node to failover. You can change the failover timeout time by setting "master.akka.cluster.auto-down-unreachable-after"
+  
 ###Metrics and Dashboard
-Gearpump use Graphite for the metrics dashboard. You need to install a graphite to get the metrics, if you don't need metrics dashboard, you don't need to install Graphite.
+Gearpump use Graphite for the metrics dashboard. By default, metrics is disabled. If you want to use metrics, you need to install a graphite to get the metrics.
 
 After than, you need to configure the conf/application.conf
 
