@@ -89,19 +89,22 @@ object Master extends App with ArgumentsParser {
 
     val system = ActorSystem(MASTER, masterConfig)
 
-    //start singleton manager
-    val singletonManager = system.actorOf(ClusterSingletonManager.props(
-      singletonProps = Props(classOf[MasterWatcher], MASTER),
-      singletonName = MASTER_WATCHER,
-      terminationMessage = PoisonPill,
-      role = Some(MASTER)),
-      name = SINGLETON_MANAGER)
+    val replicator = DataReplication(system).replicator
+    LOG.info(s"Replicator path: ${replicator.path}")
 
     //start master proxy
     val masterProxy = system.actorOf(ClusterSingletonProxy.props(
       singletonPath = s"/user/${SINGLETON_MANAGER}/${MASTER_WATCHER}/${MASTER}",
       role = Some(MASTER)),
       name = MASTER)
+
+    //start singleton manager
+    val singletonManager = system.actorOf(ClusterSingletonManager.props(
+      singletonProps = Props(classOf[MasterWatcher], MASTER, masterProxy),
+      singletonName = MASTER_WATCHER,
+      terminationMessage = PoisonPill,
+      role = Some(MASTER)),
+      name = SINGLETON_MANAGER)
 
     LOG.info(s"master proxy is started at ${masterProxy.path}")
 
@@ -110,6 +113,8 @@ object Master extends App with ArgumentsParser {
       override def run() : Unit = {
         if (!system.isTerminated) {
           System.out.println("Triggering shutdown hook....")
+
+          system.stop(masterProxy)
           val cluster = Cluster(system)
           cluster.leave(cluster.selfAddress)
           cluster.down(cluster.selfAddress)
@@ -130,7 +135,7 @@ object Master extends App with ArgumentsParser {
   start()
 }
 
-class MasterWatcher(role: String) extends Actor  with ActorLogging {
+class MasterWatcher(role: String, masterProxy : ActorRef) extends Actor  with ActorLogging {
   import context.dispatcher
 
   val cluster = Cluster(context.system)
@@ -193,6 +198,7 @@ class MasterWatcher(role: String) extends Actor  with ActorLogging {
 
   def waitForShutdown : Receive = {
     case MasterWatcher.Shutdown => {
+      context.system.stop(masterProxy)
       cluster.unsubscribe(self)
       cluster.leave(cluster.selfAddress)
       context.stop(self)
