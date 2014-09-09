@@ -29,11 +29,11 @@ object SOL extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
-    "spout"-> CLIOption[Int]("<spout number>", required = true, defaultValue = Some(1)),
-    "bolt"-> CLIOption[Int]("<bolt number>", required = true, defaultValue = Some(1)),
-    "runseconds" -> CLIOption[Int]("<run seconds>", required = true, defaultValue = Some(60)),
-    "bytesPerMessage" -> CLIOption[Int]("<sze of each message>", required = true, defaultValue = Some(200)),
-    "stages"-> CLIOption[Int]("<how many stages to run>", required = true, defaultValue = Some(2)))
+    "spout"-> CLIOption[Int]("<spout number>", required = false, defaultValue = Some(2)),
+    "bolt"-> CLIOption[Int]("<bolt number>", required = false, defaultValue = Some(2)),
+    "runseconds" -> CLIOption[Int]("<run seconds>", required = false, defaultValue = Some(60)),
+    "bytesPerMessage" -> CLIOption[Int]("<size of each message>", required = false, defaultValue = Some(100)),
+    "stages"-> CLIOption[Int]("<how many stages to run>", required = false, defaultValue = Some(2)))
 
   start()
 
