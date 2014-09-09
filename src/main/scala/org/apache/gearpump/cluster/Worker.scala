@@ -92,8 +92,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       if (actor.compareTo(master) == 0) {
         // parent is down, let's make suicide
         LOG.info("parent master cannot be contacted, find a new master ...")
-        masterProxy ! RegisterWorker(id)
-        context.become(waitForMasterConfirm(suicideAfter(30)))
+        context.become(waitForMasterConfirm(repeatActionUtil(30)(masterProxy ! RegisterWorker(id))))
       } else if (isChildActorPath(actor)) {
         //one executor is down,
         LOG.info(s"Executor is down ${actor.path.name}")
@@ -123,12 +122,27 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
   import context.dispatcher
   override def preStart() : Unit = {
-    masterProxy ! RegisterNewWorker
     LOG.info(s"Worker[$id] Sending master RegisterNewWorker")
-    context.become(waitForMasterConfirm(suicideAfter(30)))
+    masterProxy ! RegisterNewWorker
+    context.become(waitForMasterConfirm(repeatActionUtil(30)(null)))
   }
 
-  private def suicideAfter(seconds: Int) = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
+  private def repeatActionUtil(seconds: Int)(action : => Unit) : Cancellable = {
+
+    val cancelSend = context.system.scheduler.schedule(Duration.Zero, Duration(2, TimeUnit.SECONDS))(action)
+    val cancelSuicide = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
+    return new Cancellable {
+      def cancel(): Boolean = {
+        val result1 = cancelSend.cancel()
+        val result2 = cancelSuicide.cancel()
+        result1 && result2
+      }
+
+      def isCancelled: Boolean = {
+        cancelSend.isCancelled && cancelSuicide.isCancelled
+      }
+    }
+  }
 
   override def postStop : Unit = {
     LOG.info(s"Worker $id is going down....")

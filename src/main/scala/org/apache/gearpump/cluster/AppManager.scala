@@ -112,6 +112,15 @@ private[cluster] class AppManager() extends Actor with Stash {
   val readQuorum = masterClusterSize + 1 - writeQuorum
 
   replicator ! new Get(STATE, ReadFrom(readQuorum), TIMEOUT, None)
+
+  override def preStart : Unit = {
+    replicator ! Subscribe(STATE, self)
+  }
+
+  override def postStop : Unit = {
+    replicator ! Unsubscribe(STATE, self)
+  }
+
   LOG.info("Recoving application state....")
   context.become(waitForMasterState)
 
@@ -137,13 +146,21 @@ private[cluster] class AppManager() extends Actor with Stash {
       stash()
   }
 
-  def receiveHandler = clientMsgHandler orElse appMasterMessage orElse terminationWatch
+  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse terminationWatch
+
+  def masterHAMsgHandler : Receive = {
+    case update: UpdateResponse => LOG.info(s"we get update $update")
+    case Changed(STATE, data: GSet) =>
+      LOG.info("Current elements: {}", data.value)
+  }
 
   def clientMsgHandler : Receive = {
     case submitApp @ SubmitApplication(appMasterClass, config, app) =>
       LOG.info(s"AppManager Submiting Application $appId...")
       val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app), appId.toString)
-      replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + new ApplicationState(appId, 0, submitApp))
+
+      LOG.info(s"Persist master state writeQuorum: ${writeQuorum}, timeout: ${TIMEOUT}...")
+      replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + new ApplicationState(appId, 0, null))
       sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
       appId += 1
     case ShutdownApplication(appId) =>
@@ -164,7 +181,7 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   def appMasterMessage : Receive = {
     case RegisterAppMaster(appMaster, appId, executorId, slots, registerData : AppMasterInfo) =>
-      LOG.info(s"Master $executorId has been launched...")
+      LOG.info(s"Register AppMaster for app: $appId...")
       context.watch(appMaster)
       appMasterRegistry += appId -> registerData
       sender ! AppMasterRegistered(appId, context.parent)
@@ -220,7 +237,7 @@ private[cluster] object AppManager {
     def waitForActorSystemToStart(worker : ActorRef, masterConfig : Configs) : Receive = {
       case ExecutorLaunchRejected(reason, ex) =>
         LOG.error(s"Executor Launch failed reason：$reason", ex)
-        //TODO: restart this process, ask for resources instead of stopping myself
+        //TODO: ask master to allocate new resources.
         context.stop(self)
       case RegisterActorSystem(systemPath) =>
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")

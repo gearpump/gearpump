@@ -37,7 +37,7 @@ import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.Queue
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class AppMaster (config : Configs) extends Actor {
 
@@ -81,9 +81,8 @@ class AppMaster (config : Configs) extends Actor {
     totalTaskCount = tasks.size
     taskQueue ++= tasks
 
-    masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData)
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
-    context.become(waitForMasterToConfirmRegistration(suicideAfter(30)))
+    context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData))))
   }
 
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
@@ -196,8 +195,7 @@ class AppMaster (config : Configs) extends Actor {
     if (null != master && actor.compareTo(master) == 0) {
       // master is down, let's try to contact new master
       LOG.info("parent master cannot be contacted, find a new master ...")
-      masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData)
-      context.become(waitForMasterToConfirmRegistration(suicideAfter(30)))
+      context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData))))
     } else if (isChildActorPath(actor)) {
       //executor is down
       //TODO: handle this failure
@@ -207,7 +205,22 @@ class AppMaster (config : Configs) extends Actor {
 
   import context.dispatcher
 
-  private def suicideAfter(seconds: Int) = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
+  private def repeatActionUtil(seconds: Int)(action : => Unit) : Cancellable = {
+
+    val cancelSend = context.system.scheduler.schedule(Duration.Zero, Duration(2, TimeUnit.SECONDS))(action)
+    val cancelSuicide = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
+    return new Cancellable {
+      def cancel(): Boolean = {
+        val result1 = cancelSend.cancel()
+        val result2 = cancelSuicide.cancel()
+        result1 && result2
+      }
+
+      def isCancelled: Boolean = {
+        cancelSend.isCancelled && cancelSuicide.isCancelled
+      }
+    }
+  }
 
   private def isChildActorPath(actor : ActorRef) : Boolean = {
     if (null != actor) {

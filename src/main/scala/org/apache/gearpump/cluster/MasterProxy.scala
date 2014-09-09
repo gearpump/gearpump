@@ -25,7 +25,7 @@ import org.apache.gearpump.util.Constants._
 import org.slf4j.{LoggerFactory, Logger}
 
 class MasterProxy(masters: Iterable[HostPort])
-  extends Actor with Stash with ActorLogging {
+  extends Actor with Stash {
 
   import MasterProxy._
 
@@ -48,7 +48,7 @@ class MasterProxy(masters: Iterable[HostPort])
   def establishing: Actor.Receive = {
     case ActorIdentity(_, Some(receptionist)) =>
       context watch receptionist
-      log.info("Connected to [{}]", receptionist.path)
+      LOG.info("Connected to [{}]", receptionist.path)
       context.watch(receptionist)
       unstashAll()
       context.become(active(receptionist))
@@ -60,11 +60,14 @@ class MasterProxy(masters: Iterable[HostPort])
 
   def active(receptionist: ActorRef): Actor.Receive = {
     case Terminated(receptionist) ⇒
-      log.info("Lost contact with [{}], restablishing connection", receptionist)
+      LOG.info("Lost contact with [{}], restablishing connection", receptionist)
       contacts foreach { _ ! Identify(None) }
       context.become(establishing)
     case _: ActorIdentity ⇒ // ok, from previous establish, already handled
-    case msg => receptionist forward msg
+    case msg => {
+      LOG.info(s"Get msg ${msg.getClass.getSimpleName}, forwarding to ${receptionist.path}")
+      receptionist forward msg
+    }
   }
 }
 
