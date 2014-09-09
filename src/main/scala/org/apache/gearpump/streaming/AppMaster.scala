@@ -89,6 +89,8 @@ class AppMaster (config : Configs) extends Actor {
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
     case AppMasterRegistered(appId, master) =>
       LOG.info(s"AppMasterRegistered received for appID: $appId")
+
+      LOG.info("Sending request resource to master...")
       master ! RequestResource(appId, taskQueue.size)
 
       killSelf.cancel()
