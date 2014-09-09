@@ -58,31 +58,41 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
 
 
 ###Cluster Mode
-1. On 1 node, Start Master
+1. modify conf/application.conf, set gearpump.clusters to a list of master node.
+  ```
+  gearpump {
+   ...
+  cluster {
+    masters = ["127.0.0.1:3000"]
+  }
+  }
+  ```
+  
+2. On 1 node, Start Master
   ```bash
   ## Create Master on <master ip>:8092, 
-  target/pack/bin/master -port 8092
+  target/pack/bin/master -ip 127.0.0.1 -port 3000
   ```
 
-2. On same or different machine, Start workers. If you want to start 3 worker, then you need to run this command 3 times.
+3. On same or different machine, Start workers. If you want to start 3 worker, then you need to run this command 3 times.
 
   ```bash
-  target/pack/bin/worker -ip <master ip> -port <master port>
+  target/pack/bin/worker
   ```
-3. Start Client Example Code
+4. Start Client Example Code
 
   ```bash
   ## Create Application
-  target/pack/bin/wordcount -ip <master ip> -port <master port> -split <split number> -sum <sum number> -runseconds <runseconds>
+  target/pack/bin/wordcount -masters 127.0.0.1:3000 -split <split number> -sum <sum number> -runseconds <runseconds>
   ```
 
 ###Metrics and Dashboard
-Gearpump use Graphite for the metrics dashboard. You need to install a graphite to get the metrics. 
+Gearpump use Graphite for the metrics dashboard. You need to install a graphite to get the metrics, if you don't need metrics dashboard, you don't need to install Graphite.
 
 After than, you need to configure the conf/application.conf
 
     ```
-	gearpump.metrics.enabled = true
+	gearpump.metrics.enabled = true  # Default is false, thus metrics is not enabled.
 	gearpump.metrics.graphite.host = "your actual graphite host name or ip"  
 	gearpump.metrics.graphite.port = 2003   ## Your graphite port
 	gearpump.metrics.sample.rate = 10        ## this means we will sample 1 message for every 10 messages
