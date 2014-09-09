@@ -59,6 +59,7 @@ object AppMasterToMaster {
 
 object MasterToAppMaster {
   case class ResourceAllocated(resource: Array[Resource])
+  case class AppMasterRegistered(appId: Int, master : ActorRef)
   case object ShutdownAppMaster
 }
 
@@ -68,6 +69,5 @@ object AppMasterToWorker {
 }
 
 object WorkerToAppMaster {
-  case class ExecutorLaunchAccepted(appId: Int, executorId: Int, slots: Int)
   case class ExecutorLaunchRejected(reason: String = null, ex: Throwable = null)
 }

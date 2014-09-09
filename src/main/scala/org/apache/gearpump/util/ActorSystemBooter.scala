@@ -54,6 +54,8 @@ object ActorSystemBooter  {
 
   case class BindLifeCycle(actor : ActorRef)
   case class CreateActor(props : Props, name : String)
+  case class ActorCreated(actor : ActorRef, name : String)
+
   case class RegisterActorSystem(systemPath : String)
 
   class Daemon(name : String, reportBack : String) extends Actor {
@@ -66,7 +68,8 @@ object ActorSystemBooter  {
 
       case CreateActor(props : Props, name : String) =>
         LOG.info(s"creating actor $name")
-        context.actorOf(props, name)
+        val actor = context.actorOf(props, name)
+        sender ! ActorCreated(actor, name)
       case PoisonPill =>
         context.stop(self)
       case Terminated(actor) =>

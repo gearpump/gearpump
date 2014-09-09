@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.util
+package org.apache.gearpump.cluster
 
 import akka.actor._
 import org.apache.gearpump.transport.HostPort

@@ -46,8 +46,8 @@ class Configs(val config: Map[String, _])  extends Serializable{
 
   def appDescription : Application = config.getAnyRef(APP_DESCRIPTION).asInstanceOf[Application]
 
-  def withMaster(master : ActorRef) = withValue(MASTER, master)
-  def master : ActorRef = config.getAnyRef(MASTER).asInstanceOf[ActorRef]
+  def withMasterProxy(master : ActorRef) = withValue(MASTER_PROXY, master)
+  def masterProxy : ActorRef = config.getAnyRef(MASTER_PROXY).asInstanceOf[ActorRef]
 
   def withAppMaster(appMaster : ActorRef) = withValue(APP_MASTER, appMaster)
   def appMaster : ActorRef = config.getAnyRef(APP_MASTER).asInstanceOf[ActorRef]

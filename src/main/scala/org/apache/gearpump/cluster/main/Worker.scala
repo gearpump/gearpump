@@ -19,8 +19,8 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
-import org.apache.gearpump.cluster.Worker
-import org.apache.gearpump.util.{Configs, MasterProxy}
+import org.apache.gearpump.cluster.{MasterProxy, Worker}
+import org.apache.gearpump.util.{Configs}
 import org.slf4j.{Logger, LoggerFactory}
 import org.apache.gearpump.util.Constants._
 import scala.collection.JavaConverters._

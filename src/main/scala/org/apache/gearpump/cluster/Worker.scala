@@ -83,9 +83,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         resource = resource - launch.slots
         allocatedResource = allocatedResource + (executor -> launch.slots)
         master ! ResourceUpdate(id, resource)
-
-        sender ! ExecutorLaunchAccepted(launch.appId, launch.executorId, launch.slots)
-
         context.watch(executor)
       }
   }

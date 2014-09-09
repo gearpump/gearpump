@@ -29,7 +29,8 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, CreateActor, RegisterActorSystem}
+import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
+import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Configs, ActorSystemBooter, ActorUtil, Util}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -150,8 +151,6 @@ private[cluster] class AppManager() extends Actor with Stash {
       if (child.isEmpty) {
         sender.tell(ShutdownApplicationResult(Failure(new Exception(s"App $appId not found"))), context.parent)
       } else {
-        //TODO: find worker, executorId,
-
         val data = appMasterRegistry.get(appId)
         if (data.isDefined) {
           val worker = data.get.worker
@@ -168,11 +167,11 @@ private[cluster] class AppManager() extends Actor with Stash {
   }
 
   def appMasterMessage : Receive = {
-    case RegisterAppMaster(master, appId, executorId, slots, registerData : AppMasterInfo) => {
+    case RegisterAppMaster(appMaster, appId, executorId, slots, registerData : AppMasterInfo) =>
       LOG.info(s"Master $executorId has been launched...")
-      context.watch(master)
+      context.watch(appMaster)
       appMasterRegistry += appId -> registerData
-    }
+      sender ! AppMasterRegistered(appId, self)
   }
 
   def terminationWatch : Receive = {
@@ -198,6 +197,8 @@ private[cluster] object AppManager {
    */
   class AppMasterStarter(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
 
+    val systemConfig = context.system.settings.config
+
     val master = context.actorSelection("../../")
     master ! RequestResource(appId, 1)
     LOG.info(s"AppManager asking Master for resource for app $appId...")
@@ -208,7 +209,7 @@ private[cluster] object AppManager {
       case ResourceAllocated(resource) => {
         LOG.info(s"Resource allocated for appMaster $app Id")
         val Resource(worker, slots) = resource(0)
-        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withMaster(sender).withAppMasterRegisterData(AppMasterInfo(worker)).withExecutorId(masterExecutorId).withSlots(slots)
+        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(worker)).withExecutorId(masterExecutorId).withSlots(slots)
         LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
         val name = actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
@@ -221,29 +222,26 @@ private[cluster] object AppManager {
     }
 
     def waitForActorSystemToStart(worker : ActorRef, masterConfig : Configs) : Receive = {
-      case RegisterActorSystem(systemPath) =>
-        LOG.info(s"Received RegisterActorSystem $systemPath for app master")
-        val masterProps = Props(appMasterClass, masterConfig)
-
-        sender ! CreateActor(masterProps, "appmaster")
-
-        //bind lifecycle with worker
-        sender ! BindLifeCycle(worker)
-        context.become(waitForAppMasterLaunchAccepted)
-    }
-
-    private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
-
-    def waitForAppMasterLaunchAccepted : Receive = {
-      case ExecutorLaunchAccepted(appId, executorId, slots) => {
-        LOG.info("Successfully launched executor on worker, my mission is completed, close myself...")
-        context.stop(self)
-      }
-      case ExecutorLaunchRejected(reason, ex) => {
+      case ExecutorLaunchRejected(reason, ex) =>
         LOG.error(s"Executor Launch failed reason：$reason", ex)
         //TODO: restart this process, ask for resources instead of stopping myself
         context.stop(self)
-      }
+      case RegisterActorSystem(systemPath) =>
+        LOG.info(s"Received RegisterActorSystem $systemPath for app master")
+        //bind lifecycle with worker
+        sender ! BindLifeCycle(worker)
+        val masterAddress = systemConfig.getStringList("gearpump.cluster.masters").asScala
+        val masterProxyConfig = Props(classOf[MasterProxy], masterAddress)
+        sender ! CreateActor(masterProxyConfig, "masterproxy")
+        context.become(waitForMasterProxyToStart(masterConfig))
     }
+
+    def waitForMasterProxyToStart(masterConfig : Configs) : Receive = {
+      case ActorCreated(masterProxy, "masterproxy") =>
+        val masterProps = Props(appMasterClass, masterConfig.withMasterProxy(masterProxy))
+        sender ! CreateActor(masterProps, "appmaster")
+    }
+
+    private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
   }
 }
