@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster
 
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.pattern.pipe
@@ -30,26 +31,33 @@ import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.util.{ActorUtil, ProcessLogRedirector}
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.concurrent.duration._
 import scala.concurrent.{Future, future}
 import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
 
-private[cluster] class Worker(id : Int, master : ActorRef) extends Actor{
+/**
+ * masterProxy is used to resolve the master
+ */
+private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
   val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
 
   private var resource = 100
   private var allocatedResource = Map[ActorRef, Int]()
+  private var id = -1
+  override def receive : Receive = null
+  var master : ActorRef = null
 
-  override def receive : Receive = waitForMasterConfirm
-
-  LOG.info(s"Worker $id is starting...")
-
-  def waitForMasterConfirm : Receive = {
-    case WorkerRegistered =>
+  def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
+    case WorkerRegistered(id) =>
+      this.id = id
+      killSelf.cancel()
+      master = sender
+      context.watch(master)
       LOG.info(s"Worker $id Registered ....")
       sender ! ResourceUpdate(id, resource)
-      context.become(appMasterMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self))
+      context.become(appMasterMsgHandler orElse terminationWatch(master) orElse ActorUtil.defaultMsgHandler(self))
   }
 
   def appMasterMsgHandler : Receive = {
@@ -66,7 +74,7 @@ private[cluster] class Worker(id : Int, master : ActorRef) extends Actor{
     case launch : LaunchExecutor =>
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
       if (resource < launch.slots) {
-        sender ! ExecutorLaunchFailed("There is no free resource on this machine")
+        sender ! ExecutorLaunchRejected("There is no free resource on this machine")
       } else {
         val actorName = actorNameForExecutor(launch.appId, launch.executorId)
 
@@ -74,37 +82,57 @@ private[cluster] class Worker(id : Int, master : ActorRef) extends Actor{
 
         resource = resource - launch.slots
         allocatedResource = allocatedResource + (executor -> launch.slots)
-
+        master ! ResourceUpdate(id, resource)
         context.watch(executor)
       }
   }
 
-  def terminationWatch : Receive = {
+  def terminationWatch(master : ActorRef) : Receive = {
     case Terminated(actor) =>
       if (actor.compareTo(master) == 0) {
         // parent is down, let's make suicide
-        LOG.info("parent master cannot be contacted, kill myself...")
-        context.stop(self)
-      } else if (actor.path.parent == self.path) {
-        LOG.info(s"[$id] An executor dies ${actor.path}...." )
-        allocatedResource.get(actor).map { slots =>
-          LOG.info(s"[$id] Reclaiming resource $slots...." )
+        LOG.info("parent master cannot be contacted, find a new master ...")
+        masterProxy ! RegisterWorker(id)
+        context.become(waitForMasterConfirm(suicideAfter(30)))
+      } else if (isChildActorPath(actor)) {
+        //one executor is down,
+        LOG.info(s"Executor is down ${actor.path.name}")
+
+        val allocated = allocatedResource.get(actor)
+        if (allocated.isDefined) {
+          resource = resource + allocated.get
           allocatedResource = allocatedResource - actor
-          resource += slots
+          master ! ResourceUpdate(id, resource)
         }
       }
   }
 
-  private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
-
-  override def preStart() : Unit = {
-    master ! RegisterWorker(id)
-    context.watch(master)
-    LOG.info(s"Worker[$id] Sending master RegisterWorker")
+  private def isChildActorPath(actor : ActorRef) : Boolean = {
+    if (null != actor) {
+      val name = actor.path.name
+      val child = context.child(name)
+      if (child.isDefined) {
+        return child.get.path == actor.path
+      }
+    }
+    return false
   }
 
-  override def postStop(): Unit = {
+  private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
+
+
+  import context.dispatcher
+  override def preStart() : Unit = {
+    masterProxy ! RegisterNewWorker
+    LOG.info(s"Worker[$id] Sending master RegisterNewWorker")
+    context.become(waitForMasterConfirm(suicideAfter(30)))
+  }
+
+  private def suicideAfter(seconds: Int) = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
+
+  override def postStop : Unit = {
     LOG.info(s"Worker $id is going down....")
+    context.system.shutdown()
   }
 }
 

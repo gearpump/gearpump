@@ -18,23 +18,27 @@
 
 package org.apache.gearpump.streaming
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
+import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask}
+import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.streaming.task.{TaskLocations, TaskId}
-import org.apache.gearpump.transport.{HostPort}
+import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
+import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.{ActorSystemBooter, Util, ActorUtil, DAG}
+import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable
 import scala.collection.mutable.Queue
+import scala.concurrent.duration.FiniteDuration
+
 class AppMaster (config : Configs) extends Actor {
 
   import org.apache.gearpump.streaming.AppMaster._
@@ -45,8 +49,10 @@ class AppMaster (config : Configs) extends Actor {
 
   private val appId = config.appId
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
-  private val master = config.master
-  private val appManager = config.appManager
+  private val masterProxy = config.masterProxy
+  private var master : ActorRef = null
+
+  private val registerData = config.appMasterRegisterData
 
   private val name = appDescription.name
   private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
@@ -56,15 +62,10 @@ class AppMaster (config : Configs) extends Actor {
   private var startedTasks = Set.empty[TaskId]
   private var totalTaskCount = 0
 
-  private var pendingTaskLocationQueries = new mutable.HashMap[TaskId, mutable.ListBuffer[ActorRef]]()
-
+  override def receive : Receive = null
 
   override def preStart: Unit = {
-    context.parent ! RegisterMaster(appManager, appId, masterExecutorId, slots)
-
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
-    Console.out.println("AppMaster is launched xxxxxxxxxxxxxxxxx")
-
     val dag = DAG(appDescription.dag)
 
     //scheduler the task fairly on every machine
@@ -79,11 +80,26 @@ class AppMaster (config : Configs) extends Actor {
 
     totalTaskCount = tasks.size
     taskQueue ++= tasks
-    LOG.info(s"App Master $appId request Resource ${taskQueue.size}")
-    master ! RequestResource(appId, taskQueue.size)
+
+    masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData)
+    LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
+    context.become(waitForMasterToConfirmRegistration(suicideAfter(30)))
   }
 
-  override def receive: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch
+  def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
+    case AppMasterRegistered(appId, master) =>
+      LOG.info(s"AppMasterRegistered received for appID: $appId")
+
+      LOG.info("Sending request resource to master...")
+      master ! RequestResource(appId, taskQueue.size)
+
+      killSelf.cancel()
+      this.master = master
+      context.watch(master)
+      context.become(messageHandler)
+  }
+
+  def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(resource) => {
@@ -95,8 +111,6 @@ class AppMaster (config : Configs) extends Actor {
         val (worker, slots) = workerAndSlots
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: $slots on worker $worker")
         val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withSlots(slots)
-
-
         context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, slots, executorConfig))
         currentExecutorId += 1
       })
@@ -104,7 +118,7 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def executorMsgHandler: Receive = {
-    case TaskLaunched(taskId, host) => {
+    case RegisterTask(taskId, host) => {
       LOG.info(s"Task $taskId has been Launched for app $appId")
 
       var taskIds = taskLocations.get(host).getOrElse(Set.empty[TaskId])
@@ -150,7 +164,7 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def workerMsgHandler : Receive = {
-    case ExecutorLaunched(executor, executorId, slots) => {
+    case RegisterExecutor(executor, executorId, slots) => {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
@@ -171,14 +185,39 @@ class AppMaster (config : Configs) extends Actor {
       }
       launchTask(slots)
     }
-    case ExecutorLaunchFailed(reason, ex) => {
+    case ExecutorLaunchRejected(reason, ex) => {
       LOG.error(s"Executor Launch failed reason：$reason", ex)
     }
   }
 
   //TODO: We an task is down, we need to recover
   def terminationWatch : Receive = {
-    case Terminated(actor) => Unit
+    case Terminated(actor) =>
+    if (null != master && actor.compareTo(master) == 0) {
+      // master is down, let's try to contact new master
+      LOG.info("parent master cannot be contacted, find a new master ...")
+      masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData)
+      context.become(waitForMasterToConfirmRegistration(suicideAfter(30)))
+    } else if (isChildActorPath(actor)) {
+      //executor is down
+      //TODO: handle this failure
+      LOG.error(s"Executor is down ${actor.path.name}")
+    }
+  }
+
+  import context.dispatcher
+
+  private def suicideAfter(seconds: Int) = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
+
+  private def isChildActorPath(actor : ActorRef) : Boolean = {
+    if (null != actor) {
+      val name = actor.path.name
+      val child = context.child(name)
+      if (child.isDefined) {
+        return child.get.path == actor.path
+      }
+    }
+    return false
   }
 }
 

@@ -19,24 +19,21 @@
 package org.apache.gearpump.cluster.main
 
 import java.io.{File, PrintWriter}
-
-import org.apache.gearpump.cluster.Configs
+import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
-
+import org.apache.gearpump.util.Constants._
 object Shell extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "ip"-> CLIOption("<master ip>", required = true),
+    "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
     "port"-> CLIOption("<master port>", required = true))
 
   val config = parse(args)
 
-  val ip = config.getString("ip")
-  val port = config.getInt("port")
-  val masterURL = s"akka.tcp://${Configs.MASTER}@$ip:$port/user/${Configs.MASTER}"
-  Console.out.println("Master URL: " + masterURL)
+  val masters = config.getString("master")
+  Console.out.println("Master URL: " + masters)
 
   def start() = {
     val java = System.getenv("JAVA_HOME") + "/bin/java"
@@ -49,7 +46,7 @@ object Shell extends App with ArgumentsParser {
     System.setProperty("scala.home", scalaHome)
     System.setProperty("scala.usejavacp", "true")
 
-    System.setProperty("masterActorPath", masterURL)
+    System.setProperty("masterActorPath", masters)
 
     val file = File.createTempFile("scala_shell", ".scala")
 

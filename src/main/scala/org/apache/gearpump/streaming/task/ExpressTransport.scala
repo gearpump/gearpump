@@ -20,9 +20,8 @@ package org.apache.gearpump.streaming.task
 
 import akka.actor.{Actor, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
+import org.apache.gearpump.transport.Express
 import org.apache.gearpump.transport.netty.TaskMessage
-import org.apache.gearpump.transport.{Express}
-import org.slf4j.{LoggerFactory, Logger}
 
 trait ExpressTransport {
   this: TaskActor =>

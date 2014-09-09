@@ -18,48 +18,171 @@
 
 package org.apache.gearpump.cluster
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
-import akka.remote.RemoteScope
+import akka.contrib.datareplication.{GSet, DataReplication}
+import akka.contrib.datareplication.Replicator._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.util.ActorSystemBooter.{CreateActor, BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil}
+import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
+import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.{Configs, ActorSystemBooter, ActorUtil, Util}
 import org.slf4j.{Logger, LoggerFactory}
 
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{Actor, ActorLogging, Props, _}
+import akka.cluster.ClusterEvent._
+import akka.cluster.{Cluster, Member, MemberStatus}
+import akka.contrib.datareplication.Replicator._
+import akka.contrib.pattern.ClusterSingletonManager
+import com.typesafe.config.ConfigFactory
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+import scala.concurrent.duration._
+import akka.actor.ActorLogging
+import akka.cluster.Cluster
+import akka.actor.Actor
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
+import akka.actor.Props
+import akka.contrib.datareplication.{GSet, DataReplication}
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
-import org.apache.gearpump.util.Util
 /**
  * AppManager is dedicated part of Master to manager applicaitons
  */
-private[cluster] class AppManager() extends Actor {
+
+class ApplicationState(val appId : Int, val attemptId : Int, val state : Any) extends Serializable {
+
+  override def equals(other: Any): Boolean = {
+    if (other.isInstanceOf[ApplicationState]) {
+      val that = other.asInstanceOf[ApplicationState]
+      if (appId == that.appId && attemptId == that.attemptId) {
+        return true
+      } else {
+        return false
+      }
+    } else {
+      return false
+    }
+  }
+
+  override def hashCode: Int = {
+    import akka.routing.MurmurHash._
+    extendHash(appId, attemptId, startMagicA, startMagicB)
+  }
+}
+
+private[cluster] class AppManager() extends Actor with Stash {
   import org.apache.gearpump.cluster.AppManager._
 
   private var master : ActorRef = null
   private var executorCount : Int = 0;
   private var appId : Int = 0;
-  def receive : Receive = clientMsgHandler
+
+  private val systemconfig = context.system.settings.config
+
+  def receive : Receive = null
+
+  //from appid to appMaster data
+  private var appMasterRegistry = Map.empty[Int, AppMasterInfo]
+
+  private val STATE = "masterstate"
+  private val TIMEOUT = Duration(5, TimeUnit.SECONDS)
+  private val replicator = DataReplication(context.system).replicator
+
+  //TODO: We can use this state for appmaster HA to recover a new App master
+  private var state : Set[ApplicationState] = Set.empty[ApplicationState]
+
+  val masterClusterSize = systemconfig.getStringList("gearpump.cluster.masters").size()
+
+  //optimize write path, we can tollerate one master down for recovery.
+  val writeQuorum = Math.min(2, masterClusterSize / 2 + 1)
+  val readQuorum = masterClusterSize + 1 - writeQuorum
+
+  replicator ! new Get(STATE, ReadFrom(readQuorum), TIMEOUT, None)
+  LOG.info("Recoving application state....")
+  context.become(waitForMasterState)
+
+  def waitForMasterState : Receive = {
+    case GetSuccess(_, replicatedState : GSet, _) =>
+      state = replicatedState.getValue().asScala.foldLeft(state) { (set, appState) =>
+        set + appState.asInstanceOf[ApplicationState]
+      }
+      appId = state.map(_.appId).size
+      LOG.info(s"Successfully recoeved application states for ${state.map(_.appId)}, nextAppId: ${appId}....")
+      context.become(receiveHandler)
+      unstashAll()
+    case x : GetFailure =>
+      LOG.info("GetFailure We cannot find any exisitng state, start a fresh one...")
+      context.become(receiveHandler)
+      unstashAll()
+    case x : NotFound =>
+      LOG.info("We cannot find any exisitng state, start a fresh one...")
+      context.become(receiveHandler)
+      unstashAll()
+    case msg =>
+      LOG.info(s"Get information ${msg.getClass.getSimpleName}")
+      stash()
+  }
+
+  def receiveHandler = clientMsgHandler orElse appMasterMessage orElse terminationWatch
 
   def clientMsgHandler : Receive = {
-    case SubmitApplication(appMasterClass, config, app) =>
+    case submitApp @ SubmitApplication(appMasterClass, config, app) =>
       LOG.info(s"AppManager Submiting Application $appId...")
-      val appWatcher = context.actorOf(Props(classOf[AppMasterWatcher], appId, appMasterClass, config, app), appId.toString)
+      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app), appId.toString)
+      replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + new ApplicationState(appId, 0, submitApp))
       sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
       appId += 1
     case ShutdownApplication(appId) =>
       LOG.info(s"App Manager Shutting down application $appId")
-      val child = context.child(appId.toString)
-      if (child.isEmpty) {
-        sender.tell(ShutdownApplicationResult(Failure(new Exception(s"App $appId not found"))), context.parent)
-      } else {
-        LOG.info(s"Shutting down  ${child.get.path}")
-        child.get.forward(ShutdownAppMaster)
+      val data = appMasterRegistry.get(appId)
+      if (data.isDefined) {
+        val worker = data.get.worker
+        LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $masterExecutorId")
+        worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
+        sender ! ShutdownApplicationResult(Success(appId))
+      }
+      else {
+        val errorMsg = s"Find to find regisration information for appId: $appId"
+        LOG.error(errorMsg)
+        sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
   }
+
+  def appMasterMessage : Receive = {
+    case RegisterAppMaster(appMaster, appId, executorId, slots, registerData : AppMasterInfo) =>
+      LOG.info(s"Master $executorId has been launched...")
+      context.watch(appMaster)
+      appMasterRegistry += appId -> registerData
+      sender ! AppMasterRegistered(appId, context.parent)
+  }
+
+  def terminationWatch : Receive = {
+    //TODO: fix this
+    case terminate : Terminated => {
+      terminate.getAddressTerminated()
+      //TODO: Check whether this belongs to a app master
+      LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
+
+      //TODO: decide whether it is a normal terminaiton, or abnormal. and implement appMaster HA
+    }
+  }
 }
+
+case class AppMasterInfo(worker : ActorRef) extends AppMasterRegisterData
 
 private[cluster] object AppManager {
   private val masterExecutorId = -1
@@ -68,7 +191,9 @@ private[cluster] object AppManager {
   /**
    * Start and watch Single AppMaster's lifecycle
    */
-  class AppMasterWatcher(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
+  class AppMasterStarter(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
+
+    val systemConfig = context.system.settings.config
 
     val master = context.actorSelection("../../")
     master ! RequestResource(appId, 1)
@@ -78,9 +203,9 @@ private[cluster] object AppManager {
 
     def waitForResourceAllocation : Receive = {
       case ResourceAllocated(resource) => {
-        LOG.info(s"Resource allocated for appMaster $appId")
+        LOG.info(s"Resource allocated for appMaster $app Id")
         val Resource(worker, slots) = resource(0)
-        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withMaster(sender).withAppManager(self).withExecutorId(masterExecutorId).withSlots(slots)
+        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(worker)).withExecutorId(masterExecutorId).withSlots(slots)
         LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
         val name = actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
@@ -93,50 +218,34 @@ private[cluster] object AppManager {
     }
 
     def waitForActorSystemToStart(worker : ActorRef, masterConfig : Configs) : Receive = {
+      case ExecutorLaunchRejected(reason, ex) =>
+        LOG.error(s"Executor Launch failed reason：$reason", ex)
+        //TODO: restart this process, ask for resources instead of stopping myself
+        context.stop(self)
       case RegisterActorSystem(systemPath) =>
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
-        val masterProps = Props(appMasterClass, masterConfig)
-
-        sender ! CreateActor(masterProps, "appmaster")
-
         //bind lifecycle with worker
         sender ! BindLifeCycle(worker)
-        context.become(waitForAppMasterToStart)
+        val masterAddress = systemConfig.getStringList("gearpump.cluster.masters").asScala.map { address =>
+          val hostAndPort = address.split(":")
+          HostPort(hostAndPort(0), hostAndPort(1).toInt)
+        }
+        LOG.info(s"Create master proxy on target actor system ${systemPath}")
+        val masterProxyConfig = Props(classOf[MasterProxy], masterAddress)
+        sender ! CreateActor(masterProxyConfig, "masterproxy")
+        context.become(waitForMasterProxyToStart(masterConfig))
+    }
+
+    def waitForMasterProxyToStart(masterConfig : Configs) : Receive = {
+      case ActorCreated(masterProxy, "masterproxy") =>
+        LOG.info(s"Master proxy is created, create appmaster...")
+        val masterProps = Props(appMasterClass, masterConfig.withMasterProxy(masterProxy))
+        sender ! CreateActor(masterProps, "appmaster")
+
+        //my job has completed. kill myself
+        self ! PoisonPill
     }
 
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
-
-    def waitForAppMasterToStart : Receive = {
-      case RegisterMaster(master, appId, executorId, slots) => {
-        LOG.info(s"Master $executorId has been launched...")
-        context.watch(master)
-        context.become(waitForShutdownCommand(sender, executorId) orElse terminationWatch(master))
-      }
-      case ExecutorLaunchFailed(reason, ex) => {
-        LOG.error(s"Executor Launch failed reason：$reason", ex)
-      }
-    }
-
-    def waitForShutdownCommand(worker : ActorRef, executorId : Int) : Receive = {
-      case ShutdownAppMaster => {
-
-        LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $executorId")
-
-        worker ! ShutdownExecutor(appId, executorId, s"AppMaster $appId shutdown requested by master...")
-        sender ! ShutdownApplicationResult(Success(appId))
-        //kill myself
-        self ! PoisonPill
-      }
-    }
-
-    def terminationWatch(appMaster : ActorRef) : Receive = {
-      case terminate : Terminated => {
-        terminate.getAddressTerminated()
-        if (terminate.actor.compareTo(appMaster) == 0) {
-          LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
-          context.stop(self)
-        }
-      }
-    }
   }
 }

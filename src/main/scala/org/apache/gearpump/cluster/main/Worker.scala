@@ -18,26 +18,40 @@
 
 package org.apache.gearpump.cluster.main
 
-import org.apache.gearpump.cluster.Configs
-import org.apache.gearpump.util.ActorSystemBooter
+import akka.actor.{ActorSystem, Props}
+import org.apache.gearpump.cluster.{MasterProxy, Worker}
+import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.{Configs}
 import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.Constants._
+import scala.collection.JavaConverters._
 
 object Worker extends App with ArgumentsParser {
   val LOG : Logger = LoggerFactory.getLogger(Worker.getClass)
 
   def uuid = java.util.UUID.randomUUID.toString
 
-  val options:Array[(String, CLIOption[Any])] = Array(
-    "ip"-> CLIOption("<master ip>", required = true),
-    "port"-> CLIOption("<master port>", required = true, defaultValue = Some(8092)))
+  val options = Array.empty[(String, CLIOption[Any])]
 
   def start() = {
-    worker(parse(args).getString("ip"), parse(args).getInt("port"))
+    worker()
   }
 
-  def worker(ip : String, port : Int): Unit = {
-    val masterURL = s"akka.tcp://${Configs.MASTER}@$ip:$port/user/${Configs.MASTER}"
-    ActorSystemBooter.create(Configs.WORKER_CONFIG).boot(uuid, masterURL).awaitTermination
+  def worker(): Unit = {
+    val config = Configs.WORKER_CONFIG
+
+    val id = uuid
+    val system = ActorSystem(id, config)
+
+    val masterAddress = config.getStringList("gearpump.cluster.masters").asScala.map { address =>
+      val hostAndPort = address.split(":")
+      HostPort(hostAndPort(0), hostAndPort(1).toInt)
+    }
+    val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER)
+
+    val worker = system.actorOf(Props(classOf[Worker], masterProxy), classOf[Worker].getSimpleName + id)
+
+    system.awaitTermination
   }
 
   start()

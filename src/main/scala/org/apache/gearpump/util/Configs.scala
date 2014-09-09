@@ -16,18 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.util
 
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
 import org.apache.gearpump.streaming.task.TaskId
-import org.apache.gearpump.util.DAG
+import org.apache.gearpump.util.Constants._
 
 /**
  * Immutable configuration
  */
 class Configs(val config: Map[String, _])  extends Serializable{
-  import org.apache.gearpump.cluster.Configs._
+  import org.apache.gearpump.util.Configs._
 
   def withValue(key: String, value: Any) = {
     Configs(config + (key->value))
@@ -45,8 +46,8 @@ class Configs(val config: Map[String, _])  extends Serializable{
 
   def appDescription : Application = config.getAnyRef(APP_DESCRIPTION).asInstanceOf[Application]
 
-  def withMaster(master : ActorRef) = withValue(MASTER, master)
-  def master : ActorRef = config.getAnyRef(MASTER).asInstanceOf[ActorRef]
+  def withMasterProxy(master : ActorRef) = withValue(MASTER, master)
+  def masterProxy : ActorRef = config.getAnyRef(MASTER).asInstanceOf[ActorRef]
 
   def withAppMaster(appMaster : ActorRef) = withValue(APP_MASTER, appMaster)
   def appMaster : ActorRef = config.getAnyRef(APP_MASTER).asInstanceOf[ActorRef]
@@ -57,8 +58,8 @@ class Configs(val config: Map[String, _])  extends Serializable{
   def withSlots(slots : Int) = withValue(SLOTS, slots)
   def slots = config.getInt(SLOTS)
 
-  def withAppManager(appManager : ActorRef) = withValue(APP_MANAGER, appManager)
-  def appManager : ActorRef = config.getAnyRef(APP_MANAGER).asInstanceOf[ActorRef]
+  def withAppMasterRegisterData(data : AppMasterRegisterData) = withValue(APP_MASTER_REGISTER_DATA, data)
+  def appMasterRegisterData : AppMasterRegisterData = config.getAnyRef(APP_MASTER_REGISTER_DATA).asInstanceOf[AppMasterRegisterData]
 
   def withTaskId(taskId : TaskId) =  withValue(TASK_ID, taskId)
   def taskId : TaskId = config.getAnyRef(TASK_ID).asInstanceOf[TaskId]
@@ -69,22 +70,6 @@ class Configs(val config: Map[String, _])  extends Serializable{
 }
 
 object Configs {
-
-  //config for construction of appMaster
-  val APPID = "appId"
-  val APP_DESCRIPTION =  "appDescription"
-  val MASTER = "master"
-  val WORKER = "worker"
-  val APP_MANAGER = "appManager"
-
-  //config for construction of executor
-  val APP_MASTER = "appMaster"
-  val EXECUTOR_ID = "executorId"
-  val SLOTS = "slots"
-
-  val TASK_ID = "taskId"
-  val TASK_DAG = "taskDag"
-
   def empty = new Configs(Map.empty[String, Any])
 
   def apply(config : Map[String, _]) = new Configs(config)

@@ -19,7 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
+import org.apache.gearpump.util.Configs
 
 import scala.util.Try
 
@@ -27,12 +27,13 @@ import scala.util.Try
  * Cluster Bootup Flow
  */
 object WorkerToMaster {
+  case object RegisterNewWorker
   case class RegisterWorker(workerId: Int)
   case class ResourceUpdate(workerId: Int, slots: Int)
 }
 
 object MasterToWorker {
-  case object WorkerRegistered
+  case class WorkerRegistered(workerId : Int)
 }
 
 /**
@@ -49,13 +50,16 @@ object MasterToClient {
   case class ShutdownApplicationResult(appId : Try[Int])
 }
 
+trait AppMasterRegisterData
+
 object AppMasterToMaster {
-  case class RegisterMaster(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int)
+  case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int, registerData : AppMasterRegisterData)
   case class RequestResource(appId: Int, slots: Int)
 }
 
 object MasterToAppMaster {
   case class ResourceAllocated(resource: Array[Resource])
+  case class AppMasterRegistered(appId: Int, master : ActorRef)
   case object ShutdownAppMaster
 }
 
@@ -65,7 +69,5 @@ object AppMasterToWorker {
 }
 
 object WorkerToAppMaster {
-  case class ExecutorLaunched(executor: ActorRef, executorId: Int, slots: Int)
-  case class ExecutorLaunchFailed(reason: String = null, ex: Throwable = null)
+  case class ExecutorLaunchRejected(reason: String = null, ex: Throwable = null)
 }
-

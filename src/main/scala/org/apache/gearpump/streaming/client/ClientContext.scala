@@ -20,23 +20,23 @@ package org.apache.gearpump.streaming.client
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{Props, ActorRef, ActorSystem}
 import akka.util.Timeout
-import org.apache.gearpump.cluster.{Application, Configs, MasterClient}
+import org.apache.gearpump.cluster.{MasterProxy, Application, MasterClient}
 import org.apache.gearpump.streaming.AppMaster
+import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.Constants._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class ClientContext(masterActorPath : String) {
-
-  private var system : ActorSystem = null
-  private var master : ActorRef = null
+class ClientContext(masters: Iterable[HostPort]) {
 
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
+  val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG)
 
-  this.system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG)
-  this.master = Await.result(system.actorSelection(masterActorPath).resolveOne(), Duration.Inf)
+  val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
 
   def submit(app : Application) : Int = {
     val client = new MasterClient(master)
@@ -54,5 +54,18 @@ class ClientContext(masterActorPath : String) {
 }
 
 object ClientContext {
-  def apply(masterActorPath : String) = new ClientContext(masterActorPath)
+  /**
+   * masterList is a list of master node address
+   * host1:port,host2:port2,host3:port3
+   */
+  def apply(masterList : String) = {
+
+    val masters = masterList.trim.split(",").map { address =>
+      val hostAndPort = address.split(":")
+      HostPort(hostAndPort(0), hostAndPort(1).toInt)
+    }
+    new ClientContext(masters)
+  }
+
+  def apply(masters: Iterable[HostPort]) = new ClientContext(masters)
 }

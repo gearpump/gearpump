@@ -20,39 +20,44 @@ package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
-import org.apache.gearpump.cluster.Configs
-import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil}
+import org.apache.gearpump.cluster.{Master, Worker}
+import org.apache.gearpump.util.{Constants, Configs, ActorSystemBooter, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
-
+import org.apache.gearpump.util.Constants._
 
 object Local extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
 
-  override val options: Array[(String, CLIOption[Any])] = Array(
-    "port"-> CLIOption[Int]("<master port>", required = true),
-    "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
-    "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(4)))
+  override val options: Array[(String, CLIOption[Any])] =
+    Array("ip"->CLIOption[String]("<master ip address>",required = false, defaultValue = Some("127.0.0.1")),
+          "port"->CLIOption("<master port>",required = true),
+          "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
+          "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(4)))
 
   val config = parse(args)
 
   def start() = {
-    local(config.getInt("port"), config.getInt("workernum"), config.exists("sameprocess"))
+    local(config.getString("ip"),  config.getInt("port"), config.getInt("workernum"), config.exists("sameprocess"))
   }
 
-  def local(port : Int, workerCount : Int, sameProcess : Boolean) : Unit = {
+  def local(ip : String, port : Int, workerCount : Int, sameProcess : Boolean) : Unit = {
     if (sameProcess) {
       System.setProperty("LOCAL", "true")
     }
 
-    val system = ActorSystem(Configs.MASTER, Configs.MASTER_CONFIG.withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)))
-    system.actorOf(Props[org.apache.gearpump.cluster.Master], Configs.MASTER)
-    val masterPath = ActorUtil.getSystemPath(system) + s"/user/${Configs.MASTER}"
+    val system = ActorSystem(MASTER, Configs.MASTER_CONFIG.
+      withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
+      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip))
+    )
+    val master = system.actorOf(Props[Master], MASTER)
+    val masterPath = ActorUtil.getSystemPath(system) + s"/user/${MASTER}"
 
     LOG.info(s"master is started at $masterPath...")
 
-    //We are free
-    0.until(workerCount).foreach(id => ActorSystemBooter.create(Configs.WORKER_CONFIG).boot(classOf[org.apache.gearpump.cluster.Worker].getSimpleName + id , masterPath))
+    0.until(workerCount).foreach { id =>
+      system.actorOf(Props(classOf[Worker], master), classOf[Worker].getSimpleName + id)
+    }
   }
   start()
 }

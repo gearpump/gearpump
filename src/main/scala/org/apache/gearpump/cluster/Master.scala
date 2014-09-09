@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.cluster
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToMaster._
@@ -29,31 +31,41 @@ import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorS
 import org.apache.gearpump.util.ActorUtil
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.concurrent.duration.Duration
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
-private[cluster] class Master extends Actor {
+private[cluster] class Master extends Actor with Stash {
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Master])
+
+  // resources and resourceRequests can be dynamically constructed by
+  // heartbeat of worker and appmaster when master singleton is migrated.
+  // we don't need to persist them in cluster
   private var resources = new Array[(ActorRef, Int)](0)
   private val resourceRequests = new mutable.Queue[(ActorRef, Int)]
 
   private var appManager : ActorRef = null
-  private var workerId = 0
+
+  LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
 
   override def receive : Receive = workerMsgHandler orElse appMasterMsgHandler orElse clientMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self)
 
+  final val undefinedUid = 0
+  @tailrec final def newUid(): Int = {
+    val uid = ThreadLocalRandom.current.nextInt()
+    if (uid == undefinedUid) newUid
+    else uid
+  }
+
   def workerMsgHandler : Receive = {
-    //create worker
-    case RegisterActorSystem(systemPath) =>
-      LOG.info(s"Received RegisterActorSystem $systemPath")
-      val systemAddress = AddressFromURIString(systemPath)
-      val workerConfig = Props(classOf[Worker], workerId, self).withDeploy(Deploy(scope = RemoteScope(systemAddress)))
-      val worker = context.actorOf(workerConfig, classOf[Worker].getSimpleName + workerId)
-      workerId += 1
-      sender ! BindLifeCycle(worker)
+    case RegisterNewWorker =>
+      val workerId = newUid
+      self forward RegisterWorker(workerId)
     case RegisterWorker(id) =>
       context.watch(sender())
-      sender ! WorkerRegistered
+      sender ! WorkerRegistered(id)
       LOG.info(s"Register Worker $id....")
     case ResourceUpdate(id, slots) =>
       LOG.info(s"Resource update id: $id, slots: $slots....")
@@ -73,6 +85,9 @@ private[cluster] class Master extends Actor {
       val appMaster = sender()
       resourceRequests.enqueue((appMaster, slots))
       allocateResource()
+    case registerAppMaster : RegisterAppMaster =>
+      //forward to appmaster
+      appManager forward registerAppMaster
   }
 
   def clientMsgHandler : Receive = {
@@ -97,9 +112,6 @@ private[cluster] class Master extends Actor {
         worker.compareTo(actor) != 0
       }
   }
-
-  // shutdown the hosting actor system
-  override def postStop(): Unit = context.system.shutdown()
 
   def allocateResource(): Unit = {
     val length = resources.length

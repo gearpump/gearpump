@@ -18,12 +18,12 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
-import org.apache.gearpump.cluster.Configs
-import org.apache.gearpump.cluster.main._
+import org.apache.gearpump.cluster.main.{CLIOption, ArgumentsParser}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.client.ClientContext
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.{Configs, Graph}
+import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.Graph._
 
 class WordCount  {
@@ -40,8 +40,7 @@ class WordCount  {
 object WordCount extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "ip" -> CLIOption[String]("<master ip>", required = true),
-    "port"-> CLIOption[Int]("<master port>", required = true),
+    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
     "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
@@ -49,14 +48,10 @@ object WordCount extends App with ArgumentsParser {
 
   def start(): Unit = {
 
-    val ip = config.getString("ip")
-    val port = config.getInt("port")
+    val masters = config.getString("master")
+    Console.out.println("Master URL: " + masters)
 
-    val masterURL = s"akka.tcp://${Configs.MASTER}@$ip:$port/user/${Configs.MASTER}"
-
-    Console.out.println("Master URL: " + masterURL)
-
-    val context = ClientContext(masterURL)
+    val context = ClientContext(masters)
 
     val appId = context.submit(new WordCount().getApplication(config.getInt("split"), config.getInt("sum")))
     System.out.println(s"We get application id: $appId")

@@ -39,13 +39,14 @@ resolvers ++= Seq(
   "cloudera-repo" at "https://repository.cloudera.com/artifactory/cloudera-repos",
   "mapr-repo" at "http://repository.mapr.com/maven",
   "spring-releases" at "http://repo.spring.io/libs-release",
-  "sonatype" at "https://oss.sonatype.org/content/repositories/releases"
+  "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
+  "clockfly" at "http://dl.bintray.com/clockfly/maven"
 )
 
 parallelExecution in Test := false
 
 
-val akkaVersion = "2.3.4"
+val akkaVersion = "2.3.5"
 val kyroVersion = "0.3.2"
 val codahaleVersion = "3.0.2"
 val commonsLangVersion = "3.3.2"
@@ -77,9 +78,12 @@ libraryDependencies ++= Seq(
   "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-remote" % akkaVersion,
+  "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
+  "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
   "com.typesafe.akka" %% "akka-agent" % akkaVersion,
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
   "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
   "org.scala-lang" % "jline" % scalaVersionNumber,
-  "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion
+  "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion,
+  "com.github.patriknw" %% "akka-data-replication" % "0.4"
 )

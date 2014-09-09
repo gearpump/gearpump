@@ -19,9 +19,8 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.Actor
-import org.apache.gearpump.cluster.Configs
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.util.{Graph, ReferenceEqual}
+import org.apache.gearpump.util.{Configs, Graph, ReferenceEqual}
 
 case class TaskDescription(taskClass: Class[_ <: Actor], parallism : Int) extends ReferenceEqual
 

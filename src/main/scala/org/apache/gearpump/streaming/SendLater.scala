@@ -20,19 +20,22 @@ package org.apache.gearpump.streaming
 
 import java.util
 
-import akka.actor.{Stash, Actor}
+import akka.actor.Actor
+import akka.pattern.pipe
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.transport.netty.TaskMessage
-import akka.pattern.pipe
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 
 case object TaskLocationReady
 
+//TODO:
+// 1. when any task dead in app master, appmaster should forward this message to here so that
+//we will not send message to wrong address
+//
 class SendLater extends Actor {
-  import SendLater.LOG
-
   import context.dispatcher
+  import org.apache.gearpump.streaming.SendLater.LOG
 
   private[this] val queue : util.ArrayDeque[TaskMessage] = new util.ArrayDeque[TaskMessage](SendLater.INITIAL_WINDOW_SIZE)
 
