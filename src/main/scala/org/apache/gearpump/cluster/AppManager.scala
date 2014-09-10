@@ -237,7 +237,7 @@ private[cluster] object AppManager {
     def waitForActorSystemToStart(worker : ActorRef, masterConfig : Configs) : Receive = {
       case ExecutorLaunchRejected(reason, ex) =>
         LOG.error(s"Executor Launch failed reason：$reason", ex)
-        //TODO: ask master to allocate new resources.
+        //TODO: ask master to allocate new resources and start appmaster on new node.
         context.stop(self)
       case RegisterActorSystem(systemPath) =>
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")

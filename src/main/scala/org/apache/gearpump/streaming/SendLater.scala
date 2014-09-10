@@ -29,10 +29,6 @@ import org.slf4j.{Logger, LoggerFactory}
 
 case object TaskLocationReady
 
-//TODO:
-// 1. when any task dead in app master, appmaster should forward this message to here so that
-//we will not send message to wrong address
-//
 class SendLater extends Actor {
   import context.dispatcher
   import org.apache.gearpump.streaming.SendLater.LOG
