@@ -44,6 +44,10 @@ private[cluster] class Master extends Actor with Stash {
   // heartbeat of worker and appmaster when master singleton is migrated.
   // we don't need to persist them in cluster
   private var resources = new Array[(ActorRef, Int)](0)
+
+  //TODO: currently we use a FIFO queue to record resource requirements and
+  // scheduler the resource. We should make this plugable to support scheduler
+  // like Hadoop FairScheduler, CapacityScheduler.
   private val resourceRequests = new mutable.Queue[(ActorRef, Int)]
 
   private var appManager : ActorRef = null
