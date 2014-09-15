@@ -46,12 +46,13 @@ object Local extends App with ArgumentsParser {
       System.setProperty("LOCAL", "true")
     }
 
-    val system = ActorSystem(MASTER, Configs.MASTER_CONFIG.
+    implicit val system = ActorSystem(MASTER, Configs.MASTER_CONFIG.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
       withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip))
     )
     val master = system.actorOf(Props[Master], MASTER)
     val masterPath = ActorUtil.getSystemPath(system) + s"/user/${MASTER}"
+    org.apache.gearpump.services.Services.start
 
     LOG.info(s"master is started at $masterPath...")
 

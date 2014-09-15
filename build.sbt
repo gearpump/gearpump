@@ -40,6 +40,7 @@ resolvers ++= Seq(
   "mapr-repo" at "http://repository.mapr.com/maven",
   "spring-releases" at "http://repo.spring.io/libs-release",
   "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
+  "spray repo" at "http://repo.spray.io",
   "clockfly" at "http://dl.bintray.com/clockfly/maven"
 )
 
@@ -47,6 +48,8 @@ parallelExecution in Test := false
 
 
 val akkaVersion = "2.3.5"
+val sprayVersion = "1.3.1"
+val sprayJsonVersion = "1.2.6"
 val kyroVersion = "0.3.2"
 val codahaleVersion = "3.0.2"
 val commonsLangVersion = "3.3.2"
@@ -85,5 +88,12 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
   "org.scala-lang" % "jline" % scalaVersionNumber,
   "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion,
-  "com.github.patriknw" %% "akka-data-replication" % "0.4"
+  "com.github.patriknw" %% "akka-data-replication" % "0.4",
+  "io.spray" %%  "spray-can"       % sprayVersion,
+  "io.spray" %%  "spray-routing"   % sprayVersion,
+  "io.spray" %%  "spray-testkit"   % sprayVersion,
+  "io.spray" %%  "spray-httpx"     % sprayVersion,
+  "io.spray" %%  "spray-client"    % sprayVersion,
+  "io.spray" %%  "spray-json"    % sprayJsonVersion,
+  "org.json4s" %%  "json4s-native"   % "3.2.10"
 )
