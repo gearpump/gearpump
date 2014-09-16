@@ -12,6 +12,11 @@ val scalaVersionNumber = "2.10.4"
 
 scalaVersion := scalaVersionNumber
 
+scalacOptions ++= Seq(
+  "-Yclosure-elim",
+  "-Yinline"
+)
+
 packSettings
 
 packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
@@ -33,6 +38,7 @@ packExtraClasspath := Map("local" -> Seq("${PROG_HOME}/conf"),
 resolvers ++= Seq(
   "maven-repo" at "http://repo.maven.apache.org/maven2",
   "maven1-repo" at "http://repo1.maven.org/maven2",
+  "maven2-repo" at "http://mvnrepository.com",
   "apache-repo" at "https://repository.apache.org/content/repositories/releases",
   "jboss-repo" at "https://repository.jboss.org/nexus/content/repositories/releases",
   "mqtt-repo" at "https://repo.eclipse.org/content/repositories/paho-releases",
@@ -95,5 +101,7 @@ libraryDependencies ++= Seq(
   "io.spray" %%  "spray-httpx"     % sprayVersion,
   "io.spray" %%  "spray-client"    % sprayVersion,
   "io.spray" %%  "spray-json"    % sprayJsonVersion,
-  "org.json4s" %%  "json4s-native"   % "3.2.10"
+  "com.gettyimages" %% "spray-swagger" % "0.4.3" excludeAll( ExclusionRule(organization = "org.json4s"), ExclusionRule(organization = "io.spray") ),
+  "org.json4s" %% "json4s-jackson" % "3.2.10",
+  "org.json4s" %% "json4s-native"   % "3.2.10"
 )
