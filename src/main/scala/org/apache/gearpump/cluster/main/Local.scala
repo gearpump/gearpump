@@ -53,7 +53,7 @@ object Local extends App with ArgumentsParser {
     )
     val master = system.actorOf(Props[Master], MASTER)
     val masterPath = ActorUtil.getSystemPath(system) + s"/user/${MASTER}"
-    Services.start
+    Services.start(master)
 
     LOG.info(s"master is started at $masterPath...")
 

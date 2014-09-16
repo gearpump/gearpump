@@ -1,6 +1,6 @@
 package org.apache.gearpump.services
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{ActorRef, Actor, ActorSystem, Props}
 import akka.io.IO
 import com.gettyimages.spray.swagger._
 import com.typesafe.config.ConfigFactory
@@ -9,13 +9,16 @@ import spray.can._
 import spray.json._
 import spray.routing.HttpService
 
+import scala.concurrent.{ExecutionContext}
 import scala.reflect.runtime.universe._
 
-class Services extends Actor with HttpService with DefaultJsonProtocol {
+class Services(master: ActorRef)(implicit executionContext:ExecutionContext) extends Actor with HttpService with DefaultJsonProtocol {
 
   def actorRefFactory = context
 
     val appMasterService = new AppMasterService {
+      implicit val executionContextRef:ExecutionContext = executionContext
+      override val masterRef:ActorRef = master
       def actorRefFactory = context
     }
 
@@ -42,9 +45,9 @@ class Services extends Actor with HttpService with DefaultJsonProtocol {
 }
 
 object Services {
-  def start(implicit system:ActorSystem) {
+  def start(master:ActorRef)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
-    val services = system.actorOf(Props(new Services), "services")
+    val services = system.actorOf(Props(new Services(master)), "services")
     val config = ConfigFactory.load()
     val port = config.getInt("gearpump.services.port")
     val host = config.getString("gearpump.services.host")
