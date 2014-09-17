@@ -188,7 +188,9 @@ private[cluster] class AppManager() extends Actor with Stash {
       sender ! AppMasterRegistered(appId, context.parent)
     case appMasterDataRequest: AppMasterDataRequest =>
       LOG.info("AppManager returning AppMasterData")
-      sender ! AppMasterData(appId=appId, executorId=masterExecutorId, appData=appMasterRegistry.getOrElse(appId, null))
+      val lastAppId = appId - 1
+      val appData = appMasterRegistry.getOrElse(lastAppId, null)
+      sender ! AppMasterData(appId=lastAppId, executorId=masterExecutorId, appData=appData.toString)
   }
 
   def terminationWatch : Receive = {

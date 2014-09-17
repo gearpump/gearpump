@@ -57,7 +57,7 @@ class AppMasterService(val master:ActorRef, val context: ActorContext, execution
   }
 }
 
-case class AppMasterData(appId: Int, executorId: Int, appData: AppMasterRegisterData)
+case class AppMasterData(appId: Int, executorId: Int, appData: String)
 case class AppMasterDataRequest()
 
 
