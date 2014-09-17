@@ -29,6 +29,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
+import org.apache.gearpump.services.{AppMasterData, AppMasterDataRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util.Constants._
@@ -185,6 +186,9 @@ private[cluster] class AppManager() extends Actor with Stash {
       context.watch(appMaster)
       appMasterRegistry += appId -> registerData
       sender ! AppMasterRegistered(appId, context.parent)
+    case appMasterDataRequest: AppMasterDataRequest =>
+      LOG.info("AppManager returning AppMasterData")
+      sender ! AppMasterData(appId=appId, executorId=masterExecutorId, appData=appMasterRegistry.getOrElse(appId, null))
   }
 
   def terminationWatch : Receive = {

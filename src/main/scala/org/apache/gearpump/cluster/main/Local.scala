@@ -21,7 +21,7 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.{Master, Worker}
-import org.apache.gearpump.services.Services
+import org.apache.gearpump.services.RestServices
 import org.apache.gearpump.util.{Constants, Configs, ActorSystemBooter, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
 import org.apache.gearpump.util.Constants._
@@ -53,7 +53,7 @@ object Local extends App with ArgumentsParser {
     )
     val master = system.actorOf(Props[Master], MASTER)
     val masterPath = ActorUtil.getSystemPath(system) + s"/user/${MASTER}"
-    Services.start(master)
+    RestServices.start(master)
 
     LOG.info(s"master is started at $masterPath...")
 
