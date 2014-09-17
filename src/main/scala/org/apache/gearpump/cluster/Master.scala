@@ -27,7 +27,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.services.AppMasterData
+import org.apache.gearpump.services.{AppMasterDataRequest, AppMasterData}
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util.ActorUtil
 import org.slf4j.{Logger, LoggerFactory}
@@ -53,7 +53,7 @@ private[cluster] class Master extends Actor with Stash {
 
   private var appManager : ActorRef = null
 
-  private var appMasterData: AppMasterData = null
+  private var appMasterData: AppMasterData = AppMasterData(-1,-1,null)
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
 
@@ -93,9 +93,12 @@ private[cluster] class Master extends Actor with Stash {
       resourceRequests.enqueue((appMaster, slots))
       allocateResource()
     case registerAppMaster : RegisterAppMaster =>
-      appMasterData = AppMasterData(appId=registerAppMaster.appId, registerAppMaster.executorId, registerAppMaster.registerData)
+      appMasterData = AppMasterData(appId=registerAppMaster.appId, executorId=registerAppMaster.executorId, appData=registerAppMaster.registerData)
       //forward to appManager
       appManager forward registerAppMaster
+    case AppMasterDataRequest() =>
+      sender ! appMasterData
+
   }
 
   def clientMsgHandler : Receive = {

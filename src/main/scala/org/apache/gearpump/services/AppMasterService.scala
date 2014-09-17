@@ -3,7 +3,7 @@ package org.apache.gearpump.services
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorRef
+import akka.actor.{ActorContext, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.wordnik.swagger.annotations._
@@ -16,13 +16,11 @@ import scala.util.{Failure, Success}
 
 
 @Api(value = "/appmaster", description = "AppMaster Info.")
-trait AppMasterService extends HttpService {
+class AppMasterService(val master:ActorRef, val context: ActorContext, executionContext: ExecutionContext) extends HttpService {
   import org.apache.gearpump.services.Json4sSupport._
-
-  private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-  implicit val executionContextRef:ExecutionContext
-
-  val masterRef:ActorRef
+  implicit val timeout = Timeout(5, TimeUnit.SECONDS)
+  def actorRefFactory = context
+  implicit val executionContextRef:ExecutionContext = executionContext
 
   val routes = readRoute 
 
@@ -33,8 +31,7 @@ trait AppMasterService extends HttpService {
   ))
   def readRoute = get { 
      path("appmaster") {
-       val appmasterInfo:Future[AppMasterData] = (masterRef ? AppMasterData).asInstanceOf[Future[AppMasterData]]
-       onComplete(appmasterInfo) {
+       onComplete((master ? AppMasterDataRequest()).asInstanceOf[Future[AppMasterData]]) {
          case Success(value:AppMasterData) => complete(value)
          case Failure(ex)    => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
        }
@@ -43,4 +40,6 @@ trait AppMasterService extends HttpService {
 }
 
 case class AppMasterData(appId: Int, executorId: Int, appData: AppMasterRegisterData)
+case class AppMasterDataRequest()
+
 

@@ -16,13 +16,9 @@ class Services(master: ActorRef)(implicit executionContext:ExecutionContext) ext
 
   def actorRefFactory = context
 
-    val appMasterService = new AppMasterService {
-      implicit val executionContextRef:ExecutionContext = executionContext
-      override val masterRef:ActorRef = master
-      def actorRefFactory = context
-    }
+  val appMasterService = new AppMasterService(master, context, executionContext)
 
-    def receive = runRoute(appMasterService.routes ~ swaggerService.routes ~
+  def receive = runRoute(appMasterService.routes ~ swaggerService.routes ~
       get {
         pathPrefix("") { 
           pathEndOrSingleSlash {
@@ -30,7 +26,7 @@ class Services(master: ActorRef)(implicit executionContext:ExecutionContext) ext
           }
         } ~
         getFromResourceDirectory("swagger-ui")
-      })
+  })
 
   val swaggerService = new SwaggerHttpService {
     override def apiTypes = Seq(typeOf[AppMasterService])
