@@ -29,6 +29,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
+import org.apache.gearpump.scheduler.Resource
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util.Constants._
@@ -213,24 +214,24 @@ private[cluster] object AppManager {
     val systemConfig = context.system.settings.config
 
     val master = context.actorSelection("../../")
-    master ! RequestResource(appId, 1)
+    master ! RequestResource(appId, Resource(1))
     LOG.info(s"AppManager asking Master for resource for app $appId...")
 
     def receive : Receive = waitForResourceAllocation
 
     def waitForResourceAllocation : Receive = {
-      case ResourceAllocated(resource) => {
+      case ResourceAllocated(allocations) => {
         LOG.info(s"Resource allocated for appMaster $app Id")
-        val Resource(worker, slots) = resource(0)
-        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(worker)).withExecutorId(masterExecutorId).withSlots(slots)
-        LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
+        val allocation = allocations(0)
+        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withSlots(allocation.slots)
+        //LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
         val name = actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
 
         val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString("gearpump.streaming.appmaster.vmargs").split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
 
-        worker ! LaunchExecutor(appId, masterExecutorId, slots,executionContext)
-        context.become(waitForActorSystemToStart(worker, appMasterConfig))
+        allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation, executionContext)
+        context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))
       }
     }
 

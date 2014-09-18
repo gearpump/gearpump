@@ -28,6 +28,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.scheduler.Resource
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
@@ -90,7 +91,7 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"AppMasterRegistered received for appID: $appId")
 
       LOG.info("Sending request resource to master...")
-      master ! RequestResource(appId, taskQueue.size)
+      master ! RequestResource(appId, Resource(taskQueue.size))
 
       killSelf.cancel()
       this.master = master
@@ -101,10 +102,10 @@ class AppMaster (config : Configs) extends Actor {
   def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch
 
   def masterMsgHandler: Receive = {
-    case ResourceAllocated(resource) => {
-      LOG.info(s"AppMaster $appId received ResourceAllocated $resource")
+    case ResourceAllocated(allocations) => {
+      LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
       //group resource by worker
-      val groupedResource = resource.groupBy(_.worker).mapValues(_.foldLeft(0)((count, resource) => count + resource.slots)).toArray
+      val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(0)((count, resource) => count + resource.slots)).toArray
 
       groupedResource.map((workerAndSlots) => {
         val (worker, slots) = workerAndSlots
@@ -248,7 +249,7 @@ object AppMaster {
 
     val launch = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString("gearpump.streaming.executor.vmargs").split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
 
-    worker ! LaunchExecutor(appId, executorId,slots, launch)
+    worker ! LaunchExecutor(appId, executorId, Resource(slots), launch)
 
     def receive : Receive = waitForActorSystemToStart
 
