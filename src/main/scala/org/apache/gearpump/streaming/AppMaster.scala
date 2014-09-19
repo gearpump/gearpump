@@ -105,13 +105,13 @@ class AppMaster (config : Configs) extends Actor {
     case ResourceAllocated(allocations) => {
       LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
       //group resource by worker
-      val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(0)((count, resource) => count + resource.slots)).toArray
+      val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(Resource(0))((count, resource) => count plus resource)).toArray
 
-      groupedResource.map((workerAndSlots) => {
-        val (worker, slots) = workerAndSlots
-        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: $slots on worker $worker")
-        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withSlots(slots)
-        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, slots, executorConfig))
+      groupedResource.map((workerAndResources) => {
+        val (worker, resources) = workerAndResources
+        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resources.slots} on worker $worker")
+        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withSlots(resources)
+        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resources, executorConfig))
         currentExecutorId += 1
       })
     }
@@ -164,13 +164,13 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def workerMsgHandler : Receive = {
-    case RegisterExecutor(executor, executorId, slots) => {
+    case RegisterExecutor(executor, executorId, resources) => {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
 
-      def launchTask(remainSlots: Int): Unit = {
-        if (remainSlots > 0 && !taskQueue.isEmpty) {
+      def launchTask(remainResources: Resource): Unit = {
+        if (remainResources > 0 && !taskQueue.isEmpty) {
           val (taskId, taskDescription, dag) = taskQueue.dequeue()
           //Launch task
 
@@ -180,10 +180,10 @@ class AppMaster (config : Configs) extends Actor {
 
           val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
           executor ! LaunchTask(taskId, config, taskDescription.taskClass)
-          launchTask(remainSlots - 1)
+          launchTask(remainResources - Resource.RESOURCE_MINIMUM_UNIT)
         }
       }
-      launchTask(slots)
+      launchTask(resources)
     }
     case ExecutorLaunchRejected(reason, ex) => {
       LOG.error(s"Executor Launch failed reason：$reason", ex)
@@ -240,7 +240,7 @@ object AppMaster {
 
   case class TaskData(taskDescription : TaskDescription, dag : DAG)
 
-  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, slots : Int, executorConfig : Configs) extends Actor {
+  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs) extends Actor {
 
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
@@ -249,7 +249,7 @@ object AppMaster {
 
     val launch = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString("gearpump.streaming.executor.vmargs").split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
 
-    worker ! LaunchExecutor(appId, executorId, Resource(slots), launch)
+    worker ! LaunchExecutor(appId, executorId, resource, launch)
 
     def receive : Receive = waitForActorSystemToStart
 

@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.util.{ActorUtil, ProcessLogRedirector}
-import org.apache.gearpump.scheduler.{ResourceCalculator, Resource}
+import org.apache.gearpump.scheduler.Resource
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration._
@@ -74,14 +74,14 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       }
     case launch : LaunchExecutor =>
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
-      if (ResourceCalculator.lessThan(resource, launch.resource)) {
+      if (resource < launch.resource) {
         sender ! ExecutorLaunchRejected("There is no free resource on this machine")
       } else {
         val actorName = actorNameForExecutor(launch.appId, launch.executorId)
 
         val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch), actorName)
 
-        resource = ResourceCalculator.subtract(resource, launch.resource)
+        resource = resource - launch.resource
         allocatedResource = allocatedResource + (executor -> launch.resource)
         master ! ResourceUpdate(id, resource)
         context.watch(executor)
@@ -100,7 +100,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
         val allocated = allocatedResource.get(actor)
         if (allocated.isDefined) {
-          resource = ResourceCalculator.add(resource, allocated.get)
+          resource = resource - allocated.get
           allocatedResource = allocatedResource - actor
           master ! ResourceUpdate(id, resource)
         }
