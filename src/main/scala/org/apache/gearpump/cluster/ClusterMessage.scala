@@ -22,6 +22,7 @@ import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.scheduler.{Allocation, Resource}
 import org.apache.gearpump.util.Configs
 
+import scala.collection.mutable.HashMap
 import scala.util.Try
 
 /**
@@ -56,12 +57,14 @@ trait AppMasterRegisterData
 object AppMasterToMaster {
   case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resources: Resource, registerData : AppMasterRegisterData)
   case class RequestResource(appId: Int, resource : Resource)
+  case object GetAllWorkers
 }
 
 object MasterToAppMaster {
   case class ResourceAllocated(allocations: Array[Allocation])
   case class AppMasterRegistered(appId: Int, master : ActorRef)
   case object ShutdownAppMaster
+  case class WorkerList(list : HashMap[ActorRef, Int])
 }
 
 object AppMasterToWorker {

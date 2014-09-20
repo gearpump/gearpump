@@ -32,6 +32,7 @@ import org.apache.gearpump.util.ActorUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
 private[cluster] class Master extends Actor with Stash {
@@ -45,6 +46,8 @@ private[cluster] class Master extends Actor with Stash {
   private var appManager : ActorRef = null
 
   private var scheduler : ActorRef = null
+
+  private var workers = new mutable.HashMap[ActorRef, Int]
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
 
@@ -64,6 +67,7 @@ private[cluster] class Master extends Actor with Stash {
     case RegisterWorker(id) =>
       context.watch(sender())
       sender ! WorkerRegistered(id)
+      workers += (sender() -> id)
       LOG.info(s"Register Worker $id....")
     case resourceUpdate : ResourceUpdate =>
       //LOG.info(s"Resource update id: $id, slots: $slots....")
@@ -74,6 +78,8 @@ private[cluster] class Master extends Actor with Stash {
     case  request : RequestResource =>
       //LOG.info(s"Request resource: appId: $appId, slots: $slots")
       scheduler forward request
+    case GetAllWorkers =>
+      sender() ! WorkerList(workers)
     case registerAppMaster : RegisterAppMaster =>
       //forward to appmaster
       appManager forward registerAppMaster
@@ -94,7 +100,10 @@ private[cluster] class Master extends Actor with Stash {
       LOG.info(s"worker ${actor.path} get terminated, is it due to network reason? ${t.getAddressTerminated()}")
       LOG.info("Let's filter out dead resources...")
       // filter out dead worker resource
-      scheduler forward t
+      if(actor.isInstanceOf[Worker]){
+        scheduler forward t
+        workers -= actor
+      }
   }
 
   override def preStart(): Unit = {
