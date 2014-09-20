@@ -40,10 +40,10 @@ class RestServices(master: ActorRef)(implicit executionContext:ExecutionContext)
       get {
         pathPrefix("") { 
           pathEndOrSingleSlash {
-            getFromResource("swagger-ui/index.html")
+            getFromResource("index.html")
           }
         } ~
-        getFromResourceDirectory("swagger-ui")
+        getFromResourceDirectory("META-INF/resources/webjars/swagger-ui/2.0.21")
   })
 
   val swaggerService = new SwaggerHttpService {

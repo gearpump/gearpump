@@ -47,7 +47,8 @@ resolvers ++= Seq(
   "spring-releases" at "http://repo.spring.io/libs-release",
   "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
   "spray repo" at "http://repo.spray.io",
-  "clockfly" at "http://dl.bintray.com/clockfly/maven"
+  "clockfly" at "http://dl.bintray.com/clockfly/maven",
+  "webjars" at "http://webjars.github.com/m2"
 )
 
 parallelExecution in Test := false
@@ -103,5 +104,6 @@ libraryDependencies ++= Seq(
   "io.spray" %%  "spray-json"    % sprayJsonVersion,
   "com.gettyimages" %% "spray-swagger" % "0.4.3" excludeAll( ExclusionRule(organization = "org.json4s"), ExclusionRule(organization = "io.spray") ),
   "org.json4s" %% "json4s-jackson" % "3.2.10",
-  "org.json4s" %% "json4s-native"   % "3.2.10"
+  "org.json4s" %% "json4s-native"   % "3.2.10",
+  "org.webjars" % "swagger-ui" % "2.0.21"
 )
