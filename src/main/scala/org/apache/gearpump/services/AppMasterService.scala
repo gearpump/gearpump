@@ -25,7 +25,7 @@ import akka.actor.{ActorContext, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.wordnik.swagger.annotations._
-import org.apache.gearpump.cluster.AppMasterRegisterData
+import org.apache.gearpump.cluster.{AppMasterInfo, AppMasterRegisterData}
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
@@ -57,7 +57,7 @@ class AppMasterService(val master:ActorRef, val context: ActorContext, execution
   }
 }
 
-case class AppMasterData(appId: Int, executorId: Int, appData: String)
+case class AppMasterData(appId: Int, executorId: Int, appData: AppMasterInfo)
 case class AppMasterDataRequest()
 
 

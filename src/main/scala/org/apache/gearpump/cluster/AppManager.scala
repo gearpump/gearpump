@@ -169,7 +169,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       val data = appMasterRegistry.get(appId)
       if (data.isDefined) {
         val worker = data.get.worker
-        LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $masterExecutorId")
+        LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
         worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
         sender ! ShutdownApplicationResult(Success(appId))
       }
@@ -190,7 +190,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       val lastAppId = appId - 1
       val appData = Option[AppMasterInfo](appMasterRegistry.getOrElse(lastAppId, null))
       LOG.info(s"AppManager returning AppMasterData for $lastAppId")
-      sender ! AppMasterData(appId=lastAppId, executorId=masterExecutorId, appData=appData.getOrElse("").toString)
+      sender ! AppMasterData(appId=lastAppId, executorId=masterExecutorId, appData=appData.getOrElse(null))
   }
 
   def terminationWatch : Receive = {

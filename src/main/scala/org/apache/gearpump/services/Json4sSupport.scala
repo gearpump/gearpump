@@ -18,12 +18,14 @@
 
 package org.apache.gearpump.services
 
+import akka.actor.{ActorSystem, ActorRef, ActorContext}
+import org.apache.gearpump.cluster.AppMasterInfo
 import spray.httpx.Json4sJacksonSupport
 import org.json4s._
 import java.util.UUID
 
 object Json4sSupport extends Json4sJacksonSupport {
-   implicit def json4sJacksonFormats: Formats = jackson.Serialization.formats(NoTypeHints) + new UUIDFormat
+   implicit def json4sJacksonFormats: Formats = jackson.Serialization.formats(NoTypeHints) + new UUIDFormat + new AppMasterInfoSerializer
 
   //so you don't need to import
   //jackson everywhere
@@ -41,6 +43,20 @@ object Json4sSupport extends Json4sJacksonSupport {
       case x: UUID => JString(x.toString)
     }
   }
+
+  class AppMasterInfoSerializer extends CustomSerializer[AppMasterInfo]( format => (
+    {
+      case JObject(JField("worker", JString(s)) :: Nil ) =>
+        //only need to serialize to json
+        AppMasterInfo(null)
+    },
+    {
+      case x:AppMasterInfo =>
+        JObject(
+          JField("worker", JString(x.worker.path.address.toString)) :: Nil)
+    }
+    )
+  )
 
   def toJValue[T](value: T): JValue = {
     Extraction.decompose(value)
