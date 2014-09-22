@@ -34,14 +34,12 @@ class FifoScheduler extends Scheduler{
       }
 
       val (appMaster, request) = resourceRequests.dequeue()
-      if(request.isInstanceOf[Allocation])
-        return
       val newAllocated = ResourceCalculator.min(total - allocated, request)
       val singleAllocation = flattenResource.slice(allocated.slots, (allocated plus newAllocated).slots)
         .groupBy((actor) => actor).mapValues(_.length).toArray.map((resource) =>  Allocation(resource._2, resource._1))
       appMaster ! ResourceAllocated(singleAllocation)
-      if (request > newAllocated) {
-        resourceRequests.enqueue((appMaster, request - newAllocated))
+      if (request.resource > newAllocated) {
+        resourceRequests.enqueue((appMaster, Allocation(request.resource - newAllocated, request.worker)))
       }
       assignResourceToApplication(allocated plus newAllocated)
     }

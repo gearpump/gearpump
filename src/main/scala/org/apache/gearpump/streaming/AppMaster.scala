@@ -28,7 +28,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.scheduler.Resource
+import org.apache.gearpump.scheduler.{Allocation, Resource}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
@@ -37,7 +37,6 @@ import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorS
 import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable
 import scala.collection.mutable.Queue
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -58,30 +57,17 @@ class AppMaster (config : Configs) extends Actor {
 
   private val name = appDescription.name
   private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
-  private val executorLocations = new Array[(ActorRef, ActorRef)](0)
 
   private var taskLocations = Map.empty[HostPort, Set[TaskId]]
 
   private var startedTasks = Set.empty[TaskId]
   private var totalTaskCount = 0
-  private var workers : mutable.HashMap[ActorRef, Int] = null
-  private var taskQuenes = new mutable.HashMap[ActorRef, Queue[(TaskId, TaskDescription, DAG)]]()
 
   override def receive : Receive = null
 
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
     val dag = DAG(appDescription.dag)
-    import scala.collection.JavaConverters._
-    val tmpMap : Map[String, String]= Configs.SYSTEM_DEFAULT_CONFIG.getConfig("gearpump.scheduler.strategy").root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k -> v.toString) }
-
-    val result = tmpMap.map( elem => {
-      val (worker, str) = elem
-      val tmp = str.split(",")
-      //(workerId, taskClass, parallism)
-      (util.Try(worker.toInt), Class.forName(tmp(0)), util.Try(tmp(1).toInt))
-      }
-    )
 
     //scheduler the task fairly on every machine
     val tasks = dag.tasks.flatMap { params =>
@@ -103,19 +89,13 @@ class AppMaster (config : Configs) extends Actor {
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
     case AppMasterRegistered(appId, master) =>
       LOG.info(s"AppMasterRegistered received for appID: $appId")
+
+      LOG.info("Sending request resource to master...")
+      master ! RequestResource(appId, Allocation(taskQueue.size, null))
+
       killSelf.cancel()
       this.master = master
       context.watch(master)
-      context.become(waitForWorkerList(repeatActionUtil(30)(master ! GetAllWorkers)))
-  }
-
-  def waitForWorkerList(killSelf : Cancellable) : Receive = {
-    case WorkerList(list) =>
-      this.workers = list
-      killSelf.cancel()
-
-      LOG.info("Sending request resource to master...")
-      master ! RequestResource(appId, Resource(taskQueue.size))
       context.become(messageHandler)
   }
 
@@ -181,7 +161,6 @@ class AppMaster (config : Configs) extends Actor {
     case LaunchExecutorActor(conf : Props, executorId : Int, daemon : ActorRef, worker : ActorRef) =>
       val executor = context.actorOf(conf, executorId.toString)
       daemon ! BindLifeCycle(executor)
-      executorLocations :+ (worker, executor)
   }
 
   def workerMsgHandler : Receive = {

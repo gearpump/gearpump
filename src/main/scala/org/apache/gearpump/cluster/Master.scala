@@ -78,8 +78,6 @@ private[cluster] class Master extends Actor with Stash {
     case  request : RequestResource =>
       //LOG.info(s"Request resource: appId: $appId, slots: $slots")
       scheduler forward request
-    case GetAllWorkers =>
-      sender() ! WorkerList(workers)
     case registerAppMaster : RegisterAppMaster =>
       //forward to appmaster
       appManager forward registerAppMaster

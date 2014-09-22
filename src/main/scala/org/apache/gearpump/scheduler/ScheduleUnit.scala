@@ -19,16 +19,16 @@ package org.apache.gearpump.scheduler
 
 import akka.actor.ActorRef
 
-class Resource(val slots : Int) extends Serializable
+case class Resource(slots : Int)
 
-case class Allocation(override val slots : Int, worker : ActorRef) extends Resource(slots)
+case class Allocation(resource : Resource, worker : ActorRef)
 
 object Resource{
   val RESOURCE_MINIMUM_UNIT = new Resource(1)
 
-  def apply(slots : Int) = new Resource(slots)
-
   implicit def int2Resource(slots : Int) = apply(slots)
+
+  implicit def alloc2Resource(allocation : Allocation) = allocation.resource
 
   implicit class ResourceHelper(resource : Resource){
     def plus(other : Resource) = Resource(resource.slots + other.slots)
@@ -41,8 +41,4 @@ object Resource{
 
     def ==(other : Resource) = resource.slots == other.slots
   }
-}
-
-object Allocation{
-  implicit def allc2Resource(allc : Allocation) = Resource(allc.slots)
 }

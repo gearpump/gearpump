@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.scheduler.Resource
+import org.apache.gearpump.scheduler.{Allocation, Resource}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util.Constants._
@@ -214,7 +214,7 @@ private[cluster] object AppManager {
     val systemConfig = context.system.settings.config
 
     val master = context.actorSelection("../../")
-    master ! RequestResource(appId, Resource(1))
+    master ! RequestResource(appId, Allocation(1, null))
     LOG.info(s"AppManager asking Master for resource for app $appId...")
 
     def receive : Receive = waitForResourceAllocation
