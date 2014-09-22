@@ -46,7 +46,7 @@ class AppMaster (config : Configs) extends Actor {
 
   val masterExecutorId = config.executorId
   var currentExecutorId = masterExecutorId + 1
-  val slots = config.slots
+  val slots = config.resource
 
   private val appId = config.appId
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
@@ -91,7 +91,7 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"AppMasterRegistered received for appID: $appId")
 
       LOG.info("Sending request resource to master...")
-      master ! RequestResource(appId, ResourceRequest(taskQueue.size, null))
+      master ! RequestResource(appId, ResourceRequest(Resource(taskQueue.size)))
 
       killSelf.cancel()
       this.master = master
@@ -105,13 +105,13 @@ class AppMaster (config : Configs) extends Actor {
     case ResourceAllocated(allocations) => {
       LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
       //group resource by worker
-      val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(Resource(0))((count, resource) => count plus resource)).toArray
+      val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(Resource.empty)((totalResource, request) => totalResource add request.resource)).toArray
 
       groupedResource.map((workerAndResources) => {
-        val (worker, resources) = workerAndResources
-        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resources.slots} on worker $worker")
-        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withSlots(resources)
-        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resources, executorConfig))
+        val (worker, resource) = workerAndResources
+        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
+        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource)
+        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig))
         currentExecutorId += 1
       })
     }
@@ -164,13 +164,13 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def workerMsgHandler : Receive = {
-    case RegisterExecutor(executor, executorId, resources) => {
+    case RegisterExecutor(executor, executorId, resource) => {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
 
       def launchTask(remainResources: Resource): Unit = {
-        if (remainResources > 0 && !taskQueue.isEmpty) {
+        if (remainResources.greaterThan(Resource.empty) && !taskQueue.isEmpty) {
           val (taskId, taskDescription, dag) = taskQueue.dequeue()
           //Launch task
 
@@ -180,10 +180,12 @@ class AppMaster (config : Configs) extends Actor {
 
           val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
           executor ! LaunchTask(taskId, config, taskDescription.taskClass)
-          launchTask(remainResources - Resource.RESOURCE_MINIMUM_UNIT)
+          //Todo: subtract the actual resource used by task
+          val usedResource = Resource(1)
+          launchTask(remainResources subtract usedResource)
         }
       }
-      launchTask(resources)
+      launchTask(resource)
     }
     case ExecutorLaunchRejected(reason, ex) => {
       LOG.error(s"Executor Launch failed reason：$reason", ex)

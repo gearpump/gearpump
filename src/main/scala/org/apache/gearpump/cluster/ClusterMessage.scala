@@ -54,7 +54,7 @@ object MasterToClient {
 trait AppMasterRegisterData
 
 object AppMasterToMaster {
-  case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resources: Resource, registerData : AppMasterRegisterData)
+  case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resource: Resource, registerData : AppMasterRegisterData)
   case class RequestResource(appId: Int, request : ResourceRequest)
 }
 

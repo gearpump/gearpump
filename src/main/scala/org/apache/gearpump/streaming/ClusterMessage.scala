@@ -29,7 +29,7 @@ object AppMasterToExecutor {
 }
 
 object ExecutorToAppMaster {
-  case class RegisterExecutor(executor: ActorRef, executorId: Int, resources: Resource)
+  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource)
 
   case class RegisterTask(taskId: TaskId, task: HostPort)
 

@@ -43,7 +43,7 @@ object Constants {
   //config for construction of executor
   val APP_MASTER = "appMaster"
   val EXECUTOR_ID = "executorId"
-  val SLOTS = "slots"
+  val RESOURCE = "resource"
 
   val TASK_ID = "taskId"
   val TASK_DAG = "taskDag"

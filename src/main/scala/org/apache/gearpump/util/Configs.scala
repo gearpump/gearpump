@@ -56,8 +56,8 @@ class Configs(val config: Map[String, _])  extends Serializable{
   def withExecutorId(executorId : Int) = withValue(EXECUTOR_ID, executorId)
   def executorId = config.getInt(EXECUTOR_ID)
 
-  def withSlots(slots : Resource) = withValue(SLOTS, slots)
-  def slots = config.getResource(SLOTS)
+  def withResource(resource : Resource) = withValue(RESOURCE, resource)
+  def resource = config.getResource(RESOURCE)
 
   def withAppMasterRegisterData(data : AppMasterRegisterData) = withValue(APP_MASTER_REGISTER_DATA, data)
   def appMasterRegisterData : AppMasterRegisterData = config.getAnyRef(APP_MASTER_REGISTER_DATA).asInstanceOf[AppMasterRegisterData]

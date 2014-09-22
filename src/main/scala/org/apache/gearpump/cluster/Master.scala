@@ -70,13 +70,11 @@ private[cluster] class Master extends Actor with Stash {
       workers += (sender() -> id)
       LOG.info(s"Register Worker $id....")
     case resourceUpdate : ResourceUpdate =>
-      //LOG.info(s"Resource update id: $id, slots: $slots....")
       scheduler forward resourceUpdate
   }
 
   def appMasterMsgHandler : Receive = {
     case  request : RequestResource =>
-      //LOG.info(s"Request resource: appId: $appId, slots: $slots")
       scheduler forward request
     case registerAppMaster : RegisterAppMaster =>
       //forward to appmaster
@@ -98,7 +96,7 @@ private[cluster] class Master extends Actor with Stash {
       LOG.info(s"worker ${actor.path} get terminated, is it due to network reason? ${t.getAddressTerminated()}")
       LOG.info("Let's filter out dead resources...")
       // filter out dead worker resource
-      if(actor.isInstanceOf[Worker]){
+      if(workers.keySet.contains(actor)){
         scheduler forward t
         workers -= actor
       }

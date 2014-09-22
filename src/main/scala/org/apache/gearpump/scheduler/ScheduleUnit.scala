@@ -26,23 +26,21 @@ case class ResourceRequest(resource: Resource, worker : ActorRef)
 case class Allocation(resource : Resource, worker : ActorRef)
 
 object Resource{
-  val RESOURCE_MINIMUM_UNIT = new Resource(1)
-
-  implicit def int2Resource(slots : Int) = apply(slots)
-
-  implicit def alloc2Resource(allocation : Allocation) = allocation.resource
-
-  implicit def req2Resource(request : ResourceRequest) = request.resource
+  def empty = new Resource(0)
 
   implicit class ResourceHelper(resource : Resource){
-    def plus(other : Resource) = Resource(resource.slots + other.slots)
+    def add(other : Resource) = Resource(resource.slots + other.slots)
 
-    def -(other : Resource) = Resource(resource.slots - other.slots)
+    def subtract(other : Resource) = Resource(resource.slots - other.slots)
 
-    def >(other : Resource) = resource.slots > other.slots
+    def greaterThan(other : Resource) = resource.slots > other.slots
 
-    def <(other : Resource) = resource.slots < other.slots
+    def lessThan(other : Resource) = resource.slots < other.slots
 
-    def ==(other : Resource) = resource.slots == other.slots
-  }
+    def equals(other : Resource) = resource.slots == other.slots
+    }
+}
+
+object ResourceRequest{
+  def apply(resource : Resource) = new ResourceRequest(resource, null)
 }

@@ -74,14 +74,14 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       }
     case launch : LaunchExecutor =>
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
-      if (resource < launch.resource) {
+      if (resource.lessThan(launch.resource)) {
         sender ! ExecutorLaunchRejected("There is no free resource on this machine")
       } else {
         val actorName = actorNameForExecutor(launch.appId, launch.executorId)
 
         val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch), actorName)
 
-        resource = resource - launch.resource
+        resource = resource.subtract(launch.resource)
         allocatedResource = allocatedResource + (executor -> launch.resource)
         master ! ResourceUpdate(id, resource)
         context.watch(executor)
@@ -100,7 +100,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
         val allocated = allocatedResource.get(actor)
         if (allocated.isDefined) {
-          resource = resource - allocated.get
+          resource = resource.add(allocated.get)
           allocatedResource = allocatedResource - actor
           master ! ResourceUpdate(id, resource)
         }

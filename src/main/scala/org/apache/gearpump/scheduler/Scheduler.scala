@@ -29,10 +29,9 @@ abstract class Scheduler extends Actor{
   protected var resources = new Array[(ActorRef, Resource)](0)
   protected val resourceRequests = new mutable.Queue[(ActorRef, ResourceRequest)]
 
-  override def receive : Receive = handle
-
-  def handle : Receive = {
+  def handleScheduleMessage : Receive = {
     case ResourceUpdate(id, resource) =>
+      LOG.info(s"Resource update id: $id, slots: ${resource.slots}....")
       val current = sender()
       val index = resources.indexWhere((worker) => worker._1.equals(current), 0)
       if (index == -1) {
@@ -41,9 +40,10 @@ abstract class Scheduler extends Actor{
         resources(index) = (current, resource)
       }
       allocateResource()
-    case RequestResource(appId, resource)=>
+    case RequestResource(appId, request)=>
+      LOG.info(s"Request resource: appId: $appId, slots: ${request.resource.slots}")
       val appMaster = sender()
-      resourceRequests.enqueue((appMaster, resource))
+      resourceRequests.enqueue((appMaster, request))
       allocateResource()
     case t : Terminated =>
       val actor = t.actor

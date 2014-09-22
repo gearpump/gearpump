@@ -1,3 +1,4 @@
+package org.apache.gearpump.scheduler
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -15,11 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.scheduler
 
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 
 class FifoScheduler extends Scheduler{
+  override def receive: Receive = super.handleScheduleMessage
+
   override def allocateResource(): Unit = {
     val length = resources.length
     val flattenResource = resources.zipWithIndex.flatMap((workerWithIndex) => {
@@ -34,14 +36,14 @@ class FifoScheduler extends Scheduler{
       }
 
       val (appMaster, request) = resourceRequests.dequeue()
-      val newAllocated = ResourceCalculator.min(total - allocated, request)
-      val singleAllocation = flattenResource.slice(allocated.slots, (allocated plus newAllocated).slots)
-        .groupBy((actor) => actor).mapValues(_.length).toArray.map((resource) =>  Allocation(resource._2, resource._1))
+      val newAllocated = ResourceUtil.min(total.subtract(allocated), request.resource)
+      val singleAllocation = flattenResource.slice(allocated.slots, (allocated.add(newAllocated)).slots)
+        .groupBy((actor) => actor).mapValues(_.length).toArray.map((resource) =>  Allocation(Resource(resource._2), resource._1))
       appMaster ! ResourceAllocated(singleAllocation)
-      if (request.resource > newAllocated) {
-        resourceRequests.enqueue((appMaster, ResourceRequest(request.resource - newAllocated, request.worker)))
+      if (request.resource.greaterThan(newAllocated)) {
+        resourceRequests.enqueue((appMaster, ResourceRequest(request.resource.subtract(newAllocated), request.worker)))
       }
-      assignResourceToApplication(allocated plus newAllocated)
+      assignResourceToApplication(allocated.add(newAllocated))
     }
 
     assignResourceToApplication(Resource(0))
