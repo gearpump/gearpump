@@ -48,7 +48,8 @@ object Local extends App with ArgumentsParser {
 
     val system = ActorSystem(MASTER, Configs.MASTER_CONFIG.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
-      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip))
+      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip)).
+      withValue("gearpump.cluster.masters",  ConfigValueFactory.fromAnyRef(List(s"$ip:$port")))
     )
     val master = system.actorOf(Props[Master], MASTER)
     val masterPath = ActorUtil.getSystemPath(system) + s"/user/${MASTER}"
