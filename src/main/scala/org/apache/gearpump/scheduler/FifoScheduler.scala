@@ -39,7 +39,7 @@ class FifoScheduler extends Scheduler{
         .groupBy((actor) => actor).mapValues(_.length).toArray.map((resource) =>  Allocation(resource._2, resource._1))
       appMaster ! ResourceAllocated(singleAllocation)
       if (request.resource > newAllocated) {
-        resourceRequests.enqueue((appMaster, Allocation(request.resource - newAllocated, request.worker)))
+        resourceRequests.enqueue((appMaster, ResourceRequest(request.resource - newAllocated, request.worker)))
       }
       assignResourceToApplication(allocated plus newAllocated)
     }

@@ -31,6 +31,15 @@ object Constants {
 
   val APP_MASTER_REGISTER_DATA = "appmasterregisterdata"
 
+  val GEARPUMP_SCHEDULER = "gearpump.scheduler.class"
+
+  val GEARPUMP_SERIALIZERS = "gearpump.serializers"
+
+  val GEARPUMP_TASK_DISPATCHER = "gearpump.task-dispatcher"
+  val GEARPUMP_CLUSTER_MASTERS = "gearpump.cluster.masters"
+  val GEARPUMP_APPMASTER_ARGS = "gearpump.streaming.appmaster.vmargs"
+  val GEARPUMP_EXECUTOR_ARGS = "gearpump.streaming.executor.vmargs"
+
   //config for construction of executor
   val APP_MASTER = "appMaster"
   val EXECUTOR_ID = "executorId"

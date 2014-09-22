@@ -28,7 +28,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.ActorUtil
+import org.apache.gearpump.util.{Constants, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
@@ -107,7 +107,7 @@ private[cluster] class Master extends Actor with Stash {
   override def preStart(): Unit = {
     val path = ActorUtil.getFullPath(context)
     LOG.info(s"master path is $path")
-    val schedulerClass = Class.forName(systemConfig.getString("gearpump.scheduler.class"))
+    val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULER))
     appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
     scheduler = context.actorOf(Props(schedulerClass))
   }

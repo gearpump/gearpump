@@ -29,11 +29,11 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.scheduler.{Allocation, Resource}
+import org.apache.gearpump.scheduler.{ResourceRequest, Allocation, Resource}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{Configs, ActorSystemBooter, ActorUtil, Util}
+import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.concurrent.TimeUnit
@@ -106,7 +106,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   //TODO: We can use this state for appmaster HA to recover a new App master
   private var state : Set[ApplicationState] = Set.empty[ApplicationState]
 
-  val masterClusterSize = systemconfig.getStringList("gearpump.cluster.masters").size()
+  val masterClusterSize = systemconfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).size()
 
   //optimize write path, we can tollerate one master down for recovery.
   val writeQuorum = Math.min(2, masterClusterSize / 2 + 1)
@@ -214,7 +214,7 @@ private[cluster] object AppManager {
     val systemConfig = context.system.settings.config
 
     val master = context.actorSelection("../../")
-    master ! RequestResource(appId, Allocation(1, null))
+    master ! RequestResource(appId, ResourceRequest(1, null))
     LOG.info(s"AppManager asking Master for resource for app $appId...")
 
     def receive : Receive = waitForResourceAllocation
@@ -228,7 +228,7 @@ private[cluster] object AppManager {
         val name = actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
 
-        val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString("gearpump.streaming.appmaster.vmargs").split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
+        val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
 
         allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation, executionContext)
         context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))
@@ -244,7 +244,7 @@ private[cluster] object AppManager {
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
         //bind lifecycle with worker
         sender ! BindLifeCycle(worker)
-        val masterAddress = systemConfig.getStringList("gearpump.cluster.masters").asScala.map { address =>
+        val masterAddress = systemConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala.map { address =>
           val hostAndPort = address.split(":")
           HostPort(hostAndPort(0), hostAndPort(1).toInt)
         }

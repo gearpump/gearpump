@@ -21,6 +21,8 @@ import akka.actor.ActorRef
 
 case class Resource(slots : Int)
 
+case class ResourceRequest(resource: Resource, worker : ActorRef)
+
 case class Allocation(resource : Resource, worker : ActorRef)
 
 object Resource{
@@ -29,6 +31,8 @@ object Resource{
   implicit def int2Resource(slots : Int) = apply(slots)
 
   implicit def alloc2Resource(allocation : Allocation) = allocation.resource
+
+  implicit def req2Resource(request : ResourceRequest) = request.resource
 
   implicit class ResourceHelper(resource : Resource){
     def plus(other : Resource) = Resource(resource.slots + other.slots)

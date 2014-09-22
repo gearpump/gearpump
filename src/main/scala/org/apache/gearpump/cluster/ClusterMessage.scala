@@ -19,7 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.scheduler.{Allocation, Resource}
+import org.apache.gearpump.scheduler.{ResourceRequest, Allocation, Resource}
 import org.apache.gearpump.util.Configs
 
 import scala.util.Try
@@ -55,7 +55,7 @@ trait AppMasterRegisterData
 
 object AppMasterToMaster {
   case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resources: Resource, registerData : AppMasterRegisterData)
-  case class RequestResource(appId: Int, allocation : Allocation)
+  case class RequestResource(appId: Int, request : ResourceRequest)
 }
 
 object MasterToAppMaster {

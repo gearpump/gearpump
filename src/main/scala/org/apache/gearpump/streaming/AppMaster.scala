@@ -28,7 +28,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.scheduler.{Allocation, Resource}
+import org.apache.gearpump.scheduler.{ResourceRequest, Allocation, Resource}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
@@ -91,7 +91,7 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"AppMasterRegistered received for appID: $appId")
 
       LOG.info("Sending request resource to master...")
-      master ! RequestResource(appId, Allocation(taskQueue.size, null))
+      master ! RequestResource(appId, ResourceRequest(taskQueue.size, null))
 
       killSelf.cancel()
       this.master = master
@@ -247,7 +247,7 @@ object AppMaster {
     val name = actorNameForExecutor(appId, executorId)
     val selfPath = ActorUtil.getFullPath(context)
 
-    val launch = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString("gearpump.streaming.executor.vmargs").split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
+    val launch = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
 
     worker ! LaunchExecutor(appId, executorId, resource, launch)
 

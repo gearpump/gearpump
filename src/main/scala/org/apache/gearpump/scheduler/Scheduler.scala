@@ -27,7 +27,7 @@ import scala.collection.mutable
 abstract class Scheduler extends Actor{
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Scheduler])
   protected var resources = new Array[(ActorRef, Resource)](0)
-  protected val resourceRequests = new mutable.Queue[(ActorRef, Allocation)]
+  protected val resourceRequests = new mutable.Queue[(ActorRef, ResourceRequest)]
 
   override def receive : Receive = handle
 
