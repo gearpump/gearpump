@@ -18,22 +18,18 @@
 
 package org.apache.gearpump.cluster
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor._
-import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
+import org.apache.gearpump.services.AppMasterDataRequest
 import org.apache.gearpump.util.ActorUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.concurrent.duration.Duration
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
 private[cluster] class Master extends Actor with Stash {
@@ -59,13 +55,13 @@ private[cluster] class Master extends Actor with Stash {
   final val undefinedUid = 0
   @tailrec final def newUid(): Int = {
     val uid = ThreadLocalRandom.current.nextInt()
-    if (uid == undefinedUid) newUid
+    if (uid == undefinedUid) newUid()
     else uid
   }
 
   def workerMsgHandler : Receive = {
     case RegisterNewWorker =>
-      val workerId = newUid
+      val workerId = newUid()
       self forward RegisterWorker(workerId)
     case RegisterWorker(id) =>
       context.watch(sender())
@@ -90,8 +86,11 @@ private[cluster] class Master extends Actor with Stash {
       resourceRequests.enqueue((appMaster, slots))
       allocateResource()
     case registerAppMaster : RegisterAppMaster =>
-      //forward to appmaster
+      //forward to appManager
       appManager forward registerAppMaster
+    case appMasterDataRequest: AppMasterDataRequest =>
+      LOG.info("Master received AppMasterDataRequest")
+      appManager forward appMasterDataRequest
   }
 
   def clientMsgHandler : Receive = {
