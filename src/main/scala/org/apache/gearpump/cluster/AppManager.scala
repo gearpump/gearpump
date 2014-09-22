@@ -224,7 +224,7 @@ private[cluster] object AppManager {
         LOG.info(s"Resource allocated for appMaster $app Id")
         val allocation = allocations(0)
         val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
-        //LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
+        LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
 

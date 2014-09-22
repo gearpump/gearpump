@@ -31,10 +31,10 @@ class Executor(config : Configs)  extends Actor {
 
   val appMaster = config.appMaster
   val executorId = config.executorId
-  val slots = config.resource
+  val resource = config.resource
   val appId = config.appId
 
-  context.parent ! RegisterExecutor(self, executorId, slots)
+  context.parent ! RegisterExecutor(self, executorId, resource)
   context.watch(appMaster)
 
   val sendLater = context.actorOf(Props[SendLater], "sendlater")

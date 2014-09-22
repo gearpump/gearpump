@@ -46,7 +46,7 @@ class AppMaster (config : Configs) extends Actor {
 
   val masterExecutorId = config.executorId
   var currentExecutorId = masterExecutorId + 1
-  val slots = config.resource
+  val resource = config.resource
 
   private val appId = config.appId
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
@@ -83,7 +83,7 @@ class AppMaster (config : Configs) extends Actor {
     taskQueue ++= tasks
 
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
-    context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData))))
+    context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
   }
 
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
@@ -198,7 +198,7 @@ class AppMaster (config : Configs) extends Actor {
     if (null != master && actor.compareTo(master) == 0) {
       // master is down, let's try to contact new master
       LOG.info("parent master cannot be contacted, find a new master ...")
-      context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData))))
+      context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
     } else if (isChildActorPath(actor)) {
       //executor is down
       //TODO: handle this failure
