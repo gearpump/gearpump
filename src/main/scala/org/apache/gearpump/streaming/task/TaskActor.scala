@@ -79,7 +79,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       val partition = partitions(start)
 
       transport(Message(System.currentTimeMillis(), msg), outputTaskIds(partition))
-      val ackRequest = flowControl.markOutput(partition)
+      val ackRequest = flowControl.sendMessage(partition)
       if (null != ackRequest) {
         transport(ackRequest, outputTaskIds(partition))
       }
@@ -141,12 +141,14 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   private def tryToSyncToClockService : Unit = {
     if (unackedClockUpdateTimestamp == 0) {
-      appMaster ! UpdateClock(this.taskId, clockTracker.selfMinClock)
+      appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
+      needSyncToClockService = false
       unackedClockUpdateTimestamp = System.currentTimeMillis()
     } else {
       val current = System.currentTimeMillis()
       if (current - unackedClockUpdateTimestamp > CLOCK_SYNC_TIMEOUT_INTERVAL) {
-        appMaster ! UpdateClock(this.taskId, clockTracker.selfMinClock)
+        appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
+        needSyncToClockService = false
         unackedClockUpdateTimestamp  = System.currentTimeMillis()
       } else {
         needSyncToClockService = true
@@ -156,7 +158,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   private def doHandleMessage : Unit = {
     var done = false
-    while (flowControl.pass() && !done) {
+    while (flowControl.allowSendingMoreMsgs() && !done) {
       val msg = queue.poll()
       if (msg != null) {
         msg match {
@@ -182,7 +184,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       //enqueue to handle the ackRequest and send back ack later
       queue.add(ackRequest)
     case ack @ Ack(taskId, seq) =>
-      flowControl.markAck(taskId, seq)
+      flowControl.receiveAck(taskId, seq)
       val updated = clockTracker.onAck(ack)
       if (updated) {
         tryToSyncToClockService
@@ -200,7 +202,6 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       unackedClockUpdateTimestamp = 0
       if (needSyncToClockService) {
         tryToSyncToClockService
-        needSyncToClockService = false
       }
 
     case other =>

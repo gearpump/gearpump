@@ -22,51 +22,52 @@ import org.slf4j.{LoggerFactory, Logger}
 import org.apache.gearpump.streaming.task.FlowControl.LOG
 
 class FlowControl(taskId : TaskId, partitionNum : Int) {
-  private final val INITIAL_WINDOW_SIZE = 1024 * 16
-  private final val FLOW_CONTROL_RATE = 100
+  import FlowControl._
 
   private[this] var outputWindow : Long = INITIAL_WINDOW_SIZE
   private val ackWaterMark = new Array[Long](partitionNum)
   private val outputWaterMark = new Array[Long](partitionNum)
   private val ackRequestWaterMark = new Array[Long](partitionNum)
 
-  def markOutput(partitionId : Int) : AckRequest = {
-    outputWaterMark(partitionId) += 1
+  def sendMessage(messagePartition : Int) : AckRequest = {
+    outputWaterMark(messagePartition) += 1
     outputWindow -= 1
 
-    if (outputWaterMark(partitionId) > ackRequestWaterMark(partitionId) + FLOW_CONTROL_RATE) {
-      ackRequestWaterMark(partitionId) = outputWaterMark(partitionId)
-      AckRequest(taskId, Seq(partitionId, outputWaterMark(partitionId)))
+    if (outputWaterMark(messagePartition) > ackRequestWaterMark(messagePartition) + FLOW_CONTROL_RATE) {
+      ackRequestWaterMark(messagePartition) = outputWaterMark(messagePartition)
+      AckRequest(taskId, Seq(messagePartition, outputWaterMark(messagePartition)))
     } else {
       null
     }
   }
 
-  def markAck(ackTask : TaskId, seq : Seq) : Unit = {
-    LOG.debug("get ack from downstream, current: " + this.taskId + "downL: " + ackTask + ", seq: " + seq + ", windows: " + outputWindow)
+  def receiveAck(sourceTask : TaskId, seq : Seq) : Unit = {
+    LOG.debug("get ack from downstream, current: " + this.taskId + "downstream: " + sourceTask + ", seq: " + seq + ", windows: " + outputWindow)
     outputWindow += seq.seq - ackWaterMark(seq.id)
     ackWaterMark(seq.id) = seq.seq
   }
 
-  def pass() : Boolean = outputWindow > 0
+  /**
+   * return true if we allow to output more messages
+   */
+  def allowSendingMoreMsgs() : Boolean = outputWindow > 0
 
-  def outputSnapshot() : Array[Long] = {
+  def snapshotOutputWaterMark() : Array[Long] = {
     outputWaterMark.clone
   }
 
-  def isOutputEmpty : Boolean = {
+  def isAllMessageAcked : Boolean = {
     outputWindow == INITIAL_WINDOW_SIZE
   }
 
-  def outputExceed(outputCheck : Array[Long]) : Boolean = {
-
-    if (null == outputCheck || outputCheck.length == 0) {
+  def isOutputWatermarkExceed(threshold : Array[Long]) : Boolean = {
+    if (null == threshold || threshold.length == 0) {
       return true
     }
 
     var index = 0
     while(index < outputWaterMark.size) {
-      if (outputWaterMark(index) < outputCheck(index)) {
+      if (outputWaterMark(index) < threshold(index)) {
         return false
       }
       index += 1
@@ -77,4 +78,7 @@ class FlowControl(taskId : TaskId, partitionNum : Int) {
 
 object FlowControl {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[FlowControl])
+
+  final val INITIAL_WINDOW_SIZE = 1024 * 16
+  final val FLOW_CONTROL_RATE = 100
 }

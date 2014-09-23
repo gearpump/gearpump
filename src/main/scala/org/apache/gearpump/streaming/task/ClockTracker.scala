@@ -29,10 +29,10 @@ class MinClockSince(val first : Message, flow : FlowControl) {
   }
 
   def processMsg(msg : Message) : Option[Long] = {
-    if (flow.isOutputEmpty) {
+    if (flow.isAllMessageAcked) {
       Some(minClock)
     } else if (!firstMsgProcessed && msg.eq(this.first)) {
-      ackThreshold = flow.outputSnapshot()
+      ackThreshold = flow.snapshotOutputWaterMark()
       firstMsgProcessed = true
       None
     } else {
@@ -42,7 +42,7 @@ class MinClockSince(val first : Message, flow : FlowControl) {
 
   def ackMsg() : Option[Long] = {
     if (firstMsgProcessed) {
-      if (flow.outputExceed(ackThreshold)) {
+      if (flow.isOutputWatermarkExceed(ackThreshold)) {
         Some(minClock)
       } else {
         None
@@ -109,7 +109,7 @@ class ClockTracker(flowControl : FlowControl)  {
    * return true if there are changes to self min clock
    */
   def onAck(ack: Ack): Boolean = {
-    if (unprocessedMsgCount == 0 && flowControl.isOutputEmpty) {
+    if (unprocessedMsgCount == 0 && flowControl.isAllMessageAcked) {
       candidateMinClock = null
       myMinClock = Long.MaxValue
       true
@@ -141,7 +141,7 @@ class ClockTracker(flowControl : FlowControl)  {
   /**
    * min clock timestamp of all messages pending at current task
    */
-  def selfMinClock : Long = {
+  def minClockAtCurrentTask : Long = {
     myMinClock
   }
 }
