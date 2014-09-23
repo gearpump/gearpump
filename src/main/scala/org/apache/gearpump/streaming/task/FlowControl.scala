@@ -29,7 +29,7 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
   private val outputWaterMark = new Array[Long](outputTaskCount)
   private val ackRequestWaterMark = new Array[Long](outputTaskCount)
 
-  def markSendingMessage(messagePartition : Int) : AckRequest = {
+  def sendMessage(messagePartition : Int) : AckRequest = {
     outputWaterMark(messagePartition) += 1
     outputWindow -= 1
 
@@ -41,7 +41,7 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
     }
   }
 
-  def markReceivingAck(sourceTask : TaskId, seq : Seq) : Unit = {
+  def receiveAck(sourceTask : TaskId, seq : Seq) : Unit = {
     LOG.debug("get ack from downstream, current: " + this.taskId + "downstream: " + sourceTask + ", seq: " + seq + ", windows: " + outputWindow)
     outputWindow += seq.seq - ackWaterMark(seq.id)
     ackWaterMark(seq.id) = seq.seq
@@ -56,7 +56,7 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
     outputWaterMark.clone
   }
 
-  def isAllMessagesAcked : Boolean = {
+  def allMessagesAcked : Boolean = {
     outputWindow == INITIAL_WINDOW_SIZE
   }
 

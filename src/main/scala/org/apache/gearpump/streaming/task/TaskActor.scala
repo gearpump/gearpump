@@ -77,7 +77,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       val partition = partitions(start)
 
       transport(Message(System.currentTimeMillis(), msg), outputTaskIds(partition))
-      val ackRequest = flowControl.markSendingMessage(partition)
+      val ackRequest = flowControl.sendMessage(partition)
       if (null != ackRequest) {
         transport(ackRequest, outputTaskIds(partition))
       }
@@ -182,7 +182,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       //enqueue to handle the ackRequest and send back ack later
       queue.add(ackRequest)
     case ack @ Ack(taskId, seq) =>
-      flowControl.markReceivingAck(taskId, seq)
+      flowControl.receiveAck(taskId, seq)
       val updated = clockTracker.onAck(ack)
       if (updated) {
         tryToSyncToClockService
