@@ -93,8 +93,12 @@ import ClockTracker._
   def onAck(ack: Ack): Boolean = {
     if (unprocessedMsgCount == 0 && flowControl.allMessagesAcked) {
       candidateMinClock = null
-      minClock = Long.MaxValue
-      true
+    if (minClock == Long.MaxValue) {
+        false
+      } else {
+        minClock = Long.MaxValue
+        true
+      }
     } else if (null != candidateMinClock) {
       val newMinClock = candidateMinClock.ackMsg()
       if (newMinClock.isDefined) {
