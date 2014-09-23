@@ -28,6 +28,8 @@ case class ResourceAllocation(resource : Resource, worker : ActorRef)
 object Resource{
   def empty = new Resource(0)
 
+  def min(res1: Resource, res2: Resource) = if (res1.slots < res2.slots) res1 else res2
+
   implicit class ResourceHelper(resource : Resource){
     def add(other : Resource) = Resource(resource.slots + other.slots)
 
@@ -44,3 +46,5 @@ object Resource{
 object ResourceRequest{
   def apply(resource : Resource) = new ResourceRequest(resource, null)
 }
+
+
