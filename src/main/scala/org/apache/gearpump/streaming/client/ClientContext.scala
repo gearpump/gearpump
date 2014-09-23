@@ -48,6 +48,8 @@ class ClientContext(masters: Iterable[HostPort]) {
     client.shutdownApplication(appId)
   }
 
+  //TODO: add interface to query master here
+
   def destroy() : Unit = {
     system.shutdown()
   }
