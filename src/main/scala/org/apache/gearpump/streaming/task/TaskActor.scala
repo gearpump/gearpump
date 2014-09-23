@@ -200,7 +200,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
         latencies.update(System.currentTimeMillis() - msg.timestamp)
       }
       doHandleMessage
-    case MinClock(timestamp) =>
+    case ClockUpdated(timestamp) =>
       clockTracker.onUpstreamMinClock(timestamp)
       pendingClock = 0
       if (needToSyncClock) {

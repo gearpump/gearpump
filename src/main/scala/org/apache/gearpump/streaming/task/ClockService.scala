@@ -33,8 +33,8 @@ object GetMinClock
 class ClockService(dag : DAG) extends Actor {
 import ClockService._
 
-  val taskgroupClocks = new util.TreeSet[TaskGroupClock]()
-  val taskgroupLookup = new util.HashMap[Int, TaskGroupClock]()
+  private val taskgroupClocks = new util.TreeSet[TaskGroupClock]()
+  private val taskgroupLookup = new util.HashMap[TaskGroup, TaskGroupClock]()
   private var scheduler : Cancellable = null
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[ClockService])
@@ -52,7 +52,7 @@ import ClockService._
 
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
+      new FiniteDuration(5, TimeUnit.SECONDS))(reportGlobalMinClock)
   }
 
   override def postStop() : Unit = {
@@ -68,9 +68,9 @@ import ClockService._
       taskgroup.taskClocks(taskIndex) = clock
       taskgroup.minClock = taskgroup.taskClocks.min
       taskgroupClocks.add(taskgroup)
-      sender ! MinClock(taskgroup.minClock)
+      sender ! ClockUpdated(taskgroup.minClock)
     case GetMinClock =>
-      sender ! MinClock(minClock)
+      sender ! ClockUpdated(minClock)
   }
 
   private def minClock : TimeStamp = {
@@ -78,32 +78,10 @@ import ClockService._
     taskgroup.minClock
   }
 
-  def reportWordCount : Unit = {
+  def reportGlobalMinClock : Unit = {
     val current : Long = System.currentTimeMillis()
     val minTimeStamp = new Date(minClock)
     LOG.info(s"Application minClock tracking: ${minTimeStamp}")
-  }
-}
-
-
-class TaskGroupClock(val taskgroup : Int, var minClock : Long = 0L, var taskClocks : Array[Long] = null) extends Comparable[TaskGroupClock] {
-  override def equals(obj: Any): Boolean = {
-    if (this.eq(obj.asInstanceOf[AnyRef])) {
-      return true
-    } else {
-      return false
-    }
-  }
-
-  override def compareTo(o: TaskGroupClock): Int = {
-    val delta = minClock - o.minClock
-    if (delta > 0) {
-      1
-    } else if (delta < 0) {
-      -1
-    } else {
-      taskgroup - o.taskgroup
-    }
   }
 }
 
@@ -112,4 +90,24 @@ object ClockService {
   type TaskIndex = Int
   type TimeStamp = Long
 
+  class TaskGroupClock(val taskgroup : TaskGroup, var minClock : TimeStamp = 0L, var taskClocks : Array[TimeStamp] = null) extends Comparable[TaskGroupClock] {
+    override def equals(obj: Any): Boolean = {
+      if (this.eq(obj.asInstanceOf[AnyRef])) {
+        return true
+      } else {
+        return false
+      }
+    }
+
+    override def compareTo(o: TaskGroupClock): Int = {
+      val delta = minClock - o.minClock
+      if (delta > 0) {
+        1
+      } else if (delta < 0) {
+        -1
+      } else {
+        taskgroup - o.taskgroup
+      }
+    }
+  }
 }
