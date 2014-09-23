@@ -76,7 +76,7 @@ import ClockTracker._
    * return true if there are changes to self min clock
    */
   def onAck(ack: Ack): Boolean = {
-    if (unprocessedMsgCount == 0 && flowControl.isAllMessageAcked) {
+    if (unprocessedMsgCount == 0 && flowControl.isAllMessagesAcked) {
       candidateMinClock = null
       minClock = Long.MaxValue
       true
@@ -115,7 +115,7 @@ object ClockTracker {
     }
 
     def processMsg(msg: Message): Option[Long] = {
-      if (flow.isAllMessageAcked) {
+      if (flow.isAllMessagesAcked) {
         Some(minClock)
       } else if (!firstMsgProcessed && msg.eq(this.first)) {
         ackThreshold = flow.snapshotOutputWaterMark()

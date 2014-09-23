@@ -21,15 +21,15 @@ package org.apache.gearpump.streaming.task
 import org.slf4j.{LoggerFactory, Logger}
 import org.apache.gearpump.streaming.task.FlowControl.LOG
 
-class FlowControl(taskId : TaskId, partitionNum : Int) {
+class FlowControl(taskId : TaskId, outputTaskCount : Int) {
   import FlowControl._
 
   private var outputWindow : Long = INITIAL_WINDOW_SIZE
-  private val ackWaterMark = new Array[Long](partitionNum)
-  private val outputWaterMark = new Array[Long](partitionNum)
-  private val ackRequestWaterMark = new Array[Long](partitionNum)
+  private val ackWaterMark = new Array[Long](outputTaskCount)
+  private val outputWaterMark = new Array[Long](outputTaskCount)
+  private val ackRequestWaterMark = new Array[Long](outputTaskCount)
 
-  def sendMessage(messagePartition : Int) : AckRequest = {
+  def markSendingMessage(messagePartition : Int) : AckRequest = {
     outputWaterMark(messagePartition) += 1
     outputWindow -= 1
 
@@ -41,7 +41,7 @@ class FlowControl(taskId : TaskId, partitionNum : Int) {
     }
   }
 
-  def receiveAck(sourceTask : TaskId, seq : Seq) : Unit = {
+  def markReceivingAck(sourceTask : TaskId, seq : Seq) : Unit = {
     LOG.debug("get ack from downstream, current: " + this.taskId + "downstream: " + sourceTask + ", seq: " + seq + ", windows: " + outputWindow)
     outputWindow += seq.seq - ackWaterMark(seq.id)
     ackWaterMark(seq.id) = seq.seq
@@ -50,13 +50,13 @@ class FlowControl(taskId : TaskId, partitionNum : Int) {
   /**
    * return true if we allow to output more messages
    */
-  def allowSendingMoreMsgs() : Boolean = outputWindow > 0
+  def allowSendingMoreMessages() : Boolean = outputWindow > 0
 
   def snapshotOutputWaterMark() : Array[Long] = {
     outputWaterMark.clone
   }
 
-  def isAllMessageAcked : Boolean = {
+  def isAllMessagesAcked : Boolean = {
     outputWindow == INITIAL_WINDOW_SIZE
   }
 
