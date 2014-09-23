@@ -33,10 +33,7 @@ import ClockTracker._
 
   private var unprocessedMsgCount : Long = 0
 
-  /**
-   * TODO: Swap the message with a new instance to make sure the message is unique
-   */
-  def onReceive(msg: Message): Unit = {
+  def onReceive(msg: Message): Message = {
     newReceivedMsg = msg
     unprocessedMsgCount += 1
     if (this.minClock == INVALID) {
@@ -46,9 +43,22 @@ import ClockTracker._
     }
 
     if (null == candidateMinClock) {
-      candidateMinClock = new MinClockSince(msg, flowControl)
+      /**
+       * Create a shadow message for MinClockSince so that we can get a new
+       * object reference, so that we can make sure the uniqueness of this
+       * message. In MinClockSince, it will use the object.eq to test whether
+       * received message equals the head of MinClockSince.
+       *
+       * For example, if we receive 3 same message(same object reference),
+       * MinClockSince will still be able to differentiate these three messages
+       * by testing object.eq.
+       */
+      val shadowMsg = msg.copy()
+      candidateMinClock = new MinClockSince(shadowMsg, flowControl)
+      shadowMsg
     } else {
       candidateMinClock.receiveNewMsg(msg)
+      msg
     }
   }
 
@@ -104,8 +114,8 @@ import ClockTracker._
 
 object ClockTracker {
 
-  class MinClockSince(val first: Message, flow: FlowControl) {
-    private var minClock = first.timestamp
+  class MinClockSince(val head: Message, flow: FlowControl) {
+    private var minClock = head.timestamp
     private var ackThreshold: Array[Long] = null
 
     private var firstMsgProcessed = false
@@ -117,7 +127,7 @@ object ClockTracker {
     def processMsg(msg: Message): Option[TimeStamp] = {
       if (flow.allMessagesAcked) {
         Some(minClock)
-      } else if (!firstMsgProcessed && msg.eq(this.first)) {
+      } else if (!firstMsgProcessed && msg.eq(this.head)) {
         ackThreshold = flow.snapshotOutputWaterMark()
         firstMsgProcessed = true
         None
