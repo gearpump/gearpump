@@ -70,8 +70,6 @@ class AppMaster (config : Configs) extends Actor {
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
 
-    //TODO: If the DAG is really that big and cannot be stored in memory
-    //Then we need to store it in local LevelDB
     val dag = DAG(appDescription.dag)
 
     //scheduler the task fairly on every machine

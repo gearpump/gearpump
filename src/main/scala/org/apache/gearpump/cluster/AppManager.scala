@@ -66,7 +66,7 @@ import scala.util.{Failure, Success}
  */
 
 /**
- * This state will be persistend across the masters.
+ * This state will be persisted across the masters.
  */
 class ApplicationState(val appId : Int, val attemptId : Int, val state : Any) extends Serializable {
 
@@ -204,9 +204,8 @@ private[cluster] class AppManager() extends Actor with Stash {
       //TODO: Check whether this belongs to a app master
       LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
 
-      //TODO: decide whether it is a normal terminaiton, or abnormal. and implement appMaster HA
-      //TODO: we can use private var state : Set[ApplicationState] = Set.empty[ApplicationState]
-      // to get necessary information of appmaster to restart it some other place.
+      //TODO: judge whether it is a normal terminaiton, or abnormal. and implement appMaster HA
+      //TODO: the app state is stored at Set[ApplicationState], we can use it to recover Application
     }
   }
 }
