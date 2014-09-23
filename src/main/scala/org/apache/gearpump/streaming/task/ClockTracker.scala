@@ -18,48 +18,15 @@
 
 package org.apache.gearpump.streaming.task
 
-class MinClockSince(val first : Message, flow : FlowControl) {
-  private var minClock = first.timestamp
-  private var ackThreshold : Array[Long] = null
-
-  private var firstMsgProcessed = false
-
-  def receiveNewMsg(msg : Message) : Unit = {
-    minClock = Math.min(minClock, msg.timestamp)
-  }
-
-  def processMsg(msg : Message) : Option[Long] = {
-    if (flow.isAllMessageAcked) {
-      Some(minClock)
-    } else if (!firstMsgProcessed && msg.eq(this.first)) {
-      ackThreshold = flow.snapshotOutputWaterMark()
-      firstMsgProcessed = true
-      None
-    } else {
-      None
-    }
-  }
-
-  def ackMsg() : Option[Long] = {
-    if (firstMsgProcessed) {
-      if (flow.isOutputWatermarkExceed(ackThreshold)) {
-        Some(minClock)
-      } else {
-        None
-      }
-    } else {
-      None
-    }
-  }
-}
-
+/**
+ * Clocktracker will keep track of all pending messages on current task
+ */
 class ClockTracker(flowControl : FlowControl)  {
+import ClockTracker._
 
   private final val INVALID : Long = -1
 
-  private var upstreamMinClock : Long = INVALID
-
-  private var myMinClock : Long = INVALID
+  private var minClock : Long = INVALID
   private var candidateMinClock : MinClockSince = null
 
   private var newReceivedMsg : Message = null
@@ -72,10 +39,10 @@ class ClockTracker(flowControl : FlowControl)  {
   def onReceive(msg: Message): Unit = {
     newReceivedMsg = msg
     unprocessedMsgCount += 1
-    if (this.myMinClock == INVALID) {
-      myMinClock = msg.timestamp
+    if (this.minClock == INVALID) {
+      minClock = msg.timestamp
     } else {
-      myMinClock = Math.min(myMinClock, msg.timestamp)
+      minClock = Math.min(minClock, msg.timestamp)
     }
 
     if (null == candidateMinClock) {
@@ -94,7 +61,7 @@ class ClockTracker(flowControl : FlowControl)  {
     if (candidateMinClock != null) {
       val newMinClock = candidateMinClock.processMsg(msg)
       if (newMinClock.isDefined) {
-        myMinClock = newMinClock.get
+        minClock = newMinClock.get
         candidateMinClock = null
         true
       } else {
@@ -111,12 +78,12 @@ class ClockTracker(flowControl : FlowControl)  {
   def onAck(ack: Ack): Boolean = {
     if (unprocessedMsgCount == 0 && flowControl.isAllMessageAcked) {
       candidateMinClock = null
-      myMinClock = Long.MaxValue
+      minClock = Long.MaxValue
       true
     } else if (null != candidateMinClock) {
       val newMinClock = candidateMinClock.ackMsg()
       if (newMinClock.isDefined) {
-        myMinClock = newMinClock.get
+        minClock = newMinClock.get
         candidateMinClock = null
         true
       } else {
@@ -127,21 +94,48 @@ class ClockTracker(flowControl : FlowControl)  {
     }
   }
 
-  def onUpstreamMinClockUpdate(clock : Long) : Unit = {
-    upstreamMinClock = clock
-  }
-
-  /**
-   * min timestamp of all messages at current task and all upstream tasks(recursive)
-   */
-  def minClock : Long = {
-    Math.min(upstreamMinClock, myMinClock)
-  }
-
   /**
    * min clock timestamp of all messages pending at current task
    */
   def minClockAtCurrentTask : Long = {
-    myMinClock
+    minClock
+  }
+}
+
+object ClockTracker {
+
+  class MinClockSince(val first: Message, flow: FlowControl) {
+    private var minClock = first.timestamp
+    private var ackThreshold: Array[Long] = null
+
+    private var firstMsgProcessed = false
+
+    def receiveNewMsg(msg: Message): Unit = {
+      minClock = Math.min(minClock, msg.timestamp)
+    }
+
+    def processMsg(msg: Message): Option[Long] = {
+      if (flow.isAllMessageAcked) {
+        Some(minClock)
+      } else if (!firstMsgProcessed && msg.eq(this.first)) {
+        ackThreshold = flow.snapshotOutputWaterMark()
+        firstMsgProcessed = true
+        None
+      } else {
+        None
+      }
+    }
+
+    def ackMsg(): Option[Long] = {
+      if (firstMsgProcessed) {
+        if (flow.isOutputWatermarkExceed(ackThreshold)) {
+          Some(minClock)
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+    }
   }
 }

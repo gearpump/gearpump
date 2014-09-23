@@ -24,7 +24,7 @@ import org.apache.gearpump.streaming.task.FlowControl.LOG
 class FlowControl(taskId : TaskId, partitionNum : Int) {
   import FlowControl._
 
-  private[this] var outputWindow : Long = INITIAL_WINDOW_SIZE
+  private var outputWindow : Long = INITIAL_WINDOW_SIZE
   private val ackWaterMark = new Array[Long](partitionNum)
   private val outputWaterMark = new Array[Long](partitionNum)
   private val ackRequestWaterMark = new Array[Long](partitionNum)

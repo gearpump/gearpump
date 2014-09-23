@@ -28,7 +28,9 @@ import org.slf4j.{LoggerFactory, Logger}
 
 import scala.concurrent.duration.FiniteDuration
 
-
+/**
+ * The clockservice will maintain a global view of message timestamp in the application
+ */
 class ClockService(dag : DAG) extends Actor {
 import ClockService._
 

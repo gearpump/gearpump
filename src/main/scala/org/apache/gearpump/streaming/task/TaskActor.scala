@@ -46,8 +46,10 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   private var flowControl : FlowControl = null
   private var clockTracker : ClockTracker = null
 
-  private var unackedClockUpdateTimestamp : Long = 0
+  private var unackedUpdateClockTimestamp : Long = 0
   private var needSyncToClockService = false
+
+  private var minClock : Long = 0L
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -59,10 +61,6 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   def onNext(msg : String) : Unit
 
   def onStop() : Unit = {}
-
-  def minClock() : Long = {
-    clockTracker.minClock
-  }
 
   def output(msg : String) : Unit = {
     if (null == outputTaskIds || outputTaskIds.length == 0) {
@@ -140,16 +138,16 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   }
 
   private def tryToSyncToClockService : Unit = {
-    if (unackedClockUpdateTimestamp == 0) {
+    if (unackedUpdateClockTimestamp == 0) {
       appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
       needSyncToClockService = false
-      unackedClockUpdateTimestamp = System.currentTimeMillis()
+      unackedUpdateClockTimestamp = System.currentTimeMillis()
     } else {
       val current = System.currentTimeMillis()
-      if (current - unackedClockUpdateTimestamp > CLOCK_SYNC_TIMEOUT_INTERVAL) {
+      if (current - unackedUpdateClockTimestamp > CLOCK_SYNC_TIMEOUT_INTERVAL) {
         appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
         needSyncToClockService = false
-        unackedClockUpdateTimestamp  = System.currentTimeMillis()
+        unackedUpdateClockTimestamp  = System.currentTimeMillis()
       } else {
         needSyncToClockService = true
       }
@@ -198,8 +196,8 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       }
       doHandleMessage
     case ClockUpdated(timestamp) =>
-      clockTracker.onUpstreamMinClockUpdate(timestamp)
-      unackedClockUpdateTimestamp = 0
+      minClock = timestamp
+      unackedUpdateClockTimestamp = 0
       if (needSyncToClockService) {
         tryToSyncToClockService
       }
