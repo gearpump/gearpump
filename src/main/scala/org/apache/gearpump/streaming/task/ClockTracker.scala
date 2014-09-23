@@ -53,19 +53,13 @@ class MinClockSince(val first : Message, flow : FlowControl) {
   }
 }
 
-/**
- * track the minClock status of current task
- * minClock is the lowest timestamp of all messages in current task
- *
- * state machine, better modelled with actor?
- */
 class ClockTracker(flowControl : FlowControl)  {
 
   private final val INVALID : Long = -1
 
   private var upstreamMinClock : Long = INVALID
 
-  private var minClock : Long = INVALID
+  private var myMinClock : Long = INVALID
   private var candidateMinClock : MinClockSince = null
 
   private var newReceivedMsg : Message = null
@@ -78,10 +72,10 @@ class ClockTracker(flowControl : FlowControl)  {
   def onReceive(msg: Message): Unit = {
     newReceivedMsg = msg
     unprocessedMsgCount += 1
-    if (this.minClock == INVALID) {
-      minClock = msg.timestamp
+    if (this.myMinClock == INVALID) {
+      myMinClock = msg.timestamp
     } else {
-      minClock = Math.min(minClock, msg.timestamp)
+      myMinClock = Math.min(myMinClock, msg.timestamp)
     }
 
     if (null == candidateMinClock) {
@@ -91,60 +85,63 @@ class ClockTracker(flowControl : FlowControl)  {
     }
   }
 
-  def onProcess(msg: Message): Option[Long] = {
+  /**
+   * return true if there are changes to self min clock
+   */
+  def onProcess(msg: Message): Boolean = {
     unprocessedMsgCount -= 1
 
     if (candidateMinClock != null) {
       val newMinClock = candidateMinClock.processMsg(msg)
       if (newMinClock.isDefined) {
-        minClock = newMinClock.get
+        myMinClock = newMinClock.get
         candidateMinClock = null
-        Some(minClock)
+        true
       } else {
-        None
+        false
       }
     } else {
-      None
+      false
     }
   }
 
   /**
-   * return an updated min clock if there are changes
+   * return true if there are changes to self min clock
    */
-  def onAck(ack: Ack): Option[Long] = {
+  def onAck(ack: Ack): Boolean = {
     if (unprocessedMsgCount == 0 && flowControl.isOutputEmpty) {
       candidateMinClock = null
-      minClock = Long.MaxValue
-      Some(minClock)
+      myMinClock = Long.MaxValue
+      true
     } else if (null != candidateMinClock) {
       val newMinClock = candidateMinClock.ackMsg()
       if (newMinClock.isDefined) {
-        minClock = newMinClock.get
+        myMinClock = newMinClock.get
         candidateMinClock = null
-        Some(minClock)
+        true
       } else {
-        None
+        false
       }
     } else {
-      None
+      false
     }
   }
 
-  def onUpstreamMinClock(clock : Long) : Unit = {
+  def onUpstreamMinClockUpdate(clock : Long) : Unit = {
     upstreamMinClock = clock
   }
 
   /**
-   * min timestamp of myself + all upstream tasks
+   * min timestamp of all messages at current task and all upstream tasks(recursive)
    */
-  def recursiveMinClock : Long = {
-    Math.min(upstreamMinClock, minClock)
+  def minClock : Long = {
+    Math.min(upstreamMinClock, myMinClock)
   }
 
   /**
-   * self min clock
+   * min clock timestamp of all messages pending at current task
    */
   def selfMinClock : Long = {
-    minClock
+    myMinClock
   }
 }

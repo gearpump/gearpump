@@ -37,27 +37,22 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   private val latencies = Metrics(context.system).histogram(s"$metricName.latency")
   private val throughput = Metrics(context.system).meter(s"$metricName.throughput")
 
-  private[this] val appMaster : ActorRef = conf.appMaster
+  private val appMaster : ActorRef = conf.appMaster
 
-  private[this] val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
-  private[this] var partitioner : MergedPartitioner = null
+  private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
+  private var partitioner : MergedPartitioner = null
 
-  private[this] var
-  outputTaskIds : Array[TaskId] = null
-  private[this] var flowControl : FlowControl = null
-  private [this] var clockTracker : ClockTracker = null
+  private var outputTaskIds : Array[TaskId] = null
+  private var flowControl : FlowControl = null
+  private var clockTracker : ClockTracker = null
 
-  private [this] var pendingClock : Long = 0
-  private [this] final val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000 //3 seconds
-  private [this] var needToSyncClock = false
+  private var unackedClockUpdateTimestamp : Long = 0
+  private var needSyncToClockService = false
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
 
-  //We will set this in preStart
-  final def receive : Receive = {
-    case _ => Unit
-  }
+  final def receive : Receive = null
 
   def onStart() : Unit
 
@@ -66,7 +61,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   def onStop() : Unit = {}
 
   def minClock() : Long = {
-    clockTracker.selfMinClock
+    clockTracker.minClock
   }
 
   def output(msg : String) : Unit = {
@@ -144,17 +139,17 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
     }
   }
 
-  private def tryToSyncClock : Unit = {
-    if (pendingClock == 0) {
+  private def tryToSyncToClockService : Unit = {
+    if (unackedClockUpdateTimestamp == 0) {
       appMaster ! UpdateClock(this.taskId, clockTracker.selfMinClock)
-      pendingClock = System.currentTimeMillis()
+      unackedClockUpdateTimestamp = System.currentTimeMillis()
     } else {
       val current = System.currentTimeMillis()
-      if (current - pendingClock > CLOCK_SYNC_TIMEOUT_INTERVAL) {
+      if (current - unackedClockUpdateTimestamp > CLOCK_SYNC_TIMEOUT_INTERVAL) {
         appMaster ! UpdateClock(this.taskId, clockTracker.selfMinClock)
-        pendingClock = System.currentTimeMillis()
+        unackedClockUpdateTimestamp  = System.currentTimeMillis()
       } else {
-        needToSyncClock = true
+        needSyncToClockService = true
       }
     }
   }
@@ -169,9 +164,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
             transport(Ack(this.taskId, seq), taskId)
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
           case m @ Message(timestamp, msg) =>
-            val updatedClock = clockTracker.onProcess(m)
-            if (updatedClock.isDefined) {
-              tryToSyncClock
+            val updated = clockTracker.onProcess(m)
+            if (updated) {
+              tryToSyncToClockService
             }
 
             onNext(msg)
@@ -188,9 +183,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       queue.add(ackRequest)
     case ack @ Ack(taskId, seq) =>
       flowControl.markAck(taskId, seq)
-      val updatedClock = clockTracker.onAck(ack)
-      if (updatedClock.isDefined) {
-        tryToSyncClock
+      val updated = clockTracker.onAck(ack)
+      if (updated) {
+        tryToSyncToClockService
       }
       doHandleMessage
     case msg : Message =>
@@ -201,11 +196,11 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       }
       doHandleMessage
     case ClockUpdated(timestamp) =>
-      clockTracker.onUpstreamMinClock(timestamp)
-      pendingClock = 0
-      if (needToSyncClock) {
-        tryToSyncClock
-        needToSyncClock = false
+      clockTracker.onUpstreamMinClockUpdate(timestamp)
+      unackedClockUpdateTimestamp = 0
+      if (needSyncToClockService) {
+        tryToSyncToClockService
+        needSyncToClockService = false
       }
 
     case other =>
@@ -216,6 +211,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 object TaskActor {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[TaskActor])
   val INITIAL_WINDOW_SIZE = 1024 * 16
+  val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000 //3 seconds
 
   class MergedPartitioner(partitioners : Array[Partitioner], partitionStart : Array[Int], partitionStop : Array[Int]) {
 
