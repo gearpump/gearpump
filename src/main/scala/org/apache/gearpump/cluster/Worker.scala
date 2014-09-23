@@ -25,7 +25,6 @@ import akka.actor._
 import akka.pattern.pipe
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToWorker._
-import org.apache.gearpump.cluster.SchedulerToWorker.UpdateResourceFailed
 import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._

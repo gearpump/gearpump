@@ -19,7 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.scheduler.{ResourceRequest, Allocation, Resource}
+import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
 import org.apache.gearpump.util.Configs
 
 import scala.util.Try
@@ -35,6 +35,7 @@ object WorkerToMaster {
 
 object MasterToWorker {
   case class WorkerRegistered(workerId : Int)
+  case class UpdateResourceFailed(reason : String = null, ex: Throwable = null)
 }
 
 /**
@@ -59,7 +60,7 @@ object AppMasterToMaster {
 }
 
 object MasterToAppMaster {
-  case class ResourceAllocated(allocations: Array[Allocation])
+  case class ResourceAllocated(allocations: Array[ResourceAllocation])
   case class AppMasterRegistered(appId: Int, master : ActorRef)
   case object ShutdownAppMaster
 }
@@ -75,8 +76,4 @@ object WorkerToAppMaster {
 
 object MasterToScheduler {
   case class WorkerTerminated(worker : ActorRef)
-}
-
-object SchedulerToWorker {
-  case class UpdateResourceFailed(reason : String = null, ex: Throwable = null)
 }

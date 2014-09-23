@@ -115,3 +115,7 @@ private[cluster] class Master extends Actor with Stash {
     scheduler = context.actorOf(Props(schedulerClass))
   }
 }
+
+object Master{
+  case class WorkerTerminated(worker : ActorRef)
+}

@@ -20,8 +20,7 @@ package org.apache.gearpump.scheduler
 import akka.actor.{ActorRef, Actor}
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.MasterToScheduler.WorkerTerminated
-import org.apache.gearpump.cluster.MasterToWorker.WorkerRegistered
-import org.apache.gearpump.cluster.SchedulerToWorker.UpdateResourceFailed
+import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import org.slf4j.{LoggerFactory, Logger}
 
@@ -47,7 +46,7 @@ abstract class Scheduler extends Actor{
         allocateResource()
       }
       else {
-        current ! UpdateResourceFailed(s"Worker $id is not schedulable, it may have terminated")
+        current ! UpdateResourceFailed(s"ResourceUpdate failed! The worker $id has not been registered into master")
       }
     case RequestResource(appId, request)=>
       LOG.info(s"Request resource: appId: $appId, slots: ${request.resource.slots}")

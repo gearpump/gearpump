@@ -23,7 +23,7 @@ case class Resource(slots : Int)
 
 case class ResourceRequest(resource: Resource, worker : ActorRef)
 
-case class Allocation(resource : Resource, worker : ActorRef)
+case class ResourceAllocation(resource : Resource, worker : ActorRef)
 
 object Resource{
   def empty = new Resource(0)

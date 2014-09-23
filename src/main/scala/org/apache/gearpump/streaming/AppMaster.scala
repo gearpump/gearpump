@@ -28,7 +28,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.scheduler.{ResourceRequest, Allocation, Resource}
+import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
