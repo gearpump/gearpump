@@ -19,7 +19,7 @@ package org.apache.gearpump.scheduler
 
 import akka.actor.{ActorRef, Actor}
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
-import org.apache.gearpump.cluster.MasterToScheduler.WorkerTerminated
+import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import org.slf4j.{LoggerFactory, Logger}

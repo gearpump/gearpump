@@ -74,6 +74,3 @@ object WorkerToAppMaster {
   case class ExecutorLaunchRejected(reason: String = null, ex: Throwable = null)
 }
 
-object MasterToScheduler {
-  case class WorkerTerminated(worker : ActorRef)
-}

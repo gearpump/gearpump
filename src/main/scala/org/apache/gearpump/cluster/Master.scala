@@ -22,8 +22,8 @@ import akka.actor._
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster._
+import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToScheduler.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}

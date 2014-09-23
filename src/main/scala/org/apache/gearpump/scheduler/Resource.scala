@@ -21,7 +21,7 @@ import akka.actor.ActorRef
 
 case class Resource(slots : Int)
 
-case class ResourceRequest(resource: Resource, worker : ActorRef)
+case class ResourceRequest(resource: Resource, worker : ActorRef = null)
 
 case class ResourceAllocation(resource : Resource, worker : ActorRef)
 
@@ -41,10 +41,6 @@ object Resource{
 
     def equals(other : Resource) = resource.slots == other.slots
     }
-}
-
-object ResourceRequest{
-  def apply(resource : Resource) = new ResourceRequest(resource, null)
 }
 
 
