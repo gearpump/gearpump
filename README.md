@@ -7,7 +7,7 @@ GearPump
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/project/logo/logo.png)
 
 
-A Actor Driven streaming framework.
+A Actor Driven streaming framework. The idea is inspired by MillWheel, Storm, spark streaming, and SAMZA.
 
 A initial benchmarks shows that we can process 2million messages/second (100 bytes per message) with latency around 30ms on a cluster of 4 nodes.
 

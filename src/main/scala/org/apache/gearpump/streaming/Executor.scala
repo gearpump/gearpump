@@ -22,7 +22,7 @@ import akka.actor.{Actor, Props, Terminated}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.task.TaskLocations
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{Constants, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
 class Executor(config : Configs)  extends Actor {
@@ -31,10 +31,10 @@ class Executor(config : Configs)  extends Actor {
 
   val appMaster = config.appMaster
   val executorId = config.executorId
-  val slots = config.slots
+  val resource = config.resource
   val appId = config.appId
 
-  context.parent ! RegisterExecutor(self, executorId, slots)
+  context.parent ! RegisterExecutor(self, executorId, resource)
   context.watch(appMaster)
 
   val sendLater = context.actorOf(Props[SendLater], "sendlater")
@@ -44,7 +44,7 @@ class Executor(config : Configs)  extends Actor {
   def appMasterMsgHandler : Receive = {
     case LaunchTask(taskId, config, taskClass) => {
       LOG.info(s"Launching Task $taskId for app: $appId, $taskClass")
-      val taskDispatcher = context.system.settings.config.getString("gearpump.task-dispatcher")
+      val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
       val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }
 

@@ -29,6 +29,7 @@ import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.util.{ActorUtil, ProcessLogRedirector}
+import org.apache.gearpump.scheduler.Resource
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration._
@@ -43,8 +44,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
   val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
 
-  private var resource = 100
-  private var allocatedResource = Map[ActorRef, Int]()
+  private var resource = Resource(100)
+  private var allocatedResource = Map[ActorRef, Resource]()
   private var id = -1
   override def receive : Receive = null
   var master : ActorRef = null
@@ -73,18 +74,24 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       }
     case launch : LaunchExecutor =>
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
-      if (resource < launch.slots) {
+      if (resource.lessThan(launch.resource)) {
         sender ! ExecutorLaunchRejected("There is no free resource on this machine")
       } else {
         val actorName = actorNameForExecutor(launch.appId, launch.executorId)
 
         val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch), actorName)
 
-        resource = resource - launch.slots
-        allocatedResource = allocatedResource + (executor -> launch.slots)
+        resource = resource.subtract(launch.resource)
+        allocatedResource = allocatedResource + (executor -> launch.resource)
         master ! ResourceUpdate(id, resource)
         context.watch(executor)
       }
+  }
+
+  def schedulerMsgHandler : Receive = {
+    case UpdateResourceFailed(reason, ex) =>
+      LOG.error(reason)
+      context.stop(self)
   }
 
   def terminationWatch(master : ActorRef) : Receive = {
@@ -99,7 +106,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
         val allocated = allocatedResource.get(actor)
         if (allocated.isDefined) {
-          resource = resource + allocated.get
+          resource = resource.add(allocated.get)
           allocatedResource = allocatedResource - actor
           master ! ResourceUpdate(id, resource)
         }

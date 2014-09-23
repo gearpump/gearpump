@@ -18,39 +18,37 @@
 
 package org.apache.gearpump.cluster
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor._
-import akka.remote.RemoteScope
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster._
+import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.ActorUtil
+import org.apache.gearpump.util.{Constants, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.collection.immutable
+import org.apache.gearpump.services.AppMasterDataRequest
+
 import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.concurrent.duration.Duration
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
 private[cluster] class Master extends Actor with Stash {
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Master])
-
+  private val systemConfig : Config = context.system.settings.config
   // resources and resourceRequests can be dynamically constructed by
   // heartbeat of worker and appmaster when master singleton is migrated.
   // we don't need to persist them in cluster
-  private var resources = new Array[(ActorRef, Int)](0)
-
-  //TODO: currently we use a FIFO queue to record resource requirements and
-  // scheduler the resource. We should make this plugable to support scheduler
-  // like Hadoop FairScheduler, CapacityScheduler.
-  private val resourceRequests = new mutable.Queue[(ActorRef, Int)]
 
   private var appManager : ActorRef = null
+
+  private var scheduler : ActorRef = null
+
+  private var workers = new immutable.HashMap[ActorRef, Int]
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
 
@@ -59,39 +57,33 @@ private[cluster] class Master extends Actor with Stash {
   final val undefinedUid = 0
   @tailrec final def newUid(): Int = {
     val uid = ThreadLocalRandom.current.nextInt()
-    if (uid == undefinedUid) newUid
+    if (uid == undefinedUid) newUid()
     else uid
   }
 
   def workerMsgHandler : Receive = {
     case RegisterNewWorker =>
-      val workerId = newUid
+      val workerId = newUid()
       self forward RegisterWorker(workerId)
     case RegisterWorker(id) =>
       context.watch(sender())
       sender ! WorkerRegistered(id)
+      scheduler forward WorkerRegistered(id)
+      workers += (sender() -> id)
       LOG.info(s"Register Worker $id....")
-    case ResourceUpdate(id, slots) =>
-      LOG.info(s"Resource update id: $id, slots: $slots....")
-      val current = sender()
-      val index = resources.indexWhere((worker) => worker._1.equals(current), 0)
-      if (index == -1) {
-        resources = resources :+ (current, slots)
-      } else {
-        resources(index) = (current, slots)
-      }
-      allocateResource()
+    case resourceUpdate : ResourceUpdate =>
+      scheduler forward resourceUpdate
   }
 
   def appMasterMsgHandler : Receive = {
-    case RequestResource(appId, slots) =>
-      LOG.info(s"Request resource: appId: $appId, slots: $slots")
-      val appMaster = sender()
-      resourceRequests.enqueue((appMaster, slots))
-      allocateResource()
+    case  request : RequestResource =>
+      scheduler forward request
     case registerAppMaster : RegisterAppMaster =>
-      //forward to appmaster
+      //forward to appManager
       appManager forward registerAppMaster
+    case appMasterDataRequest: AppMasterDataRequest =>
+      LOG.info("Master received AppMasterDataRequest")
+      appManager forward appMasterDataRequest
   }
 
   def clientMsgHandler : Receive = {
@@ -107,46 +99,23 @@ private[cluster] class Master extends Actor with Stash {
     case t : Terminated =>
       val actor = t.actor
       LOG.info(s"worker ${actor.path} get terminated, is it due to network reason? ${t.getAddressTerminated()}")
-
       LOG.info("Let's filter out dead resources...")
-
       // filter out dead worker resource
-      resources = resources.filter { resource =>
-        val (worker, _) = resource
-        worker.compareTo(actor) != 0
+      if(workers.keySet.contains(actor)){
+        scheduler ! WorkerTerminated(actor)
+        workers -= actor
       }
-  }
-
-  def allocateResource(): Unit = {
-    val length = resources.length
-    val flattenResource = resources.zipWithIndex.flatMap((workerWithIndex) => {
-      val ((worker, slots), index) = workerWithIndex
-      0.until(slots).map((seq) => (worker, seq * length + index))
-    }).sortBy(_._2).map(_._1)
-
-    val total = flattenResource.length
-    def assignResourceToApplication(allocated : Int) : Unit = {
-      if (allocated == total || resourceRequests.isEmpty) {
-        return
-      }
-
-      val (appMaster, slots) = resourceRequests.dequeue()
-      val newAllocated = Math.min(total - allocated, slots)
-      val singleAllocation = flattenResource.slice(allocated, allocated + newAllocated)
-        .groupBy((actor) => actor).mapValues(_.length).toArray.map((resource) => Resource(resource._1, resource._2))
-      appMaster ! ResourceAllocated(singleAllocation)
-      if (slots > newAllocated) {
-        resourceRequests.enqueue((appMaster, slots - newAllocated))
-      }
-      assignResourceToApplication(allocated + newAllocated)
-    }
-
-    assignResourceToApplication(0)
   }
 
   override def preStart(): Unit = {
     val path = ActorUtil.getFullPath(context)
     LOG.info(s"master path is $path")
+    val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULER))
     appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
+    scheduler = context.actorOf(Props(schedulerClass))
   }
+}
+
+object Master{
+  case class WorkerTerminated(worker : ActorRef)
 }

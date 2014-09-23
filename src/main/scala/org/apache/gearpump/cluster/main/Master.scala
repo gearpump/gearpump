@@ -22,7 +22,7 @@ import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.contrib.pattern.{ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.{Master => MasterClass}
-import org.apache.gearpump.util.{Configs, ActorUtil}
+import org.apache.gearpump.util.{Constants, Configs, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
@@ -72,7 +72,7 @@ object Master extends App with ArgumentsParser {
   def master(ip:String, port : Int): Unit = {
 
     var masterConfig = Configs.MASTER_CONFIG
-    val masters = masterConfig.getStringList("gearpump.cluster.masters").asScala
+      val masters = masterConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
 
     if (!verifyMaster(ip, port, masters)) {
       LOG.error(s"The provided ip $ip and port $port doesn't conform with config at gearpump.cluster.masters: ${masters.mkString(", ")}")

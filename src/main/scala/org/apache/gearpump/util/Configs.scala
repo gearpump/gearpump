@@ -21,6 +21,7 @@ package org.apache.gearpump.util
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
+import org.apache.gearpump.scheduler.Resource
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Constants._
 
@@ -55,8 +56,8 @@ class Configs(val config: Map[String, _])  extends Serializable{
   def withExecutorId(executorId : Int) = withValue(EXECUTOR_ID, executorId)
   def executorId = config.getInt(EXECUTOR_ID)
 
-  def withSlots(slots : Int) = withValue(SLOTS, slots)
-  def slots = config.getInt(SLOTS)
+  def withResource(resource : Resource) = withValue(RESOURCE, resource)
+  def resource = config.getResource(RESOURCE)
 
   def withAppMasterRegisterData(data : AppMasterRegisterData) = withValue(APP_MASTER_REGISTER_DATA, data)
   def appMasterRegisterData : AppMasterRegisterData = config.getAnyRef(APP_MASTER_REGISTER_DATA).asInstanceOf[AppMasterRegisterData]
@@ -102,6 +103,10 @@ object Configs {
 
     def getAnyRef(key: String) : AnyRef = {
       config.get(key).get.asInstanceOf[AnyRef]
+    }
+
+    def getResource(key : String) : Resource = {
+      config.get(key).get.asInstanceOf[Resource]
     }
   }
 }
