@@ -28,7 +28,6 @@ import org.slf4j.{LoggerFactory, Logger}
 
 import scala.concurrent.duration.FiniteDuration
 
-object GetMinClock
 
 class ClockService(dag : DAG) extends Actor {
 import ClockService._
@@ -39,7 +38,7 @@ import ClockService._
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[ClockService])
 
-  override def receive = handleClock
+  override def receive = clockService
 
   override def preStart : Unit = {
     dag.tasks.foreach { taskIdWithDescription =>
@@ -59,7 +58,7 @@ import ClockService._
     scheduler.cancel()
   }
 
-  def handleClock : Receive = {
+  def clockService : Receive = {
     case UpdateClock(task, clock) =>
       val TaskId(taskgroupId, taskIndex) = task
 
@@ -69,8 +68,8 @@ import ClockService._
       taskgroup.minClock = taskgroup.taskClocks.min
       taskgroupClocks.add(taskgroup)
       sender ! ClockUpdated(taskgroup.minClock)
-    case GetMinClock =>
-      sender ! ClockUpdated(minClock)
+    case GetLatestMinClock =>
+      sender ! LatestMinClock(minClock)
   }
 
   private def minClock : TimeStamp = {

@@ -23,4 +23,7 @@ case class AckRequest(taskId : TaskId, seq : Seq)
 case class Ack(taskId : TaskId, seq : Seq)
 
 case class UpdateClock(taskId : TaskId, time : Long)
-case class ClockUpdated(time : Long)
+case class ClockUpdated(latestMinClock : Long)
+
+object GetLatestMinClock
+case class LatestMinClock(clock : Long)

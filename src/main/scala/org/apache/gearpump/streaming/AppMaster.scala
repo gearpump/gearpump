@@ -144,8 +144,8 @@ class AppMaster (config : Configs) extends Actor {
 
     case clock : UpdateClock =>
       clockService forward clock
-    case GetMinClock =>
-      clockService forward GetMinClock
+    case GetLatestMinClock =>
+      clockService forward GetLatestMinClock
 
     case task: TaskFinished => {
       val taskId = task.taskId
