@@ -30,6 +30,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.scheduler.{ResourceRequest, Allocation, Resource}
+import org.apache.gearpump.services.{AppMasterData, AppMasterDataRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util.Constants._
@@ -169,7 +170,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       val data = appMasterRegistry.get(appId)
       if (data.isDefined) {
         val worker = data.get.worker
-        LOG.info(s"Shuttdown app master at ${worker.path.toString}, appId: $appId, executorId: $masterExecutorId")
+        LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
         worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
         sender ! ShutdownApplicationResult(Success(appId))
       }
@@ -186,6 +187,11 @@ private[cluster] class AppManager() extends Actor with Stash {
       context.watch(appMaster)
       appMasterRegistry += appId -> registerData
       sender ! AppMasterRegistered(appId, context.parent)
+    case appMasterDataRequest: AppMasterDataRequest =>
+      val lastAppId = appId - 1
+      val appData = Option[AppMasterInfo](appMasterRegistry.getOrElse(lastAppId, null))
+      LOG.info(s"AppManager returning AppMasterData for $lastAppId")
+      sender ! AppMasterData(appId=lastAppId, executorId=masterExecutorId, appData=appData.getOrElse(null))
   }
 
   def terminationWatch : Receive = {
