@@ -49,9 +49,9 @@ class Sum (conf : Configs) extends TaskActor(conf) {
     if (null == msg) {
       return
     }
-    val current = map.getOrElse(msg.msg, 0L)
+    val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
     wordCount += 1
-    map.put(msg.msg, current + 1)
+    map.put(msg.msg.asInstanceOf[String], current + 1)
   }
 
   override def onStop() : Unit = {

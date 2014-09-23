@@ -24,13 +24,13 @@ import org.apache.gearpump.streaming.task._
 
 class MessageSerializer extends Serializer[Message] {
   override def write(kryo: Kryo, output: Output, obj: Message) = {
-    output.writeString(obj.msg)
     output.writeLong(obj.timestamp)
+    kryo.writeClassAndObject(output, obj.msg)
   }
 
   override def read(kryo: Kryo, input: Input, typ: Class[Message]): Message = {
-    val msg = input.readString()
     var timeStamp = input.readLong()
+    val msg = kryo.readClassAndObject(input)
     return new Message(msg, timeStamp)
   }
 }
