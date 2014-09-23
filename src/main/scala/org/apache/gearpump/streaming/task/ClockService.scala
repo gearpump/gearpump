@@ -80,7 +80,6 @@ import ClockService._
   }
 
   def reportGlobalMinClock : Unit = {
-    val current : TimeStamp = System.currentTimeMillis()
     val minTimeStamp = new Date(minClock)
     LOG.info(s"Application minClock tracking: ${minTimeStamp}")
   }
