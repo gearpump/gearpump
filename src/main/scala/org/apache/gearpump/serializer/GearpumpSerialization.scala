@@ -19,14 +19,14 @@
 package org.apache.gearpump.serializer
 
 import com.esotericsoftware.kryo.{Kryo, Serializer}
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{Constants, Configs}
 
 class GearpumpSerialization {
   val config = Configs.SYSTEM_DEFAULT_CONFIG
 
   def customize(kryo: Kryo): Unit  = {
 
-    val serializationMap: Map[String, String] = configToMap("gearpump.serializers")
+    val serializationMap: Map[String, String] = configToMap(Constants.GEARPUMP_SERIALIZERS)
 
     serializationMap.foreach { kv =>
       val (key, value) = kv

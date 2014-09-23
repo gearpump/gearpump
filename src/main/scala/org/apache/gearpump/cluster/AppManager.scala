@@ -29,11 +29,12 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
+import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
 import org.apache.gearpump.services.{AppMasterData, AppMasterDataRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{Configs, ActorSystemBooter, ActorUtil, Util}
+import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.concurrent.TimeUnit
@@ -106,7 +107,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   //TODO: We can use this state for appmaster HA to recover a new App master
   private var state : Set[ApplicationState] = Set.empty[ApplicationState]
 
-  val masterClusterSize = systemconfig.getStringList("gearpump.cluster.masters").size()
+  val masterClusterSize = systemconfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).size()
 
   //optimize write path, we can tollerate one master down for recovery.
   val writeQuorum = Math.min(2, masterClusterSize / 2 + 1)
@@ -219,24 +220,24 @@ private[cluster] object AppManager {
     val systemConfig = context.system.settings.config
 
     val master = context.actorSelection("../../")
-    master ! RequestResource(appId, 1)
+    master ! RequestResource(appId, ResourceRequest(Resource(1)))
     LOG.info(s"AppManager asking Master for resource for app $appId...")
 
     def receive : Receive = waitForResourceAllocation
 
     def waitForResourceAllocation : Receive = {
-      case ResourceAllocated(resource) => {
+      case ResourceAllocated(allocations) => {
         LOG.info(s"Resource allocated for appMaster $app Id")
-        val Resource(worker, slots) = resource(0)
-        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(worker)).withExecutorId(masterExecutorId).withSlots(slots)
-        LOG.info(s"Try to launch a executor for app Master on $worker for app $appId")
+        val allocation = allocations(0)
+        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
+        LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
 
-        val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString("gearpump.streaming.appmaster.vmargs").split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
+        val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
 
-        worker ! LaunchExecutor(appId, masterExecutorId, slots,executionContext)
-        context.become(waitForActorSystemToStart(worker, appMasterConfig))
+        allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
+        context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))
       }
     }
 
@@ -249,7 +250,7 @@ private[cluster] object AppManager {
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
         //bind lifecycle with worker
         sender ! BindLifeCycle(worker)
-        val masterAddress = systemConfig.getStringList("gearpump.cluster.masters").asScala.map { address =>
+        val masterAddress = systemConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala.map { address =>
           val hostAndPort = address.split(":")
           HostPort(hostAndPort(0), hostAndPort(1).toInt)
         }

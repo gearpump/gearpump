@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.{Actor, ActorRef}
+import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
 import org.apache.gearpump.util.Configs
 
 import scala.util.Try
@@ -29,11 +30,12 @@ import scala.util.Try
 object WorkerToMaster {
   case object RegisterNewWorker
   case class RegisterWorker(workerId: Int)
-  case class ResourceUpdate(workerId: Int, slots: Int)
+  case class ResourceUpdate(workerId: Int, resource: Resource)
 }
 
 object MasterToWorker {
   case class WorkerRegistered(workerId : Int)
+  case class UpdateResourceFailed(reason : String = null, ex: Throwable = null)
 }
 
 /**
@@ -53,21 +55,22 @@ object MasterToClient {
 trait AppMasterRegisterData
 
 object AppMasterToMaster {
-  case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, slots: Int, registerData : AppMasterRegisterData)
-  case class RequestResource(appId: Int, slots: Int)
+  case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resource: Resource, registerData : AppMasterRegisterData)
+  case class RequestResource(appId: Int, request : ResourceRequest)
 }
 
 object MasterToAppMaster {
-  case class ResourceAllocated(resource: Array[Resource])
+  case class ResourceAllocated(allocations: Array[ResourceAllocation])
   case class AppMasterRegistered(appId: Int, master : ActorRef)
   case object ShutdownAppMaster
 }
 
 object AppMasterToWorker {
-  case class LaunchExecutor(appId: Int, executorId: Int, slots: Int, executorContext: ExecutorContext)
+  case class LaunchExecutor(appId: Int, executorId: Int, resource: Resource, executorContext: ExecutorContext)
   case class ShutdownExecutor(appId : Int, executorId : Int, reason : String)
 }
 
 object WorkerToAppMaster {
   case class ExecutorLaunchRejected(reason: String = null, ex: Throwable = null)
 }
+

@@ -15,9 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.gearpump.cluster
+package org.apache.gearpump.scheduler
 
 import akka.actor.ActorRef
 
-case class Resource(worker: ActorRef, slots: Integer)
+case class Resource(slots : Int)
+
+case class ResourceRequest(resource: Resource, worker : ActorRef = null)
+
+case class ResourceAllocation(resource : Resource, worker : ActorRef)
+
+object Resource{
+  def empty = new Resource(0)
+
+  def min(res1: Resource, res2: Resource) = if (res1.slots < res2.slots) res1 else res2
+
+  implicit class ResourceHelper(resource : Resource){
+    def add(other : Resource) = Resource(resource.slots + other.slots)
+
+    def subtract(other : Resource) = Resource(resource.slots - other.slots)
+
+    def greaterThan(other : Resource) = resource.slots > other.slots
+
+    def lessThan(other : Resource) = resource.slots < other.slots
+
+    def equals(other : Resource) = resource.slots == other.slots
+    }
+}
+
+

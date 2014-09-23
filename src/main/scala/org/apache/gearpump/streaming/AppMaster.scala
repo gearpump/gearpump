@@ -28,6 +28,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
@@ -45,7 +46,7 @@ class AppMaster (config : Configs) extends Actor {
 
   val masterExecutorId = config.executorId
   var currentExecutorId = masterExecutorId + 1
-  val slots = config.slots
+  val resource = config.resource
 
   private val appId = config.appId
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
@@ -82,7 +83,7 @@ class AppMaster (config : Configs) extends Actor {
     taskQueue ++= tasks
 
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
-    context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData))))
+    context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
   }
 
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
@@ -90,7 +91,7 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"AppMasterRegistered received for appID: $appId")
 
       LOG.info("Sending request resource to master...")
-      master ! RequestResource(appId, taskQueue.size)
+      master ! RequestResource(appId, ResourceRequest(Resource(taskQueue.size)))
 
       killSelf.cancel()
       this.master = master
@@ -101,16 +102,16 @@ class AppMaster (config : Configs) extends Actor {
   def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch
 
   def masterMsgHandler: Receive = {
-    case ResourceAllocated(resource) => {
-      LOG.info(s"AppMaster $appId received ResourceAllocated $resource")
+    case ResourceAllocated(allocations) => {
+      LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
       //group resource by worker
-      val groupedResource = resource.groupBy(_.worker).mapValues(_.foldLeft(0)((count, resource) => count + resource.slots)).toArray
+      val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(Resource.empty)((totalResource, request) => totalResource add request.resource)).toArray
 
-      groupedResource.map((workerAndSlots) => {
-        val (worker, slots) = workerAndSlots
-        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: $slots on worker $worker")
-        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withSlots(slots)
-        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, slots, executorConfig))
+      groupedResource.map((workerAndResources) => {
+        val (worker, resource) = workerAndResources
+        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
+        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource)
+        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig))
         currentExecutorId += 1
       })
     }
@@ -157,19 +158,19 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def selfMsgHandler : Receive = {
-    case LaunchExecutorActor(conf : Props, executorId : Int, daemon : ActorRef) =>
+    case LaunchExecutorActor(conf : Props, executorId : Int, daemon : ActorRef, worker : ActorRef) =>
       val executor = context.actorOf(conf, executorId.toString)
       daemon ! BindLifeCycle(executor)
   }
 
   def workerMsgHandler : Receive = {
-    case RegisterExecutor(executor, executorId, slots) => {
+    case RegisterExecutor(executor, executorId, resource) => {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
 
-      def launchTask(remainSlots: Int): Unit = {
-        if (remainSlots > 0 && !taskQueue.isEmpty) {
+      def launchTask(remainResources: Resource): Unit = {
+        if (remainResources.greaterThan(Resource.empty) && !taskQueue.isEmpty) {
           val (taskId, taskDescription, dag) = taskQueue.dequeue()
           //Launch task
 
@@ -179,10 +180,12 @@ class AppMaster (config : Configs) extends Actor {
 
           val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
           executor ! LaunchTask(taskId, config, taskDescription.taskClass)
-          launchTask(remainSlots - 1)
+          //Todo: subtract the actual resource used by task
+          val usedResource = Resource(1)
+          launchTask(remainResources subtract usedResource)
         }
       }
-      launchTask(slots)
+      launchTask(resource)
     }
     case ExecutorLaunchRejected(reason, ex) => {
       LOG.error(s"Executor Launch failed reason：$reason", ex)
@@ -195,7 +198,7 @@ class AppMaster (config : Configs) extends Actor {
     if (null != master && actor.compareTo(master) == 0) {
       // master is down, let's try to contact new master
       LOG.info("parent master cannot be contacted, find a new master ...")
-      context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, slots, registerData))))
+      context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
     } else if (isChildActorPath(actor)) {
       //executor is down
       //TODO: handle this failure
@@ -239,16 +242,16 @@ object AppMaster {
 
   case class TaskData(taskDescription : TaskDescription, dag : DAG)
 
-  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, slots : Int, executorConfig : Configs) extends Actor {
+  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs) extends Actor {
 
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
     val name = actorNameForExecutor(appId, executorId)
     val selfPath = ActorUtil.getFullPath(context)
 
-    val launch = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString("gearpump.streaming.executor.vmargs").split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
+    val launch = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
 
-    worker ! LaunchExecutor(appId, executorId,slots, launch)
+    worker ! LaunchExecutor(appId, executorId, resource, launch)
 
     def receive : Receive = waitForActorSystemToStart
 
@@ -258,10 +261,10 @@ object AppMaster {
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
         val executorProps = Props(classOf[Executor], executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
         sender ! BindLifeCycle(worker)
-        context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender)
+        context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender, worker)
         context.stop(self)
     }
   }
 
-  case class LaunchExecutorActor(executorConfig : Props, executorId : Int, daemon: ActorRef)
+  case class LaunchExecutorActor(executorConfig : Props, executorId : Int, daemon: ActorRef, worker : ActorRef)
 }
