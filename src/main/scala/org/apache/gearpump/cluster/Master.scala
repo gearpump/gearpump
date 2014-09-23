@@ -25,6 +25,7 @@ import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
+import org.apache.gearpump.cluster.MasterToScheduler.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
@@ -32,7 +33,7 @@ import org.apache.gearpump.util.{Constants, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
-import scala.collection.mutable
+import scala.collection.immutable
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
 private[cluster] class Master extends Actor with Stash {
@@ -47,7 +48,7 @@ private[cluster] class Master extends Actor with Stash {
 
   private var scheduler : ActorRef = null
 
-  private var workers = new mutable.HashMap[ActorRef, Int]
+  private var workers = new immutable.HashMap[ActorRef, Int]
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
 
@@ -67,6 +68,7 @@ private[cluster] class Master extends Actor with Stash {
     case RegisterWorker(id) =>
       context.watch(sender())
       sender ! WorkerRegistered(id)
+      scheduler forward WorkerRegistered(id)
       workers += (sender() -> id)
       LOG.info(s"Register Worker $id....")
     case resourceUpdate : ResourceUpdate =>
@@ -97,7 +99,7 @@ private[cluster] class Master extends Actor with Stash {
       LOG.info("Let's filter out dead resources...")
       // filter out dead worker resource
       if(workers.keySet.contains(actor)){
-        scheduler forward t
+        scheduler ! WorkerTerminated(actor)
         workers -= actor
       }
   }

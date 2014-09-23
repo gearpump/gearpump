@@ -25,6 +25,7 @@ import akka.actor._
 import akka.pattern.pipe
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToWorker._
+import org.apache.gearpump.cluster.SchedulerToWorker.UpdateResourceFailed
 import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
@@ -86,6 +87,12 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         master ! ResourceUpdate(id, resource)
         context.watch(executor)
       }
+  }
+
+  def schedulerMsgHandler : Receive = {
+    case UpdateResourceFailed(reason, ex) =>
+      LOG.error(reason)
+      context.stop(self)
   }
 
   def terminationWatch(master : ActorRef) : Receive = {

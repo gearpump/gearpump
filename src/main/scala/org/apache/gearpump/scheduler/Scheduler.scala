@@ -17,8 +17,11 @@
  */
 package org.apache.gearpump.scheduler
 
-import akka.actor.{Terminated, ActorRef, Actor}
+import akka.actor.{ActorRef, Actor}
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
+import org.apache.gearpump.cluster.MasterToScheduler.WorkerTerminated
+import org.apache.gearpump.cluster.MasterToWorker.WorkerRegistered
+import org.apache.gearpump.cluster.SchedulerToWorker.UpdateResourceFailed
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import org.slf4j.{LoggerFactory, Logger}
 
@@ -26,30 +29,34 @@ import scala.collection.mutable
 
 abstract class Scheduler extends Actor{
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Scheduler])
-  protected var resources = new Array[(ActorRef, Resource)](0)
+  protected var resources = new mutable.HashMap[ActorRef, Resource]
   protected val resourceRequests = new mutable.Queue[(ActorRef, ResourceRequest)]
 
   def handleScheduleMessage : Receive = {
+    case WorkerRegistered(id) =>
+      val worker = sender()
+      if(!resources.contains(worker)) {
+        LOG.info(s"Worker $id added to the scheduler")
+        resources.put(worker, Resource.empty)
+      }
     case ResourceUpdate(id, resource) =>
       LOG.info(s"Resource update id: $id, slots: ${resource.slots}....")
       val current = sender()
-      val index = resources.indexWhere((worker) => worker._1.equals(current), 0)
-      if (index == -1) {
-        resources = resources :+ (current,resource)
-      } else {
-        resources(index) = (current, resource)
+      if(resources.contains(current)) {
+        resources.update(current, resource)
+        allocateResource()
       }
-      allocateResource()
+      else {
+        current ! UpdateResourceFailed(s"Worker $id is not schedulable, it may have terminated")
+      }
     case RequestResource(appId, request)=>
       LOG.info(s"Request resource: appId: $appId, slots: ${request.resource.slots}")
       val appMaster = sender()
       resourceRequests.enqueue((appMaster, request))
       allocateResource()
-    case t : Terminated =>
-      val actor = t.actor
-      resources = resources.filter{ resource =>
-        val (worker, _) = resource
-        worker.compareTo(actor) != 0
+    case WorkerTerminated(actor) =>
+      if(resources.contains(actor)){
+        resources -= actor
       }
   }
 

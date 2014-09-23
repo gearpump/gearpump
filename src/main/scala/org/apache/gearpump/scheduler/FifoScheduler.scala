@@ -23,8 +23,8 @@ class FifoScheduler extends Scheduler{
   override def receive: Receive = super.handleScheduleMessage
 
   override def allocateResource(): Unit = {
-    val length = resources.length
-    val flattenResource = resources.zipWithIndex.flatMap((workerWithIndex) => {
+    val length = resources.size
+    val flattenResource = resources.toArray.zipWithIndex.flatMap((workerWithIndex) => {
       val ((worker, resource), index) = workerWithIndex
       0.until(resource.slots).map((seq) => (worker, seq * length + index))
     }).sortBy(_._2).map(_._1)
@@ -37,7 +37,7 @@ class FifoScheduler extends Scheduler{
 
       val (appMaster, request) = resourceRequests.dequeue()
       val newAllocated = ResourceUtil.min(total.subtract(allocated), request.resource)
-      val singleAllocation = flattenResource.slice(allocated.slots, (allocated.add(newAllocated)).slots)
+      val singleAllocation = flattenResource.slice(allocated.slots, allocated.add(newAllocated).slots)
         .groupBy((actor) => actor).mapValues(_.length).toArray.map((resource) =>  Allocation(Resource(resource._2), resource._1))
       appMaster ! ResourceAllocated(singleAllocation)
       if (request.resource.greaterThan(newAllocated)) {
