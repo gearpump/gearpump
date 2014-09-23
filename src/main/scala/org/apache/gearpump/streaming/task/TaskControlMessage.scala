@@ -18,12 +18,16 @@
 
 package org.apache.gearpump.streaming.task
 
-case class Seq(id : Int, seq : Long)
-case class AckRequest(taskId : TaskId, seq : Seq)
-case class Ack(taskId : TaskId, seq : Seq)
+case class Seq(id: Int, seq: Long)
 
-case class UpdateClock(taskId : TaskId, time : Long)
-case class ClockUpdated(latestMinClock : Long)
+case class AckRequest(taskId: TaskId, seq: Seq)
+
+case class Ack(taskId: TaskId, seq: Seq)
+
+case class UpdateClock(taskId: TaskId, time: TimeStamp)
+
+case class ClockUpdated(latestMinClock: TimeStamp)
 
 object GetLatestMinClock
-case class LatestMinClock(clock : Long)
+
+case class LatestMinClock(clock: TimeStamp)

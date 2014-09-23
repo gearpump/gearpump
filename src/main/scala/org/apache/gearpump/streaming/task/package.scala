@@ -16,6 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.task
+package org.apache.gearpump.streaming
 
-case class Message(timestamp: TimeStamp = 0L, msg : String)
+package object task {
+  type TaskGroup = Int
+  type TaskIndex = Int
+  type TimeStamp = Long
+}

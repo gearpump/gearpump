@@ -46,10 +46,10 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   private var flowControl : FlowControl = null
   private var clockTracker : ClockTracker = null
 
-  private var unackedUpdateClockTimestamp : Long = 0
+  private var unackedClockSyncTimestamp : TimeStamp = 0
   private var needSyncToClockService = false
 
-  private var minClock : Long = 0L
+  private var minClock : TimeStamp = 0L
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -138,16 +138,16 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   }
 
   private def tryToSyncToClockService : Unit = {
-    if (unackedUpdateClockTimestamp == 0) {
+    if (unackedClockSyncTimestamp == 0) {
       appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
       needSyncToClockService = false
-      unackedUpdateClockTimestamp = System.currentTimeMillis()
+      unackedClockSyncTimestamp = System.currentTimeMillis()
     } else {
       val current = System.currentTimeMillis()
-      if (current - unackedUpdateClockTimestamp > CLOCK_SYNC_TIMEOUT_INTERVAL) {
+      if (current - unackedClockSyncTimestamp > CLOCK_SYNC_TIMEOUT_INTERVAL) {
         appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
         needSyncToClockService = false
-        unackedUpdateClockTimestamp  = System.currentTimeMillis()
+        unackedClockSyncTimestamp  = System.currentTimeMillis()
       } else {
         needSyncToClockService = true
       }
@@ -197,7 +197,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       doHandleMessage
     case ClockUpdated(timestamp) =>
       minClock = timestamp
-      unackedUpdateClockTimestamp = 0
+      unackedClockSyncTimestamp = 0
       if (needSyncToClockService) {
         tryToSyncToClockService
       }

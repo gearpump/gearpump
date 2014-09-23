@@ -80,16 +80,13 @@ import ClockService._
   }
 
   def reportGlobalMinClock : Unit = {
-    val current : Long = System.currentTimeMillis()
+    val current : TimeStamp = System.currentTimeMillis()
     val minTimeStamp = new Date(minClock)
     LOG.info(s"Application minClock tracking: ${minTimeStamp}")
   }
 }
 
 object ClockService {
-  type TaskGroup = Int
-  type TaskIndex = Int
-  type TimeStamp = Long
 
   class TaskGroupClock(val taskgroup : TaskGroup, var minClock : TimeStamp = 0L, var taskClocks : Array[TimeStamp] = null) extends Comparable[TaskGroupClock] {
     override def equals(obj: Any): Boolean = {

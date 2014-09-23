@@ -26,7 +26,7 @@ import ClockTracker._
 
   private final val INVALID : Long = -1
 
-  private var minClock : Long = INVALID
+  private var minClock : TimeStamp = INVALID
   private var candidateMinClock : MinClockSince = null
 
   private var newReceivedMsg : Message = null
@@ -97,7 +97,7 @@ import ClockTracker._
   /**
    * min clock timestamp of all messages pending at current task
    */
-  def minClockAtCurrentTask : Long = {
+  def minClockAtCurrentTask : TimeStamp = {
     minClock
   }
 }
@@ -114,7 +114,7 @@ object ClockTracker {
       minClock = Math.min(minClock, msg.timestamp)
     }
 
-    def processMsg(msg: Message): Option[Long] = {
+    def processMsg(msg: Message): Option[TimeStamp] = {
       if (flow.isAllMessagesAcked) {
         Some(minClock)
       } else if (!firstMsgProcessed && msg.eq(this.first)) {
@@ -126,7 +126,7 @@ object ClockTracker {
       }
     }
 
-    def ackMsg(): Option[Long] = {
+    def ackMsg(): Option[TimeStamp] = {
       if (firstMsgProcessed) {
         if (flow.isOutputWatermarkExceed(ackThreshold)) {
           Some(minClock)
