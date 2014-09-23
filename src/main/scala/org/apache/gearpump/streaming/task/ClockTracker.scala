@@ -24,23 +24,24 @@ package org.apache.gearpump.streaming.task
 class ClockTracker(flowControl : FlowControl)  {
 import ClockTracker._
 
-  private final val INVALID : Long = -1
-
-  private var minClock : TimeStamp = INVALID
+  private var minClock : TimeStamp = Long.MaxValue
   private var candidateMinClock : MinClockSince = null
 
   private var newReceivedMsg : Message = null
 
   private var unprocessedMsgCount : Long = 0
 
+  /**
+   * This method may replace the msg with a new message.
+   */
   def onReceive(msg: Message): Message = {
+    if (msg.timestamp == Message.noTimeStamp) {
+      return msg
+    }
+
     newReceivedMsg = msg
     unprocessedMsgCount += 1
-    if (this.minClock == INVALID) {
-      minClock = msg.timestamp
-    } else {
-      minClock = Math.min(minClock, msg.timestamp)
-    }
+    minClock = Math.min(minClock, msg.timestamp)
 
     if (null == candidateMinClock) {
       /**
@@ -66,6 +67,10 @@ import ClockTracker._
    * return true if there are changes to self min clock
    */
   def onProcess(msg: Message): Boolean = {
+    if (msg.timestamp == Message.noTimeStamp) {
+      return false
+    }
+
     unprocessedMsgCount -= 1
 
     if (candidateMinClock != null) {

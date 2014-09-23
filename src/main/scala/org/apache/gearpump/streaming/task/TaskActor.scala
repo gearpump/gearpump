@@ -58,11 +58,11 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   def onStart() : Unit
 
-  def onNext(msg : String) : Unit
+  def onNext(msg : Message) : Unit
 
   def onStop() : Unit = {}
 
-  def output(msg : String) : Unit = {
+  def output(msg : Message) : Unit = {
     if (null == outputTaskIds || outputTaskIds.length == 0) {
       return
     }
@@ -76,7 +76,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
     while (start < partitions.length) {
       val partition = partitions(start)
 
-      transport(Message(System.currentTimeMillis(), msg), outputTaskIds(partition))
+      transport(msg, outputTaskIds(partition))
       val ackRequest = flowControl.sendMessage(partition)
       if (null != ackRequest) {
         transport(ackRequest, outputTaskIds(partition))
@@ -163,13 +163,13 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
           case AckRequest(taskId, seq) =>
             transport(Ack(this.taskId, seq), taskId)
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
-          case m @ Message(timestamp, msg) =>
+          case m : Message =>
             val updated = clockTracker.onProcess(m)
             if (updated) {
               tryToSyncToClockService
             }
 
-            onNext(msg)
+            onNext(m)
         }
       } else {
         done = true
@@ -189,11 +189,13 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       }
       doHandleMessage
     case msg : Message =>
-      queue.add(msg)
-      if (msg.timestamp != 0) {
-        clockTracker.onReceive(msg)
+      if (msg.timestamp != Message.noTimeStamp) {
         latencies.update(System.currentTimeMillis() - msg.timestamp)
       }
+
+      val updatedMessage = clockTracker.onReceive(msg)
+      queue.add(msg)
+
       doHandleMessage
     case ClockUpdated(timestamp) =>
       minClock = timestamp
@@ -228,7 +230,7 @@ object TaskActor {
       new MergedPartitioner(partitioners :+ partitioner, newPartitionStart, newPartitionEnd)
     }
 
-    def getPartitions(msg : String) : Array[Int] = {
+    def getPartitions(msg : Message) : Array[Int] = {
       var start = 0
       val length = partitioners.length
       val result = new Array[Int](length)

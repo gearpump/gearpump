@@ -18,4 +18,8 @@
 
 package org.apache.gearpump.streaming.task
 
-case class Message(timestamp: TimeStamp = 0L, msg : String)
+case class Message(msg : String, timestamp: TimeStamp = Message.noTimeStamp)
+
+object Message {
+  val noTimeStamp : TimeStamp = 0L
+}

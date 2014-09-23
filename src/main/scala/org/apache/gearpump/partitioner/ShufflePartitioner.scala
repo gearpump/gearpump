@@ -20,6 +20,8 @@ package org.apache.gearpump.partitioner
 
 import java.util.Random
 
+import org.apache.gearpump.streaming.task.Message
+
 /**
  * Round Robin partition the data.
  */
@@ -28,7 +30,7 @@ class ShufflePartitioner extends Partitioner {
   private var count = 0
 
 
-  override def getPartition(msg : String, partitionNum : Int) : Int = {
+  override def getPartition(msg : Message, partitionNum : Int) : Int = {
 
     if (seed == 0) {
       seed = newSeed

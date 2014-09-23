@@ -61,9 +61,9 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     }
   }
 
-  override def onNext(msg : String) : Unit = {
+  override def onNext(msg : Message) : Unit = {
     val message = messages(rand.nextInt(messages.length))
-    output(message)
+    output(new Message(message, System.currentTimeMillis()))
     messageCount = messageCount + 1L
 
     self ! Continue
@@ -73,6 +73,6 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
 object SOLSpout{
   val BYTES_PER_MESSAGE = "bytesPerMessage"
 
-  val Start = Message(0, "start")
-  val Continue = Message(0, "continue")
+  val Start = Message("start")
+  val Continue = Message("continue")
 }
