@@ -21,7 +21,6 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.Master
-import org.apache.gearpump.services.RestServices
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{ActorUtil, Configs}
 import org.slf4j.{Logger, LoggerFactory}
@@ -52,9 +51,7 @@ object Local extends App with ArgumentsParser {
       withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip))
     )
     val master = system.actorOf(Props[Master], MASTER)
-    val masterPath = ActorUtil.getSystemPath(system) + s"/user/${MASTER}"
-    RestServices.start(master)
-
+    val masterPath = ActorUtil.getSystemPath(system) + s"/user/$MASTER"
     LOG.info(s"master is started at $masterPath...")
 
     0.until(workerCount).foreach { id =>

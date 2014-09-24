@@ -22,6 +22,7 @@ packSettings
 packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
                 "master" -> "org.apache.gearpump.cluster.main.Master",
                 "worker" -> "org.apache.gearpump.cluster.main.Worker",
+                "rest" -> "org.apache.gearpump.cluster.main.Rest",
                 "sol" -> "org.apache.gearpump.streaming.examples.sol.SOL",
                 "wordcount" -> "org.apache.gearpump.streaming.examples.wordcount.WordCount",
                 "shell" -> "org.apache.gearpump.cluster.main.Shell")
