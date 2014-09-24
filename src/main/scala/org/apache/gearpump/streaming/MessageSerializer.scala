@@ -31,7 +31,7 @@ class MessageSerializer extends Serializer[Message] {
   override def read(kryo: Kryo, input: Input, typ: Class[Message]): Message = {
     var timeStamp = input.readLong()
     val msg = kryo.readClassAndObject(input)
-    return new Message(msg, timeStamp)
+    return new Message(msg.asInstanceOf[java.io.Serializable], timeStamp)
   }
 }
 
