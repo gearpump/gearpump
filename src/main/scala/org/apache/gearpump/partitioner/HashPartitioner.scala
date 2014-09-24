@@ -18,8 +18,10 @@
 
 package org.apache.gearpump.partitioner
 
+import org.apache.gearpump.streaming.task.Message
+
 class HashPartitioner extends Partitioner {
-  override def getPartition(msg : String, partitionNum : Int) : Int = {
-    (msg.hashCode & Integer.MAX_VALUE) % partitionNum
+  override def getPartition(msg : Message, partitionNum : Int) : Int = {
+    (msg.msg.hashCode & Integer.MAX_VALUE) % partitionNum
   }
 }

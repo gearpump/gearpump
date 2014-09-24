@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.examples.sol
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.{Message, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -42,7 +42,7 @@ class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) {
     snapShotTime = System.currentTimeMillis()
   }
 
-  override def onNext(msg : String) : Unit = {
+  override def onNext(msg : Message) : Unit = {
     output(msg)
     msgCount = msgCount + 1
   }

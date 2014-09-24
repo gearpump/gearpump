@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.task
 
 import org.apache.gearpump.transport.HostPort
 
-case class TaskId(groupId : Int, index : Int)
+case class TaskId(groupId : TaskGroup, index : TaskIndex)
 
 object TaskId {
   def toLong(id : TaskId) = (id.groupId.toLong << 32) + id.index

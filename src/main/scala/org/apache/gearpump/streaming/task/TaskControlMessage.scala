@@ -18,8 +18,16 @@
 
 package org.apache.gearpump.streaming.task
 
-sealed trait TaskControlMessage
+case class Seq(id: Int, seq: Long)
 
-case class Seq(id : Int, seq : Long)
-case class AckRequest(taskId : TaskId, seq : Seq)
-case class Ack(taskId : TaskId, seq : Seq)
+case class AckRequest(taskId: TaskId, seq: Seq)
+
+case class Ack(taskId: TaskId, seq: Seq)
+
+case class UpdateClock(taskId: TaskId, time: TimeStamp)
+
+case class ClockUpdated(latestMinClock: TimeStamp)
+
+object GetLatestMinClock
+
+case class LatestMinClock(clock: TimeStamp)
