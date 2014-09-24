@@ -23,7 +23,7 @@ case class Resource(slots : Int)
 
 object Priority extends Enumeration{
   type Priority = Value
-  val IDLE, NORMAL, HIGH = Value
+  val LOW, NORMAL, HIGH = Value
 }
 
 import Priority._

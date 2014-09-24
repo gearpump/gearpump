@@ -29,8 +29,6 @@ import scala.collection.mutable
 abstract class Scheduler extends Actor{
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Scheduler])
   protected var resources = new mutable.HashMap[ActorRef, Resource]
-  type TimeStamp = Long
-  private[scheduler] class PendingRequest(val appMaster: ActorRef, val request: ResourceRequest, val timeStamp: TimeStamp)
 
   def handleScheduleMessage : Receive = {
     case WorkerRegistered(id) =>
@@ -56,4 +54,9 @@ abstract class Scheduler extends Actor{
   }
 
   def allocateResource(): Unit
+}
+
+object Scheduler{
+  type TimeStamp = Long
+  class PendingRequest(val appMaster: ActorRef, val request: ResourceRequest, val timeStamp: TimeStamp)
 }
