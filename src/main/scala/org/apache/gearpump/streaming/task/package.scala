@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.task
+package org.apache.gearpump.streaming
 
-case class Message(msg: java.io.Serializable, timestamp: TimeStamp = Message.noTimeStamp)
-
-object Message {
-  val noTimeStamp : TimeStamp = 0L
+package object task {
+  type TaskGroup = Int
+  type TaskIndex = Int
+  type TimeStamp = Long
 }

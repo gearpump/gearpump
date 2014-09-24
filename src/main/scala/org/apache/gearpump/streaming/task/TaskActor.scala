@@ -27,7 +27,7 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
-abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
+abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   import org.apache.gearpump.streaming.task.TaskActor._
 
   private val appId = conf.appId
@@ -37,38 +37,37 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
   private val latencies = Metrics(context.system).histogram(s"$metricName.latency")
   private val throughput = Metrics(context.system).meter(s"$metricName.throughput")
 
-  private[this] val appMaster : ActorRef = conf.appMaster
+  private val appMaster : ActorRef = conf.appMaster
 
-  private[this] val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
-  private[this] var partitioner : MergedPartitioner = null
+  private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
+  private var partitioner : MergedPartitioner = null
 
-  private[this] var outputTaskIds : Array[TaskId] = null
-  private[this] var outputWaterMark : Array[Long] = null
-  private[this] var ackRequestWaterMark : Array[Long] = null
-  private[this] var ackWaterMark : Array[Long] = null
-  private[this] var outputWindow : Long = INITIAL_WINDOW_SIZE
+  private var outputTaskIds : Array[TaskId] = null
+  private var flowControl : FlowControl = null
+  private var clockTracker : ClockTracker = null
+
+  private var unackedClockSyncTimestamp : TimeStamp = 0
+  private var needSyncToClockService = false
+
+  private var minClock : TimeStamp = 0L
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
 
-  //We will set this in preStart
-  final def receive : Receive = {
-    case _ => Unit
-  }
+  final def receive : Receive = null
 
   def onStart() : Unit
 
-  def onNext(msg : String) : Unit
+  def onNext(msg : Message) : Unit
 
   def onStop() : Unit = {}
 
-  def output(msg : String) : Unit = {
-    if (null == outputTaskIds) {
+  def output(msg : Message) : Unit = {
+    if (null == outputTaskIds || outputTaskIds.length == 0) {
       return
     }
 
     val partitions = partitioner.getPartitions(msg)
-    outputWindow -= partitions.length
 
     var start = 0
 
@@ -77,21 +76,17 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
     while (start < partitions.length) {
       val partition = partitions(start)
 
-      transport(Message(System.currentTimeMillis(), msg), outputTaskIds(partition))
-
-      outputWaterMark(partition) += 1
-
-      if (outputWaterMark(partition) > ackRequestWaterMark(partition) + FLOW_CONTROL_RATE) {
-
-        transport(AckRequest(taskId, Seq(partition, outputWaterMark(partition))), outputTaskIds(partition))
-        ackRequestWaterMark(partition) = outputWaterMark(partition)
+      transport(msg, outputTaskIds(partition))
+      val ackRequest = flowControl.sendMessage(partition)
+      if (null != ackRequest) {
+        transport(ackRequest, outputTaskIds(partition))
       }
+
       start = start + 1
     }
   }
 
   final override def postStop : Unit = {
-
   }
 
   final override def preStart() : Unit = {
@@ -127,37 +122,54 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
         }
       }.toArray
 
-      this.ackWaterMark = new Array[Long](outputTaskIds.length)
-      this.outputWaterMark = new Array[Long](outputTaskIds.length)
-      this.ackRequestWaterMark = new Array[Long](outputTaskIds.length)
     } else {
       //outer degree == 0
       this.partitioner = null
-      this.outputTaskIds = null
+      this.outputTaskIds = Array.empty[TaskId]
     }
+
+    this.flowControl = new FlowControl(taskId, outputTaskIds.length)
+    this.clockTracker = new ClockTracker(flowControl)
+
     context.become {
       onStart
       handleMessage
     }
   }
 
-  private def doHandleMessage : Unit = {
-    if (outputWindow <= 0) {
-      LOG.debug("Touched Flow control, windows size: " + outputWindow)
+  private def tryToSyncToClockService : Unit = {
+    if (unackedClockSyncTimestamp == 0) {
+      appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
+      needSyncToClockService = false
+      unackedClockSyncTimestamp = System.currentTimeMillis()
+    } else {
+      val current = System.currentTimeMillis()
+      if (current - unackedClockSyncTimestamp > CLOCK_SYNC_TIMEOUT_INTERVAL) {
+        appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
+        needSyncToClockService = false
+        unackedClockSyncTimestamp  = System.currentTimeMillis()
+      } else {
+        needSyncToClockService = true
+      }
     }
+  }
 
+  private def doHandleMessage : Unit = {
     var done = false
-    while (outputWindow > 0 && !done) {
+    while (flowControl.allowSendingMoreMessages() && !done) {
       val msg = queue.poll()
       if (msg != null) {
         msg match {
           case AckRequest(taskId, seq) =>
             transport(Ack(this.taskId, seq), taskId)
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
-          case Message(timestamp, msg) =>
-            onNext(msg)
-          case msg : String =>
-            onNext(msg)
+          case m : Message =>
+            val updated = clockTracker.onProcess(m)
+            if (updated) {
+              tryToSyncToClockService
+            }
+
+            onNext(m)
         }
       } else {
         done = true
@@ -169,17 +181,29 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
     case ackRequest : AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
       queue.add(ackRequest)
-    case Ack(taskId, seq) =>
-      LOG.debug("get ack from downstream, current: " + this.taskId + "downL: " + taskId + ", seq: " + seq + ", windows: " + outputWindow)
-      outputWindow += seq.seq - ackWaterMark(seq.id)
-      ackWaterMark(seq.id) = seq.seq
-      doHandleMessage
-    case msg : Message =>
-      queue.add(msg)
-      if (msg.timestamp != 0) {
-        latencies.update(System.currentTimeMillis() - msg.timestamp)
+    case ack @ Ack(taskId, seq) =>
+      flowControl.receiveAck(taskId, seq)
+      val updated = clockTracker.onAck(ack)
+      if (updated) {
+        tryToSyncToClockService
       }
       doHandleMessage
+    case msg : Message =>
+      if (msg.timestamp != Message.noTimeStamp) {
+        latencies.update(System.currentTimeMillis() - msg.timestamp)
+      }
+
+      val updatedMessage = clockTracker.onReceive(msg)
+      queue.add(msg)
+
+      doHandleMessage
+    case ClockUpdated(timestamp) =>
+      minClock = timestamp
+      unackedClockSyncTimestamp = 0
+      if (needSyncToClockService) {
+        tryToSyncToClockService
+      }
+
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
   }
@@ -188,7 +212,7 @@ abstract class TaskActor(conf : Configs) extends Actor  with ExpressTransport {
 object TaskActor {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[TaskActor])
   val INITIAL_WINDOW_SIZE = 1024 * 16
-  val FLOW_CONTROL_RATE = 100
+  val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000 //3 seconds
 
   class MergedPartitioner(partitioners : Array[Partitioner], partitionStart : Array[Int], partitionStop : Array[Int]) {
 
@@ -206,7 +230,7 @@ object TaskActor {
       new MergedPartitioner(partitioners :+ partitioner, newPartitionStart, newPartitionEnd)
     }
 
-    def getPartitions(msg : String) : Array[Int] = {
+    def getPartitions(msg : Message) : Array[Int] = {
       var start = 0
       val length = partitioners.length
       val result = new Array[Int](length)

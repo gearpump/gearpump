@@ -65,6 +65,9 @@ import scala.util.{Failure, Success}
  * AppManager is dedicated part of Master to manager applicaitons
  */
 
+/**
+ * This state will be persisted across the masters.
+ */
 class ApplicationState(val appId : Int, val attemptId : Int, val state : Any) extends Serializable {
 
   override def equals(other: Any): Boolean = {
@@ -87,15 +90,16 @@ class ApplicationState(val appId : Int, val attemptId : Int, val state : Any) ex
 }
 
 private[cluster] class AppManager() extends Actor with Stash {
+
   import org.apache.gearpump.cluster.AppManager._
 
-  private var master : ActorRef = null
-  private var executorCount : Int = 0;
-  private var appId : Int = 0;
+  private var master: ActorRef = null
+  private var executorCount: Int = 0;
+  private var appId: Int = 0;
 
   private val systemconfig = context.system.settings.config
 
-  def receive : Receive = null
+  def receive: Receive = null
 
   //from appid to appMaster data
   private var appMasterRegistry = Map.empty[Int, AppMasterInfo]
@@ -105,7 +109,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   private val replicator = DataReplication(context.system).replicator
 
   //TODO: We can use this state for appmaster HA to recover a new App master
-  private var state : Set[ApplicationState] = Set.empty[ApplicationState]
+  private var state: Set[ApplicationState] = Set.empty[ApplicationState]
 
   val masterClusterSize = systemconfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).size()
 
@@ -115,19 +119,19 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   replicator ! new Get(STATE, ReadFrom(readQuorum), TIMEOUT, None)
 
-  override def preStart : Unit = {
+  override def preStart: Unit = {
     replicator ! Subscribe(STATE, self)
   }
 
-  override def postStop : Unit = {
+  override def postStop: Unit = {
     replicator ! Unsubscribe(STATE, self)
   }
 
   LOG.info("Recoving application state....")
   context.become(waitForMasterState)
 
-  def waitForMasterState : Receive = {
-    case GetSuccess(_, replicatedState : GSet, _) =>
+  def waitForMasterState: Receive = {
+    case GetSuccess(_, replicatedState: GSet, _) =>
       state = replicatedState.getValue().asScala.foldLeft(state) { (set, appState) =>
         set + appState.asInstanceOf[ApplicationState]
       }
@@ -135,11 +139,11 @@ private[cluster] class AppManager() extends Actor with Stash {
       LOG.info(s"Successfully recoeved application states for ${state.map(_.appId)}, nextAppId: ${appId}....")
       context.become(receiveHandler)
       unstashAll()
-    case x : GetFailure =>
+    case x: GetFailure =>
       LOG.info("GetFailure We cannot find any exisitng state, start a fresh one...")
       context.become(receiveHandler)
       unstashAll()
-    case x : NotFound =>
+    case x: NotFound =>
       LOG.info("We cannot find any exisitng state, start a fresh one...")
       context.become(receiveHandler)
       unstashAll()
@@ -150,14 +154,14 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse terminationWatch
 
-  def masterHAMsgHandler : Receive = {
+  def masterHAMsgHandler: Receive = {
     case update: UpdateResponse => LOG.info(s"we get update $update")
     case Changed(STATE, data: GSet) =>
       LOG.info("Current elements: {}", data.value)
   }
 
-  def clientMsgHandler : Receive = {
-    case submitApp @ SubmitApplication(appMasterClass, config, app) =>
+  def clientMsgHandler: Receive = {
+    case submitApp@SubmitApplication(appMasterClass, config, app) =>
       LOG.info(s"AppManager Submiting Application $appId...")
       val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app), appId.toString)
 
@@ -181,8 +185,8 @@ private[cluster] class AppManager() extends Actor with Stash {
       }
   }
 
-  def appMasterMessage : Receive = {
-    case RegisterAppMaster(appMaster, appId, executorId, slots, registerData : AppMasterInfo) =>
+  def appMasterMessage: Receive = {
+    case RegisterAppMaster(appMaster, appId, executorId, slots, registerData: AppMasterInfo) =>
       LOG.info(s"Register AppMaster for app: $appId...")
       context.watch(appMaster)
       appMasterRegistry += appId -> registerData
@@ -191,17 +195,18 @@ private[cluster] class AppManager() extends Actor with Stash {
       val lastAppId = appId - 1
       val appData = Option[AppMasterInfo](appMasterRegistry.getOrElse(lastAppId, null))
       LOG.info(s"AppManager returning AppMasterData for $lastAppId")
-      sender ! AppMasterData(appId=lastAppId, executorId=masterExecutorId, appData=appData.getOrElse(null))
+      sender ! AppMasterData(appId = lastAppId, executorId = masterExecutorId, appData = appData.getOrElse(null))
   }
 
-  def terminationWatch : Receive = {
+  def terminationWatch: Receive = {
     //TODO: fix this
-    case terminate : Terminated => {
+    case terminate: Terminated => {
       terminate.getAddressTerminated()
       //TODO: Check whether this belongs to a app master
       LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
 
-      //TODO: decide whether it is a normal terminaiton, or abnormal. and implement appMaster HA
+      //TODO: we need to find out whether it is a normal terminaiton, or abnormal.
+      // The appMaster HA can be implemented by restoring the state from Set[ApplicationState]
     }
   }
 }

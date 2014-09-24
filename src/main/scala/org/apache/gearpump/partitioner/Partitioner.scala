@@ -18,10 +18,12 @@
 
 package org.apache.gearpump.partitioner
 
+import org.apache.gearpump.streaming.task.Message
+
 trait Msg
 
 trait Partitioner extends Serializable {
-  def getPartition(msg : String, partitionNum : Int) : Int
+  def getPartition(msg : Message, partitionNum : Int) : Int
 }
 
 

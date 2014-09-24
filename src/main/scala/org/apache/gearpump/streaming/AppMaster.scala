@@ -31,7 +31,7 @@ import org.apache.gearpump.cluster._
 import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
+import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util._
@@ -58,6 +58,8 @@ class AppMaster (config : Configs) extends Actor {
   private val name = appDescription.name
   private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
 
+  private var clockService : ActorRef = null
+
   private var taskLocations = Map.empty[HostPort, Set[TaskId]]
 
   private var startedTasks = Set.empty[TaskId]
@@ -67,6 +69,7 @@ class AppMaster (config : Configs) extends Actor {
 
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
+
     val dag = DAG(appDescription.dag)
 
     //scheduler the task fairly on every machine
@@ -83,6 +86,10 @@ class AppMaster (config : Configs) extends Actor {
     taskQueue ++= tasks
 
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
+
+    LOG.info("Initializing Clock service ....")
+    clockService = context.actorOf(Props(classOf[ClockService], dag))
+  
     context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
   }
 
@@ -134,6 +141,12 @@ class AppMaster (config : Configs) extends Actor {
         }
       }
     }
+
+    case clock : UpdateClock =>
+      clockService forward clock
+    case GetLatestMinClock =>
+      clockService forward GetLatestMinClock
+
     case task: TaskFinished => {
       val taskId = task.taskId
       LOG.info(s"Task ${taskId} has been finished for app $appId")

@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.examples.wordcount
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.{Message, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -45,13 +45,13 @@ class Sum (conf : Configs) extends TaskActor(conf) {
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
   }
 
-  override def onNext(msg : String) : Unit = {
+  override def onNext(msg : Message) : Unit = {
     if (null == msg) {
       return
     }
-    val current = map.getOrElse(msg, 0L)
+    val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
     wordCount += 1
-    map.put(msg, current + 1)
+    map.put(msg.msg.asInstanceOf[String], current + 1)
   }
 
   override def onStop() : Unit = {
