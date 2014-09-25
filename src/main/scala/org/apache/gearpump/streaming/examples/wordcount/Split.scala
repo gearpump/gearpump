@@ -44,11 +44,15 @@ class Split(conf : Configs) extends TaskActor(conf) {
 
 
   override def onStart() : Unit = {
-    self ! Message(System.currentTimeMillis(), "start")
+    self ! Message("start")
   }
 
-  override def onNext(msg : String) : Unit = {
-    txt.lines.foreach((line) => line.split(" ").foreach(output(_)))
-    self ! Message(System.currentTimeMillis(), "continue")
+  override def onNext(msg : Message) : Unit = {
+    txt.lines.foreach { line =>
+      line.split(" ").foreach { msg =>
+        output(new Message(msg, System.currentTimeMillis()))
+      }
+    }
+    self ! Message("continue")
   }
 }

@@ -23,6 +23,7 @@ import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.Master
 import org.apache.gearpump.services.RestServices
 import org.apache.gearpump.util.Constants._
+import scala.collection.JavaConverters._
 import org.apache.gearpump.util.{ActorUtil, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -49,7 +50,8 @@ object Local extends App with ArgumentsParser {
 
     implicit val system = ActorSystem(MASTER, Configs.MASTER_CONFIG.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
-      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip))
+      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip)).
+      withValue("gearpump.cluster.masters",  ConfigValueFactory.fromAnyRef(List(s"$ip:$port").asJava))
     )
     val master = system.actorOf(Props[Master], MASTER)
     val masterPath = ActorUtil.getSystemPath(system) + s"/user/${MASTER}"

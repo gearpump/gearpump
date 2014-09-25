@@ -1,4 +1,3 @@
-package org.apache.gearpump.scheduler
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,10 +16,30 @@ package org.apache.gearpump.scheduler
  * limitations under the License.
  */
 
-import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
+package org.apache.gearpump.scheduler
 
-class FifoScheduler extends Scheduler{
-  override def receive: Receive = super.handleScheduleMessage
+import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
+import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
+import org.apache.gearpump.scheduler.Scheduler.PendingRequest
+import org.slf4j.{LoggerFactory, Logger}
+
+import scala.collection.mutable
+
+class PriorityScheduler extends Scheduler{
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[PriorityScheduler])
+
+  private val resourceRequests = new mutable.PriorityQueue[PendingRequest]()(requestOrdering)
+
+  def requestOrdering = new Ordering[PendingRequest] {
+    override def compare(x: PendingRequest, y: PendingRequest) = {
+      var res = x.request.priority.id - y.request.priority.id
+      if(res == 0)
+        res = y.timeStamp.compareTo(x.timeStamp)
+      res
+    }
+  }
+
+  override def receive: Receive = super.handleScheduleMessage orElse resourceRequestHandler
 
   override def allocateResource(): Unit = {
     val length = resources.size
@@ -35,17 +54,27 @@ class FifoScheduler extends Scheduler{
         return
       }
 
-      val (appMaster, request) = resourceRequests.dequeue()
+      val pendingRequest = resourceRequests.dequeue()
+      val (appMaster, request, timeStamp) = (pendingRequest.appMaster, pendingRequest.request, pendingRequest.timeStamp)
       val newAllocated = Resource.min(total.subtract(allocated), request.resource)
       val singleAllocation = flattenResource.slice(allocated.slots, allocated.add(newAllocated).slots)
         .groupBy((actor) => actor).mapValues(_.length).toArray.map((resource) =>  ResourceAllocation(Resource(resource._2), resource._1))
       appMaster ! ResourceAllocated(singleAllocation)
       if (request.resource.greaterThan(newAllocated)) {
-        resourceRequests.enqueue((appMaster, ResourceRequest(request.resource.subtract(newAllocated), request.worker)))
+        resourceRequests.enqueue(new PendingRequest(appMaster, ResourceRequest(request.resource.subtract(newAllocated), request.priority, request.worker), timeStamp))
       }
       assignResourceToApplication(allocated.add(newAllocated))
     }
 
     assignResourceToApplication(Resource(0))
   }
+
+  def resourceRequestHandler: Receive = {
+    case RequestResource(appId, request) =>
+      LOG.info(s"Request resource: appId: $appId, slots: ${request.resource.slots}")
+      val appMaster = sender()
+      resourceRequests.enqueue(new PendingRequest(appMaster, request, System.currentTimeMillis()))
+      allocateResource()
+  }
+
 }

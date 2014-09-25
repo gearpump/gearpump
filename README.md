@@ -130,6 +130,73 @@ Here is how it looks like for grafana dashboard:
 
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/dashboard.png)
 
+Serialization
+========================
+We use library kryo and akka-kryo library https://github.com/romix/akka-kryo-serialization. The serialization for the following types are built-in. 
+
+```
+# gearpump types
+Message
+AckRequest
+Ack
+
+# akka types
+akka.actor.ActorRef
+
+# scala types
+scala.Enumeration#Value
+scala.collection.mutable.Map[_, _]
+scala.collection.immutable.SortedMap[_, _]
+scala.collection.immutable.Map[_, _]
+scala.collection.immutable.SortedSet[_]
+scala.collection.immutable.Set[_]
+scala.collection.mutable.SortedSet[_]
+scala.collection.mutable.Set[_]
+scala.collection.generic.MapFactory[scala.collection.Map]
+scala.collection.generic.SetFactory[scala.collection.Set]
+scala.collection.Traversable[_]
+
+# java complex types
+byte[]
+char[]
+short[]
+int[]
+long[]
+float[]
+double[]
+boolean[]
+String[]
+Object[]
+BigInteger
+BigDecimal
+Class
+Date
+Enum
+EnumSet
+Currency
+StringBuffer
+StringBuilder
+TreeSet
+Collection
+TreeMap
+Map
+TimeZone
+Calendar
+Locale
+
+## Primitive types
+int
+String
+float
+boolean
+byte
+char
+short
+long
+double
+void
+```
+
 Acknowledge
 ========================
 The netty transport code work is based on apache storm. Thanks to apache storm contributors.
