@@ -24,7 +24,8 @@ packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
                 "worker" -> "org.apache.gearpump.cluster.main.Worker",
                 "sol" -> "org.apache.gearpump.streaming.examples.sol.SOL",
                 "wordcount" -> "org.apache.gearpump.streaming.examples.wordcount.WordCount",
-                "shell" -> "org.apache.gearpump.cluster.main.Shell")
+                "shell" -> "org.apache.gearpump.cluster.main.Shell",
+                "seqfilerw" -> "org.apache.gearpump.streaming.examples.seqfilerw.SeqFileRW")
 				
 packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
 		
@@ -33,7 +34,8 @@ packExtraClasspath := Map("local" -> Seq("${PROG_HOME}/conf"),
 						  "worker" -> Seq("${PROG_HOME}/conf"),
 						  "sol" -> Seq("${PROG_HOME}/conf"),
 						  "wordcount" -> Seq("${PROG_HOME}/conf"),
-						  "shell" -> Seq("${PROG_HOME}/conf"))
+						  "shell" -> Seq("${PROG_HOME}/conf"),
+						  "seqfilerw" -> Seq("${PROG_HOME}/conf"))
 
 resolvers ++= Seq(
   "maven-repo" at "http://repo.maven.apache.org/maven2",
@@ -105,5 +107,6 @@ libraryDependencies ++= Seq(
   "com.gettyimages" %% "spray-swagger" % "0.4.3" excludeAll( ExclusionRule(organization = "org.json4s"), ExclusionRule(organization = "io.spray") ),
   "org.json4s" %% "json4s-jackson" % "3.2.10",
   "org.json4s" %% "json4s-native"   % "3.2.10",
-  "org.webjars" % "swagger-ui" % "2.0.21"
+  "org.webjars" % "swagger-ui" % "2.0.21",
+  "org.apache.hadoop" % "hadoop-common" % "2.4.1"
 )
