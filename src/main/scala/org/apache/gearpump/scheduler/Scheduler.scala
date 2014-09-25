@@ -29,7 +29,6 @@ import scala.collection.mutable
 abstract class Scheduler extends Actor{
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Scheduler])
   protected var resources = new mutable.HashMap[ActorRef, Resource]
-  protected val resourceRequests = new mutable.Queue[(ActorRef, ResourceRequest)]
 
   def handleScheduleMessage : Receive = {
     case WorkerRegistered(id) =>
@@ -48,16 +47,16 @@ abstract class Scheduler extends Actor{
       else {
         current ! UpdateResourceFailed(s"ResourceUpdate failed! The worker $id has not been registered into master")
       }
-    case RequestResource(appId, request)=>
-      LOG.info(s"Request resource: appId: $appId, slots: ${request.resource.slots}")
-      val appMaster = sender()
-      resourceRequests.enqueue((appMaster, request))
-      allocateResource()
     case WorkerTerminated(actor) =>
       if(resources.contains(actor)){
         resources -= actor
       }
   }
 
-  def allocateResource() : Unit
+  def allocateResource(): Unit
+}
+
+object Scheduler{
+  type TimeStamp = Long
+  class PendingRequest(val appMaster: ActorRef, val request: ResourceRequest, val timeStamp: TimeStamp)
 }
