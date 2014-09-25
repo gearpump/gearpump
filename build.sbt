@@ -24,7 +24,6 @@ packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
                 "worker" -> "org.apache.gearpump.cluster.main.Worker",
                 "sol" -> "org.apache.gearpump.streaming.examples.sol.SOL",
                 "wordcount" -> "org.apache.gearpump.streaming.examples.wordcount.WordCount",
-                "kafkawordcount" -> "org.apache.gearpump.streaming.examples.kafka.KafkaWordCount",
                 "shell" -> "org.apache.gearpump.cluster.main.Shell")
 				
 packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
@@ -106,6 +105,5 @@ libraryDependencies ++= Seq(
   "com.gettyimages" %% "spray-swagger" % "0.4.3" excludeAll( ExclusionRule(organization = "org.json4s"), ExclusionRule(organization = "io.spray") ),
   "org.json4s" %% "json4s-jackson" % "3.2.10",
   "org.json4s" %% "json4s-native"   % "3.2.10",
-  "org.webjars" % "swagger-ui" % "2.0.21",
-  "org.apache.kafka" %% "kafka" % "0.8.1.1"
+  "org.webjars" % "swagger-ui" % "2.0.21"
 )
