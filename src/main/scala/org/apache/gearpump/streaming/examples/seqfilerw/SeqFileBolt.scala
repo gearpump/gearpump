@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.examples.seqfilerw
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.{Message, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{Path, FileSystem}
@@ -58,8 +58,8 @@ class SeqFileBolt(config: Configs) extends TaskActor(config ){
     LOG.info("sequence file bolt initiated")
   }
 
-  override def onNext(msg: String): Unit = {
-    val kv = msg.split("\\+\\+")
+  override def onNext(msg: Message): Unit = {
+    val kv = msg.msg.asInstanceOf[String].split("\\+\\+")
     key.set(kv(0))
     value.set(kv(1))
     writer.append(key, value)
@@ -75,7 +75,7 @@ class SeqFileBolt(config: Configs) extends TaskActor(config ){
   def reportStatus() = {
     val current : Long = System.currentTimeMillis()
     LOG.info(s"Task $taskId Throughput: ${(msgCount - snapShotKVCount, (current - snapShotTime) / 1000)} (KVPairs, second)")
-    snapShotKVCount = msgCTount
+    snapShotKVCount = msgCount
     snapShotTime = current
   }
 }
