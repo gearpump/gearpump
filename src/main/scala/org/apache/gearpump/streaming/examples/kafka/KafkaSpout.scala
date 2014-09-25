@@ -57,16 +57,16 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   import org.apache.gearpump.streaming.examples.kafka.KafkaSpout._
 
 
-  val config = conf.config
-  val zookeeper = config.get(ZOOKEEPER).get.asInstanceOf[String]
-  val kafkaRoot = config.get(KAFKA_ROOT).get.asInstanceOf[String]
-  val connectString = zookeeper + kafkaRoot
-  val topic = config.get(TOPIC).get.asInstanceOf[String]
-  val clientId = config.get(CLIENT_ID).get.asInstanceOf[String]
-  val soTimeout = config.get(SO_TIMEOUT).get.asInstanceOf[Int]
-  val bufferSize = config.get(SO_BUFFERSIZE).get.asInstanceOf[Int]
-  val fetchSize = config.get(FETCH_SIZE).get.asInstanceOf[Int]
-  val zkClient = new ZkClient(connectString, soTimeout, soTimeout, ZKStringSerializer)
+  private val config = conf.config
+  private val zookeeper = config.get(ZOOKEEPER).get.asInstanceOf[String]
+  private val kafkaRoot = config.get(KAFKA_ROOT).get.asInstanceOf[String]
+  private val connectString = zookeeper + kafkaRoot
+  private val topic = config.get(TOPIC).get.asInstanceOf[String]
+  private val clientId = config.get(CLIENT_ID).get.asInstanceOf[String]
+  private val soTimeout = config.get(SO_TIMEOUT).get.asInstanceOf[Int]
+  private val bufferSize = config.get(SO_BUFFERSIZE).get.asInstanceOf[Int]
+  private val fetchSize = config.get(FETCH_SIZE).get.asInstanceOf[Int]
+  private val zkClient = new ZkClient(connectString, soTimeout, soTimeout, ZKStringSerializer)
 
   val brokers = {
     ZkUtils.getAllBrokersInCluster(zkClient).map(b => Broker(b.host, b.port)).toList
@@ -76,19 +76,21 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
     val partitionPath = kafkaRoot + ZkUtils.getTopicPartitionsPath(topic)
     val numPartitions = ZkUtils.getPartitionsForTopics(zkClient, List(topic))(topic).size
     val numTasks = conf.dag.tasks(taskId.groupId).parallism
-    0.until(numPartitions).filter(_ % numTasks == taskId.index).toList
+    val partitions = 0.until(numPartitions).filter(_ % numTasks == taskId.index).toList
+    LOG.info(s"assigned partitions $partitions")
+    partitions
   }
 
-  val leaders: Map[Int, Broker] = partitions.map(
+  private val leaders: Map[Int, Broker] = partitions.map(
     p => (p, findLeader(brokers, topic, p).get)).toMap
 
-  val nextOffsets: MutableMap[Int, Long] = {
+  private val nextOffsets: MutableMap[Int, Long] = {
     val offsets = MutableMap[Int, Long]()
     partitions.foreach(offsets.put(_, 0L))
     offsets
   }
 
-  val iterators: Map[Int, MessageIterator] = partitions.map(
+  private val iterators: Map[Int, MessageIterator] = partitions.map(
     p => {
       val broker = leaders(p)
       val host = broker.host
@@ -170,18 +172,18 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
 
 }
 
-class MessageIterator(val host: String,
-                      val port: Int,
-                      val topic: String,
-                      val partition: Int,
-                      val soTimeout: Int,
-                      val bufferSize: Int,
-                      val fetchSize: Int,
-                      val clientId: String) {
+class MessageIterator(host: String,
+                      port: Int,
+                      topic: String,
+                      partition: Int,
+                      soTimeout: Int,
+                      bufferSize: Int,
+                      fetchSize: Int,
+                      clientId: String) {
 
 
-  val consumer = new SimpleConsumer(host, port, soTimeout, bufferSize, clientId)
-  val decoder = new StringDecoder()
+  private val consumer = new SimpleConsumer(host, port, soTimeout, bufferSize, clientId)
+  private val decoder = new StringDecoder()
 
   private var iter: Iterator[MessageAndOffset] = null
   private var nextOffset = 0L
