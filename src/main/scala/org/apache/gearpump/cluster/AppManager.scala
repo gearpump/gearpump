@@ -20,44 +20,22 @@ package org.apache.gearpump.cluster
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor._
-import akka.contrib.datareplication.{GSet, DataReplication}
+import akka.actor.{Actor, Props, _}
 import akka.contrib.datareplication.Replicator._
+import akka.contrib.datareplication.{DataReplication, GSet}
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
-import org.apache.gearpump.services.{AppMasterData, AppMasterDataRequest}
+import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.services.{AppMasterData, AppMasterDataRequest, AppMastersData, AppMastersDataRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
-import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.util.concurrent.TimeUnit
-
-import akka.actor.{Actor, ActorLogging, Props, _}
-import akka.cluster.ClusterEvent._
-import akka.cluster.{Cluster, Member, MemberStatus}
-import akka.contrib.datareplication.Replicator._
-import akka.contrib.pattern.ClusterSingletonManager
-import com.typesafe.config.ConfigFactory
-
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.duration._
-
-import scala.concurrent.duration._
-import akka.actor.ActorLogging
-import akka.cluster.Cluster
-import akka.actor.Actor
-import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
-import akka.actor.Props
-import akka.contrib.datareplication.{GSet, DataReplication}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
@@ -74,12 +52,12 @@ class ApplicationState(val appId : Int, val attemptId : Int, val state : Any) ex
     if (other.isInstanceOf[ApplicationState]) {
       val that = other.asInstanceOf[ApplicationState]
       if (appId == that.appId && attemptId == that.attemptId) {
-        return true
+        true
       } else {
-        return false
+        false
       }
     } else {
-      return false
+      false
     }
   }
 
@@ -94,8 +72,8 @@ private[cluster] class AppManager() extends Actor with Stash {
   import org.apache.gearpump.cluster.AppManager._
 
   private var master: ActorRef = null
-  private var executorCount: Int = 0;
-  private var appId: Int = 0;
+  private var executorCount: Int = 0
+  private var appId: Int = 0
 
   private val systemconfig = context.system.settings.config
 
@@ -191,11 +169,19 @@ private[cluster] class AppManager() extends Actor with Stash {
       context.watch(appMaster)
       appMasterRegistry += appId -> registerData
       sender ! AppMasterRegistered(appId, context.parent)
+    case appMastersDataRequest: AppMastersDataRequest =>
+      val appMastersData = collection.mutable.ListBuffer[AppMasterData]()
+      appMasterRegistry.foreach(pair => {
+        val (id, info:AppMasterInfo) = pair
+        appMastersData += AppMasterData(id,info)
+      }
+      )
+      sender ! AppMastersData(appMastersData.toList)
     case appMasterDataRequest: AppMasterDataRequest =>
       val lastAppId = appId - 1
       val appData = Option[AppMasterInfo](appMasterRegistry.getOrElse(lastAppId, null))
       LOG.info(s"AppManager returning AppMasterData for $lastAppId")
-      sender ! AppMasterData(appId = lastAppId, executorId = masterExecutorId, appData = appData.getOrElse(null))
+      sender ! AppMasterData(appId = lastAppId, appData = appData.getOrElse(null))
   }
 
   def terminationWatch: Receive = {

@@ -34,9 +34,11 @@ class RestServices(master: ActorRef)(implicit executionContext:ExecutionContext)
 
   def actorRefFactory = context
 
+  val appMastersService = new AppMastersService(master, context, executionContext)
+
   val appMasterService = new AppMasterService(master, context, executionContext)
 
-  def receive = runRoute(appMasterService.routes ~ swaggerService.routes ~
+  def receive = runRoute(appMastersService.routes ~ appMasterService.routes ~ swaggerService.routes ~
       get {
         pathPrefix("") { 
           pathEndOrSingleSlash {
@@ -54,7 +56,6 @@ class RestServices(master: ActorRef)(implicit executionContext:ExecutionContext)
     override def actorRefFactory = context
     override def apiInfo = Some(new ApiInfo(title="Spray-Swagger", description="A service using spray and spray-swagger.", termsOfServiceUrl="", contact="", "Apache V2", "http://www.apache.org/licenses/LICENSE-2.0"))
 
-    //authorizations, not used
   }
 }
 

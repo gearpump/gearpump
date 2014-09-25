@@ -33,8 +33,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 
-@Api(value = "/appmaster", description = "AppMaster Info.")
-class AppMasterService(val master:ActorRef, val context: ActorContext, executionContext: ExecutionContext) extends HttpService {
+@Api(value = "/appmasters", description = "AppMasters Info.")
+class AppMastersService(val master:ActorRef, val context: ActorContext, executionContext: ExecutionContext) extends HttpService {
   import org.apache.gearpump.services.Json4sSupport._
   implicit val timeout = Timeout(5, TimeUnit.SECONDS)
   def actorRefFactory = context
@@ -42,25 +42,23 @@ class AppMasterService(val master:ActorRef, val context: ActorContext, execution
 
   val routes = readRoute 
 
-  @ApiOperation(value = "Get AppMaster Info", notes = "Returns AppMaster Info ", httpMethod = "GET", response = classOf[AppMasterData])
-  @ApiImplicitParams(Array(
-      new ApiImplicitParam(name = "appId", required = true, dataType = "integer", paramType = "path", value = "ID of AppMaster")
-        ))
+  @ApiOperation(value = "Get AppMasters Info", notes = "Returns AppMasters Info ", httpMethod = "GET", response = classOf[AppMastersData])
   @ApiResponses(Array(
-    new ApiResponse(code = 404, message = "AppMaster not found"),
-    new ApiResponse(code = 400, message = "Invalid ID supplied")
+    new ApiResponse(code = 404, message = "AppMasters not found")
   ))
   def readRoute = get { 
-     path("appmaster"/IntNumber) { appId =>
-       onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
-         case Success(value:AppMasterData) => complete(value)
+     path("appmasters") {
+       onComplete((master ? AppMastersDataRequest()).asInstanceOf[Future[AppMastersData]]) {
+         case Success(value:AppMastersData) => complete(value)
          case Failure(ex)    => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
        }
     }
   }
 }
 
-case class AppMasterData(appId: Int, appData: AppMasterInfo)
-case class AppMasterDataRequest(appId: Int)
+@ApiModel(description = "AppMastersData - list of AppMasterData")
+case class AppMastersData(appMasters: List[AppMasterData])
+@ApiModel(description = "AppMastersDataRequest - request list of AppMasterData")
+case class AppMastersDataRequest()
 
 

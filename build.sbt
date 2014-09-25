@@ -8,7 +8,7 @@ version := "0.1-SNAPSHOT"
 
 organization := "com.github.intel-hadoop"
 
-val scalaVersionNumber = "2.10.4"
+val scalaVersionNumber = "2.11.2"
 
 scalaVersion := scalaVersionNumber
 
@@ -49,6 +49,7 @@ resolvers ++= Seq(
   "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
   "spray repo" at "http://repo.spray.io",
   "clockfly" at "http://dl.bintray.com/clockfly/maven",
+  "patrik" at "http://dl.bintray.com/patriknw/maven",
   "webjars" at "http://webjars.github.com/m2"
 )
 
@@ -94,9 +95,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-agent" % akkaVersion,
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
   "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
-  "org.scala-lang" % "jline" % scalaVersionNumber,
   "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion,
-  "com.github.patriknw" %% "akka-data-replication" % "0.4",
+  "com.github.patriknw" %% "akka-data-replication" % "0.6",
   "io.spray" %%  "spray-can"       % sprayVersion,
   "io.spray" %%  "spray-routing"   % sprayVersion,
   "io.spray" %%  "spray-testkit"   % sprayVersion,
