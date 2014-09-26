@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.examples.seqfilerw
+package org.apache.gearpump.streaming.examples.fsio
 
 import org.apache.gearpump.streaming.task.{Message, TaskActor}
 import org.apache.gearpump.util.Configs
@@ -24,7 +24,7 @@ import org.apache.hadoop.fs.{Path, FileSystem}
 import org.apache.hadoop.io.SequenceFile
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.Text
-import org.apache.gearpump.streaming.examples.seqfilerw.SeqFileSpout._
+import org.apache.gearpump.streaming.examples.fsio.SeqFileSpout._
 import org.slf4j.{LoggerFactory, Logger}
 
 class SeqFileSpout(config: Configs) extends TaskActor(config ){
@@ -32,7 +32,7 @@ class SeqFileSpout(config: Configs) extends TaskActor(config ){
   val value = new Text()
   val key = new Text()
   var reader: SequenceFile.Reader = null
-  val hadoopConf = new Configuration()
+  val hadoopConf = config.hadoopConf
   val fs = FileSystem.get(hadoopConf)
   val inputPath = new Path(config.getString(INPUT_PATH))
 

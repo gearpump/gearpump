@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.examples.seqfilerw
+package org.apache.gearpump.streaming.examples.fsio
 
 import java.util.concurrent.TimeUnit
 
@@ -24,7 +24,7 @@ import org.apache.gearpump.streaming.task.{Message, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{Path, FileSystem}
-import org.apache.gearpump.streaming.examples.seqfilerw.SeqFileBolt._
+import org.apache.gearpump.streaming.examples.fsio.SeqFileBolt._
 import org.apache.hadoop.io.SequenceFile
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.Text
@@ -32,7 +32,7 @@ import org.slf4j.{LoggerFactory, Logger}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SeqFileBolt(config: Configs) extends TaskActor(config ){
+class SeqFileBolt(config: Configs) extends TaskActor(config){
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileBolt])
   val outputPath = new Path(config.getString(OUTPUT_PATH) + this.taskId)
   var writer: SequenceFile.Writer = null;
@@ -46,7 +46,7 @@ class SeqFileBolt(config: Configs) extends TaskActor(config ){
   private var snapShotTime : Long = 0
 
   override def onStart() = {
-    val hadoopConf = new Configuration()
+    val hadoopConf = config.hadoopConf
     val fs = FileSystem.get(hadoopConf)
     fs.deleteOnExit(outputPath)
     writer = SequenceFile.createWriter(hadoopConf, Writer.file(outputPath), Writer.keyClass(textClass), Writer.valueClass(textClass))
