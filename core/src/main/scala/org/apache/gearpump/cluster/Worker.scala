@@ -42,13 +42,12 @@ import scala.util.{Failure, Success, Try}
  */
 private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
-  val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
-
   private var resource = Resource(100)
   private var allocatedResource = Map[ActorRef, Resource]()
   private var id = -1
   override def receive : Receive = null
   var master : ActorRef = null
+  val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
 
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
     case WorkerRegistered(id) =>

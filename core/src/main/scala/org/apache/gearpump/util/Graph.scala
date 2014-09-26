@@ -21,7 +21,6 @@ package org.apache.gearpump.util
 import java.io.ObjectOutputStream
 
 import org.apache.gearpump.streaming.TaskDescription
-import org.apache.gearpump.streaming.examples.sol.SOLBolt
 import org.apache.gearpump.util.Graph.Edge
 import org.jgrapht.Graphs
 import org.jgrapht.graph.DefaultDirectedGraph
@@ -141,6 +140,7 @@ object Graph {
     new Graph(new DefaultDirectedGraph[N, Edge[E]](classOf[Edge[E]]))
   }
 
+/*
   def main (args: Array[String]) {
     val g = Graph(1~2~>4, 1~5~>4, 4~2~>8~2~>9)
 
@@ -151,6 +151,7 @@ object Graph {
     Console.println(bolt.equals(bolt2))
     Console.println(g.toString)
   }
+*/
 
   implicit def toGraphElements(element: Any): Array[GraphElement] = {
 

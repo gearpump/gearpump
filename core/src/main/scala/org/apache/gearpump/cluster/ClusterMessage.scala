@@ -63,6 +63,10 @@ object MasterToAppMaster {
   case class ResourceAllocated(allocations: Array[ResourceAllocation])
   case class AppMasterRegistered(appId: Int, master : ActorRef)
   case object ShutdownAppMaster
+  case class AppMasterData(appId: Int, appData: AppMasterInfo)
+  case class AppMasterDataRequest(appId: Int)
+  case class AppMastersData(appMasters: List[AppMasterData])
+  case class AppMastersDataRequest()
 }
 
 object AppMasterToWorker {

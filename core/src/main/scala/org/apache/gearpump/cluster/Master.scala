@@ -26,14 +26,11 @@ import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.{Constants, ActorUtil}
+import org.apache.gearpump.util.{ActorUtil, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.immutable
-import org.apache.gearpump.services.{AppMastersDataRequest, AppMasterDataRequest}
-
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
 private[cluster] class Master extends Actor with Stash {
