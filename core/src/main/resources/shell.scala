@@ -27,7 +27,8 @@ val context = ClientContext(System.getProperty("masterActorPath"))
 class Example {
   def sol(spout : Int, bolt : Int, bytesPerMessage: Int, stages: Int) = SOL.getApplication(spout, bolt, bytesPerMessage, stages)
   def wordcount(split:Int, sum:Int) = new WordCount().getApplication(split, sum)
-  def kafkawordcount(conf: Configs, spout: Int, split: Int, sum: Int) = new KafkaWordCount().getApplication(conf, spout, split, sum)
+  def kafkawordcount(conf: Configs, kafkaSpout: Int, split: Int, sum: Int, kafkaBolt: Int) =
+    new KafkaWordCount().getApplication(conf, kafkaSpout, split, sum, kafkaBolt)
 }
 
 val example = new Example

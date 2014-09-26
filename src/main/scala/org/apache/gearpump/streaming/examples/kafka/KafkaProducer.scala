@@ -18,16 +18,33 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import org.apache.gearpump.streaming.task.{TaskActor, Message}
-import org.apache.gearpump.util.Configs
+import kafka.producer.{ProducerConfig, Producer, KeyedMessage}
 
-class Split(conf: Configs) extends TaskActor(conf) {
+import scala.collection.mutable.ArrayBuffer
 
-  override def onStart() : Unit = {
+class KafkaProducer[K, V](config: ProducerConfig,
+                    topic: String,
+                    batchSize: Int) {
+
+  private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
+  private val producer = new Producer[K, V](config)
+
+  def send(key: K, msg: V): Unit = send(key, null, msg)
+
+  def send(key: K, partKey: Any, msg: V): Unit = {
+    buffer += new KeyedMessage[K, V](topic, key, partKey, msg)
+    if (buffer.size >= batchSize) {
+      flush()
+    }
   }
 
-  override def onNext(msg : Message) : Unit = {
-    msg.msg.asInstanceOf[String].split("\\s+").foreach(
-      word => output(new Message(word, System.currentTimeMillis())))
+  def flush(): Unit = {
+    producer.send(buffer: _*)
+    buffer.clear()
+  }
+
+  def close(): Unit = {
+    flush()
+    producer.close()
   }
 }

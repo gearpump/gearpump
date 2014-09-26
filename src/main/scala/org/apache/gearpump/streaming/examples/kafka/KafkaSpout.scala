@@ -56,17 +56,17 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
 
   import org.apache.gearpump.streaming.examples.kafka.KafkaSpout._
 
-
   private val config = conf.config
   private val zookeeper = config.get(ZOOKEEPER).get.asInstanceOf[String]
   private val kafkaRoot = config.get(KAFKA_ROOT).get.asInstanceOf[String]
   private val connectString = zookeeper + kafkaRoot
-  private val topic = config.get(TOPIC).get.asInstanceOf[String]
+  private val topic = config.get(CONSUMER_TOPIC).get.asInstanceOf[String]
   private val clientId = config.get(CLIENT_ID).get.asInstanceOf[String]
   private val soTimeout = config.get(SO_TIMEOUT).get.asInstanceOf[Int]
   private val bufferSize = config.get(SO_BUFFERSIZE).get.asInstanceOf[Int]
   private val fetchSize = config.get(FETCH_SIZE).get.asInstanceOf[Int]
   private val zkClient = new ZkClient(connectString, soTimeout, soTimeout, ZKStringSerializer)
+  private val batchSize = config.get(BATCH_SIZE).get.asInstanceOf[Int]
 
   val brokers = {
     ZkUtils.getAllBrokersInCluster(zkClient).map(b => Broker(b.host, b.port)).toList
@@ -76,26 +76,21 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
     val partitionPath = kafkaRoot + ZkUtils.getTopicPartitionsPath(topic)
     val numPartitions = ZkUtils.getPartitionsForTopics(zkClient, List(topic))(topic).size
     val numTasks = conf.dag.tasks(taskId.groupId).parallism
-    val partitions = 0.until(numPartitions).filter(_ % numTasks == taskId.index).toList
-    LOG.info(s"assigned partitions $partitions")
+    val id = taskId.index
+    val partitions = 0.until(numPartitions).filter(_ % numTasks == id).toList
+    LOG.info(s"spout $id assigned partitions $partitions")
     partitions
   }
 
   private val leaders: Map[Int, Broker] = partitions.map(
     p => (p, findLeader(brokers, topic, p).get)).toMap
 
-  private val nextOffsets: MutableMap[Int, Long] = {
-    val offsets = MutableMap[Int, Long]()
-    partitions.foreach(offsets.put(_, 0L))
-    offsets
-  }
-
   private val iterators: Map[Int, MessageIterator] = partitions.map(
     p => {
       val broker = leaders(p)
       val host = broker.host
       val port = broker.port
-      (p, new MessageIterator(host, port, topic, p,
+      (p, new MessageIterator(host, port, topic, p, 0L,
         soTimeout, bufferSize, fetchSize, clientId))
     }).toMap
 
@@ -105,22 +100,25 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   }
 
   override def onNext(msg: Message): Unit = {
-    partitions.foreach(fetchMessagesAndOutput(_))
-    self ! Message("continue", System.currentTimeMillis())
+    fetchMessagesAndOutput(partitions.size, batchSize)
+    self ! Message("continue", Message.noTimeStamp)
   }
 
   override def onStop(): Unit = {
     iterators.foreach(_._2.close())
   }
 
-  private def fetchMessagesAndOutput(partition: Int): Unit = {
-    val iterator = iterators(partition)
-    iterator.setOffset(nextOffsets(partition))
-    while (iterator.hasNext()) {
-      val msg = iterator.next()
-      output(new Message(msg, System.currentTimeMillis()))
+  private def fetchMessagesAndOutput(partitionNum: Int, batchSize: Int): Unit = {
+    @annotation.tailrec
+    def emit(partition: Int, num: Int): Unit = {
+      val iter = iterators(partition)
+      if (num < batchSize && iter.hasNext()) {
+        val msg = iter.next()
+        output(new Message(msg, System.currentTimeMillis()))
+        emit((partition + 1) % partitionNum, num + 1)
+      }
     }
-    nextOffsets.put(partition, iterator.getOffset())
+    emit(0, 0)
   }
 
   private def findLeader(brokers: List[Broker], topic: String, partition: Int): Option[Broker] = brokers match {
@@ -152,30 +150,13 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
       consumer.close()
     }
   }
-
-  private def getLastOffset(host: String, port: Int, topic: String, partition: Int): Long = {
-    val consumer = new SimpleConsumer(host, port, soTimeout, bufferSize, clientId)
-    val request = new OffsetRequest(Map(TopicAndPartition(topic, partition) ->
-      PartitionOffsetRequestInfo(OffsetRequest.LatestTime, 1)), clientId = clientId)
-    try {
-      val offsetResponse = consumer.getOffsetsBefore(request)
-      val offsetPartitionResponse = offsetResponse.partitionErrorAndOffsets(TopicAndPartition(topic, partition))
-
-      offsetPartitionResponse.error match {
-        case NoError => offsetPartitionResponse.offsets.head
-        case error => throw exceptionFor(error)
-      }
-    } finally {
-      consumer.close()
-    }
-  }
-
 }
 
 class MessageIterator(host: String,
                       port: Int,
                       topic: String,
                       partition: Int,
+                      startOffset: Long,
                       soTimeout: Int,
                       bufferSize: Int,
                       fetchSize: Int,
@@ -185,26 +166,35 @@ class MessageIterator(host: String,
   private val consumer = new SimpleConsumer(host, port, soTimeout, bufferSize, clientId)
   private val decoder = new StringDecoder()
 
-  private var iter: Iterator[MessageAndOffset] = null
-  private var nextOffset = 0L
-
-  def setOffset(offset: Long): Unit = {
-    nextOffset = offset
-    iter = iterator(nextOffset)
-  }
+  private var iter = iterator(startOffset)
+  private var readMessages = 0L
+  private var offset = startOffset
+  private var nextOffset = offset
 
   def getOffset(): Long = {
-    nextOffset
+    offset
   }
 
   def next(): String = {
     val mo = iter.next()
+    readMessages += 1
+    offset = mo.offset
     nextOffset = mo.nextOffset
     decoder.fromBytes(Utils.readBytes(mo.message.payload))
   }
 
-  def hasNext(): Boolean = {
-    iter.hasNext
+  @annotation.tailrec
+  final def hasNext(): Boolean = {
+    if (iter.hasNext) {
+      true
+    } else if (0 == readMessages) {
+      close()
+      false
+    } else {
+      iter = iterator(nextOffset)
+      readMessages = 0
+      hasNext()
+    }
   }
 
   def close(): Unit = {
