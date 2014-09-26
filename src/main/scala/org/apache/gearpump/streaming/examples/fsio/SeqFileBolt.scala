@@ -34,7 +34,7 @@ import scala.concurrent.duration.FiniteDuration
 
 class SeqFileBolt(config: Configs) extends TaskActor(config){
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileBolt])
-  val outputPath = new Path(config.getString(OUTPUT_PATH) + this.taskId)
+  val outputPath = new Path(config.getString(OUTPUT_PATH) + System.getProperty("file.separator") + this.taskId)
   var writer: SequenceFile.Writer = null;
   val textClass = new Text().getClass
   val key = new Text()

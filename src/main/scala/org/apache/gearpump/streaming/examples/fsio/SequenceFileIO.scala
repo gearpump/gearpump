@@ -28,11 +28,11 @@ import org.apache.hadoop.conf.Configuration
 object SequenceFileIO extends App with ArgumentsParser{
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
-    "seqspout"-> CLIOption[Int]("<spout number>", required = false, defaultValue = Some(2)),
-    "seqbolt"-> CLIOption[Int]("<bolt number>", required = false, defaultValue = Some(2)),
+    "source"-> CLIOption[Int]("<sequence file reader number>", required = false, defaultValue = Some(2)),
+    "sink"-> CLIOption[Int]("<sequence file writer number>", required = false, defaultValue = Some(2)),
     "runseconds" -> CLIOption[Int]("<run seconds>", required = false, defaultValue = Some(60)),
     "input"-> CLIOption[String]("<input file path>", required = true),
-    "output"-> CLIOption[String]("<output path>", required = true)
+    "output"-> CLIOption[String]("<output file directory>", required = true)
   )
 
   start()
@@ -41,8 +41,8 @@ object SequenceFileIO extends App with ArgumentsParser{
     val config = parse(args)
 
     val masters = config.getString("master")
-    val spout = config.getInt("seqspout")
-    val bolt = config.getInt("seqbolt")
+    val spout = config.getInt("source")
+    val bolt = config.getInt("sink")
     val runseconds = config.getInt("runseconds")
     val input = config.getString("input")
     val output = config.getString("output")
@@ -66,7 +66,7 @@ object SequenceFileIO extends App with ArgumentsParser{
     val partitioner = new ShufflePartitioner()
     val spout = TaskDescription(classOf[SeqFileSpout], spoutNum)
     val bolt = TaskDescription(classOf[SeqFileBolt], boltNum)
-    val app = AppDescription("SeqFileReadWrite", config, Graph(spout ~ partitioner ~> bolt))
+    val app = AppDescription("SequenceFileIO", config, Graph(spout ~ partitioner ~> bolt))
     app
   }
 }

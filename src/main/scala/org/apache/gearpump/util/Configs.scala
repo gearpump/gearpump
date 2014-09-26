@@ -84,7 +84,7 @@ object Configs {
 
   def apply(config : Map[String, _]) = new Configs(config)
 
-  def serializeHadoopConf(conf: Configuration) : Array[Byte] = {
+  private def serializeHadoopConf(conf: Configuration) : Array[Byte] = {
     val out = new ByteArrayOutputStream()
     val dataout = new DataOutputStream(out)
     conf.write(dataout)
@@ -92,7 +92,7 @@ object Configs {
     out.toByteArray
   }
 
-  def deserializeHadoopConf(bytes: Array[Byte]) : Configuration = {
+  private def deserializeHadoopConf(bytes: Array[Byte]) : Configuration = {
     val in = new ByteArrayInputStream(bytes)
     val datain = new DataInputStream(in)
     val result= new Configuration()
