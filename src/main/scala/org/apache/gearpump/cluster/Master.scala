@@ -31,7 +31,7 @@ import org.apache.gearpump.util.{Constants, ActorUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.immutable
-import org.apache.gearpump.services.AppMasterDataRequest
+import org.apache.gearpump.services.{AppMastersDataRequest, AppMasterDataRequest}
 
 import scala.annotation.tailrec
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -81,6 +81,9 @@ private[cluster] class Master extends Actor with Stash {
     case registerAppMaster : RegisterAppMaster =>
       //forward to appManager
       appManager forward registerAppMaster
+    case appMastersDataRequest: AppMastersDataRequest =>
+      LOG.info("Master received AppMastersDataRequest")
+      appManager forward appMastersDataRequest
     case appMasterDataRequest: AppMasterDataRequest =>
       LOG.info("Master received AppMasterDataRequest")
       appManager forward appMasterDataRequest
