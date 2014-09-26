@@ -20,12 +20,14 @@ scalacOptions ++= Seq(
 packSettings
 
 packMain := Map("sol" -> "org.apache.gearpump.streaming.examples.sol.SOL",
-                "wordcount" -> "org.apache.gearpump.streaming.examples.wordcount.WordCount")
+                "wordcount" -> "org.apache.gearpump.streaming.examples.wordcount.WordCount",
+                "fsio" -> "org.apache.gearpump.streaming.examples.fsio.SequenceFileIO")
 				
 packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
 		
 packExtraClasspath := Map("sol" -> Seq("${PROG_HOME}/conf"),
-                          "wordcount" -> Seq("${PROG_HOME}/conf"))
+                          "wordcount" -> Seq("${PROG_HOME}/conf"),
+			  "fs" -> Seq("${PROG_HOME}/conf"))
 
 resolvers ++= Seq(
   "maven-repo" at "http://repo.maven.apache.org/maven2",
