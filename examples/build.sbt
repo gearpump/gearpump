@@ -8,7 +8,7 @@ version := "0.1"
 
 organization := "com.github.intel-hadoop"
 
-val scalaVersionNumber = "2.11.2"
+val scalaVersionNumber = "2.10.4"
 
 scalaVersion := scalaVersionNumber
 

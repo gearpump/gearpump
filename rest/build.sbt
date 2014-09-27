@@ -8,7 +8,7 @@ version := "0.1"
 
 organization := "com.github.intel-hadoop"
 
-val scalaVersionNumber = "2.11.2"
+val scalaVersionNumber = "2.10.4"
 
 scalaVersion := scalaVersionNumber
 
@@ -39,6 +39,19 @@ parallelExecution in Test := false
 
 val gearpumpCoreVersion = "0.1"
 
+val sprayVersion = "1.3.1"
+val sprayJsonVersion = "1.2.6"
+
 libraryDependencies ++= Seq(
+  "io.spray" %%  "spray-can"       % sprayVersion,
+  "io.spray" %%  "spray-routing"   % sprayVersion,
+  "io.spray" %%  "spray-testkit"   % sprayVersion,
+  "io.spray" %%  "spray-httpx"     % sprayVersion,
+  "io.spray" %%  "spray-client"    % sprayVersion,
+  "io.spray" %%  "spray-json"    % sprayJsonVersion,
+  "com.gettyimages" %% "spray-swagger" % "0.4.3" excludeAll( ExclusionRule(organization = "org.json4s"), ExclusionRule(organization = "io.spray") ),
+  "org.json4s" %% "json4s-jackson" % "3.2.10",
+  "org.json4s" %% "json4s-native"   % "3.2.10",
+  "org.webjars" % "swagger-ui" % "2.0.21",
   "com.github.intel-hadoop" %% "gearpump-core" % gearpumpCoreVersion
 )

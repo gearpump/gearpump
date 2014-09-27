@@ -8,7 +8,7 @@ version := "0.1"
 
 organization := "com.github.intel-hadoop"
 
-val scalaVersionNumber = "2.11.2"
+val scalaVersionNumber = "2.10.4"
 
 scalaVersion := scalaVersionNumber
 
@@ -16,6 +16,8 @@ scalacOptions ++= Seq(
   "-Yclosure-elim",
   "-Yinline"
 )
+
+crossScalaVersions := Seq("2.10.4", "2.11.2")
 
 packSettings
 
@@ -84,9 +86,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
   "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
   "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion,
-  "com.github.patriknw" %% "akka-data-replication" % "0.6",
-  "org.json4s" %% "json4s-jackson" % "3.2.10",
-  "org.json4s" %% "json4s-native"   % "3.2.10",
-  "org.webjars" % "swagger-ui" % "2.0.21",
-  "com.github.intel-hadoop" %% "gearpump-examples" % gearpumpExamplesVersion
+  "com.github.patriknw" %% "akka-data-replication" % "0.4"
+//  "com.github.intel-hadoop" %% "gearpump-examples" % gearpumpExamplesVersion
 )
