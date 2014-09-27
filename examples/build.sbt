@@ -44,5 +44,6 @@ parallelExecution in Test := false
 val gearpumpCoreVersion = "0.1"
 
 libraryDependencies ++= Seq(
+  "org.apache.hadoop" % "hadoop-common" % "2.4.1",
   "com.github.intel-hadoop" %% "gearpump-core" % gearpumpCoreVersion
 )

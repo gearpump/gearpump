@@ -18,15 +18,12 @@
 
 package org.apache.gearpump.util
 
-import java.io.{DataInputStream, ByteArrayInputStream, DataOutputStream, ByteArrayOutputStream}
-
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
 import org.apache.gearpump.scheduler.Resource
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Constants._
-import org.apache.hadoop.conf.Configuration
 
 /**
  * Immutable configuration
@@ -75,8 +72,6 @@ class Configs(val config: Map[String, _])  extends Serializable{
   def withDag(taskDag : DAG) = withValue(TASK_DAG, taskDag)
   def dag : DAG = config.getAnyRef(TASK_DAG).asInstanceOf[DAG]
 
-  def withHadoopConf(conf : Configuration) = withValue(HADOOP_CONF, Configs.serializeHadoopConf(conf))
-  def hadoopConf : Configuration = Configs.deserializeHadoopConf(config.getAnyRef(HADOOP_CONF).asInstanceOf[Array[Byte]])
 }
 
 object Configs {
@@ -84,22 +79,6 @@ object Configs {
 
   def apply(config : Map[String, _]) = new Configs(config)
 
-  private def serializeHadoopConf(conf: Configuration) : Array[Byte] = {
-    val out = new ByteArrayOutputStream()
-    val dataout = new DataOutputStream(out)
-    conf.write(dataout)
-    dataout.close()
-    out.toByteArray
-  }
-
-  private def deserializeHadoopConf(bytes: Array[Byte]) : Configuration = {
-    val in = new ByteArrayInputStream(bytes)
-    val datain = new DataInputStream(in)
-    val result= new Configuration()
-    result.readFields(datain)
-    datain.close()
-    result
-  }
 
   //for production
   val SYSTEM_DEFAULT_CONFIG = ConfigFactory.load()
@@ -122,7 +101,7 @@ object Configs {
     }
   }
 
-  private implicit class MapHelper(config: Map[String, _]) {
+  implicit class MapHelper(config: Map[String, _]) {
     def getInt(key : String) : Int = {
       config.get(key).get.asInstanceOf[Int]
     }

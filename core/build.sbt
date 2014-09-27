@@ -88,6 +88,5 @@ libraryDependencies ++= Seq(
   "org.json4s" %% "json4s-jackson" % "3.2.10",
   "org.json4s" %% "json4s-native"   % "3.2.10",
   "org.webjars" % "swagger-ui" % "2.0.21",
-  "org.apache.hadoop" % "hadoop-common" % "2.4.1",
   "com.github.intel-hadoop" %% "gearpump-examples" % gearpumpExamplesVersion
 )

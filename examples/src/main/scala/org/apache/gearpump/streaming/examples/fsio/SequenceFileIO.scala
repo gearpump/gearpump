@@ -62,7 +62,7 @@ object SequenceFileIO extends App with ArgumentsParser{
   }
 
   def getApplication(spoutNum : Int, boltNum : Int, input : String, output : String) : AppDescription = {
-    val config = Configs.empty.withValue(SeqFileSpout.INPUT_PATH, input).withValue(SeqFileBolt.OUTPUT_PATH, output).withHadoopConf(new Configuration())
+    val config = HadoopConfig.empty.withValue(SeqFileSpout.INPUT_PATH, input).withValue(SeqFileBolt.OUTPUT_PATH, output).withHadoopConf(new Configuration())
     val partitioner = new ShufflePartitioner()
     val spout = TaskDescription(classOf[SeqFileSpout], spoutNum)
     val bolt = TaskDescription(classOf[SeqFileBolt], boltNum)

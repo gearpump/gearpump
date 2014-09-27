@@ -27,7 +27,7 @@ import org.apache.hadoop.io.Text
 import org.apache.gearpump.streaming.examples.fsio.SeqFileSpout._
 import org.slf4j.{LoggerFactory, Logger}
 
-class SeqFileSpout(config: Configs) extends TaskActor(config ){
+class SeqFileSpout(config: HadoopConfig) extends TaskActor(config ){
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileSpout])
   val value = new Text()
   val key = new Text()
