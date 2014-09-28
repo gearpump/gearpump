@@ -16,19 +16,27 @@
  * limitations under the License.
  */
 
-import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.examples.kafka.KafkaWordCount
-import org.apache.gearpump.streaming.examples.sol._
-import org.apache.gearpump.streaming.examples.wordcount.WordCount
-import org.apache.gearpump.util.Configs
+package org.apache.gearpump.streaming.examples.kafka
 
-val context = ClientContext(System.getProperty("masterActorPath"))
+object KafkaConstants {
 
-class Example {
-  def sol(spout : Int, bolt : Int, bytesPerMessage: Int, stages: Int) = SOL.getApplication(spout, bolt, bytesPerMessage, stages)
-  def wordcount(split:Int, sum:Int) = new WordCount().getApplication(split, sum)
-  def kafkawordcount(conf: Configs, kafkaSpout: Int, split: Int, sum: Int, kafkaBolt: Int) =
-    new KafkaWordCount().getApplication(conf, kafkaSpout, split, sum, kafkaBolt)
+  // consumer configs
+  val ZOOKEEPER = "zookeeper"
+  val KAFKA_ROOT = "kafka_root"
+  val CONSUMER_TOPIC = "consumer_topic"
+  val CLIENT_ID = "client_id"
+  val SO_TIMEOUT = "socket.timeout.ms"
+  val SO_BUFFERSIZE = "socket.receive.buffer.size"
+  val FETCH_SIZE = "fetch.message.max.bytes"
+
+  // producer configs
+  val PRODUCER_TOPIC = "producer_topic"
+  val BROKER_LIST = "metadata.broker.list"
+  val PRODUCER_TYPE = "producer.type"
+  val SERIALIZER_CLASS = "serializer.class"
+  val REQUIRED_ACKS = "request.required.acks"
+
+
+  // message configs
+  val BATCH_SIZE = "batch_size"
 }
-
-val example = new Example

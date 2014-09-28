@@ -16,19 +16,35 @@
  * limitations under the License.
  */
 
-import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.examples.kafka.KafkaWordCount
-import org.apache.gearpump.streaming.examples.sol._
-import org.apache.gearpump.streaming.examples.wordcount.WordCount
-import org.apache.gearpump.util.Configs
+package org.apache.gearpump.streaming.examples.kafka
 
-val context = ClientContext(System.getProperty("masterActorPath"))
+import kafka.producer.{ProducerConfig, Producer, KeyedMessage}
 
-class Example {
-  def sol(spout : Int, bolt : Int, bytesPerMessage: Int, stages: Int) = SOL.getApplication(spout, bolt, bytesPerMessage, stages)
-  def wordcount(split:Int, sum:Int) = new WordCount().getApplication(split, sum)
-  def kafkawordcount(conf: Configs, kafkaSpout: Int, split: Int, sum: Int, kafkaBolt: Int) =
-    new KafkaWordCount().getApplication(conf, kafkaSpout, split, sum, kafkaBolt)
+import scala.collection.mutable.ArrayBuffer
+
+class KafkaProducer[K, V](config: ProducerConfig,
+                    topic: String,
+                    batchSize: Int) {
+
+  private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
+  private val producer = new Producer[K, V](config)
+
+  def send(key: K, msg: V): Unit = send(key, null, msg)
+
+  def send(key: K, partKey: Any, msg: V): Unit = {
+    buffer += new KeyedMessage[K, V](topic, key, partKey, msg)
+    if (buffer.size >= batchSize) {
+      flush()
+    }
+  }
+
+  def flush(): Unit = {
+    producer.send(buffer: _*)
+    buffer.clear()
+  }
+
+  def close(): Unit = {
+    flush()
+    producer.close()
+  }
 }
-
-val example = new Example
