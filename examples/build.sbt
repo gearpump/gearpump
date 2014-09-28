@@ -21,7 +21,8 @@ packSettings
 
 packMain := Map("sol" -> "org.apache.gearpump.streaming.examples.sol.SOL",
                 "wordcount" -> "org.apache.gearpump.streaming.examples.wordcount.WordCount",
-                "fsio" -> "org.apache.gearpump.streaming.examples.fsio.SequenceFileIO")
+                "fsio" -> "org.apache.gearpump.streaming.examples.fsio.SequenceFileIO",
+                "kafkawordcount" -> "org.apache.gearpump.streaming.examples.kafka.KafkaWordCount")
 				
 packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
 		
@@ -45,5 +46,6 @@ val gearpumpCoreVersion = "0.1"
 
 libraryDependencies ++= Seq(
   "org.apache.hadoop" % "hadoop-common" % "2.4.1",
-  "com.github.intel-hadoop" %% "gearpump-core" % gearpumpCoreVersion
+  "com.github.intel-hadoop" %% "gearpump-core" % gearpumpCoreVersion,
+  "org.apache.kafka" %% "kafka" % "0.8.1.1"
 )
