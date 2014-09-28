@@ -4,7 +4,7 @@
 GearPump
 ========
 
-![](https://raw.githubusercontent.com/clockfly/gearpump/master/project/logo/logo.png)
+![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
 
 
 A Actor Driven streaming framework. The idea is inspired by MillWheel, Storm, spark streaming, and SAMZA.
@@ -20,7 +20,7 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
   ## Build Gearpump
   sbt clean pack
   ```
-  This will generate scripts under target/pack/bin
+  This will generate scripts under core/target/pack/bin, examples/target/pack/bin and rest/target/pack/bin
 
 ##How to Package for distribution
   ```bash
@@ -32,9 +32,9 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
 ##How to Install to /usr/local
   ```bash
   ## Run Build step above
-  cd target/pack
+  cd core/target/pack
   sudo make install PREFIX="/usr/local"
-  This will install scripts to /usr/local/bin and jars to /usr/local/lib.
+  This will install scripts to run local, master or shell to /usr/local/bin and jars to /usr/local/lib.
   ```
 
 ###Local Mode
@@ -42,7 +42,7 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
 1. Start Local Cluster in same process
   ```bash
   ## By default, it will create 4 workers
-  target/pack/bin/local -port 3000
+  core/target/pack/bin/local -port 3000
   ```
 
 2. Start WordCount Example
@@ -124,7 +124,7 @@ After than, you need to configure the conf/application.conf
 	gearpump.metrics.graphite.port = 2003   ## Your graphite port
 	gearpump.metrics.sample.rate = 10        ## this means we will sample 1 message for every 10 messages
 	```
-For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in [dashboard/README.md](dashboard/README.md)
+For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in [doc/dashboard/README.md](doc/dashboard/README.md)
 
 Here is how it looks like for grafana dashboard:
 
