@@ -16,19 +16,18 @@
  * limitations under the License.
  */
 
-import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.examples.kafka.KafkaWordCount
-import org.apache.gearpump.streaming.examples.sol._
-import org.apache.gearpump.streaming.examples.wordcount.WordCount
+package org.apache.gearpump.streaming.examples.kafka
+
+import org.apache.gearpump.streaming.task.{TaskActor, Message}
 import org.apache.gearpump.util.Configs
 
-val context = ClientContext(System.getProperty("masterActorPath"))
+class Split(conf: Configs) extends TaskActor(conf) {
 
-class Example {
-  def sol(spout : Int, bolt : Int, bytesPerMessage: Int, stages: Int) = SOL.getApplication(spout, bolt, bytesPerMessage, stages)
-  def wordcount(split:Int, sum:Int) = new WordCount().getApplication(split, sum)
-  def kafkawordcount(conf: Configs, kafkaSpout: Int, split: Int, sum: Int, kafkaBolt: Int) =
-    new KafkaWordCount().getApplication(conf, kafkaSpout, split, sum, kafkaBolt)
+  override def onStart() : Unit = {
+  }
+
+  override def onNext(msg : Message) : Unit = {
+    msg.msg.asInstanceOf[String].split("\\s+").foreach(
+      word => output(new Message(word, System.currentTimeMillis())))
+  }
 }
-
-val example = new Example
