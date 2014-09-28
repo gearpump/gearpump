@@ -73,41 +73,9 @@ class AppMaster (config : Configs) extends Actor {
 
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
-
     val dag = DAG(appDescription.dag)
-    val schedules = Configs.loadUserAllocation(ConfigFactory.parseFile(new File("/root/application.conf")))
-    var scheduledTaskClass = Set.empty[String]
-    schedules.foreach(params => {
-      val (workerid, taskDescription) = params
-      scheduledTaskClass += taskDescription.taskClass.getName
-      userConfigTask.put(workerid , mutable.Queue.empty[(TaskId, TaskDescription, DAG)])
-    })
 
-    var unScheculedTask = Array.empty[(TaskId, TaskDescription, DAG)]
-    dag.tasks.foreach { params =>
-      val (taskGroupId, taskDescription) = params
-      if (scheduledTaskClass.contains(taskDescription.taskClass.getName)) {
-        schedules.filter(_._2.taskClass.equals(taskDescription.taskClass)).map(workerWithTask => {
-          0.until(workerWithTask._2.parallism).map((taskIndex: Int) => {
-            val taskId = TaskId(taskGroupId, taskIndex)
-            userConfigTask(workerWithTask._1).enqueue((taskId, taskDescription, dag.subGraph(taskGroupId)))
-            LOG.info("workerQueue in queue  " + taskDescription.taskClass.getName)
-            totalTaskCount += 1
-          })
-        })
-      }else {
-        0.until(taskDescription.parallism).map((taskIndex: Int) => {
-          val taskId = TaskId(taskGroupId, taskIndex)
-          totalTaskCount += 1
-          unScheculedTask = unScheculedTask :+ (taskId, taskDescription, dag.subGraph(taskGroupId))
-          LOG.info("normal Task" + taskDescription.taskClass.getName +"   " + taskDescription.parallism)
-        })
-      }
-    }
-
-    taskQueue ++= unScheculedTask.sortBy(_._1.index)
-    LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
-
+    initTaskQueues()
     LOG.info("Initializing Clock service ....")
     clockService = context.actorOf(Props(classOf[ClockService], dag))
   
@@ -123,10 +91,8 @@ class AppMaster (config : Configs) extends Actor {
       userConfigTask.foreach(params => {
         val (worker, tasks) = params
         resourceRequest = resourceRequest :+ ResourceRequest(Resource(tasks.size), worker = WorkerInfo(worker))
-        LOG.info("request " + tasks.size + "tasks on worker " + worker)
       })
       resourceRequest = resourceRequest :+ ResourceRequest(Resource(taskQueue.size))
-      LOG.info("normal request" + taskQueue.size + "===")
 
       master ! RequestResource(appId, resourceRequest)
       killSelf.cancel()
@@ -211,9 +177,9 @@ class AppMaster (config : Configs) extends Actor {
       //watch for executor termination
       context.watch(executor)
       var queue : Queue[(TaskId, TaskDescription, DAG)] = null
-      if(userConfigTask.contains(worker.id) && !userConfigTask.get(worker.id).isEmpty){
+      if (userConfigTask.contains(worker.id) && !userConfigTask.get(worker.id).isEmpty) {
         queue = userConfigTask.get(worker.id).get
-      }else {
+      } else {
         queue = taskQueue
       }
 
@@ -282,6 +248,38 @@ class AppMaster (config : Configs) extends Actor {
       }
     }
     return false
+  }
+
+  private def initTaskQueues() = {
+    val dag = DAG(appDescription.dag)
+    val schedules = Configs.loadUserAllocation(ConfigFactory.empty())
+    var scheduledTaskClass = Set.empty[String]
+    schedules.foreach(params => {
+      val (workerid, taskDescription) = params
+      scheduledTaskClass += taskDescription.taskClass.getName
+      userConfigTask.put(workerid , mutable.Queue.empty[(TaskId, TaskDescription, DAG)])
+    })
+
+    var unScheculedTask = Array.empty[(TaskId, TaskDescription, DAG)]
+    dag.tasks.foreach { params =>
+      val (taskGroupId, taskDescription) = params
+      if (scheduledTaskClass.contains(taskDescription.taskClass.getName)) {
+        schedules.filter(_._2.taskClass.equals(taskDescription.taskClass)).map(workerWithTask => {
+          0.until(workerWithTask._2.parallism).map((taskIndex: Int) => {
+            val taskId = TaskId(taskGroupId, taskIndex)
+            userConfigTask(workerWithTask._1).enqueue((taskId, taskDescription, dag.subGraph(taskGroupId)))
+            totalTaskCount += 1
+          })
+        })
+      }else {
+        0.until(taskDescription.parallism).map((taskIndex: Int) => {
+          val taskId = TaskId(taskGroupId, taskIndex)
+          totalTaskCount += 1
+          unScheculedTask = unScheculedTask :+ (taskId, taskDescription, dag.subGraph(taskGroupId))
+        })
+      }
+    }
+    taskQueue ++= unScheculedTask.sortBy(_._1.index)
   }
 }
 

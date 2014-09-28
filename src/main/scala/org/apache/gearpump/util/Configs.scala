@@ -144,16 +144,17 @@ object Configs {
   def loadUserAllocation(config: Config) : Array[(Int, TaskDescription)] ={
     import scala.collection.JavaConverters._
     var result = new Array[(Int, TaskDescription)](0)
-    val allocations = config.getObject("gearpump.scheduler.allocations")
+    if(!config.hasPath(Constants.GEARPUMP_SCHEDULING_REQUEST))
+      return result
+    val allocations = config.getObject(Constants.GEARPUMP_SCHEDULING_REQUEST)
     if(allocations == null)
-      result
+      return result
     for(worker <- allocations.keySet().asScala.toSet[String]){
       val tasks = allocations.get(worker).unwrapped().asInstanceOf[util.HashMap[String, Object]]
       for( taskClass <- tasks.keySet().asScala.toSet[String]){
         val taskClazz = Class.forName(taskClass).asInstanceOf[Class[Actor]]
-        result = result :+ (worker.toInt, TaskDescription(taskClazz, 2))
-        //val resources = tasks.get(taskClass).asInstanceOf[util.HashMap[String, Int]]
-        //for(resource <- resources.keySet().asScala.toSet[String] ){
+        val parallism = tasks.get(taskClass).asInstanceOf[Int]
+        result = result :+ (worker.toInt, TaskDescription(taskClazz, parallism))
       }
     }
     result
