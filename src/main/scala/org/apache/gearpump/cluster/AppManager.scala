@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.services.{AppMasterData, AppMasterDataRequest, AppMastersData, AppMastersDataRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
@@ -211,7 +211,7 @@ private[cluster] object AppManager {
     val systemConfig = context.system.settings.config
 
     val master = context.actorSelection("../../")
-    master ! RequestResource(appId, ResourceRequest(Resource(1)))
+    master ! RequestResource(appId, Array(ResourceRequest(Resource(1))))
     LOG.info(s"AppManager asking Master for resource for app $appId...")
 
     def receive : Receive = waitForResourceAllocation
@@ -220,15 +220,15 @@ private[cluster] object AppManager {
       case ResourceAllocated(allocations) => {
         LOG.info(s"Resource allocated for appMaster $app Id")
         val allocation = allocations(0)
-        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
+        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker.actorRef)).withExecutorId(masterExecutorId).withResource(allocation.resource)
         LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
 
         val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
 
-        allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
-        context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))
+        allocation.worker.actorRef ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
+        context.become(waitForActorSystemToStart(allocation.worker.actorRef, appMasterConfig))
       }
     }
 

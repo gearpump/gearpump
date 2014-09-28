@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.util.{ActorUtil, ProcessLogRedirector}
-import org.apache.gearpump.scheduler.Resource
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration._
@@ -57,7 +57,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       master = sender
       context.watch(master)
       LOG.info(s"Worker $id Registered ....")
-      sender ! ResourceUpdate(id, resource)
+      sender ! ResourceUpdate(WorkerInfo(id, self), resource)
       context.become(appMasterMsgHandler orElse terminationWatch(master) orElse ActorUtil.defaultMsgHandler(self))
   }
 
@@ -83,7 +83,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
         resource = resource.subtract(launch.resource)
         allocatedResource = allocatedResource + (executor -> launch.resource)
-        master ! ResourceUpdate(id, resource)
+        master ! ResourceUpdate(WorkerInfo(id, self), resource)
         context.watch(executor)
       }
   }
@@ -108,7 +108,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         if (allocated.isDefined) {
           resource = resource.add(allocated.get)
           allocatedResource = allocatedResource - actor
-          master ! ResourceUpdate(id, resource)
+          master ! ResourceUpdate(WorkerInfo(id, self), resource)
         }
       }
   }
@@ -156,6 +156,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
     context.system.shutdown()
   }
 }
+
+case class WorkerInfo(id : Int, actorRef : ActorRef = null)
 
 private[cluster] object Worker {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Worker])

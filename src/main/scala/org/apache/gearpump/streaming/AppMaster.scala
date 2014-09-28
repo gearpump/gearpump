@@ -19,16 +19,18 @@
 package org.apache.gearpump.streaming
 
 import java.util.concurrent.TimeUnit
+import java.io.File
 
 import akka.actor._
 import akka.remote.RemoteScope
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
+import org.apache.gearpump.cluster.scheduler.{ResourceRequest, ResourceAllocation, Resource}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
@@ -37,7 +39,8 @@ import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorS
 import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable.Queue
+import scala.collection.mutable
+import scala.collection.mutable.{Queue, HashMap}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class AppMaster (config : Configs) extends Actor {
@@ -57,6 +60,7 @@ class AppMaster (config : Configs) extends Actor {
 
   private val name = appDescription.name
   private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
+  private val userConfigTask = new HashMap[Int, Queue[(TaskId, TaskDescription, DAG)]]()
 
   private var clockService : ActorRef = null
 
@@ -71,20 +75,37 @@ class AppMaster (config : Configs) extends Actor {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
 
     val dag = DAG(appDescription.dag)
+    val schedules = Configs.loadUserAllocation(ConfigFactory.parseFile(new File("/root/application.conf")))
+    var scheduledTaskClass = Set.empty[String]
+    schedules.foreach(params => {
+      val (workerid, taskDescription) = params
+      scheduledTaskClass += taskDescription.taskClass.getName
+      userConfigTask.put(workerid , mutable.Queue.empty[(TaskId, TaskDescription, DAG)])
+    })
 
-    //scheduler the task fairly on every machine
-    val tasks = dag.tasks.flatMap { params =>
+    var unScheculedTask = Array.empty[(TaskId, TaskDescription, DAG)]
+    dag.tasks.foreach { params =>
       val (taskGroupId, taskDescription) = params
-      0.until(taskDescription.parallism).map((taskIndex: Int) => {
-        val taskId = TaskId(taskGroupId, taskIndex)
-        val nextGroupId = taskGroupId + 1
-        (taskId, taskDescription, dag.subGraph(taskGroupId))
-      })
-    }.toArray.sortBy(_._1.index)
+      if (scheduledTaskClass.contains(taskDescription.taskClass.getName)) {
+        schedules.filter(_._2.taskClass.equals(taskDescription.taskClass)).map(workerWithTask => {
+          0.until(workerWithTask._2.parallism).map((taskIndex: Int) => {
+            val taskId = TaskId(taskGroupId, taskIndex)
+            userConfigTask(workerWithTask._1).enqueue((taskId, taskDescription, dag.subGraph(taskGroupId)))
+            LOG.info("workerQueue in queue  " + taskDescription.taskClass.getName)
+            totalTaskCount += 1
+          })
+        })
+      }else {
+        0.until(taskDescription.parallism).map((taskIndex: Int) => {
+          val taskId = TaskId(taskGroupId, taskIndex)
+          totalTaskCount += 1
+          unScheculedTask = unScheculedTask :+ (taskId, taskDescription, dag.subGraph(taskGroupId))
+          LOG.info("normal Task" + taskDescription.taskClass.getName +"   " + taskDescription.parallism)
+        })
+      }
+    }
 
-    totalTaskCount = tasks.size
-    taskQueue ++= tasks
-
+    taskQueue ++= unScheculedTask.sortBy(_._1.index)
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
 
     LOG.info("Initializing Clock service ....")
@@ -98,8 +119,16 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"AppMasterRegistered received for appID: $appId")
 
       LOG.info("Sending request resource to master...")
-      master ! RequestResource(appId, ResourceRequest(Resource(taskQueue.size)))
+      var resourceRequest = Array.empty[ResourceRequest]
+      userConfigTask.foreach(params => {
+        val (worker, tasks) = params
+        resourceRequest = resourceRequest :+ ResourceRequest(Resource(tasks.size), worker = WorkerInfo(worker))
+        LOG.info("request " + tasks.size + "tasks on worker " + worker)
+      })
+      resourceRequest = resourceRequest :+ ResourceRequest(Resource(taskQueue.size))
+      LOG.info("normal request" + taskQueue.size + "===")
 
+      master ! RequestResource(appId, resourceRequest)
       killSelf.cancel()
       this.master = master
       context.watch(master)
@@ -116,9 +145,9 @@ class AppMaster (config : Configs) extends Actor {
 
       groupedResource.map((workerAndResources) => {
         val (worker, resource) = workerAndResources
-        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
-        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource)
-        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig))
+        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker ${worker.id}")
+        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withWorkerInfo(worker)
+        context.actorOf(Props(classOf[ExecutorLauncher], worker.actorRef, appId, currentExecutorId, resource, executorConfig))
         currentExecutorId += 1
       })
     }
@@ -171,20 +200,26 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def selfMsgHandler : Receive = {
-    case LaunchExecutorActor(conf : Props, executorId : Int, daemon : ActorRef, worker : ActorRef) =>
+    case LaunchExecutorActor(conf : Props, executorId : Int, daemon : ActorRef) =>
       val executor = context.actorOf(conf, executorId.toString)
       daemon ! BindLifeCycle(executor)
   }
 
   def workerMsgHandler : Receive = {
-    case RegisterExecutor(executor, executorId, resource) => {
+    case RegisterExecutor(executor, executorId, resource, worker) => {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
+      var queue : Queue[(TaskId, TaskDescription, DAG)] = null
+      if(userConfigTask.contains(worker.id) && !userConfigTask.get(worker.id).isEmpty){
+        queue = userConfigTask.get(worker.id).get
+      }else {
+        queue = taskQueue
+      }
 
       def launchTask(remainResources: Resource): Unit = {
-        if (remainResources.greaterThan(Resource.empty) && !taskQueue.isEmpty) {
-          val (taskId, taskDescription, dag) = taskQueue.dequeue()
+        if (remainResources.greaterThan(Resource.empty) && !queue.isEmpty) {
+          val (taskId, taskDescription, dag) = queue.dequeue()
           //Launch task
 
           LOG.info("Sending Launch Task to executor: " + executor.toString())
@@ -274,10 +309,10 @@ object AppMaster {
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
         val executorProps = Props(classOf[Executor], executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
         sender ! BindLifeCycle(worker)
-        context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender, worker)
+        context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender)
         context.stop(self)
     }
   }
 
-  case class LaunchExecutorActor(executorConfig : Props, executorId : Int, daemon: ActorRef, worker : ActorRef)
+  case class LaunchExecutorActor(executorConfig : Props, executorId : Int, daemon: ActorRef)
 }

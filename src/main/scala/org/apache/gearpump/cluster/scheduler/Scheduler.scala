@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.scheduler
+package org.apache.gearpump.cluster.scheduler
 
 import akka.actor.{ActorRef, Actor}
-import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
+import org.apache.gearpump.cluster.WorkerInfo
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import org.slf4j.{LoggerFactory, Logger}
 
@@ -28,29 +28,29 @@ import scala.collection.mutable
 
 abstract class Scheduler extends Actor{
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Scheduler])
-  protected var resources = new mutable.HashMap[ActorRef, Resource]
+  protected var resources = new mutable.HashMap[WorkerInfo, Resource]
 
   def handleScheduleMessage : Receive = {
     case WorkerRegistered(id) =>
-      val worker = sender()
-      if(!resources.contains(worker)) {
+      val workerInfo = WorkerInfo(id, sender())
+      if(!resources.contains(workerInfo)) {
         LOG.info(s"Worker $id added to the scheduler")
-        resources.put(worker, Resource.empty)
+        resources.put(workerInfo, Resource.empty)
       }
-    case ResourceUpdate(id, resource) =>
-      LOG.info(s"Resource update id: $id, slots: ${resource.slots}....")
-      val current = sender()
-      if(resources.contains(current)) {
-        resources.update(current, resource)
+    case ResourceUpdate(worker, resource) =>
+      LOG.info(s"Resource update id: ${worker.id}, slots: ${resource.slots}....")
+      if(resources.contains(worker)) {
+        resources.update(worker, resource)
         allocateResource()
       }
       else {
-        current ! UpdateResourceFailed(s"ResourceUpdate failed! The worker $id has not been registered into master")
+        worker.actorRef ! UpdateResourceFailed(s"ResourceUpdate failed! The worker ${worker.id} has not been registered into master")
       }
     case WorkerTerminated(actor) =>
-      if(resources.contains(actor)){
-        resources -= actor
-      }
+      resources = resources.filter( params => {
+        val (workerInfo, _) = params
+        workerInfo.actorRef != actor
+      })
   }
 
   def allocateResource(): Unit

@@ -19,11 +19,13 @@
 package org.apache.gearpump.util
 
 import java.io.{DataInputStream, ByteArrayInputStream, DataOutputStream, ByteArrayOutputStream}
+import java.util
 
-import akka.actor.ActorRef
-import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
-import org.apache.gearpump.scheduler.Resource
+import akka.actor.{Actor, ActorRef}
+import com.typesafe.config.{ConfigFactory, Config}
+import org.apache.gearpump.cluster.{WorkerInfo, AppMasterRegisterData, Application}
+import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.streaming.TaskDescription
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Constants._
 import org.apache.hadoop.conf.Configuration
@@ -77,6 +79,9 @@ class Configs(val config: Map[String, _])  extends Serializable{
 
   def withHadoopConf(conf : Configuration) = withValue(HADOOP_CONF, Configs.serializeHadoopConf(conf))
   def hadoopConf : Configuration = Configs.deserializeHadoopConf(config.getAnyRef(HADOOP_CONF).asInstanceOf[Array[Byte]])
+
+  def withWorkerInfo(info : WorkerInfo) = withValue(WORKER_INFO, info)
+  def workerInfo : WorkerInfo = config.getAnyRef(WORKER_INFO).asInstanceOf[WorkerInfo]
 }
 
 object Configs {
@@ -134,5 +139,23 @@ object Configs {
     def getResource(key : String) : Resource = {
       config.get(key).get.asInstanceOf[Resource]
     }
+  }
+
+  def loadUserAllocation(config: Config) : Array[(Int, TaskDescription)] ={
+    import scala.collection.JavaConverters._
+    var result = new Array[(Int, TaskDescription)](0)
+    val allocations = config.getObject("gearpump.scheduler.allocations")
+    if(allocations == null)
+      result
+    for(worker <- allocations.keySet().asScala.toSet[String]){
+      val tasks = allocations.get(worker).unwrapped().asInstanceOf[util.HashMap[String, Object]]
+      for( taskClass <- tasks.keySet().asScala.toSet[String]){
+        val taskClazz = Class.forName(taskClass).asInstanceOf[Class[Actor]]
+        result = result :+ (worker.toInt, TaskDescription(taskClazz, 2))
+        //val resources = tasks.get(taskClass).asInstanceOf[util.HashMap[String, Int]]
+        //for(resource <- resources.keySet().asScala.toSet[String] ){
+      }
+    }
+    result
   }
 }

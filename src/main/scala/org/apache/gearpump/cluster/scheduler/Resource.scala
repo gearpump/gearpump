@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.scheduler
+package org.apache.gearpump.cluster.scheduler
 
-import akka.actor.ActorRef
+import org.apache.gearpump.cluster.WorkerInfo
 
 case class Resource(slots : Int)
 
@@ -28,9 +28,9 @@ object Priority extends Enumeration{
 
 import Priority._
 
-case class ResourceRequest(resource: Resource, priority: Priority = NORMAL, worker: ActorRef = null)
+case class ResourceRequest(resource: Resource, priority: Priority = NORMAL, worker: WorkerInfo = null)
 
-case class ResourceAllocation(resource : Resource, worker : ActorRef)
+case class ResourceAllocation(resource : Resource, worker : WorkerInfo)
 
 object Resource{
   def empty = new Resource(0)

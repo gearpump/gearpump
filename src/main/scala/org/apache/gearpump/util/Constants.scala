@@ -28,6 +28,7 @@ object Constants {
   val MASTER_WATCHER = "masterwatcher"
 
   val WORKER = "worker"
+  val WORKER_INFO = "workerinfo"
 
   val APP_MASTER_REGISTER_DATA = "appmasterregisterdata"
 
