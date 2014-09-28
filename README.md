@@ -4,7 +4,7 @@
 GearPump
 ========
 
-![](https://raw.githubusercontent.com/clockfly/gearpump/master/project/logo/logo.png)
+![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
 
 
 A Actor Driven streaming framework. The idea is inspired by MillWheel, Storm, spark streaming, and SAMZA.
@@ -124,7 +124,7 @@ After than, you need to configure the conf/application.conf
 	gearpump.metrics.graphite.port = 2003   ## Your graphite port
 	gearpump.metrics.sample.rate = 10        ## this means we will sample 1 message for every 10 messages
 	```
-For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in [dashboard/README.md](dashboard/README.md)
+For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in [doc/dashboard/README.md](doc/dashboard/README.md)
 
 Here is how it looks like for grafana dashboard:
 
