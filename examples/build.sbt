@@ -24,11 +24,12 @@ packMain := Map("sol" -> "org.apache.gearpump.streaming.examples.sol.SOL",
                 "fsio" -> "org.apache.gearpump.streaming.examples.fsio.SequenceFileIO",
                 "kafkawordcount" -> "org.apache.gearpump.streaming.examples.kafka.KafkaWordCount")
 				
-packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
-		
+packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")
+
 packExtraClasspath := Map("sol" -> Seq("${PROG_HOME}/conf"),
                           "wordcount" -> Seq("${PROG_HOME}/conf"),
-			  "fs" -> Seq("${PROG_HOME}/conf"))
+                          "fs" -> Seq("${PROG_HOME}/conf"),
+                          "kafkawordcount" -> Seq("{PROG_HOME}/conf"))
 
 resolvers ++= Seq(
   "maven-repo" at "http://repo.maven.apache.org/maven2",
