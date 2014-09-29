@@ -86,6 +86,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
   "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
   "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion,
-  "com.github.patriknw" %% "akka-data-replication" % "0.4"
-//  "com.github.intel-hadoop" %% "gearpump-examples" % gearpumpExamplesVersion
+  "com.github.patriknw" %% "akka-data-replication" % "0.4",
+  "com.github.intel-hadoop" %% "gearpump-examples" % gearpumpExamplesVersion
 )
