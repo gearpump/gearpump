@@ -19,6 +19,8 @@ scalacOptions ++= Seq(
 
 crossScalaVersions := Seq("2.10.4", "2.11.2")
 
+val examplesLib = "${PROG_HOME}/../../../examples/target/pack/lib/gearpump-examples_2.10-0.1.jar"
+
 packSettings
 
 packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
@@ -28,10 +30,10 @@ packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
 				
 packResourceDir += (baseDirectory.value / "src/main/resources" -> "conf")		
 		
-packExtraClasspath := Map("local" -> Seq("${PROG_HOME}/conf"),
-                          "master" -> Seq("${PROG_HOME}/conf"),
-			  "worker" -> Seq("${PROG_HOME}/conf"),
-			  "shell" -> Seq("${PROG_HOME}/conf"))
+packExtraClasspath := Map("local" -> Seq(examplesLib),
+                          "master" -> Seq(examplesLib),
+			  "worker" -> Seq(examplesLib),
+			  "shell" -> Seq(examplesLib))
 
 pack <<= pack.dependsOn(publishLocal)
 
@@ -86,6 +88,5 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
   "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
   "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion,
-  "com.github.patriknw" %% "akka-data-replication" % "0.4",
-  "com.github.intel-hadoop" %% "gearpump-examples" % gearpumpExamplesVersion
+  "com.github.patriknw" %% "akka-data-replication" % "0.4"
 )
