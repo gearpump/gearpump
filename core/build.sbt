@@ -19,7 +19,7 @@ scalacOptions ++= Seq(
 
 crossScalaVersions := Seq("2.10.4", "2.11.2")
 
-val examplesLib = "${PROG_HOME}/../../../examples/target/pack/lib/gearpump-examples_2.10-0.1.jar"
+val examplesLib = "${PROG_HOME}/../../../examples/target/pack/lib/*"
 
 packSettings
 
