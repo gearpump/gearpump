@@ -18,7 +18,7 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
 ###How to Build
   ```bash
   ## Build Gearpump
-  sbt clean pack
+  sbt clean publishLocal pack
   ```
   This will generate scripts under core/target/pack/bin, examples/target/pack/bin and rest/target/pack/bin
 
