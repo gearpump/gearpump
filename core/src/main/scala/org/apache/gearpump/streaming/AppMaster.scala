@@ -20,16 +20,18 @@ package org.apache.gearpump.streaming
 
 import java.util.concurrent.TimeUnit
 
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
+import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.streaming.AppMasterToController.{AllTaskLaunched, ExecutorFailed, TaskAdded, TaskLaunched}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
+import org.apache.gearpump.streaming.ControllerToAppMaster.ReScheduleFailedTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
@@ -38,7 +40,7 @@ import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.Queue
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration._
 
 class AppMaster (config : Configs) extends Actor {
 
@@ -59,6 +61,7 @@ class AppMaster (config : Configs) extends Actor {
   private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
 
   private var clockService : ActorRef = null
+  private var controller : ActorRef = null
 
   private var taskLocations = Map.empty[HostPort, Set[TaskId]]
 
@@ -66,6 +69,13 @@ class AppMaster (config : Configs) extends Actor {
   private var totalTaskCount = 0
 
   override def receive : Receive = null
+
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+      case _: ActorKilledException => Restart
+      case t =>
+        super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)
+    }
 
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
@@ -89,6 +99,7 @@ class AppMaster (config : Configs) extends Actor {
 
     LOG.info("Initializing Clock service ....")
     clockService = context.actorOf(Props(classOf[ClockService], dag))
+    controller = context.actorOf(Props(classOf[Controller], appDescription))
   
     context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
   }
@@ -106,7 +117,7 @@ class AppMaster (config : Configs) extends Actor {
       context.become(messageHandler)
   }
 
-  def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch
+  def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch orElse controllerMsgHandler
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) => {
@@ -134,11 +145,13 @@ class AppMaster (config : Configs) extends Actor {
       startedTasks += taskId
 
       LOG.info(s" started task size: ${startedTasks.size}, taskQueue size: ${totalTaskCount}")
+      controller ! TaskLaunched(taskId, sender())
       if (startedTasks.size == totalTaskCount) {
         context.children.foreach { executor =>
           LOG.info(s"Sending Task locations to executor ${executor.path.name}")
           executor ! TaskLocations(taskLocations)
         }
+        controller ! AllTaskLaunched
       }
     }
 
@@ -193,6 +206,7 @@ class AppMaster (config : Configs) extends Actor {
 
           val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
           executor ! LaunchTask(taskId, config, taskDescription.taskClass)
+          controller ! TaskAdded(executor, taskId, taskDescription.taskClass)
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
           launchTask(remainResources subtract usedResource)
@@ -202,6 +216,18 @@ class AppMaster (config : Configs) extends Actor {
     }
     case ExecutorLaunchRejected(reason, ex) => {
       LOG.error(s"Executor Launch failed reason：$reason", ex)
+    }
+  }
+
+  def controllerMsgHandler : Receive = {
+    case ReScheduleFailedTasks(tasks) => {
+      val dag = DAG(appDescription.dag)
+      tasks.foreach(params => {
+        val (taskId, taskClass) = params
+        startedTasks -= taskId
+        taskQueue.enqueue((taskId, TaskDescription(taskClass, 1), dag.subGraph(taskId.groupId)))
+      })
+      master ! RequestResource(appId, ResourceRequest(Resource(taskQueue.size)))
     }
   }
 
@@ -216,6 +242,7 @@ class AppMaster (config : Configs) extends Actor {
       //executor is down
       //TODO: handle this failure
       LOG.error(s"Executor is down ${actor.path.name}")
+      controller ! ExecutorFailed(actor)
     }
   }
 
