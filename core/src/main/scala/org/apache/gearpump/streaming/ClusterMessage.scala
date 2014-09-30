@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming
 
 import akka.actor.{ActorRef, Actor}
 import org.apache.gearpump.scheduler.Resource
-import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.streaming.task.{TimeStamp, TaskId}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Configs
 
@@ -39,4 +39,19 @@ object ExecutorToAppMaster {
 
   case class TaskSuccess(taskId : TaskId) extends TaskFinished
   case class TaskFailed(taskId: TaskId, reason: String = null, ex: Exception = null) extends TaskFinished
+}
+
+object AppMasterToController {
+  case class TaskAdded(executor: ActorRef, taskId: TaskId, taskClass: Class[_ <: Actor])
+  case class TaskLaunched(taskId: TaskId, taskRef: ActorRef)
+  case class ExecutorFailed(executor: ActorRef)
+  case object AllTaskLaunched
+}
+
+object ControllerToAppMaster {
+  case class ReScheduleFailedTasks(tasks: Array[(TaskId, Class[_ <: Actor])])
+}
+
+object ControllerToTask {
+  case class ResetTheOffset(timeStamp: TimeStamp)
 }
