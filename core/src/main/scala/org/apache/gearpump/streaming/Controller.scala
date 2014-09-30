@@ -4,8 +4,8 @@ import akka.actor.{Cancellable, Kill, ActorRef, Actor}
 import org.apache.gearpump.streaming.AppMasterToController.{AllTaskLaunched, TaskLaunched, ExecutorFailed, TaskAdded}
 import org.apache.gearpump.streaming.Controller.TaskInfo
 import org.apache.gearpump.streaming.ControllerToAppMaster.ReScheduleFailedTasks
-import org.apache.gearpump.streaming.ControllerToTask.ResetTheOffset
-import org.apache.gearpump.streaming.task.{LatestMinClock, TaskId, ClockService}
+import org.apache.gearpump.streaming.ControllerToTask.ResetReaderOffset
+import org.apache.gearpump.streaming.task.{GetLatestMinClock, LatestMinClock, TaskId, ClockService}
 import org.slf4j.{LoggerFactory, Logger}
 
 import scala.collection.mutable
@@ -34,8 +34,14 @@ class Controller(appDescription : AppDescription, clockService : ClockService) e
     }
     case AllTaskLaunched => {
       if(recovering) {
-        context.become(waitForLatestMinClock)
+        sender() ! GetLatestMinClock
       }
+    }
+    case LatestMinClock(timeStamp) =>{
+      val spout = appDescription.dag.topologicalOrderIterator.next()
+      executorWithTasks.values.flatMap(_.toList).filter(_.taskClass.equals(spout.taskClass)).foreach(_.actorRef ! ResetReaderOffset(timeStamp))
+      recovering = false;
+      context.become(appMasterMsgHandler)
     }
     case ExecutorFailed(executor) => {
       if(!executorWithTasks.contains(executor)){
@@ -46,15 +52,6 @@ class Controller(appDescription : AppDescription, clockService : ClockService) e
       executorWithTasks -= executor
       sender() ! ReScheduleFailedTasks(tasks)
       recovering = true;
-    }
-  }
-
-  def waitForLatestMinClock() : Receive = {
-    case LatestMinClock(timeStamp) =>{
-      val spout = appDescription.dag.topologicalOrderIterator.next()
-      executorWithTasks.values.flatMap(_.toList).filter(_.taskClass.equals(spout.taskClass)).foreach(_.actorRef ! ResetTheOffset(timeStamp))
-      recovering = false;
-      context.become(appMasterMsgHandler)
     }
   }
 }

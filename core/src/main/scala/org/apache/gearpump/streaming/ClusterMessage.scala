@@ -53,5 +53,5 @@ object ControllerToAppMaster {
 }
 
 object ControllerToTask {
-  case class ResetTheOffset(timeStamp: TimeStamp)
+  case class ResetReaderOffset(timeStamp: TimeStamp)
 }

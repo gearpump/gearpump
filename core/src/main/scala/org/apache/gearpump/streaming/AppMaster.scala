@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.SupervisorStrategy.{Escalate, Resume}
+import akka.actor.SupervisorStrategy.{Restart, Escalate, Resume}
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToMaster._
@@ -73,7 +73,7 @@ class AppMaster (config : Configs) extends Actor {
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: ActorKilledException => Resume
+      case _: ActorKilledException => Restart
       case t =>
         super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)
     }
