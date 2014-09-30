@@ -1,16 +1,16 @@
 package org.apache.gearpump.streaming
 
-import akka.actor.{Cancellable, Kill, ActorRef, Actor}
-import org.apache.gearpump.streaming.AppMasterToController.{AllTaskLaunched, TaskLaunched, ExecutorFailed, TaskAdded}
+import akka.actor.{Actor, ActorRef, Kill}
+import org.apache.gearpump.streaming.AppMasterToController.{AllTaskLaunched, ExecutorFailed, TaskAdded, TaskLaunched}
 import org.apache.gearpump.streaming.Controller.TaskInfo
 import org.apache.gearpump.streaming.ControllerToAppMaster.ReScheduleFailedTasks
 import org.apache.gearpump.streaming.ControllerToTask.ResetReaderOffset
-import org.apache.gearpump.streaming.task.{GetLatestMinClock, LatestMinClock, TaskId, ClockService}
-import org.slf4j.{LoggerFactory, Logger}
+import org.apache.gearpump.streaming.task.{GetLatestMinClock, LatestMinClock, TaskId}
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class Controller(appDescription : AppDescription, clockService : ClockService) extends Actor{
+class Controller(appDescription : AppDescription) extends Actor{
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Controller])
   private var recovering = false;
 

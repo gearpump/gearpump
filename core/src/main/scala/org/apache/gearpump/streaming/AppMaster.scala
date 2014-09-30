@@ -20,17 +20,16 @@ package org.apache.gearpump.streaming
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.SupervisorStrategy.{Restart, Escalate, Resume}
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
-import org.apache.gearpump.streaming.AppMasterToController.{AllTaskLaunched, TaskLaunched, ExecutorFailed, TaskAdded}
+import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.streaming.AppMasterToController.{AllTaskLaunched, ExecutorFailed, TaskAdded, TaskLaunched}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ControllerToAppMaster.ReScheduleFailedTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
@@ -100,7 +99,7 @@ class AppMaster (config : Configs) extends Actor {
 
     LOG.info("Initializing Clock service ....")
     clockService = context.actorOf(Props(classOf[ClockService], dag))
-    controller = context.actorOf(Props(classOf[Controller], appDescription, clockService))
+    controller = context.actorOf(Props(classOf[Controller], appDescription))
   
     context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
   }
