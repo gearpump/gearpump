@@ -20,12 +20,18 @@ package org.apache.gearpump.services
 
 import akka.actor.{ActorSystem, ActorRef, ActorContext}
 import org.apache.gearpump.cluster.AppMasterInfo
+import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.{TaskDescription, AppDescription}
+import org.apache.gearpump.util.Graph
+import org.slf4j.{LoggerFactory, Logger}
 import spray.httpx.Json4sJacksonSupport
 import org.json4s._
 import java.util.UUID
 
+import scala.collection.parallel.mutable
+
 object Json4sSupport extends Json4sJacksonSupport {
-   implicit def json4sJacksonFormats: Formats = jackson.Serialization.formats(NoTypeHints) + new UUIDFormat + new AppMasterInfoSerializer
+  implicit def json4sJacksonFormats: Formats = jackson.Serialization.formats(NoTypeHints) + new UUIDFormat + new AppMasterInfoSerializer + new AppDescriptionSerializer
 
   //so you don't need to import
   //jackson everywhere
@@ -54,6 +60,31 @@ object Json4sSupport extends Json4sJacksonSupport {
       case x:AppMasterInfo =>
         JObject(
           JField("worker", JString(x.worker.path.address.toString)) :: Nil)
+    }
+    )
+  )
+
+  class AppDescriptionSerializer extends CustomSerializer[AppDescription]( format => (
+    {
+      case JObject(JField("name", JString(s)) :: Nil ) =>
+        //only need to serialize to json
+        AppDescription(null,null,null)
+    },
+    {
+      case x:AppDescription =>
+        val confKeys = collection.mutable.ListBuffer[JValue]()
+        x.conf.config.map(f => {
+          val (key,value) = f
+          confKeys += JString(key)
+        }
+        )
+        val dagVertices = collection.mutable.ListBuffer[JValue]()
+        val graph:Graph[TaskDescription,Partitioner] = x.dag
+        graph.vertex.map(f => {
+          dagVertices += JString(f.taskClass.getSimpleName)
+        })
+        JObject(
+          JField("name", JString(x.name)) :: JField("conf", JArray(confKeys.toList))  :: JField("dag", JArray(dagVertices.toList)) :: Nil)
     }
     )
   )

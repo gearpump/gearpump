@@ -114,6 +114,7 @@ object Build extends sbt.Build {
       Seq(
         packMain := Map("rest" -> "org.apache.gearpump.cluster.main.Rest"),
         packResourceDir := Map(baseDirectory.value / "src/main/resources" -> "conf"),
+        packExtraClasspath := Map("rest" -> Seq(examplesClassPath)),
         libraryDependencies ++= Seq(
           "io.spray" %%  "spray-can"       % sprayVersion,
           "io.spray" %%  "spray-routing"   % sprayVersion,
