@@ -83,8 +83,18 @@ object Json4sSupport extends Json4sJacksonSupport {
         graph.vertex.map(f => {
           dagVertices += JString(f.taskClass.getSimpleName)
         })
+        val dagEdges = collection.mutable.ListBuffer[JValue]()
+        graph.edges.foreach(f => {
+          val (node1, edge, node2) = f
+          val array = collection.mutable.ListBuffer[JValue]()
+          array += JString(node1.taskClass.getSimpleName)
+          array += JString(edge.getClass.getSimpleName)
+          array += JString(node2.taskClass.getSimpleName)
+          dagEdges += JArray(array.toList)
+        })
         JObject(
-          JField("name", JString(x.name)) :: JField("conf", JArray(confKeys.toList))  :: JField("dag", JArray(dagVertices.toList)) :: Nil)
+          JField("name", JString(x.name)) :: JField("conf", JArray(confKeys.toList)) :: JField("dag",
+            JObject(JField("vertex", JArray(dagVertices.toList)) :: JField("edge", JArray(dagEdges.toList)) ::Nil)) :: Nil)
     }
     )
   )
