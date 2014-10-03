@@ -78,23 +78,20 @@ object Json4sSupport extends Json4sJacksonSupport {
           confKeys += JString(key)
         }
         )
-        val dagVertices = collection.mutable.ListBuffer[JValue]()
-        val graph:Graph[TaskDescription,Partitioner] = x.dag
-        graph.vertex.map(f => {
-          dagVertices += JString(f.taskClass.getSimpleName)
-        })
-        val dagEdges = collection.mutable.ListBuffer[JValue]()
-        graph.edges.foreach(f => {
+        val dagVertices = x.dag.vertex.map(f => {
+          JString(f.taskClass.getSimpleName)
+        }).toList
+        val dagEdges = x.dag.edges.map(f => {
           val (node1, edge, node2) = f
           val array = collection.mutable.ListBuffer[JValue]()
           array += JString(node1.taskClass.getSimpleName)
           array += JString(edge.getClass.getSimpleName)
           array += JString(node2.taskClass.getSimpleName)
-          dagEdges += JArray(array.toList)
-        })
+          JArray(array.toList)
+        }).toList
         JObject(
           JField("name", JString(x.name)) :: JField("conf", JArray(confKeys.toList)) :: JField("dag",
-            JObject(JField("vertex", JArray(dagVertices.toList)) :: JField("edge", JArray(dagEdges.toList)) ::Nil)) :: Nil)
+            JObject(JField("vertex", JArray(dagVertices.toList)) :: JField("edge", JArray(dagEdges)) ::Nil)) :: Nil)
     }
     )
   )
