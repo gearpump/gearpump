@@ -99,14 +99,14 @@ object Json4sSupport extends Json4sJacksonSupport {
         }
         ).toList
         val dagVertices = x.dag.vertex.map(f => {
-          JObject(JField("taskClass", JString(f.taskClass.getSimpleName))::JField("parallism", JInt(f.parallism))::Nil)
+          JObject(JField("taskClass", JString(f.taskClass.getCanonicalName))::JField("parallism", JInt(f.parallism))::Nil)
         }).toList
         val dagEdges = x.dag.edges.map(f => {
           val (node1, edge, node2) = f
           JArray(
-            JObject(JField("taskClass",JString(node1.taskClass.getSimpleName))::JField("parallism",JInt(node1.parallism))::Nil)::
-            JString(edge.getClass.getSimpleName)::
-            JObject(JField("taskClass",JString(node2.taskClass.getSimpleName))::JField("parallism",JInt(node2.parallism))::Nil)::
+            JObject(JField("taskClass",JString(node1.taskClass.getCanonicalName))::JField("parallism",JInt(node1.parallism))::Nil)::
+            JString(edge.getClass.getCanonicalName)::
+            JObject(JField("taskClass",JString(node2.taskClass.getCanonicalName))::JField("parallism",JInt(node2.parallism))::Nil)::
             Nil
           )
         }).toList
