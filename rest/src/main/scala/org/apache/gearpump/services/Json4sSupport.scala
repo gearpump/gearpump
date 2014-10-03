@@ -22,13 +22,14 @@ import akka.actor.{ActorSystem, ActorRef, ActorContext}
 import org.apache.gearpump.cluster.AppMasterInfo
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.{TaskDescription, AppDescription}
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.{Configs, Graph}
 import org.slf4j.{LoggerFactory, Logger}
 import spray.httpx.Json4sJacksonSupport
 import org.json4s._
 import java.util.UUID
 
 import scala.collection.parallel.mutable
+import scala.concurrent.ExecutionContext
 
 object Json4sSupport extends Json4sJacksonSupport {
   implicit def json4sJacksonFormats: Formats = jackson.Serialization.formats(NoTypeHints) + new UUIDFormat + new AppMasterInfoSerializer + new AppDescriptionSerializer
@@ -65,19 +66,23 @@ object Json4sSupport extends Json4sJacksonSupport {
   )
 
   class AppDescriptionSerializer extends CustomSerializer[AppDescription]( format => (
-    {
-      case JObject(JField("name", JString(s)) :: Nil ) =>
-        //only need to serialize to json
-        AppDescription(null,null,null)
+    { //from json
+      case JObject(
+        JField("name", JString(name)) :: JField("conf", JObject(confMap)) :: JField("dag",
+          JObject(JField("vertex", JArray(dagVertices)) :: JField("edge", JArray(dagEdges)) ::Nil)) :: Nil) =>
+        val conf = Configs(confMap.map(f => {
+          val (key, value) = f
+          (key, value.toSome)
+        }).toMap)
+        AppDescription(name,conf,null)
     },
-    {
+    { //to json
       case x:AppDescription =>
-        val confKeys = collection.mutable.ListBuffer[JValue]()
-        x.conf.config.map(f => {
+        val confKeys = x.conf.config.map(f => {
           val (key,value) = f
-          confKeys += JString(key)
+          JField(key, JString(value.toString))
         }
-        )
+        ).toList
         val dagVertices = x.dag.vertex.map(f => {
           JString(f.taskClass.getSimpleName)
         }).toList
@@ -90,7 +95,7 @@ object Json4sSupport extends Json4sJacksonSupport {
           JArray(array.toList)
         }).toList
         JObject(
-          JField("name", JString(x.name)) :: JField("conf", JArray(confKeys.toList)) :: JField("dag",
+          JField("name", JString(x.name)) :: JField("conf", JObject(confKeys)) :: JField("dag",
             JObject(JField("vertex", JArray(dagVertices.toList)) :: JField("edge", JArray(dagEdges)) ::Nil)) :: Nil)
     }
     )
