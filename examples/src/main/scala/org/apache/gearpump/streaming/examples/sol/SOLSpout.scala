@@ -67,7 +67,12 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     output(new Message(message, System.currentTimeMillis()))
     messageCount = messageCount + 1L
 
-    self ! Continue
+    self ! messageSourceMinClock
+  }
+
+  // messageSourceMinClock represent the min clock of the message source
+  private def messageSourceMinClock : Message = {
+    Message("tick", System.currentTimeMillis())
   }
 }
 
@@ -75,5 +80,4 @@ object SOLSpout{
   val BYTES_PER_MESSAGE = "bytesPerMessage"
 
   val Start = Message("start")
-  val Continue = Message("continue")
 }

@@ -205,7 +205,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       }
 
       val updatedMessage = clockTracker.onReceive(msg)
-      queue.add(msg)
+      queue.add(updatedMessage)
 
       doHandleMessage
     case ClockUpdated(timestamp) =>
