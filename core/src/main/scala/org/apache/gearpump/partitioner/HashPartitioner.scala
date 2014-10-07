@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.partitioner
 
-import org.apache.gearpump.streaming.task.Message
+import org.apache.gearpump.Message
 
 class HashPartitioner extends Partitioner {
   override def getPartition(msg : Message, partitionNum : Int) : Int = {

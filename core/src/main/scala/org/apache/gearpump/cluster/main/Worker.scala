@@ -21,9 +21,10 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import org.apache.gearpump.cluster.{MasterProxy, Worker}
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.{Configs}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.Configs
 import org.apache.gearpump.util.Constants._
+import org.slf4j.{Logger, LoggerFactory}
+
 import scala.collection.JavaConverters._
 
 object Worker extends App with ArgumentsParser {

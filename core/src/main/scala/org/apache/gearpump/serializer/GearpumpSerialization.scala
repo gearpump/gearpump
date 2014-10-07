@@ -19,7 +19,7 @@
 package org.apache.gearpump.serializer
 
 import com.esotericsoftware.kryo.{Kryo, Serializer}
-import org.apache.gearpump.util.{Constants, Configs}
+import org.apache.gearpump.util.{Configs, Constants}
 
 class GearpumpSerialization {
   val config = Configs.SYSTEM_DEFAULT_CONFIG

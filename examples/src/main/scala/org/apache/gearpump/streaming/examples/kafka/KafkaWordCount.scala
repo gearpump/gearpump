@@ -18,12 +18,12 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import org.apache.gearpump.cluster.main.{CLIOption, ArgumentsParser}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.{TaskDescription, AppDescription}
-import org.apache.gearpump.util.{Graph, Configs}
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
+import org.apache.gearpump.util.{Configs, Graph}
 
 class KafkaWordCount {
   def getApplication(config: Configs, kafkaSpoutNum: Int, splitNum: Int,

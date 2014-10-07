@@ -16,27 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming
+package org.apache.gearpump.streaming.task
 
-import akka.actor.{ActorRef, Actor}
-import org.apache.gearpump.scheduler.Resource
-import org.apache.gearpump.streaming.task.TaskId
-import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.TimeStamp
 
-object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
-}
+case class Seq(id: Int, seq: Long)
 
-object ExecutorToAppMaster {
-  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource)
+case class AckRequest(taskId: TaskId, seq: Seq)
 
-  case class RegisterTask(taskId: TaskId, task: HostPort)
+case class Ack(taskId: TaskId, seq: Seq)
 
-  trait TaskFinished {
-    def taskId : TaskId
-  }
+case class UpdateClock(taskId: TaskId, time: TimeStamp)
 
-  case class TaskSuccess(taskId : TaskId) extends TaskFinished
-  case class TaskFailed(taskId: TaskId, reason: String = null, ex: Exception = null) extends TaskFinished
-}
+case class ClockUpdated(latestMinClock: TimeStamp)
+
+object GetLatestMinClock
+
+case class LatestMinClock(clock: TimeStamp)

@@ -20,9 +20,10 @@ package org.apache.gearpump.streaming
 
 import akka.actor.{Actor, Props, Terminated}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
+import ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.task.TaskLocations
-import org.apache.gearpump.util.{Constants, Configs}
+import org.apache.gearpump.util.{Configs, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
 class Executor(config : Configs)  extends Actor {

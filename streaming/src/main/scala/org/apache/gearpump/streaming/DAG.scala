@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.util
+package org.apache.gearpump.streaming
 
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.TaskDescription
+import org.apache.gearpump.util.Graph
 
 import scala.collection.JavaConversions._
 

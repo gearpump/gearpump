@@ -16,10 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.task
+package org.apache.gearpump.streaming
 
-case class Message(msg: java.io.Serializable, timestamp: TimeStamp = Message.noTimeStamp)
+import akka.actor.{Actor, ActorRef}
+import org.apache.gearpump.scheduler.Resource
+import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.Configs
 
-object Message {
-  val noTimeStamp : TimeStamp = 0L
+object AppMasterToExecutor {
+  case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
+}
+
+object ExecutorToAppMaster {
+  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource)
+
+  case class RegisterTask(taskId: TaskId, task: HostPort)
+
+  trait TaskFinished {
+    def taskId : TaskId
+  }
+
+  case class TaskSuccess(taskId : TaskId) extends TaskFinished
+  case class TaskFailed(taskId: TaskId, reason: String = null, ex: Exception = null) extends TaskFinished
 }
