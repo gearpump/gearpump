@@ -26,7 +26,7 @@ import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.ConfigsHelper._
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -89,7 +89,7 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
     }).toMap
 
 
-  override def onStart(): Unit = {
+  override def onStart(taskContext : TaskContext): Unit = {
     self ! Message("start", System.currentTimeMillis())
   }
 

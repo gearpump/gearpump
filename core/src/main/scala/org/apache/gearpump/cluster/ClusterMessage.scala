@@ -21,7 +21,7 @@ package org.apache.gearpump.cluster
 import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.util.Configs
-
+import org.apache.gearpump.TimeStamp
 import scala.util.Try
 
 /**
