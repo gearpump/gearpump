@@ -304,7 +304,7 @@ object AppMaster {
 
   case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
 
-  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs, startTime : TimeStamp) extends Actor {
+  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs) extends Actor {
 
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
