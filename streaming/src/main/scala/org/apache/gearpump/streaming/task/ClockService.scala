@@ -70,7 +70,7 @@ import org.apache.gearpump.streaming.task.ClockService._
       taskgroup.taskClocks(taskIndex) = clock
       taskgroup.minClock = taskgroup.taskClocks.min
       taskgroupClocks.add(taskgroup)
-      sender ! ClockUpdated(taskgroup.minClock)
+      sender ! ClockUpdated(minClock)
     case GetLatestMinClock =>
       sender ! LatestMinClock(minClock)
   }
