@@ -18,6 +18,7 @@
 package org.apache.gearpump.scheduler
 
 import akka.actor.{ActorRef, Actor}
+import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
@@ -57,6 +58,5 @@ abstract class Scheduler extends Actor{
 }
 
 object Scheduler{
-  type TimeStamp = Long
   class PendingRequest(val appMaster: ActorRef, val request: ResourceRequest, val timeStamp: TimeStamp)
 }

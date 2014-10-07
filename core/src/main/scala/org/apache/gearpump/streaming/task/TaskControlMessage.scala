@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.task
 
+import org.apache.gearpump.TimeStamp
+
 case class Seq(id: Int, seq: Long)
 
 case class AckRequest(taskId: TaskId, seq: Seq)

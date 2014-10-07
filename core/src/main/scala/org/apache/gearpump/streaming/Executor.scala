@@ -24,6 +24,7 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.task.TaskLocations
 import org.apache.gearpump.util.{Constants, Configs}
 import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.streaming.ConfigsHelper._
 
 class Executor(config : Configs)  extends Actor {
 

@@ -21,7 +21,8 @@ package org.apache.gearpump.streaming.examples.kafka
 import java.util.Properties
 
 import kafka.producer.ProducerConfig
-import org.apache.gearpump.streaming.task.{Message, TaskActor}
+import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.task.TaskActor
 import org.apache.gearpump.util.Configs
 
 class KafkaBolt(conf: Configs) extends TaskActor(conf) {

@@ -19,7 +19,5 @@
 package org.apache.gearpump.streaming
 
 package object task {
-  type TaskGroup = Int
-  type TaskIndex = Int
-  type TimeStamp = Long
+  import org.apache.gearpump.streaming._
 }

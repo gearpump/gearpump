@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.task
 
+import org.apache.gearpump.{TimeStamp, Message}
+
 /**
  * Clocktracker will keep track of all pending messages on current task
  */

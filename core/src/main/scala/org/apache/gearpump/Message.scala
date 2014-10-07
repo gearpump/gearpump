@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.task
+package org.apache.gearpump
 
 case class Message(msg: java.io.Serializable, timestamp: TimeStamp = Message.noTimeStamp)
 

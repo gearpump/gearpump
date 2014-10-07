@@ -23,7 +23,8 @@ import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Cancellable, Actor}
-import org.apache.gearpump.util.DAG
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.{TaskGroup, DAG}
 import org.slf4j.{LoggerFactory, Logger}
 
 import scala.concurrent.duration.FiniteDuration

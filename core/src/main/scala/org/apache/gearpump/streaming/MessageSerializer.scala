@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
+import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.task._
 
 class MessageSerializer extends Serializer[Message] {
