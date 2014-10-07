@@ -1,9 +1,15 @@
 import sbt._
 import sbt.Keys._
 import xerial.sbt.Pack._
+import scala.collection.immutable.Map.WithDefault
 
 object Build extends sbt.Build {
 
+
+  class DefaultValueMap[+B](value : B) extends WithDefault[String, B](null, (key) => value) {
+    override def get(key: String) = Some(value)
+  }
+  
   val akkaVersion = "2.3.5"
   val kyroVersion = "0.3.2"
   val codahaleVersion = "3.0.2"
@@ -22,9 +28,7 @@ object Build extends sbt.Build {
   val spraySwaggerVersion = "0.4.3"
   val swaggerUiVersion = "2.0.21"
 
-  val examplesClassPath = "examples/target/pack/lib/*"
-
-  val commonSettings = Defaults.defaultSettings ++
+  val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++
     Seq(
       scalaVersion := scalaVersionNumber,
       version := gearPumpVersion,
@@ -33,7 +37,9 @@ object Build extends sbt.Build {
       scalacOptions ++= Seq(
         "-Yclosure-elim",
         "-Yinline"
-      )
+      ),
+      packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
+      packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
   )
 
   lazy val root = Project(
@@ -49,24 +55,16 @@ object Build extends sbt.Build {
           "clockfly" at "http://dl.bintray.com/clockfly/maven",
           "patrik" at "http://dl.bintray.com/patriknw/maven"
         )
-      ),
-    aggregate = Seq(core, examples, rest) 
-  )
+      )
+  )  dependsOn(core, examples, rest)
 
   lazy val core = Project(
     id = "gearpump-core",
     base = file("core"),
-    settings = commonSettings ++ packSettings ++
+    settings = commonSettings  ++
     Seq(
-        packMain := Map("local" -> "org.apache.gearpump.cluster.main.Local",
-                        "master" -> "org.apache.gearpump.cluster.main.Master",
-                        "worker" -> "org.apache.gearpump.cluster.main.Worker",
-                        "shell" -> "org.apache.gearpump.cluster.main.Shell"),
         packResourceDir := Map(baseDirectory.value / "src/main/resources" -> "conf"),
-        packExtraClasspath := Map("local" -> Seq(examplesClassPath),
-                                  "master" -> Seq(examplesClassPath),
-        			  "worker" -> Seq(examplesClassPath),
-        			  "shell" -> Seq(examplesClassPath)),
+
         libraryDependencies ++= Seq(
         "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
         "com.codahale.metrics" % "metrics-core" % codahaleVersion,
@@ -93,13 +91,8 @@ object Build extends sbt.Build {
   lazy val examples = Project(
     id = "gearpump-examples",
     base = file("examples"),
-    settings = commonSettings ++ packSettings ++
+    settings = commonSettings  ++
       Seq(
-        packMain := Map("sol" -> "org.apache.gearpump.streaming.examples.sol.SOL",
-                        "wordcount" -> "org.apache.gearpump.streaming.examples.wordcount.WordCount",
-                        "fsio" -> "org.apache.gearpump.streaming.examples.fsio.SequenceFileIO",
-                        "kafkawordcount" -> "org.apache.gearpump.streaming.examples.kafka.KafkaWordCount"),
-        packResourceDir := Map(baseDirectory.value / "src/main/resources" -> "conf"),
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
           "org.apache.kafka" %% "kafka" % kafkaVersion
@@ -110,10 +103,8 @@ object Build extends sbt.Build {
   lazy val rest = Project(
     id = "gearpump-rest",
     base = file("rest"),
-    settings = commonSettings ++ packSettings ++
+    settings = commonSettings  ++
       Seq(
-        packMain := Map("rest" -> "org.apache.gearpump.cluster.main.Rest"),
-        packResourceDir := Map(baseDirectory.value / "src/main/resources" -> "conf"),
         libraryDependencies ++= Seq(
           "io.spray" %%  "spray-can"       % sprayVersion,
           "io.spray" %%  "spray-routing"   % sprayVersion,
