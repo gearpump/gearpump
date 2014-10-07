@@ -121,7 +121,7 @@ class AppMaster (config : Configs) extends Actor {
       context.become(messageHandler)
   }
 
-  def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch
+  def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse clientMsgHandler orElse executorMsgHandler orElse terminationWatch
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) => {
@@ -265,6 +265,8 @@ class AppMaster (config : Configs) extends Actor {
       val taskSet = executorIdToTasks(executorId)
 
       (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(clock => RecoverTasks(clock.clock, taskSet)).pipeTo(self)
+    } else {
+      LOG.error(s"=============terminiated unknown actorss===============${actor.path}")
     }
   }
 
@@ -289,13 +291,10 @@ class AppMaster (config : Configs) extends Actor {
 
   private def isChildActorPath(actor : ActorRef) : Boolean = {
     if (null != actor) {
-      val name = actor.path.name
-      val child = context.child(name)
-      if (child.isDefined) {
-        return child.get.path == actor.path
-      }
+      self.path.name == actor.path.parent.name
+    } else {
+      false
     }
-    return false
   }
 }
 
