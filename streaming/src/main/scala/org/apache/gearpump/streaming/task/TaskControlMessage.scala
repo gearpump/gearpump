@@ -16,35 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.task
 
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+import org.apache.gearpump.TimeStamp
 
-import scala.collection.mutable.ArrayBuffer
+case class Seq(id: Int, seq: Long)
 
-class KafkaProducer[K, V](config: ProducerConfig,
-                    topic: String,
-                    batchSize: Int) {
+case class AckRequest(taskId: TaskId, seq: Seq)
 
-  private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
-  private val producer = new Producer[K, V](config)
+case class Ack(taskId: TaskId, seq: Seq)
 
-  def send(key: K, msg: V): Unit = send(key, null, msg)
+case class UpdateClock(taskId: TaskId, time: TimeStamp)
 
-  def send(key: K, partKey: Any, msg: V): Unit = {
-    buffer += new KeyedMessage[K, V](topic, key, partKey, msg)
-    if (buffer.size >= batchSize) {
-      flush()
-    }
-  }
+case class ClockUpdated(latestMinClock: TimeStamp)
 
-  def flush(): Unit = {
-    producer.send(buffer: _*)
-    buffer.clear()
-  }
+object GetLatestMinClock
 
-  def close(): Unit = {
-    flush()
-    producer.close()
-  }
-}
+case class LatestMinClock(clock: TimeStamp)

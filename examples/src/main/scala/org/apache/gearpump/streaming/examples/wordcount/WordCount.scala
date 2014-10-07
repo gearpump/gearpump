@@ -18,13 +18,12 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
-import org.apache.gearpump.cluster.main.{CLIOption, ArgumentsParser}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.client.ClientContext
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
-import org.apache.gearpump.util.{Configs, Graph}
-import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.Graph._
+import org.apache.gearpump.util.{Configs, Graph}
 
 class WordCount  {
   def getApplication(splitNum : Int, sumNum : Int) : AppDescription = {

@@ -16,35 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming
 
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+import akka.actor.{Actor, ActorRef}
+import org.apache.gearpump.scheduler.Resource
+import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.Configs
 
-import scala.collection.mutable.ArrayBuffer
+object AppMasterToExecutor {
+  case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
+}
 
-class KafkaProducer[K, V](config: ProducerConfig,
-                    topic: String,
-                    batchSize: Int) {
+object ExecutorToAppMaster {
+  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource)
 
-  private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
-  private val producer = new Producer[K, V](config)
+  case class RegisterTask(taskId: TaskId, task: HostPort)
 
-  def send(key: K, msg: V): Unit = send(key, null, msg)
-
-  def send(key: K, partKey: Any, msg: V): Unit = {
-    buffer += new KeyedMessage[K, V](topic, key, partKey, msg)
-    if (buffer.size >= batchSize) {
-      flush()
-    }
+  trait TaskFinished {
+    def taskId : TaskId
   }
 
-  def flush(): Unit = {
-    producer.send(buffer: _*)
-    buffer.clear()
-  }
-
-  def close(): Unit = {
-    flush()
-    producer.close()
-  }
+  case class TaskSuccess(taskId : TaskId) extends TaskFinished
+  case class TaskFailed(taskId: TaskId, reason: String = null, ex: Exception = null) extends TaskFinished
 }

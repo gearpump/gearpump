@@ -16,35 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.task
 
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+import org.apache.gearpump.streaming.{TaskGroup, TaskIndex}
+import org.apache.gearpump.transport.HostPort
 
-import scala.collection.mutable.ArrayBuffer
+case class TaskId(groupId : TaskGroup, index : TaskIndex)
 
-class KafkaProducer[K, V](config: ProducerConfig,
-                    topic: String,
-                    batchSize: Int) {
-
-  private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
-  private val producer = new Producer[K, V](config)
-
-  def send(key: K, msg: V): Unit = send(key, null, msg)
-
-  def send(key: K, partKey: Any, msg: V): Unit = {
-    buffer += new KeyedMessage[K, V](topic, key, partKey, msg)
-    if (buffer.size >= batchSize) {
-      flush()
-    }
-  }
-
-  def flush(): Unit = {
-    producer.send(buffer: _*)
-    buffer.clear()
-  }
-
-  def close(): Unit = {
-    flush()
-    producer.close()
-  }
+object TaskId {
+  def toLong(id : TaskId) = (id.groupId.toLong << 32) + id.index
+  def fromLong(id : Long) = TaskId(((id >> 32) & 0xFFFFFFFF).toInt, (id & 0xFFFFFFFF).toInt)
 }
+
+case class TaskLocations(locations : Map[HostPort, Set[TaskId]])

@@ -42,7 +42,7 @@ object KafkaConfig {
 }
 
 class KafkaConfig {
-  import KafkaConfig._
+  import org.apache.gearpump.streaming.examples.kafka.KafkaConfig._
 
   val config = ConfigFactory.load("kafka.conf")
 

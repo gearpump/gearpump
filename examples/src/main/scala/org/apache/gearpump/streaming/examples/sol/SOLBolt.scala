@@ -21,7 +21,8 @@ package org.apache.gearpump.streaming.examples.sol
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
-import org.apache.gearpump.streaming.task.{Message, TaskActor}
+import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.task.TaskActor
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
