@@ -122,8 +122,7 @@ object Graph {
     graph
   }
 
-  def apply[N, E](edges : Tuple3[N, E, N]*) = {
-    val backStoreGraph = empty[N, E]
+  def apply[N, E](backStoreGraph: Graph[N, E], edges : Tuple3[N, E, N]*) = {
     edges.foreach {nodeEdgeNode =>
       val (node1, edge, node2) = nodeEdgeNode
       backStoreGraph.addEdge(node1, edge, node2)

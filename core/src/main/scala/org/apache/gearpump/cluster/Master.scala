@@ -84,6 +84,9 @@ private[cluster] class Master extends Actor with Stash {
     case appMasterDataRequest: AppMasterDataRequest =>
       LOG.info("Master received AppMasterDataRequest")
       appManager forward appMasterDataRequest
+    case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
+      LOG.info("Master received AppMasterDataDetailRequest")
+      appManager forward appMasterDataDetailRequest
   }
 
   def clientMsgHandler : Receive = {
