@@ -18,13 +18,13 @@
 
 package org.apache.gearpump.streaming.task
 
-import org.apache.gearpump.{TimeStamp, Message}
+import org.apache.gearpump.{Message, TimeStamp}
 
 /**
  * Clocktracker will keep track of all pending messages on current task
  */
 class ClockTracker(flowControl : FlowControl)  {
-import ClockTracker._
+import org.apache.gearpump.streaming.task.ClockTracker._
 
   private var minClock : TimeStamp = Long.MaxValue
   private var candidateMinClock : MinClockSince = null

@@ -31,8 +31,6 @@ import scala.language.implicitConversions
  * Application DAG
  */
 
-import java.io.ByteArrayOutputStream
-
 class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) extends Serializable{
   import org.apache.gearpump.util.Graph._
 

@@ -25,10 +25,10 @@ import kafka.message.MessageAndOffset
 import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
 import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.task.TaskActor
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.gearpump.streaming.ConfigsHelper._
 
 import scala.util._
 

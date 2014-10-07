@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import kafka.producer.{ProducerConfig, Producer, KeyedMessage}
+import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
 
 import scala.collection.mutable.ArrayBuffer
 

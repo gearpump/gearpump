@@ -18,11 +18,10 @@
 
 package org.apache.gearpump.streaming.task
 
-import org.slf4j.{LoggerFactory, Logger}
-import org.apache.gearpump.streaming.task.FlowControl.LOG
+import org.slf4j.{Logger, LoggerFactory}
 
 class FlowControl(taskId : TaskId, outputTaskCount : Int) {
-  import FlowControl._
+  import org.apache.gearpump.streaming.task.FlowControl._
 
   private var outputWindow : Long = INITIAL_WINDOW_SIZE
   private val ackWaterMark = new Array[Long](outputTaskCount)

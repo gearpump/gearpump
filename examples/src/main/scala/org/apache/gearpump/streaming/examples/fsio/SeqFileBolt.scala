@@ -21,15 +21,12 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.TaskActor
-import org.apache.gearpump.util.Configs
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{Path, FileSystem}
 import org.apache.gearpump.streaming.examples.fsio.SeqFileBolt._
-import org.apache.hadoop.io.SequenceFile
+import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
-import org.apache.hadoop.io.Text
-import org.slf4j.{LoggerFactory, Logger}
+import org.apache.hadoop.io.{SequenceFile, Text}
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.FiniteDuration
 

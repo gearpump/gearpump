@@ -18,37 +18,22 @@
 
 package org.apache.gearpump.cluster.main
 
-import akka.actor.{ActorSystem, PoisonPill, Props}
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props, _}
+import akka.cluster.ClusterEvent._
+import akka.cluster.{Cluster, Member, MemberStatus}
+import akka.contrib.datareplication.DataReplication
 import akka.contrib.pattern.{ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.{Master => MasterClass}
-import org.apache.gearpump.util.{Constants, Configs, ActorUtil}
+import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.{Configs, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
-
-import java.util.concurrent.TimeUnit
-
-import akka.actor.{Actor, ActorLogging, Props, _}
-import akka.cluster.ClusterEvent._
-import akka.cluster.{Cluster, Member, MemberStatus}
-import akka.contrib.datareplication.Replicator._
-import akka.contrib.pattern.ClusterSingletonManager
-import com.typesafe.config.ConfigFactory
-
 import scala.collection.immutable
 import scala.concurrent.duration._
-
-import scala.concurrent.duration._
-import akka.actor.ActorLogging
-import akka.cluster.Cluster
-import akka.actor.Actor
-import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
-import akka.actor.Props
-import akka.contrib.datareplication.{GSet, DataReplication}
-import scala.collection.JavaConverters._
-import org.apache.gearpump.util.Constants._
 object Master extends App with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
 

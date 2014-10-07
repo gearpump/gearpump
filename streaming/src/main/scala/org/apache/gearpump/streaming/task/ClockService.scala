@@ -22,10 +22,10 @@ import java.util
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Cancellable, Actor}
+import akka.actor.{Actor, Cancellable}
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.{TaskGroup, DAG}
-import org.slf4j.{LoggerFactory, Logger}
+import org.apache.gearpump.streaming.{DAG, TaskGroup}
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -33,7 +33,7 @@ import scala.concurrent.duration.FiniteDuration
  * The clockservice will maintain a global view of message timestamp in the application
  */
 class ClockService(dag : DAG) extends Actor {
-import ClockService._
+import org.apache.gearpump.streaming.task.ClockService._
 
   private val taskgroupClocks = new util.TreeSet[TaskGroupClock]()
   private val taskgroupLookup = new util.HashMap[TaskGroup, TaskGroupClock]()

@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.scheduler.Resource
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.transport.HostPort

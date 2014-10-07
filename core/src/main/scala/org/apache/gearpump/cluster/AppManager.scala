@@ -20,7 +20,7 @@ package org.apache.gearpump.cluster
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, Props, _}
+import akka.actor._
 import akka.contrib.datareplication.Replicator._
 import akka.contrib.datareplication.{DataReplication, GSet}
 import org.apache.gearpump.cluster.AppMasterToMaster._

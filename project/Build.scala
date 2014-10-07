@@ -1,6 +1,7 @@
-import sbt._
 import sbt.Keys._
+import sbt._
 import xerial.sbt.Pack._
+
 import scala.collection.immutable.Map.WithDefault
 
 object Build extends sbt.Build {
@@ -56,7 +57,7 @@ object Build extends sbt.Build {
           "patrik" at "http://dl.bintray.com/patriknw/maven"
         )
       )
-  )  dependsOn(core, examples, rest)
+  )  dependsOn(core, streaming, examples, rest)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -88,6 +89,12 @@ object Build extends sbt.Build {
     ) 
   )
 
+  lazy val streaming = Project(
+    id = "gearpump-streaming",
+    base = file("streaming"),
+    settings = commonSettings
+  )  dependsOn(core)
+  
   lazy val examples = Project(
     id = "gearpump-examples",
     base = file("examples"),
@@ -98,7 +105,7 @@ object Build extends sbt.Build {
           "org.apache.kafka" %% "kafka" % kafkaVersion
         )
       ) 
-  ) dependsOn(core)
+  ) dependsOn(streaming)
 
   lazy val rest = Project(
     id = "gearpump-rest",
@@ -118,5 +125,5 @@ object Build extends sbt.Build {
           "org.webjars" % "swagger-ui" % swaggerUiVersion
         )
       ) 
-  ) dependsOn(core)
+  ) dependsOn(core, streaming)
 }
