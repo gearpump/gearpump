@@ -26,14 +26,14 @@ import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
+import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
+import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -191,7 +191,7 @@ class AppMaster (config : Configs) extends Actor {
 
           val executorByPath = context.actorSelection("../app_0_executor_0")
 
-          val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
+          val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withValue(TASK_DAG, dag)
           executor ! LaunchTask(taskId, config, taskDescription.taskClass)
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)

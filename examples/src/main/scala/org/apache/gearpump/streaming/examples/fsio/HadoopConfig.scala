@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.streaming.examples.fsio
 
-import java.io.{DataInputStream, ByteArrayInputStream, DataOutputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 
 import org.apache.gearpump.util.Configs
 import org.apache.gearpump.util.Constants._

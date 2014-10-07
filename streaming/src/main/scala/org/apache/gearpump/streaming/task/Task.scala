@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.task
 
+import org.apache.gearpump.streaming.{TaskGroup, TaskIndex}
 import org.apache.gearpump.transport.HostPort
 
 case class TaskId(groupId : TaskGroup, index : TaskIndex)

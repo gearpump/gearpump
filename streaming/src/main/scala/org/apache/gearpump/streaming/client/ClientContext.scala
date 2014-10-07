@@ -20,16 +20,13 @@ package org.apache.gearpump.streaming.client
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Props, ActorRef, ActorSystem}
+import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
-import org.apache.gearpump.cluster.{MasterProxy, Application, MasterClient}
+import org.apache.gearpump.cluster.{Application, MasterClient, MasterProxy}
 import org.apache.gearpump.streaming.AppMaster
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Configs
 import org.apache.gearpump.util.Constants._
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 class ClientContext(masters: Iterable[HostPort]) {
 
