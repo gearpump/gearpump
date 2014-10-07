@@ -23,6 +23,7 @@ import java.util
 import akka.actor._
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.AppMasterToExecutor.{RestartException, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
@@ -206,7 +207,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       if (needSyncToClockService) {
         tryToSyncToClockService
       }
-
+    case RestartTasks(timestamp) =>
+      LOG.info(s"Restarting myself ${taskId} from timestamp $timestamp...")
+      throw new RestartException
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
   }

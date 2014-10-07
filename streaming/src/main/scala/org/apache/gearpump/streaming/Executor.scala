@@ -22,8 +22,8 @@ import akka.actor.{Actor, Props, Terminated}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.task.TaskLocations
-import org.apache.gearpump.util.{Configs, Constants}
+import org.apache.gearpump.streaming.task.{CleanTaskLocations, TaskLocations}
+import org.apache.gearpump.util.{Constants, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
 class Executor(config : Configs)  extends Actor {
@@ -39,6 +39,7 @@ class Executor(config : Configs)  extends Actor {
   context.watch(appMaster)
 
   val sendLater = context.actorOf(Props[SendLater], "sendlater")
+  var restarting = false
 
   def receive : Receive = appMasterMsgHandler orElse terminationWatch
 
@@ -48,8 +49,15 @@ class Executor(config : Configs)  extends Actor {
       val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
       val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }
-
-    case taskLocations : TaskLocations => sendLater.forward(taskLocations)
+    case taskLocations : TaskLocations =>
+      sendLater.forward(taskLocations)
+      restarting = false
+    case r : RestartTasks =>
+      if (!restarting) {
+        restarting = true
+        sendLater.forward(CleanTaskLocations)
+        context.children.foreach(_ ! r)
+      }
   }
 
   def terminationWatch : Receive = {

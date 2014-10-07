@@ -26,9 +26,10 @@ import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
+import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
-import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
+import org.apache.gearpump.streaming.AppMasterToExecutor.{RestartTasks, RecoverToClock, Recover, LaunchTask}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
@@ -36,9 +37,13 @@ import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorS
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.streaming.ConfigsHelper._
 
 import scala.collection.mutable.Queue
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import akka.pattern.ask
+import akka.pattern.pipe
+import scala.concurrent.Future
 
 class AppMaster (config : Configs) extends Actor {
 
@@ -47,6 +52,8 @@ class AppMaster (config : Configs) extends Actor {
   val masterExecutorId = config.executorId
   var currentExecutorId = masterExecutorId + 1
   val resource = config.resource
+
+  import context.dispatcher
 
   private val appId = config.appId
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
@@ -191,7 +198,7 @@ class AppMaster (config : Configs) extends Actor {
 
           val executorByPath = context.actorSelection("../app_0_executor_0")
 
-          val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withValue(TASK_DAG, dag)
+          val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
           executor ! LaunchTask(taskId, config, taskDescription.taskClass)
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
@@ -203,6 +210,16 @@ class AppMaster (config : Configs) extends Actor {
     case ExecutorLaunchRejected(reason, ex) => {
       LOG.error(s"Executor Launch failed reason：$reason", ex)
     }
+  }
+
+  def clientMsgHandler : Receive = {
+    case Recover =>
+      LOG.info("Received recover command from client...")
+      implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
+      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(clock  => RecoverToClock(clock.clock)).pipeTo(self)
+    case RecoverToClock(minClock) =>
+      LOG.info(s"Restarting to clock $minClock")
+      context.children.foreach(_ ! RestartTasks(minClock))
   }
 
   //TODO: We an task is down, we need to recover
