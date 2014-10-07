@@ -53,10 +53,12 @@ class Executor(config : Configs)  extends Actor {
     case taskLocations : TaskLocations =>
       sendLater.forward(taskLocations)
     case r @ RestartTasks(clock) =>
+      LOG.info(s"Executor received restart tasks at time: $clock")
       sendLater.forward(CleanTaskLocations)
       this.startClock = clock
       context.children.foreach(_ ! r)
     case GetStartClock =>
+      LOG.info(s"Executor received GetStartClock, return: $startClock")
       sender ! StartClock(startClock)
   }
 
