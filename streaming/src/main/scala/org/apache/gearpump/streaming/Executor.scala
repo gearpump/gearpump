@@ -19,6 +19,7 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.{Actor, Props, Terminated}
+import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
@@ -34,12 +35,12 @@ class Executor(config : Configs)  extends Actor {
   val executorId = config.executorId
   val resource = config.resource
   val appId = config.appId
+  var startClock : TimeStamp = config.startTime
 
   context.parent ! RegisterExecutor(self, executorId, resource)
   context.watch(appMaster)
 
   val sendLater = context.actorOf(Props[SendLater], "sendlater")
-  var restarting = false
 
   def receive : Receive = appMasterMsgHandler orElse terminationWatch
 
@@ -51,13 +52,12 @@ class Executor(config : Configs)  extends Actor {
     }
     case taskLocations : TaskLocations =>
       sendLater.forward(taskLocations)
-      restarting = false
-    case r : RestartTasks =>
-      if (!restarting) {
-        restarting = true
-        sendLater.forward(CleanTaskLocations)
-        context.children.foreach(_ ! r)
-      }
+    case r @ RestartTasks(clock) =>
+      sendLater.forward(CleanTaskLocations)
+      this.startClock = clock
+      context.children.foreach(_ ! r)
+    case GetStartClock =>
+      sender ! StartClock(startClock)
   }
 
   def terminationWatch : Receive = {

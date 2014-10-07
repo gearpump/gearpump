@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.remote.RemoteScope
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
@@ -29,7 +30,7 @@ import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{RestartTasks, RecoverToClock, Recover, LaunchTask}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{RestartTasks, RecoverTasks, Recover, LaunchTask}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
@@ -63,11 +64,14 @@ class AppMaster (config : Configs) extends Actor {
   private val registerData = config.appMasterRegisterData
 
   private val name = appDescription.name
-  private val taskQueue = new Queue[(TaskId, TaskDescription, DAG)]
+  private val taskQueue = new Queue[TaskLaunchData]
+  private var taskMap = Map.empty[TaskId, TaskLaunchData]
 
   private var clockService : ActorRef = null
+  private var startClock : TimeStamp = 0L
 
   private var taskLocations = Map.empty[HostPort, Set[TaskId]]
+  private var executorIdToTasks = Map.empty[Int, Set[TaskId]]
 
   private var startedTasks = Set.empty[TaskId]
   private var totalTaskCount = 0
@@ -85,9 +89,13 @@ class AppMaster (config : Configs) extends Actor {
       0.until(taskDescription.parallism).map((taskIndex: Int) => {
         val taskId = TaskId(taskGroupId, taskIndex)
         val nextGroupId = taskGroupId + 1
-        (taskId, taskDescription, dag.subGraph(taskGroupId))
+        TaskLaunchData(taskId, taskDescription, dag.subGraph(taskGroupId))
       })
-    }.toArray.sortBy(_._1.index)
+    }.toArray.sortBy(_.taskId.index)
+
+    taskMap = tasks.foldLeft(taskMap){ (map, taskItem) =>
+      map + (taskItem.taskId -> taskItem)
+    }
 
     totalTaskCount = tasks.size
     taskQueue ++= tasks
@@ -124,7 +132,7 @@ class AppMaster (config : Configs) extends Actor {
       groupedResource.map((workerAndResources) => {
         val (worker, resource) = workerAndResources
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
-        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource)
+        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withStartTime(startClock)
         context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig))
         currentExecutorId += 1
       })
@@ -132,12 +140,17 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def executorMsgHandler: Receive = {
-    case RegisterTask(taskId, host) => {
+    case RegisterTask(taskId, executorId, host) => {
       LOG.info(s"Task $taskId has been Launched for app $appId")
 
       var taskIds = taskLocations.get(host).getOrElse(Set.empty[TaskId])
       taskIds += taskId
       taskLocations += host -> taskIds
+
+      var taskSetForExecutorId = executorIdToTasks.get(executorId).getOrElse(Set.empty[TaskId])
+      taskSetForExecutorId += taskId
+      executorIdToTasks += executorId -> taskSetForExecutorId
+
       startedTasks += taskId
 
       LOG.info(s" started task size: ${startedTasks.size}, taskQueue size: ${totalTaskCount}")
@@ -191,7 +204,7 @@ class AppMaster (config : Configs) extends Actor {
 
       def launchTask(remainResources: Resource): Unit = {
         if (remainResources.greaterThan(Resource.empty) && !taskQueue.isEmpty) {
-          val (taskId, taskDescription, dag) = taskQueue.dequeue()
+          val TaskLaunchData(taskId, taskDescription, dag) = taskQueue.dequeue()
           //Launch task
 
           LOG.info("Sending Launch Task to executor: " + executor.toString())
@@ -212,14 +225,27 @@ class AppMaster (config : Configs) extends Actor {
     }
   }
 
+  implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
   def clientMsgHandler : Receive = {
-    case Recover =>
-      LOG.info("Received recover command from client...")
-      implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
-      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(clock  => RecoverToClock(clock.clock)).pipeTo(self)
-    case RecoverToClock(minClock) =>
-      LOG.info(s"Restarting to clock $minClock")
-      context.children.foreach(_ ! RestartTasks(minClock))
+    case RecoverTasks(minClock, tasks) =>
+      LOG.info(s"Restarting to clock $minClock...")
+
+      //clean the state
+      startClock = minClock
+      taskLocations = taskLocations.empty
+      startedTasks = startedTasks.empty
+
+      //allocate resource for failed tasks
+      if (null != tasks) {
+        tasks.foreach { taskId =>
+          val task = taskMap(taskId)
+          taskQueue.enqueue(task)
+        }
+        master ! RequestResource(appId, ResourceRequest(Resource(taskQueue.size)))
+      }
+
+      //restart existing tasks
+      context.children.foreach(_ ! RestartTasks(startClock))
   }
 
   //TODO: We an task is down, we need to recover
@@ -232,7 +258,13 @@ class AppMaster (config : Configs) extends Actor {
     } else if (isChildActorPath(actor)) {
       //executor is down
       //TODO: handle this failure
-      LOG.error(s"Executor is down ${actor.path.name}")
+
+      val executorId = actor.path.name.toInt
+      LOG.error(s"Executor is down ${actor.path.name}, executorId: $executorId")
+
+      val taskSet = executorIdToTasks(executorId)
+
+      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(clock => RecoverTasks(clock.clock, taskSet)).pipeTo(self)
     }
   }
 
@@ -270,9 +302,9 @@ class AppMaster (config : Configs) extends Actor {
 object AppMaster {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMaster])
 
-  case class TaskData(taskDescription : TaskDescription, dag : DAG)
+  case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
 
-  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs) extends Actor {
+  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs, startTime : TimeStamp) extends Actor {
 
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 

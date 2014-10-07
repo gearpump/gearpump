@@ -27,9 +27,11 @@ import org.apache.gearpump.util.Configs
 
 object AppMasterToExecutor {
   case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
-  case object Recover
-  case class RecoverToClock(clock : TimeStamp)
+  case class Recover(startTime : TimeStamp)
+  case class RecoverTasks(startTime : TimeStamp, tasks : Iterable[TaskId])
   case class RestartTasks(timeStamp : TimeStamp)
+  case object GetStartClock
+  case class StartClock(clock : TimeStamp)
   case object RestartClockService
   class RestartException extends Exception
 }
@@ -37,7 +39,7 @@ object AppMasterToExecutor {
 object ExecutorToAppMaster {
   case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource)
 
-  case class RegisterTask(taskId: TaskId, task: HostPort)
+  case class RegisterTask(taskId: TaskId, executorId : Int, task: HostPort)
 
   trait TaskFinished {
     def taskId : TaskId

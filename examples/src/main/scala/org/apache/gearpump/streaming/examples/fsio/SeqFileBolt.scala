@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.examples.fsio.SeqFileBolt._
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
@@ -43,7 +43,7 @@ class SeqFileBolt(config: HadoopConfig) extends TaskActor(config){
   private var snapShotKVCount : Long = 0
   private var snapShotTime : Long = 0
 
-  override def onStart() = {
+  override def onStart(taskContext : TaskContext) = {
     val hadoopConf = config.hadoopConf
     val fs = FileSystem.get(hadoopConf)
     fs.deleteOnExit(outputPath)

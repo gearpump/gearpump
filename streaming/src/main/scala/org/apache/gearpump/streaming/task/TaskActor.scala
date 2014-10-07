@@ -23,13 +23,15 @@ import java.util
 import akka.actor._
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.AppMasterToExecutor.{RestartException, RestartTasks}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, GetStartClock, RestartException, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.util.Configs
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
+import akka.pattern.ask
+import akka.pattern.pipe
 
 abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   import org.apache.gearpump.streaming.task.TaskActor._
@@ -60,7 +62,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   final def receive : Receive = null
 
-  def onStart() : Unit
+  def onStart(context : TaskContext) : Unit
 
   def onNext(msg : Message) : Unit
 
@@ -95,7 +97,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   final override def preStart() : Unit = {
 
-    appMaster ! RegisterTask(taskId, local)
+    appMaster ! RegisterTask(taskId, conf.executorId, local)
 
     val graph = conf.dag.graph
     LOG.info(s"TaskInit... taskId: $taskId")
@@ -135,10 +137,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
     this.flowControl = new FlowControl(taskId, outputTaskIds.length)
     this.clockTracker = new ClockTracker(flowControl)
 
-    context.become {
-      onStart
-      handleMessage
-    }
+    context.become(waitForStartClock)
+
+    context.parent ! GetStartClock
   }
 
   private def tryToSyncToClockService : Unit = {
@@ -179,6 +180,12 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
         done = true
       }
     }
+  }
+
+  def waitForStartClock : Receive = {
+    case StartClock(clock) =>
+      onStart(new TaskContext(clock))
+      context.become(handleMessage)
   }
 
   def handleMessage : Receive = {
