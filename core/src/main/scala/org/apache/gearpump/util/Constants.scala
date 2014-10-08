@@ -49,5 +49,7 @@ object Constants {
   val TASK_ID = "taskId"
   val TASK_DAG = "taskDag"
 
+  val START_TIME = "startTime"
+
   val HADOOP_CONF = "hadoopConf"
 }

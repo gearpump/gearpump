@@ -38,6 +38,10 @@ class Configs(val config: Map[String, _])  extends Serializable{
     config.getInt(key)
   }
 
+  def getLong(key : String) = {
+    config.getLong(key)
+  }
+
   def getString(key : String) = {
     getAnyRef(key).asInstanceOf[String]
   }
@@ -99,6 +103,10 @@ object Configs {
   implicit class MapHelper(config: Map[String, _]) {
     def getInt(key : String) : Int = {
       config.get(key).get.asInstanceOf[Int]
+    }
+
+    def getLong(key : String) : Long = {
+      config.get(key).get.asInstanceOf[Long]
     }
 
     def getAnyRef(key: String) : AnyRef = {

@@ -20,7 +20,7 @@ package org.apache.gearpump.cluster.main
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props, _}
+import akka.actor._
 import akka.cluster.ClusterEvent._
 import akka.cluster.{Cluster, Member, MemberStatus}
 import akka.contrib.datareplication.DataReplication
