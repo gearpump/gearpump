@@ -31,9 +31,7 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
 
   private val config = conf.config
   private val topic = config.getProducerTopic
-  private val batchSize = config.getProducerEmitBatchSize
-  private val kafkaProducer =
-    new KafkaProducer[String, String](getProducerConfig(config), topic, batchSize)
+  private val kafkaProducer = config.getProducer[String, String]()
 
 
   override def onStart(taskContext : TaskContext): Unit = {
@@ -43,20 +41,11 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     val kvMessage = msg.msg.asInstanceOf[(String, String)]
     val key = kvMessage._1
     val value = kvMessage._2
-    kafkaProducer.send(key, value)
+    kafkaProducer.send(topic, key, value)
   }
 
   override def onStop(): Unit = {
     kafkaProducer.close()
-  }
-
-  private def getProducerConfig(config: Map[String, _]): ProducerConfig = {
-    val props = new Properties()
-    props.put("metadata.broker.list", config.getMetadataBrokerList)
-    props.put("serializer.class", config.getSerializerClass)
-    props.put("producer.type", config.getProducerType)
-    props.put("request.required.acks", config.getRequestRequiredAcks)
-    new ProducerConfig(props)
   }
 }
 

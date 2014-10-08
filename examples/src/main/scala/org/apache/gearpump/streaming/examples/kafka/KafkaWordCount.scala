@@ -58,7 +58,7 @@ object KafkaWordCount extends App with ArgumentsParser {
     val context = ClientContext(masters)
 
     val appId = context.submit(new KafkaWordCount().getApplication(
-      Configs(KafkaUtils()), config.getInt("kafka_spout"), config.getInt("split"),
+      Configs(KafkaConfig()), config.getInt("kafka_spout"), config.getInt("split"),
       config.getInt("sum"), config.getInt("kafka_bolt")))
 
     System.out.println(s"We get application id: $appId")

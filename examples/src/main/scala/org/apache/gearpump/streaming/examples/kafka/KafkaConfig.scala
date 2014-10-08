@@ -18,11 +18,17 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
+import java.util.Properties
+
 import com.typesafe.config.ConfigFactory
+import kafka.common.TopicAndPartition
+import kafka.producer.ProducerConfig
 import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
+import org.I0Itec.zkclient.serialize.ZkSerializer
 import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 object KafkaConfig {
   // consumer config
@@ -42,6 +48,9 @@ object KafkaConfig {
   val REQUEST_REQUIRED_ACKS = "kafka.producer.request.required.acks"
   val PRODUCER_EMIT_BATCH_SIZE = "kafka.producer.emit.batch.size"
 
+  // grouper config
+  val GROUPER_CLASS = "kafka.grouper.class"
+
   def apply(): Map[String, _] = new KafkaConfig().toMap
 
   implicit class ConfigToKafka(config: Map[String, _]) {
@@ -54,12 +63,26 @@ object KafkaConfig {
       config.get(key).get.asInstanceOf[Int]
     }
 
+    private def getStringList(key: String): List[String] = {
+      config.get(key).get.asInstanceOf[java.util.List[String]].asScala.toList
+    }
+
+    def getConsumer(topicAndPartitions: Array[TopicAndPartition],
+                    clientId: String = getClientId,
+                    socketTimeout: Int = getSocketTimeoutMS,
+                    receiveBufferSize: Int = getSocketReceiveBufferSize,
+                    fetchSize: Int = getFetchMessageMaxBytes,
+                    zkClient: ZkClient = getZkClient()): KafkaConsumer = {
+      new KafkaConsumer(topicAndPartitions, clientId, socketTimeout,
+        receiveBufferSize, fetchSize, zkClient)
+    }
+
     def getZookeeperConnect = {
       getString(ZOOKEEPER_CONNECT)
     }
 
-    def getConsumerTopic = {
-      getString(CONSUMER_TOPIC)
+    def getConsumerTopics = {
+      getStringList(CONSUMER_TOPIC)
     }
 
     def getSocketTimeoutMS = {
@@ -82,9 +105,30 @@ object KafkaConfig {
       getInt(CONSUMER_EMIT_BATCH_SIZE)
     }
 
-    def getZkClient = {
-      val socketTimeout = getSocketTimeoutMS
-      new ZkClient(getZookeeperConnect, socketTimeout, socketTimeout, ZKStringSerializer)
+    def getZkClient(zookeeperConnect: String = getZookeeperConnect,
+                    sessionTimeout: Int = getSocketTimeoutMS,
+                    connectionTimeout: Int = getSocketTimeoutMS,
+                    zkSerializer: ZkSerializer = ZKStringSerializer) = {
+      new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
+    }
+
+
+
+    def getProducer[K, V](producerConfig: ProducerConfig = getProducerConfig(),
+                          emitBatchSize: Int = getProducerEmitBatchSize): KafkaProducer[K, V] = {
+      new KafkaProducer[K, V](producerConfig, emitBatchSize)
+    }
+
+    def getProducerConfig(brokerList: String = getMetadataBrokerList,
+                          serializerClass: String = getSerializerClass,
+                          producerType: String = getProducerType,
+                          requiredAcks: String = getRequestRequiredAcks): ProducerConfig = {
+      val props = new Properties()
+      props.put("metadata.broker.list", brokerList)
+      props.put("serializer.class", serializerClass)
+      props.put("producer.type", producerType)
+      props.put("request.required.acks", requiredAcks)
+      new ProducerConfig(props)
     }
 
     def getProducerTopic = {
@@ -109,6 +153,10 @@ object KafkaConfig {
 
     def getMetadataBrokerList = {
       getString(METADATA_BROKER_LIST)
+    }
+
+    def getGrouper(): Grouper = {
+      Class.forName(getString(GROUPER_CLASS)).newInstance().asInstanceOf[Grouper]
     }
   }
 
