@@ -313,11 +313,8 @@ class AppMaster (config : Configs) extends Actor {
 object AppMaster {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMaster])
 
-<<<<<<< HEAD
   case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
 
-=======
->>>>>>> upstream/master
   class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs) extends Actor {
 
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
