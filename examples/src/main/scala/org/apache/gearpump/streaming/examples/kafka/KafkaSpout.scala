@@ -26,6 +26,7 @@ import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.ConfigsHelper._
+import org.apache.gearpump.streaming.examples.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
@@ -55,13 +56,14 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   import org.apache.gearpump.streaming.examples.kafka.KafkaSpout._
 
   private val kafkaConfig = new KafkaConfig()
-  private val topic = kafkaConfig.getConsumerTopic
-  private val clientId = kafkaConfig.getClientId
-  private val soTimeout = kafkaConfig.getSocketTimeoutMS
-  private val bufferSize = kafkaConfig.getSocketReceiveBufferSize
-  private val fetchSize = kafkaConfig.getFetchMessageMaxBytes
-  private val zkClient = kafkaConfig.getZkClient
-  private val batchSize = kafkaConfig.getConsumerEmitBatchSize
+  private val config = conf.config
+  private val topic = config.getConsumerTopic
+  private val clientId = config.getClientId
+  private val soTimeout = config.getSocketTimeoutMS
+  private val bufferSize = config.getSocketReceiveBufferSize
+  private val fetchSize = config.getFetchMessageMaxBytes
+  private val zkClient = config.getZkClient
+  private val batchSize = config.getConsumerEmitBatchSize
 
   val brokers = {
     ZkUtils.getAllBrokersInCluster(zkClient).map(b => Broker(b.host, b.port)).toList

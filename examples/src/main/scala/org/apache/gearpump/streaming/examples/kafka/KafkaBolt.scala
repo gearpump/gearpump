@@ -22,16 +22,18 @@ import java.util.Properties
 
 import kafka.producer.ProducerConfig
 import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.examples.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 
+
 class KafkaBolt(conf: Configs) extends TaskActor(conf) {
 
-  private val kafkaConfig = new KafkaConfig()
-  private val topic = kafkaConfig.getProducerTopic
-  private val batchSize = kafkaConfig.getProducerEmitBatchSize
+  private val config = conf.config
+  private val topic = config.getProducerTopic
+  private val batchSize = config.getProducerEmitBatchSize
   private val kafkaProducer =
-    new KafkaProducer[String, String](getProducerConfig(kafkaConfig), topic, batchSize)
+    new KafkaProducer[String, String](getProducerConfig(config), topic, batchSize)
 
 
   override def onStart(taskContext : TaskContext): Unit = {
@@ -48,7 +50,7 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     kafkaProducer.close()
   }
 
-  private def getProducerConfig(config: KafkaConfig): ProducerConfig = {
+  private def getProducerConfig(config: Map[String, _]): ProducerConfig = {
     val props = new Properties()
     props.put("metadata.broker.list", config.getMetadataBrokerList)
     props.put("serializer.class", config.getSerializerClass)
