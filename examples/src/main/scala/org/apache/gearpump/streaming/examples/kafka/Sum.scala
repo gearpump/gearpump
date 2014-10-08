@@ -21,15 +21,16 @@ package org.apache.gearpump.streaming.examples.kafka
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
-import org.apache.gearpump.streaming.task.{Message, TaskActor}
+import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.task.TaskActor
 import org.apache.gearpump.util.Configs
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.HashMap
 import scala.concurrent.duration.FiniteDuration
 
 class Sum (conf : Configs) extends TaskActor(conf) {
-  import Sum._
+  import org.apache.gearpump.streaming.examples.kafka.Sum._
 
   private val map : HashMap[String, Long] = new HashMap[String, Long]()
 

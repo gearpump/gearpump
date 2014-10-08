@@ -26,7 +26,7 @@ object Priority extends Enumeration{
   val LOW, NORMAL, HIGH = Value
 }
 
-import Priority._
+import org.apache.gearpump.cluster.scheduler.Priority._
 
 case class ResourceRequest(resource: Resource, priority: Priority = NORMAL, worker: WorkerInfo = null)
 

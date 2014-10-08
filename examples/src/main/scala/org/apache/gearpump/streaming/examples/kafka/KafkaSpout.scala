@@ -18,20 +18,18 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import kafka.api.{FetchRequestBuilder, OffsetRequest, PartitionOffsetRequestInfo, TopicMetadataRequest}
+import kafka.api.{FetchRequestBuilder, TopicMetadataRequest}
 import kafka.common.ErrorMapping._
-import kafka.common.TopicAndPartition
 import kafka.consumer.SimpleConsumer
 import kafka.message.MessageAndOffset
 import kafka.serializer.StringDecoder
-import kafka.utils.{Utils, ZKStringSerializer, ZkUtils}
-import org.I0Itec.zkclient.ZkClient
-import org.apache.gearpump.streaming.examples.kafka.KafkaConstants._
-import org.apache.gearpump.streaming.task.{TaskActor, Message}
+import kafka.utils.{Utils, ZkUtils}
+import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.ConfigsHelper._
+import org.apache.gearpump.streaming.task.TaskActor
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable.{Map => MutableMap}
 import scala.util._
 
 
@@ -56,24 +54,20 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
 
   import org.apache.gearpump.streaming.examples.kafka.KafkaSpout._
 
-  private val config = conf.config
-  private val zookeeper = config.get(ZOOKEEPER).get.asInstanceOf[String]
-  private val kafkaRoot = config.get(KAFKA_ROOT).get.asInstanceOf[String]
-  private val connectString = zookeeper + kafkaRoot
-  private val topic = config.get(CONSUMER_TOPIC).get.asInstanceOf[String]
-  private val clientId = config.get(CLIENT_ID).get.asInstanceOf[String]
-  private val soTimeout = config.get(SO_TIMEOUT).get.asInstanceOf[Int]
-  private val bufferSize = config.get(SO_BUFFERSIZE).get.asInstanceOf[Int]
-  private val fetchSize = config.get(FETCH_SIZE).get.asInstanceOf[Int]
-  private val zkClient = new ZkClient(connectString, soTimeout, soTimeout, ZKStringSerializer)
-  private val batchSize = config.get(BATCH_SIZE).get.asInstanceOf[Int]
+  private val kafkaConfig = new KafkaConfig()
+  private val topic = kafkaConfig.getConsumerTopic
+  private val clientId = kafkaConfig.getClientId
+  private val soTimeout = kafkaConfig.getSocketTimeoutMS
+  private val bufferSize = kafkaConfig.getSocketReceiveBufferSize
+  private val fetchSize = kafkaConfig.getFetchMessageMaxBytes
+  private val zkClient = kafkaConfig.getZkClient
+  private val batchSize = kafkaConfig.getConsumerEmitBatchSize
 
   val brokers = {
     ZkUtils.getAllBrokersInCluster(zkClient).map(b => Broker(b.host, b.port)).toList
   }
 
   val partitions = {
-    val partitionPath = kafkaRoot + ZkUtils.getTopicPartitionsPath(topic)
     val numPartitions = ZkUtils.getPartitionsForTopics(zkClient, List(topic))(topic).size
     val numTasks = conf.dag.tasks(taskId.groupId).parallism
     val id = taskId.index

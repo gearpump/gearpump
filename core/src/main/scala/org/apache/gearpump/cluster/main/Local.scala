@@ -22,9 +22,10 @@ import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.Master
 import org.apache.gearpump.util.Constants._
-import scala.collection.JavaConverters._
 import org.apache.gearpump.util.{ActorUtil, Configs}
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.collection.JavaConverters._
 
 object Local extends App with ArgumentsParser {
 

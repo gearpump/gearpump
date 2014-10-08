@@ -18,14 +18,22 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.{ActorSystem, ActorRef, ActorContext}
+import akka.actor.{Actor, ActorSystem, ActorRef, ActorContext}
 import org.apache.gearpump.cluster.AppMasterInfo
+import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.{TaskDescription, AppDescription}
+import org.apache.gearpump.util.{Configs, Graph}
+import org.slf4j.{LoggerFactory, Logger}
 import spray.httpx.Json4sJacksonSupport
 import org.json4s._
 import java.util.UUID
 
+import scala.collection.parallel.mutable
+import scala.concurrent.ExecutionContext
+
 object Json4sSupport extends Json4sJacksonSupport {
-   implicit def json4sJacksonFormats: Formats = jackson.Serialization.formats(NoTypeHints) + new UUIDFormat + new AppMasterInfoSerializer
+  implicit def json4sJacksonFormats: Formats = jackson.Serialization.formats(NoTypeHints) + new UUIDFormat + new AppMasterInfoSerializer + new AppDescriptionSerializer
 
   //so you don't need to import
   //jackson everywhere
@@ -45,15 +53,66 @@ object Json4sSupport extends Json4sJacksonSupport {
   }
 
   class AppMasterInfoSerializer extends CustomSerializer[AppMasterInfo]( format => (
-    {
+    { //from json
       case JObject(JField("worker", JString(s)) :: Nil ) =>
         //only need to serialize to json
         AppMasterInfo(null)
     },
-    {
+    { //to json
       case x:AppMasterInfo =>
         JObject(
           JField("worker", JString(x.worker.path.address.toString)) :: Nil)
+    }
+    )
+  )
+
+  class AppDescriptionSerializer extends CustomSerializer[AppDescription]( format => (
+    { //from json
+      case JObject(
+        JField("name", JString(name)) :: JField("conf", JObject(confMap)) :: JField("dag",
+          JObject(JField("vertex", JArray(dagVertices)) :: JField("edge", JArray(dagEdges)) ::Nil)) :: Nil) =>
+        val conf = Configs(confMap.map(f => {
+          val (key, value) = f
+          (key, value.toSome)
+        }).toMap)
+        val tuples = dagEdges.map {
+          case JArray(
+          JObject(JField("taskClass", JString(node1)) :: JField("parallism", JInt(parallism1)) :: Nil) ::
+            JString(partitioner) ::
+            JObject(JField("taskClass", JString(node2)) :: JField("parallism", JInt(parallism2)) :: Nil) ::
+            Nil) =>
+            Tuple3(
+              TaskDescription(Class.forName(node1).asInstanceOf[Actor].getClass, parallism1.toInt),
+              Class.forName(partitioner).asInstanceOf[Partitioner],
+              TaskDescription(Class.forName(node2).asInstanceOf[Actor].getClass, parallism2.toInt))
+
+        }.toList
+        val dag:Graph[TaskDescription,Partitioner] = Graph.empty
+        Graph(dag, tuples:_*)
+        AppDescription(name,conf,dag)
+    },
+    { //to json
+      case x:AppDescription =>
+        val confKeys = x.conf.config.map(f => {
+          val (key,value) = f
+          JField(key, JString(value.toString))
+        }
+        ).toList
+        val dagVertices = x.dag.vertex.map(f => {
+          JObject(JField("taskClass", JString(f.taskClass.getCanonicalName))::JField("parallism", JInt(f.parallism))::Nil)
+        }).toList
+        val dagEdges = x.dag.edges.map(f => {
+          val (node1, edge, node2) = f
+          JArray(
+            JObject(JField("taskClass",JString(node1.taskClass.getCanonicalName))::JField("parallism",JInt(node1.parallism))::Nil)::
+            JString(edge.getClass.getCanonicalName)::
+            JObject(JField("taskClass",JString(node2.taskClass.getCanonicalName))::JField("parallism",JInt(node2.parallism))::Nil)::
+            Nil
+          )
+        }).toList
+        JObject(
+          JField("name", JString(x.name)) :: JField("conf", JObject(confKeys)) :: JField("dag",
+            JObject(JField("vertex", JArray(dagVertices.toList)) :: JField("edge", JArray(dagEdges)) ::Nil)) :: Nil)
     }
     )
   )

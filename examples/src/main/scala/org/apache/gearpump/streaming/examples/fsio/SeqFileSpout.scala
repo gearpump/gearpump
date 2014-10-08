@@ -17,15 +17,13 @@
  */
 package org.apache.gearpump.streaming.examples.fsio
 
-import org.apache.gearpump.streaming.task.{Message, TaskActor}
-import org.apache.gearpump.util.Configs
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{Path, FileSystem}
-import org.apache.hadoop.io.SequenceFile
-import org.apache.hadoop.io.SequenceFile._
-import org.apache.hadoop.io.Text
+import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.examples.fsio.SeqFileSpout._
-import org.slf4j.{LoggerFactory, Logger}
+import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.io.SequenceFile._
+import org.apache.hadoop.io.{SequenceFile, Text}
+import org.slf4j.{Logger, LoggerFactory}
 
 class SeqFileSpout(config: HadoopConfig) extends TaskActor(config ){
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileSpout])

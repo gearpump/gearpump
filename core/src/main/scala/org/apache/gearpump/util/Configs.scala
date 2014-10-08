@@ -24,9 +24,7 @@ import akka.actor.{Actor, ActorRef}
 import com.typesafe.config.{ConfigFactory, Config}
 import org.apache.gearpump.cluster.{WorkerInfo, AppMasterRegisterData, Application}
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.streaming.TaskDescription
 import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
-import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Constants._
 
 /**
@@ -44,22 +42,25 @@ class Configs(val config: Map[String, _])  extends Serializable{
   }
 
   def getString(key : String) = {
-    config.getAnyRef(key).asInstanceOf[String]
+    getAnyRef(key).asInstanceOf[String]
   }
 
+  def getAnyRef(key: String) : AnyRef = {
+    config.getAnyRef(key)
+  }
 
   def withAppId(appId : Int) = withValue(APPID, appId)
-  def appId : Int = config.getInt(APPID)
+  def appId : Int = getInt(APPID)
 
   def withAppDescription(appDesc : Application) = withValue(APP_DESCRIPTION, appDesc)
 
-  def appDescription : Application = config.getAnyRef(APP_DESCRIPTION).asInstanceOf[Application]
+  def appDescription : Application = getAnyRef(APP_DESCRIPTION).asInstanceOf[Application]
 
   def withMasterProxy(master : ActorRef) = withValue(MASTER, master)
-  def masterProxy : ActorRef = config.getAnyRef(MASTER).asInstanceOf[ActorRef]
+  def masterProxy : ActorRef = getAnyRef(MASTER).asInstanceOf[ActorRef]
 
   def withAppMaster(appMaster : ActorRef) = withValue(APP_MASTER, appMaster)
-  def appMaster : ActorRef = config.getAnyRef(APP_MASTER).asInstanceOf[ActorRef]
+  def appMaster : ActorRef = getAnyRef(APP_MASTER).asInstanceOf[ActorRef]
 
   def withExecutorId(executorId : Int) = withValue(EXECUTOR_ID, executorId)
   def executorId = config.getInt(EXECUTOR_ID)
@@ -69,12 +70,6 @@ class Configs(val config: Map[String, _])  extends Serializable{
 
   def withAppMasterRegisterData(data : AppMasterRegisterData) = withValue(APP_MASTER_REGISTER_DATA, data)
   def appMasterRegisterData : AppMasterRegisterData = config.getAnyRef(APP_MASTER_REGISTER_DATA).asInstanceOf[AppMasterRegisterData]
-
-  def withTaskId(taskId : TaskId) =  withValue(TASK_ID, taskId)
-  def taskId : TaskId = config.getAnyRef(TASK_ID).asInstanceOf[TaskId]
-
-  def withDag(taskDag : DAG) = withValue(TASK_DAG, taskDag)
-  def dag : DAG = config.getAnyRef(TASK_DAG).asInstanceOf[DAG]
 
   def withWorkerInfo(info : WorkerInfo) = withValue(WORKER_INFO, info)
   def workerInfo : WorkerInfo = config.getAnyRef(WORKER_INFO).asInstanceOf[WorkerInfo]
@@ -119,24 +114,5 @@ object Configs {
     def getResource(key : String) : Resource = {
       config.get(key).get.asInstanceOf[Resource]
     }
-  }
-
-  def loadUserAllocation(config: Config) : Array[(Int, TaskDescription)] ={
-    import scala.collection.JavaConverters._
-    var result = new Array[(Int, TaskDescription)](0)
-    if(!config.hasPath(Constants.GEARPUMP_SCHEDULING_REQUEST))
-      return result
-    val allocations = config.getObject(Constants.GEARPUMP_SCHEDULING_REQUEST)
-    if(allocations == null)
-      return result
-    for(worker <- allocations.keySet().asScala.toSet[String]){
-      val tasks = allocations.get(worker).unwrapped().asInstanceOf[util.HashMap[String, Object]]
-      for( taskClass <- tasks.keySet().asScala.toSet[String]){
-        val taskClazz = Class.forName(taskClass).asInstanceOf[Class[Actor]]
-        val parallism = tasks.get(taskClass).asInstanceOf[Int]
-        result = result :+ (worker.toInt, TaskDescription(taskClazz, parallism))
-      }
-    }
-    result
   }
 }

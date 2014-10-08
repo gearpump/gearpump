@@ -20,7 +20,7 @@ package org.apache.gearpump.partitioner
 
 import java.util.Random
 
-import org.apache.gearpump.streaming.task.Message
+import org.apache.gearpump.Message
 
 /**
  * Round Robin partition the data.

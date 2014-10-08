@@ -19,17 +19,19 @@
 package org.apache.gearpump.cluster
 
 import java.io.File
+import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.pattern.pipe
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.util.{ActorUtil, ProcessLogRedirector}
 import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.util.{ActorUtil, Constants, ProcessLogRedirector}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration._
@@ -41,8 +43,8 @@ import scala.util.{Failure, Success, Try}
  * masterProxy is used to resolve the master
  */
 private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
-
-  private var resource = Resource(100)
+  private val systemConfig : Config = context.system.settings.config
+  private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()
   private var id = -1
   override def receive : Receive = null
@@ -129,6 +131,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
   import context.dispatcher
   override def preStart() : Unit = {
     LOG.info(s"Worker[$id] Sending master RegisterNewWorker")
+    val resourceConfig = systemConfig.getAnyRef(Constants.WORKER_RESOURCE).asInstanceOf[util.HashMap[String, Int]]
+    this.resource = Resource(resourceConfig.get("slots"))
     masterProxy ! RegisterNewWorker
     context.become(waitForMasterConfirm(repeatActionUtil(30)(null)))
   }

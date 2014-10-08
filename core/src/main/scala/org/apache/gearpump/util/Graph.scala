@@ -18,9 +18,6 @@
 
 package org.apache.gearpump.util
 
-import java.io.ObjectOutputStream
-
-import org.apache.gearpump.streaming.TaskDescription
 import org.apache.gearpump.util.Graph.Edge
 import org.jgrapht.Graphs
 import org.jgrapht.graph.DefaultDirectedGraph
@@ -33,8 +30,6 @@ import scala.language.implicitConversions
 /**
  * Application DAG
  */
-
-import java.io.ByteArrayOutputStream
 
 class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) extends Serializable{
   import org.apache.gearpump.util.Graph._
@@ -127,8 +122,7 @@ object Graph {
     graph
   }
 
-  def apply[N, E](edges : Tuple3[N, E, N]*) = {
-    val backStoreGraph = empty[N, E]
+  def apply[N, E](backStoreGraph: Graph[N, E], edges : Tuple3[N, E, N]*) = {
     edges.foreach {nodeEdgeNode =>
       val (node1, edge, node2) = nodeEdgeNode
       backStoreGraph.addEdge(node1, edge, node2)
@@ -139,19 +133,6 @@ object Graph {
   def empty[N, E] = {
     new Graph(new DefaultDirectedGraph[N, Edge[E]](classOf[Edge[E]]))
   }
-
-/*
-  def main (args: Array[String]) {
-    val g = Graph(1~2~>4, 1~5~>4, 4~2~>8~2~>9)
-
-    val out = new ObjectOutputStream(new ByteArrayOutputStream());
-    out.writeObject(g);
-    val bolt = TaskDescription(classOf[SOLBolt], 3)
-    val bolt2 = TaskDescription(classOf[SOLBolt], 3)
-    Console.println(bolt.equals(bolt2))
-    Console.println(g.toString)
-  }
-*/
 
   implicit def toGraphElements(element: Any): Array[GraphElement] = {
 
