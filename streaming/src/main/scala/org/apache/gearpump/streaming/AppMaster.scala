@@ -121,7 +121,8 @@ class AppMaster (config : Configs) extends Actor {
       context.become(messageHandler)
   }
 
-  def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse workerMsgHandler orElse clientMsgHandler orElse executorMsgHandler orElse terminationWatch
+  def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse appManagerMsgHandler orElse workerMsgHandler orElse clientMsgHandler orElse executorMsgHandler orElse terminationWatch
+
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) => {
@@ -137,6 +138,17 @@ class AppMaster (config : Configs) extends Actor {
         currentExecutorId += 1
       })
     }
+  }
+
+  def appManagerMsgHandler: Receive = {
+    case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
+      val appId = appMasterDataDetailRequest.appId
+      LOG.info(s"Received AppMasterDataDetailRequest $appId")
+      appId match {
+        case this.appId =>
+          LOG.info(s"Sending back AppMasterDataDetailRequest $appId")
+          sender ! AppMasterDataDetail(appId = appId, appDescription = appDescription)
+      }
   }
 
   def executorMsgHandler: Receive = {
@@ -301,8 +313,11 @@ class AppMaster (config : Configs) extends Actor {
 object AppMaster {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMaster])
 
+<<<<<<< HEAD
   case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
 
+=======
+>>>>>>> upstream/master
   class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs) extends Actor {
 
     private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId

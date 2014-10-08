@@ -25,12 +25,12 @@ import akka.actor.{ActorContext, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.wordnik.swagger.annotations._
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataRequest}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetail, AppMasterDataDetailRequest, AppMasterData, AppMasterDataRequest}
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 
 @Api(value = "/appmaster", description = "AppMaster Info.")
@@ -44,18 +44,31 @@ class AppMasterService(val master:ActorRef, val context: ActorContext, execution
 
   @ApiOperation(value = "Get AppMaster Info", notes = "Returns AppMaster Info ", httpMethod = "GET", response = classOf[AppMasterData])
   @ApiImplicitParams(Array(
-      new ApiImplicitParam(name = "appId", required = true, dataType = "integer", paramType = "path", value = "ID of AppMaster")
-        ))
+      new ApiImplicitParam(name = "appId", required = true, dataType = "integer", paramType = "path", value = "ID of AppMaster"),
+      new ApiImplicitParam(name = "detail", required = false, dataType = "boolean", paramType = "query", value = "true/false")
+  ))
   @ApiResponses(Array(
     new ApiResponse(code = 404, message = "AppMaster not found"),
     new ApiResponse(code = 400, message = "Invalid ID supplied")
   ))
   def readRoute = get { 
-     path("appmaster"/IntNumber) { appId =>
-       onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
-         case Success(value:AppMasterData) => complete(value)
-         case Failure(ex)    => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+     path("appmaster"/IntNumber) { appId => {
+       parameter("detail" ? "false") { detail =>
+         val detailValue = Try(detail.toBoolean).getOrElse(false)
+         detailValue match {
+           case true =>
+             onComplete((master ? AppMasterDataDetailRequest(appId)).asInstanceOf[Future[AppMasterDataDetail]]) {
+               case Success(value: AppMasterDataDetail) => complete(value)
+               case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+             }
+           case false =>
+             onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
+               case Success(value: AppMasterData) => complete(value)
+               case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+             }
+         }
        }
+     }
     }
   }
 }
