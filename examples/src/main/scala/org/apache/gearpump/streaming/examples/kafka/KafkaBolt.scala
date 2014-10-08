@@ -22,16 +22,16 @@ import java.util.Properties
 
 import kafka.producer.ProducerConfig
 import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.examples.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 
+
 class KafkaBolt(conf: Configs) extends TaskActor(conf) {
 
-  private val kafkaConfig = new KafkaConfig()
-  private val topic = kafkaConfig.getProducerTopic
-  private val batchSize = kafkaConfig.getProducerEmitBatchSize
-  private val kafkaProducer =
-    new KafkaProducer[String, String](getProducerConfig(kafkaConfig), topic, batchSize)
+  private val config = conf.config
+  private val topic = config.getProducerTopic
+  private val kafkaProducer = config.getProducer[String, String]()
 
 
   override def onStart(taskContext : TaskContext): Unit = {
@@ -41,20 +41,11 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     val kvMessage = msg.msg.asInstanceOf[(String, String)]
     val key = kvMessage._1
     val value = kvMessage._2
-    kafkaProducer.send(key, value)
+    kafkaProducer.send(topic, key, value)
   }
 
   override def onStop(): Unit = {
     kafkaProducer.close()
-  }
-
-  private def getProducerConfig(config: KafkaConfig): ProducerConfig = {
-    val props = new Properties()
-    props.put("metadata.broker.list", config.getMetadataBrokerList)
-    props.put("serializer.class", config.getSerializerClass)
-    props.put("producer.type", config.getProducerType)
-    props.put("request.required.acks", config.getRequestRequiredAcks)
-    new ProducerConfig(props)
   }
 }
 
