@@ -21,6 +21,7 @@ package org.apache.gearpump.streaming
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import akka.pattern.{ask, pipe}
 import akka.remote.RemoteScope
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump._
@@ -28,26 +29,21 @@ import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
-import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
-import org.apache.gearpump.streaming.AppMasterToExecutor.{RestartTasks, RecoverTasks, Recover, LaunchTask}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RecoverTasks, RestartTasks}
+import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.gearpump.streaming.ConfigsHelper._
 
 import scala.collection.mutable
-import scala.collection.mutable.{HashMap, Queue}
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import akka.pattern.ask
-import akka.pattern.pipe
+import scala.collection.mutable.Queue
 import scala.concurrent.Future
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class AppMaster (config : Configs) extends Actor {
 
@@ -69,7 +65,7 @@ class AppMaster (config : Configs) extends Actor {
   private val name = appDescription.name
   private val taskQueue = new Queue[TaskLaunchData]
   private var taskMap = Map.empty[TaskId, TaskLaunchData]
-  private val userConfigTask = new HashMap[Int, Queue[TaskLaunchData]]()
+  private var userConfigTask = Map.empty[Int, Queue[TaskLaunchData]]
 
   private var clockService : ActorRef = null
   private var startClock : TimeStamp = 0L
@@ -86,23 +82,7 @@ class AppMaster (config : Configs) extends Actor {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
     val dag = DAG(appDescription.dag)
 
-    initTaskQueues()
-    //scheduler the task fairly on every machine
-    val tasks = dag.tasks.flatMap { params =>
-      val (taskGroupId, taskDescription) = params
-      0.until(taskDescription.parallism).map((taskIndex: Int) => {
-        val taskId = TaskId(taskGroupId, taskIndex)
-        val nextGroupId = taskGroupId + 1
-        TaskLaunchData(taskId, taskDescription, dag.subGraph(taskGroupId))
-      })
-    }.toArray.sortBy(_.taskId.index)
-
-    taskMap = tasks.foldLeft(taskMap){ (map, taskItem) =>
-      map + (taskItem.taskId -> taskItem)
-    }
-
-    totalTaskCount = tasks.size
-    taskQueue ++= tasks
+    initTaskQueues(dag)
 
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
 
@@ -223,8 +203,8 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
-      var queue : Queue[(TaskId, TaskDescription, DAG)] = null
-      if (userConfigTask.contains(workerId) && !userConfigTask.get(workerId).isEmpty) {
+      var queue : Queue[TaskLaunchData] = null
+      if (userConfigTask.contains(workerId) && userConfigTask.get(workerId).nonEmpty) {
         queue = userConfigTask.get(workerId).get
       } else {
         queue = taskQueue
@@ -325,36 +305,38 @@ class AppMaster (config : Configs) extends Actor {
     }
   }
 
-  private def initTaskQueues() = {
-    val dag = DAG(appDescription.dag)
-    val schedules = ConfigsHelper.loadUserAllocation(ConfigFactory.empty())
+  private def initTaskQueues(dag : DAG) = {
+    val schedules : Array[(Int, TaskDescription)] = ConfigsHelper.loadUserAllocation(ConfigFactory.empty())
     var scheduledTaskClass = Set.empty[String]
     schedules.foreach(params => {
       val (workerid, taskDescription) = params
       scheduledTaskClass += taskDescription.taskClass.getName
-      userConfigTask.put(workerid , mutable.Queue.empty[(TaskId, TaskDescription, DAG)])
+      userConfigTask += (workerid -> mutable.Queue.empty[TaskLaunchData])
     })
 
-    var unScheculedTask = Array.empty[(TaskId, TaskDescription, DAG)]
+    val unScheculedTask = mutable.Queue.empty[TaskLaunchData]
     dag.tasks.foreach { params =>
       val (taskGroupId, taskDescription) = params
       if (scheduledTaskClass.contains(taskDescription.taskClass.getName)) {
-        schedules.filter(_._2.taskClass.equals(taskDescription.taskClass)).map(workerWithTask => {
-          0.until(workerWithTask._2.parallism).map((taskIndex: Int) => {
-            val taskId = TaskId(taskGroupId, taskIndex)
-            userConfigTask(workerWithTask._1).enqueue((taskId, taskDescription, dag.subGraph(taskGroupId)))
-            totalTaskCount += 1
-          })
+        schedules.filter(_._2.taskClass.equals(taskDescription.taskClass)).foreach(workerWithTask => {
+          val (workerId, task) = workerWithTask
+          enqueueTask(userConfigTask(workerId), taskGroupId, task)
         })
       }else {
-        0.until(taskDescription.parallism).map((taskIndex: Int) => {
-          val taskId = TaskId(taskGroupId, taskIndex)
-          totalTaskCount += 1
-          unScheculedTask = unScheculedTask :+ (taskId, taskDescription, dag.subGraph(taskGroupId))
-        })
+        enqueueTask(unScheculedTask, taskGroupId, taskDescription)
       }
     }
-    taskQueue ++= unScheculedTask.sortBy(_._1.index)
+    taskQueue ++= unScheculedTask.toArray.sortBy(_.taskId.index)
+
+    def enqueueTask(queue: mutable.Queue[TaskLaunchData], taskGroupId: Int, taskDescription: TaskDescription){
+      0.until(taskDescription.parallism).map((taskIndex: Int) => {
+        val taskId = TaskId(taskGroupId, taskIndex)
+        val taskLaunchData = TaskLaunchData(taskId, taskDescription, dag.subGraph(taskGroupId))
+        queue.enqueue(taskLaunchData)
+        taskMap += (taskId -> taskLaunchData)
+        totalTaskCount += 1
+      })
+    }
   }
 }
 
