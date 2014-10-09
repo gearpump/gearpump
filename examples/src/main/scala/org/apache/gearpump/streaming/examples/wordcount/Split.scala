@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.examples.wordcount
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 
 class Split(conf : Configs) extends TaskActor(conf) {
@@ -44,7 +44,7 @@ class Split(conf : Configs) extends TaskActor(conf) {
     """.stripMargin
 
 
-  override def onStart() : Unit = {
+  override def onStart(taskContext : TaskContext) : Unit = {
     self ! Message("start")
   }
 

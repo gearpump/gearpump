@@ -19,11 +19,12 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.{Actor, Props, Terminated}
+import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.AppMasterToExecutor._
-import ConfigsHelper._
+import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.task.TaskLocations
-import org.apache.gearpump.util.{Configs, Constants}
+import org.apache.gearpump.streaming.task.{CleanTaskLocations, TaskLocations}
+import org.apache.gearpump.util.{Constants, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
 class Executor(config : Configs)  extends Actor {
@@ -35,6 +36,7 @@ class Executor(config : Configs)  extends Actor {
   val resource = config.resource
   val appId = config.appId
   val workerId = config.workerId
+  var startClock : TimeStamp = config.startTime
 
   context.parent ! RegisterExecutor(self, executorId, resource, workerId)
   context.watch(appMaster)
@@ -49,8 +51,16 @@ class Executor(config : Configs)  extends Actor {
       val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
       val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }
-
-    case taskLocations : TaskLocations => sendLater.forward(taskLocations)
+    case taskLocations : TaskLocations =>
+      sendLater.forward(taskLocations)
+    case r @ RestartTasks(clock) =>
+      LOG.info(s"Executor received restart tasks at time: $clock")
+      sendLater.forward(CleanTaskLocations)
+      this.startClock = clock
+      context.children.foreach(_ ! r)
+    case GetStartClock =>
+      LOG.info(s"Executor received GetStartClock, return: $startClock")
+      sender ! StartClock(startClock)
   }
 
   def terminationWatch : Receive = {

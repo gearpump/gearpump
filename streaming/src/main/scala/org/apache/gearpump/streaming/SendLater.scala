@@ -23,7 +23,7 @@ import java.util
 import akka.actor.Actor
 import akka.pattern.pipe
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.transport.Express
+import org.apache.gearpump.transport.{HostPort, Express}
 import org.apache.gearpump.transport.netty.TaskMessage
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -48,6 +48,9 @@ class SendLater extends Actor {
       express.remoteAddressMap.send(result)
       express.remoteAddressMap.future().map(_ => TaskLocationReady).pipeTo(self)
     }
+    case CleanTaskLocations =>
+      express.remoteAddressMap.send(Map.empty[Long, HostPort])
+      taskLocationReady = false
     case msg : TaskMessage => {
       queue.add(msg)
       if (taskLocationReady) {

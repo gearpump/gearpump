@@ -22,7 +22,7 @@ import java.util.Random
 
 import akka.serialization.SerializationExtension
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 
 class SOLSpout(conf : Configs) extends TaskActor(conf) {
@@ -34,7 +34,7 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
   private var rand : Random = null
   private var messageCount : Long = 0
 
-  override def onStart() : Unit = {
+  override def onStart(taskContext : TaskContext) : Unit = {
     prepareRandomMessage
     self ! Start
     val s = SerializationExtension(context.system)
@@ -67,7 +67,12 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     output(new Message(message, System.currentTimeMillis()))
     messageCount = messageCount + 1L
 
-    self ! Continue
+    self ! messageSourceMinClock
+  }
+
+  // messageSourceMinClock represent the min clock of the message source
+  private def messageSourceMinClock : Message = {
+    Message("tick", System.currentTimeMillis())
   }
 }
 
@@ -75,5 +80,4 @@ object SOLSpout{
   val BYTES_PER_MESSAGE = "bytesPerMessage"
 
   val Start = Message("start")
-  val Continue = Message("continue")
 }

@@ -22,7 +22,7 @@ import java.util.Properties
 
 import kafka.producer.ProducerConfig
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 
 class KafkaBolt(conf: Configs) extends TaskActor(conf) {
@@ -34,7 +34,7 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     new KafkaProducer[String, String](getProducerConfig(kafkaConfig), topic, batchSize)
 
 
-  override def onStart(): Unit = {
+  override def onStart(taskContext : TaskContext): Unit = {
   }
 
   override def onNext(msg: Message): Unit = {

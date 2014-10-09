@@ -35,16 +35,17 @@ object Local extends App with ArgumentsParser {
     Array("ip"->CLIOption[String]("<master ip address>",required = false, defaultValue = Some("127.0.0.1")),
           "port"->CLIOption("<master port>",required = true),
           "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
-          "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(4)))
+          "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(2)))
 
   val config = parse(args)
 
   def start() = {
-    local(config.getString("ip"),  config.getInt("port"), config.getInt("workernum"), config.exists("sameprocess"))
+    local(config.getString("ip"),  config.getInt("port"), config.getInt("workernum"), config.getBoolean("sameprocess"))
   }
 
   def local(ip : String, port : Int, workerCount : Int, sameProcess : Boolean) : Unit = {
     if (sameProcess) {
+      LOG.info("Starting local in same process")
       System.setProperty("LOCAL", "true")
     }
 

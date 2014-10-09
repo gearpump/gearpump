@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -40,7 +40,7 @@ class Sum (conf : Configs) extends TaskActor(conf) {
 
   private var scheduler : Cancellable = null
 
-  override def onStart() : Unit = {
+  override def onStart(taskContext : TaskContext) : Unit = {
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)

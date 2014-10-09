@@ -29,3 +29,4 @@ object TaskId {
 }
 
 case class TaskLocations(locations : Map[HostPort, Set[TaskId]])
+case object CleanTaskLocations
