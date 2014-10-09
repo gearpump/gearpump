@@ -17,8 +17,6 @@
  */
 package org.apache.gearpump.cluster.scheduler
 
-import org.apache.gearpump.cluster.WorkerInfo
-
 case class Resource(slots : Int)
 
 object Priority extends Enumeration{
@@ -26,11 +24,12 @@ object Priority extends Enumeration{
   val LOW, NORMAL, HIGH = Value
 }
 
+import akka.actor.ActorRef
 import org.apache.gearpump.cluster.scheduler.Priority._
 
-case class ResourceRequest(resource: Resource, priority: Priority = NORMAL, worker: WorkerInfo = null)
+case class ResourceRequest(resource: Resource, priority: Priority = NORMAL, workerId: Int = 0)
 
-case class ResourceAllocation(resource : Resource, worker : WorkerInfo)
+case class ResourceAllocation(resource : Resource, worker : ActorRef, workerId : Int)
 
 object Resource{
   def empty = new Resource(0)

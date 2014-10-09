@@ -17,11 +17,10 @@
  */
 package org.apache.gearpump.cluster.scheduler
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
-import org.apache.gearpump.cluster.WorkerInfo
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -29,28 +28,27 @@ import scala.collection.mutable
 
 abstract class Scheduler extends Actor{
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Scheduler])
-  protected var resources = new mutable.HashMap[WorkerInfo, Resource]
+  protected var resources = new mutable.HashMap[Int, (ActorRef, Resource)]
 
   def handleScheduleMessage : Receive = {
     case WorkerRegistered(id) =>
-      val workerInfo = WorkerInfo(id, sender())
-      if(!resources.contains(workerInfo)) {
+      if(!resources.contains(id)) {
         LOG.info(s"Worker $id added to the scheduler")
-        resources.put(workerInfo, Resource.empty)
+        resources.put(id, (sender(), Resource.empty))
       }
-    case ResourceUpdate(worker, resource) =>
-      LOG.info(s"Resource update id: ${worker.id}, slots: ${resource.slots}....")
-      if(resources.contains(worker)) {
-        resources.update(worker, resource)
+    case ResourceUpdate(workerId, resource) =>
+      LOG.info(s"Resource update id: ${workerId}, slots: ${resource.slots}....")
+      if(resources.contains(workerId)) {
+        resources.update(workerId, (sender(), resource))
         allocateResource()
       }
       else {
-        worker.actorRef ! UpdateResourceFailed(s"ResourceUpdate failed! The worker ${worker.id} has not been registered into master")
+        sender() ! UpdateResourceFailed(s"ResourceUpdate failed! The worker ${workerId} has not been registered into master")
       }
     case WorkerTerminated(actor) =>
       resources = resources.filter( params => {
-        val (workerInfo, _) = params
-        workerInfo.actorRef != actor
+        val (_, (worker, _)) = params
+        worker != actor
       })
   }
 
@@ -58,5 +56,5 @@ abstract class Scheduler extends Actor{
 }
 
 object Scheduler{
-  class PendingRequest(val appMaster: ActorRef, val request: ResourceRequest, val timeStamp: TimeStamp)
+  case class PendingRequest(appMaster: ActorRef, request: ResourceRequest, timeStamp: TimeStamp)
 }

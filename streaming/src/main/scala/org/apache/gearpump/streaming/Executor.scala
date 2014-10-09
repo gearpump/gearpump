@@ -34,9 +34,9 @@ class Executor(config : Configs)  extends Actor {
   val executorId = config.executorId
   val resource = config.resource
   val appId = config.appId
-  val workerInfo = config.workerInfo
+  val workerId = config.workerId
 
-  context.parent ! RegisterExecutor(self, executorId, resource, workerInfo)
+  context.parent ! RegisterExecutor(self, executorId, resource, workerId)
   context.watch(appMaster)
 
   val sendLater = context.actorOf(Props[SendLater], "sendlater")

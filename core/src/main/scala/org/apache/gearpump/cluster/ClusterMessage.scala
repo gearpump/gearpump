@@ -30,7 +30,7 @@ import scala.util.Try
 object WorkerToMaster {
   case object RegisterNewWorker
   case class RegisterWorker(workerId: Int)
-  case class ResourceUpdate(workerInfo: WorkerInfo, resource: Resource)
+  case class ResourceUpdate(workerId: Int, resource: Resource)
 }
 
 object MasterToWorker {
@@ -56,7 +56,7 @@ trait AppMasterRegisterData
 
 object AppMasterToMaster {
   case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resource: Resource, registerData : AppMasterRegisterData)
-  case class RequestResource(appId: Int, requests : Array[ResourceRequest])
+  case class RequestResource(appId: Int, request: ResourceRequest)
 }
 
 object MasterToAppMaster {

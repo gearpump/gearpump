@@ -20,9 +20,8 @@ package org.apache.gearpump.cluster.scheduler
 
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
-import org.apache.gearpump.cluster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.Scheduler.PendingRequest
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
@@ -46,51 +45,51 @@ class PriorityScheduler extends Scheduler{
     val length = resources.size
 
     val flattenResource = resources.toArray.zipWithIndex.flatMap((workerWithIndex) => {
-      val ((worker, resource), index) = workerWithIndex
-      0.until(resource.slots).map((seq) => (worker, seq * length + index))
+      val ((workerId, (worker, resource)), index) = workerWithIndex
+      0.until(resource.slots).map((seq) => ((workerId, worker), seq * length + index))
     }).sortBy(_._2).map(_._1)
 
     val total = Resource(flattenResource.length)
-    var tempStoredRequests = Array.empty[PendingRequest]
+    var scheduleLater = Array.empty[PendingRequest]
     def assignResourceToApplication(allocated : Resource) : Unit = {
       if (allocated == total || resourceRequests.isEmpty) {
         return
       }
-      val pendingRequest = resourceRequests.dequeue()
-      val (appMaster, request, timeStamp) = (pendingRequest.appMaster, pendingRequest.request, pendingRequest.timeStamp)
-      if (request.worker != null && resources.exists(_._1.id == request.worker.id)) {
-        val workerResource = resources.find(_._1.id == request.worker.id).getOrElse((WorkerInfo(-1), Resource(0)))
-        if (workerResource._2.greaterThan(request.resource)) {
-          appMaster ! ResourceAllocated(Array(ResourceAllocation(request.resource, workerResource._1)))
+      val PendingRequest(appMaster, request, timeStamp) = resourceRequests.dequeue()
+      if (resources.contains(request.workerId)) {
+        val (worker, availableResource) = resources.get(request.workerId).get
+        if (availableResource.greaterThan(request.resource)) {
+          appMaster ! ResourceAllocated(Array(ResourceAllocation(request.resource, worker, request.workerId)))
           assignResourceToApplication(allocated.add(request.resource))
         } else {
-          tempStoredRequests = tempStoredRequests :+ pendingRequest
+          scheduleLater = scheduleLater :+ PendingRequest(appMaster, request, timeStamp)
           assignResourceToApplication(allocated)
         }
       }
 
       val newAllocated = Resource.min(total.subtract(allocated), request.resource)
       val singleAllocation = flattenResource.slice(allocated.slots, allocated.add(newAllocated).slots)
-        .groupBy((actor) => actor).mapValues(_.length).toArray.map((resource) =>  ResourceAllocation(Resource(resource._2), resource._1))
+        .groupBy((actor) => actor).mapValues(_.length).toArray.map((params) => {
+        val ((workerId, worker), slots) = params
+        ResourceAllocation(Resource(slots), worker, workerId)
+      })
       appMaster ! ResourceAllocated(singleAllocation)
       if (request.resource.greaterThan(newAllocated)) {
-        tempStoredRequests = tempStoredRequests :+ new PendingRequest(appMaster, ResourceRequest(request.resource.subtract(newAllocated), request.priority, request.worker), timeStamp)
+        resourceRequests.enqueue(PendingRequest(appMaster, ResourceRequest(request.resource.subtract(newAllocated), request.priority, request.workerId), timeStamp))
       }
       assignResourceToApplication(allocated.add(newAllocated))
     }
     assignResourceToApplication(Resource(0))
 
-    for(request <- tempStoredRequests)
+    for(request <- scheduleLater)
       resourceRequests.enqueue(request)
   }
 
   def resourceRequestHandler: Receive = {
-    case RequestResource(appId, requests) =>
-      requests.foreach(request => {
-        LOG.info(s"Request resource: appId: $appId, slots: ${request.resource.slots}")
-        val appMaster = sender()
-        resourceRequests.enqueue(new PendingRequest(appMaster, request, System.currentTimeMillis()))
-      })
+    case RequestResource(appId, request) =>
+      LOG.info(s"Request resource: appId: $appId, slots: ${request.resource.slots}")
+      val appMaster = sender()
+      resourceRequests.enqueue(new PendingRequest(appMaster, request, System.currentTimeMillis()))
       allocateResource()
   }
 

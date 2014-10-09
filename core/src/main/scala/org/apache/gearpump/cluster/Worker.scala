@@ -58,7 +58,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       master = sender
       context.watch(master)
       LOG.info(s"Worker $id Registered ....")
-      sender ! ResourceUpdate(WorkerInfo(id, self), resource)
+      sender ! ResourceUpdate(id, resource)
       context.become(appMasterMsgHandler orElse terminationWatch(master) orElse ActorUtil.defaultMsgHandler(self))
   }
 
@@ -84,7 +84,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 
         resource = resource.subtract(launch.resource)
         allocatedResource = allocatedResource + (executor -> launch.resource)
-        master ! ResourceUpdate(WorkerInfo(id, self), resource)
+        master ! ResourceUpdate(id, resource)
         context.watch(executor)
       }
   }
@@ -109,7 +109,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         if (allocated.isDefined) {
           resource = resource.add(allocated.get)
           allocatedResource = allocatedResource - actor
-          master ! ResourceUpdate(WorkerInfo(id, self), resource)
+          master ! ResourceUpdate(id, resource)
         }
       }
   }
@@ -159,8 +159,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
     context.system.shutdown()
   }
 }
-
-case class WorkerInfo(id : Int, actorRef : ActorRef = null)
 
 private[cluster] object Worker {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Worker])

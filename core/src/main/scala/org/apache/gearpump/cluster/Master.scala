@@ -67,7 +67,7 @@ private[cluster] class Master extends Actor with Stash {
       sender ! WorkerRegistered(id)
       scheduler forward WorkerRegistered(id)
       workers += (sender() -> id)
-      LOG.info(s"Register Worker $id on....")
+      LOG.info(s"Register Worker $id....")
     case resourceUpdate : ResourceUpdate =>
       scheduler forward resourceUpdate
   }

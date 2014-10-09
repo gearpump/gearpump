@@ -19,7 +19,6 @@
 package org.apache.gearpump.streaming
 
 import java.util.concurrent.TimeUnit
-import java.io.File
 
 import akka.actor._
 import akka.remote.RemoteScope
@@ -29,7 +28,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.{ResourceRequest, ResourceAllocation, Resource}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
@@ -40,7 +39,7 @@ import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
-import scala.collection.mutable.{Queue, HashMap}
+import scala.collection.mutable.{HashMap, Queue}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class AppMaster (config : Configs) extends Actor {
@@ -87,14 +86,12 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"AppMasterRegistered received for appID: $appId")
 
       LOG.info("Sending request resource to master...")
-      var resourceRequest = Array.empty[ResourceRequest]
       userConfigTask.foreach(params => {
         val (worker, tasks) = params
-        resourceRequest = resourceRequest :+ ResourceRequest(Resource(tasks.size), worker = WorkerInfo(worker))
+        master ! RequestResource(appId, ResourceRequest(Resource(tasks.size), workerId = worker))
       })
-      resourceRequest = resourceRequest :+ ResourceRequest(Resource(taskQueue.size))
 
-      master ! RequestResource(appId, resourceRequest)
+      master ! RequestResource(appId, ResourceRequest(Resource(taskQueue.size)))
       killSelf.cancel()
       this.master = master
       context.watch(master)
@@ -107,13 +104,15 @@ class AppMaster (config : Configs) extends Actor {
     case ResourceAllocated(allocations) => {
       LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
       //group resource by worker
+      val actorToWorkerId = mutable.HashMap.empty[ActorRef, Int]
       val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(Resource.empty)((totalResource, request) => totalResource add request.resource)).toArray
+      allocations.foreach(allocation => actorToWorkerId.put(allocation.worker, allocation.workerId))
 
       groupedResource.map((workerAndResources) => {
         val (worker, resource) = workerAndResources
-        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker ${worker.id}")
-        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withWorkerInfo(worker)
-        context.actorOf(Props(classOf[ExecutorLauncher], worker.actorRef, appId, currentExecutorId, resource, executorConfig))
+        LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
+        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withWorkerId(actorToWorkerId.get(worker).get)
+        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig))
         currentExecutorId += 1
       })
     }
@@ -183,13 +182,13 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def workerMsgHandler : Receive = {
-    case RegisterExecutor(executor, executorId, resource, worker) => {
+    case RegisterExecutor(executor, executorId, resource, workerId) => {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
       var queue : Queue[(TaskId, TaskDescription, DAG)] = null
-      if (userConfigTask.contains(worker.id) && !userConfigTask.get(worker.id).isEmpty) {
-        queue = userConfigTask.get(worker.id).get
+      if (userConfigTask.contains(workerId) && !userConfigTask.get(workerId).isEmpty) {
+        queue = userConfigTask.get(workerId).get
       } else {
         queue = taskQueue
       }

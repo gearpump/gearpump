@@ -28,7 +28,7 @@ object Constants {
   val MASTER_WATCHER = "masterwatcher"
 
   val WORKER = "worker"
-  val WORKER_INFO = "workerinfo"
+  val WORKER_ID = "workerid"
   val WORKER_RESOURCE = "worker.akka.cluster.resource"
 
   val APP_MASTER_REGISTER_DATA = "appmasterregisterdata"
