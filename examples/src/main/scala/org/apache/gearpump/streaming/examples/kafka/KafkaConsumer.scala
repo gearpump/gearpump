@@ -18,15 +18,16 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import kafka.api.{FetchRequestBuilder, TopicMetadataRequest}
+import java.util.{Map => JMap}
+
+import kafka.api.{FetchRequestBuilder, OffsetRequest, TopicMetadataRequest}
 import kafka.common.ErrorMapping._
 import kafka.common.TopicAndPartition
 import kafka.consumer.SimpleConsumer
 import kafka.message.MessageAndOffset
-import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.{Failure, Success, Try}
 
@@ -42,6 +43,9 @@ object KafkaConsumer {
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaSpout])
 }
+
+case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
+                        key: Array[Byte], msg: Array[Byte])
 
 class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String, socketTimeout: Int,
@@ -62,30 +66,31 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
       val broker = leaders(tp)
       val host = broker.host
       val port = broker.port
-      (tp, new MessageIterator(host, port, tp.topic, tp.partition, 0L,
+      (tp, new MessageIterator(host, port, tp.topic, tp.partition,
         socketTimeout, receiveBufferSize, fetchSize, clientId))
     }).toMap
 
   private var partitionIndex = 0
   private val partitionNum = topicAndPartitions.length
 
-  def start(): Unit = {
-
+  def setStartOffset(topicAndPartition: TopicAndPartition, startOffset: Long): Unit = {
+    iterators(topicAndPartition).setStartOffset(startOffset)
   }
 
-  def nextMessage(): (TopicAndPartition, String) = {
-    val tp = topicAndPartitions(partitionIndex)
-    val iter = iterators(tp)
+  // fetch message from each TopicAndPartition in a round-robin way
+  def nextMessage(): KafkaMessage = {
+    val msg = nextMessage(topicAndPartitions(partitionIndex))
     partitionIndex = (partitionIndex + 1) % partitionNum
-    if (iter.hasNext()) {
-      (tp, iter.next())
+    msg
+  }
+
+  def nextMessage(topicAndPartition: TopicAndPartition): KafkaMessage = {
+    val iter = iterators(topicAndPartition)
+    if (iter.hasNext) {
+      KafkaMessage(topicAndPartition, iter.getOffset, iter.getKey, iter.next)
     } else {
       null
     }
-  }
-
-  def getOffset(topicAndPartition: TopicAndPartition): Long = {
-    iterators(topicAndPartition).getOffset()
   }
 
   def close(): Unit = {
@@ -127,7 +132,6 @@ class MessageIterator(host: String,
                       port: Int,
                       topic: String,
                       partition: Int,
-                      startOffset: Long,
                       soTimeout: Int,
                       bufferSize: Int,
                       fetchSize: Int,
@@ -135,27 +139,39 @@ class MessageIterator(host: String,
 
 
   private val consumer = new SimpleConsumer(host, port, soTimeout, bufferSize, clientId)
-  private val decoder = new StringDecoder()
-
+  private var startOffset = consumer.earliestOrLatestOffset(TopicAndPartition(topic, partition),
+    OffsetRequest.EarliestTime, -1)
   private var iter = iterator(startOffset)
   private var readMessages = 0L
   private var offset = startOffset
+  private var key: Array[Byte] = null
   private var nextOffset = offset
 
-  def getOffset(): Long = {
+  def setStartOffset(startOffset: Long): Unit = {
+    this.startOffset = startOffset
+  }
+
+  def getKey: Array[Byte] = {
+    key
+  }
+
+  def getOffset: Long = {
     offset
   }
 
-  def next(): String = {
+  def next: Array[Byte] = {
     val mo = iter.next()
+    val message = mo.message
     readMessages += 1
     offset = mo.offset
+    key = Utils.readBytes(message.key)
     nextOffset = mo.nextOffset
-    decoder.fromBytes(Utils.readBytes(mo.message.payload))
+    Utils.readBytes(mo.message.payload)
   }
 
+
   @annotation.tailrec
-  final def hasNext(): Boolean = {
+  final def hasNext: Boolean = {
     if (iter.hasNext) {
       true
     } else if (0 == readMessages) {
@@ -164,7 +180,7 @@ class MessageIterator(host: String,
     } else {
       iter = iterator(nextOffset)
       readMessages = 0
-      hasNext()
+      hasNext
     }
   }
 

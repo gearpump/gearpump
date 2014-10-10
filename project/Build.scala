@@ -102,6 +102,7 @@ object Build extends sbt.Build {
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
+          "org.json4s" %% "json4s-native" % json4sVersion,
           "org.apache.kafka" %% "kafka" % kafkaVersion
         )
       ) 

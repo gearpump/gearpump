@@ -25,7 +25,7 @@ import kafka.consumer.SimpleConsumer
 import kafka.message.MessageAndOffset
 import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
-import org.apache.gearpump.Message
+import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.examples.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
@@ -70,30 +70,87 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
     grouped
   }
 
-  private val consumer = config.getConsumer(topicAndPartitions)
+  private val consumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
+  private val decoder = new StringDecoder()
+  private val checkpointManager =
+    config.getCheckpointManagerFactory.getCheckpointManager(topicAndPartitions, conf)
+  private val commitIntervalMS = config.getCheckpointCommitIntervalMS
+  private var indexMessages = Map.empty[(TopicAndPartition, TimeStamp), KafkaMessage]
+  private var lastCommitTime = 0L
 
   override def onStart(taskContext: TaskContext): Unit = {
+    checkpointManager.start()
     self ! Message("start", System.currentTimeMillis())
   }
 
   override def onNext(msg: Message): Unit = {
+    @annotation.tailrec
     def emit(msgNum: Int): Unit = {
       if (msgNum < emitBatchSize) {
-        val timestamp = System.currentTimeMillis()
-        val kafkaMessage = consumer.nextMessage()
-        if (kafkaMessage != null) {
-          output(new Message(kafkaMessage._2, timestamp))
+        val kafkaMsg = consumer.nextMessage()
+        if (kafkaMsg != null) {
+          val timestamp = System.currentTimeMillis()
+          output(new Message(decoder.fromBytes(kafkaMsg.msg)))
+          updateCheckpoint(timestamp, kafkaMsg)
         }
         emit(msgNum + 1)
       }
     }
     emit(0)
+    if (shouldCommitCheckpoint) {
+      LOG.info("committing checkpoint...")
+      commitCheckpoint
+    }
     self ! Message("continue", Message.noTimeStamp)
   }
 
   override def onStop(): Unit = {
     consumer.close()
+    checkpointManager.close()
   }
 
+  private def updateCheckpoint(timestamp: TimeStamp, kafkaMsg: KafkaMessage): Unit = {
+    val topicAndPartition = kafkaMsg.topicAndPartition
+    if (!indexMessages.contains((topicAndPartition, timestamp))) {
+      indexMessages += (topicAndPartition, timestamp) -> kafkaMsg
+    }
+  }
 
+  private def commitCheckpoint = {
+    indexMessages.foreach {
+      entry => {
+        val topicAndPartition = entry._1._1
+        val timestamp = entry._1._2
+        val kafkaMsg = entry._2
+        checkpointManager.writeCheckpoint(topicAndPartition,
+          Checkpoint(timestamp, KafkaUtil.serialize(kafkaMsg)))
+      }
+    }
+
+    lastCommitTime = System.currentTimeMillis()
+    indexMessages = Map.empty[(TopicAndPartition, Long), KafkaMessage]
+  }
+
+  private def shouldCommitCheckpoint: Boolean = {
+    val now = System.currentTimeMillis()
+    (now - lastCommitTime) > commitIntervalMS
+  }
+
+  private def readCheckpoints(): Map[(TopicAndPartition, TimeStamp), KafkaMessage] = {
+    topicAndPartitions.flatMap {
+      tp =>
+        checkpointManager.readCheckpoints(tp).map {
+          checkpoint =>
+            ((tp, checkpoint.timestamp), KafkaUtil.deserialize(checkpoint.data))
+        }
+    }.toMap
+  }
+
+  private def readOffsets(topicAndPartition: TopicAndPartition): Map[TimeStamp, Long] = {
+    checkpointManager.readCheckpoints(topicAndPartition).map {
+      checkpoint =>
+        val kafkaMessage = KafkaUtil.deserialize(checkpoint.data)
+        (checkpoint.timestamp, kafkaMessage.offset)
+    }.toMap
+  }
 }
