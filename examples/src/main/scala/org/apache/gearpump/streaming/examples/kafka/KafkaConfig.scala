@@ -23,6 +23,7 @@ import java.util.Properties
 import com.typesafe.config.ConfigFactory
 import kafka.common.TopicAndPartition
 import kafka.producer.ProducerConfig
+import kafka.serializer.Decoder
 import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
@@ -33,12 +34,13 @@ import scala.collection.JavaConverters._
 object KafkaConfig {
   // consumer config
   val ZOOKEEPER_CONNECT = "kafka.consumer.zookeeper.connect"
-  val CONSUMER_TOPIC = "kafka.consumer.topic"
+  val CONSUMER_TOPICS = "kafka.consumer.topics"
   val SOCKET_TIMEOUT_MS = "kafka.consumer.socket.timeout.ms"
   val SOCKET_RECEIVE_BUFFER_SIZE = "kafka.consumer.socket.receive.buffer.size"
   val CLIENT_ID = "kafka.consumer.client.id"
   val FETCH_MESSAGE_MAX_BYTES = "kafka.consumer.fetch.message.max.bytes"
   val CONSUMER_EMIT_BATCH_SIZE = "kafka.consumer.emit.batch.size"
+  val CONSUMER_DESERIALIZER_CLASS = "kafka.consumer.deserializer.class"
 
   // producer config
   val PRODUCER_TOPIC = "kafka.producer.topic"
@@ -51,6 +53,11 @@ object KafkaConfig {
   // grouper config
   val GROUPER_CLASS = "kafka.grouper.class"
 
+  // checkpoint config
+  val CHECKPOINT_MANAGER_FACTORY_CLASS = "kafka.checkpoint.manager.factory.class"
+  val CHECKPOINT_REPLICAS = "kafka.checkpoint.replicas"
+  val CHECKPOINT_COMMIT_INTERVAL_MS = "kafka.checkpoint.commit.interval.ms"
+
   def apply(): Map[String, _] = new KafkaConfig().toMap
 
   implicit class ConfigToKafka(config: Map[String, _]) {
@@ -61,6 +68,11 @@ object KafkaConfig {
 
     private def getInt(key: String): Int = {
       config.get(key).get.asInstanceOf[Int]
+    }
+
+
+    private def getInstance[C](key: String): C = {
+      Class.forName(getString(key)).newInstance().asInstanceOf[C]
     }
 
     private def getStringList(key: String): List[String] = {
@@ -82,7 +94,7 @@ object KafkaConfig {
     }
 
     def getConsumerTopics = {
-      getStringList(CONSUMER_TOPIC)
+      getStringList(CONSUMER_TOPICS)
     }
 
     def getSocketTimeoutMS = {
@@ -105,14 +117,16 @@ object KafkaConfig {
       getInt(CONSUMER_EMIT_BATCH_SIZE)
     }
 
+    def getConsumerDeserializer = {
+      getInstance[Decoder[_]](CONSUMER_DESERIALIZER_CLASS)
+    }
+
     def getZkClient(zookeeperConnect: String = getZookeeperConnect,
                     sessionTimeout: Int = getSocketTimeoutMS,
                     connectionTimeout: Int = getSocketTimeoutMS,
                     zkSerializer: ZkSerializer = ZKStringSerializer) = {
       new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
     }
-
-
 
     def getProducer[K, V](producerConfig: ProducerConfig = getProducerConfig(),
                           emitBatchSize: Int = getProducerEmitBatchSize): KafkaProducer[K, V] = {
@@ -155,8 +169,20 @@ object KafkaConfig {
       getString(METADATA_BROKER_LIST)
     }
 
-    def getGrouper(): Grouper = {
-      Class.forName(getString(GROUPER_CLASS)).newInstance().asInstanceOf[Grouper]
+    def getGrouper = {
+      getInstance[Grouper](GROUPER_CLASS)
+    }
+
+    def getCheckpointManagerFactory = {
+      getInstance[CheckpointManagerFactory](CHECKPOINT_MANAGER_FACTORY_CLASS)
+    }
+
+    def getCheckpointReplicas = {
+      getInt(CHECKPOINT_REPLICAS)
+    }
+
+    def getCheckpointCommitIntervalMS = {
+      getInt(CHECKPOINT_COMMIT_INTERVAL_MS)
     }
   }
 
