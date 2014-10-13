@@ -80,6 +80,8 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
 
   override def onStart(taskContext: TaskContext): Unit = {
     checkpointManager.start()
+    readCheckpoints.filter(_._1._2 > taskContext.startTime).foreach(
+      checkpoint => consumer.setStartOffset(checkpoint._1._1, checkpoint._2.offset))
     self ! Message("start", System.currentTimeMillis())
   }
 
@@ -136,21 +138,13 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
     (now - lastCommitTime) > commitIntervalMS
   }
 
-  private def readCheckpoints(): Map[(TopicAndPartition, TimeStamp), KafkaMessage] = {
+  private def readCheckpoints: Map[(TopicAndPartition, TimeStamp), KafkaMessage] = {
     topicAndPartitions.flatMap {
       tp =>
         checkpointManager.readCheckpoints(tp).map {
           checkpoint =>
             ((tp, checkpoint.timestamp), KafkaUtil.deserialize(checkpoint.data))
         }
-    }.toMap
-  }
-
-  private def readOffsets(topicAndPartition: TopicAndPartition): Map[TimeStamp, Long] = {
-    checkpointManager.readCheckpoints(topicAndPartition).map {
-      checkpoint =>
-        val kafkaMessage = KafkaUtil.deserialize(checkpoint.data)
-        (checkpoint.timestamp, kafkaMessage.offset)
     }.toMap
   }
 }
