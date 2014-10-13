@@ -50,22 +50,21 @@ class KafkaCheckpointManager(topicAndPartitions: Array[TopicAndPartition],
   }
 
   override def readCheckpoints(topicAndPartition: TopicAndPartition): List[Checkpoint] = {
+    // can only get consumer after checkpoint topics having been created
     if (null == consumer) {
       consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
     }
-    var checkpoints = List.empty[Checkpoint]
     val checkpointTopicAndPartition = getCheckpointTopicAndPartition(topicAndPartition)
     @annotation.tailrec
-    def fetch: List[Checkpoint] = {
+    def fetch(checkpoints: List[Checkpoint]): List[Checkpoint] = {
       val kafkaMsg = consumer.nextMessage(checkpointTopicAndPartition)
       if (kafkaMsg != null) {
-        checkpoints :+= Checkpoint(KafkaUtil.byteArrayToLong(kafkaMsg.key), kafkaMsg.msg)
-        fetch
+        fetch(checkpoints :+ Checkpoint(KafkaUtil.byteArrayToLong(kafkaMsg.key), kafkaMsg.msg))
       } else {
         checkpoints
       }
     }
-    fetch
+    fetch(List.empty[Checkpoint])
   }
 
   override def close(): Unit = {
