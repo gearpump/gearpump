@@ -134,6 +134,7 @@ Serialization
 ========================
 
 The configuration for serialization is:
+
 ```
 gearpump {
   serializers {
@@ -145,10 +146,12 @@ gearpump {
     "scala.Tuple2" = ""
   }
 }
+```
 
 We use library kryo and akka-kryo library https://github.com/romix/akka-kryo-serialization. The following list contians supported value types.
 
 ```
+
 # gearpump types
 Message
 AckRequest
