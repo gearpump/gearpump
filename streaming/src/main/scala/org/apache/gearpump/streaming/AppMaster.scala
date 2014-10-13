@@ -21,30 +21,27 @@ package org.apache.gearpump.streaming
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import akka.pattern.{ask, pipe}
 import akka.remote.RemoteScope
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.cluster.WorkerToMaster.{ResourceUpdate, RegisterWorker}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{RestartTasks, RecoverTasks, Recover, LaunchTask}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RecoverTasks, RestartTasks}
+import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
-import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.gearpump.streaming.ConfigsHelper._
 
 import scala.collection.mutable.Queue
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import akka.pattern.ask
-import akka.pattern.pipe
 import scala.concurrent.Future
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class AppMaster (config : Configs) extends Actor {
 
@@ -267,7 +264,7 @@ class AppMaster (config : Configs) extends Actor {
       // master is down, let's try to contact new master
       LOG.info("parent master cannot be contacted, find a new master ...")
       context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
-    } else if (isChildActorPath(actor)) {
+    } else if (ActorUtil.isChildActorPath(self, actor)) {
       //executor is down
       //TODO: handle this failure
 
@@ -298,14 +295,6 @@ class AppMaster (config : Configs) extends Actor {
       def isCancelled: Boolean = {
         cancelSend.isCancelled && cancelSuicide.isCancelled
       }
-    }
-  }
-
-  private def isChildActorPath(actor : ActorRef) : Boolean = {
-    if (null != actor) {
-      self.path.name == actor.path.parent.name
-    } else {
-      false
     }
   }
 }
