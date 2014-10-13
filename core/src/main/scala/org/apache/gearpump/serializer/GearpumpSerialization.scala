@@ -18,7 +18,12 @@
 
 package org.apache.gearpump.serializer
 
-import com.esotericsoftware.kryo.{Kryo, Serializer}
+import java.math.BigInteger
+import java.util
+import java.util._
+
+import akka.actor.ActorRef
+import com.esotericsoftware.kryo.{KryoSerializable, Kryo, Serializer}
 import org.apache.gearpump.util.{Configs, Constants}
 import org.slf4j.{LoggerFactory, Logger}
 
@@ -30,18 +35,25 @@ class GearpumpSerialization {
 
     LOG.info("GearpumpSerialization init........")
 
-    val serializationMap: Map[String, String] = configToMap(Constants.GEARPUMP_SERIALIZERS)
+    val serializationMap = configToMap(Constants.GEARPUMP_SERIALIZERS)
 
     serializationMap.foreach { kv =>
       val (key, value) = kv
       val keyClass = Class.forName(key)
-      val valueClass = Class.forName(value)
-      kryo.register(keyClass, valueClass.newInstance().asInstanceOf[Serializer[_]])
+
+      if (value == null || value.isEmpty) {
+
+        //Use default serializer for this class type
+        kryo.register(keyClass)
+      } else {
+        val valueClass = Class.forName(value)
+        kryo.register(keyClass, valueClass.newInstance().asInstanceOf[Serializer[_]])
+      }
     }
     kryo.setReferences(false)
   }
 
-  private final def configToMap(path: String): Map[String, String] = {
+  private final def configToMap(path: String) = {
     import scala.collection.JavaConverters._
     config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k -> v.toString) }
   }

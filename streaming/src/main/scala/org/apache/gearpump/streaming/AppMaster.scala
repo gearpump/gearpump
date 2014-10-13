@@ -266,7 +266,7 @@ class AppMaster (config : Configs) extends Actor {
       // master is down, let's try to contact new master
       LOG.info("parent master cannot be contacted, find a new master ...")
       context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
-    } else if (isChildActorPath(actor)) {
+    } else if (ActorUtil.isChildActorPath(self, actor)) {
       //executor is down
       //TODO: handle this failure
 
@@ -297,14 +297,6 @@ class AppMaster (config : Configs) extends Actor {
       def isCancelled: Boolean = {
         cancelSend.isCancelled && cancelSuicide.isCancelled
       }
-    }
-  }
-
-  private def isChildActorPath(actor : ActorRef) : Boolean = {
-    if (null != actor) {
-      self.path.name == actor.path.parent.name
-    } else {
-      false
     }
   }
 
