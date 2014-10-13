@@ -75,7 +75,7 @@ class PriorityScheduler extends Scheduler{
       })
       appMaster ! ResourceAllocated(singleAllocation)
       if (request.resource.greaterThan(newAllocated)) {
-        resourceRequests.enqueue(PendingRequest(appMaster, ResourceRequest(request.resource.subtract(newAllocated), request.priority, request.workerId), timeStamp))
+        resourceRequests.enqueue(PendingRequest(appMaster, ResourceRequest(request.resource.subtract(newAllocated), request.workerId, request.priority), timeStamp))
       }
       assignResourceToApplication(allocated.add(newAllocated))
     }

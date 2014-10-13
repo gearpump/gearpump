@@ -1,13 +1,11 @@
 package org.apache.gearpump.streaming
 
-import java.util
-
 import akka.actor.Actor
 import com.typesafe.config.Config
-import org.apache.gearpump.streaming.task.TaskId
-import org.apache.gearpump.util.{Constants, Configs}
-import org.apache.gearpump.util.Constants._
 import org.apache.gearpump._
+import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.{Configs, Constants}
 
 class ConfigsHelper(config : Configs) {
   def withTaskId(taskId : TaskId) =  config.withValue(TASK_ID, taskId)
@@ -23,20 +21,18 @@ class ConfigsHelper(config : Configs) {
 object ConfigsHelper {
   implicit def toConfigHelper(config: Configs) = new ConfigsHelper(config)
 
-  def loadUserAllocation(config: Config) : Array[(Int, TaskDescription)] ={
+  def loadUserAllocation(config: Config) : Array[(TaskDescription, Locality)] ={
     import scala.collection.JavaConverters._
-    var result = new Array[(Int, TaskDescription)](0)
+    var result = new Array[(TaskDescription, Locality)](0)
     if(!config.hasPath(Constants.GEARPUMP_SCHEDULING_REQUEST))
       return result
-    val allocations = config.getObject(Constants.GEARPUMP_SCHEDULING_REQUEST)
-    if(allocations == null)
-      return result
-    for(worker <- allocations.keySet().asScala.toSet[String]){
-      val tasks = allocations.get(worker).unwrapped().asInstanceOf[util.HashMap[String, Object]]
-      for( taskClass <- tasks.keySet().asScala.toSet[String]){
+    val requests = config.getObject(Constants.GEARPUMP_SCHEDULING_REQUEST)
+    for(workerId <- requests.keySet().asScala.toSet[String]){
+      val taskDescriptions = requests.get(workerId).unwrapped().asInstanceOf[Map[String, Int]]
+      for(taskDescription <- taskDescriptions){
+        val (taskClass, parallism) = taskDescription
         val taskClazz = Class.forName(taskClass).asInstanceOf[Class[Actor]]
-        val parallism = tasks.get(taskClass).asInstanceOf[Int]
-        result = result :+ (worker.toInt, TaskDescription(taskClazz, parallism))
+        result = result :+ (TaskDescription(taskClazz, parallism), WorkerLocality(workerId.toInt))
       }
     }
     result

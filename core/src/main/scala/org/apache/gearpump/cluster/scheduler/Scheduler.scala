@@ -34,22 +34,22 @@ abstract class Scheduler extends Actor{
     case WorkerRegistered(id) =>
       if(!resources.contains(id)) {
         LOG.info(s"Worker $id added to the scheduler")
-        resources.put(id, (sender(), Resource.empty))
+        resources.put(id, (sender, Resource.empty))
       }
     case ResourceUpdate(workerId, resource) =>
       LOG.info(s"Resource update id: ${workerId}, slots: ${resource.slots}....")
       if(resources.contains(workerId)) {
-        resources.update(workerId, (sender(), resource))
+        resources.update(workerId, (sender, resource))
         allocateResource()
       }
       else {
         sender() ! UpdateResourceFailed(s"ResourceUpdate failed! The worker ${workerId} has not been registered into master")
       }
     case WorkerTerminated(actor) =>
-      resources = resources.filter( params => {
-        val (_, (worker, _)) = params
-        worker != actor
-      })
+      val workerId = actor.path.name.toInt
+      if(resources.contains(workerId)){
+        resources -= workerId
+      }
   }
 
   def allocateResource(): Unit

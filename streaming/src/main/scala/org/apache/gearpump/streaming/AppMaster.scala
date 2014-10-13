@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.pattern.{ask, pipe}
 import akka.remote.RemoteScope
-import com.typesafe.config.ConfigFactory
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
@@ -63,9 +62,9 @@ class AppMaster (config : Configs) extends Actor {
   private val registerData = config.appMasterRegisterData
 
   private val name = appDescription.name
-  private val taskQueue = new Queue[TaskLaunchData]
   private var taskMap = Map.empty[TaskId, TaskLaunchData]
-  private var userConfigTask = Map.empty[Int, Queue[TaskLaunchData]]
+  private var taskQueues = Map.empty[Locality, Queue[TaskLaunchData]]
+  private val taskLocator = new TaskLocator(config)
 
   private var clockService : ActorRef = null
   private var startClock : TimeStamp = 0L
@@ -88,7 +87,7 @@ class AppMaster (config : Configs) extends Actor {
 
     LOG.info("Initializing Clock service ....")
     clockService = context.actorOf(Props(classOf[ClockService], dag))
-  
+
     context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
   }
 
@@ -97,12 +96,14 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"AppMasterRegistered received for appID: $appId")
 
       LOG.info("Sending request resource to master...")
-      userConfigTask.foreach(params => {
-        val (worker, tasks) = params
-        master ! RequestResource(appId, ResourceRequest(Resource(tasks.size), workerId = worker))
+      taskQueues.foreach(params => {
+        val (locality, tasks) = params
+        locality match {
+          case locality: WorkerLocality => master ! RequestResource(appId, ResourceRequest(Resource(tasks.size), locality.workerId))
+          case _ => master ! RequestResource(appId, ResourceRequest(Resource(tasks.size)))
+        }
       })
 
-      master ! RequestResource(appId, ResourceRequest(Resource(taskQueue.size)))
       killSelf.cancel()
       this.master = master
       context.watch(master)
@@ -203,12 +204,8 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
-      var queue : Queue[TaskLaunchData] = null
-      if (userConfigTask.contains(workerId) && userConfigTask.get(workerId).nonEmpty) {
-        queue = userConfigTask.get(workerId).get
-      } else {
-        queue = taskQueue
-      }
+      val taskLocality = WorkerLocality(workerId)
+      var queue = taskQueues.getOrElse(taskLocality, Queue.empty[TaskLaunchData])
 
       def launchTask(remainResources: Resource): Unit = {
         if (remainResources.greaterThan(Resource.empty) && !queue.isEmpty) {
@@ -224,6 +221,11 @@ class AppMaster (config : Configs) extends Actor {
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
           launchTask(remainResources subtract usedResource)
+        } else if(remainResources.greaterThan(Resource.empty) && queue.isEmpty) {
+          queue = taskQueues.getOrElse(NonLocality, Queue.empty[TaskLaunchData])
+          if(queue.nonEmpty) {
+            launchTask(remainResources)
+          }
         }
       }
       launchTask(resource)
@@ -244,6 +246,7 @@ class AppMaster (config : Configs) extends Actor {
       startedTasks = startedTasks.empty
 
       //allocate resource for failed tasks
+      val taskQueue = taskQueues.getOrElse(NonLocality, Queue.empty[TaskLaunchData])
       if (null != tasks) {
         tasks.foreach { taskId =>
           val task = taskMap(taskId)
@@ -306,37 +309,23 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   private def initTaskQueues(dag : DAG) = {
-    val schedules : Array[(Int, TaskDescription)] = ConfigsHelper.loadUserAllocation(ConfigFactory.empty())
-    var scheduledTaskClass = Set.empty[String]
-    schedules.foreach(params => {
-      val (workerid, taskDescription) = params
-      scheduledTaskClass += taskDescription.taskClass.getName
-      userConfigTask += (workerid -> mutable.Queue.empty[TaskLaunchData])
-    })
-
-    val unScheculedTask = mutable.Queue.empty[TaskLaunchData]
     dag.tasks.foreach { params =>
       val (taskGroupId, taskDescription) = params
-      if (scheduledTaskClass.contains(taskDescription.taskClass.getName)) {
-        schedules.filter(_._2.taskClass.equals(taskDescription.taskClass)).foreach(workerWithTask => {
-          val (workerId, task) = workerWithTask
-          enqueueTask(userConfigTask(workerId), taskGroupId, task)
-        })
-      }else {
-        enqueueTask(unScheculedTask, taskGroupId, taskDescription)
-      }
-    }
-    taskQueue ++= unScheculedTask.toArray.sortBy(_.taskId.index)
-
-    def enqueueTask(queue: mutable.Queue[TaskLaunchData], taskGroupId: Int, taskDescription: TaskDescription){
       0.until(taskDescription.parallism).map((taskIndex: Int) => {
         val taskId = TaskId(taskGroupId, taskIndex)
+        val locality = taskLocator.locateTask(taskDescription)
         val taskLaunchData = TaskLaunchData(taskId, taskDescription, dag.subGraph(taskGroupId))
-        queue.enqueue(taskLaunchData)
         taskMap += (taskId -> taskLaunchData)
+        val taskQueue = taskQueues.getOrElse(locality, Queue.empty[TaskLaunchData])
+        taskQueue.enqueue(taskLaunchData)
+        taskQueues += (locality -> taskQueue)
         totalTaskCount += 1
       })
     }
+    val nonLocalityQueue = taskQueues.getOrElse(NonLocality, Queue.empty[TaskLaunchData])
+    //reorder the tasks to distributing fairly on workers
+    val taskQueue = nonLocalityQueue.sortBy(_.taskId.index)
+    taskQueues += (NonLocality -> taskQueue)
   }
 }
 
