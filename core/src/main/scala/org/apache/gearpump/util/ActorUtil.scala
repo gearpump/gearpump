@@ -46,4 +46,14 @@ object ActorUtil {
     m.setAccessible(true);//Abracadabra
     Console.out.print(m.invoke(system))
   }
+
+  // Check whether a actor is child actor by simply examining name
+  //TODO: fix this, we should also check the path to root besides name
+  def isChildActorPath(parent : ActorRef, child : ActorRef) : Boolean = {
+    if (null != child) {
+      parent.path.name == child.path.parent.name
+    } else {
+      false
+    }
+  }
  }
