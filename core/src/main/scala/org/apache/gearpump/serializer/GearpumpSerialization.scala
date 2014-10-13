@@ -92,8 +92,15 @@ class GearpumpSerialization {
     serializationMap.foreach { kv =>
       val (key, value) = kv
       val keyClass = Class.forName(key)
-      val valueClass = Class.forName(value)
-      kryo.register(keyClass, valueClass.newInstance().asInstanceOf[Serializer[_]])
+
+      if (value == null || value.isEmpty) {
+
+        //Use default serializer for this class type
+        kryo.register(keyClass)
+      } else {
+        val valueClass = Class.forName(value)
+        kryo.register(keyClass, valueClass.newInstance().asInstanceOf[Serializer[_]])
+      }
     }
     kryo.setReferences(false)
   }
