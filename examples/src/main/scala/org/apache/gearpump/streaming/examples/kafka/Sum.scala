@@ -34,16 +34,8 @@ class Sum (conf : Configs) extends TaskActor(conf) {
 
   private val map : HashMap[String, Long] = new HashMap[String, Long]()
 
-  private var wordCount : Long = 0
-  private var snapShotTime : Long = System.currentTimeMillis()
-  private var snapShotWordCount : Long = 0
-
-  private var scheduler : Cancellable = null
-
   override def onStart(taskContext : TaskContext) : Unit = {
-    import context.dispatcher
-    scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
+
   }
 
   override def onNext(msg : Message) : Unit = {
@@ -51,7 +43,6 @@ class Sum (conf : Configs) extends TaskActor(conf) {
       return
     }
     val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
-    wordCount += 1
     val word = msg.msg.asInstanceOf[String]
     val count = current + 1
     map.put(word, count)
@@ -59,14 +50,6 @@ class Sum (conf : Configs) extends TaskActor(conf) {
   }
 
   override def onStop() : Unit = {
-    scheduler.cancel()
-  }
-
-  def reportWordCount : Unit = {
-    val current : Long = System.currentTimeMillis()
-    LOG.info(s"Task $taskId Throughput: ${((wordCount - snapShotWordCount), ((current - snapShotTime) / 1000))} (words, second)")
-    snapShotWordCount = wordCount
-    snapShotTime = current
   }
 }
 
