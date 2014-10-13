@@ -132,7 +132,21 @@ Here is how it looks like for grafana dashboard:
 
 Serialization
 ========================
-We use library kryo and akka-kryo library https://github.com/romix/akka-kryo-serialization. The serialization for the following types are built-in. 
+
+The configuration for serialization is:
+```
+gearpump {
+  serializers {
+    "org.apache.gearpump.Message" = "org.apache.gearpump.streaming.MessageSerializer"
+    "org.apache.gearpump.streaming.task.AckRequest" = "org.apache.gearpump.streaming.AckRequestSerializer"
+    "org.apache.gearpump.streaming.task.Ack" = "org.apache.gearpump.streaming.AckSerializer"
+
+    ## Use default serializer for this type
+    "scala.Tuple2" = ""
+  }
+}
+
+We use library kryo and akka-kryo library https://github.com/romix/akka-kryo-serialization. The following list contians supported value types.
 
 ```
 # gearpump types
@@ -155,6 +169,9 @@ scala.collection.mutable.Set[_]
 scala.collection.generic.MapFactory[scala.collection.Map]
 scala.collection.generic.SetFactory[scala.collection.Set]
 scala.collection.Traversable[_]
+Tuple2
+Tuple3
+
 
 # java complex types
 byte[]
