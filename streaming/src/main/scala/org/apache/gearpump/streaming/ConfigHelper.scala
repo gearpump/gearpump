@@ -1,5 +1,7 @@
 package org.apache.gearpump.streaming
 
+import java.util
+
 import akka.actor.Actor
 import com.typesafe.config.Config
 import org.apache.gearpump._
@@ -21,6 +23,22 @@ class ConfigsHelper(config : Configs) {
 object ConfigsHelper {
   implicit def toConfigHelper(config: Configs) = new ConfigsHelper(config)
 
+  /*
+  The task resource requests format:
+  gearpump {
+    scheduling {
+      requests {
+        worker1 {
+          "task1" = 2   //parallelism
+          "task2" = 4
+        }
+        worker2 {
+          "task1" = 2
+        }
+      }
+    }
+  }
+   */
   def loadUserAllocation(config: Config) : Array[(TaskDescription, Locality)] ={
     import scala.collection.JavaConverters._
     var result = new Array[(TaskDescription, Locality)](0)
@@ -28,7 +46,7 @@ object ConfigsHelper {
       return result
     val requests = config.getObject(Constants.GEARPUMP_SCHEDULING_REQUEST)
     for(workerId <- requests.keySet().asScala.toSet[String]){
-      val taskDescriptions = requests.get(workerId).unwrapped().asInstanceOf[Map[String, Int]]
+      val taskDescriptions = requests.get(workerId).unwrapped().asInstanceOf[util.HashMap[String, Int]].asScala
       for(taskDescription <- taskDescriptions){
         val (taskClass, parallism) = taskDescription
         val taskClazz = Class.forName(taskClass).asInstanceOf[Class[Actor]]

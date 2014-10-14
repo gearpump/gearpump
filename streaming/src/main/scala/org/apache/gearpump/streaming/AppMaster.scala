@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RecoverTasks, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
@@ -40,7 +40,6 @@ import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
-import scala.collection.mutable.Queue
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -62,9 +61,7 @@ class AppMaster (config : Configs) extends Actor {
   private val registerData = config.appMasterRegisterData
 
   private val name = appDescription.name
-  private var taskMap = Map.empty[TaskId, TaskLaunchData]
-  private var taskQueues = Map.empty[Locality, Queue[TaskLaunchData]]
-  private val taskLocator = new TaskLocator(config)
+  private val taskSet = new TaskSet(config, self, DAG(appDescription.dag))
 
   private var clockService : ActorRef = null
   private var startClock : TimeStamp = 0L
@@ -73,15 +70,12 @@ class AppMaster (config : Configs) extends Actor {
   private var executorIdToTasks = Map.empty[Int, Set[TaskId]]
 
   private var startedTasks = Set.empty[TaskId]
-  private var totalTaskCount = 0
 
   override def receive : Receive = null
 
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
     val dag = DAG(appDescription.dag)
-
-    initTaskQueues(dag)
 
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
 
@@ -96,13 +90,8 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"AppMasterRegistered received for appID: $appId")
 
       LOG.info("Sending request resource to master...")
-      taskQueues.foreach(params => {
-        val (locality, tasks) = params
-        locality match {
-          case locality: WorkerLocality => master ! RequestResource(appId, ResourceRequest(Resource(tasks.size), locality.workerId))
-          case _ => master ! RequestResource(appId, ResourceRequest(Resource(tasks.size)))
-        }
-      })
+      val resourceRequests = taskSet.getResourceRequests()
+      resourceRequests.foreach(master ! RequestResource(appId, _))
 
       killSelf.cancel()
       this.master = master
@@ -115,7 +104,7 @@ class AppMaster (config : Configs) extends Actor {
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) => {
-      LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
+      LOG.info(s"AppMaster $appId received ResourceAllocated ${allocations.length}")
       //group resource by worker
       val actorToWorkerId = mutable.HashMap.empty[ActorRef, Int]
       val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(Resource.empty)((totalResource, request) => totalResource add request.resource)).toArray
@@ -156,11 +145,16 @@ class AppMaster (config : Configs) extends Actor {
 
       startedTasks += taskId
 
-      LOG.info(s" started task size: ${startedTasks.size}, taskQueue size: ${totalTaskCount}")
-      if (startedTasks.size == totalTaskCount) {
+      LOG.info(s" started task size: ${startedTasks.size}, taskQueue size: ${taskSet.totalTaskCount}")
+      if (startedTasks.size == taskSet.totalTaskCount) {
         context.children.foreach { executor =>
           LOG.info(s"Sending Task locations to executor ${executor.path.name}")
           executor ! TaskLocations(taskLocations)
+        }
+        executorIdToTasks.foreach { params =>
+          val (executorId, taskSet) = params
+          for(task <- taskSet)
+            LOG.info(s"task locations: task $task on executor $executorId")
         }
       }
     }
@@ -204,12 +198,10 @@ class AppMaster (config : Configs) extends Actor {
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
-      val taskLocality = WorkerLocality(workerId)
-      var queue = taskQueues.getOrElse(taskLocality, Queue.empty[TaskLaunchData])
 
       def launchTask(remainResources: Resource): Unit = {
-        if (remainResources.greaterThan(Resource.empty) && !queue.isEmpty) {
-          val TaskLaunchData(taskId, taskDescription, dag) = queue.dequeue()
+        if (remainResources.greaterThan(Resource.empty) && taskSet.hasUnlaunchedTask) {
+          val TaskLaunchData(taskId, taskDescription, dag) = taskSet.scheduleTaskOnWorker(workerId)
           //Launch task
 
           LOG.info("Sending Launch Task to executor: " + executor.toString())
@@ -221,11 +213,6 @@ class AppMaster (config : Configs) extends Actor {
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
           launchTask(remainResources subtract usedResource)
-        } else if(remainResources.greaterThan(Resource.empty) && queue.isEmpty) {
-          queue = taskQueues.getOrElse(NonLocality, Queue.empty[TaskLaunchData])
-          if(queue.nonEmpty) {
-            launchTask(remainResources)
-          }
         }
       }
       launchTask(resource)
@@ -246,14 +233,9 @@ class AppMaster (config : Configs) extends Actor {
       startedTasks = startedTasks.empty
 
       //allocate resource for failed tasks
-      val taskQueue = taskQueues.getOrElse(NonLocality, Queue.empty[TaskLaunchData])
-      if (null != tasks) {
-        tasks.foreach { taskId =>
-          val task = taskMap(taskId)
-          taskQueue.enqueue(task)
-        }
-        master ! RequestResource(appId, ResourceRequest(Resource(taskQueue.size)))
-      }
+      taskSet.taskFailed(tasks)
+      val resourceRequests = taskSet.getResourceRequests()
+      resourceRequests.foreach(master ! RequestResource(appId, _))
 
       //restart existing tasks
       context.children.foreach(_ ! RestartTasks(startClock))
@@ -298,26 +280,6 @@ class AppMaster (config : Configs) extends Actor {
         cancelSend.isCancelled && cancelSuicide.isCancelled
       }
     }
-  }
-
-  private def initTaskQueues(dag : DAG) = {
-    dag.tasks.foreach { params =>
-      val (taskGroupId, taskDescription) = params
-      0.until(taskDescription.parallism).map((taskIndex: Int) => {
-        val taskId = TaskId(taskGroupId, taskIndex)
-        val locality = taskLocator.locateTask(taskDescription)
-        val taskLaunchData = TaskLaunchData(taskId, taskDescription, dag.subGraph(taskGroupId))
-        taskMap += (taskId -> taskLaunchData)
-        val taskQueue = taskQueues.getOrElse(locality, Queue.empty[TaskLaunchData])
-        taskQueue.enqueue(taskLaunchData)
-        taskQueues += (locality -> taskQueue)
-        totalTaskCount += 1
-      })
-    }
-    val nonLocalityQueue = taskQueues.getOrElse(NonLocality, Queue.empty[TaskLaunchData])
-    //reorder the tasks to distributing fairly on workers
-    val taskQueue = nonLocalityQueue.sortBy(_.taskId.index)
-    taskQueues += (NonLocality -> taskQueue)
   }
 }
 
