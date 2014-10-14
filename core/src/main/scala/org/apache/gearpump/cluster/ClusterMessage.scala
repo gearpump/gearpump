@@ -19,9 +19,9 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.scheduler.{ResourceRequest, ResourceAllocation, Resource}
+import org.apache.gearpump.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.util.Configs
-import org.apache.gearpump.TimeStamp
+
 import scala.util.Try
 
 /**
@@ -66,7 +66,7 @@ object MasterToAppMaster {
   case class AppMasterData(appId: Int, appData: AppMasterInfo)
   case class AppMasterDataRequest(appId: Int)
   case class AppMastersData(appMasters: List[AppMasterData])
-  case class AppMastersDataRequest()
+  case object AppMastersDataRequest
   case class AppMasterDataDetailRequest(appId: Int)
   case class AppMasterDataDetail(val appId: Int,  val appDescription: Application)
 }
