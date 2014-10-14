@@ -78,9 +78,9 @@ private[cluster] class Master extends Actor with Stash {
     case registerAppMaster : RegisterAppMaster =>
       //forward to appManager
       appManager forward registerAppMaster
-    case appMastersDataRequest: AppMastersDataRequest =>
+    case AppMastersDataRequest =>
       LOG.info("Master received AppMastersDataRequest")
-      appManager forward appMastersDataRequest
+      appManager forward AppMastersDataRequest
     case appMasterDataRequest: AppMasterDataRequest =>
       LOG.info("Master received AppMasterDataRequest")
       appManager forward appMasterDataRequest

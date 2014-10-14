@@ -33,7 +33,7 @@ object Shell extends App with ArgumentsParser {
   val masters = config.getString("master")
   Console.out.println("Master URL: " + masters)
 
-  def start() = {
+  def shell() = {
     val java = System.getenv("JAVA_HOME") + "/bin/java"
     val scalaHome = System.getenv("SCALA_HOME")
     if (null == scalaHome || "" == scalaHome) {
@@ -66,5 +66,5 @@ object Shell extends App with ArgumentsParser {
     classpathList.mkString(File.pathSeparator)
   }
 
-  start
+  shell
 }

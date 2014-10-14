@@ -33,8 +33,6 @@ class GearpumpSerialization {
 
   def customize(kryo: Kryo): Unit  = {
 
-    LOG.info("GearpumpSerialization init........")
-
     val serializationMap = configToMap(Constants.GEARPUMP_SERIALIZERS)
 
     serializationMap.foreach { kv =>

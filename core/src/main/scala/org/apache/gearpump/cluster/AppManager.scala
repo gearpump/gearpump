@@ -170,7 +170,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       context.watch(appMaster)
       appMasterRegistry += appId -> (appMaster, registerData)
       sender ! AppMasterRegistered(appId, context.parent)
-    case appMastersDataRequest: AppMastersDataRequest =>
+    case AppMastersDataRequest =>
       val appMastersData = collection.mutable.ListBuffer[AppMasterData]()
       appMasterRegistry.foreach(pair => {
         val (id, (appMaster:ActorRef, info:AppMasterInfo)) = pair
