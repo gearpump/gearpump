@@ -30,7 +30,7 @@ import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.scheduler.Resource
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.util.{ActorUtil, Constants, ProcessLogRedirector}
 import org.slf4j.{Logger, LoggerFactory}
 

@@ -28,11 +28,13 @@ object Constants {
   val MASTER_WATCHER = "masterwatcher"
 
   val WORKER = "worker"
+  val WORKER_ID = "workerid"
   val WORKER_RESOURCE = "worker.akka.cluster.resource"
 
   val APP_MASTER_REGISTER_DATA = "appmasterregisterdata"
 
-  val GEARPUMP_SCHEDULER = "gearpump.scheduler.class"
+  val GEARPUMP_SCHEDULING_SCHEDULER = "gearpump.scheduling.scheduler-class"
+  val GEARPUMP_SCHEDULING_REQUEST = "gearpump.scheduling.requests"
 
   val GEARPUMP_SERIALIZERS = "gearpump.serializers"
 

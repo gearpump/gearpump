@@ -113,7 +113,7 @@ private[cluster] class Master extends Actor with Stash {
   override def preStart(): Unit = {
     val path = ActorUtil.getFullPath(context)
     LOG.info(s"master path is $path")
-    val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULER))
+    val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULING_SCHEDULER))
     appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
     scheduler = context.actorOf(Props(schedulerClass))
   }
