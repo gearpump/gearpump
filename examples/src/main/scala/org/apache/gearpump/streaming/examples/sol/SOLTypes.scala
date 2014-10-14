@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -16,25 +17,9 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.examples.sol
 
-import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.Handler.DefaultHandler
-import org.apache.gearpump.streaming.task.{Handler, MessageHandler, TaskContext, TaskActor}
-import org.apache.gearpump.util.Configs
+trait Baz extends java.io.Serializable
+case class Foo(msg: String) extends Baz
 
-class Split(conf: Configs) extends TaskActor(conf) with MessageHandler[String] {
-
-  override def onStart(taskContext : TaskContext) : Unit = {
-  }
-
-  def onNext(msg: Message): Unit = {
-    DefaultHandler
-    doNext(msg)
-  }
-
-  def next(msg : String) : Unit = {
-    msg.split("\\s+").foreach(
-      word => output(new Message(word, System.currentTimeMillis())))
-  }
-}
+case class Bar(msg: String) extends Baz

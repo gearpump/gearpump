@@ -22,14 +22,15 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.Handler.DefaultHandler
+import org.apache.gearpump.streaming.task.{MessageHandler, TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.HashMap
 import scala.concurrent.duration.FiniteDuration
 
-class Sum (conf : Configs) extends TaskActor(conf) {
+class Sum (conf : Configs) extends TaskActor(conf) with MessageHandler[String] {
   import org.apache.gearpump.streaming.examples.wordcount.Sum._
 
   private val map : HashMap[String, Long] = new HashMap[String, Long]()
@@ -46,13 +47,18 @@ class Sum (conf : Configs) extends TaskActor(conf) {
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
   }
 
-  override def onNext(msg : Message) : Unit = {
+  def onNext(msg: Message): Unit = {
+    DefaultHandler
+    doNext(msg)
+  }
+
+  def next(msg : String) : Unit = {
     if (null == msg) {
       return
     }
-    val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
+    val current = map.getOrElse(msg, 0L)
     wordCount += 1
-    map.put(msg.msg.asInstanceOf[String], current + 1)
+    map.put(msg, current + 1)
   }
 
   override def onStop() : Unit = {

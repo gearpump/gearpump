@@ -22,10 +22,21 @@ import java.util.Properties
 
 import kafka.producer.ProducerConfig
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.examples.kafka.KafkaBolt.KafkaBoltHandler
+import org.apache.gearpump.streaming.task.{Handler, MessageHandler, TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 
-class KafkaBolt(conf: Configs) extends TaskActor(conf) {
+object KafkaBolt {
+  type Tuple = (String,String)
+  implicit object KafkaBoltHandler extends Handler[(String,String)](
+  {
+    case a: Tuple =>
+      a
+  }
+  )
+}
+
+class KafkaBolt(conf: Configs) extends TaskActor(conf) with MessageHandler[(String,String)]{
 
   private val kafkaConfig = new KafkaConfig()
   private val topic = kafkaConfig.getProducerTopic
@@ -38,7 +49,11 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
   }
 
   override def onNext(msg: Message): Unit = {
-    val kvMessage = msg.msg.asInstanceOf[(String, String)]
+    KafkaBoltHandler
+    doNext(msg)
+  }
+
+  def next(kvMessage:(String,String)): Unit = {
     val key = kvMessage._1
     val value = kvMessage._2
     kafkaProducer.send(key, value)
