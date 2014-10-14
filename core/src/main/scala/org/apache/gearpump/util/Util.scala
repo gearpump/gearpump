@@ -37,6 +37,6 @@ object Util {
       val hostAndPort = address.split(":")
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
     }
-    masters
+    masters.toList
   }
 }
