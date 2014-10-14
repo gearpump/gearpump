@@ -17,16 +17,15 @@
  */
 package org.apache.gearpump.streaming
 
-import akka.actor.ActorRef
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.streaming.AppMaster.TaskLaunchData
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Configs
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.Queue
 
-class TaskSet(config : Configs, appMaster : ActorRef, dag : DAG) {
+class TaskSet(config : Configs, dag : DAG) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[TaskSet])
   private var taskMap = Map.empty[TaskId, TaskLaunchData]
   private var taskQueues = Map.empty[Locality, Queue[TaskLaunchData]]

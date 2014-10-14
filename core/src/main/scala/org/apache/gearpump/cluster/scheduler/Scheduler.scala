@@ -43,7 +43,7 @@ abstract class Scheduler extends Actor{
         allocateResource()
       }
       else {
-        sender() ! UpdateResourceFailed(s"ResourceUpdate failed! The worker ${workerId} has not been registered into master")
+        sender ! UpdateResourceFailed(s"ResourceUpdate failed! The worker $workerId has not been registered into master")
       }
     case WorkerTerminated(actor) =>
       val workerId = actor.path.name.toInt

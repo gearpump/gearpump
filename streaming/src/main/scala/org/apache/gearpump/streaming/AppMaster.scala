@@ -61,7 +61,7 @@ class AppMaster (config : Configs) extends Actor {
   private val registerData = config.appMasterRegisterData
 
   private val name = appDescription.name
-  private val taskSet = new TaskSet(config, self, DAG(appDescription.dag))
+  private val taskSet = new TaskSet(config, DAG(appDescription.dag))
 
   private var clockService : ActorRef = null
   private var startClock : TimeStamp = 0L
@@ -104,7 +104,7 @@ class AppMaster (config : Configs) extends Actor {
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) => {
-      LOG.info(s"AppMaster $appId received ResourceAllocated ${allocations.length}")
+      LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
       //group resource by worker
       val actorToWorkerId = mutable.HashMap.empty[ActorRef, Int]
       val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(Resource.empty)((totalResource, request) => totalResource add request.resource)).toArray
@@ -150,11 +150,6 @@ class AppMaster (config : Configs) extends Actor {
         context.children.foreach { executor =>
           LOG.info(s"Sending Task locations to executor ${executor.path.name}")
           executor ! TaskLocations(taskLocations)
-        }
-        executorIdToTasks.foreach { params =>
-          val (executorId, taskSet) = params
-          for(task <- taskSet)
-            LOG.info(s"task locations: task $task on executor $executorId")
         }
       }
     }
