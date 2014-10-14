@@ -25,7 +25,7 @@ import akka.util.Timeout
 import org.apache.gearpump.cluster.{Application, MasterClient, MasterProxy}
 import org.apache.gearpump.streaming.AppMaster
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{Util, Configs}
 import org.apache.gearpump.util.Constants._
 
 class ClientContext(masters: Iterable[HostPort]) {
@@ -58,12 +58,7 @@ object ClientContext {
    * host1:port,host2:port2,host3:port3
    */
   def apply(masterList : String) = {
-
-    val masters = masterList.trim.split(",").map { address =>
-      val hostAndPort = address.split(":")
-      HostPort(hostAndPort(0), hostAndPort(1).toInt)
-    }
-    new ClientContext(masters)
+    new ClientContext(Util.parseHostList(masterList))
   }
 
   def apply(masters: Iterable[HostPort]) = new ClientContext(masters)

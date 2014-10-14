@@ -20,10 +20,23 @@ package org.apache.gearpump.util
 
 import java.io.File
 
+import org.apache.gearpump.transport.HostPort
+
 object Util {
   def getCurrentClassPath : Array[String] = {
     val classpath = System.getProperty("java.class.path");
     val classpathList = classpath.split(File.pathSeparator);
     classpathList
+  }
+
+  /**
+   * hostList format: host1:port1,host2:port2,host3:port3...
+   */
+  def parseHostList(hostList : String) = {
+    val masters = hostList.trim.split(",").map { address =>
+      val hostAndPort = address.split(":")
+      HostPort(hostAndPort(0), hostAndPort(1).toInt)
+    }
+    masters
   }
 }

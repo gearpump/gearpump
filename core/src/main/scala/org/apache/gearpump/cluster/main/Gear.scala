@@ -12,9 +12,7 @@ object Gear extends App with ArgumentsParser {
 
   override  val remainArgs : Array[String] = Array("kill|info|shell")
 
-  val config = parse(args)
-
-  val command = config.remainArgs(0)
+  val command = args(0)
 
   val commandArgs = args.drop(1)
 

@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
 import org.apache.gearpump.cluster.{MasterClient, MasterProxy}
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{Util, Configs}
 import org.apache.gearpump.util.Constants._
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -43,7 +43,7 @@ object Kill extends App with ArgumentsParser {
 
     implicit val timeout = Timeout(5, TimeUnit.SECONDS)
     val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG)
-    val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
+    val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
 
     val client = new MasterClient(master)
     client.shutdownApplication(config.getInt("appid"))

@@ -64,8 +64,8 @@ trait ArgumentsParser {
           val fixedKey = key.substring(1)
           config += fixedKey -> value
           if (!options.map(_._1).contains(fixedKey)) {
-            help
             if (!ignoreUnknownArgument) {
+              help
               throw new Exception(s"found unknown option $fixedKey")
             }
           }
