@@ -53,11 +53,10 @@ class PriorityScheduler extends Scheduler{
     }
 
     while(resourceRequests.nonEmpty && allocated.lessThan(totalResource)) {
-      val pendingRequest = resourceRequests.dequeue()
-      val PendingRequest(appMaster, request, timeStamp) = pendingRequest
+      val PendingRequest(appMaster, request, timeStamp) = resourceRequests.dequeue()
       request.relaxation match {
         case ANY =>
-          val newAllocated = allocateFairly(resourcesSnapShot, pendingRequest, allocated)
+          val newAllocated = allocateFairly(resourcesSnapShot, PendingRequest(appMaster, request, timeStamp), allocated)
           allocated = allocated.add(newAllocated)
         case ONEWORKER =>
           val availableResource = resourcesSnapShot.find{params =>
