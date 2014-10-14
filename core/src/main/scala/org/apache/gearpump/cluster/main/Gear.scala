@@ -8,7 +8,7 @@ object Gear extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array()
 
-  override  val remainArgs : Array[String] = Array("<kill|info|shell>")
+  override  val remainArgs : Array[String] = Array("kill|info|shell")
 
   val config = parse(args)
 
