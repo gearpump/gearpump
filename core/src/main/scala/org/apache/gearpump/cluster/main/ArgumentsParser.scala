@@ -35,6 +35,8 @@ class ParseResult(optionMap : Map[String, String], remainArguments : Array[Strin
 
 trait ArgumentsParser {
 
+  val ignoreUnknownArgument = false
+
   def help:Unit = {
     Console.println("Usage:")
     var usage = List(s"java ${this.getClass} " + options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") + " " + remainArgs.map(k => s"<$k>").mkString(" "))
@@ -63,7 +65,9 @@ trait ArgumentsParser {
           config += fixedKey -> value
           if (!options.map(_._1).contains(fixedKey)) {
             help
-            throw new Exception(s"found unknown option $fixedKey")
+            if (!ignoreUnknownArgument) {
+              throw new Exception(s"found unknown option $fixedKey")
+            }
           }
           doParse(rest)
 
