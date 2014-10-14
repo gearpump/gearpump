@@ -66,7 +66,7 @@ object MasterToAppMaster {
   case class AppMasterData(appId: Int, appData: AppMasterInfo)
   case class AppMasterDataRequest(appId: Int)
   case class AppMastersData(appMasters: List[AppMasterData])
-  case class AppMastersDataRequest()
+  case object AppMastersDataRequest
   case class AppMasterDataDetailRequest(appId: Int)
   case class AppMasterDataDetail(val appId: Int,  val appDescription: Application)
 }

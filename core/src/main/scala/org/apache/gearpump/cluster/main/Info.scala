@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
+import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.cluster.{MasterClient, MasterProxy}
 import org.apache.gearpump.util.{Util, Configs}
@@ -41,7 +42,8 @@ object Info extends App with ArgumentsParser {
     Console.out.println("Master URL: " + masters)
 
     implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-    val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG)
+    val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
+      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARN")))
     val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
 
     val client = new MasterClient(master)
@@ -50,6 +52,7 @@ object Info extends App with ArgumentsParser {
     appMasters.foreach { appData =>
       Console.println(s"application: ${appData.appId}, worker: ${appData.appData.worker}")
     }
+    system.shutdown()
   }
 
   start
