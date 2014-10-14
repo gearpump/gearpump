@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util._
@@ -170,7 +170,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       context.watch(appMaster)
       appMasterRegistry += appId -> (appMaster, registerData)
       sender ! AppMasterRegistered(appId, context.parent)
-    case appMastersDataRequest: AppMastersDataRequest =>
+    case AppMastersDataRequest =>
       val appMastersData = collection.mutable.ListBuffer[AppMasterData]()
       appMasterRegistry.foreach(pair => {
         val (id, (appMaster:ActorRef, info:AppMasterInfo)) = pair

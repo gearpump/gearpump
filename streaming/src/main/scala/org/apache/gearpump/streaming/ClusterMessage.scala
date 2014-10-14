@@ -19,8 +19,8 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.{Actor, ActorRef}
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.scheduler.Resource
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Configs
@@ -37,7 +37,7 @@ object AppMasterToExecutor {
 }
 
 object ExecutorToAppMaster {
-  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource)
+  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, workerId : Int)
 
   case class RegisterTask(taskId: TaskId, executorId : Int, task: HostPort)
 
