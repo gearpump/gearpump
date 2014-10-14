@@ -16,55 +16,66 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.transaction.kafka
 
 import kafka.admin.AdminUtils
 import kafka.common.TopicAndPartition
-import org.apache.gearpump.streaming.examples.kafka.KafkaConfig._
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.transaction.api.{Checkpoint, CheckpointManager}
+import org.apache.gearpump.streaming.transaction.api.Source
+import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
+
 
 object KafkaCheckpointManager {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaCheckpointManager])
 }
 
-class KafkaCheckpointManager(topicAndPartitions: Array[TopicAndPartition],
-                             conf: Configs) extends CheckpointManager {
+class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
 
   private val config = conf.config
   private val producer = config.getProducer[Array[Byte], Array[Byte]](
     producerConfig = config.getProducerConfig(serializerClass = "kafka.serializer.DefaultEncoder")
   )
-  private val checkpointTopicAndPartitions =
-    topicAndPartitions.map(getCheckpointTopicAndPartition(_))
+
+  private var checkpointTopicAndPartitions: List[TopicAndPartition] = null
   private var consumer: KafkaConsumer = null
 
   override def start(): Unit = {
     createTopics()
   }
 
-  override def writeCheckpoint(topicAndPartition: TopicAndPartition,
-                               checkpoint: Checkpoint): Unit = {
-    producer.send(topicAndPartition.topic, KafkaUtil.longToByteArray(checkpoint.timestamp),
-      topicAndPartition.partition, checkpoint.data)
+  override def register(topicAndPartitions: List[Source]): Unit = {
+    this.checkpointTopicAndPartitions =
+      topicAndPartitions.map(getCheckpointTopicAndPartition(_))
+    this.consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
   }
 
-  override def readCheckpoints(topicAndPartition: TopicAndPartition): List[Checkpoint] = {
-    // can only get consumer after checkpoint topics having been created
-    if (null == consumer) {
-      consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
-    }
-    val checkpointTopicAndPartition = getCheckpointTopicAndPartition(topicAndPartition)
+  override def writeCheckpoint(source: Source,
+                               checkpoint: Checkpoint): Unit = {
+    checkpoint.timeAndOffsets.foreach(timeAndOffset => {
+      producer.send(source.name, longToByteArray(timeAndOffset._1),
+        source.partition, longToByteArray(timeAndOffset._2))
+    })
+
+  }
+
+  override def readCheckpoint(source: Source): Checkpoint = {
+    val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
+
     @annotation.tailrec
-    def fetch(checkpoints: List[Checkpoint]): List[Checkpoint] = {
+    def fetch(timeAndOffsets: Map[TimeStamp, Long]): Map[TimeStamp, Long] = {
       val kafkaMsg = consumer.nextMessage(checkpointTopicAndPartition)
       if (kafkaMsg != null) {
-        fetch(checkpoints :+ Checkpoint(KafkaUtil.byteArrayToLong(kafkaMsg.key), kafkaMsg.msg))
+        fetch(timeAndOffsets +
+          (byteArrayToLong(kafkaMsg.key) -> byteArrayToLong(kafkaMsg.msg)))
       } else {
-        checkpoints
+        timeAndOffsets
       }
     }
-    fetch(List.empty[Checkpoint])
+    Checkpoint(fetch(Map.empty[TimeStamp, Long]))
   }
 
   override def close(): Unit = {
@@ -92,8 +103,8 @@ class KafkaCheckpointManager(topicAndPartitions: Array[TopicAndPartition],
     s"checkpoint_application${appId}_${topic}"
   }
 
-  private def getCheckpointTopicAndPartition(topicAndPartition: TopicAndPartition): TopicAndPartition = {
-    TopicAndPartition(getCheckpointTopic(conf.appId, topicAndPartition.topic), topicAndPartition.partition)
+  private def getCheckpointTopicAndPartition(source: Source): TopicAndPartition = {
+    TopicAndPartition(getCheckpointTopic(conf.appId, source.name), source.partition)
   }
 
 }

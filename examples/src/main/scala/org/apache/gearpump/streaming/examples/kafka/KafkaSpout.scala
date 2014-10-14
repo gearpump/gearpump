@@ -25,9 +25,13 @@ import kafka.consumer.SimpleConsumer
 import kafka.message.MessageAndOffset
 import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
-import org.apache.gearpump.{TimeStamp, Message}
+
 import org.apache.gearpump.streaming.ConfigsHelper._
-import org.apache.gearpump.streaming.examples.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.api.{Checkpoint, OffsetManager}
+import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
+import org.apache.gearpump.streaming.transaction.kafka.{KafkaMessage, KafkaSource, KafkaUtil}
+import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
@@ -57,12 +61,12 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   import org.apache.gearpump.streaming.examples.kafka.KafkaSpout._
 
   private val config = conf.config
-  private val grouper = config.getGrouper
+  private val grouper = new KafkaDefaultGrouper
   private val emitBatchSize = config.getConsumerEmitBatchSize
 
-  private val topicAndPartitions = {
+  private val topicAndPartitions: List[TopicAndPartition] = {
     val original = ZkUtils.getPartitionsForTopics(config.getZkClient(), config.getConsumerTopics)
-      .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toSet
+      .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toList
     val grouped = grouper.group(original,
       conf.dag.tasks(taskId.groupId).parallism, taskId)
     grouped.foreach(tp =>
@@ -72,16 +76,20 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
 
   private val consumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
   private val decoder = new StringDecoder()
-  private val checkpointManager =
-    config.getCheckpointManagerFactory.getCheckpointManager(topicAndPartitions, conf)
+  private val offsetManager = new OffsetManager(conf)
   private val commitIntervalMS = config.getCheckpointCommitIntervalMS
-  private var indexMessages = Map.empty[(TopicAndPartition, TimeStamp), KafkaMessage]
-  private var lastCommitTime = 0L
+  private var lastCommitTime = System.currentTimeMillis()
 
   override def onStart(taskContext: TaskContext): Unit = {
-    checkpointManager.start()
-    readCheckpoints.filter(_._1._2 > taskContext.startTime).foreach(
-      checkpoint => consumer.setStartOffset(checkpoint._1._1, checkpoint._2.offset))
+    offsetManager.register(topicAndPartitions.map(KafkaSource(_)))
+    offsetManager.start()
+    offsetManager.loadStartingOffsets(taskContext.startTime).foreach{
+      entry =>
+        val source = entry._1
+        val offset = entry._2
+        val topicAndPartition = TopicAndPartition(source.name, source.partition)
+        consumer.setStartOffset(topicAndPartition, offset)
+    }
     self ! Message("start", System.currentTimeMillis())
   }
 
@@ -93,7 +101,7 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
         if (kafkaMsg != null) {
           val timestamp = System.currentTimeMillis()
           output(new Message(decoder.fromBytes(kafkaMsg.msg)))
-          updateCheckpoint(timestamp, kafkaMsg)
+          offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
         }
         emit(msgNum + 1)
       }
@@ -101,50 +109,19 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
     emit(0)
     if (shouldCommitCheckpoint) {
       LOG.info("committing checkpoint...")
-      commitCheckpoint
+      offsetManager.checkpoint
+      lastCommitTime = System.currentTimeMillis()
     }
     self ! Message("continue", Message.noTimeStamp)
   }
 
   override def onStop(): Unit = {
     consumer.close()
-    checkpointManager.close()
-  }
-
-  private def updateCheckpoint(timestamp: TimeStamp, kafkaMsg: KafkaMessage): Unit = {
-    val topicAndPartition = kafkaMsg.topicAndPartition
-    if (!indexMessages.contains((topicAndPartition, timestamp))) {
-      indexMessages += (topicAndPartition, timestamp) -> kafkaMsg
-    }
-  }
-
-  private def commitCheckpoint = {
-    indexMessages.foreach {
-      entry => {
-        val topicAndPartition = entry._1._1
-        val timestamp = entry._1._2
-        val kafkaMsg = entry._2
-        checkpointManager.writeCheckpoint(topicAndPartition,
-          Checkpoint(timestamp, KafkaUtil.serialize(kafkaMsg)))
-      }
-    }
-
-    lastCommitTime = System.currentTimeMillis()
-    indexMessages = Map.empty[(TopicAndPartition, Long), KafkaMessage]
+    offsetManager.close()
   }
 
   private def shouldCommitCheckpoint: Boolean = {
     val now = System.currentTimeMillis()
     (now - lastCommitTime) > commitIntervalMS
-  }
-
-  private def readCheckpoints: Map[(TopicAndPartition, TimeStamp), KafkaMessage] = {
-    topicAndPartitions.flatMap {
-      tp =>
-        checkpointManager.readCheckpoints(tp).map {
-          checkpoint =>
-            ((tp, checkpoint.timestamp), KafkaUtil.deserialize(checkpoint.data))
-        }
-    }.toMap
   }
 }

@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.transaction.kafka
 
-import kafka.common.TopicAndPartition
+import org.apache.gearpump.streaming.transaction.api.{CheckpointManager, CheckpointManagerFactory}
 import org.apache.gearpump.util.Configs
 
-
-trait CheckpointManagerFactory {
-  def getCheckpointManager(topicAndPartitions: Array[TopicAndPartition], conf: Configs): CheckpointManager
+class KafkaCheckpointManagerFactory extends CheckpointManagerFactory {
+  override def getCheckpointManager(conf: Configs): CheckpointManager = {
+    new KafkaCheckpointManager(conf)
+  }
 }

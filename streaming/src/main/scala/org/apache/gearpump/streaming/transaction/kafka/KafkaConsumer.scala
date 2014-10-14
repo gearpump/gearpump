@@ -16,9 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
-
-import java.util.{Map => JMap}
+package org.apache.gearpump.streaming.transaction.kafka
 
 import kafka.api.{FetchRequestBuilder, OffsetRequest, TopicMetadataRequest}
 import kafka.common.ErrorMapping._
@@ -31,6 +29,10 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.{Failure, Success, Try}
 
+
+case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
+                        key: Array[Byte], msg: Array[Byte])
+
 object KafkaConsumer {
 
   object Broker {
@@ -41,18 +43,15 @@ object KafkaConsumer {
     override def toString = s"${host}:${port}"
   }
 
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaSpout])
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaConsumer])
 }
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Array[Byte], msg: Array[Byte])
 
-class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
+class KafkaConsumer(topicAndPartitions: List[TopicAndPartition],
                     clientId: String, socketTimeout: Int,
                     receiveBufferSize: Int, fetchSize: Int,
                     zkClient: ZkClient)  {
-
-  import org.apache.gearpump.streaming.examples.kafka.KafkaConsumer._
+  import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer._
 
   private val brokers = {
     ZkUtils.getAllBrokersInCluster(zkClient).map(b => Broker(b.host, b.port)).toList

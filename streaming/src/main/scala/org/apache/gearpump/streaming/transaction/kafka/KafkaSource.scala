@@ -16,34 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.transaction.kafka
 
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+import org.apache.gearpump.streaming.transaction.api.Source
+import kafka.common.TopicAndPartition
 
-import scala.collection.mutable.ArrayBuffer
-
-class KafkaProducer[K, V](config: ProducerConfig,
-                    batchSize: Int) {
-
-  private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
-  private val producer = new Producer[K, V](config)
-
-  def send(topic: String, key: K, msg: V): Unit = send(topic, key, null, msg)
-
-  def send(topic: String, key: K, partKey: Any, msg: V): Unit = {
-    buffer += new KeyedMessage[K, V](topic, key, partKey, msg)
-    if (buffer.size >= batchSize) {
-      flush()
-    }
+object KafkaSource {
+  def apply(topicAndPartition: TopicAndPartition): KafkaSource = {
+    new KafkaSource(topicAndPartition)
   }
 
-  def flush(): Unit = {
-    producer.send(buffer: _*)
-    buffer.clear()
-  }
-
-  def close(): Unit = {
-    flush()
-    producer.close()
+  def apply(name: String, partition: Int): KafkaSource = {
+    KafkaSource(TopicAndPartition(name, partition))
   }
 }
+
+class KafkaSource(topicAndPartition: TopicAndPartition) extends Source {
+  override def name: String = topicAndPartition.topic
+  override def partition: Int = topicAndPartition.partition
+}
+

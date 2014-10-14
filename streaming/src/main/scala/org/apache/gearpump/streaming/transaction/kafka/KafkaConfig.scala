@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.transaction.kafka
 
 import java.util.Properties
 
@@ -27,7 +27,9 @@ import kafka.serializer.Decoder
 import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
+import org.apache.gearpump.streaming.transaction.api.{CheckpointFilter, CheckpointManagerFactory}
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
@@ -50,13 +52,14 @@ object KafkaConfig {
   val REQUEST_REQUIRED_ACKS = "kafka.producer.request.required.acks"
   val PRODUCER_EMIT_BATCH_SIZE = "kafka.producer.emit.batch.size"
 
-  // grouper config
-  val GROUPER_CLASS = "kafka.grouper.class"
-
   // checkpoint config
   val CHECKPOINT_MANAGER_FACTORY_CLASS = "kafka.checkpoint.manager.factory.class"
   val CHECKPOINT_REPLICAS = "kafka.checkpoint.replicas"
   val CHECKPOINT_COMMIT_INTERVAL_MS = "kafka.checkpoint.commit.interval.ms"
+
+  // filtering config
+  val CHECKPOINT_FILTER_CLASS = "kafka.checkpoint.filter.class"
+  val CHECKPOINT_MESSAGE_DELAY_MS = "kafka.checkpoint.message.delay.ms"
 
   def apply(): Map[String, _] = new KafkaConfig().toMap
 
@@ -70,6 +73,10 @@ object KafkaConfig {
       config.get(key).get.asInstanceOf[Int]
     }
 
+    private def getLong(key: String): Long = {
+      config.get(key).get.asInstanceOf[Long]
+    }
+
 
     private def getInstance[C](key: String): C = {
       Class.forName(getString(key)).newInstance().asInstanceOf[C]
@@ -79,7 +86,7 @@ object KafkaConfig {
       config.get(key).get.asInstanceOf[java.util.List[String]].asScala.toList
     }
 
-    def getConsumer(topicAndPartitions: Array[TopicAndPartition],
+    def getConsumer(topicAndPartitions: List[TopicAndPartition],
                     clientId: String = getClientId,
                     socketTimeout: Int = getSocketTimeoutMS,
                     receiveBufferSize: Int = getSocketReceiveBufferSize,
@@ -169,10 +176,6 @@ object KafkaConfig {
       getString(METADATA_BROKER_LIST)
     }
 
-    def getGrouper = {
-      getInstance[Grouper](GROUPER_CLASS)
-    }
-
     def getCheckpointManagerFactory = {
       getInstance[CheckpointManagerFactory](CHECKPOINT_MANAGER_FACTORY_CLASS)
     }
@@ -184,14 +187,21 @@ object KafkaConfig {
     def getCheckpointCommitIntervalMS = {
       getInt(CHECKPOINT_COMMIT_INTERVAL_MS)
     }
+
+    def getCheckpointFilter = {
+      getInstance[CheckpointFilter](CHECKPOINT_FILTER_CLASS)
+    }
+
+    def getCheckpointMessageDelayMS = {
+      getLong(CHECKPOINT_MESSAGE_DELAY_MS)
+    }
   }
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaConfig])
 }
 
 class KafkaConfig {
-
-  import org.apache.gearpump.streaming.examples.kafka.KafkaConfig._
+  import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 
   LOG.info("Loading Kafka configurations...")
   val config = ConfigFactory.load("kafka.conf")

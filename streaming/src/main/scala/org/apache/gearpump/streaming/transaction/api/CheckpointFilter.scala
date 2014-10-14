@@ -16,28 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.transaction.api
 
-import org.json4s._
-import org.json4s.native.Serialization
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.util.Configs
 
-object KafkaUtil {
-  implicit val formats = Serialization.formats(NoTypeHints)
-  val MESSAGE_ENCODING = "UTF8"
-
-  def longToByteArray(long: Long): Array[Byte] = {
-    java.nio.ByteBuffer.allocate(8).putLong(long).array()
-  }
-
-  def byteArrayToLong(bytes: Array[Byte]): Long = {
-    java.nio.ByteBuffer.wrap(bytes).getLong
-  }
-
-  def deserialize(bytes: Array[Byte]): KafkaMessage = {
-    Serialization.read(new String(bytes, MESSAGE_ENCODING))
-  }
-
-  def serialize(kafkaMsg: KafkaMessage): Array[Byte] = {
-    Serialization.write(kafkaMsg).getBytes(MESSAGE_ENCODING)
-  }
+trait CheckpointFilter {
+  def filter(checkpoint: Checkpoint, timestamp: TimeStamp,
+             conf: Configs): Option[Long]
 }
+

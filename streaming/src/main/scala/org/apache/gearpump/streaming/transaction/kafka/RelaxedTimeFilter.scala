@@ -16,14 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.transaction.kafka
 
-import kafka.common.TopicAndPartition
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.transaction.api.{Checkpoint, CheckpointFilter}
+import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.util.Configs
 
-class KafkaCheckpointManagerFactory extends CheckpointManagerFactory {
-  override def getCheckpointManager(topicAndPartitions: Array[TopicAndPartition],
-                                    conf: Configs): CheckpointManager = {
-    new KafkaCheckpointManager(topicAndPartitions, conf)
+class RelaxedTimeFilter extends CheckpointFilter {
+  override def filter(checkpoint: Checkpoint,
+                      timestamp: TimeStamp, conf: Configs): Option[Long] = {
+    val delta = conf.config.getCheckpointMessageDelayMS
+    checkpoint.timeAndOffsets.toList.sortBy(_._1).find(_._1 > (timestamp - delta)).map(_._2)
   }
 }

@@ -16,20 +16,42 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.transaction.api
 
-import kafka.common.TopicAndPartition
 import org.apache.gearpump.TimeStamp
 
-case class Checkpoint(timestamp: TimeStamp, data: Array[Byte])
+/**
+ * a Source consists of its name and partition
+ */
+trait Source {
+  def name: String
+  def partition: Int
+}
 
+/**
+ * a Checkpoint is a map from message timestamps to
+ * message offsets of the input stream
+ */
+object Checkpoint {
+  def apply(timestamp: TimeStamp, offset: Long): Checkpoint =
+    Checkpoint(Map(timestamp -> offset))
+}
+case class Checkpoint(timeAndOffsets: Map[TimeStamp, Long])
+
+
+/**
+ * CheckpointManager checkpoints message and its timestamp to a persistent system
+ * such that we could replay messages around or after given time
+ */
 trait CheckpointManager {
 
   def start(): Unit
 
-  def writeCheckpoint(topicAndPartition: TopicAndPartition, checkpoint: Checkpoint): Unit
+  def register(sources: List[Source]): Unit
 
-  def readCheckpoints(topicAndPartition: TopicAndPartition): List[Checkpoint]
+  def writeCheckpoint(source: Source, checkpoint: Checkpoint): Unit
+
+  def readCheckpoint(source: Source): Checkpoint
 
   def close(): Unit
 }

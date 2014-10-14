@@ -18,9 +18,8 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import kafka.common.TopicAndPartition
-import org.apache.gearpump.streaming.TaskIndex
 import org.apache.gearpump.streaming.task.TaskId
+import kafka.common.TopicAndPartition
 
 /**
  * default grouper groups TopicAndPartitions among Spouts by partitions
@@ -31,11 +30,11 @@ import org.apache.gearpump.streaming.task.TaskId
  * spout0 gets (topicA, partition1), (topicB, partition1) and (topicA, partition3)
  * spout1 gets (topicA, partition2), (topicB, partition2)
  */
-class DefaultGrouper extends Grouper {
-  override def group(topicAndPartitions: Set[TopicAndPartition],
-                     taskNum: Int, taskId: TaskId): Array[TopicAndPartition] = {
+class KafkaDefaultGrouper {
+  def group(topicAndPartitions: List[TopicAndPartition],
+                     taskNum: Int, taskId: TaskId): List[TopicAndPartition] = {
     val taskToTopicAndPartitions = topicAndPartitions.groupBy(tp => tp.partition % taskNum).map(params =>
-      (TaskId(taskId.groupId, params._1), params._2.toArray)
+      (TaskId(taskId.groupId, params._1), params._2.toList)
     )
     taskToTopicAndPartitions(taskId)
   }

@@ -92,7 +92,12 @@ object Build extends sbt.Build {
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
-    settings = commonSettings
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.kafka" %% "kafka" % kafkaVersion
+        )
+      )
   )  dependsOn(core)
   
   lazy val examples = Project(
@@ -101,11 +106,9 @@ object Build extends sbt.Build {
     settings = commonSettings  ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
-          "org.json4s" %% "json4s-native" % json4sVersion,
-          "org.apache.kafka" %% "kafka" % kafkaVersion
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
         )
-      ) 
+      )
   ) dependsOn(streaming)
 
   lazy val rest = Project(
