@@ -44,7 +44,7 @@ object Kill extends App with ArgumentsParser {
 
     implicit val timeout = Timeout(5, TimeUnit.SECONDS)
     val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
-      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARN")))
+      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
     val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
 
     val client = new MasterClient(master)

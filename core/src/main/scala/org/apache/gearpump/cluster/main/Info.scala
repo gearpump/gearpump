@@ -43,13 +43,15 @@ object Info extends App with ArgumentsParser {
 
     implicit val timeout = Timeout(5, TimeUnit.SECONDS)
     val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
-      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARN")))
+      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
     val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
 
     val client = new MasterClient(master)
 
     val AppMastersData(appMasters) = client.listApplications
     appMasters.foreach { appData =>
+      Console.println("== Application Information ==")
+      Console.println("====================================")
       Console.println(s"application: ${appData.appId}, worker: ${appData.appData.worker}")
     }
     system.shutdown()
