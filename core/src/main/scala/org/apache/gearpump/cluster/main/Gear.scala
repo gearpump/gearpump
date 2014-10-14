@@ -1,10 +1,5 @@
 package org.apache.gearpump.cluster.main
 
-import akka.actor.{ActorSystem, Props}
-import com.typesafe.config.ConfigValueFactory
-import org.apache.gearpump.cluster.Master
-import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{ActorUtil, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
 object Gear extends App with ArgumentsParser {

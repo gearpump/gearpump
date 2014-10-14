@@ -17,17 +17,15 @@
  */
 package org.apache.gearpump.cluster.main
 
-import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
-import org.apache.gearpump.cluster.{MasterProxy, MasterClient}
+import org.apache.gearpump.cluster.{MasterClient, MasterProxy}
+import org.apache.gearpump.util.Configs
 import org.apache.gearpump.util.Constants._
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.gearpump.streaming.examples.sol._
-import org.apache.gearpump.util.Configs
 
 object Info extends App with ArgumentsParser {
 
