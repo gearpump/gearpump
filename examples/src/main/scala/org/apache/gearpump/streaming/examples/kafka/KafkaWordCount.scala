@@ -21,6 +21,7 @@ package org.apache.gearpump.streaming.examples.kafka
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.client.ClientContext
+import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
@@ -58,7 +59,7 @@ object KafkaWordCount extends App with ArgumentsParser {
     val context = ClientContext(masters)
 
     val appId = context.submit(new KafkaWordCount().getApplication(
-      Configs.empty, config.getInt("kafka_spout"), config.getInt("split"),
+      Configs(KafkaConfig()), config.getInt("kafka_spout"), config.getInt("split"),
       config.getInt("sum"), config.getInt("kafka_bolt")))
 
     System.out.println(s"We get application id: $appId")

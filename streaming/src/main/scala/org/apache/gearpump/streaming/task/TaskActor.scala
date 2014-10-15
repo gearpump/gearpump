@@ -38,7 +38,6 @@ trait MessageHandler[T] {
   def next(t:T):Unit
 }
 case class Handler[T](handler:PartialFunction[java.io.Serializable,T])
-class MessageH[T<:java.io.Serializable](handler:PartialFunction[java.io.Serializable,T])
 object Handler {
   implicit object DefaultHandler extends Handler[String](
   {
