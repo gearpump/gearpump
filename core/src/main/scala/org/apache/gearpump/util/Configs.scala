@@ -20,8 +20,8 @@ package org.apache.gearpump.util
 
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
-import org.apache.gearpump.scheduler.Resource
 import org.apache.gearpump.util.Constants._
 
 /**
@@ -71,6 +71,9 @@ class Configs(val config: Map[String, _])  extends Serializable{
 
   def withAppMasterRegisterData(data : AppMasterRegisterData) = withValue(APP_MASTER_REGISTER_DATA, data)
   def appMasterRegisterData : AppMasterRegisterData = getAnyRef(APP_MASTER_REGISTER_DATA).asInstanceOf[AppMasterRegisterData]
+
+  def withWorkerId(id : Int) = withValue(WORKER_ID, id)
+  def workerId : Int = getInt(WORKER_ID)
 }
 
 object Configs {

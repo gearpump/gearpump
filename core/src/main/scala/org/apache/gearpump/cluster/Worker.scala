@@ -30,7 +30,7 @@ import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.scheduler.Resource
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.util.{ActorUtil, Constants, ProcessLogRedirector}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -101,7 +101,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         // parent is down, let's make suicide
         LOG.info("parent master cannot be contacted, find a new master ...")
         context.become(waitForMasterConfirm(repeatActionUtil(30)(masterProxy ! RegisterWorker(id))))
-      } else if (isChildActorPath(actor)) {
+      } else if (ActorUtil.isChildActorPath(self, actor)) {
         //one executor is down,
         LOG.info(s"Executor is down ${actor.path.name}")
 
@@ -112,17 +112,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
           master ! ResourceUpdate(id, resource)
         }
       }
-  }
-
-  private def isChildActorPath(actor : ActorRef) : Boolean = {
-    if (null != actor) {
-      val name = actor.path.name
-      val child = context.child(name)
-      if (child.isDefined) {
-        return child.get.path == actor.path
-      }
-    }
-    return false
   }
 
   private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId

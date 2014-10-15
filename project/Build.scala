@@ -129,5 +129,5 @@ object Build extends sbt.Build {
           "org.webjars" % "swagger-ui" % swaggerUiVersion
         )
       ) 
-  ) dependsOn(core, streaming)
+  ) dependsOn(core, streaming, examples)
 }

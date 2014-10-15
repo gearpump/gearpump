@@ -24,6 +24,7 @@ import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster._
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest}
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.util.Configs
 
@@ -48,5 +49,10 @@ class MasterClient(master : ActorRef) {
       case Success(_) => Unit
       case Failure(ex) => throw(ex)
     }
+  }
+
+  def listApplications = {
+    val result = Await.result((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]], Duration.Inf)
+    result
   }
 }

@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util._
@@ -79,7 +79,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   def receive: Receive = null
 
   //from appid to appMaster data
-  private var appMasterRegistry = Map.empty[Int, AppMasterInfo]
+  private var appMasterRegistry = Map.empty[Int, (ActorRef, AppMasterInfo)]
 
   private val STATE = "masterstate"
   private val TIMEOUT = Duration(5, TimeUnit.SECONDS)
@@ -148,39 +148,59 @@ private[cluster] class AppManager() extends Actor with Stash {
       appId += 1
     case ShutdownApplication(appId) =>
       LOG.info(s"App Manager Shutting down application $appId")
-      val data = appMasterRegistry.get(appId)
-      if (data.isDefined) {
-        val worker = data.get.worker
-        LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
-        worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
-        sender ! ShutdownApplicationResult(Success(appId))
-      }
-      else {
-        val errorMsg = s"Find to find regisration information for appId: $appId"
-        LOG.error(errorMsg)
-        sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
+      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(info) match {
+        case Some(info) =>
+          val worker = info.worker
+          LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
+          worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
+          sender ! ShutdownApplicationResult(Success(appId))
+        case None =>
+          val errorMsg = s"Find to find regisration information for appId: $appId"
+          LOG.error(errorMsg)
+          sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
   }
 
   def appMasterMessage: Receive = {
     case RegisterAppMaster(appMaster, appId, executorId, slots, registerData: AppMasterInfo) =>
-      LOG.info(s"Register AppMaster for app: $appId...")
+      val appMasterPath = appMaster.path.address.toString
+      val workerPath = registerData.worker.path.address.toString
+      LOG.info(s"Register AppMaster for app: $appId appMaster=$appMasterPath worker=$workerPath")
       context.watch(appMaster)
-      appMasterRegistry += appId -> registerData
+      appMasterRegistry += appId -> (appMaster, registerData)
       sender ! AppMasterRegistered(appId, context.parent)
-    case appMastersDataRequest: AppMastersDataRequest =>
+    case AppMastersDataRequest =>
       val appMastersData = collection.mutable.ListBuffer[AppMasterData]()
       appMasterRegistry.foreach(pair => {
-        val (id, info:AppMasterInfo) = pair
+        val (id, (appMaster:ActorRef, info:AppMasterInfo)) = pair
         appMastersData += AppMasterData(id,info)
       }
       )
       sender ! AppMastersData(appMastersData.toList)
     case appMasterDataRequest: AppMasterDataRequest =>
       val appId = appMasterDataRequest.appId
-      val appData = Option[AppMasterInfo](appMasterRegistry.getOrElse(appId, null))
-      LOG.info(s"AppManager returning AppMasterData for $appId")
-      sender ! AppMasterData(appId = appId, appData = appData.getOrElse(null))
+      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(info) match {
+        case a@Some(data) =>
+          val worker = a.get.worker
+          sender ! AppMasterData(appId = appId, appData = data)
+        case None =>
+          sender ! AppMasterData(appId = appId, appData = null)
+      }
+    case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
+      val appId = appMasterDataDetailRequest.appId
+      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(appMaster) match {
+        case a@Some(appMaster) =>
+          val appM:ActorRef = a.get
+          val path = appM.toString
+          LOG.info(s"AppManager forwarding AppMasterDataRequest to AppMaster $path")
+          appM forward appMasterDataDetailRequest
+        case None =>
+          sender ! AppMasterDataDetail(appId = appId, appDescription = null)
+      }
+
   }
 
   def terminationWatch: Receive = {

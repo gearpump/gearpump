@@ -15,9 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.scheduler
-
-import akka.actor.ActorRef
+package org.apache.gearpump.cluster.scheduler
 
 case class Resource(slots : Int)
 
@@ -26,11 +24,18 @@ object Priority extends Enumeration{
   val LOW, NORMAL, HIGH = Value
 }
 
-import org.apache.gearpump.scheduler.Priority._
+object Relaxation extends Enumeration{
+  type Relaxation = Value
+  val ANY, ONEWORKER, SPECIFICWORKER = Value
+}
 
-case class ResourceRequest(resource: Resource, priority: Priority = NORMAL, worker: ActorRef = null)
+import akka.actor.ActorRef
+import org.apache.gearpump.cluster.scheduler.Priority._
+import org.apache.gearpump.cluster.scheduler.Relaxation._
 
-case class ResourceAllocation(resource : Resource, worker : ActorRef)
+case class ResourceRequest(resource: Resource,  workerId: Int = 0, priority: Priority = NORMAL, relaxation: Relaxation = ANY)
+
+case class ResourceAllocation(resource : Resource, worker : ActorRef, workerId : Int)
 
 object Resource{
   def empty = new Resource(0)
@@ -47,6 +52,8 @@ object Resource{
     def lessThan(other : Resource) = resource.slots < other.slots
 
     def equals(other : Resource) = resource.slots == other.slots
+
+    def isEmpty = resource.slots == 0
     }
 }
 

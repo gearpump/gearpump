@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.scheduler
+package org.apache.gearpump.cluster.scheduler
 
 import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.TimeStamp
@@ -28,28 +28,27 @@ import scala.collection.mutable
 
 abstract class Scheduler extends Actor{
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Scheduler])
-  protected var resources = new mutable.HashMap[ActorRef, Resource]
+  protected var resources = new mutable.HashMap[Int, (ActorRef, Resource)]
 
   def handleScheduleMessage : Receive = {
     case WorkerRegistered(id) =>
-      val worker = sender()
-      if(!resources.contains(worker)) {
+      if(!resources.contains(id)) {
         LOG.info(s"Worker $id added to the scheduler")
-        resources.put(worker, Resource.empty)
+        resources.put(id, (sender, Resource.empty))
       }
-    case ResourceUpdate(id, resource) =>
-      LOG.info(s"Resource update id: $id, slots: ${resource.slots}....")
-      val current = sender()
-      if(resources.contains(current)) {
-        resources.update(current, resource)
+    case ResourceUpdate(workerId, resource) =>
+      LOG.info(s"Resource update id: ${workerId}, slots: ${resource.slots}....")
+      if(resources.contains(workerId)) {
+        resources.update(workerId, (sender, resource))
         allocateResource()
       }
       else {
-        current ! UpdateResourceFailed(s"ResourceUpdate failed! The worker $id has not been registered into master")
+        sender ! UpdateResourceFailed(s"ResourceUpdate failed! The worker $workerId has not been registered into master")
       }
     case WorkerTerminated(actor) =>
-      if(resources.contains(actor)){
-        resources -= actor
+      val workerId = actor.path.name.toInt
+      if(resources.contains(workerId)){
+        resources -= workerId
       }
   }
 
@@ -57,5 +56,5 @@ abstract class Scheduler extends Actor{
 }
 
 object Scheduler{
-  class PendingRequest(val appMaster: ActorRef, val request: ResourceRequest, val timeStamp: TimeStamp)
+  case class PendingRequest(appMaster: ActorRef, request: ResourceRequest, timeStamp: TimeStamp)
 }
