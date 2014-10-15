@@ -73,11 +73,6 @@ object KafkaConfig {
       config.get(key).get.asInstanceOf[Int]
     }
 
-    private def getLong(key: String): Long = {
-      config.get(key).get.asInstanceOf[Long]
-    }
-
-
     private def getInstance[C](key: String): C = {
       Class.forName(getString(key)).newInstance().asInstanceOf[C]
     }
@@ -193,7 +188,7 @@ object KafkaConfig {
     }
 
     def getCheckpointMessageDelayMS = {
-      getLong(CHECKPOINT_MESSAGE_DELAY_MS)
+      getInt(CHECKPOINT_MESSAGE_DELAY_MS)
     }
   }
 

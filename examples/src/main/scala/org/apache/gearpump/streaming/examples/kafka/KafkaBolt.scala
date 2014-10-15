@@ -23,8 +23,7 @@ import java.util.Properties
 import akka.actor.Cancellable
 import kafka.producer.ProducerConfig
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig
-import KafkaConfig._
+import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import scala.concurrent.duration.FiniteDuration

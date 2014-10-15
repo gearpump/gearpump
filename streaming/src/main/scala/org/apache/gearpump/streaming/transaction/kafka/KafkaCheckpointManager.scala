@@ -34,6 +34,7 @@ object KafkaCheckpointManager {
 }
 
 class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
+  import org.apache.gearpump.streaming.transaction.kafka.KafkaCheckpointManager._
 
   private val config = conf.config
   private val producer = config.getProducer[Array[Byte], Array[Byte]](
@@ -45,19 +46,22 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
 
   override def start(): Unit = {
     createTopics()
+    // get consumers only after topics having been created
+    LOG.info("creating consumer...")
+    consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
   }
 
   override def register(topicAndPartitions: List[Source]): Unit = {
     this.checkpointTopicAndPartitions =
       topicAndPartitions.map(getCheckpointTopicAndPartition(_))
-    this.consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
   }
 
   override def writeCheckpoint(source: Source,
                                checkpoint: Checkpoint): Unit = {
+    val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
     checkpoint.timeAndOffsets.foreach(timeAndOffset => {
-      producer.send(source.name, longToByteArray(timeAndOffset._1),
-        source.partition, longToByteArray(timeAndOffset._2))
+      producer.send(checkpointTopicAndPartition.topic, longToByteArray(timeAndOffset._1),
+        checkpointTopicAndPartition.partition, longToByteArray(timeAndOffset._2))
     })
 
   }
