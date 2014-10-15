@@ -16,35 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.transaction.kafka
 
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+import org.apache.gearpump.streaming.transaction.api.{CheckpointManager, CheckpointManagerFactory}
+import org.apache.gearpump.util.Configs
 
-import scala.collection.mutable.ArrayBuffer
-
-class KafkaProducer[K, V](config: ProducerConfig,
-                    topic: String,
-                    batchSize: Int) {
-
-  private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
-  private val producer = new Producer[K, V](config)
-
-  def send(key: K, msg: V): Unit = send(key, null, msg)
-
-  def send(key: K, partKey: Any, msg: V): Unit = {
-    buffer += new KeyedMessage[K, V](topic, key, partKey, msg)
-    if (buffer.size >= batchSize) {
-      flush()
-    }
-  }
-
-  def flush(): Unit = {
-    producer.send(buffer: _*)
-    buffer.clear()
-  }
-
-  def close(): Unit = {
-    flush()
-    producer.close()
+class KafkaCheckpointManagerFactory extends CheckpointManagerFactory {
+  override def getCheckpointManager(conf: Configs): CheckpointManager = {
+    new KafkaCheckpointManager(conf)
   }
 }

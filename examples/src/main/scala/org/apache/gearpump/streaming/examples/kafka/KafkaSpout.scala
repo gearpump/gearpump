@@ -20,17 +20,23 @@ package org.apache.gearpump.streaming.examples.kafka
 
 import kafka.api.{FetchRequestBuilder, TopicMetadataRequest}
 import kafka.common.ErrorMapping._
+import kafka.common.TopicAndPartition
 import kafka.consumer.SimpleConsumer
 import kafka.message.MessageAndOffset
 import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
-import org.apache.gearpump.Message
+
 import org.apache.gearpump.streaming.ConfigsHelper._
+import org.apache.gearpump.streaming.transaction.api.{Checkpoint, OffsetManager}
+import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
+import org.apache.gearpump.streaming.transaction.kafka.{KafkaMessage, KafkaSource, KafkaUtil}
+import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.util._
+import scala.collection.JavaConversions._
 
 
 object KafkaSpout {
@@ -54,157 +60,68 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
 
   import org.apache.gearpump.streaming.examples.kafka.KafkaSpout._
 
-  private val kafkaConfig = new KafkaConfig()
-  private val topic = kafkaConfig.getConsumerTopic
-  private val clientId = kafkaConfig.getClientId
-  private val soTimeout = kafkaConfig.getSocketTimeoutMS
-  private val bufferSize = kafkaConfig.getSocketReceiveBufferSize
-  private val fetchSize = kafkaConfig.getFetchMessageMaxBytes
-  private val zkClient = kafkaConfig.getZkClient
-  private val batchSize = kafkaConfig.getConsumerEmitBatchSize
+  private val config = conf.config
+  private val grouper = new KafkaDefaultGrouper
+  private val emitBatchSize = config.getConsumerEmitBatchSize
 
-  val brokers = {
-    ZkUtils.getAllBrokersInCluster(zkClient).map(b => Broker(b.host, b.port)).toList
+  private val topicAndPartitions: List[TopicAndPartition] = {
+    val original = ZkUtils.getPartitionsForTopics(config.getZkClient(), config.getConsumerTopics)
+      .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toList
+    val grouped = grouper.group(original,
+      conf.dag.tasks(taskId.groupId).parallism, taskId)
+    grouped.foreach(tp =>
+      LOG.info(s"spout $taskId has been assigned partition (${tp.topic}, ${tp.partition})"))
+    grouped
   }
 
-  val partitions = {
-    val numPartitions = ZkUtils.getPartitionsForTopics(zkClient, List(topic))(topic).size
-    val numTasks = conf.dag.tasks(taskId.groupId).parallism
-    val id = taskId.index
-    val partitions = 0.until(numPartitions).filter(_ % numTasks == id).toList
-    LOG.info(s"spout $id assigned partitions $partitions")
-    partitions
-  }
+  private val consumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
+  private val decoder = new StringDecoder()
+  private val offsetManager = new OffsetManager(conf)
+  private val commitIntervalMS = config.getCheckpointCommitIntervalMS
+  private var lastCommitTime = System.currentTimeMillis()
 
-  private val leaders: Map[Int, Broker] = partitions.map(
-    p => (p, findLeader(brokers, topic, p).get)).toMap
-
-  private val iterators: Map[Int, MessageIterator] = partitions.map(
-    p => {
-      val broker = leaders(p)
-      val host = broker.host
-      val port = broker.port
-      (p, new MessageIterator(host, port, topic, p, 0L,
-        soTimeout, bufferSize, fetchSize, clientId))
-    }).toMap
-
-
-  override def onStart(taskContext : TaskContext): Unit = {
+  override def onStart(taskContext: TaskContext): Unit = {
+    offsetManager.register(topicAndPartitions.map(KafkaSource(_)))
+    offsetManager.start()
+    offsetManager.loadStartingOffsets(taskContext.startTime).foreach{
+      entry =>
+        val source = entry._1
+        val offset = entry._2
+        val topicAndPartition = TopicAndPartition(source.name, source.partition)
+        consumer.setStartOffset(topicAndPartition, offset)
+    }
     self ! Message("start", System.currentTimeMillis())
   }
 
   override def onNext(msg: Message): Unit = {
-    fetchMessagesAndOutput(partitions.size, batchSize)
+    @annotation.tailrec
+    def emit(msgNum: Int): Unit = {
+      if (msgNum < emitBatchSize) {
+        val kafkaMsg = consumer.nextMessage()
+        if (kafkaMsg != null) {
+          val timestamp = System.currentTimeMillis()
+          output(new Message(decoder.fromBytes(kafkaMsg.msg)))
+          offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
+        }
+        emit(msgNum + 1)
+      }
+    }
+    emit(0)
+    if (shouldCommitCheckpoint) {
+      LOG.info("committing checkpoint...")
+      offsetManager.checkpoint
+      lastCommitTime = System.currentTimeMillis()
+    }
     self ! Message("continue", Message.noTimeStamp)
   }
 
   override def onStop(): Unit = {
-    iterators.foreach(_._2.close())
-  }
-
-  private def fetchMessagesAndOutput(partitionNum: Int, batchSize: Int): Unit = {
-    @annotation.tailrec
-    def emit(partition: Int, num: Int): Unit = {
-      val iter = iterators(partition)
-      if (num < batchSize && iter.hasNext()) {
-        val msg = iter.next()
-        output(new Message(msg, System.currentTimeMillis()))
-        emit((partition + 1) % partitionNum, num + 1)
-      }
-    }
-    emit(0, 0)
-  }
-
-  private def findLeader(brokers: List[Broker], topic: String, partition: Int): Option[Broker] = brokers match {
-    case Nil => throw new IllegalArgumentException("empty broker list")
-    case Broker(host, port) :: Nil =>
-      findLeader(host, port, topic, partition)
-    case Broker(host, port) :: brokers =>
-      Try(findLeader(host, port, topic, partition)) match {
-        case Success(leader) => leader
-        case Failure(e) => findLeader(brokers, topic, partition)
-      }
-  }
-
-  private def findLeader(host: String, port: Int, topic: String, partition: Int): Option[Broker] = {
-    val consumer = new SimpleConsumer(host, port, soTimeout, bufferSize, clientId)
-    val request = new TopicMetadataRequest(TopicMetadataRequest.CurrentVersion, 0, clientId, List(topic))
-    try {
-      val response = consumer.send(request)
-      val metaData = response.topicsMetadata(0)
-
-      metaData.errorCode match {
-        case NoError => metaData.partitionsMetadata
-          .filter(_.partitionId == partition)(0).leader
-          .map(l => Broker(l.host, l.port))
-        case LeaderNotAvailableCode => None
-        case error => throw exceptionFor(error)
-      }
-    } finally {
-      consumer.close()
-    }
-  }
-}
-
-class MessageIterator(host: String,
-                      port: Int,
-                      topic: String,
-                      partition: Int,
-                      startOffset: Long,
-                      soTimeout: Int,
-                      bufferSize: Int,
-                      fetchSize: Int,
-                      clientId: String) {
-
-
-  private val consumer = new SimpleConsumer(host, port, soTimeout, bufferSize, clientId)
-  private val decoder = new StringDecoder()
-
-  private var iter = iterator(startOffset)
-  private var readMessages = 0L
-  private var offset = startOffset
-  private var nextOffset = offset
-
-  def getOffset(): Long = {
-    offset
-  }
-
-  def next(): String = {
-    val mo = iter.next()
-    readMessages += 1
-    offset = mo.offset
-    nextOffset = mo.nextOffset
-    decoder.fromBytes(Utils.readBytes(mo.message.payload))
-  }
-
-  @annotation.tailrec
-  final def hasNext(): Boolean = {
-    if (iter.hasNext) {
-      true
-    } else if (0 == readMessages) {
-      close()
-      false
-    } else {
-      iter = iterator(nextOffset)
-      readMessages = 0
-      hasNext()
-    }
-  }
-
-  def close(): Unit = {
     consumer.close()
+    offsetManager.close()
   }
 
-  private def iterator(offset: Long): Iterator[MessageAndOffset] = {
-    val request = new FetchRequestBuilder()
-      .clientId(clientId)
-      .addFetch(topic, partition, offset, fetchSize)
-      .build()
-
-    val response = consumer.fetch(request)
-    response.errorCode(topic, partition) match {
-      case NoError => response.messageSet(topic, partition).iterator
-      case error => throw exceptionFor(error)
-    }
+  private def shouldCommitCheckpoint: Boolean = {
+    val now = System.currentTimeMillis()
+    (now - lastCommitTime) > commitIntervalMS
   }
 }
