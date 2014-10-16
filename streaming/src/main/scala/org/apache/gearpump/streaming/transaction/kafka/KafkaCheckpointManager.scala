@@ -61,7 +61,7 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
     val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
     checkpoint.timeAndOffsets.foreach(timeAndOffset => {
       producer.send(checkpointTopicAndPartition.topic, longToByteArray(timeAndOffset._1),
-        checkpointTopicAndPartition.partition, longToByteArray(timeAndOffset._2))
+        0, longToByteArray(timeAndOffset._2))
     })
 
   }
@@ -90,25 +90,22 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
   }
 
   private def createTopics(): Unit = {
-    val partitionsByTopic = checkpointTopicAndPartitions.groupBy(tp => tp.topic)
+    val partitionsByTopic = checkpointTopicAndPartitions.groupBy(_.topic)
     partitionsByTopic.foreach(entry => {
       val topic = entry._1
-      val partitions = entry._2
       val zkClient = config.getZkClient()
       if (!AdminUtils.topicExists(zkClient, topic)) {
-        AdminUtils.createTopic(
-          zkClient, topic,
-          partitions.size, config.getCheckpointReplicas)
+        AdminUtils.createTopic(zkClient, topic, 1, config.getCheckpointReplicas)
       }
     })
   }
 
-  private def getCheckpointTopic(appId: Int, topic: String): String  = {
-    s"checkpoint_application${appId}_${topic}"
+  private def getCheckpointTopic(appId: Int, topic: String, partition: Int): String  = {
+    s"checkpoint_application${appId}_${topic}_${partition}"
   }
 
   private def getCheckpointTopicAndPartition(source: Source): TopicAndPartition = {
-    TopicAndPartition(getCheckpointTopic(conf.appId, source.name), source.partition)
+    TopicAndPartition(getCheckpointTopic(conf.appId, source.name, source.partition), 0)
   }
 
 }
