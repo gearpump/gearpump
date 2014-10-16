@@ -22,16 +22,12 @@ import org.apache.gearpump.streaming.transaction.api.Source
 import kafka.common.TopicAndPartition
 
 object KafkaSource {
-  def apply(topicAndPartition: TopicAndPartition): KafkaSource = {
-    new KafkaSource(topicAndPartition)
-  }
-
   def apply(name: String, partition: Int): KafkaSource = {
     KafkaSource(TopicAndPartition(name, partition))
   }
 }
 
-class KafkaSource(topicAndPartition: TopicAndPartition) extends Source {
+case class KafkaSource(topicAndPartition: TopicAndPartition) extends Source {
   override def name: String = topicAndPartition.topic
   override def partition: Int = topicAndPartition.partition
 }
