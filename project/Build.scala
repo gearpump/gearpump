@@ -28,6 +28,7 @@ object Build extends sbt.Build {
   val sprayJsonVersion = "1.2.6"
   val spraySwaggerVersion = "0.4.3"
   val swaggerUiVersion = "2.0.21"
+  val specs2Version = "1.13"
 
   val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++
     Seq(
@@ -54,10 +55,7 @@ object Build extends sbt.Build {
           "maven2-repo" at "http://mvnrepository.com",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "clockfly" at "http://dl.bintray.com/clockfly/maven",
-          "patrik" at "http://dl.bintray.com/patriknw/maven",
-           Resolver.sonatypeRepo("releases"),
-           Resolver.sonatypeRepo("snapshots"),
-          "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
+          "patrik" at "http://dl.bintray.com/patriknw/maven"
         )
       )
   )  dependsOn(core, streaming, examples, rest)
@@ -99,7 +97,7 @@ object Build extends sbt.Build {
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.kafka" %% "kafka" % kafkaVersion,
-          "org.specs2" %% "specs2" % "2.4.6" % "test"
+          "org.specs2" %% "specs2" % specs2Version % "test"
         )
       )
   )  dependsOn(core)
