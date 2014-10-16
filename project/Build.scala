@@ -54,7 +54,10 @@ object Build extends sbt.Build {
           "maven2-repo" at "http://mvnrepository.com",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "clockfly" at "http://dl.bintray.com/clockfly/maven",
-          "patrik" at "http://dl.bintray.com/patriknw/maven"
+          "patrik" at "http://dl.bintray.com/patriknw/maven",
+           Resolver.sonatypeRepo("releases"),
+           Resolver.sonatypeRepo("snapshots"),
+          "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
         )
       )
   )  dependsOn(core, streaming, examples, rest)
@@ -95,7 +98,8 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.kafka" %% "kafka" % kafkaVersion
+          "org.apache.kafka" %% "kafka" % kafkaVersion,
+          "org.specs2" %% "specs2" % "2.4.6" % "test"
         )
       )
   )  dependsOn(core)
