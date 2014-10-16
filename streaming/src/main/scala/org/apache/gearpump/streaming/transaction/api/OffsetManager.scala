@@ -48,7 +48,7 @@ class OffsetManager(conf: Configs) {
   }
 
   def update(source: Source, timestamp: TimeStamp, offset: Long) = {
-    if (offsetsByTimeAndSource.contains((source, timestamp))) {
+    if (!offsetsByTimeAndSource.contains((source, timestamp))) {
       offsetsByTimeAndSource += (source, timestamp) -> offset
     }
   }
