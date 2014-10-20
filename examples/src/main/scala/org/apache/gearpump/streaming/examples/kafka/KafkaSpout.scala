@@ -96,7 +96,7 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   override def onNext(msg: Message): Unit = {
 
     @annotation.tailrec
-    def emit(msgNum: Int, tpIndex: Int): Unit = {
+    def fetchAndEmit(msgNum: Int, tpIndex: Int): Unit = {
       if (msgNum < emitBatchSize) {
         val kafkaMsg = consumer.nextMessage(topicAndPartitions(tpIndex))
         if (kafkaMsg != null) {
@@ -104,14 +104,16 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
           output(new Message(decoder.fromBytes(kafkaMsg.msg)))
           offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
         }
+        // poll message from each TopicAndPartition in a round-robin way
+        // TODO: make it configurable
         if (tpIndex + 1 == topicAndPartitions.size) {
-          emit(msgNum + 1, 0)
+          fetchAndEmit(msgNum + 1, 0)
         } else {
-          emit(msgNum + 1, tpIndex + 1)
+          fetchAndEmit(msgNum + 1, tpIndex + 1)
         }
       }
     }
-    emit(0, 0)
+    fetchAndEmit(0, 0)
     if (shouldCommitCheckpoint) {
       LOG.info("committing checkpoint...")
       offsetManager.checkpoint

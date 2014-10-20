@@ -56,24 +56,10 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
 
   private val leaders: Map[TopicAndPartition, Broker] = topicAndPartitions.map {
     tp =>
-
-      def getLeader(topic: String, partition: Int, times: Int): Int = {
-        if (times == 1) {
-          ZkUtils.getLeaderForPartition(zkClient, topic, partition)
-            .getOrElse(throw new Exception(s"leader not available for TopicAndPartition(${tp.topic}, ${tp.partition})"))
-        } else {
-          Thread.sleep(1000)
-          ZkUtils.getLeaderForPartition(zkClient, topic, partition)
-            .getOrElse(getLeader(topic, partition, times - 1))
-        }
-      }
       val topic = tp.topic
       val partition = tp.partition
-/*      val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
+       val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
         .getOrElse(throw new Exception(s"leader not available for TopicAndPartition(${tp.topic}, ${tp.partition})"))
- */
-      val leader = getLeader(topic, partition, 10)
-
       val broker = ZkUtils.getBrokerInfo(zkClient, leader)
         .getOrElse(throw new Exception(s"broker info not found for leader ${leader}"))
       tp -> Broker(broker.host, broker.port)

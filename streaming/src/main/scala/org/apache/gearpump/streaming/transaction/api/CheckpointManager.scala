@@ -35,6 +35,9 @@ trait Source {
 object Checkpoint {
   def apply(timestamp: TimeStamp, offset: Long): Checkpoint =
     Checkpoint(Map(timestamp -> offset))
+
+  def empty: Checkpoint =
+    Checkpoint(Map.empty[TimeStamp, Long])
 }
 case class Checkpoint(timeAndOffsets: Map[TimeStamp, Long])
 
