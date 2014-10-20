@@ -81,7 +81,7 @@ object KafkaConfig {
       config.get(key).get.asInstanceOf[java.util.List[String]].asScala.toList
     }
 
-    def getConsumer(topicAndPartitions: List[TopicAndPartition],
+    def getConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String = getClientId,
                     socketTimeout: Int = getSocketTimeoutMS,
                     receiveBufferSize: Int = getSocketReceiveBufferSize,

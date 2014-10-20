@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.transaction.kafka
 
-import kafka.api.{FetchRequestBuilder, OffsetRequest, TopicMetadataRequest}
+import kafka.api.{FetchRequestBuilder, OffsetRequest}
 import kafka.common.ErrorMapping._
 import kafka.common.TopicAndPartition
 import kafka.consumer.SimpleConsumer
@@ -26,8 +26,8 @@ import kafka.message.MessageAndOffset
 import kafka.utils.{Utils, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.util.{Failure, Success, Try}
+import java.util.concurrent.LinkedBlockingQueue
+import scala.collection.mutable.{Map => MutableMap}
 
 
 case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
@@ -35,6 +35,7 @@ case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
 
 object KafkaConsumer {
 
+  // TODO: use kafka.cluster.Broker once it is not package private in 0.8.2
   object Broker {
     def toString(brokers: List[Broker]) = brokers.mkString(",")
   }
@@ -47,18 +48,36 @@ object KafkaConsumer {
 }
 
 
-class KafkaConsumer(topicAndPartitions: List[TopicAndPartition],
+class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String, socketTimeout: Int,
                     receiveBufferSize: Int, fetchSize: Int,
                     zkClient: ZkClient)  {
   import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer._
 
-  private val brokers = {
-    ZkUtils.getAllBrokersInCluster(zkClient).map(b => Broker(b.host, b.port)).toList
-  }
+  private val leaders: Map[TopicAndPartition, Broker] = topicAndPartitions.map {
+    tp =>
 
-  private val leaders: Map[TopicAndPartition, Broker] = topicAndPartitions.map(
-    tp => (tp, findLeader(brokers, tp.topic, tp.partition).get)).toMap
+      def getLeader(topic: String, partition: Int, times: Int): Int = {
+        if (times == 1) {
+          ZkUtils.getLeaderForPartition(zkClient, topic, partition)
+            .getOrElse(throw new Exception(s"leader not available for TopicAndPartition(${tp.topic}, ${tp.partition})"))
+        } else {
+          Thread.sleep(1000)
+          ZkUtils.getLeaderForPartition(zkClient, topic, partition)
+            .getOrElse(getLeader(topic, partition, times - 1))
+        }
+      }
+      val topic = tp.topic
+      val partition = tp.partition
+/*      val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
+        .getOrElse(throw new Exception(s"leader not available for TopicAndPartition(${tp.topic}, ${tp.partition})"))
+ */
+      val leader = getLeader(topic, partition, 10)
+
+      val broker = ZkUtils.getBrokerInfo(zkClient, leader)
+        .getOrElse(throw new Exception(s"broker info not found for leader ${leader}"))
+      tp -> Broker(broker.host, broker.port)
+  }.toMap
 
   private val iterators: Map[TopicAndPartition, MessageIterator] = topicAndPartitions.map(
     tp => {
@@ -72,18 +91,38 @@ class KafkaConsumer(topicAndPartitions: List[TopicAndPartition],
   private var partitionIndex = 0
   private val partitionNum = topicAndPartitions.length
 
+  private val incomingQueue = topicAndPartitions.map(_ -> new LinkedBlockingQueue[KafkaMessage]()).toMap
+
+  private val fetchThread = new Thread {
+    override def run(): Unit = {
+      // TODO: sleep for a while when there are no more messages from all TopicAndPartitions
+      while(!Thread.currentThread.isInterrupted) {
+        val msg = fetchMessage()
+        incomingQueue(msg.topicAndPartition).put(msg)
+      }
+    }
+  }
+
+  def start(): Unit = {
+    fetchThread.start()
+  }
+
   def setStartOffset(topicAndPartition: TopicAndPartition, startOffset: Long): Unit = {
     iterators(topicAndPartition).setStartOffset(startOffset)
   }
 
+  def nextMessage(topicAndPartition: TopicAndPartition): KafkaMessage = {
+    incomingQueue(topicAndPartition).poll()
+  }
+
   // fetch message from each TopicAndPartition in a round-robin way
-  def nextMessage(): KafkaMessage = {
-    val msg = nextMessage(topicAndPartitions(partitionIndex))
+  private def fetchMessage(): KafkaMessage = {
+    val msg = fetchMessage(topicAndPartitions(partitionIndex))
     partitionIndex = (partitionIndex + 1) % partitionNum
     msg
   }
 
-  def nextMessage(topicAndPartition: TopicAndPartition): KafkaMessage = {
+  private def fetchMessage(topicAndPartition: TopicAndPartition): KafkaMessage = {
     val iter = iterators(topicAndPartition)
     if (iter.hasNext) {
       KafkaMessage(topicAndPartition, iter.getOffset, iter.getKey, iter.next)
@@ -94,36 +133,6 @@ class KafkaConsumer(topicAndPartitions: List[TopicAndPartition],
 
   def close(): Unit = {
     iterators.foreach(_._2.close())
-  }
-
-  private def findLeader(brokers: List[Broker], topic: String, partition: Int): Option[Broker] = brokers match {
-    case Nil => throw new IllegalArgumentException("empty broker list")
-    case Broker(host, port) :: Nil =>
-      findLeader(host, port, topic, partition)
-    case Broker(host, port) :: brokers =>
-      Try(findLeader(host, port, topic, partition)) match {
-        case Success(leader) => leader
-        case Failure(e) => findLeader(brokers, topic, partition)
-      }
-  }
-
-  private def findLeader(host: String, port: Int, topic: String, partition: Int): Option[Broker] = {
-    val consumer = new SimpleConsumer(host, port, socketTimeout, receiveBufferSize, clientId)
-    val request = new TopicMetadataRequest(TopicMetadataRequest.CurrentVersion, 0, clientId, List(topic))
-    try {
-      val response = consumer.send(request)
-      val metaData = response.topicsMetadata(0)
-
-      metaData.errorCode match {
-        case NoError => metaData.partitionsMetadata
-          .filter(_.partitionId == partition)(0).leader
-          .map(l => Broker(l.host, l.port))
-        case LeaderNotAvailableCode => None
-        case error => throw exceptionFor(error)
-      }
-    } finally {
-      consumer.close()
-    }
   }
 }
 

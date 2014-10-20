@@ -64,9 +64,9 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   private val grouper = new KafkaDefaultGrouper
   private val emitBatchSize = config.getConsumerEmitBatchSize
 
-  private val topicAndPartitions: List[TopicAndPartition] = {
+  private val topicAndPartitions: Array[TopicAndPartition] = {
     val original = ZkUtils.getPartitionsForTopics(config.getZkClient(), config.getConsumerTopics)
-      .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toList
+      .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toArray
     val grouped = grouper.group(original,
       conf.dag.tasks(taskId.groupId).parallism, taskId)
     grouped.foreach(tp =>
@@ -94,19 +94,24 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   }
 
   override def onNext(msg: Message): Unit = {
+
     @annotation.tailrec
-    def emit(msgNum: Int): Unit = {
+    def emit(msgNum: Int, tpIndex: Int): Unit = {
       if (msgNum < emitBatchSize) {
-        val kafkaMsg = consumer.nextMessage()
+        val kafkaMsg = consumer.nextMessage(topicAndPartitions(tpIndex))
         if (kafkaMsg != null) {
           val timestamp = System.currentTimeMillis()
           output(new Message(decoder.fromBytes(kafkaMsg.msg)))
           offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
         }
-        emit(msgNum + 1)
+        if (tpIndex + 1 == topicAndPartitions.size) {
+          emit(msgNum + 1, 0)
+        } else {
+          emit(msgNum + 1, tpIndex + 1)
+        }
       }
     }
-    emit(0)
+    emit(0, 0)
     if (shouldCommitCheckpoint) {
       LOG.info("committing checkpoint...")
       offsetManager.checkpoint

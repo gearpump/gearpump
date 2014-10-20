@@ -47,7 +47,7 @@ trait CheckpointManager {
 
   def start(): Unit
 
-  def register(sources: List[Source]): Unit
+  def register(sources: Array[Source]): Unit
 
   def writeCheckpoint(source: Source, checkpoint: Checkpoint): Unit
 

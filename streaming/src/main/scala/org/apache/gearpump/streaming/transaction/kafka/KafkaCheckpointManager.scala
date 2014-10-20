@@ -41,17 +41,15 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
     producerConfig = config.getProducerConfig(serializerClass = "kafka.serializer.DefaultEncoder")
   )
 
-  private var checkpointTopicAndPartitions: List[TopicAndPartition] = null
+  private var checkpointTopicAndPartitions: Array[TopicAndPartition] = null
   private var consumer: KafkaConsumer = null
 
   override def start(): Unit = {
     createTopics()
-    // get consumers only after topics having been created
-    LOG.info("creating consumer...")
-    consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
+
   }
 
-  override def register(topicAndPartitions: List[Source]): Unit = {
+  override def register(topicAndPartitions: Array[Source]): Unit = {
     this.checkpointTopicAndPartitions =
       topicAndPartitions.map(getCheckpointTopicAndPartition(_))
   }
@@ -67,14 +65,24 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
   }
 
   override def readCheckpoint(source: Source): Checkpoint = {
+    // get consumers only after topics having been created
+    LOG.info("creating consumer...")
+    if (null == consumer ) {
+      consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
+    }
     val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
 
     @annotation.tailrec
     def fetch(timeAndOffsets: Map[TimeStamp, Long]): Map[TimeStamp, Long] = {
       val kafkaMsg = consumer.nextMessage(checkpointTopicAndPartition)
       if (kafkaMsg != null) {
-        fetch(timeAndOffsets +
-          (byteArrayToLong(kafkaMsg.key) -> byteArrayToLong(kafkaMsg.msg)))
+        if (kafkaMsg.key != null) {
+          fetch(timeAndOffsets +
+            (byteArrayToLong(kafkaMsg.key) -> byteArrayToLong(kafkaMsg.msg)))
+        } else {
+          LOG.error(s"timestamp is null at offset ${kafkaMsg.offset} for ${checkpointTopicAndPartition}")
+          fetch(timeAndOffsets)
+        }
       } else {
         timeAndOffsets
       }
