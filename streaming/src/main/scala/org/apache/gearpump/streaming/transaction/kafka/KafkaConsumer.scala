@@ -27,7 +27,7 @@ import kafka.utils.{Utils, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.slf4j.{Logger, LoggerFactory}
 import java.util.concurrent.LinkedBlockingQueue
-import scala.collection.mutable.{Map => MutableMap}
+import scala.util.{Try, Success, Failure}
 
 
 case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
@@ -77,14 +77,20 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
   private var partitionIndex = 0
   private val partitionNum = topicAndPartitions.length
 
+  private var noMessages: Set[TopicAndPartition] = Set.empty[TopicAndPartition]
+  private val noMessageSleepMS = 100
   private val incomingQueue = topicAndPartitions.map(_ -> new LinkedBlockingQueue[KafkaMessage]()).toMap
 
   private val fetchThread = new Thread {
     override def run(): Unit = {
-      // TODO: sleep for a while when there are no more messages from all TopicAndPartitions
-      while(!Thread.currentThread.isInterrupted) {
+      while (!Thread.currentThread.isInterrupted) {
         val msg = fetchMessage()
-        incomingQueue(msg.topicAndPartition).put(msg)
+        if (msg != null) {
+          incomingQueue(msg.topicAndPartition).put(msg)
+        } else if (noMessages.size == topicAndPartitions.size) {
+          LOG.info(s"no messages for all TopicAndPartitions. sleeping for ${noMessageSleepMS} ms")
+          Thread.sleep(noMessageSleepMS)
+        }
       }
     }
   }
@@ -111,8 +117,12 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
   private def fetchMessage(topicAndPartition: TopicAndPartition): KafkaMessage = {
     val iter = iterators(topicAndPartition)
     if (iter.hasNext) {
+      if (noMessages(topicAndPartition)) {
+        noMessages -= topicAndPartition
+      }
       KafkaMessage(topicAndPartition, iter.getOffset, iter.getKey, iter.next)
     } else {
+      noMessages += topicAndPartition
       null
     }
   }
