@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.scheduler.{ResourceRequest, Resource}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RecoverTasks, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
@@ -212,8 +212,10 @@ class AppMaster (config : Configs) extends Actor {
       }
       launchTask(resource)
     }
-    case ExecutorLaunchRejected(reason, ex) => {
+    case ExecutorLaunchRejected(reason, resource, ex) => {
       LOG.error(s"Executor Launch failed reason：$reason", ex)
+      LOG.info(s"reallocate resource $resource to start appmaster")
+      master ! RequestResource(appId, ResourceRequest(resource))
     }
   }
 
