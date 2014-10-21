@@ -43,6 +43,7 @@ object KafkaConfig {
   val FETCH_MESSAGE_MAX_BYTES = "kafka.consumer.fetch.message.max.bytes"
   val CONSUMER_EMIT_BATCH_SIZE = "kafka.consumer.emit.batch.size"
   val CONSUMER_DESERIALIZER_CLASS = "kafka.consumer.deserializer.class"
+  val CONSUMER_QUEUE_SIZE = "kafka.consumer.queue.size"
 
   // producer config
   val PRODUCER_TOPIC = "kafka.producer.topic"
@@ -56,6 +57,7 @@ object KafkaConfig {
   val CHECKPOINT_MANAGER_FACTORY_CLASS = "kafka.checkpoint.manager.factory.class"
   val CHECKPOINT_REPLICAS = "kafka.checkpoint.replicas"
   val CHECKPOINT_COMMIT_INTERVAL_MS = "kafka.checkpoint.commit.interval.ms"
+  val CHECKPOINT_ID = "kafka.checkpoint.id"
 
   // filtering config
   val CHECKPOINT_FILTER_CLASS = "kafka.checkpoint.filter.class"
@@ -81,14 +83,15 @@ object KafkaConfig {
       config.get(key).get.asInstanceOf[java.util.List[String]].asScala.toList
     }
 
-    def getConsumer(topicAndPartitions: List[TopicAndPartition],
+    def getConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String = getClientId,
                     socketTimeout: Int = getSocketTimeoutMS,
                     receiveBufferSize: Int = getSocketReceiveBufferSize,
                     fetchSize: Int = getFetchMessageMaxBytes,
-                    zkClient: ZkClient = getZkClient()): KafkaConsumer = {
+                    zkClient: ZkClient = getZkClient(),
+                    queueSize: Int = getConsumerQueueSize): KafkaConsumer = {
       new KafkaConsumer(topicAndPartitions, clientId, socketTimeout,
-        receiveBufferSize, fetchSize, zkClient)
+        receiveBufferSize, fetchSize, zkClient, queueSize)
     }
 
     def getZookeeperConnect = {
@@ -121,6 +124,10 @@ object KafkaConfig {
 
     def getConsumerDeserializer = {
       getInstance[Decoder[_]](CONSUMER_DESERIALIZER_CLASS)
+    }
+
+    def getConsumerQueueSize = {
+      getInt(CONSUMER_QUEUE_SIZE)
     }
 
     def getZkClient(zookeeperConnect: String = getZookeeperConnect,
@@ -189,6 +196,10 @@ object KafkaConfig {
 
     def getCheckpointMessageDelayMS = {
       getInt(CHECKPOINT_MESSAGE_DELAY_MS)
+    }
+
+    def getCheckpointId = {
+      getInt(CHECKPOINT_ID)
     }
   }
 
