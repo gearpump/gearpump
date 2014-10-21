@@ -57,6 +57,7 @@ object KafkaConfig {
   val CHECKPOINT_MANAGER_FACTORY_CLASS = "kafka.checkpoint.manager.factory.class"
   val CHECKPOINT_REPLICAS = "kafka.checkpoint.replicas"
   val CHECKPOINT_COMMIT_INTERVAL_MS = "kafka.checkpoint.commit.interval.ms"
+  val CHECKPOINT_ID = "kafka.checkpoint.id"
 
   // filtering config
   val CHECKPOINT_FILTER_CLASS = "kafka.checkpoint.filter.class"
@@ -195,6 +196,10 @@ object KafkaConfig {
 
     def getCheckpointMessageDelayMS = {
       getInt(CHECKPOINT_MESSAGE_DELAY_MS)
+    }
+
+    def getCheckpointId = {
+      getInt(CHECKPOINT_ID)
     }
   }
 

@@ -126,12 +126,12 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
     }
   }
 
-  private def getCheckpointTopic(appId: Int, topic: String, partition: Int): String  = {
-    s"checkpoint_application${appId}_${topic}_${partition}"
+  private def getCheckpointTopic(id: Int, topic: String, partition: Int): String  = {
+    s"checkpoint_${id}_${topic}_${partition}"
   }
 
   private def getCheckpointTopicAndPartition(source: Source): TopicAndPartition = {
-    TopicAndPartition(getCheckpointTopic(conf.appId, source.name, source.partition), 0)
+    TopicAndPartition(getCheckpointTopic(config.getCheckpointId, source.name, source.partition), 0)
   }
 
 }
