@@ -31,10 +31,10 @@ import kafka.common.TopicAndPartition
  * spout1 gets (topicA, partition2), (topicB, partition2)
  */
 class KafkaDefaultGrouper {
-  def group(topicAndPartitions: List[TopicAndPartition],
-                     taskNum: Int, taskId: TaskId): List[TopicAndPartition] = {
+  def group(topicAndPartitions: Array[TopicAndPartition],
+                     taskNum: Int, taskId: TaskId): Array[TopicAndPartition] = {
     val taskToTopicAndPartitions = topicAndPartitions.groupBy(tp => tp.partition % taskNum).map(params =>
-      (TaskId(taskId.groupId, params._1), params._2.toList)
+      (TaskId(taskId.groupId, params._1), params._2)
     )
     taskToTopicAndPartitions(taskId)
   }

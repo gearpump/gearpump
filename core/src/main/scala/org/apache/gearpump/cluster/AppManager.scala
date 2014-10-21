@@ -252,10 +252,10 @@ private[cluster] object AppManager {
     }
 
     def waitForActorSystemToStart(worker : ActorRef, masterConfig : Configs) : Receive = {
-      case ExecutorLaunchRejected(reason, ex) =>
+      case ExecutorLaunchRejected(reason, resource, ex) =>
         LOG.error(s"Executor Launch failed reason：$reason", ex)
-        //TODO: ask master to allocate new resources and start appmaster on new node.
-        context.stop(self)
+        LOG.info(s"reallocate resource $resource to start appmaster")
+        master ! RequestResource(appId, ResourceRequest(resource))
       case RegisterActorSystem(systemPath) =>
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
         //bind lifecycle with worker
