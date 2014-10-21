@@ -54,14 +54,9 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
   import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer._
 
   private val leaders: Map[TopicAndPartition, Broker] = topicAndPartitions.map {
-    tp =>
-      val topic = tp.topic
-      val partition = tp.partition
-       val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
-        .getOrElse(throw new Exception(s"leader not available for TopicAndPartition(${tp.topic}, ${tp.partition})"))
-      val broker = ZkUtils.getBrokerInfo(zkClient, leader)
-        .getOrElse(throw new Exception(s"broker info not found for leader ${leader}"))
-      tp -> Broker(broker.host, broker.port)
+    tp => {
+      tp -> KafkaUtil.getBroker(zkClient, tp.topic, tp.partition)
+    }
   }.toMap
 
   private val iterators: Map[TopicAndPartition, MessageIterator] = topicAndPartitions.map(
