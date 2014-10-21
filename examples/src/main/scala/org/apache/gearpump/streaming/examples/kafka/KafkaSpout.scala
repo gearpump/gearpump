@@ -90,6 +90,7 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
         val topicAndPartition = TopicAndPartition(source.name, source.partition)
         consumer.setStartOffset(topicAndPartition, offset)
     }
+    consumer.start()
     self ! Message("start", System.currentTimeMillis())
   }
 
@@ -103,6 +104,8 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
           val timestamp = System.currentTimeMillis()
           output(new Message(decoder.fromBytes(kafkaMsg.msg)))
           offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
+        } else {
+          LOG.info(s"no more messages from ${topicAndPartitions(tpIndex)}")
         }
         // poll message from each TopicAndPartition in a round-robin way
         // TODO: make it configurable

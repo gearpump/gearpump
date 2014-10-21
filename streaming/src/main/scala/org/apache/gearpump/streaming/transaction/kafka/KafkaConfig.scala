@@ -43,6 +43,7 @@ object KafkaConfig {
   val FETCH_MESSAGE_MAX_BYTES = "kafka.consumer.fetch.message.max.bytes"
   val CONSUMER_EMIT_BATCH_SIZE = "kafka.consumer.emit.batch.size"
   val CONSUMER_DESERIALIZER_CLASS = "kafka.consumer.deserializer.class"
+  val CONSUMER_QUEUE_SIZE = "kafka.consumer.queue.size"
 
   // producer config
   val PRODUCER_TOPIC = "kafka.producer.topic"
@@ -86,9 +87,10 @@ object KafkaConfig {
                     socketTimeout: Int = getSocketTimeoutMS,
                     receiveBufferSize: Int = getSocketReceiveBufferSize,
                     fetchSize: Int = getFetchMessageMaxBytes,
-                    zkClient: ZkClient = getZkClient()): KafkaConsumer = {
+                    zkClient: ZkClient = getZkClient(),
+                    queueSize: Int = getConsumerQueueSize): KafkaConsumer = {
       new KafkaConsumer(topicAndPartitions, clientId, socketTimeout,
-        receiveBufferSize, fetchSize, zkClient)
+        receiveBufferSize, fetchSize, zkClient, queueSize)
     }
 
     def getZookeeperConnect = {
@@ -121,6 +123,10 @@ object KafkaConfig {
 
     def getConsumerDeserializer = {
       getInstance[Decoder[_]](CONSUMER_DESERIALIZER_CLASS)
+    }
+
+    def getConsumerQueueSize = {
+      getInt(CONSUMER_QUEUE_SIZE)
     }
 
     def getZkClient(zookeeperConnect: String = getZookeeperConnect,

@@ -27,7 +27,6 @@ import kafka.utils.{Utils, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.slf4j.{Logger, LoggerFactory}
 import java.util.concurrent.LinkedBlockingQueue
-import scala.util.{Try, Success, Failure}
 
 
 case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
@@ -51,7 +50,7 @@ object KafkaConsumer {
 class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String, socketTimeout: Int,
                     receiveBufferSize: Int, fetchSize: Int,
-                    zkClient: ZkClient)  {
+                    zkClient: ZkClient, queueSize: Int)  {
   import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer._
 
   private val leaders: Map[TopicAndPartition, Broker] = topicAndPartitions.map {
@@ -79,7 +78,7 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
 
   private var noMessages: Set[TopicAndPartition] = Set.empty[TopicAndPartition]
   private val noMessageSleepMS = 100
-  private val incomingQueue = topicAndPartitions.map(_ -> new LinkedBlockingQueue[KafkaMessage]()).toMap
+  private val incomingQueue = topicAndPartitions.map(_ -> new LinkedBlockingQueue[KafkaMessage](queueSize)).toMap
 
   private val fetchThread = new Thread {
     override def run(): Unit = {
