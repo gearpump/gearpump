@@ -76,7 +76,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
     case launch : LaunchExecutor =>
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
       if (resource.lessThan(launch.resource)) {
-        sender ! ExecutorLaunchRejected("There is no free resource on this machine")
+        sender ! ExecutorLaunchRejected("There is no free resource on this machine", launch.resource)
       } else {
         val actorName = actorNameForExecutor(launch.appId, launch.executorId)
 

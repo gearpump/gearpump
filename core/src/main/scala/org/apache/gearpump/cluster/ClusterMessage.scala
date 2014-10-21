@@ -77,6 +77,6 @@ object AppMasterToWorker {
 }
 
 object WorkerToAppMaster {
-  case class ExecutorLaunchRejected(reason: String = null, ex: Throwable = null)
+  case class ExecutorLaunchRejected(reason: String = null, resource : Resource, ex: Throwable = null)
 }
 
