@@ -96,6 +96,9 @@ private[cluster] class Master extends Actor with Stash {
     case app : ShutdownApplication =>
       LOG.info(s"Receive from client, Shutting down Application ${app.appId}")
       appManager.forward(app)
+    case app : RestartApplication =>
+      LOG.info(s"Receive from client, Restarting Application ${app.appId}")
+      appManager.forward(app)
   }
 
   def terminationWatch : Receive = {
