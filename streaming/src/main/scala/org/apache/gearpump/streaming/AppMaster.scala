@@ -129,6 +129,12 @@ class AppMaster (config : Configs) extends Actor {
           LOG.info(s"Sending back AppMasterDataDetailRequest $appId")
           sender ! AppMasterDataDetail(appId = appId, appDescription = appDescription)
       }
+    case ReplayFromTimestampWindowTrailingEdge =>
+      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
+        startClock = clock.clock
+        taskLocations = taskLocations.empty
+        startedTasks = startedTasks.empty
+        context.children.foreach(_ ! RestartTasks(startClock))}
   }
 
   def executorMsgHandler: Receive = {

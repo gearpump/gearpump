@@ -10,7 +10,7 @@ object Gear extends App with ArgumentsParser {
 
   override val ignoreUnknownArgument = true
 
-  override  val remainArgs : Array[String] = Array("kill|info|shell")
+  override  val remainArgs : Array[String] = Array("kill|info|shell|replay")
 
   val command = args(0)
 
@@ -23,5 +23,7 @@ object Gear extends App with ArgumentsParser {
       Shell.main(commandArgs)
     case "info" =>
       Info.main(commandArgs)
+    case "replay" =>
+      Replay.main(commandArgs)
   }
 }
