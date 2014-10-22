@@ -19,13 +19,13 @@ package org.apache.gearpump.streaming.examples.fsio
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.examples.fsio.SeqFileSpout._
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{MessageHandler, TaskContext, TaskActor}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
 import org.slf4j.{Logger, LoggerFactory}
 
-class SeqFileSpout(config: HadoopConfig) extends TaskActor(config ){
+class SeqFileSpout(config: HadoopConfig) extends TaskActor(config ) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileSpout])
   val value = new Text()
   val key = new Text()

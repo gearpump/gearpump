@@ -23,15 +23,29 @@ import java.util
 import akka.actor._
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, GetStartClock, RestartException, RestartTasks}
-import org.apache.gearpump.streaming.ConfigsHelper
+import org.apache.gearpump.streaming.AppMasterToExecutor.{GetStartClock, RestartException, RestartTasks, StartClock}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.util.Configs
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
-import akka.pattern.ask
-import akka.pattern.pipe
+
+trait MessageHandler[T] {
+  this: TaskActor =>
+  def doNext(msg:Message)(implicit handler:Handler[T]): Unit = {
+    next(handler.handler(msg.msg))
+  }
+  def next(t:T):Unit
+}
+case class Handler[T](handler:PartialFunction[java.io.Serializable,T])
+object Handler {
+  implicit object DefaultHandler extends Handler[String](
+  {
+    case a: String =>
+      a
+  }
+  )
+}
 
 abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   import org.apache.gearpump.streaming.task.TaskActor._

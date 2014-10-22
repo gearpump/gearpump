@@ -22,10 +22,16 @@ import java.util.Random
 
 import akka.serialization.SerializationExtension
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.Handler.DefaultHandler
+import org.apache.gearpump.streaming.task.{Handler, MessageHandler, TaskActor, TaskContext}
 import org.apache.gearpump.util.Configs
 
-class SOLSpout(conf : Configs) extends TaskActor(conf) {
+object SOLSpout {
+  val BYTES_PER_MESSAGE = "bytesPerMessage"
+  val Start = Message("start")
+}
+
+class SOLSpout(conf : Configs) extends TaskActor(conf) with MessageHandler[String] {
   import org.apache.gearpump.streaming.examples.sol.SOLSpout._
 
   private val sizeInBytes = conf.getInt(SOLSpout.BYTES_PER_MESSAGE)
@@ -62,9 +68,22 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     }
   }
 
-  override def onNext(msg : Message) : Unit = {
+  def onNext(msg: Message): Unit = {
+    DefaultHandler
+    doNext(msg)
+  }
+
+  def next(msg : String) : Unit = {
     val message = messages(rand.nextInt(messages.length))
-    output(new Message(message, System.currentTimeMillis()))
+    println(s"SOLSpout next!!! $message")
+    val num = new Integer(message.substring(0,6))
+    val omsg = (num % 2) match {
+      case 0 =>
+        Foo(message)
+      case _ =>
+        Bar(message)
+    }
+    output(new Message(omsg, System.currentTimeMillis()))
     messageCount = messageCount + 1L
 
     self ! messageSourceMinClock
@@ -76,8 +95,3 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
   }
 }
 
-object SOLSpout{
-  val BYTES_PER_MESSAGE = "bytesPerMessage"
-
-  val Start = Message("start")
-}
