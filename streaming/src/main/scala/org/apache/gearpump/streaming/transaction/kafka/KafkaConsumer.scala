@@ -54,14 +54,9 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
   import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer._
 
   private val leaders: Map[TopicAndPartition, Broker] = topicAndPartitions.map {
-    tp =>
-      val topic = tp.topic
-      val partition = tp.partition
-       val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
-        .getOrElse(throw new Exception(s"leader not available for TopicAndPartition(${tp.topic}, ${tp.partition})"))
-      val broker = ZkUtils.getBrokerInfo(zkClient, leader)
-        .getOrElse(throw new Exception(s"broker info not found for leader ${leader}"))
-      tp -> Broker(broker.host, broker.port)
+    tp => {
+      tp -> KafkaUtil.getBroker(zkClient, tp.topic, tp.partition)
+    }
   }.toMap
 
   private val iterators: Map[TopicAndPartition, MessageIterator] = topicAndPartitions.map(
@@ -87,7 +82,7 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
         if (msg != null) {
           incomingQueue(msg.topicAndPartition).put(msg)
         } else if (noMessages.size == topicAndPartitions.size) {
-          LOG.info(s"no messages for all TopicAndPartitions. sleeping for ${noMessageSleepMS} ms")
+          LOG.debug(s"no messages for all TopicAndPartitions. sleeping for ${noMessageSleepMS} ms")
           Thread.sleep(noMessageSleepMS)
         }
       }
@@ -107,6 +102,7 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
   }
 
   // fetch message from each TopicAndPartition in a round-robin way
+  // TODO: make each MessageIterator run in its own thread
   private def fetchMessage(): KafkaMessage = {
     val msg = fetchMessage(topicAndPartitions(partitionIndex))
     partitionIndex = (partitionIndex + 1) % partitionNum
@@ -128,6 +124,8 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
 
   def close(): Unit = {
     iterators.foreach(_._2.close())
+    fetchThread.interrupt()
+    fetchThread.join()
   }
 }
 

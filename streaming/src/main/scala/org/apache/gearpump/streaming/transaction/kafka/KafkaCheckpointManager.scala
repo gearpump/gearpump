@@ -29,6 +29,8 @@ import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.{Map => MutableMap}
+import kafka.consumer.SimpleConsumer
+import kafka.utils.ZkUtils
 
 
 object KafkaCheckpointManager {
@@ -45,7 +47,6 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
 
   private var checkpointTopicAndPartitions: Array[TopicAndPartition] = null
   private val topicExists: MutableMap[TopicAndPartition, Boolean] = MutableMap.empty[TopicAndPartition, Boolean]
-  private var consumer: KafkaConsumer = null
 
   override def start(): Unit = {
     createTopics()
@@ -68,41 +69,48 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
   }
 
   override def readCheckpoint(source: Source): Checkpoint = {
-    if (!topicExists.getOrElse(TopicAndPartition(source.name, source.partition), false)) {
+    val topicAndPartition = TopicAndPartition(source.name, source.partition)
+    if (!topicExists.getOrElse(topicAndPartition, false)) {
       Checkpoint(Map.empty[TimeStamp, Long])
     } else {
       // get consumers only after topics having been created
       LOG.info("creating consumer...")
-      if (null == consumer) {
-        consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
-        consumer.start()
-      }
+      val msgIter = consume(topicAndPartition)
       val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
 
       @annotation.tailrec
       def fetch(timeAndOffsets: Map[TimeStamp, Long]): Map[TimeStamp, Long] = {
-        val kafkaMsg = consumer.nextMessage(checkpointTopicAndPartition)
-        if (kafkaMsg != null) {
-          if (kafkaMsg.key != null) {
-            fetch(timeAndOffsets +
-              (byteArrayToLong(kafkaMsg.key) -> byteArrayToLong(kafkaMsg.msg)))
+        if (msgIter.hasNext) {
+          val key = msgIter.getKey
+          if (key != null) {
+            val timestamp = byteArrayToLong(key)
+            val offset = byteArrayToLong(msgIter.next)
+            fetch(timeAndOffsets + (timestamp -> offset))
           } else {
-            LOG.error(s"timestamp is null at offset ${kafkaMsg.offset} for ${checkpointTopicAndPartition}")
+            // TODO: this should not happen; need further investigation
+            LOG.error(s"timestamp is null at offset ${msgIter.getOffset} for ${checkpointTopicAndPartition}")
             fetch(timeAndOffsets)
           }
         } else {
           timeAndOffsets
         }
       }
+      msgIter.close()
       Checkpoint(fetch(Map.empty[TimeStamp, Long]))
     }
   }
 
   override def close(): Unit = {
     producer.close()
-    if (consumer != null) {
-      consumer.close()
-    }
+  }
+
+
+  private def consume(topicAndPartition: TopicAndPartition): MessageIterator = {
+    val topic = topicAndPartition.topic
+    val partition = topicAndPartition.partition
+    val broker = KafkaUtil.getBroker(config.getZkClient(), topic, partition)
+    new MessageIterator(broker.host, broker.port, topic, partition, config.getSocketTimeoutMS,
+      config.getSocketReceiveBufferSize, config.getFetchMessageMaxBytes, config.getClientId)
   }
 
   private def createTopics(): Unit = {

@@ -105,7 +105,7 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
           output(new Message(decoder.fromBytes(kafkaMsg.msg)))
           offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
         } else {
-          LOG.info(s"no more messages from ${topicAndPartitions(tpIndex)}")
+          LOG.debug(s"no more messages from ${topicAndPartitions(tpIndex)}")
         }
         // poll message from each TopicAndPartition in a round-robin way
         // TODO: make it configurable
