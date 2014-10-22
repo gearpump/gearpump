@@ -19,7 +19,6 @@
 package org.apache.gearpump.streaming.transaction.api
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.api.Source
 import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.util.Configs
 import org.slf4j.{LoggerFactory, Logger}
@@ -34,7 +33,7 @@ class OffsetManager(conf: Configs) {
   private val filter = config.getCheckpointFilter
   private val checkpointManager =
     config.getCheckpointManagerFactory.getCheckpointManager(conf)
-  private var sources: List[Source] = null
+  private var sources: Array[Source] = null
   private var offsetsByTimeAndSource = Map.empty[(Source, TimeStamp), Long]
 
   def start(): Unit = {
@@ -42,7 +41,7 @@ class OffsetManager(conf: Configs) {
     checkpointManager.start()
   }
 
-  def register(sources: List[Source]) = {
+  def register(sources: Array[Source]) = {
     this.sources = sources
     checkpointManager.register(this.sources)
   }

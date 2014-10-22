@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.transaction.kafka
 
 import kafka.admin.AdminUtils
-import kafka.common.TopicAndPartition
+import kafka.common.{TopicExistsException, TopicAndPartition}
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.api.{Checkpoint, CheckpointManager}
 import org.apache.gearpump.streaming.transaction.api.Source
@@ -27,6 +27,8 @@ import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.collection.mutable.{Map => MutableMap}
 
 
 object KafkaCheckpointManager {
@@ -41,17 +43,16 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
     producerConfig = config.getProducerConfig(serializerClass = "kafka.serializer.DefaultEncoder")
   )
 
-  private var checkpointTopicAndPartitions: List[TopicAndPartition] = null
+  private var checkpointTopicAndPartitions: Array[TopicAndPartition] = null
+  private val topicExists: MutableMap[TopicAndPartition, Boolean] = MutableMap.empty[TopicAndPartition, Boolean]
   private var consumer: KafkaConsumer = null
 
   override def start(): Unit = {
     createTopics()
-    // get consumers only after topics having been created
-    LOG.info("creating consumer...")
-    consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
+
   }
 
-  override def register(topicAndPartitions: List[Source]): Unit = {
+  override def register(topicAndPartitions: Array[Source]): Unit = {
     this.checkpointTopicAndPartitions =
       topicAndPartitions.map(getCheckpointTopicAndPartition(_))
   }
@@ -61,25 +62,40 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
     val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
     checkpoint.timeAndOffsets.foreach(timeAndOffset => {
       producer.send(checkpointTopicAndPartition.topic, longToByteArray(timeAndOffset._1),
-        checkpointTopicAndPartition.partition, longToByteArray(timeAndOffset._2))
+        0, longToByteArray(timeAndOffset._2))
     })
 
   }
 
   override def readCheckpoint(source: Source): Checkpoint = {
-    val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
-
-    @annotation.tailrec
-    def fetch(timeAndOffsets: Map[TimeStamp, Long]): Map[TimeStamp, Long] = {
-      val kafkaMsg = consumer.nextMessage(checkpointTopicAndPartition)
-      if (kafkaMsg != null) {
-        fetch(timeAndOffsets +
-          (byteArrayToLong(kafkaMsg.key) -> byteArrayToLong(kafkaMsg.msg)))
-      } else {
-        timeAndOffsets
+    if (!topicExists.getOrElse(TopicAndPartition(source.name, source.partition), false)) {
+      Checkpoint(Map.empty[TimeStamp, Long])
+    } else {
+      // get consumers only after topics having been created
+      LOG.info("creating consumer...")
+      if (null == consumer) {
+        consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
+        consumer.start()
       }
+      val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
+
+      @annotation.tailrec
+      def fetch(timeAndOffsets: Map[TimeStamp, Long]): Map[TimeStamp, Long] = {
+        val kafkaMsg = consumer.nextMessage(checkpointTopicAndPartition)
+        if (kafkaMsg != null) {
+          if (kafkaMsg.key != null) {
+            fetch(timeAndOffsets +
+              (byteArrayToLong(kafkaMsg.key) -> byteArrayToLong(kafkaMsg.msg)))
+          } else {
+            LOG.error(s"timestamp is null at offset ${kafkaMsg.offset} for ${checkpointTopicAndPartition}")
+            fetch(timeAndOffsets)
+          }
+        } else {
+          timeAndOffsets
+        }
+      }
+      Checkpoint(fetch(Map.empty[TimeStamp, Long]))
     }
-    Checkpoint(fetch(Map.empty[TimeStamp, Long]))
   }
 
   override def close(): Unit = {
@@ -90,25 +106,32 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
   }
 
   private def createTopics(): Unit = {
-    val partitionsByTopic = checkpointTopicAndPartitions.groupBy(tp => tp.topic)
-    partitionsByTopic.foreach(entry => {
-      val topic = entry._1
-      val partitions = entry._2
-      val zkClient = config.getZkClient()
-      if (!AdminUtils.topicExists(zkClient, topic)) {
-        AdminUtils.createTopic(
-          zkClient, topic,
-          partitions.size, config.getCheckpointReplicas)
+    checkpointTopicAndPartitions.foreach {
+      tp => {
+        val zkClient = config.getZkClient()
+        try {
+          val topic = tp.topic
+          AdminUtils.createTopic(zkClient, topic, 1, config.getCheckpointReplicas)
+          topicExists.put(tp, false)
+        } catch {
+          case tee: TopicExistsException => {
+            LOG.info(s"${tp} already exists")
+            topicExists.put(tp, true)
+          }
+          case e: Exception => throw e
+        } finally {
+          zkClient.close()
+        }
       }
-    })
+    }
   }
 
-  private def getCheckpointTopic(appId: Int, topic: String): String  = {
-    s"checkpoint_application${appId}_${topic}"
+  private def getCheckpointTopic(id: Int, topic: String, partition: Int): String  = {
+    s"checkpoint_${id}_${topic}_${partition}"
   }
 
   private def getCheckpointTopicAndPartition(source: Source): TopicAndPartition = {
-    TopicAndPartition(getCheckpointTopic(conf.appId, source.name), source.partition)
+    TopicAndPartition(getCheckpointTopic(config.getCheckpointId, source.name, source.partition), 0)
   }
 
 }

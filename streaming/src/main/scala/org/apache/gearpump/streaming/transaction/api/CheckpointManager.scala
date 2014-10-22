@@ -35,6 +35,9 @@ trait Source {
 object Checkpoint {
   def apply(timestamp: TimeStamp, offset: Long): Checkpoint =
     Checkpoint(Map(timestamp -> offset))
+
+  def empty: Checkpoint =
+    Checkpoint(Map.empty[TimeStamp, Long])
 }
 case class Checkpoint(timeAndOffsets: Map[TimeStamp, Long])
 
@@ -47,7 +50,7 @@ trait CheckpointManager {
 
   def start(): Unit
 
-  def register(sources: List[Source]): Unit
+  def register(sources: Array[Source]): Unit
 
   def writeCheckpoint(source: Source, checkpoint: Checkpoint): Unit
 

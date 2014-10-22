@@ -56,7 +56,7 @@ class PriorityScheduler extends Scheduler{
       val PendingRequest(appMaster, request, timeStamp) = resourceRequests.dequeue()
       request.relaxation match {
         case ANY =>
-          val newAllocated = allocateFairly(resourcesSnapShot, PendingRequest(appMaster, request, timeStamp), allocated)
+          val newAllocated = allocateFairly(resourcesSnapShot, PendingRequest(appMaster, request, timeStamp))
           allocated = allocated.add(newAllocated)
         case ONEWORKER =>
           val availableResource = resourcesSnapShot.find{params =>
@@ -95,7 +95,7 @@ class PriorityScheduler extends Scheduler{
       allocateResource()
   }
 
-  private def allocateFairly(resources : mutable.HashMap[Int, (ActorRef, Resource)], pendindRequest : PendingRequest, allocated : Resource): Resource ={
+  private def allocateFairly(resources : mutable.HashMap[Int, (ActorRef, Resource)], pendindRequest : PendingRequest): Resource ={
     val length = resources.size
     val flattenResource = resources.toArray.zipWithIndex.flatMap((workerWithIndex) => {
       val ((workerId, (worker, resource)), index) = workerWithIndex
@@ -104,8 +104,8 @@ class PriorityScheduler extends Scheduler{
     val PendingRequest(appMaster, request, timeStamp) = pendindRequest
     val total = Resource(flattenResource.size)
 
-    val newAllocated = Resource.min(total.subtract(allocated), request.resource)
-    val singleAllocation = flattenResource.slice(allocated.slots, allocated.add(newAllocated).slots)
+    val newAllocated = Resource.min(total, request.resource)
+    val singleAllocation = flattenResource.take(newAllocated.slots)
       .groupBy((actor) => actor).mapValues(_.length).toArray.map((params) => {
       val ((workerId, worker), slots) = params
       resources.update(workerId, (worker, resources.get(workerId).get._2.subtract(Resource(slots))))
