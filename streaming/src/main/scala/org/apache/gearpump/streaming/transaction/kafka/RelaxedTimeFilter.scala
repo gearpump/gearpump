@@ -23,10 +23,10 @@ import org.apache.gearpump.streaming.transaction.api.{Checkpoint, CheckpointFilt
 import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.util.Configs
 
-class RelaxedTimeFilter extends CheckpointFilter {
-  override def filter(checkpoint: Checkpoint,
-                      timestamp: TimeStamp, conf: Configs): Option[Long] = {
+class RelaxedTimeFilter(conf: Configs) extends CheckpointFilter(conf) {
+  override def filter(timeAndOffsets: List[(TimeStamp, Long)],
+                      timestamp: TimeStamp): Option[(TimeStamp, Long)] = {
     val delta = conf.config.getCheckpointMessageDelayMS
-    checkpoint.timeAndOffsets.toList.sortBy(_._1).find(_._1 > (timestamp - delta)).map(_._2)
+    super.filter(timeAndOffsets, timestamp - delta)
   }
 }

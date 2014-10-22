@@ -18,25 +18,27 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.TimeStamp
+object CheckpointManager {
 
-/**
- * a Source consists of its name and partition
- */
-trait Source {
-  def name: String
-  def partition: Int
-}
+  trait Source {
+    def name: String
 
-/**
- * a Checkpoint is a map from message timestamps to
- * message offsets of the input stream
- */
-object Checkpoint {
-  def apply(timestamp: TimeStamp, offset: Long): Checkpoint =
-    Checkpoint(Map(timestamp -> offset))
+    def partition: Int
+  }
+
+  type Record = (Array[Byte], Array[Byte])
+
+  object Checkpoint {
+    def apply(key: Array[Byte], payload: Array[Byte]): Checkpoint =
+      Checkpoint(List((key, payload)))
+
+    def empty: Checkpoint =
+      Checkpoint(List.empty[Record])
+
+  }
+
+  case class Checkpoint(records: List[Record])
 }
-case class Checkpoint(timeAndOffsets: Map[TimeStamp, Long])
 
 
 /**
@@ -44,10 +46,11 @@ case class Checkpoint(timeAndOffsets: Map[TimeStamp, Long])
  * such that we could replay messages around or after given time
  */
 trait CheckpointManager {
+  import org.apache.gearpump.streaming.transaction.api.CheckpointManager._
 
   def start(): Unit
 
-  def register(sources: List[Source]): Unit
+  def register(sources: Array[Source]): Unit
 
   def writeCheckpoint(source: Source, checkpoint: Checkpoint): Unit
 

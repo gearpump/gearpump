@@ -64,9 +64,9 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   private val grouper = new KafkaDefaultGrouper
   private val emitBatchSize = config.getConsumerEmitBatchSize
 
-  private val topicAndPartitions: List[TopicAndPartition] = {
+  private val topicAndPartitions: Array[TopicAndPartition] = {
     val original = ZkUtils.getPartitionsForTopics(config.getZkClient(), config.getConsumerTopics)
-      .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toList
+      .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toArray
     val grouped = grouper.group(original,
       conf.dag.tasks(taskId.groupId).parallism, taskId)
     grouped.foreach(tp =>
@@ -76,7 +76,8 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
 
   private val consumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
   private val decoder = new StringDecoder()
-  private val offsetManager = new OffsetManager(conf)
+  private val offsetManager = new OffsetManager(
+    config.getCheckpointManagerFactory.getCheckpointManager(conf), config.getCheckpointFilter)
   private val commitIntervalMS = config.getCheckpointCommitIntervalMS
   private var lastCommitTime = System.currentTimeMillis()
 
@@ -90,23 +91,33 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
         val topicAndPartition = TopicAndPartition(source.name, source.partition)
         consumer.setStartOffset(topicAndPartition, offset)
     }
+    consumer.start()
     self ! Message("start", System.currentTimeMillis())
   }
 
   override def onNext(msg: Message): Unit = {
+
     @annotation.tailrec
-    def emit(msgNum: Int): Unit = {
+    def fetchAndEmit(msgNum: Int, tpIndex: Int): Unit = {
       if (msgNum < emitBatchSize) {
-        val kafkaMsg = consumer.nextMessage()
+        val kafkaMsg = consumer.nextMessage(topicAndPartitions(tpIndex))
         if (kafkaMsg != null) {
           val timestamp = System.currentTimeMillis()
           output(new Message(decoder.fromBytes(kafkaMsg.msg)))
           offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
+        } else {
+          LOG.debug(s"no more messages from ${topicAndPartitions(tpIndex)}")
         }
-        emit(msgNum + 1)
+        // poll message from each TopicAndPartition in a round-robin way
+        // TODO: make it configurable
+        if (tpIndex + 1 == topicAndPartitions.size) {
+          fetchAndEmit(msgNum + 1, 0)
+        } else {
+          fetchAndEmit(msgNum + 1, tpIndex + 1)
+        }
       }
     }
-    emit(0)
+    fetchAndEmit(0, 0)
     if (shouldCommitCheckpoint) {
       LOG.info("committing checkpoint...")
       offsetManager.checkpoint

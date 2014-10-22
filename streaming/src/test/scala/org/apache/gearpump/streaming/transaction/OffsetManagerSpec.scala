@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.transaction
 
 import org.apache.gearpump.streaming.transaction.api.{OffsetManager, Checkpoint, Source}
-import org.apache.gearpump.streaming.transaction.kafka.{KafkaCheckpointManagerFactory, KafkaCheckpointManager, KafkaSource}
+import org.apache.gearpump.streaming.transaction.kafka._
 import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.util.Configs
@@ -27,22 +27,25 @@ import org.specs2.mutable._
 import org.specs2.mock._
 
 
-object OffsetManagerSpec extends Specification with Mockito with MockitoMocker {
+class OffsetManagerSpec extends Specification with Mockito {
   "OffsetManager" should {
     "checkpoint updated timestamp and offsets for each source" in {
 
       "Testing OffsetManager".txt
 
-      val kafkaConfig = mock[Map[String, _]]
       val checkpointManagerFactory = mock[KafkaCheckpointManagerFactory]
       val checkpointManager = mock[KafkaCheckpointManager]
+      val filter = mock[RelaxedTimeFilter]
+      val config = Map(
+        CHECKPOINT_MANAGER_FACTORY_CLASS -> checkpointManagerFactory,
+        CHECKPOINT_FILTER_CLASS -> filter
+      )
 
-      kafkaConfig.getCheckpointManagerFactory returns checkpointManagerFactory
       checkpointManagerFactory.getCheckpointManager(any[Configs]) returns checkpointManager
-      checkpointManager.writeCheckpoint(any[Source], any[Checkpoint]) returns doNothing
+      checkpointManager.writeCheckpoint(any[Source], any[Checkpoint]) answers {args => }
 
 
-      val conf = Configs(kafkaConfig)
+      val conf = Configs(config)
       val offsetManager = new OffsetManager(conf)
 
       val offsetsByTimeAndSource: Map[(Source, TimeStamp), Long] = Map(
