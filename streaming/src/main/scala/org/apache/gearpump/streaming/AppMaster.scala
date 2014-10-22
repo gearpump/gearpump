@@ -129,7 +129,7 @@ class AppMaster (config : Configs) extends Actor {
           LOG.info(s"Sending back AppMasterDataDetailRequest $appId")
           sender ! AppMasterDataDetail(appId = appId, appDescription = appDescription)
       }
-    case ReplayAppFromLatestTimestamp =>
+    case ReplayFromTimestampWindowTrailingEdge =>
       (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
         startClock = clock.clock
         taskLocations = taskLocations.empty

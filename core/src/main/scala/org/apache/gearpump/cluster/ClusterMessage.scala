@@ -70,7 +70,7 @@ object MasterToAppMaster {
   case object AppMastersDataRequest
   case class AppMasterDataDetailRequest(appId: Int)
   case class AppMasterDataDetail(val appId: Int,  val appDescription: Application)
-  case class ReplayAppFromLatestTimestamp(appId: Int)
+  case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
 }
 
 object AppMasterToWorker {

@@ -47,7 +47,7 @@ object Replay extends App with ArgumentsParser {
     val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
 
     val client = new MasterClient(master)
-    client.replayAppFromLatestTimestamp(config.getInt("appid"))
+    client.replayFromTimestampWindowTrailingEdge(config.getInt("appid"))
 
     system.shutdown()
   }

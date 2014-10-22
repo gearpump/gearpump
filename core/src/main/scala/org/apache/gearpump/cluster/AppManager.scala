@@ -160,13 +160,13 @@ private[cluster] class AppManager() extends Actor with Stash {
           LOG.error(errorMsg)
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
-    case ReplayAppFromLatestTimestamp(appId) =>
-      LOG.info(s"App Manager Restarting application $appId")
+    case ReplayFromTimestampWindowTrailingEdge(appId) =>
+      LOG.info(s"App Manager Replaying application $appId")
       val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
       Option(appMaster) match {
         case Some(ref) =>
-          LOG.info(s"Restarting application: $appId")
-          ref forward ReplayAppFromLatestTimestamp
+          LOG.info(s"Replaying application: $appId")
+          ref forward ReplayFromTimestampWindowTrailingEdge
           sender ! ReplayApplicationResult(Success(appId))
         case None =>
           val errorMsg = s"Can not find regisration information for appId: $appId"

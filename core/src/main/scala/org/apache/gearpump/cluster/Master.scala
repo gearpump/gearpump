@@ -96,8 +96,8 @@ private[cluster] class Master extends Actor with Stash {
     case app : ShutdownApplication =>
       LOG.info(s"Receive from client, Shutting down Application ${app.appId}")
       appManager.forward(app)
-    case app : ReplayAppFromLatestTimestamp =>
-      LOG.info(s"Receive from client, Restarting Application ${app.appId}")
+    case app : ReplayFromTimestampWindowTrailingEdge =>
+      LOG.info(s"Receive from client, Replaying Application ${app.appId} from timestamp window trailing edge")
       appManager.forward(app)
   }
 

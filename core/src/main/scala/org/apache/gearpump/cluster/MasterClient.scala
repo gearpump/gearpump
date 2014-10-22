@@ -24,7 +24,7 @@ import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster._
-import org.apache.gearpump.cluster.MasterToAppMaster.{ReplayAppFromLatestTimestamp, AppMastersData, AppMastersDataRequest}
+import org.apache.gearpump.cluster.MasterToAppMaster.{ReplayFromTimestampWindowTrailingEdge, AppMastersData, AppMastersDataRequest}
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.util.Configs
 
@@ -56,8 +56,8 @@ class MasterClient(master : ActorRef) {
     result
   }
 
-  def replayAppFromLatestTimestamp(appId : Int) = {
-    val result = Await.result((master ? ReplayAppFromLatestTimestamp(appId)).asInstanceOf[Future[ReplayApplicationResult]], Duration.Inf)
+  def replayFromTimestampWindowTrailingEdge(appId : Int) = {
+    val result = Await.result((master ? ReplayFromTimestampWindowTrailingEdge(appId)).asInstanceOf[Future[ReplayApplicationResult]], Duration.Inf)
     result
   }
 }
