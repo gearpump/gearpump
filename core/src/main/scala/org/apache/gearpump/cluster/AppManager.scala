@@ -27,7 +27,7 @@ import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.{RestartApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
@@ -160,18 +160,18 @@ private[cluster] class AppManager() extends Actor with Stash {
           LOG.error(errorMsg)
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
-    case RestartApplication(appId) =>
+    case ReplayAppFromLatestTimestamp(appId) =>
       LOG.info(s"App Manager Restarting application $appId")
       val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
       Option(appMaster) match {
         case Some(ref) =>
           LOG.info(s"Restarting application: $appId")
-          ref forward RestartApplication
-          sender ! RestartApplicationResult(Success(appId))
+          ref forward ReplayAppFromLatestTimestamp
+          sender ! ReplayApplicationResult(Success(appId))
         case None =>
           val errorMsg = s"Can not find regisration information for appId: $appId"
           LOG.error(errorMsg)
-          sender ! RestartApplicationResult(Failure(new Exception(errorMsg)))
+          sender ! ReplayApplicationResult(Failure(new Exception(errorMsg)))
       }
   }
 

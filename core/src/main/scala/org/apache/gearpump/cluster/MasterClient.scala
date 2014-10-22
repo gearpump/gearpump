@@ -24,8 +24,8 @@ import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster._
-import org.apache.gearpump.cluster.MasterToAppMaster.{RestartApplication, AppMastersData, AppMastersDataRequest}
-import org.apache.gearpump.cluster.MasterToClient.{RestartApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.MasterToAppMaster.{ReplayAppFromLatestTimestamp, AppMastersData, AppMastersDataRequest}
+import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.util.Configs
 
 import scala.concurrent.duration.Duration
@@ -56,8 +56,8 @@ class MasterClient(master : ActorRef) {
     result
   }
 
-  def restartApplication(appId : Int) = {
-    val result = Await.result((master ? RestartApplication(appId)).asInstanceOf[Future[RestartApplicationResult]], Duration.Inf)
+  def replayAppFromLatestTimestamp(appId : Int) = {
+    val result = Await.result((master ? ReplayAppFromLatestTimestamp(appId)).asInstanceOf[Future[ReplayApplicationResult]], Duration.Inf)
     result
   }
 }

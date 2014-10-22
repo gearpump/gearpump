@@ -50,7 +50,7 @@ object ClientToMaster {
 object MasterToClient {
   case class SubmitApplicationResult(appId : Try[Int])
   case class ShutdownApplicationResult(appId : Try[Int])
-  case class RestartApplicationResult(appId: Try[Int])
+  case class ReplayApplicationResult(appId: Try[Int])
 }
 
 trait AppMasterRegisterData
@@ -70,7 +70,7 @@ object MasterToAppMaster {
   case object AppMastersDataRequest
   case class AppMasterDataDetailRequest(appId: Int)
   case class AppMasterDataDetail(val appId: Int,  val appDescription: Application)
-  case class RestartApplication(appId: Int)
+  case class ReplayAppFromLatestTimestamp(appId: Int)
 }
 
 object AppMasterToWorker {

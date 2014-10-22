@@ -27,7 +27,7 @@ import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Configs, Util}
 import org.slf4j.{Logger, LoggerFactory}
 
-object Restart extends App with ArgumentsParser {
+object Replay extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
 
@@ -47,7 +47,7 @@ object Restart extends App with ArgumentsParser {
     val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
 
     val client = new MasterClient(master)
-    client.restartApplication(config.getInt("appid"))
+    client.replayAppFromLatestTimestamp(config.getInt("appid"))
 
     system.shutdown()
   }
