@@ -18,7 +18,9 @@
 
 package org.apache.gearpump.streaming.transaction
 
-import org.apache.gearpump.streaming.transaction.api.{OffsetManager, Checkpoint, Source}
+import org.apache.gearpump.streaming.transaction.api.OffsetManager
+import org.apache.gearpump.streaming.transaction.api.OffsetManager._
+import org.apache.gearpump.streaming.transaction.api.CheckpointManager._
 import org.apache.gearpump.streaming.transaction.kafka._
 import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.TimeStamp
@@ -33,20 +35,12 @@ class OffsetManagerSpec extends Specification with Mockito {
 
       "Testing OffsetManager".txt
 
-      val checkpointManagerFactory = mock[KafkaCheckpointManagerFactory]
       val checkpointManager = mock[KafkaCheckpointManager]
       val filter = mock[RelaxedTimeFilter]
-      val config = Map(
-        CHECKPOINT_MANAGER_FACTORY_CLASS -> checkpointManagerFactory,
-        CHECKPOINT_FILTER_CLASS -> filter
-      )
 
-      checkpointManagerFactory.getCheckpointManager(any[Configs]) returns checkpointManager
       checkpointManager.writeCheckpoint(any[Source], any[Checkpoint]) answers {args => }
 
-
-      val conf = Configs(config)
-      val offsetManager = new OffsetManager(conf)
+      val offsetManager = new OffsetManager(checkpointManager, filter)
 
       val offsetsByTimeAndSource: Map[(Source, TimeStamp), Long] = Map(
         (KafkaSource("t1", 0), 0L) -> 0L, (KafkaSource("t1", 0), 0L) -> 1L,
@@ -63,13 +57,18 @@ class OffsetManagerSpec extends Specification with Mockito {
           offsetManager.update(source, timestamp, offset)
       }
 
-      val expected: Map[Source, Checkpoint] = Map(
-        KafkaSource("t1", 0) -> Checkpoint(Map(0L -> 0L)),
-        KafkaSource("t1", 1) -> Checkpoint(Map(0L -> 0L, 1L -> 2L)),
-        KafkaSource("t2", 0) -> Checkpoint(Map(0L -> 0L, 1L -> 1L))
+      val expected: Map[Source, List[(TimeStamp, Long)]] = Map(
+        KafkaSource("t1", 0) -> List((0L, 0L)),
+        KafkaSource("t1", 1) -> List((0L, 0L), (1L, 2L)),
+        KafkaSource("t2", 0) -> List((0L, 0L), (1L, 1L))
       )
 
-      val actual = offsetManager.checkpoint
+      val actual = offsetManager.checkpoint.map {
+        sourceAndCheckpoint =>
+          val source = sourceAndCheckpoint._1
+          val checkpoint = sourceAndCheckpoint._2
+          source -> checkpoint.records.map(fromRecord(_))
+      }
 
       actual must beEqualTo(expected)
     }

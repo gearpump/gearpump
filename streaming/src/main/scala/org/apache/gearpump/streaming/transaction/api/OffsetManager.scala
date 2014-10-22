@@ -24,11 +24,19 @@ import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
 import org.slf4j.{LoggerFactory, Logger}
 
 object OffsetManager {
+  def toRecord(timeAndOffset: (TimeStamp, Long)): Record = {
+    (longToByteArray(timeAndOffset._1), longToByteArray(timeAndOffset._2))
+  }
+
+  def fromRecord(record: Record): (TimeStamp, Long) = {
+    (byteArrayToLong(record._1), byteArrayToLong(record._2))
+  }
+
   private val LOG: Logger = LoggerFactory.getLogger(classOf[OffsetManager])
 }
 
 class OffsetManager(checkpointManager: CheckpointManager,
-                    filter: CheckpointFilter) {
+                    filter: OffsetFilter) {
   import org.apache.gearpump.streaming.transaction.api.OffsetManager._
 
   private var sources: Array[Source] = null
@@ -59,7 +67,7 @@ class OffsetManager(checkpointManager: CheckpointManager,
           entry =>
             val timestamp = entry._1._2
             val offset = entry._2
-            (longToByteArray(timestamp), longToByteArray(offset))
+            toRecord((timestamp, offset))
         }.toList
         source -> Checkpoint(records)
       }
@@ -77,7 +85,9 @@ class OffsetManager(checkpointManager: CheckpointManager,
   def loadStartingOffsets(timestamp: TimeStamp): Map[Source, Long] = {
     LOG.info("loading start offsets...")
     sources.foldLeft(Map.empty[Source, Long]) { (accum, source) =>
-      filter.filter(checkpointManager.readCheckpoint(source).timeAndOffsets.toList, timestamp) match {
+      filter.filter(checkpointManager.readCheckpoint(source).records
+        // TODO: this is not efficient
+        .map(fromRecord(_)), timestamp) match {
         case Some((_, offset)) => accum + (source -> offset)
         case None => accum
       }
@@ -87,5 +97,7 @@ class OffsetManager(checkpointManager: CheckpointManager,
   def close(): Unit = {
     checkpointManager.close()
   }
+
+
 
 }

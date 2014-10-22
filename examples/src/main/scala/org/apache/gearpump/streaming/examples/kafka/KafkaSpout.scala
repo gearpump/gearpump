@@ -27,7 +27,7 @@ import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
 
 import org.apache.gearpump.streaming.ConfigsHelper._
-import org.apache.gearpump.streaming.transaction.api.{Checkpoint, OffsetManager}
+import org.apache.gearpump.streaming.transaction.api.OffsetManager
 import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
 import org.apache.gearpump.streaming.transaction.kafka.{KafkaMessage, KafkaSource, KafkaUtil}

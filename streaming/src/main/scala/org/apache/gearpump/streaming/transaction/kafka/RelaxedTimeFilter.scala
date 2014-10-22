@@ -19,11 +19,11 @@
 package org.apache.gearpump.streaming.transaction.kafka
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.api.{Checkpoint, CheckpointFilter}
+import org.apache.gearpump.streaming.transaction.api.OffsetFilter
 import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.util.Configs
 
-class RelaxedTimeFilter(conf: Configs) extends CheckpointFilter(conf) {
+class RelaxedTimeFilter(conf: Configs) extends OffsetFilter(conf) {
   override def filter(timeAndOffsets: List[(TimeStamp, Long)],
                       timestamp: TimeStamp): Option[(TimeStamp, Long)] = {
     val delta = conf.config.getCheckpointMessageDelayMS

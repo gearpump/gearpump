@@ -27,7 +27,7 @@ import kafka.serializer.Decoder
 import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
-import org.apache.gearpump.streaming.transaction.api.{CheckpointFilter, CheckpointManagerFactory}
+import org.apache.gearpump.streaming.transaction.api.{OffsetFilter, CheckpointManagerFactory}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
@@ -191,7 +191,7 @@ object KafkaConfig {
     }
 
     def getCheckpointFilter = {
-      getInstance[CheckpointFilter](CHECKPOINT_FILTER_CLASS)
+      getInstance[OffsetFilter](CHECKPOINT_FILTER_CLASS)
     }
 
     def getCheckpointMessageDelayMS = {
