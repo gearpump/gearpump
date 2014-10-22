@@ -18,12 +18,8 @@
 
 package org.apache.gearpump.streaming.transaction.kafka
 
-import kafka.api.{FetchRequestBuilder, OffsetRequest}
-import kafka.common.ErrorMapping._
 import kafka.common.TopicAndPartition
-import kafka.consumer.SimpleConsumer
-import kafka.message.MessageAndOffset
-import kafka.utils.{Utils, ZkUtils}
+
 import org.I0Itec.zkclient.ZkClient
 import org.slf4j.{Logger, LoggerFactory}
 import java.util.concurrent.LinkedBlockingQueue
@@ -129,76 +125,4 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
   }
 }
 
-class MessageIterator(host: String,
-                      port: Int,
-                      topic: String,
-                      partition: Int,
-                      soTimeout: Int,
-                      bufferSize: Int,
-                      fetchSize: Int,
-                      clientId: String) {
 
-
-  private val consumer = new SimpleConsumer(host, port, soTimeout, bufferSize, clientId)
-  private var startOffset = consumer.earliestOrLatestOffset(TopicAndPartition(topic, partition),
-    OffsetRequest.EarliestTime, -1)
-  private var iter = iterator(startOffset)
-  private var readMessages = 0L
-  private var offset = startOffset
-  private var key: Array[Byte] = null
-  private var nextOffset = offset
-
-  def setStartOffset(startOffset: Long): Unit = {
-    this.startOffset = startOffset
-  }
-
-  def getKey: Array[Byte] = {
-    key
-  }
-
-  def getOffset: Long = {
-    offset
-  }
-
-  def next: Array[Byte] = {
-    val mo = iter.next()
-    val message = mo.message
-    readMessages += 1
-    offset = mo.offset
-    key = Utils.readBytes(message.key)
-    nextOffset = mo.nextOffset
-    Utils.readBytes(mo.message.payload)
-  }
-
-
-  @annotation.tailrec
-  final def hasNext: Boolean = {
-    if (iter.hasNext) {
-      true
-    } else if (0 == readMessages) {
-      close()
-      false
-    } else {
-      iter = iterator(nextOffset)
-      readMessages = 0
-      hasNext
-    }
-  }
-
-  def close(): Unit = {
-    consumer.close()
-  }
-
-  private def iterator(offset: Long): Iterator[MessageAndOffset] = {
-    val request = new FetchRequestBuilder()
-      .clientId(clientId)
-      .addFetch(topic, partition, offset, fetchSize)
-      .build()
-
-    val response = consumer.fetch(request)
-    response.errorCode(topic, partition) match {
-      case NoError => response.messageSet(topic, partition).iterator
-      case error => throw exceptionFor(error)
-    }
-  }
-}

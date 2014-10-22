@@ -19,10 +19,12 @@
 package org.apache.gearpump.streaming.transaction.api
 
 import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.transaction.api.CheckpointManager._
 import org.apache.gearpump.util.Configs
 
-trait CheckpointFilter {
-  def filter(checkpoint: Checkpoint, timestamp: TimeStamp,
-             conf: Configs): Option[Long]
+class CheckpointFilter(conf: Configs) {
+  def filter(records: List[Record], timestamp: TimeStamp): Option[Record] = {
+    timeAndOffsets.sortBy(_._1).find(_._1 > timestamp)
+  }
 }
 

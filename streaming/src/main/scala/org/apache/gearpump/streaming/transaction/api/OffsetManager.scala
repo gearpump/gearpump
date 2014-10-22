@@ -19,20 +19,18 @@
 package org.apache.gearpump.streaming.transaction.api
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.streaming.transaction.api.CheckpointManager._
+import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
 import org.slf4j.{LoggerFactory, Logger}
 
 object OffsetManager {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[OffsetManager])
 }
-class OffsetManager(conf: Configs) {
+
+class OffsetManager(checkpointManager: CheckpointManager,
+                    filter: CheckpointFilter) {
   import org.apache.gearpump.streaming.transaction.api.OffsetManager._
 
-  private val config = conf.config
-  private val filter = config.getCheckpointFilter
-  private val checkpointManager =
-    config.getCheckpointManagerFactory.getCheckpointManager(conf)
   private var sources: Array[Source] = null
   private var offsetsByTimeAndSource = Map.empty[(Source, TimeStamp), Long]
 
@@ -55,12 +53,20 @@ class OffsetManager(conf: Configs) {
   def checkpoint: Map[Source, Checkpoint] = {
     val checkpointsBySource = offsetsByTimeAndSource
       .groupBy(_._1._1)
-      .mapValues[Checkpoint](values => {
-        Checkpoint(values.map(entry => (entry._1._2, entry._2)))
-      })
+      .map { grouped => {
+        val source = grouped._1
+        val records = grouped._2.map {
+          entry =>
+            val timestamp = entry._1._2
+            val offset = entry._2
+            (longToByteArray(timestamp), longToByteArray(offset))
+        }.toList
+        source -> Checkpoint(records)
+      }
+    }
     checkpointsBySource.foreach {
-        sourceAndCheckpoint =>
-          checkpointManager.writeCheckpoint(sourceAndCheckpoint._1,
+      sourceAndCheckpoint =>
+        checkpointManager.writeCheckpoint(sourceAndCheckpoint._1,
           sourceAndCheckpoint._2)
     }
 
@@ -71,8 +77,8 @@ class OffsetManager(conf: Configs) {
   def loadStartingOffsets(timestamp: TimeStamp): Map[Source, Long] = {
     LOG.info("loading start offsets...")
     sources.foldLeft(Map.empty[Source, Long]) { (accum, source) =>
-      filter.filter(checkpointManager.readCheckpoint(source), timestamp, conf) match {
-        case Some(offset) => accum + (source -> offset)
+      filter.filter(checkpointManager.readCheckpoint(source).timeAndOffsets.toList, timestamp) match {
+        case Some((_, offset)) => accum + (source -> offset)
         case None => accum
       }
     }
