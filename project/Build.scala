@@ -28,8 +28,7 @@ object Build extends sbt.Build {
   val sprayJsonVersion = "1.2.6"
   val spraySwaggerVersion = "0.4.3"
   val swaggerUiVersion = "2.0.21"
-  val specs2Version = "1.13"
-  val mockitoVersion = "1.9.5"
+
 
   val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++
     Seq(
@@ -97,9 +96,7 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.kafka" %% "kafka" % kafkaVersion,
-          "org.specs2" %% "specs2" % specs2Version % "test",
-          "org.mockito" % "mockito-core"  % mockitoVersion % "test"
+          "org.apache.kafka" %% "kafka" % kafkaVersion
         )
       )
   )  dependsOn(core)
