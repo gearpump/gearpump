@@ -26,18 +26,21 @@ object CheckpointManager {
     def partition: Int
   }
 
-  type Record = (Array[Byte], Array[Byte])
+ object Checkpoint {
+    def apply[K, V](records: List[(K, V)]): Checkpoint[K, V] = new Checkpoint(records)
 
-  object Checkpoint {
-    def apply(key: Array[Byte], payload: Array[Byte]): Checkpoint =
-      Checkpoint(List((key, payload)))
-
-    def empty: Checkpoint =
-      Checkpoint(List.empty[Record])
-
+    def empty[K, V]: Checkpoint[K, V] = new Checkpoint(List.empty[(K, V)])
   }
 
-  case class Checkpoint(records: List[Record])
+  class Checkpoint[K, V](val records: List[(K, V)])
+
+  trait CheckpointSerDe[K, V] {
+    def toKeyBytes(key: K): Array[Byte]
+    def fromKeyBytes(bytes: Array[Byte]): K
+
+    def toValueBytes(value: V): Array[Byte]
+    def fromValueBytes(bytes: Array[Byte]): V
+  }
 }
 
 
@@ -45,16 +48,20 @@ object CheckpointManager {
  * CheckpointManager checkpoints message and its timestamp to a persistent system
  * such that we could replay messages around or after given time
  */
-trait CheckpointManager {
+trait CheckpointManager[K, V] {
   import org.apache.gearpump.streaming.transaction.api.CheckpointManager._
 
   def start(): Unit
 
   def register(sources: Array[Source]): Unit
 
-  def writeCheckpoint(source: Source, checkpoint: Checkpoint): Unit
+  def writeCheckpoint(source: Source, checkpoint: Checkpoint[K, V],
+                      checkpointSerDe: CheckpointSerDe[K, V]): Unit
 
-  def readCheckpoint(source: Source): Checkpoint
+  def readCheckpoint(source: Source,
+                     checkpointSerDe: CheckpointSerDe[K, V]): Checkpoint[K, V]
+
+  def sourceAndCheckpoints(checkpointSerDe: CheckpointSerDe[K, V]): Map[Source, Checkpoint[K, V]]
 
   def close(): Unit
 }

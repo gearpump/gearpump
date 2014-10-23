@@ -33,28 +33,26 @@ class OffsetManagerSpec extends Specification with Mockito {
   "OffsetManager" should {
     "checkpoint updated timestamp and offsets for each source" in {
 
-      "Testing OffsetManager".txt
-
-      val checkpointManager = mock[KafkaCheckpointManager]
+      val checkpointManager = mock[KafkaCheckpointManager[TimeStamp, Long]]
       val filter = mock[RelaxedTimeFilter]
 
-      checkpointManager.writeCheckpoint(any[Source], any[Checkpoint]) answers {args => }
+      checkpointManager.writeCheckpoint(any[Source], any[Checkpoint[TimeStamp, Long]], any[CheckpointSerDe[TimeStamp, Long]]) answers {args => }
 
       val offsetManager = new OffsetManager(checkpointManager, filter)
 
-      val offsetsByTimeAndSource: Map[(Source, TimeStamp), Long] = Map(
-        (KafkaSource("t1", 0), 0L) -> 0L, (KafkaSource("t1", 0), 0L) -> 1L,
-        (KafkaSource("t1", 1), 0L) -> 0L, (KafkaSource("t1", 1), 1L) -> 2L,
-        (KafkaSource("t2", 0), 0L) -> 0L, (KafkaSource("t2", 0), 1L)  -> 1L
+      val updates: List[((Source, TimeStamp, Long), Boolean)] = List(
+        ((KafkaSource("t1", 0), 0L, 0L), true), ((KafkaSource("t1", 0), 0L, 1L), false),
+        ((KafkaSource("t1", 1), 0L, 0L), true), ((KafkaSource("t1", 1), 1L, 2L), true),
+        ((KafkaSource("t2", 0), 0L, 0L), true), ((KafkaSource("t2", 0), 1L, 1L), true)
       )
 
-      offsetsByTimeAndSource.foreach {
+      updates.foreach {
         entry =>
           val source = entry._1._1
           val timestamp = entry._1._2
-          val offset = entry._2
-
-          offsetManager.update(source, timestamp, offset)
+          val offset = entry._1._3
+          val updated = entry._2
+          offsetManager.update(source, timestamp, offset) must beEqualTo(updated)
       }
 
       val expected: Map[Source, List[(TimeStamp, Long)]] = Map(
@@ -67,8 +65,9 @@ class OffsetManagerSpec extends Specification with Mockito {
         sourceAndCheckpoint =>
           val source = sourceAndCheckpoint._1
           val checkpoint = sourceAndCheckpoint._2
-          source -> checkpoint.records.map(fromRecord(_))
+          source -> checkpoint.records
       }
+
 
       actual must beEqualTo(expected)
     }

@@ -24,22 +24,23 @@ import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
 import org.slf4j.{LoggerFactory, Logger}
 
 object OffsetManager {
-  def toRecord(timeAndOffset: (TimeStamp, Long)): Record = {
-    (longToByteArray(timeAndOffset._1), longToByteArray(timeAndOffset._2))
-  }
+  object OffsetSerDe extends CheckpointSerDe[TimeStamp, Long] {
+    override def toKeyBytes(timestamp: TimeStamp): Array[Byte] = longToByteArray(timestamp)
 
-  def fromRecord(record: Record): (TimeStamp, Long) = {
-    (byteArrayToLong(record._1), byteArrayToLong(record._2))
+    override def toValueBytes(offset: Long): Array[Byte] = longToByteArray(offset)
+
+    override def fromKeyBytes(bytes: Array[Byte]): TimeStamp = byteArrayToLong(bytes)
+
+    override def fromValueBytes(bytes: Array[Byte]): Long = byteArrayToLong(bytes)
   }
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[OffsetManager])
 }
 
-class OffsetManager(checkpointManager: CheckpointManager,
+class OffsetManager(checkpointManager: CheckpointManager[TimeStamp, Long],
                     filter: OffsetFilter) {
   import org.apache.gearpump.streaming.transaction.api.OffsetManager._
 
-  private var sources: Array[Source] = null
   private var offsetsByTimeAndSource = Map.empty[(Source, TimeStamp), Long]
 
   def start(): Unit = {
@@ -47,35 +48,40 @@ class OffsetManager(checkpointManager: CheckpointManager,
     checkpointManager.start()
   }
 
-  def register(sources: Array[Source]) = {
-    this.sources = sources
-    checkpointManager.register(this.sources)
+  def register(sources: Array[Source]): Unit = {
+    checkpointManager.register(sources)
   }
 
-  def update(source: Source, timestamp: TimeStamp, offset: Long) = {
-    if (!offsetsByTimeAndSource.contains((source, timestamp))) {
+  /**
+   *  we only record the smallest offset at a timestamp for a source
+   *  @return whether the new offset is written
+   */
+  def update(source: Source, timestamp: TimeStamp, offset: Long): Boolean = {
+    if (!offsetsByTimeAndSource.contains((source, timestamp)) ||
+      offsetsByTimeAndSource.get((source, timestamp)).get > offset) {
       offsetsByTimeAndSource += (source, timestamp) -> offset
+      true
+    } else {
+      false
     }
   }
 
-  def checkpoint: Map[Source, Checkpoint] = {
+  def checkpoint: Map[Source, Checkpoint[TimeStamp, Long]] = {
     val checkpointsBySource = offsetsByTimeAndSource
       .groupBy(_._1._1)
       .map { grouped => {
         val source = grouped._1
-        val records = grouped._2.map {
-          entry =>
-            val timestamp = entry._1._2
-            val offset = entry._2
-            toRecord((timestamp, offset))
-        }.toList
-        source -> Checkpoint(records)
+        // TODO: this is not efficient
+        val records = grouped._2
+          .map(entry => entry._1._2 -> entry._2)
+          .toList.sortBy(_._1)
+        source -> Checkpoint[TimeStamp, Long](records)
       }
     }
     checkpointsBySource.foreach {
       sourceAndCheckpoint =>
         checkpointManager.writeCheckpoint(sourceAndCheckpoint._1,
-          sourceAndCheckpoint._2)
+          sourceAndCheckpoint._2, OffsetSerDe)
     }
 
     offsetsByTimeAndSource = Map.empty[(Source, TimeStamp), Long]
@@ -84,11 +90,9 @@ class OffsetManager(checkpointManager: CheckpointManager,
 
   def loadStartingOffsets(timestamp: TimeStamp): Map[Source, Long] = {
     LOG.info("loading start offsets...")
-    sources.foldLeft(Map.empty[Source, Long]) { (accum, source) =>
-      filter.filter(checkpointManager.readCheckpoint(source).records
-        // TODO: this is not efficient
-        .map(fromRecord(_)), timestamp) match {
-        case Some((_, offset)) => accum + (source -> offset)
+    checkpointManager.sourceAndCheckpoints(OffsetSerDe).foldLeft(Map.empty[Source, Long]) { (accum, iter) =>
+      filter.filter(iter._2.records, timestamp) match {
+        case Some((_, offset)) => accum + (iter._1 -> offset)
         case None => accum
       }
     }

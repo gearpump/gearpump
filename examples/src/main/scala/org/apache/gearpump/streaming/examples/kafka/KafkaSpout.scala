@@ -77,7 +77,7 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   private val consumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
   private val decoder = new StringDecoder()
   private val offsetManager = new OffsetManager(
-    config.getCheckpointManagerFactory.getCheckpointManager(conf), config.getCheckpointFilter)
+    config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, Long](conf), config.getCheckpointFilter)
   private val commitIntervalMS = config.getCheckpointCommitIntervalMS
   private var lastCommitTime = System.currentTimeMillis()
 

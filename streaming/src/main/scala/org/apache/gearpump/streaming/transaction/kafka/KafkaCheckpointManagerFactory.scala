@@ -23,7 +23,7 @@ import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.util.Configs
 
 class KafkaCheckpointManagerFactory extends CheckpointManagerFactory {
-  override def getCheckpointManager(conf: Configs): CheckpointManager = {
+  override def getCheckpointManager[K, V](conf: Configs): CheckpointManager[K, V] = {
     val config = conf.config
     val checkpointId = config.getCheckpointId
     val checkpointReplicas = config.getCheckpointReplicas

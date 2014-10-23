@@ -29,10 +29,10 @@ import org.I0Itec.zkclient.ZkClient
 
 
 object KafkaCheckpointManager {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaCheckpointManager])
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaCheckpointManager[_, _]])
 }
 
-class KafkaCheckpointManager(checkpointId: Int,
+class KafkaCheckpointManager[K, V](checkpointId: Int,
                              checkpointReplicas: Int,
                              producer: KafkaProducer[Array[Byte], Array[Byte]],
                              clientId: String,
@@ -40,9 +40,10 @@ class KafkaCheckpointManager(checkpointId: Int,
                              receiveBufferSize: Int,
                              fetchSize: Int,
                              zkClient: ZkClient
-                             ) extends CheckpointManager {
+                             ) extends CheckpointManager[K, V] {
   import org.apache.gearpump.streaming.transaction.kafka.KafkaCheckpointManager._
 
+  private var sources: Array[Source] = null
   private var checkpointTopicAndPartitions: Array[TopicAndPartition] = null
   private val topicExists: MutableMap[TopicAndPartition, Boolean] = MutableMap.empty[TopicAndPartition, Boolean]
 
@@ -50,20 +51,31 @@ class KafkaCheckpointManager(checkpointId: Int,
     createTopics()
   }
 
-  override def register(topicAndPartitions: Array[Source]): Unit = {
+  override def register(sources: Array[Source]): Unit = {
+    this.sources = sources
     this.checkpointTopicAndPartitions =
-      topicAndPartitions.map(getCheckpointTopicAndPartition(_))
+      sources.map(getCheckpointTopicAndPartition(_))
   }
 
   override def writeCheckpoint(source: Source,
-                               checkpoint: Checkpoint): Unit = {
+                               checkpoint: Checkpoint[K, V],
+                               checkpointSerDe: CheckpointSerDe[K, V]): Unit = {
     val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
+
     checkpoint.records.foreach(record => {
-      producer.send(checkpointTopicAndPartition.topic, record._1, 0, record._2)
+      producer.send(
+        checkpointTopicAndPartition.topic,
+        checkpointSerDe.toKeyBytes(record._1),
+        0,
+        checkpointSerDe.toValueBytes(record._2))
     })
   }
 
-  override def readCheckpoint(source: Source): Checkpoint = {
+  override def sourceAndCheckpoints(checkpointSerDe: CheckpointSerDe[K, V]): Map[Source, Checkpoint[K, V]] = {
+    sources.map(source => source -> readCheckpoint(source, checkpointSerDe)).toMap
+  }
+
+  override def readCheckpoint(source: Source, checkpointSerDe: CheckpointSerDe[K, V]): Checkpoint[K, V] = {
     val topicAndPartition = TopicAndPartition(source.name, source.partition)
     // no checkpoint to read for the first time
     if (!topicExists.getOrElse(topicAndPartition, false)) {
@@ -75,11 +87,11 @@ class KafkaCheckpointManager(checkpointId: Int,
       val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
 
       @annotation.tailrec
-      def fetch(records: List[Record]): List[Record] = {
+      def fetch(records: List[(K, V)]): List[(K, V)] = {
         if (msgIter.hasNext) {
           val key = msgIter.getKey
           if (key != null) {
-            val r: Record = (key, msgIter.next)
+            val r: (K, V) = (checkpointSerDe.fromKeyBytes(key), checkpointSerDe.fromValueBytes(msgIter.next))
             fetch(records :+ r)
           } else {
             // TODO: this should not happen; need further investigation
@@ -91,7 +103,7 @@ class KafkaCheckpointManager(checkpointId: Int,
           records
         }
       }
-      Checkpoint(fetch(List.empty[Record]))
+      Checkpoint(fetch(List.empty[(K, V)]))
     }
   }
 

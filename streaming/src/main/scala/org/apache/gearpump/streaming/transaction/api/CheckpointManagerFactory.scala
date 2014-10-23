@@ -22,5 +22,5 @@ import org.apache.gearpump.util.Configs
 
 
 trait CheckpointManagerFactory {
-  def getCheckpointManager(conf: Configs): CheckpointManager
+  def getCheckpointManager[K, V](conf: Configs): CheckpointManager[K, V]
 }
