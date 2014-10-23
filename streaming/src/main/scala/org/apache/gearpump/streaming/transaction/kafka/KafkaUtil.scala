@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.streaming.transaction.kafka
 
-import kafka.common.TopicAndPartition
 import kafka.utils.ZkUtils
 import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer.Broker
 import org.I0Itec.zkclient.ZkClient

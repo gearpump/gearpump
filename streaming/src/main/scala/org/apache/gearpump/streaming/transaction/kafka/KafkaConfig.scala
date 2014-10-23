@@ -27,7 +27,7 @@ import kafka.serializer.Decoder
 import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
-import org.apache.gearpump.streaming.transaction.api.{OffsetFilter, CheckpointManagerFactory}
+import org.apache.gearpump.streaming.transaction.api.{TimeExtractor, OffsetFilter, CheckpointManagerFactory}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
@@ -88,9 +88,11 @@ object KafkaConfig {
                     receiveBufferSize: Int = getSocketReceiveBufferSize,
                     fetchSize: Int = getFetchMessageMaxBytes,
                     zkClient: ZkClient = getZkClient(),
-                    queueSize: Int = getConsumerQueueSize): KafkaConsumer = {
+                    queueSize: Int = getConsumerQueueSize,
+                    timeExtractor: TimeExtractor[KafkaMessage]
+                    = TimeExtractor(_ => System.currentTimeMillis())): KafkaConsumer = {
       new KafkaConsumer(topicAndPartitions, clientId, socketTimeout,
-        receiveBufferSize, fetchSize, zkClient, queueSize)
+        receiveBufferSize, fetchSize, zkClient, queueSize, timeExtractor)
     }
 
     def getZookeeperConnect = {

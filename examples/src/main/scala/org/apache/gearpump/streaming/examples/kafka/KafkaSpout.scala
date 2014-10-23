@@ -101,10 +101,11 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
     @annotation.tailrec
     def fetchAndEmit(msgNum: Int, tpIndex: Int): Unit = {
       if (msgNum < emitBatchSize) {
-        val kafkaMsg = consumer.nextMessage(topicAndPartitions(tpIndex))
-        if (kafkaMsg != null) {
-          val timestamp = System.currentTimeMillis()
-          output(new Message(decoder.fromBytes(kafkaMsg.msg)))
+        val msgWithTime = consumer.nextMessageWithTime(topicAndPartitions(tpIndex))
+        if (msgWithTime != null) {
+          val kafkaMsg = msgWithTime._1
+          val timestamp =  msgWithTime._2
+          output(new Message(decoder.fromBytes(kafkaMsg.msg), timestamp))
           offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
         } else {
           LOG.debug(s"no more messages from ${topicAndPartitions(tpIndex)}")

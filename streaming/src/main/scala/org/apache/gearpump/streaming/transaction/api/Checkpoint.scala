@@ -18,19 +18,28 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.TimeStamp
+trait Source {
+  def name: String
 
-class OffsetFilter extends CheckpointFilter[TimeStamp, Long] {
-  override def filter(timeAndOffsets: List[(TimeStamp, Long)],
-             predicate: TimeStamp): Option[(TimeStamp, Long)] = {
-    timeAndOffsets.sortBy(_._1).find(_._1 >= predicate)
-  }
+  def partition: Int
 }
 
-class RelaxedTimeFilter(delta: Long) extends OffsetFilter {
-  override def filter(timeAndOffsets: List[(TimeStamp, Long)],
-             timestamp: TimeStamp): Option[(TimeStamp, Long)] = {
-    super.filter(timeAndOffsets, timestamp - delta)
-  }
+object Checkpoint {
+  def apply[K, V](records: List[(K, V)]): Checkpoint[K, V] = new Checkpoint(records)
+
+  def empty[K, V]: Checkpoint[K, V] = new Checkpoint(List.empty[(K, V)])
 }
 
+class Checkpoint[K, V](val records: List[(K, V)])
+
+trait CheckpointSerDe[K, V] {
+  def toKeyBytes(key: K): Array[Byte]
+  def fromKeyBytes(bytes: Array[Byte]): K
+
+  def toValueBytes(value: V): Array[Byte]
+  def fromValueBytes(bytes: Array[Byte]): V
+}
+
+trait CheckpointFilter[K, V] {
+  def filter(records: List[(K, V)], predicate: K): Option[(K, V)]
+}

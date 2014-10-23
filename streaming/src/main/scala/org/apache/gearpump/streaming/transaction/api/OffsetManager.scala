@@ -19,7 +19,6 @@
 package org.apache.gearpump.streaming.transaction.api
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.api.CheckpointManager._
 import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
 import org.slf4j.{LoggerFactory, Logger}
 

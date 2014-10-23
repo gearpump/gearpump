@@ -29,7 +29,6 @@ object Build extends sbt.Build {
   val spraySwaggerVersion = "0.4.3"
   val swaggerUiVersion = "2.0.21"
 
-
   val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++
     Seq(
       scalaVersion := scalaVersionNumber,

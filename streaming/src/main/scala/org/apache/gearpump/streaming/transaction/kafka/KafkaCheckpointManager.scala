@@ -20,8 +20,7 @@ package org.apache.gearpump.streaming.transaction.kafka
 
 import kafka.admin.AdminUtils
 import kafka.common.{TopicExistsException, TopicAndPartition}
-import org.apache.gearpump.streaming.transaction.api.CheckpointManager
-import org.apache.gearpump.streaming.transaction.api.CheckpointManager._
+import org.apache.gearpump.streaming.transaction.api.{CheckpointSerDe, Checkpoint, Source, CheckpointManager}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.{Map => MutableMap}

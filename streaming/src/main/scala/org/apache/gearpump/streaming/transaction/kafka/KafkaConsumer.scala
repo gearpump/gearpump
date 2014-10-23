@@ -21,6 +21,8 @@ package org.apache.gearpump.streaming.transaction.kafka
 import kafka.common.TopicAndPartition
 
 import org.I0Itec.zkclient.ZkClient
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.transaction.api.TimeExtractor
 import org.slf4j.{Logger, LoggerFactory}
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -46,7 +48,8 @@ object KafkaConsumer {
 class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String, socketTimeout: Int,
                     receiveBufferSize: Int, fetchSize: Int,
-                    zkClient: ZkClient, queueSize: Int)  {
+                    zkClient: ZkClient, queueSize: Int,
+                    timeExtractor: TimeExtractor[KafkaMessage])  {
   import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer._
 
   private val leaders: Map[TopicAndPartition, Broker] = topicAndPartitions.map {
@@ -69,14 +72,14 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
 
   private var noMessages: Set[TopicAndPartition] = Set.empty[TopicAndPartition]
   private val noMessageSleepMS = 100
-  private val incomingQueue = topicAndPartitions.map(_ -> new LinkedBlockingQueue[KafkaMessage](queueSize)).toMap
+  private val incomingQueue = topicAndPartitions.map(_ -> new LinkedBlockingQueue[(KafkaMessage, TimeStamp)](queueSize)).toMap
 
   private val fetchThread = new Thread {
     override def run(): Unit = {
       while (!Thread.currentThread.isInterrupted) {
         val msg = fetchMessage()
         if (msg != null) {
-          incomingQueue(msg.topicAndPartition).put(msg)
+          incomingQueue(msg.topicAndPartition).put(msg, timeExtractor(msg))
         } else if (noMessages.size == topicAndPartitions.size) {
           LOG.debug(s"no messages for all TopicAndPartitions. sleeping for ${noMessageSleepMS} ms")
           Thread.sleep(noMessageSleepMS)
@@ -93,7 +96,7 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
     iterators(topicAndPartition).setStartOffset(startOffset)
   }
 
-  def nextMessage(topicAndPartition: TopicAndPartition): KafkaMessage = {
+  def nextMessageWithTime(topicAndPartition: TopicAndPartition): (KafkaMessage, TimeStamp) = {
     incomingQueue(topicAndPartition).poll()
   }
 

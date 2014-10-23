@@ -18,19 +18,17 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.TimeStamp
-
-class OffsetFilter extends CheckpointFilter[TimeStamp, Long] {
-  override def filter(timeAndOffsets: List[(TimeStamp, Long)],
-             predicate: TimeStamp): Option[(TimeStamp, Long)] = {
-    timeAndOffsets.sortBy(_._1).find(_._1 >= predicate)
-  }
+/**
+ * shamelessly stolen from summingbird
+ * https://github.com/twitter/summingbird/blob/develop/summingbird-core/src/main/scala/com/twitter/summingbird/TimeExtractor.scala
+ */
+object TimeExtractor {
+  def apply[T](fn: T => Long): TimeExtractor[T] =
+    new TimeExtractor[T] {
+      override def apply(t: T) = fn(t)
+    }
 }
 
-class RelaxedTimeFilter(delta: Long) extends OffsetFilter {
-  override def filter(timeAndOffsets: List[(TimeStamp, Long)],
-             timestamp: TimeStamp): Option[(TimeStamp, Long)] = {
-    super.filter(timeAndOffsets, timestamp - delta)
-  }
+trait TimeExtractor[T] extends java.io.Serializable {
+  def apply(t: T): Long
 }
-

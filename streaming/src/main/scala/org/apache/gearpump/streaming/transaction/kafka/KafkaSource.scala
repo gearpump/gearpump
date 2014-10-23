@@ -18,8 +18,8 @@
 
 package org.apache.gearpump.streaming.transaction.kafka
 
-import org.apache.gearpump.streaming.transaction.api.CheckpointManager.Source
 import kafka.common.TopicAndPartition
+import org.apache.gearpump.streaming.transaction.api.Source
 
 object KafkaSource {
   def apply(name: String, partition: Int): KafkaSource = {

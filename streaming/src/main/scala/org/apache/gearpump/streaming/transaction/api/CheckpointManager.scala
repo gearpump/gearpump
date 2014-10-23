@@ -18,43 +18,11 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-object CheckpointManager {
-
-  trait Source {
-    def name: String
-
-    def partition: Int
-  }
-
- object Checkpoint {
-    def apply[K, V](records: List[(K, V)]): Checkpoint[K, V] = new Checkpoint(records)
-
-    def empty[K, V]: Checkpoint[K, V] = new Checkpoint(List.empty[(K, V)])
-  }
-
-  class Checkpoint[K, V](val records: List[(K, V)])
-
-  trait CheckpointSerDe[K, V] {
-    def toKeyBytes(key: K): Array[Byte]
-    def fromKeyBytes(bytes: Array[Byte]): K
-
-    def toValueBytes(value: V): Array[Byte]
-    def fromValueBytes(bytes: Array[Byte]): V
-  }
-
-  trait CheckpointFilter[K, V] {
-    def filter(records: List[(K, V)], predicate: K): Option[(K, V)]
-  }
-}
-
-
 /**
  * CheckpointManager checkpoints message and its timestamp to a persistent system
  * such that we could replay messages around or after given time
  */
 trait CheckpointManager[K, V] {
-  import org.apache.gearpump.streaming.transaction.api.CheckpointManager._
-
   def start(): Unit
 
   def register(sources: Array[Source]): Unit
