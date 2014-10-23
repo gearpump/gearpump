@@ -27,7 +27,7 @@ import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
 
 import org.apache.gearpump.streaming.ConfigsHelper._
-import org.apache.gearpump.streaming.transaction.api.OffsetManager
+import org.apache.gearpump.streaming.transaction.api.{RelaxedTimeFilter, OffsetManager}
 import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
 import org.apache.gearpump.streaming.transaction.kafka.{KafkaMessage, KafkaSource, KafkaUtil}
@@ -77,7 +77,8 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   private val consumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
   private val decoder = new StringDecoder()
   private val offsetManager = new OffsetManager(
-    config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, Long](conf), config.getCheckpointFilter)
+    config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, Long](conf),
+    new RelaxedTimeFilter(config.getCheckpointMessageDelayMS))
   private val commitIntervalMS = config.getCheckpointCommitIntervalMS
   private var lastCommitTime = System.currentTimeMillis()
 

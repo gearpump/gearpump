@@ -41,6 +41,10 @@ object CheckpointManager {
     def toValueBytes(value: V): Array[Byte]
     def fromValueBytes(bytes: Array[Byte]): V
   }
+
+  trait CheckpointFilter[K, V] {
+    def filter(records: List[(K, V)], predicate: K): Option[(K, V)]
+  }
 }
 
 

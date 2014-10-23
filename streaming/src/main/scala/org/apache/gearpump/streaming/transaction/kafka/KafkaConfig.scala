@@ -60,7 +60,6 @@ object KafkaConfig {
   val CHECKPOINT_ID = "kafka.checkpoint.id"
 
   // filtering config
-  val CHECKPOINT_FILTER_CLASS = "kafka.checkpoint.filter.class"
   val CHECKPOINT_MESSAGE_DELAY_MS = "kafka.checkpoint.message.delay.ms"
 
   def apply(): Map[String, _] = new KafkaConfig().toMap
@@ -188,10 +187,6 @@ object KafkaConfig {
 
     def getCheckpointCommitIntervalMS = {
       getInt(CHECKPOINT_COMMIT_INTERVAL_MS)
-    }
-
-    def getCheckpointFilter = {
-      getInstance[OffsetFilter](CHECKPOINT_FILTER_CLASS)
     }
 
     def getCheckpointMessageDelayMS = {

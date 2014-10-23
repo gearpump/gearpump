@@ -18,13 +18,10 @@
 
 package org.apache.gearpump.streaming.transaction
 
-import org.apache.gearpump.streaming.transaction.api.OffsetManager
-import org.apache.gearpump.streaming.transaction.api.OffsetManager._
+import org.apache.gearpump.streaming.transaction.api.{RelaxedTimeFilter, OffsetManager}
 import org.apache.gearpump.streaming.transaction.api.CheckpointManager._
 import org.apache.gearpump.streaming.transaction.kafka._
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.util.Configs
 import org.specs2.mutable._
 import org.specs2.mock._
 
@@ -43,7 +40,7 @@ class OffsetManagerSpec extends Specification with Mockito {
       val updates: List[((Source, TimeStamp, Long), Boolean)] = List(
         ((KafkaSource("t1", 0), 0L, 0L), true), ((KafkaSource("t1", 0), 0L, 1L), false),
         ((KafkaSource("t1", 1), 0L, 0L), true), ((KafkaSource("t1", 1), 1L, 2L), true),
-        ((KafkaSource("t2", 0), 0L, 0L), true), ((KafkaSource("t2", 0), 1L, 1L), true)
+        ((KafkaSource("t2", 0), 1L, 1L), true), ((KafkaSource("t2", 0), 1L, 0L), true)
       )
 
       updates.foreach {
@@ -58,7 +55,7 @@ class OffsetManagerSpec extends Specification with Mockito {
       val expected: Map[Source, List[(TimeStamp, Long)]] = Map(
         KafkaSource("t1", 0) -> List((0L, 0L)),
         KafkaSource("t1", 1) -> List((0L, 0L), (1L, 2L)),
-        KafkaSource("t2", 0) -> List((0L, 0L), (1L, 1L))
+        KafkaSource("t2", 0) -> List((1L, 0L))
       )
 
       val actual = offsetManager.checkpoint.map {
