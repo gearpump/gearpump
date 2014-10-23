@@ -48,7 +48,7 @@ object KafkaConsumer {
 class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String, socketTimeout: Int,
                     receiveBufferSize: Int, fetchSize: Int,
-                    zkClient: ZkClient, queueSize: Int,
+                    zkClient: ZkClient, fetchThreshold: Int,
                     timeExtractor: TimeExtractor[KafkaMessage])  {
   import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer._
 
@@ -58,73 +58,90 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
     }
   }.toMap
 
-  private val iterators: Map[TopicAndPartition, MessageIterator] = topicAndPartitions.map(
-    tp => {
-      val broker = leaders(tp)
-      val host = broker.host
-      val port = broker.port
-      (tp, new MessageIterator(host, port, tp.topic, tp.partition,
-        socketTimeout, receiveBufferSize, fetchSize, clientId))
-    }).toMap
-
-  private var partitionIndex = 0
-  private val partitionNum = topicAndPartitions.length
-
-  private var noMessages: Set[TopicAndPartition] = Set.empty[TopicAndPartition]
-  private val noMessageSleepMS = 100
-  private val incomingQueue = topicAndPartitions.map(_ -> new LinkedBlockingQueue[(KafkaMessage, TimeStamp)](queueSize)).toMap
-
-  private val fetchThread = new Thread {
-    override def run(): Unit = {
-      while (!Thread.currentThread.isInterrupted) {
-        val msg = fetchMessage()
-        if (msg != null) {
-          incomingQueue(msg.topicAndPartition).put(msg, timeExtractor(msg))
-        } else if (noMessages.size == topicAndPartitions.size) {
-          LOG.debug(s"no messages for all TopicAndPartitions. sleeping for ${noMessageSleepMS} ms")
-          Thread.sleep(noMessageSleepMS)
+  private val fetchThreads: Map[Broker, FetchThread] =
+    leaders.foldLeft(Map.empty[Broker, FetchThread]){
+      (accum, iter) => {
+        val tp = iter._1
+        val broker = iter._2
+        if (!accum.contains(broker)) {
+          val fetchThread = new FetchThread(broker)
+          fetchThread.addTopicAndPartition(tp)
+          accum + (broker -> fetchThread)
+        } else {
+          accum.get(broker).get.addTopicAndPartition(tp)
+          accum
         }
       }
     }
-  }
+
+  private val incomingQueue = topicAndPartitions.map(_ -> new LinkedBlockingQueue[(KafkaMessage, TimeStamp)]()).toMap
 
   def start(): Unit = {
-    fetchThread.start()
+    fetchThreads.foreach(_._2.start())
   }
 
   def setStartOffset(topicAndPartition: TopicAndPartition, startOffset: Long): Unit = {
-    iterators(topicAndPartition).setStartOffset(startOffset)
+    fetchThreads(leaders(topicAndPartition)).setStartOffset(topicAndPartition, startOffset)
   }
 
   def nextMessageWithTime(topicAndPartition: TopicAndPartition): (KafkaMessage, TimeStamp) = {
     incomingQueue(topicAndPartition).poll()
   }
 
-  // fetch message from each TopicAndPartition in a round-robin way
-  // TODO: make each MessageIterator run in its own thread
-  private def fetchMessage(): KafkaMessage = {
-    val msg = fetchMessage(topicAndPartitions(partitionIndex))
-    partitionIndex = (partitionIndex + 1) % partitionNum
-    msg
-  }
-
-  private def fetchMessage(topicAndPartition: TopicAndPartition): KafkaMessage = {
-    val iter = iterators(topicAndPartition)
-    if (iter.hasNext) {
-      if (noMessages(topicAndPartition)) {
-        noMessages -= topicAndPartition
-      }
-      KafkaMessage(topicAndPartition, iter.getOffset, iter.getKey, iter.next)
-    } else {
-      noMessages += topicAndPartition
-      null
-    }
-  }
-
   def close(): Unit = {
-    iterators.foreach(_._2.close())
-    fetchThread.interrupt()
-    fetchThread.join()
+    zkClient.close()
+    fetchThreads.foreach(_._2.interrupt())
+    fetchThreads.foreach(_._2.join())
+  }
+
+  class FetchThread(broker: Broker) extends Thread {
+    private var topicAndPartitions: List[TopicAndPartition] = List.empty[TopicAndPartition]
+    private var iterators: Map[TopicAndPartition, MessageIterator] = Map.empty[TopicAndPartition, MessageIterator]
+
+    private val noMessageSleepMS = 100
+    private var hasNextSize = 0
+
+    def addTopicAndPartition(topicAndPartition: TopicAndPartition) = {
+      topicAndPartitions :+= topicAndPartition
+    }
+
+    def setStartOffset(topicAndPartition: TopicAndPartition, offset: Long): Unit = {
+      val iter = new MessageIterator(broker.host, broker.port, topicAndPartition.topic, topicAndPartition.partition,
+      socketTimeout, receiveBufferSize, fetchSize, clientId)
+      iter.setStartOffset(offset)
+      iterators += topicAndPartition -> iter
+    }
+
+    override def run(): Unit = {
+      while (!Thread.currentThread.isInterrupted) {
+        if (0 == hasNextSize) {
+          Thread.sleep(noMessageSleepMS)
+        } else {
+          fetchMessage
+        }
+      }
+    }
+
+    private def fetchMessage = {
+      topicAndPartitions.foreach {
+        tp =>
+          val queue = incomingQueue(tp)
+          if (queue.size < fetchThreshold) {
+            val iter = iterators(tp)
+            if (iter.hasNext) {
+              val msg = KafkaMessage(tp, iter.getOffset, iter.getKey, iter.next)
+              queue.put((msg, timeExtractor(msg)))
+              if (hasNextSize < topicAndPartitions.size) {
+                hasNextSize += 1
+              }
+            } else {
+              if (hasNextSize > 0) {
+                hasNextSize -= 1
+              }
+            }
+          }
+      }
+    }
   }
 }
 

@@ -43,7 +43,7 @@ object KafkaConfig {
   val FETCH_MESSAGE_MAX_BYTES = "kafka.consumer.fetch.message.max.bytes"
   val CONSUMER_EMIT_BATCH_SIZE = "kafka.consumer.emit.batch.size"
   val CONSUMER_DESERIALIZER_CLASS = "kafka.consumer.deserializer.class"
-  val CONSUMER_QUEUE_SIZE = "kafka.consumer.queue.size"
+  val FETCH_THRESHOLD = "kafka.consumer.fetch.threshold"
 
   // producer config
   val PRODUCER_TOPIC = "kafka.producer.topic"
@@ -88,11 +88,11 @@ object KafkaConfig {
                     receiveBufferSize: Int = getSocketReceiveBufferSize,
                     fetchSize: Int = getFetchMessageMaxBytes,
                     zkClient: ZkClient = getZkClient(),
-                    queueSize: Int = getConsumerQueueSize,
+                    fetchThreshold: Int = getFetchThreshold,
                     timeExtractor: TimeExtractor[KafkaMessage]
                     = TimeExtractor(_ => System.currentTimeMillis())): KafkaConsumer = {
       new KafkaConsumer(topicAndPartitions, clientId, socketTimeout,
-        receiveBufferSize, fetchSize, zkClient, queueSize, timeExtractor)
+        receiveBufferSize, fetchSize, zkClient, fetchThreshold, timeExtractor)
     }
 
     def getZookeeperConnect = {
@@ -127,8 +127,8 @@ object KafkaConfig {
       getInstance[Decoder[_]](CONSUMER_DESERIALIZER_CLASS)
     }
 
-    def getConsumerQueueSize = {
-      getInt(CONSUMER_QUEUE_SIZE)
+    def getFetchThreshold = {
+      getInt(FETCH_THRESHOLD)
     }
 
     def getZkClient(zookeeperConnect: String = getZookeeperConnect,
