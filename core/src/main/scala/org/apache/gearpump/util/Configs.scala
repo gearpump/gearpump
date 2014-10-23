@@ -20,6 +20,7 @@ package org.apache.gearpump.util
 
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
 import org.apache.gearpump.util.Constants._
@@ -74,6 +75,9 @@ class Configs(val config: Map[String, _])  extends Serializable{
 
   def withWorkerId(id : Int) = withValue(WORKER_ID, id)
   def workerId : Int = getInt(WORKER_ID)
+
+  def withStartTime(time : TimeStamp) = withValue(START_TIME, time)
+  def startTime = getLong(START_TIME)
 }
 
 object Configs {

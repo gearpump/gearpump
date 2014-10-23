@@ -30,6 +30,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.status.{ApplicationStatus, StatusManagerImpl, StatusManager}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
 import org.apache.gearpump.util._
@@ -87,6 +88,8 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   //TODO: We can use this state for appmaster HA to recover a new App master
   private var state: Set[ApplicationState] = Set.empty[ApplicationState]
+  //Now the status manager implementation is a work-around, it will be rewritten when the state checkpoint is done
+  private val statusManager : StatusManager = new StatusManagerImpl
 
   val masterClusterSize = systemconfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).size()
 
@@ -102,6 +105,7 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   override def postStop: Unit = {
     replicator ! Unsubscribe(STATE, self)
+    statusManager.close()
   }
 
   LOG.info("Recoving application state....")
@@ -129,7 +133,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       stash()
   }
 
-  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse terminationWatch
+  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse terminationWatch orElse selfMsgHandler
 
   def masterHAMsgHandler: Receive = {
     case update: UpdateResponse => LOG.info(s"we get update $update")
@@ -140,7 +144,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   def clientMsgHandler: Receive = {
     case submitApp@SubmitApplication(appMasterClass, config, app) =>
       LOG.info(s"AppManager Submiting Application $appId...")
-      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app), appId.toString)
+      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config.withStartTime(0), app), appId.toString)
 
       LOG.info(s"Persist master state writeQuorum: ${writeQuorum}, timeout: ${TIMEOUT}...")
       replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + new ApplicationState(appId, 0, null))
@@ -154,6 +158,8 @@ private[cluster] class AppManager() extends Actor with Stash {
           val worker = info.worker
           LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
           worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
+          appMasterRegistry -= appId
+          statusManager.removeStatus(appId.toString)
           sender ! ShutdownApplicationResult(Success(appId))
         case None =>
           val errorMsg = s"Find to find regisration information for appId: $appId"
@@ -213,23 +219,50 @@ private[cluster] class AppManager() extends Actor with Stash {
         case None =>
           sender ! AppMasterDataDetail(appId = appId, appDescription = null)
       }
-
+    case updateTimestampTrailingEdge : UpdateTimestampTrailingEdge =>
+      val appId = updateTimestampTrailingEdge.appID
+      val startTime = updateTimestampTrailingEdge.timeStamp
+      val (_, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(info) match {
+        case a@Some(data) =>
+          val app = a.get.app
+          LOG.info(s"update timestamp traingling edge for application $appId")
+          statusManager.updateStatus(appId.toString, ApplicationStatus(appId, a.get.appMasterClass, app, startTime))
+        case None =>
+          LOG.error(s"no match application for app$appId when updating timestamp")
+      }
   }
 
   def terminationWatch: Receive = {
-    //TODO: fix this
     case terminate: Terminated => {
       terminate.getAddressTerminated()
-      //TODO: Check whether this belongs to a app master
       LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
-
-      //TODO: we need to find out whether it is a normal terminaiton, or abnormal.
-      // The appMaster HA can be implemented by restoring the state from Set[ApplicationState]
+      //Now we assume that the only normal way to stop the application is submitting a ShutdownApplication request
+      val application = appMasterRegistry.find{param =>
+        val (_, (actorRef, _)) = param
+        actorRef.compareTo(terminate.actor) == 0
+      }
+      if(application.nonEmpty){
+        val appId = application.get._1
+        val appStatus = statusManager.getStatus(appId.toString).asInstanceOf[ApplicationStatus]
+        self ! RecoverApplication(appStatus)
+      }
     }
   }
+
+  def selfMsgHandler: Receive = {
+    case RecoverApplication(applicationStatus) =>
+      val terminatedAppId = applicationStatus.appId
+      LOG.info(s"AppManager Recovering Application $terminatedAppId...")
+      val appMasterClass = applicationStatus.appMasterClass
+      val config = Configs.empty.withStartTime(applicationStatus.startClock)
+      context.actorOf(Props(classOf[AppMasterStarter], terminatedAppId, appMasterClass, config, applicationStatus.app), terminatedAppId.toString)
+  }
+
+  case class RecoverApplication(applicationStatus : ApplicationStatus)
 }
 
-case class AppMasterInfo(worker : ActorRef) extends AppMasterRegisterData
+case class AppMasterInfo(worker : ActorRef, app : Application, appMasterClass : Class[_ <: Actor]) extends AppMasterRegisterData
 
 private[cluster] object AppManager {
   private val masterExecutorId = -1
@@ -252,7 +285,7 @@ private[cluster] object AppManager {
       case ResourceAllocated(allocations) => {
         LOG.info(s"Resource allocated for appMaster $app Id")
         val allocation = allocations(0)
-        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
+        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker, app, appMasterClass)).withExecutorId(masterExecutorId).withResource(allocation.resource)
         LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)

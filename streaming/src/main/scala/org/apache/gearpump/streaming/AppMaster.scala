@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.{ResourceRequest, Resource}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RecoverTasks, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
@@ -64,17 +64,21 @@ class AppMaster (config : Configs) extends Actor {
   private val taskSet = new TaskSet(config, DAG(appDescription.dag))
 
   private var clockService : ActorRef = null
-  private var startClock : TimeStamp = 0L
+  private var startClock : TimeStamp = config.startTime
 
   private var taskLocations = Map.empty[HostPort, Set[TaskId]]
   private var executorIdToTasks = Map.empty[Int, Set[TaskId]]
 
   private var startedTasks = Set.empty[TaskId]
+  private var scheduler : Cancellable = null
 
   override def receive : Receive = null
 
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
+    scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+      new FiniteDuration(5, TimeUnit.SECONDS))(updateStatus)
+
     val dag = DAG(appDescription.dag)
 
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
@@ -283,6 +287,16 @@ class AppMaster (config : Configs) extends Actor {
         cancelSend.isCancelled && cancelSuicide.isCancelled
       }
     }
+  }
+
+  private def updateStatus : Unit = {
+    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
+      master ! UpdateTimestampTrailingEdge(appId, clock.clock)
+    }
+  }
+
+  override def postStop : Unit = {
+    scheduler.cancel()
   }
 }
 

@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.{Actor, ActorRef}
+import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.scheduler.{ResourceRequest, ResourceAllocation, Resource}
 import org.apache.gearpump.util.Configs
 
@@ -58,6 +59,7 @@ trait AppMasterRegisterData
 object AppMasterToMaster {
   case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resource: Resource, registerData : AppMasterRegisterData)
   case class RequestResource(appId: Int, request: ResourceRequest)
+  case class UpdateTimestampTrailingEdge(appID : Int, timeStamp : TimeStamp)
 }
 
 object MasterToAppMaster {

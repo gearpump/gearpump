@@ -4,7 +4,6 @@ import java.util
 
 import akka.actor.Actor
 import com.typesafe.config.Config
-import org.apache.gearpump._
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Configs, Constants}
@@ -15,9 +14,6 @@ class ConfigsHelper(config : Configs) {
 
   def withDag(taskDag : DAG) = config.withValue(TASK_DAG, taskDag)
   def dag : DAG = config.getAnyRef(TASK_DAG).asInstanceOf[DAG]
-
-  def withStartTime(time : TimeStamp) = config.withValue(START_TIME, time)
-  def startTime = config.getLong(START_TIME)
 }
 
 object ConfigsHelper {
