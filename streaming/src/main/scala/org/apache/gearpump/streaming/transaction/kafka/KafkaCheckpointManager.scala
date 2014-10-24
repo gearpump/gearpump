@@ -44,7 +44,7 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
 
   private var sources: Array[Source] = null
   private var checkpointTopicAndPartitions: Array[TopicAndPartition] = null
-  private val topicExists: MutableMap[TopicAndPartition, Boolean] = MutableMap.empty[TopicAndPartition, Boolean]
+  private var existingTopics: Set[TopicAndPartition] = Set.empty[TopicAndPartition]
 
   override def start(): Unit = {
     createTopics()
@@ -75,28 +75,18 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
   }
 
   override def readCheckpoint(source: Source, checkpointSerDe: CheckpointSerDe[K, V]): Checkpoint[K, V] = {
-    val topicAndPartition = TopicAndPartition(source.name, source.partition)
+    val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
     // no checkpoint to read for the first time
-    if (!topicExists.getOrElse(topicAndPartition, false)) {
+    if (!existingTopics(checkpointTopicAndPartition)) {
       Checkpoint.empty
     } else {
-      // get consumers only after topics having been created
-      LOG.info("creating consumer...")
-      val msgIter = consume(topicAndPartition)
-      val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
-
+      val msgIter = getMessageIterator(checkpointTopicAndPartition)
       @annotation.tailrec
       def fetch(records: List[(K, V)]): List[(K, V)] = {
         if (msgIter.hasNext) {
-          val key = msgIter.getKey
-          if (key != null) {
-            val r: (K, V) = (checkpointSerDe.fromKeyBytes(key), checkpointSerDe.fromValueBytes(msgIter.next))
-            fetch(records :+ r)
-          } else {
-            // TODO: this should not happen; need further investigation
-            LOG.error(s"timestamp is null at offset ${msgIter.getOffset} for ${checkpointTopicAndPartition}")
-            fetch(records)
-          }
+          val (_, key, payload) = msgIter.next
+          val r: (K, V) = (checkpointSerDe.fromKeyBytes(key), checkpointSerDe.fromValueBytes(payload))
+          fetch(records :+ r)
         } else {
           msgIter.close()
           records
@@ -112,7 +102,7 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
   }
 
 
-  private def consume(topicAndPartition: TopicAndPartition): MessageIterator = {
+  private def getMessageIterator(topicAndPartition: TopicAndPartition): MessageIterator = {
     val topic = topicAndPartition.topic
     val partition = topicAndPartition.partition
     val broker = KafkaUtil.getBroker(zkClient, topic, partition)
@@ -126,11 +116,10 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
         try {
           val topic = tp.topic
           AdminUtils.createTopic(zkClient, topic, 1, checkpointReplicas)
-          topicExists.put(tp, false)
         } catch {
           case tee: TopicExistsException => {
             LOG.info(s"${tp} already exists")
-            topicExists.put(tp, true)
+            existingTopics += tp
           }
           case e: Exception => throw e
         }

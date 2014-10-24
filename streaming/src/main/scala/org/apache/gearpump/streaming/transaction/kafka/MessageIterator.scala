@@ -40,30 +40,22 @@ class MessageIterator(host: String,
     OffsetRequest.EarliestTime, -1)
   private var iter = iterator(startOffset)
   private var readMessages = 0L
-  private var offset = startOffset
-  private var key: Array[Byte] = null
-  private var nextOffset = offset
+  private var nextOffset = startOffset
 
   def setStartOffset(startOffset: Long): Unit = {
     this.startOffset = startOffset
   }
 
-  def getKey: Array[Byte] = {
-    key
-  }
-
-  def getOffset: Long = {
-    offset
-  }
-
-  def next: Array[Byte] = {
+  def next: (Long, Array[Byte], Array[Byte]) = {
     val mo = iter.next()
     val message = mo.message
+    val offset = mo.offset
+    val key = Utils.readBytes(message.key)
+    val payload = Utils.readBytes(message.payload)
+
     readMessages += 1
-    offset = mo.offset
-    key = Utils.readBytes(message.key)
     nextOffset = mo.nextOffset
-    Utils.readBytes(mo.message.payload)
+    (offset, key, payload)
   }
 
 

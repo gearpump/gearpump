@@ -85,11 +85,12 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
   override def onStart(taskContext: TaskContext): Unit = {
     offsetManager.register(topicAndPartitions.map(KafkaSource(_)))
     offsetManager.start()
-    offsetManager.loadStartingOffsets(taskContext.startTime).foreach{
+    offsetManager.loadStartOffsets(taskContext.startTime).foreach{
       entry =>
         val source = entry._1
         val offset = entry._2
         val topicAndPartition = TopicAndPartition(source.name, source.partition)
+        LOG.info(s"set start offsets for ${topicAndPartition}")
         consumer.setStartOffset(topicAndPartition, offset)
     }
     consumer.start()
@@ -110,6 +111,11 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
         } else {
           LOG.debug(s"no more messages from ${topicAndPartitions(tpIndex)}")
         }
+        if (shouldCommitCheckpoint) {
+          LOG.info("committing checkpoint...")
+          offsetManager.checkpoint
+          lastCommitTime = System.currentTimeMillis()
+        }
         // poll message from each TopicAndPartition in a round-robin way
         // TODO: make it configurable
         if (tpIndex + 1 == topicAndPartitions.size) {
@@ -120,11 +126,6 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
       }
     }
     fetchAndEmit(0, 0)
-    if (shouldCommitCheckpoint) {
-      LOG.info("committing checkpoint...")
-      offsetManager.checkpoint
-      lastCommitTime = System.currentTimeMillis()
-    }
     self ! Message("continue", Message.noTimeStamp)
   }
 

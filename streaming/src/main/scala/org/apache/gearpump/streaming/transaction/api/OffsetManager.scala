@@ -87,8 +87,7 @@ class OffsetManager(checkpointManager: CheckpointManager[TimeStamp, Long],
     checkpointsBySource
   }
 
-  def loadStartingOffsets(timestamp: TimeStamp): Map[Source, Long] = {
-    LOG.info("loading start offsets...")
+  def loadStartOffsets(timestamp: TimeStamp): Map[Source, Long] = {
     checkpointManager.sourceAndCheckpoints(OffsetSerDe).foldLeft(Map.empty[Source, Long]) { (accum, iter) =>
       filter.filter(iter._2.records, timestamp) match {
         case Some((_, offset)) => accum + (iter._1 -> offset)

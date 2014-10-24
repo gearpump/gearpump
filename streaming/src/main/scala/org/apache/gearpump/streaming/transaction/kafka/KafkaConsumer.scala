@@ -64,7 +64,7 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
         val tp = iter._1
         val broker = iter._2
         if (!accum.contains(broker)) {
-          val fetchThread = new FetchThread(broker)
+          val fetchThread = new FetchThread(broker.host, broker.port)
           fetchThread.addTopicAndPartition(tp)
           accum + (broker -> fetchThread)
         } else {
@@ -94,7 +94,7 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
     fetchThreads.foreach(_._2.join())
   }
 
-  class FetchThread(broker: Broker) extends Thread {
+  class FetchThread(host: String, port: Int) extends Thread {
     private var topicAndPartitions: List[TopicAndPartition] = List.empty[TopicAndPartition]
     private var iterators: Map[TopicAndPartition, MessageIterator] = Map.empty[TopicAndPartition, MessageIterator]
 
@@ -103,7 +103,7 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
 
     def addTopicAndPartition(topicAndPartition: TopicAndPartition) = {
       topicAndPartitions :+= topicAndPartition
-      val iter = new MessageIterator(broker.host, broker.port, topicAndPartition.topic, topicAndPartition.partition,
+      val iter = new MessageIterator(host, port, topicAndPartition.topic, topicAndPartition.partition,
       socketTimeout, socketBufferSize, fetchSize, clientId)
       iterators += topicAndPartition -> iter
     }
@@ -129,7 +129,8 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
           if (queue.size < fetchThreshold) {
             val iter = iterators(tp)
             if (iter.hasNext) {
-              val msg = KafkaMessage(tp, iter.getOffset, iter.getKey, iter.next)
+              val (offset, key, payload) = iter.next
+              val msg = KafkaMessage(tp, offset, key, payload)
               queue.put((msg, timeExtractor(msg)))
               hasNextSet += tp
             } else {
