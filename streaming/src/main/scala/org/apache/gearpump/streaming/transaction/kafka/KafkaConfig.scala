@@ -38,7 +38,7 @@ object KafkaConfig {
   val ZOOKEEPER_CONNECT = "kafka.consumer.zookeeper.connect"
   val CONSUMER_TOPICS = "kafka.consumer.topics"
   val SOCKET_TIMEOUT_MS = "kafka.consumer.socket.timeout.ms"
-  val SOCKET_RECEIVE_BUFFER_SIZE = "kafka.consumer.socket.receive.buffer.size"
+  val SOCKET_RECEIVE_BUFFER_BYTES = "kafka.consumer.socket.receive.buffer.bytes"
   val CLIENT_ID = "kafka.consumer.client.id"
   val FETCH_MESSAGE_MAX_BYTES = "kafka.consumer.fetch.message.max.bytes"
   val CONSUMER_EMIT_BATCH_SIZE = "kafka.consumer.emit.batch.size"
@@ -85,7 +85,7 @@ object KafkaConfig {
     def getConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String = getClientId,
                     socketTimeout: Int = getSocketTimeoutMS,
-                    receiveBufferSize: Int = getSocketReceiveBufferSize,
+                    receiveBufferSize: Int = getSocketReceiveBufferBytes,
                     fetchSize: Int = getFetchMessageMaxBytes,
                     zkClient: ZkClient = getZkClient(),
                     fetchThreshold: Int = getFetchThreshold,
@@ -107,8 +107,8 @@ object KafkaConfig {
       getInt(SOCKET_TIMEOUT_MS)
     }
 
-    def getSocketReceiveBufferSize = {
-      getInt(SOCKET_RECEIVE_BUFFER_SIZE)
+    def getSocketReceiveBufferBytes = {
+      getInt(SOCKET_RECEIVE_BUFFER_BYTES)
     }
 
     def getFetchMessageMaxBytes = {

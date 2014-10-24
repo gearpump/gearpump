@@ -47,7 +47,7 @@ object KafkaConsumer {
 
 class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String, socketTimeout: Int,
-                    receiveBufferSize: Int, fetchSize: Int,
+                    socketBufferSize: Int, fetchSize: Int,
                     zkClient: ZkClient, fetchThreshold: Int,
                     timeExtractor: TimeExtractor[KafkaMessage])  {
   import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer._
@@ -99,47 +99,44 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
     private var iterators: Map[TopicAndPartition, MessageIterator] = Map.empty[TopicAndPartition, MessageIterator]
 
     private val noMessageSleepMS = 100
-    private var hasNextSize = 0
+    private var hasNextSet: Set[TopicAndPartition] = Set.empty[TopicAndPartition]
 
     def addTopicAndPartition(topicAndPartition: TopicAndPartition) = {
       topicAndPartitions :+= topicAndPartition
+      val iter = new MessageIterator(broker.host, broker.port, topicAndPartition.topic, topicAndPartition.partition,
+      socketTimeout, socketBufferSize, fetchSize, clientId)
+      iterators += topicAndPartition -> iter
     }
 
     def setStartOffset(topicAndPartition: TopicAndPartition, offset: Long): Unit = {
-      val iter = new MessageIterator(broker.host, broker.port, topicAndPartition.topic, topicAndPartition.partition,
-      socketTimeout, receiveBufferSize, fetchSize, clientId)
-      iter.setStartOffset(offset)
-      iterators += topicAndPartition -> iter
+      iterators(topicAndPartition).setStartOffset(offset)
     }
 
     override def run(): Unit = {
       while (!Thread.currentThread.isInterrupted) {
-        if (0 == hasNextSize) {
+        fetchMessage
+        if (hasNextSet.isEmpty) {
+          LOG.debug("no messages from all TopicAndPartitions, sleeping")
           Thread.sleep(noMessageSleepMS)
-        } else {
-          fetchMessage
         }
       }
     }
 
     private def fetchMessage = {
       topicAndPartitions.foreach {
-        tp =>
+        tp => {
           val queue = incomingQueue(tp)
           if (queue.size < fetchThreshold) {
             val iter = iterators(tp)
             if (iter.hasNext) {
               val msg = KafkaMessage(tp, iter.getOffset, iter.getKey, iter.next)
               queue.put((msg, timeExtractor(msg)))
-              if (hasNextSize < topicAndPartitions.size) {
-                hasNextSize += 1
-              }
+              hasNextSet += tp
             } else {
-              if (hasNextSize > 0) {
-                hasNextSize -= 1
-              }
+              hasNextSet -= tp
             }
           }
+        }
       }
     }
   }

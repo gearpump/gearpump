@@ -33,7 +33,7 @@ class KafkaCheckpointManagerFactory extends CheckpointManagerFactory {
     )
     val clientId = config.getClientId
     val socketTimeout = config.getSocketTimeoutMS
-    val receiveBufferSize = config.getSocketReceiveBufferSize
+    val receiveBufferSize = config.getSocketReceiveBufferBytes
     val fetchSize = config.getFetchMessageMaxBytes
     val zkClient = config.getZkClient()
     new KafkaCheckpointManager(

@@ -30,12 +30,12 @@ class MessageIterator(host: String,
                       topic: String,
                       partition: Int,
                       soTimeout: Int,
-                      bufferSize: Int,
+                      soBufferSize: Int,
                       fetchSize: Int,
                       clientId: String) {
 
 
-  private val consumer = new SimpleConsumer(host, port, soTimeout, bufferSize, clientId)
+  private val consumer = new SimpleConsumer(host, port, soTimeout, soBufferSize, clientId)
   private var startOffset = consumer.earliestOrLatestOffset(TopicAndPartition(topic, partition),
     OffsetRequest.EarliestTime, -1)
   private var iter = iterator(startOffset)
