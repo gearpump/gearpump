@@ -46,7 +46,7 @@ class Sum (conf : Configs) extends TaskActor(conf) {
     val word = msg.msg.asInstanceOf[String]
     val count = current + 1
     map.put(word, count)
-    output(new Message(word -> count.toString(), System.currentTimeMillis()))
+    output(new Message(s"${msg.timestamp}" -> s"${word}:${count}", System.currentTimeMillis()))
   }
 
   override def onStop() : Unit = {

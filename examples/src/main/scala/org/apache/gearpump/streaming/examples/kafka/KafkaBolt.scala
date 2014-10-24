@@ -69,7 +69,7 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
 
   private def reportThroughput : Unit = {
     val current = System.currentTimeMillis()
-    LOG.info(s"Task $taskId Throughput: ${((count - lastCount), ((current - lastTime) / 1000))} (messages, second)")
+    LOG.info(s"Task $taskId; Throughput: ${((count - lastCount), ((current - lastTime) / 1000))} (messages, second)")
     lastCount = count
     lastTime = current
   }

@@ -18,9 +18,17 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.util.Configs
+/**
+ * shamelessly stolen from summingbird
+ * https://github.com/twitter/summingbird/blob/develop/summingbird-core/src/main/scala/com/twitter/summingbird/TimeExtractor.scala
+ */
+object TimeExtractor {
+  def apply[T](fn: T => Long): TimeExtractor[T] =
+    new TimeExtractor[T] {
+      override def apply(t: T) = fn(t)
+    }
+}
 
-
-trait CheckpointManagerFactory {
-  def getCheckpointManager[K, V](conf: Configs): CheckpointManager[K, V]
+trait TimeExtractor[T] extends java.io.Serializable {
+  def apply(t: T): Long
 }

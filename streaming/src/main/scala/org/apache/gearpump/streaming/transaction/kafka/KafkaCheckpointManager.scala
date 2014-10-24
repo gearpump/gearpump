@@ -20,107 +20,108 @@ package org.apache.gearpump.streaming.transaction.kafka
 
 import kafka.admin.AdminUtils
 import kafka.common.{TopicExistsException, TopicAndPartition}
-import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.api.{Checkpoint, CheckpointManager}
-import org.apache.gearpump.streaming.transaction.api.Source
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.streaming.transaction.api.{CheckpointSerDe, Checkpoint, Source, CheckpointManager}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.{Map => MutableMap}
+import org.I0Itec.zkclient.ZkClient
 
 
 object KafkaCheckpointManager {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaCheckpointManager])
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaCheckpointManager[_, _]])
 }
 
-class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
+class KafkaCheckpointManager[K, V](checkpointId: Int,
+                             checkpointReplicas: Int,
+                             producer: KafkaProducer[Array[Byte], Array[Byte]],
+                             clientId: String,
+                             socketTimeout: Int,
+                             receiveBufferSize: Int,
+                             fetchSize: Int,
+                             zkClient: ZkClient
+                             ) extends CheckpointManager[K, V] {
   import org.apache.gearpump.streaming.transaction.kafka.KafkaCheckpointManager._
 
-  private val config = conf.config
-  private val producer = config.getProducer[Array[Byte], Array[Byte]](
-    producerConfig = config.getProducerConfig(serializerClass = "kafka.serializer.DefaultEncoder")
-  )
-
+  private var sources: Array[Source] = null
   private var checkpointTopicAndPartitions: Array[TopicAndPartition] = null
-  private val topicExists: MutableMap[TopicAndPartition, Boolean] = MutableMap.empty[TopicAndPartition, Boolean]
-  private var consumer: KafkaConsumer = null
+  private var existingTopics: Set[TopicAndPartition] = Set.empty[TopicAndPartition]
 
   override def start(): Unit = {
     createTopics()
-
   }
 
-  override def register(topicAndPartitions: Array[Source]): Unit = {
+  override def register(sources: Array[Source]): Unit = {
+    this.sources = sources
     this.checkpointTopicAndPartitions =
-      topicAndPartitions.map(getCheckpointTopicAndPartition(_))
+      sources.map(getCheckpointTopicAndPartition(_))
   }
 
   override def writeCheckpoint(source: Source,
-                               checkpoint: Checkpoint): Unit = {
+                               checkpoint: Checkpoint[K, V],
+                               checkpointSerDe: CheckpointSerDe[K, V]): Unit = {
     val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
-    checkpoint.timeAndOffsets.foreach(timeAndOffset => {
-      producer.send(checkpointTopicAndPartition.topic, longToByteArray(timeAndOffset._1),
-        0, longToByteArray(timeAndOffset._2))
-    })
 
+    checkpoint.records.foreach(record => {
+      producer.send(
+        checkpointTopicAndPartition.topic,
+        checkpointSerDe.toKeyBytes(record._1),
+        0,
+        checkpointSerDe.toValueBytes(record._2))
+    })
   }
 
-  override def readCheckpoint(source: Source): Checkpoint = {
-    if (!topicExists.getOrElse(TopicAndPartition(source.name, source.partition), false)) {
-      Checkpoint(Map.empty[TimeStamp, Long])
-    } else {
-      // get consumers only after topics having been created
-      LOG.info("creating consumer...")
-      if (null == consumer) {
-        consumer = config.getConsumer(topicAndPartitions = checkpointTopicAndPartitions)
-        consumer.start()
-      }
-      val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
+  override def sourceAndCheckpoints(checkpointSerDe: CheckpointSerDe[K, V]): Map[Source, Checkpoint[K, V]] = {
+    sources.map(source => source -> readCheckpoint(source, checkpointSerDe)).toMap
+  }
 
+  override def readCheckpoint(source: Source, checkpointSerDe: CheckpointSerDe[K, V]): Checkpoint[K, V] = {
+    val checkpointTopicAndPartition = getCheckpointTopicAndPartition(source)
+    // no checkpoint to read for the first time
+    if (!existingTopics(checkpointTopicAndPartition)) {
+      Checkpoint.empty
+    } else {
+      val msgIter = getMessageIterator(checkpointTopicAndPartition)
       @annotation.tailrec
-      def fetch(timeAndOffsets: Map[TimeStamp, Long]): Map[TimeStamp, Long] = {
-        val kafkaMsg = consumer.nextMessage(checkpointTopicAndPartition)
-        if (kafkaMsg != null) {
-          if (kafkaMsg.key != null) {
-            fetch(timeAndOffsets +
-              (byteArrayToLong(kafkaMsg.key) -> byteArrayToLong(kafkaMsg.msg)))
-          } else {
-            LOG.error(s"timestamp is null at offset ${kafkaMsg.offset} for ${checkpointTopicAndPartition}")
-            fetch(timeAndOffsets)
-          }
+      def fetch(records: List[(K, V)]): List[(K, V)] = {
+        if (msgIter.hasNext) {
+          val (_, key, payload) = msgIter.next
+          val r: (K, V) = (checkpointSerDe.fromKeyBytes(key), checkpointSerDe.fromValueBytes(payload))
+          fetch(records :+ r)
         } else {
-          timeAndOffsets
+          msgIter.close()
+          records
         }
       }
-      Checkpoint(fetch(Map.empty[TimeStamp, Long]))
+      Checkpoint(fetch(List.empty[(K, V)]))
     }
   }
 
   override def close(): Unit = {
     producer.close()
-    if (consumer != null) {
-      consumer.close()
-    }
+    zkClient.close()
+  }
+
+
+  private def getMessageIterator(topicAndPartition: TopicAndPartition): MessageIterator = {
+    val topic = topicAndPartition.topic
+    val partition = topicAndPartition.partition
+    val broker = KafkaUtil.getBroker(zkClient, topic, partition)
+    new MessageIterator(broker.host, broker.port, topic, partition, socketTimeout,
+      receiveBufferSize, fetchSize, clientId)
   }
 
   private def createTopics(): Unit = {
     checkpointTopicAndPartitions.foreach {
       tp => {
-        val zkClient = config.getZkClient()
         try {
           val topic = tp.topic
-          AdminUtils.createTopic(zkClient, topic, 1, config.getCheckpointReplicas)
-          topicExists.put(tp, false)
+          AdminUtils.createTopic(zkClient, topic, 1, checkpointReplicas)
         } catch {
           case tee: TopicExistsException => {
             LOG.info(s"${tp} already exists")
-            topicExists.put(tp, true)
+            existingTopics += tp
           }
           case e: Exception => throw e
-        } finally {
-          zkClient.close()
         }
       }
     }
@@ -131,7 +132,7 @@ class KafkaCheckpointManager(conf: Configs) extends CheckpointManager {
   }
 
   private def getCheckpointTopicAndPartition(source: Source): TopicAndPartition = {
-    TopicAndPartition(getCheckpointTopic(config.getCheckpointId, source.name, source.partition), 0)
+    TopicAndPartition(getCheckpointTopic(checkpointId, source.name, source.partition), 0)
   }
 
 }

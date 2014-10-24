@@ -19,10 +19,25 @@
 package org.apache.gearpump.streaming.transaction.kafka
 
 import org.apache.gearpump.streaming.transaction.api.{CheckpointManager, CheckpointManagerFactory}
+import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
 import org.apache.gearpump.util.Configs
 
 class KafkaCheckpointManagerFactory extends CheckpointManagerFactory {
-  override def getCheckpointManager(conf: Configs): CheckpointManager = {
-    new KafkaCheckpointManager(conf)
+  override def getCheckpointManager[K, V](conf: Configs): CheckpointManager[K, V] = {
+    val config = conf.config
+    val checkpointId = config.getCheckpointId
+    val checkpointReplicas = config.getCheckpointReplicas
+    val producer = config.getProducer[Array[Byte], Array[Byte]](
+      producerConfig = config.getProducerConfig(
+        serializerClass = "kafka.serializer.DefaultEncoder")
+    )
+    val clientId = config.getClientId
+    val socketTimeout = config.getSocketTimeoutMS
+    val receiveBufferSize = config.getSocketReceiveBufferBytes
+    val fetchSize = config.getFetchMessageMaxBytes
+    val zkClient = config.getZkClient()
+    new KafkaCheckpointManager(
+      checkpointId, checkpointReplicas, producer, clientId,
+      socketTimeout, receiveBufferSize, fetchSize, zkClient)
   }
 }
