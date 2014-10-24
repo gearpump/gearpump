@@ -64,7 +64,8 @@ class AppMaster (config : Configs) extends Actor {
   private val taskSet = new TaskSet(config, DAG(appDescription.dag))
 
   private var clockService : ActorRef = null
-  private var startClock : TimeStamp = config.startTime
+  private val START_CLOCK = "startClock"
+  private var startClock : TimeStamp = 0L
 
   private var taskLocations = Map.empty[HostPort, Set[TaskId]]
   private var executorIdToTasks = Map.empty[Int, Set[TaskId]]
@@ -291,7 +292,7 @@ class AppMaster (config : Configs) extends Actor {
 
   private def updateStatus : Unit = {
     (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
-      master ! UpdateTimestampTrailingEdge(appId, clock.clock)
+      master ! PostAppData(appId, START_CLOCK, clock.clock)
     }
   }
 

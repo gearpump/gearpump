@@ -52,7 +52,7 @@ object Json4sSupport extends Json4sJacksonSupport {
     { //from json
       case JObject(JField("worker", JString(s)) :: Nil ) =>
         //only need to serialize to json
-        AppMasterInfo(null, null, null)
+        AppMasterInfo(null)
     },
     { //to json
       case x:AppMasterInfo =>
