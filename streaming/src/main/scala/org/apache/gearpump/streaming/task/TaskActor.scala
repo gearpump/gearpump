@@ -23,15 +23,12 @@ import java.util
 import akka.actor._
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, GetStartClock, RestartException, RestartTasks}
-import org.apache.gearpump.streaming.ConfigsHelper
+import org.apache.gearpump.streaming.AppMasterToExecutor.{GetStartClock, RestartException, RestartTasks, StartClock}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.util.Configs
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
-import akka.pattern.ask
-import akka.pattern.pipe
 
 abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   import org.apache.gearpump.streaming.task.TaskActor._
@@ -93,6 +90,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   }
 
   final override def postStop : Unit = {
+    onStop()
   }
 
   final override def preStart() : Unit = {
