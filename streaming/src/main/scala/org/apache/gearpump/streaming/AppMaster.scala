@@ -19,6 +19,7 @@
 package org.apache.gearpump.streaming
 
 import java.util.concurrent.TimeUnit
+import java.util.Date
 
 import akka.actor._
 import akka.pattern.{ask, pipe}
@@ -108,7 +109,7 @@ class AppMaster (config : Configs) extends Actor {
     case GetAppDataResult(key, value) =>
       if(key.equals(START_CLOCK) && value != null) {
         startClock = value.asInstanceOf[TimeStamp]
-        LOG.info(s"recover start clock sucessfully and the start clock is $startClock")
+        LOG.info(s"recover start clock sucessfully and the start clock is ${new Date(startClock)}")
       }
 
       LOG.info("Sending request resource to master...")

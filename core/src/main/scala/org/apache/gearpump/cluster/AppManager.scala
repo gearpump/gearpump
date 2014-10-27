@@ -226,7 +226,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       val (_, info) = appMasterRegistry.getOrElse(appId, (null, null))
       Option(info) match {
         case a@Some(data) =>
-          LOG.info(s"saving application data $key for application $appId")
+          LOG.debug(s"saving application data $key for application $appId")
           replicator ! Update(appId.toString, LWWMap(), WriteTo(writeQuorum), TIMEOUT)(_ + (key -> value))
         case None =>
           LOG.error(s"no match application for app$appId when saving application data")
