@@ -114,7 +114,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   def waitForMasterState: Receive = {
     case GetSuccess(_, replicatedState: GSet, _) =>
       state = replicatedState.getValue().asScala.foldLeft(state) { (set, appState) =>
-         set + appState.asInstanceOf[ApplicationState]
+        set + appState.asInstanceOf[ApplicationState]
       }
       appId = state.map(_.appId).size
       LOG.info(s"Successfully recoeved application states for ${state.map(_.appId)}, nextAppId: ${appId}....")
@@ -158,7 +158,7 @@ private[cluster] class AppManager() extends Actor with Stash {
         case Some(info) =>
           val worker = info.worker
           LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
-          //cleanApplicationData(appId)
+          cleanApplicationData(appId)
           worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
           sender ! ShutdownApplicationResult(Success(appId))
         case None =>

@@ -47,7 +47,7 @@ import org.apache.gearpump.streaming.task.ClockService._
     dag.tasks.foreach { taskIdWithDescription =>
       val (taskGroupId, description) = taskIdWithDescription
       val taskClocks = new Array[TimeStamp](description.parallism)
-      val taskgroupClock = new TaskGroupClock(taskGroupId, 0, taskClocks)
+      val taskgroupClock = new TaskGroupClock(taskGroupId, Long.MaxValue, taskClocks)
       taskgroupClocks.add(taskgroupClock)
       taskgroupLookup.put(taskGroupId, taskgroupClock)
     }
@@ -88,7 +88,7 @@ import org.apache.gearpump.streaming.task.ClockService._
 
 object ClockService {
 
-  class TaskGroupClock(val taskgroup : TaskGroup, var minClock : TimeStamp = 0L, var taskClocks : Array[TimeStamp] = null) extends Comparable[TaskGroupClock] {
+  class TaskGroupClock(val taskgroup : TaskGroup, var minClock : TimeStamp = Long.MaxValue, var taskClocks : Array[TimeStamp] = null) extends Comparable[TaskGroupClock] {
     override def equals(obj: Any): Boolean = {
       if (this.eq(obj.asInstanceOf[AnyRef])) {
         return true
