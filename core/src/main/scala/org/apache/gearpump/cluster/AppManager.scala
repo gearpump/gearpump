@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.cluster.Cluster
 import akka.contrib.datareplication.Replicator._
-import akka.contrib.datareplication.{DataReplication, GSet}
+import akka.contrib.datareplication.{LWWMap, DataReplication, GSet}
 import akka.pattern.ask
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
@@ -113,12 +113,10 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   def waitForMasterState: Receive = {
     case GetSuccess(_, replicatedState: GSet, _) =>
-      replicatedState.getValue().asScala.foreach{item =>
-        val appState = item.asInstanceOf[ApplicationState]
-        if(appState.appId > appId){
-          appId = appState.appId
-        }
+      state = replicatedState.getValue().asScala.foldLeft(state) { (set, appState) =>
+         set + appState.asInstanceOf[ApplicationState]
       }
+      appId = state.map(_.appId).size
       LOG.info(s"Successfully recoeved application states for ${state.map(_.appId)}, nextAppId: ${appId}....")
       context.become(receiveHandler)
       unstashAll()
@@ -160,8 +158,8 @@ private[cluster] class AppManager() extends Actor with Stash {
         case Some(info) =>
           val worker = info.worker
           LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
+          //cleanApplicationData(appId)
           worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
-          //appMasterRegistry -= appId
           sender ! ShutdownApplicationResult(Success(appId))
         case None =>
           val errorMsg = s"Find to find regisration information for appId: $appId"
@@ -182,6 +180,9 @@ private[cluster] class AppManager() extends Actor with Stash {
           sender ! ReplayApplicationResult(Failure(new Exception(errorMsg)))
       }
   }
+
+  implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
+  import context.dispatcher
 
   def appMasterMessage: Receive = {
     case RegisterAppMaster(appMaster, appId, executorId, slots, registerData: AppMasterInfo) =>
@@ -221,19 +222,30 @@ private[cluster] class AppManager() extends Actor with Stash {
         case None =>
           sender ! AppMasterDataDetail(appId = appId, appDescription = null)
       }
-    case postAppData : PostAppData =>
-      val appId = postAppData.appId
+    case PostAppData(appId, key, value) =>
       val (_, info) = appMasterRegistry.getOrElse(appId, (null, null))
       Option(info) match {
         case a@Some(data) =>
-          LOG.info(s"update timestamp traingling edge for application $appId")
+          LOG.info(s"saving application data $key for application $appId")
+          replicator ! Update(appId.toString, LWWMap(), WriteTo(writeQuorum), TIMEOUT)(_ + (key -> value))
         case None =>
-          LOG.error(s"no match application for app$appId when updating timestamp")
+          LOG.error(s"no match application for app$appId when saving application data")
       }
-  }
+    case GetAppData(appId, key) =>
+      val appMaster = sender
+      (replicator ? new Get(appId.toString, ReadFrom(readQuorum), TIMEOUT, None)).asInstanceOf[Future[ReplicatorMessage]].map{
+        case GetSuccess(_, appData: LWWMap, _) =>
+          if(appData.get(key).nonEmpty){
+            appMaster ! GetAppDataResult(key, appData.get(key).get)
+          } else {
+            appMaster ! GetAppDataResult(key, null)
+          }
+        case _ =>
+          LOG.error(s"failed to get application $appId data, the request key is $key")
+          appMaster ! GetAppDataResult(key, null)
+      }
 
-  implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
-  import context.dispatcher
+  }
 
   def terminationWatch: Receive = {
     case terminate: Terminated => {
@@ -248,7 +260,7 @@ private[cluster] class AppManager() extends Actor with Stash {
         val appId = application.get._1
         (replicator ? new Get(STATE, ReadFrom(readQuorum), TIMEOUT, None)).asInstanceOf[Future[ReplicatorMessage]].map{
           case GetSuccess(_, replicatedState: GSet, _) =>
-            val appState = replicatedState.getValue().asScala.find(_.asInstanceOf[ApplicationState].appId == appId)
+            val appState = replicatedState.value.find(_.asInstanceOf[ApplicationState].appId == appId)
             if(appState.nonEmpty){
               self ! RecoverApplication(appState.get.asInstanceOf[ApplicationState])
             }
@@ -268,6 +280,13 @@ private[cluster] class AppManager() extends Actor with Stash {
   }
 
   case class RecoverApplication(applicationStatus : ApplicationState)
+
+  private def cleanApplicationData(appId : Int) : Unit = {
+    appMasterRegistry -= appId
+    replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(set =>
+      GSet(set.value.filter(_.asInstanceOf[ApplicationState].appId != appId)))
+    replicator ! Delete(appId.toString)
+  }
 }
 
 case class AppMasterInfo(worker : ActorRef) extends AppMasterRegisterData

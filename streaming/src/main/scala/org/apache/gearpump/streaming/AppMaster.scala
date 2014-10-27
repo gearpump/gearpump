@@ -93,19 +93,29 @@ class AppMaster (config : Configs) extends Actor {
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
     case AppMasterRegistered(appId, master) =>
       LOG.info(s"AppMasterRegistered received for appID: $appId")
-
-      LOG.info("Sending request resource to master...")
-      val resourceRequests = taskSet.getResourceRequests()
-      resourceRequests.foreach(master ! RequestResource(appId, _))
-
-      killSelf.cancel()
       this.master = master
       context.watch(master)
-      context.become(messageHandler)
+      killSelf.cancel()
+
+      LOG.info(s"try to recover start clock")
+      master ! GetAppData(appId, START_CLOCK)
+      context.become(recoverApplicaiton)
   }
 
   def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse appManagerMsgHandler orElse workerMsgHandler orElse clientMsgHandler orElse executorMsgHandler orElse terminationWatch
 
+  def recoverApplicaiton: Receive = {
+    case GetAppDataResult(key, value) =>
+      if(key.equals(START_CLOCK) && value != null) {
+        startClock = value.asInstanceOf[TimeStamp]
+        LOG.info(s"recover start clock sucessfully and the start clock is $startClock")
+      }
+
+      LOG.info("Sending request resource to master...")
+      val resourceRequests = taskSet.getResourceRequests()
+      resourceRequests.foreach(master ! RequestResource(appId, _))
+      context.become(messageHandler)
+  }
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) => {
