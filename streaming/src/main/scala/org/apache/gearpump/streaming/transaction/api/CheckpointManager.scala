@@ -18,43 +18,22 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.TimeStamp
-
-/**
- * a Source consists of its name and partition
- */
-trait Source {
-  def name: String
-  def partition: Int
-}
-
-/**
- * a Checkpoint is a map from message timestamps to
- * message offsets of the input stream
- */
-object Checkpoint {
-  def apply(timestamp: TimeStamp, offset: Long): Checkpoint =
-    Checkpoint(Map(timestamp -> offset))
-
-  def empty: Checkpoint =
-    Checkpoint(Map.empty[TimeStamp, Long])
-}
-case class Checkpoint(timeAndOffsets: Map[TimeStamp, Long])
-
-
 /**
  * CheckpointManager checkpoints message and its timestamp to a persistent system
  * such that we could replay messages around or after given time
  */
-trait CheckpointManager {
-
+trait CheckpointManager[K, V] {
   def start(): Unit
 
   def register(sources: Array[Source]): Unit
 
-  def writeCheckpoint(source: Source, checkpoint: Checkpoint): Unit
+  def writeCheckpoint(source: Source, checkpoint: Checkpoint[K, V],
+                      checkpointSerDe: CheckpointSerDe[K, V]): Unit
 
-  def readCheckpoint(source: Source): Checkpoint
+  def readCheckpoint(source: Source,
+                     checkpointSerDe: CheckpointSerDe[K, V]): Checkpoint[K, V]
+
+  def sourceAndCheckpoints(checkpointSerDe: CheckpointSerDe[K, V]): Map[Source, Checkpoint[K, V]]
 
   def close(): Unit
 }

@@ -28,7 +28,7 @@ class KafkaProducer[K, V](config: ProducerConfig,
   private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
   private val producer = new Producer[K, V](config)
 
-  def send(topic: String, key: K, msg: V): Unit = send(topic, key, null, msg)
+  def send(topic: String, key: K, msg: V): Unit = send(topic, key, key, msg)
 
   def send(topic: String, key: K, partKey: Any, msg: V): Unit = {
     buffer += new KeyedMessage[K, V](topic, key, partKey, msg)

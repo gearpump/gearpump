@@ -16,17 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.api.{Checkpoint, CheckpointFilter}
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
-import org.apache.gearpump.util.Configs
+trait Source {
+  def name: String
 
-class RelaxedTimeFilter extends CheckpointFilter {
-  override def filter(checkpoint: Checkpoint,
-                      timestamp: TimeStamp, conf: Configs): Option[Long] = {
-    val delta = conf.config.getCheckpointMessageDelayMS
-    checkpoint.timeAndOffsets.toList.sortBy(_._1).find(_._1 > (timestamp - delta)).map(_._2)
-  }
+  def partition: Int
+}
+
+object Checkpoint {
+  def apply[K, V](records: List[(K, V)]): Checkpoint[K, V] = new Checkpoint(records)
+
+  def empty[K, V]: Checkpoint[K, V] = new Checkpoint(List.empty[(K, V)])
+}
+
+class Checkpoint[K, V](val records: List[(K, V)])
+
+trait CheckpointSerDe[K, V] {
+  def toKeyBytes(key: K): Array[Byte]
+  def fromKeyBytes(bytes: Array[Byte]): K
+
+  def toValueBytes(value: V): Array[Byte]
+  def fromValueBytes(bytes: Array[Byte]): V
+}
+
+trait CheckpointFilter[K, V] {
+  def filter(records: List[(K, V)], predicate: K): Option[(K, V)]
 }

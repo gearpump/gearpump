@@ -27,7 +27,7 @@ import kafka.serializer.Decoder
 import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
-import org.apache.gearpump.streaming.transaction.api.{CheckpointFilter, CheckpointManagerFactory}
+import org.apache.gearpump.streaming.transaction.api.{TimeExtractor, OffsetFilter, CheckpointManagerFactory}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
@@ -38,12 +38,12 @@ object KafkaConfig {
   val ZOOKEEPER_CONNECT = "kafka.consumer.zookeeper.connect"
   val CONSUMER_TOPICS = "kafka.consumer.topics"
   val SOCKET_TIMEOUT_MS = "kafka.consumer.socket.timeout.ms"
-  val SOCKET_RECEIVE_BUFFER_SIZE = "kafka.consumer.socket.receive.buffer.size"
+  val SOCKET_RECEIVE_BUFFER_BYTES = "kafka.consumer.socket.receive.buffer.bytes"
   val CLIENT_ID = "kafka.consumer.client.id"
   val FETCH_MESSAGE_MAX_BYTES = "kafka.consumer.fetch.message.max.bytes"
   val CONSUMER_EMIT_BATCH_SIZE = "kafka.consumer.emit.batch.size"
   val CONSUMER_DESERIALIZER_CLASS = "kafka.consumer.deserializer.class"
-  val CONSUMER_QUEUE_SIZE = "kafka.consumer.queue.size"
+  val FETCH_THRESHOLD = "kafka.consumer.fetch.threshold"
 
   // producer config
   val PRODUCER_TOPIC = "kafka.producer.topic"
@@ -60,7 +60,6 @@ object KafkaConfig {
   val CHECKPOINT_ID = "kafka.checkpoint.id"
 
   // filtering config
-  val CHECKPOINT_FILTER_CLASS = "kafka.checkpoint.filter.class"
   val CHECKPOINT_MESSAGE_DELAY_MS = "kafka.checkpoint.message.delay.ms"
 
   def apply(): Map[String, _] = new KafkaConfig().toMap
@@ -86,12 +85,14 @@ object KafkaConfig {
     def getConsumer(topicAndPartitions: Array[TopicAndPartition],
                     clientId: String = getClientId,
                     socketTimeout: Int = getSocketTimeoutMS,
-                    receiveBufferSize: Int = getSocketReceiveBufferSize,
+                    receiveBufferSize: Int = getSocketReceiveBufferBytes,
                     fetchSize: Int = getFetchMessageMaxBytes,
                     zkClient: ZkClient = getZkClient(),
-                    queueSize: Int = getConsumerQueueSize): KafkaConsumer = {
+                    fetchThreshold: Int = getFetchThreshold,
+                    timeExtractor: TimeExtractor[KafkaMessage]
+                    = TimeExtractor(_ => System.currentTimeMillis())): KafkaConsumer = {
       new KafkaConsumer(topicAndPartitions, clientId, socketTimeout,
-        receiveBufferSize, fetchSize, zkClient, queueSize)
+        receiveBufferSize, fetchSize, zkClient, fetchThreshold, timeExtractor)
     }
 
     def getZookeeperConnect = {
@@ -106,8 +107,8 @@ object KafkaConfig {
       getInt(SOCKET_TIMEOUT_MS)
     }
 
-    def getSocketReceiveBufferSize = {
-      getInt(SOCKET_RECEIVE_BUFFER_SIZE)
+    def getSocketReceiveBufferBytes = {
+      getInt(SOCKET_RECEIVE_BUFFER_BYTES)
     }
 
     def getFetchMessageMaxBytes = {
@@ -126,8 +127,8 @@ object KafkaConfig {
       getInstance[Decoder[_]](CONSUMER_DESERIALIZER_CLASS)
     }
 
-    def getConsumerQueueSize = {
-      getInt(CONSUMER_QUEUE_SIZE)
+    def getFetchThreshold = {
+      getInt(FETCH_THRESHOLD)
     }
 
     def getZkClient(zookeeperConnect: String = getZookeeperConnect,
@@ -188,10 +189,6 @@ object KafkaConfig {
 
     def getCheckpointCommitIntervalMS = {
       getInt(CHECKPOINT_COMMIT_INTERVAL_MS)
-    }
-
-    def getCheckpointFilter = {
-      getInstance[CheckpointFilter](CHECKPOINT_FILTER_CLASS)
     }
 
     def getCheckpointMessageDelayMS = {

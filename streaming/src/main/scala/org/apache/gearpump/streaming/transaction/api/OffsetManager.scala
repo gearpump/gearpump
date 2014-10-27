@@ -19,21 +19,27 @@
 package org.apache.gearpump.streaming.transaction.api
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
 import org.slf4j.{LoggerFactory, Logger}
 
 object OffsetManager {
+  object OffsetSerDe extends CheckpointSerDe[TimeStamp, Long] {
+    override def toKeyBytes(timestamp: TimeStamp): Array[Byte] = longToByteArray(timestamp)
+
+    override def toValueBytes(offset: Long): Array[Byte] = longToByteArray(offset)
+
+    override def fromKeyBytes(bytes: Array[Byte]): TimeStamp = byteArrayToLong(bytes)
+
+    override def fromValueBytes(bytes: Array[Byte]): Long = byteArrayToLong(bytes)
+  }
+
   private val LOG: Logger = LoggerFactory.getLogger(classOf[OffsetManager])
 }
-class OffsetManager(conf: Configs) {
+
+class OffsetManager(checkpointManager: CheckpointManager[TimeStamp, Long],
+                    filter: OffsetFilter) {
   import org.apache.gearpump.streaming.transaction.api.OffsetManager._
 
-  private val config = conf.config
-  private val filter = config.getCheckpointFilter
-  private val checkpointManager =
-    config.getCheckpointManagerFactory.getCheckpointManager(conf)
-  private var sources: Array[Source] = null
   private var offsetsByTimeAndSource = Map.empty[(Source, TimeStamp), Long]
 
   def start(): Unit = {
@@ -41,38 +47,50 @@ class OffsetManager(conf: Configs) {
     checkpointManager.start()
   }
 
-  def register(sources: Array[Source]) = {
-    this.sources = sources
-    checkpointManager.register(this.sources)
+  def register(sources: Array[Source]): Unit = {
+    checkpointManager.register(sources)
   }
 
-  def update(source: Source, timestamp: TimeStamp, offset: Long) = {
-    if (!offsetsByTimeAndSource.contains((source, timestamp))) {
+  /**
+   *  we only record the smallest offset at a timestamp for a source
+   *  @return whether the new offset is written
+   */
+  def update(source: Source, timestamp: TimeStamp, offset: Long): Boolean = {
+    if (!offsetsByTimeAndSource.contains((source, timestamp)) ||
+      offsetsByTimeAndSource.get((source, timestamp)).get > offset) {
       offsetsByTimeAndSource += (source, timestamp) -> offset
+      true
+    } else {
+      false
     }
   }
 
-  def checkpoint: Map[Source, Checkpoint] = {
+  def checkpoint: Map[Source, Checkpoint[TimeStamp, Long]] = {
     val checkpointsBySource = offsetsByTimeAndSource
       .groupBy(_._1._1)
-      .mapValues[Checkpoint](values => {
-        Checkpoint(values.map(entry => (entry._1._2, entry._2)))
-      })
+      .map { grouped => {
+        val source = grouped._1
+        // TODO: this is not efficient
+        val records = grouped._2
+          .map(entry => entry._1._2 -> entry._2)
+          .toList.sortBy(_._1)
+        source -> Checkpoint[TimeStamp, Long](records)
+      }
+    }
     checkpointsBySource.foreach {
-        sourceAndCheckpoint =>
-          checkpointManager.writeCheckpoint(sourceAndCheckpoint._1,
-          sourceAndCheckpoint._2)
+      sourceAndCheckpoint =>
+        checkpointManager.writeCheckpoint(sourceAndCheckpoint._1,
+          sourceAndCheckpoint._2, OffsetSerDe)
     }
 
     offsetsByTimeAndSource = Map.empty[(Source, TimeStamp), Long]
     checkpointsBySource
   }
 
-  def loadStartingOffsets(timestamp: TimeStamp): Map[Source, Long] = {
-    LOG.info("loading start offsets...")
-    sources.foldLeft(Map.empty[Source, Long]) { (accum, source) =>
-      filter.filter(checkpointManager.readCheckpoint(source), timestamp, conf) match {
-        case Some(offset) => accum + (source -> offset)
+  def loadStartOffsets(timestamp: TimeStamp): Map[Source, Long] = {
+    checkpointManager.sourceAndCheckpoints(OffsetSerDe).foldLeft(Map.empty[Source, Long]) { (accum, iter) =>
+      filter.filter(iter._2.records, timestamp) match {
+        case Some((_, offset)) => accum + (iter._1 -> offset)
         case None => accum
       }
     }
@@ -81,5 +99,7 @@ class OffsetManager(conf: Configs) {
   def close(): Unit = {
     checkpointManager.close()
   }
+
+
 
 }
