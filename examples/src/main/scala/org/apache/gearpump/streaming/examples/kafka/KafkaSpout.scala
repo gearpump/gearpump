@@ -27,10 +27,10 @@ import kafka.serializer.StringDecoder
 import kafka.utils.{Utils, ZkUtils}
 
 import org.apache.gearpump.streaming.ConfigsHelper._
-import org.apache.gearpump.streaming.transaction.api.{RelaxedTimeFilter, OffsetManager}
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
-import org.apache.gearpump.streaming.transaction.kafka.{KafkaMessage, KafkaSource, KafkaUtil}
+import org.apache.gearpump.streaming.transaction.checkpoint.{RelaxedTimeFilter, OffsetManager}
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
+import org.apache.gearpump.streaming.transaction.lib.kafka.{KafkaMessage, KafkaSource, KafkaUtil}
 import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs

@@ -16,11 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.transaction.checkpoint
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
+import org.apache.gearpump.streaming.transaction.checkpoint.api.{Checkpoint, Source, CheckpointManager, CheckpointSerDe}
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
+
 import org.slf4j.{LoggerFactory, Logger}
+
 
 object OffsetManager {
   object OffsetSerDe extends CheckpointSerDe[TimeStamp, Long] {
@@ -38,7 +41,7 @@ object OffsetManager {
 
 class OffsetManager(checkpointManager: CheckpointManager[TimeStamp, Long],
                     filter: OffsetFilter) {
-  import org.apache.gearpump.streaming.transaction.api.OffsetManager._
+  import org.apache.gearpump.streaming.transaction.checkpoint.OffsetManager._
 
   private var offsetsByTimeAndSource = Map.empty[(Source, TimeStamp), Long]
 

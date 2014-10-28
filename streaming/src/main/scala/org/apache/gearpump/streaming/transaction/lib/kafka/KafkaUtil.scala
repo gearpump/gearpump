@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import kafka.utils.ZkUtils
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer.Broker
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConsumer.Broker
 import org.I0Itec.zkclient.ZkClient
 
 object KafkaUtil {

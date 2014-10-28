@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.transaction.checkpoint.api
 
 trait Source {
   def name: String
@@ -26,6 +26,8 @@ trait Source {
 
 object Checkpoint {
   def apply[K, V](records: List[(K, V)]): Checkpoint[K, V] = new Checkpoint(records)
+
+  def unit[K, V](key: K, value: V) = new Checkpoint(List((key, value)))
 
   def empty[K, V]: Checkpoint[K, V] = new Checkpoint(List.empty[(K, V)])
 }

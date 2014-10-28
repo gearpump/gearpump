@@ -16,11 +16,6 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.transaction.storage.api
 
-import org.apache.gearpump.util.Configs
-
-
-trait CheckpointManagerFactory {
-  def getCheckpointManager[K, V](conf: Configs): CheckpointManager[K, V]
-}
+trait Store

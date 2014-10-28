@@ -16,26 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.transaction.checkpoint
 
 /**
- * CheckpointManager checkpoints message and its timestamp to a persistent system
- * such that we could replay messages around or after given time
+ * shamelessly stolen from summingbird
+ * https://github.com/twitter/summingbird/blob/develop/summingbird-core/src/main/scala/com/twitter/summingbird/TimeExtractor.scala
  */
-trait CheckpointManager[K, V] {
-  def start(): Unit
-
-  def register(sources: Array[Source]): Unit
-
-  def writeCheckpoint(source: Source, checkpoint: Checkpoint[K, V],
-                      checkpointSerDe: CheckpointSerDe[K, V]): Unit
-
-  def readCheckpoint(source: Source,
-                     checkpointSerDe: CheckpointSerDe[K, V]): Checkpoint[K, V]
-
-  def sourceAndCheckpoints(checkpointSerDe: CheckpointSerDe[K, V]): Map[Source, Checkpoint[K, V]]
-
-  def close(): Unit
+object TimeExtractor {
+  def apply[T](fn: T => Long): TimeExtractor[T] =
+    new TimeExtractor[T] {
+      override def apply(t: T) = fn(t)
+    }
 }
 
-
+trait TimeExtractor[T] extends java.io.Serializable {
+  def apply(t: T): Long
+}

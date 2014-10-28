@@ -16,19 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.checkpoint.api
 
-import kafka.common.TopicAndPartition
-import org.apache.gearpump.streaming.transaction.api.Source
+import org.apache.gearpump.util.Configs
 
-object KafkaSource {
-  def apply(name: String, partition: Int): KafkaSource = {
-    KafkaSource(TopicAndPartition(name, partition))
-  }
+
+trait CheckpointManagerFactory {
+  def getCheckpointManager[K, V](conf: Configs): CheckpointManager[K, V]
 }
-
-case class KafkaSource(topicAndPartition: TopicAndPartition) extends Source {
-  override def name: String = topicAndPartition.topic
-  override def partition: Int = topicAndPartition.partition
-}
-

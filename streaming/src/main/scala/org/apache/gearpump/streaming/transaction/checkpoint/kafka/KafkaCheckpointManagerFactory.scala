@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.checkpoint.kafka
 
-import org.apache.gearpump.streaming.transaction.api.{CheckpointManager, CheckpointManagerFactory}
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
 import org.apache.gearpump.util.Configs
+import org.apache.gearpump.streaming.transaction.checkpoint.api.{CheckpointManagerFactory, CheckpointManager}
 
 class KafkaCheckpointManagerFactory extends CheckpointManagerFactory {
   override def getCheckpointManager[K, V](conf: Configs): CheckpointManager[K, V] = {

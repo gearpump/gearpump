@@ -16,19 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.transaction.storage.api
 
-/**
- * shamelessly stolen from summingbird
- * https://github.com/twitter/summingbird/blob/develop/summingbird-core/src/main/scala/com/twitter/summingbird/TimeExtractor.scala
- */
-object TimeExtractor {
-  def apply[T](fn: T => Long): TimeExtractor[T] =
-    new TimeExtractor[T] {
-      override def apply(t: T) = fn(t)
-    }
-}
+trait KeyValueStore[K, V] extends Store {
+  def get(key: K): Option[V]
 
-trait TimeExtractor[T] extends java.io.Serializable {
-  def apply(t: T): Long
+  def put(key: K, value: V): Option[V]
+
+  def putAll(kvs: List[(K, V)]): Unit
+
+  def delete(key: K): Option[V]
+
+  def flush(): Unit
+
+  def close(): Unit
 }

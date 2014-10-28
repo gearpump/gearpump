@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import java.util.Properties
 
@@ -27,11 +27,12 @@ import kafka.serializer.Decoder
 import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
-import org.apache.gearpump.streaming.transaction.api.{TimeExtractor, OffsetFilter, CheckpointManagerFactory}
+import org.apache.gearpump.streaming.transaction.checkpoint.TimeExtractor
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import org.apache.gearpump.streaming.transaction.checkpoint.api.CheckpointManagerFactory
 
 object KafkaConfig {
   // consumer config
@@ -204,7 +205,7 @@ object KafkaConfig {
 }
 
 class KafkaConfig {
-  import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
+  import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
 
   LOG.info("Loading Kafka configurations...")
   val config = ConfigFactory.load("kafka.conf")

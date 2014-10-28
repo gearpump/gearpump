@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.examples.kafka
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}

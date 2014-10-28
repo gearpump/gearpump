@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import kafka.api.{FetchRequestBuilder, OffsetRequest}
 import kafka.consumer.SimpleConsumer

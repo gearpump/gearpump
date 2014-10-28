@@ -23,15 +23,37 @@ import java.util.Properties
 import akka.actor.Cancellable
 import kafka.producer.ProducerConfig
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeUnit
 
 import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.streaming.transaction.storage.api.StorageManager
+import org.apache.gearpump.streaming.transaction.storage.InMemoryKeyValueStore
+import org.apache.gearpump.streaming.transaction.checkpoint.api.CheckpointSerDe
 
 object KafkaBolt {
+
+  class StringCheckpointSerDe(encoding: String) extends CheckpointSerDe[String, String] {
+    override def fromValueBytes(bytes: Array[Byte]): String = {
+      new String(bytes, encoding)
+    }
+
+    override def toValueBytes(value: String): Array[Byte] = {
+      value.getBytes(encoding)
+    }
+
+    override def fromKeyBytes(bytes: Array[Byte]): String = {
+      new String(bytes, encoding)
+    }
+
+    override def toKeyBytes(key: String): Array[Byte] = {
+      key.getBytes(encoding)
+    }
+  }
+
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaBolt])
 }
 
@@ -42,11 +64,19 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
   private val config = conf.config
   private val topic = config.getProducerTopic
   private val kafkaProducer = config.getProducer[String, String]()
+  private val storageManager = new StorageManager[String, String](
+    s"${conf.appId}:${taskId}",
+    new InMemoryKeyValueStore[String, String](),
+    config.getCheckpointManagerFactory.getCheckpointManager[String, String](conf),
+    new StringCheckpointSerDe("UTF8")
+  )
+
 
   private var count = 0L
   private var lastCount = 0L
   private var lastTime = System.currentTimeMillis()
   private var scheduler: Cancellable = null
+
 
   override def onStart(taskContext : TaskContext): Unit = {
     import context.dispatcher
@@ -58,6 +88,7 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     val kvMessage = msg.msg.asInstanceOf[(String, String)]
     val key = kvMessage._1
     val value = kvMessage._2
+    storageManager.put(key, value)
     kafkaProducer.send(topic, key, value)
     count += 1
   }
