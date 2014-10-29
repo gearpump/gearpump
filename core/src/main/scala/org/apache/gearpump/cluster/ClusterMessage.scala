@@ -58,7 +58,7 @@ trait AppMasterRegisterData
 object AppMasterToMaster {
   case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resource: Resource, registerData : AppMasterRegisterData)
   case class RequestResource(appId: Int, request: ResourceRequest)
-  case class PostAppData(appId: Int, key: String, value: Any)
+  case class SaveAppData(appId: Int, key: String, value: Any)
   case class GetAppData(appId: Int, key: String)
 }
 
@@ -74,6 +74,7 @@ object MasterToAppMaster {
   case class AppMasterDataDetail(val appId: Int,  val appDescription: Application)
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
   case class GetAppDataResult(key: String, value: Any)
+  case object AppDataReceived
 }
 
 object AppMasterToWorker {

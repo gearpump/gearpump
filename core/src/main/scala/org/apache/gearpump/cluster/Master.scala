@@ -87,7 +87,7 @@ private[cluster] class Master extends Actor with Stash {
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.info("Master received AppMasterDataDetailRequest")
       appManager forward appMasterDataDetailRequest
-    case post : PostAppData =>
+    case post : SaveAppData =>
       appManager forward post
     case get : GetAppData =>
       appManager forward get

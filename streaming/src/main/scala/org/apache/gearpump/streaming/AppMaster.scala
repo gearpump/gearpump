@@ -18,8 +18,8 @@
 
 package org.apache.gearpump.streaming
 
-import java.util.concurrent.TimeUnit
 import java.util.Date
+import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.pattern.{ask, pipe}
@@ -44,9 +44,10 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-class AppMaster (config : Configs) extends Actor {
+class AppMaster (config : Configs) extends Actor with AppDataStore{
 
   import org.apache.gearpump.streaming.AppMaster._
+  import org.apache.gearpump.util.Constants.timeout
 
   val masterExecutorId = config.executorId
   var currentExecutorId = masterExecutorId + 1
@@ -73,6 +74,7 @@ class AppMaster (config : Configs) extends Actor {
 
   private var startedTasks = Set.empty[TaskId]
   private var scheduler : Cancellable = null
+  private var needToUpdateStartClock = true
 
   override def receive : Receive = null
 
@@ -94,29 +96,24 @@ class AppMaster (config : Configs) extends Actor {
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
     case AppMasterRegistered(appId, master) =>
       LOG.info(s"AppMasterRegistered received for appID: $appId")
+      killSelf.cancel()
       this.master = master
       context.watch(master)
-      killSelf.cancel()
 
       LOG.info(s"try to recover start clock")
-      master ! GetAppData(appId, START_CLOCK)
-      context.become(recoverApplicaiton)
+      get(START_CLOCK).map{clock =>
+        if(clock != null){
+          startClock = clock.asInstanceOf[TimeStamp]
+          LOG.info(s"recover start clock sucessfully and the start clock is ${new Date(startClock)}")
+        }
+        LOG.info("Sending request resource to master...")
+        val resourceRequests = taskSet.getResourceRequests()
+        resourceRequests.foreach(master ! RequestResource(appId, _))
+        context.become(messageHandler)
+      }
   }
 
   def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse appManagerMsgHandler orElse workerMsgHandler orElse clientMsgHandler orElse executorMsgHandler orElse terminationWatch
-
-  def recoverApplicaiton: Receive = {
-    case GetAppDataResult(key, value) =>
-      if(key.equals(START_CLOCK) && value != null) {
-        startClock = value.asInstanceOf[TimeStamp]
-        LOG.info(s"recover start clock sucessfully and the start clock is ${new Date(startClock)}")
-      }
-
-      LOG.info("Sending request resource to master...")
-      val resourceRequests = taskSet.getResourceRequests()
-      resourceRequests.foreach(master ! RequestResource(appId, _))
-      context.become(messageHandler)
-  }
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) => {
@@ -151,6 +148,8 @@ class AppMaster (config : Configs) extends Actor {
         taskLocations = taskLocations.empty
         startedTasks = startedTasks.empty
         context.children.foreach(_ ! RestartTasks(startClock))}
+    case AppDataReceived =>
+      needToUpdateStartClock = true
   }
 
   def executorMsgHandler: Receive = {
@@ -241,7 +240,6 @@ class AppMaster (config : Configs) extends Actor {
     }
   }
 
-  implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
   def clientMsgHandler : Receive = {
     case RecoverTasks(minClock, tasks) =>
       LOG.info(s"Restarting to clock $minClock...")
@@ -302,13 +300,29 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   private def updateStatus : Unit = {
-    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
-      master ! PostAppData(appId, START_CLOCK, clock.clock)
+    if(needToUpdateStartClock){
+      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
+        put(START_CLOCK, clock.clock)
+      }
     }
   }
 
   override def postStop : Unit = {
     scheduler.cancel()
+  }
+
+  override def put(key: String, value: Any): Unit = {
+    master ! SaveAppData(appId, key, value)
+  }
+
+  override def get(key: String): Future[Any] = {
+    (master ? GetAppData(appId, key)).asInstanceOf[Future[GetAppDataResult]].map{result =>
+      if(result.key.equals(key)) {
+        result.value
+      } else {
+        null
+      }
+    }
   }
 }
 

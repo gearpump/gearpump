@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.util
 
+import java.util.concurrent.TimeUnit
+
 object Constants {
 
   //config for construction of appMaster
@@ -54,4 +56,7 @@ object Constants {
   val START_TIME = "startTime"
 
   val HADOOP_CONF = "hadoopConf"
+
+  //the time out for Future
+  implicit val timeout = akka.util.Timeout(5, TimeUnit.SECONDS)
 }

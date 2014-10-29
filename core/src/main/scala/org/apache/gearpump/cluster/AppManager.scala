@@ -53,7 +53,7 @@ class ApplicationState(val appId : Int, val attemptId : Int, val appMasterClass 
   override def equals(other: Any): Boolean = {
     if (other.isInstanceOf[ApplicationState]) {
       val that = other.asInstanceOf[ApplicationState]
-      if (appId == that.appId && attemptId == that.attemptId && appMasterClass.equals(that.appMasterClass) && app.equals(that.app)) {
+      if (appId == that.appId && attemptId == that.attemptId) {
         true
       } else {
         false
@@ -72,6 +72,8 @@ class ApplicationState(val appId : Int, val attemptId : Int, val appMasterClass 
 private[cluster] class AppManager() extends Actor with Stash {
 
   import org.apache.gearpump.cluster.AppManager._
+  import org.apache.gearpump.util.Constants.timeout
+  import context.dispatcher
 
   private var master: ActorRef = null
   private var executorCount: Int = 0
@@ -133,7 +135,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       stash()
   }
 
-  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse terminationWatch orElse selfMsgHandler
+  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse appDataStorageHandler orElse terminationWatch
 
   def masterHAMsgHandler: Receive = {
     case update: UpdateResponse => LOG.info(s"we get update $update")
@@ -181,9 +183,6 @@ private[cluster] class AppManager() extends Actor with Stash {
       }
   }
 
-  implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
-  import context.dispatcher
-
   def appMasterMessage: Receive = {
     case RegisterAppMaster(appMaster, appId, executorId, slots, registerData: AppMasterInfo) =>
       val appMasterPath = appMaster.path.address.toString
@@ -222,15 +221,18 @@ private[cluster] class AppManager() extends Actor with Stash {
         case None =>
           sender ! AppMasterDataDetail(appId = appId, appDescription = null)
       }
-    case PostAppData(appId, key, value) =>
+  }
+
+  def appDataStorageHandler: Receive = {
+    case SaveAppData(appId, key, value) =>
       val (_, info) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(info) match {
-        case a@Some(data) =>
-          LOG.debug(s"saving application data $key for application $appId")
-          replicator ! Update(appId.toString, LWWMap(), WriteTo(writeQuorum), TIMEOUT)(_ + (key -> value))
-        case None =>
-          LOG.error(s"no match application for app$appId when saving application data")
+      if(info != null){
+        LOG.debug(s"saving application data $key for application $appId")
+        replicator ! Update(appId.toString, LWWMap(), WriteTo(writeQuorum), TIMEOUT)(_ + (key -> value))
+      } else {
+        LOG.error(s"no match application for app$appId when saving application data")
       }
+      sender ! AppDataReceived
     case GetAppData(appId, key) =>
       val appMaster = sender
       (replicator ? new Get(appId.toString, ReadFrom(readQuorum), TIMEOUT, None)).asInstanceOf[Future[ReplicatorMessage]].map{
@@ -244,7 +246,6 @@ private[cluster] class AppManager() extends Actor with Stash {
           LOG.error(s"failed to get application $appId data, the request key is $key")
           appMaster ! GetAppDataResult(key, null)
       }
-
   }
 
   def terminationWatch: Receive = {
@@ -252,8 +253,8 @@ private[cluster] class AppManager() extends Actor with Stash {
       terminate.getAddressTerminated()
       LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
       //Now we assume that the only normal way to stop the application is submitting a ShutdownApplication request
-      val application = appMasterRegistry.find{param =>
-        val (_, (actorRef, _)) = param
+      val application = appMasterRegistry.find{appInfo =>
+        val (_, (actorRef, _)) = appInfo
         actorRef.compareTo(terminate.actor) == 0
       }
       if(application.nonEmpty){
@@ -273,10 +274,10 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   def selfMsgHandler: Receive = {
     case RecoverApplication(applicationStatus) =>
-      val terminatedAppId = applicationStatus.appId
-      LOG.info(s"AppManager Recovering Application $terminatedAppId...")
+      val appId = applicationStatus.appId
+      LOG.info(s"AppManager Recovering Application $appId...")
       val appMasterClass = applicationStatus.appMasterClass
-      context.actorOf(Props(classOf[AppMasterStarter], terminatedAppId, appMasterClass, Configs.empty, applicationStatus.app), terminatedAppId.toString)
+      context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, Configs.empty, applicationStatus.app), appId.toString)
   }
 
   case class RecoverApplication(applicationStatus : ApplicationState)
