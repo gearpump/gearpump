@@ -304,6 +304,7 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
       (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
         put(START_CLOCK, clock.clock)
       }
+      needToUpdateStartClock = false
     }
   }
 
