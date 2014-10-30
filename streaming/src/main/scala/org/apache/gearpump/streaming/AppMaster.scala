@@ -75,6 +75,7 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
   private var startedTasks = Set.empty[TaskId]
   private var scheduler : Cancellable = null
   private var needToUpdateStartClock = true
+  private val store : AppDataStore = this
 
   override def receive : Receive = null
 
@@ -101,7 +102,7 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
       context.watch(master)
 
       LOG.info(s"try to recover start clock")
-      get(START_CLOCK).map{clock =>
+      store.get(START_CLOCK).map{clock =>
         if(clock != null){
           startClock = clock.asInstanceOf[TimeStamp]
           LOG.info(s"recover start clock sucessfully and the start clock is ${new Date(startClock)}")
@@ -148,8 +149,6 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
         taskLocations = taskLocations.empty
         startedTasks = startedTasks.empty
         context.children.foreach(_ ! RestartTasks(startClock))}
-    case AppDataReceived =>
-      needToUpdateStartClock = true
   }
 
   def executorMsgHandler: Receive = {
@@ -300,11 +299,8 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
   }
 
   private def updateStatus : Unit = {
-    if(needToUpdateStartClock){
-      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
-        put(START_CLOCK, clock.clock)
-      }
-      needToUpdateStartClock = false
+    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map { clock =>
+      store.put(START_CLOCK, clock.clock)
     }
   }
 
@@ -313,7 +309,10 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
   }
 
   override def put(key: String, value: Any): Unit = {
-    master ! SaveAppData(appId, key, value)
+    if(needToUpdateStartClock){
+      (master ? SaveAppData(appId, key, value)).map(_ => needToUpdateStartClock = true)
+      needToUpdateStartClock = false
+    }
   }
 
   override def get(key: String): Future[Any] = {
