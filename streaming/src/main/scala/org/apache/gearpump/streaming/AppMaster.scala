@@ -44,7 +44,7 @@ import scala.collection.mutable
 import scala.concurrent._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-class AppMaster (config : Configs) extends Actor with AppDataStore{
+class AppMaster (config : Configs) extends Actor {
 
   import org.apache.gearpump.streaming.AppMaster._
   implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -74,8 +74,7 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
 
   private var startedTasks = Set.empty[TaskId]
   private var updateScheduler : Cancellable = null
-  private var needToUpdateStartClock = true
-  private val store : AppDataStore = this
+  private var store : AppDataStore = null
 
   override def receive : Receive = null
 
@@ -100,6 +99,7 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
       killSelf.cancel()
       this.master = master
       context.watch(master)
+      store = new RemoteAppDataStore(appId, master)
 
       LOG.info(s"try to recover start clock")
       store.get(START_CLOCK).map{clock =>
@@ -306,30 +306,6 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
 
   override def postStop : Unit = {
     updateScheduler.cancel()
-  }
-
-  override def put(key: String, value: Any): Future[Any] = {
-    if(needToUpdateStartClock){
-      needToUpdateStartClock = false
-      (master ? SaveAppData(appId, key, value)).map { result =>
-        needToUpdateStartClock = true
-        result
-      }
-    } else {
-      future {
-        throw new Exception(s"Update app data $key failed")
-      }
-    }
-  }
-
-  override def get(key: String): Future[Any] = {
-    (master ? GetAppData(appId, key)).asInstanceOf[Future[GetAppDataResult]].map{result =>
-      if(result.key.equals(key)) {
-        result.value
-      } else {
-        null
-      }
-    }
   }
 }
 
