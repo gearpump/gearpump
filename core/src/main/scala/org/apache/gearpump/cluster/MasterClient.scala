@@ -23,14 +23,14 @@ import akka.pattern.ask
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{Constants, Configs}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 class MasterClient(master : ActorRef) {
-  import org.apache.gearpump.util.Constants.timeout
+  implicit val timeout = Constants.FUTURE_TIMEOUT
 
   def submitApplication(appMaster : Class[_ <: Actor], config : Configs, app : Application) : Int = {
     val result = Await.result( (master ? SubmitApplication(appMaster, config, app)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)

@@ -41,13 +41,13 @@ import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class AppMaster (config : Configs) extends Actor with AppDataStore{
 
   import org.apache.gearpump.streaming.AppMaster._
-  import org.apache.gearpump.util.Constants.timeout
+  implicit val timeout = Constants.FUTURE_TIMEOUT
 
   val masterExecutorId = config.executorId
   var currentExecutorId = masterExecutorId + 1
@@ -73,7 +73,7 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
   private var executorIdToTasks = Map.empty[Int, Set[TaskId]]
 
   private var startedTasks = Set.empty[TaskId]
-  private var scheduler : Cancellable = null
+  private var updateScheduler : Cancellable = null
   private var needToUpdateStartClock = true
   private val store : AppDataStore = this
 
@@ -81,8 +81,8 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
 
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
-    scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(5, TimeUnit.SECONDS))(updateStatus)
+    updateScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+      new FiniteDuration(5, TimeUnit.SECONDS))(updateStartClock)
 
     val dag = DAG(appDescription.dag)
 
@@ -298,20 +298,27 @@ class AppMaster (config : Configs) extends Actor with AppDataStore{
     }
   }
 
-  private def updateStatus : Unit = {
+  private def updateStartClock : Unit = {
     (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map { clock =>
       store.put(START_CLOCK, clock.clock)
     }
   }
 
   override def postStop : Unit = {
-    scheduler.cancel()
+    updateScheduler.cancel()
   }
 
-  override def put(key: String, value: Any): Unit = {
+  override def put(key: String, value: Any): Future[Any] = {
     if(needToUpdateStartClock){
-      (master ? SaveAppData(appId, key, value)).map(_ => needToUpdateStartClock = true)
       needToUpdateStartClock = false
+      (master ? SaveAppData(appId, key, value)).map { result =>
+        needToUpdateStartClock = true
+        result
+      }
+    } else {
+      future {
+        throw new Exception(s"Update app data $key failed")
+      }
     }
   }
 

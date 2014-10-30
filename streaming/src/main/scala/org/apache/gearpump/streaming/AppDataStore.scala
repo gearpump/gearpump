@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming
 import scala.concurrent._
 
 trait AppDataStore {
-  def put(key: String, value: Any)
+  def put(key: String, value: Any): Future[Any]
 
   def get(key: String) : Future[Any]
 }

@@ -72,8 +72,8 @@ class ApplicationState(val appId : Int, val attemptId : Int, val appMasterClass 
 private[cluster] class AppManager() extends Actor with Stash {
 
   import org.apache.gearpump.cluster.AppManager._
-  import org.apache.gearpump.util.Constants.timeout
   import context.dispatcher
+  implicit val timeout = Constants.FUTURE_TIMEOUT
 
   private var master: ActorRef = null
   private var executorCount: Int = 0
@@ -135,7 +135,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       stash()
   }
 
-  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse appDataStorageHandler orElse terminationWatch
+  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse appDataStoreService orElse terminationWatch
 
   def masterHAMsgHandler: Receive = {
     case update: UpdateResponse => LOG.info(s"we get update $update")
@@ -223,7 +223,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       }
   }
 
-  def appDataStorageHandler: Receive = {
+  def appDataStoreService: Receive = {
     case SaveAppData(appId, key, value) =>
       val (_, info) = appMasterRegistry.getOrElse(appId, (null, null))
       if(info != null){

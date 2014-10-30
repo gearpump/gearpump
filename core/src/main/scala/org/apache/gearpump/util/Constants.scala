@@ -58,5 +58,5 @@ object Constants {
   val HADOOP_CONF = "hadoopConf"
 
   //the time out for Future
-  implicit val timeout = akka.util.Timeout(5, TimeUnit.SECONDS)
+  val FUTURE_TIMEOUT = akka.util.Timeout(5, TimeUnit.SECONDS)
 }
