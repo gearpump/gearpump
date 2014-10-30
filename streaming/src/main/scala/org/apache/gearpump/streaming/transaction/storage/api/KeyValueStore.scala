@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.transaction.storage.api
 
-trait KeyValueStore[K, V] extends Store {
+trait KeyValueStore[K, V] {
   def get(key: K): Option[V]
 
   def put(key: K, value: V): Option[V]
@@ -30,4 +30,9 @@ trait KeyValueStore[K, V] extends Store {
   def flush(): Unit
 
   def close(): Unit
+}
+
+trait KeyValueSerDe[K, V] {
+  def toBytes(kv: (K, V)): Array[Byte]
+  def fromBytes(bytes: Array[Byte]): (K, V)
 }

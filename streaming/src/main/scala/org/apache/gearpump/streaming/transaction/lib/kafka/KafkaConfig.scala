@@ -28,6 +28,7 @@ import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
 import org.apache.gearpump.streaming.transaction.checkpoint.TimeExtractor
+import org.apache.gearpump.streaming.transaction.storage.api.KeyValueStoreFactory
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
@@ -62,6 +63,9 @@ object KafkaConfig {
 
   // filtering config
   val CHECKPOINT_MESSAGE_DELAY_MS = "kafka.checkpoint.message.delay.ms"
+
+  // storage config
+  val KV_STORE_FACTORY = "kafka.storage.kv.store.factory"
 
   def apply(): Map[String, _] = new KafkaConfig().toMap
 
@@ -198,6 +202,10 @@ object KafkaConfig {
 
     def getCheckpointId = {
       getInt(CHECKPOINT_ID)
+    }
+
+    def getKeyValueStoreFactory = {
+      getInstance[KeyValueStoreFactory](KV_STORE_FACTORY)
     }
   }
 

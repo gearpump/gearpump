@@ -16,36 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.storage
+package org.apache.gearpump.streaming.transaction.storage.inmemory
 
-import java.util
-import org.apache.gearpump.streaming.transaction.storage.api.KeyValueStore
+import org.apache.gearpump.streaming.transaction.storage.api.{KeyValueStore, KeyValueStoreFactory}
+import org.apache.gearpump.util.Configs
 
-object InMemoryKeyValueStore {
-
-}
-
-class InMemoryKeyValueStore[K, V]() extends KeyValueStore[K, V] {
-
-  private val store = new util.HashMap[K, V]
-
-  override def close(): Unit = Unit
-
-  override def flush(): Unit = Unit
-
-  override def delete(key: K): Option[V] = {
-    Some(store.remove(key))
-  }
-
-  override def putAll(kvs: List[(K, V)]): Unit = {
-    kvs.foreach(kv => store.put(kv._1, kv._2))
-  }
-
-  override def put(key: K, value: V): Option[V] = {
-    Option(store.put(key, value))
-  }
-
-  override def get(key: K): Option[V] = {
-    Option(store.get(key))
+class InMemoryKeyValueStoreFactory extends KeyValueStoreFactory {
+  override def getKeyValueStore[K, V](conf: Configs): KeyValueStore[K, V] = {
+    new InMemoryKeyValueStore[K, V]
   }
 }

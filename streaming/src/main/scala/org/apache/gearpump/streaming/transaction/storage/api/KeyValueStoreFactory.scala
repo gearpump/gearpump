@@ -20,6 +20,6 @@ package org.apache.gearpump.streaming.transaction.storage.api
 
 import org.apache.gearpump.util.Configs
 
-trait StoreFactory {
-  def getStore(conf: Configs): Store
+trait KeyValueStoreFactory {
+  def getKeyValueStore[K, V](conf: Configs): KeyValueStore[K, V]
 }

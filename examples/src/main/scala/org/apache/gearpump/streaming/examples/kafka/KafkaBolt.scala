@@ -22,35 +22,35 @@ import java.util.Properties
 
 import akka.actor.Cancellable
 import kafka.producer.ProducerConfig
-import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.transaction.storage.inmemory.InMemoryKeyValueStore
+import org.apache.gearpump.{Message, TimeStamp}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeUnit
 
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.gearpump.streaming.transaction.storage.api.StorageManager
-import org.apache.gearpump.streaming.transaction.storage.InMemoryKeyValueStore
+import org.apache.gearpump.streaming.transaction.storage.api.{KeyValueSerDe, StorageManager}
 import org.apache.gearpump.streaming.transaction.checkpoint.api.CheckpointSerDe
 
 object KafkaBolt {
 
-  class StringCheckpointSerDe(encoding: String) extends CheckpointSerDe[String, String] {
-    override def fromValueBytes(bytes: Array[Byte]): String = {
-      new String(bytes, encoding)
+  class String2SerDe(encoding: String) extends KeyValueSerDe[String, String] {
+    override def toBytes(kv: (String, String)): Array[Byte] = {
+      val (key, value) = kv
+      val keyBytes = intToByteArray(key.length) ++ key.getBytes(encoding)
+      val valueBytes = intToByteArray(value.length) ++ value.getBytes(encoding)
+      keyBytes ++ valueBytes
     }
 
-    override def toValueBytes(value: String): Array[Byte] = {
-      value.getBytes(encoding)
-    }
-
-    override def fromKeyBytes(bytes: Array[Byte]): String = {
-      new String(bytes, encoding)
-    }
-
-    override def toKeyBytes(key: String): Array[Byte] = {
-      key.getBytes(encoding)
+    override def fromBytes(bytes: Array[Byte]): (String, String) = {
+      val keyLen = byteArrayToInt(bytes.take(4))
+      val key = new String(bytes.drop(4).take(keyLen), encoding)
+      val valLen = byteArrayToInt(bytes.drop(4 + keyLen).take(4))
+      val value = new String(bytes.drop(4 + keyLen + 4).take(valLen))
+      (key, value)
     }
   }
 
@@ -65,10 +65,10 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
   private val topic = config.getProducerTopic
   private val kafkaProducer = config.getProducer[String, String]()
   private val storageManager = new StorageManager[String, String](
-    s"${conf.appId}:${taskId}",
-    new InMemoryKeyValueStore[String, String](),
-    config.getCheckpointManagerFactory.getCheckpointManager[String, String](conf),
-    new StringCheckpointSerDe("UTF8")
+    s"${conf.appId}_${taskId}",
+    config.getKeyValueStoreFactory.getKeyValueStore[String, String](conf),
+    new String2SerDe("UTF8"),
+    config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, (String, String)](conf)
   )
 
 
@@ -82,6 +82,7 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput)
+    storageManager.start()
   }
 
   override def onNext(msg: Message): Unit = {

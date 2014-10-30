@@ -18,29 +18,61 @@
 
 package org.apache.gearpump.streaming.transaction.storage.api
 
-import org.apache.gearpump.streaming.transaction.checkpoint.api.{CheckpointSerDe, Checkpoint, CheckpointManager}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.transaction.checkpoint.api.{CheckpointSerDe, Checkpoint, CheckpointManager, Source}
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
+
+object StorageManager {
+  class StoreCheckpointSerDe[ K, V](keyValueSerDe: KeyValueSerDe[K, V])
+    extends CheckpointSerDe[TimeStamp, (K, V)] {
+    override def toKeyBytes(key: TimeStamp): Array[Byte] = {
+      longToByteArray(key)
+    }
+
+    override def toValueBytes(value: (K, V)): Array[Byte] = {
+      keyValueSerDe.toBytes(value)
+    }
+
+    override def fromKeyBytes(bytes: Array[Byte]): TimeStamp = {
+      byteArrayToLong(bytes)
+    }
+
+    override def fromValueBytes(bytes: Array[Byte]): (K, V) = {
+      keyValueSerDe.fromBytes(bytes)
+    }
+  }
+}
 
 class StorageManager[K, V](id: String,
                            store: KeyValueStore[K, V],
-                           checkpointManager: CheckpointManager[K, V],
-                           checkpointSerDe: CheckpointSerDe[K, V])
+                           keyValueSerDe: KeyValueSerDe[K, V],
+                           checkpointManager: CheckpointManager[TimeStamp, (K, V)]
+                           )
   extends KeyValueStore[K, V] {
+  import org.apache.gearpump.streaming.transaction.storage.api.StorageManager._
 
-  var states: Map[K, V] = Map.empty[K, V]
+  private var states: Map[K, V] = Map.empty[K, V]
+  private val source : Source = new Source {
+    def name: String = id
+    def partition: Int = 0
+  }
+  private val checkpointSerDe = new StoreCheckpointSerDe[K, V](keyValueSerDe)
 
-  def checkpoint: Checkpoint[K, V] = {
-    val kafkaSource: KafkaSource = KafkaSource(getStorageTopic, 0)
-    val checkpoint: Checkpoint[K, V] = Checkpoint(states.toList)
+  def start(): Unit = {
+    checkpointManager.register(Array(source))
+    checkpointManager.start()
+  }
+
+  def checkpoint(timestamp: TimeStamp): Checkpoint[TimeStamp, (K, V)] = {
+    val checkpoint = Checkpoint(states.map(kv => (timestamp, kv)).toList)
     states = Map.empty[K, V]
-    checkpointManager.writeCheckpoint(kafkaSource, checkpoint, checkpointSerDe)
+    checkpointManager.writeCheckpoint(source, checkpoint, checkpointSerDe)
     checkpoint
   }
 
-  def restore: Checkpoint[K, V] = {
-    val kafkaSource: KafkaSource = KafkaSource(getStorageTopic, 0)
-    val checkpoint: Checkpoint[K, V] = checkpointManager.readCheckpoint(kafkaSource, checkpointSerDe)
-    store.putAll(checkpoint.records)
+  def restore(timestamp: TimeStamp): Checkpoint[TimeStamp, (K, V)] = {
+    val checkpoint = checkpointManager.readCheckpoint(source, checkpointSerDe)
+    store.putAll(checkpoint.records.filter(_._1 == timestamp).map(_._2))
     checkpoint
   }
 
@@ -68,9 +100,5 @@ class StorageManager[K, V](id: String,
 
   override def get(key: K): Option[V] = {
     store.get(key)
-  }
-
-  private def getStorageTopic: String = {
-    s"storage_${id}"
   }
 }
