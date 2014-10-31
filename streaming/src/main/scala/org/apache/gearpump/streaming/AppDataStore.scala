@@ -32,22 +32,11 @@ trait AppDataStore {
 }
 
 class RemoteAppDataStore(appId: Int, master: ActorRef) extends AppDataStore {
-  private var needToUpdateStartClock = true
   implicit val timeout = Constants.FUTURE_TIMEOUT
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override def put(key: String, value: Any): Future[Any] = {
-    if(needToUpdateStartClock){
-      needToUpdateStartClock = false
-      master.ask(SaveAppData(appId, key, value)).map { result =>
-        needToUpdateStartClock = true
-        result
-      }
-    } else {
-      future {
-        throw new Exception(s"Update app data $key failed")
-      }
-    }
+    master.ask(SaveAppData(appId, key, value))
   }
 
   override def get(key: String): Future[Any] = {

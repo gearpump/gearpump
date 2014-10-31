@@ -81,7 +81,7 @@ class AppMaster (config : Configs) extends Actor {
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
     updateScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(5, TimeUnit.SECONDS))(updateStartClock)
+      new FiniteDuration(5, TimeUnit.SECONDS))(snapshotStartClock)
 
     val dag = DAG(appDescription.dag)
 
@@ -298,7 +298,7 @@ class AppMaster (config : Configs) extends Actor {
     }
   }
 
-  private def updateStartClock : Unit = {
+  private def snapshotStartClock : Unit = {
     (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map { clock =>
       store.put(START_CLOCK, clock.clock)
     }
