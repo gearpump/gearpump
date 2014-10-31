@@ -22,15 +22,14 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.Handler.DefaultHandler
-import org.apache.gearpump.streaming.task.{MessageHandler, TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.HashMap
 import scala.concurrent.duration.FiniteDuration
 
-class Sum (conf : Configs) extends TaskActor(conf) with MessageHandler[String] {
+class Sum (conf : Configs) extends TaskActor(conf) {
   import org.apache.gearpump.streaming.examples.wordcount.Sum._
 
   private val map : HashMap[String, Long] = new HashMap[String, Long]()
@@ -47,18 +46,13 @@ class Sum (conf : Configs) extends TaskActor(conf) with MessageHandler[String] {
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
   }
 
-  def onNext(msg: Message): Unit = {
-    DefaultHandler
-    doNext(msg)
-  }
-
-  def next(msg : String) : Unit = {
+  override def onNext[T](msg : Message[T]) : Unit = {
     if (null == msg) {
       return
     }
-    val current = map.getOrElse(msg, 0L)
+    val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
     wordCount += 1
-    map.put(msg, current + 1)
+    map.put(msg.msg.asInstanceOf[String], current + 1)
   }
 
   override def onStop() : Unit = {
@@ -76,3 +70,25 @@ class Sum (conf : Configs) extends TaskActor(conf) with MessageHandler[String] {
 object Sum {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Sum])
 }
+
+// Not used right now - experimenting with lifting message handling out of TaskActor
+trait MessageHandler[M[_]] {
+  def onNext[T<%java.io.Serializable,U<%java.io.Serializable](t: T): M[U]
+}
+case class SumHandler extends MessageHandler[Message] {
+  private val map : HashMap[String, Long] = new HashMap[String, Long]()
+
+  private var wordCount : Long = 0
+  private var snapShotTime : Long = System.currentTimeMillis()
+  private var snapShotWordCount : Long = 0
+
+  override def onNext[T<%java.io.Serializable,U<%java.io.Serializable](msg:T): Message[U] = {
+    val current = map.getOrElse(msg.asInstanceOf[String], 0L)
+    wordCount += 1
+    map.put(msg.asInstanceOf[String], current + 1)
+    Message[U](wordCount.asInstanceOf[U],System.currentTimeMillis())
+  }
+
+}
+
+

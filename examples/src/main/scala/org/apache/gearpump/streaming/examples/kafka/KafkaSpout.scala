@@ -18,25 +18,17 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import kafka.api.{FetchRequestBuilder, TopicMetadataRequest}
-import kafka.common.ErrorMapping._
 import kafka.common.TopicAndPartition
-import kafka.consumer.SimpleConsumer
-import kafka.message.MessageAndOffset
 import kafka.serializer.StringDecoder
-import kafka.utils.{Utils, ZkUtils}
-
+import kafka.utils.ZkUtils
 import org.apache.gearpump.streaming.ConfigsHelper._
-import org.apache.gearpump.streaming.transaction.api.{Checkpoint, OffsetManager}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
+import org.apache.gearpump.streaming.transaction.api.{OffsetManager, RelaxedTimeFilter}
 import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.kafka.KafkaUtil._
-import org.apache.gearpump.streaming.transaction.kafka.{KafkaMessage, KafkaSource, KafkaUtil}
-import org.apache.gearpump.{TimeStamp, Message}
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.transaction.kafka.KafkaSource
 import org.apache.gearpump.util.Configs
+import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.collection.JavaConversions._
 
 
 object KafkaSpout {
@@ -46,7 +38,7 @@ object KafkaSpout {
   }
 
   case class Broker(host: String, port: Int) {
-    override def toString = s"${host}:${port}"
+    override def toString = s"$host:$port"
   }
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaSpout])
@@ -76,36 +68,45 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
 
   private val consumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
   private val decoder = new StringDecoder()
-  private val offsetManager = new OffsetManager(conf)
+  private val offsetManager = new OffsetManager(
+    config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, Long](conf),
+    new RelaxedTimeFilter(config.getCheckpointMessageDelayMS))
   private val commitIntervalMS = config.getCheckpointCommitIntervalMS
   private var lastCommitTime = System.currentTimeMillis()
 
   override def onStart(taskContext: TaskContext): Unit = {
     offsetManager.register(topicAndPartitions.map(KafkaSource(_)))
     offsetManager.start()
-    offsetManager.loadStartingOffsets(taskContext.startTime).foreach{
+    offsetManager.loadStartOffsets(taskContext.startTime).foreach{
       entry =>
         val source = entry._1
         val offset = entry._2
         val topicAndPartition = TopicAndPartition(source.name, source.partition)
+        LOG.info(s"set start offsets for $topicAndPartition")
         consumer.setStartOffset(topicAndPartition, offset)
     }
     consumer.start()
     self ! Message("start", System.currentTimeMillis())
   }
 
-  override def onNext(msg: Message): Unit = {
+  override def onNext[T](msg: Message[T]): Unit = {
 
     @annotation.tailrec
     def fetchAndEmit(msgNum: Int, tpIndex: Int): Unit = {
       if (msgNum < emitBatchSize) {
-        val kafkaMsg = consumer.nextMessage(topicAndPartitions(tpIndex))
-        if (kafkaMsg != null) {
-          val timestamp = System.currentTimeMillis()
-          output(new Message(decoder.fromBytes(kafkaMsg.msg)))
+        val msgWithTime = consumer.nextMessageWithTime(topicAndPartitions(tpIndex))
+        if (msgWithTime != null) {
+          val kafkaMsg = msgWithTime._1
+          val timestamp =  msgWithTime._2
+          output(new Message(decoder.fromBytes(kafkaMsg.msg), timestamp))
           offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
         } else {
-          LOG.info(s"no more messages from ${topicAndPartitions(tpIndex)}")
+          LOG.debug(s"no more messages from ${topicAndPartitions(tpIndex)}")
+        }
+        if (shouldCommitCheckpoint) {
+          LOG.info("committing checkpoint...")
+          offsetManager.checkpoint
+          lastCommitTime = System.currentTimeMillis()
         }
         // poll message from each TopicAndPartition in a round-robin way
         // TODO: make it configurable
@@ -117,11 +118,6 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
       }
     }
     fetchAndEmit(0, 0)
-    if (shouldCommitCheckpoint) {
-      LOG.info("committing checkpoint...")
-      offsetManager.checkpoint
-      lastCommitTime = System.currentTimeMillis()
-    }
     self ! Message("continue", Message.noTimeStamp)
   }
 

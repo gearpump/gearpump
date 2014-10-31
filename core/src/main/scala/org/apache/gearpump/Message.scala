@@ -18,7 +18,7 @@
 
 package org.apache.gearpump
 
-case class Message(msg: java.io.Serializable, timestamp: TimeStamp = Message.noTimeStamp)
+case class Message[T<%java.io.Serializable](msg: T, timestamp: TimeStamp = Message.noTimeStamp)
 
 object Message {
   val noTimeStamp : TimeStamp = 0L

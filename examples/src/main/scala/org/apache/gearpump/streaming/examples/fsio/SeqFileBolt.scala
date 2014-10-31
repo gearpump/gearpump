@@ -22,8 +22,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.examples.fsio.SeqFileBolt._
-import org.apache.gearpump.streaming.task.Handler.DefaultHandler
-import org.apache.gearpump.streaming.task.{Handler, MessageHandler, TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
@@ -35,10 +34,10 @@ object SeqFileBolt {
   val OUTPUT_PATH = "outputpath"
 }
 
-class SeqFileBolt(config: HadoopConfig) extends TaskActor(config) with MessageHandler[String] {
+class SeqFileBolt(config: HadoopConfig) extends TaskActor(config) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileBolt])
   val outputPath = new Path(config.getString(OUTPUT_PATH) + System.getProperty("file.separator") + this.taskId)
-  var writer: SequenceFile.Writer = null;
+  var writer: SequenceFile.Writer = null
   val textClass = new Text().getClass
   val key = new Text()
   val value = new Text()
@@ -61,13 +60,8 @@ class SeqFileBolt(config: HadoopConfig) extends TaskActor(config) with MessageHa
     LOG.info("sequence file bolt initiated")
   }
 
-  def onNext(msg: Message): Unit = {
-    DefaultHandler
-    doNext(msg)
-  }
-
-  def next(msg: String): Unit = {
-    val kv = msg.split("\\+\\+")
+  def onNext[T](msg: Message[T]): Unit = {
+    val kv = msg.msg.asInstanceOf[String].split("\\+\\+")
     key.set(kv(0))
     value.set(kv(1))
     writer.append(key, value)

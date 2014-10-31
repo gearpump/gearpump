@@ -22,8 +22,7 @@ import java.util.Random
 
 import akka.serialization.SerializationExtension
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.Handler.DefaultHandler
-import org.apache.gearpump.streaming.task.{Handler, MessageHandler, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.util.Configs
 
 object SOLSpout {
@@ -31,7 +30,7 @@ object SOLSpout {
   val Start = Message("start")
 }
 
-class SOLSpout(conf : Configs) extends TaskActor(conf) with MessageHandler[String] {
+class SOLSpout(conf : Configs) extends TaskActor(conf) {
   import org.apache.gearpump.streaming.examples.sol.SOLSpout._
 
   private val sizeInBytes = conf.getInt(SOLSpout.BYTES_PER_MESSAGE)
@@ -68,12 +67,7 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) with MessageHandler[Strin
     }
   }
 
-  def onNext(msg: Message): Unit = {
-    DefaultHandler
-    doNext(msg)
-  }
-
-  def next(msg : String) : Unit = {
+  override def onNext[T](msg : Message[T]) : Unit = {
     val message = messages(rand.nextInt(messages.length))
     println(s"SOLSpout next!!! $message")
     val num = new Integer(message.substring(0,6))
@@ -90,7 +84,7 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) with MessageHandler[Strin
   }
 
   // messageSourceMinClock represent the min clock of the message source
-  private def messageSourceMinClock : Message = {
+  private def messageSourceMinClock : Message[String] = {
     Message("tick", System.currentTimeMillis())
   }
 }

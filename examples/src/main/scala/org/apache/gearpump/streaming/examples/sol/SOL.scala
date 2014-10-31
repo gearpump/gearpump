@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.examples.sol
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.partitioner.{Partitioner, ShufflePartitioner}
 import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription, _}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
 object SOL extends App with ArgumentsParser {
@@ -32,9 +32,10 @@ object SOL extends App with ArgumentsParser {
     "bolt"-> CLIOption[Int]("<bolt number>", required = false, defaultValue = Some(2)),
     "runseconds" -> CLIOption[Int]("<run seconds>", required = false, defaultValue = Some(60)),
     "bytesPerMessage" -> CLIOption[Int]("<size of each message>", required = false, defaultValue = Some(100)),
-    "stages"-> CLIOption[Int]("<how many stages to run>", required = false, defaultValue = Some(2)))
+    "stages"-> CLIOption[Int]("<how many stages to run>", required = false, defaultValue = Some(2)),
+    "jar"-> CLIOption[String]("<jar file holding TaskActors>", required = false, defaultValue = Some("examples/target/gearpump-examples-0.1.jar")))
 
-  start()
+      start()
 
   def start(): Unit = {
 
@@ -46,34 +47,42 @@ object SOL extends App with ArgumentsParser {
     val bytesPerMessage = config.getInt("bytesPerMessage")
     val stages = config.getInt("stages")
     val runseconds = config.getInt("runseconds")
+    val jar = config.getString("jar")
 
     Console.out.println("Master URL: " + masters)
-    val context = ClientContext(masters)
 
-    val appId = context.submit(getApplication(spout, bolt, bytesPerMessage, stages))
-    System.out.println(s"We get application id: $appId")
+    getApplication(spout, bolt, bytesPerMessage, stages, jar).map(application => {
+      val context = ClientContext(masters)
 
-    Thread.sleep(runseconds * 1000)
+      val appId = context.submit(application)
+      System.out.println(s"We get application id: $appId")
 
-    System.out.println(s"Shutting down application $appId")
+      Thread.sleep(runseconds * 1000)
 
-    context.shutdown(appId)
-    context.destroy()
+      System.out.println(s"Shutting down application $appId")
+
+      context.shutdown(appId)
+      context.destroy()
+    })
+    System.out.println("Failed to load application")
+
   }
 
-  def getApplication(spoutNum : Int, boltNum : Int, bytesPerMessage : Int, stages : Int) : AppDescription = {
+  def getApplication(spoutNum : Int, boltNum : Int, bytesPerMessage : Int, stages : Int, jarName: String) : Option[AppDescription] = {
     val config = Configs.empty.withValue(SOLSpout.BYTES_PER_MESSAGE, bytesPerMessage)
     val partitioner = new ShufflePartitioner()
-    val spout = TaskDescription(classOf[SOLSpout], spoutNum)
-    val bolt = TaskDescription(classOf[SOLBolt], boltNum)
-
-    var computation : Any = spout ~ partitioner ~> bolt
-    computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
-      c ~ partitioner ~> bolt.copy()
-    }
-
-    val dag = Graph[TaskDescription, Partitioner](computation)
-    val app = AppDescription("sol", config, dag)
+    val jar = new java.io.File(jarName)
+    val app: Option[AppDescription] = jar.map(jar => {
+      val spout = TaskDescription(classOf[SOLSpout].getCanonicalName, spoutNum, jar)
+      val bolt = TaskDescription(classOf[SOLBolt].getCanonicalName, boltNum, jar)
+      var computation: Any = spout ~ partitioner ~> bolt
+      computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
+        c ~ partitioner ~> bolt.copy()
+      }
+      val dag = Graph[TaskDescription, Partitioner](computation)
+      val app = AppDescription("sol", config, dag)
+      app
+    })
     app
   }
 }

@@ -18,12 +18,14 @@
 
 package org.apache.gearpump.streaming
 
+import java.net.{URL, URLClassLoader}
+
 import akka.actor.{Actor, Props, Terminated}
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.task.{CleanTaskLocations, TaskLocations}
+import org.apache.gearpump.streaming.task.{TaskActor, CleanTaskLocations, TaskLocations}
 import org.apache.gearpump.util.{Constants, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -46,8 +48,16 @@ class Executor(config : Configs)  extends Actor {
   def receive : Receive = appMasterMsgHandler orElse terminationWatch
 
   def appMasterMsgHandler : Receive = {
-    case LaunchTask(taskId, config, taskClass) => {
-      LOG.info(s"Launching Task $taskId for app: $appId, $taskClass")
+    case LaunchTask(taskId, config, taskDescription) => {
+      LOG.info(s"Launching Task $taskId for app: $appId, ${taskDescription.taskClass}")
+      var fos = new java.io.FileOutputStream(taskDescription.taskJar.name)
+      new java.io.PrintStream(fos).write(taskDescription.taskJar.bytes)
+      fos.close
+      var classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:"+taskDescription.taskJar.name)),
+        Thread.currentThread().getContextClassLoader())
+      LOG.info(s"Loading ${taskDescription.taskClass} as subClass of TaskActor")
+      val taskClass = classLoader.loadClass(taskDescription.taskClass).asSubclass(classOf[TaskActor])
+      LOG.info(s"Loaded ${taskClass.getCanonicalName}")
       val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
       val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }

@@ -30,24 +30,14 @@ import org.apache.gearpump.util.Configs
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
 
-trait MessageHandler[T] {
-  this: TaskActor =>
-  def doNext(msg:Message)(implicit handler:Handler[T]): Unit = {
-    next(handler.handler(msg.msg))
-  }
-  def next(t:T):Unit
-}
-case class Handler[T](handler:PartialFunction[java.io.Serializable,T])
-object Handler {
-  implicit object DefaultHandler extends Handler[String](
-  {
-    case a: String =>
-      a
-  }
-  )
+trait PipeLine[M[_]] {
+  TaskActor =>
+  def onNext[T](msg : M[T]) : Unit
 }
 
-abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
+abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport with PipeLine[Message] {
+  type Serializable = java.io.Serializable
+
   import org.apache.gearpump.streaming.task.TaskActor._
 
   private val appId = conf.appId
@@ -64,7 +54,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   private var outputTaskIds : Array[TaskId] = null
   private var flowControl : FlowControl = null
-  private var clockTracker : ClockTracker = null
+  private var clockTracker : ClockTracker[java.io.Serializable] = null
 
   private var unackedClockSyncTimestamp : TimeStamp = 0
   private var needSyncToClockService = false
@@ -78,11 +68,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   def onStart(context : TaskContext) : Unit
 
-  def onNext(msg : Message) : Unit
-
   def onStop() : Unit = {}
 
-  def output(msg : Message) : Unit = {
+  def output[T<:java.io.Serializable](msg : Message[T]) : Unit = {
     if (null == outputTaskIds || outputTaskIds.length == 0) {
       return
     }
@@ -107,6 +95,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   }
 
   final override def postStop : Unit = {
+    onStop()
   }
 
   final override def preStart() : Unit = {
@@ -173,7 +162,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
     }
   }
 
-  private def doHandleMessage : Unit = {
+  private def doHandleMessage: Unit = {
     var done = false
     while (flowControl.allowSendingMoreMessages() && !done) {
       val msg = queue.poll()
@@ -182,7 +171,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
           case AckRequest(taskId, seq) =>
             transport(Ack(this.taskId, seq), taskId)
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
-          case m : Message =>
+          case m : Message[Serializable] =>
             val updated = clockTracker.onProcess(m)
             if (updated) {
               tryToSyncToClockService
@@ -213,7 +202,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
         tryToSyncToClockService
       }
       doHandleMessage
-    case msg : Message =>
+    case msg : Message[Serializable] =>
       if (msg.timestamp != Message.noTimeStamp) {
         latencies.update(System.currentTimeMillis() - msg.timestamp)
       }
@@ -257,7 +246,7 @@ object TaskActor {
       new MergedPartitioner(partitioners :+ partitioner, newPartitionStart, newPartitionEnd)
     }
 
-    def getPartitions(msg : Message) : Array[Int] = {
+    def getPartitions[T<:java.io.Serializable](msg : Message[T]) : Array[Int] = {
       var start = 0
       val length = partitioners.length
       val result = new Array[Int](length)

@@ -18,6 +18,10 @@
 
 package org.apache.gearpump.streaming.transaction.kafka
 
+import kafka.utils.ZkUtils
+import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer.Broker
+import org.I0Itec.zkclient.ZkClient
+
 object KafkaUtil {
 
   def longToByteArray(long: Long): Array[Byte] = {
@@ -26,5 +30,14 @@ object KafkaUtil {
 
   def byteArrayToLong(bytes: Array[Byte]): Long = {
     java.nio.ByteBuffer.wrap(bytes).getLong
+  }
+
+
+  def getBroker(zkClient: ZkClient, topic: String, partition: Int): Broker = {
+    val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
+      .getOrElse(throw new Exception(s"leader not available for TopicAndPartition(${topic}, ${partition})"))
+    val broker = ZkUtils.getBrokerInfo(zkClient, leader)
+      .getOrElse(throw new Exception(s"broker info not found for leader ${leader}"))
+    Broker(broker.host, broker.port)
   }
 }

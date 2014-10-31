@@ -23,25 +23,25 @@ import org.apache.gearpump.{Message, TimeStamp}
 /**
  * Clocktracker will keep track of all pending messages on current task
  */
-class ClockTracker(flowControl : FlowControl)  {
+class ClockTracker[T<:java.io.Serializable](flowControl : FlowControl)  {
 import org.apache.gearpump.streaming.task.ClockTracker._
 
   private var minClock : TimeStamp = Long.MaxValue
-  private var candidateMinClock : MinClockSince = null
+  private var candidateMinClock: MinClockSince[T] = null
 
-  private var newReceivedMsg : Message = null
+  private var newReceivedMsg : Message[java.io.Serializable] = null
 
   private var unprocessedMsgCount : Long = 0
 
   /**
    * This method may replace the msg with a new message.
    */
-  def onReceive(msg: Message): Message = {
+  def onReceive(msg: Message[T]): Message[T] = {
     if (msg.timestamp == Message.noTimeStamp) {
       return msg
     }
 
-    newReceivedMsg = msg
+    newReceivedMsg = msg.asInstanceOf[Message[java.io.Serializable]]
     unprocessedMsgCount += 1
     minClock = Math.min(minClock, msg.timestamp)
 
@@ -56,8 +56,8 @@ import org.apache.gearpump.streaming.task.ClockTracker._
        * MinClockSince will still be able to differentiate these three messages
        * by testing object.eq.
        */
-      val shadowMsg = msg.copy()
-      candidateMinClock = new MinClockSince(shadowMsg, flowControl)
+      val shadowMsg = msg.copy().asInstanceOf[Message[T]]
+      candidateMinClock = new MinClockSince[T](shadowMsg, flowControl)
       shadowMsg
     } else {
       candidateMinClock.receiveNewMsg(msg)
@@ -68,7 +68,7 @@ import org.apache.gearpump.streaming.task.ClockTracker._
   /**
    * return true if there are changes to self min clock
    */
-  def onProcess(msg: Message): Boolean = {
+  def onProcess(msg: Message[T]): Boolean = {
     if (msg.timestamp == Message.noTimeStamp) {
       return false
     }
@@ -125,17 +125,17 @@ import org.apache.gearpump.streaming.task.ClockTracker._
 
 object ClockTracker {
 
-  class MinClockSince(val head: Message, flow: FlowControl) {
+  class MinClockSince[T<:java.io.Serializable](val head: Message[T], flow: FlowControl) {
     private var minClock = head.timestamp
     private var ackThreshold: Array[Long] = null
 
     private var firstMsgProcessed = false
 
-    def receiveNewMsg(msg: Message): Unit = {
+    def receiveNewMsg(msg: Message[T]): Unit = {
       minClock = Math.min(minClock, msg.timestamp)
     }
 
-    def processMsg(msg: Message): Option[TimeStamp] = {
+    def processMsg(msg: Message[T]): Option[TimeStamp] = {
       if (flow.allMessagesAcked) {
         Some(minClock)
       } else if (!firstMsgProcessed && msg.eq(this.head)) {

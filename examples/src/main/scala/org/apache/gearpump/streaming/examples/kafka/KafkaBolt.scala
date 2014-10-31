@@ -18,32 +18,22 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import java.util.Properties
-
-import akka.actor.Cancellable
-import kafka.producer.ProducerConfig
-import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.examples.kafka.KafkaBolt.KafkaBoltHandler
-import org.apache.gearpump.streaming.task.{Handler, MessageHandler, TaskContext, TaskActor}
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
-import org.apache.gearpump.util.Configs
-import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeUnit
 
+import akka.actor.Cancellable
+import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
+import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
+import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.concurrent.duration.FiniteDuration
 
 object KafkaBolt {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaBolt])
-  type Tuple = (String,String)
-  implicit object KafkaBoltHandler extends Handler[(String,String)](
-  {
-    case a: Tuple =>
-      a
-  }
-  )
 }
 
-class KafkaBolt(conf: Configs) extends TaskActor(conf) with MessageHandler[(String,String)]{
+class KafkaBolt(conf: Configs) extends TaskActor(conf) {
 
   import org.apache.gearpump.streaming.examples.kafka.KafkaBolt._
 
@@ -62,12 +52,9 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) with MessageHandler[(Stri
       new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput)
   }
 
-  override def onNext(msg: Message): Unit = {
-    KafkaBoltHandler
-    doNext(msg)
-  }
-
-  def next(kvMessage:(String,String)): Unit = {
+  override def onNext[T](msg: Message[T]): Unit = {
+    type Tuple = (String,String)
+    val kvMessage = msg.msg.asInstanceOf[Tuple]
     val key = kvMessage._1
     val value = kvMessage._2
     kafkaProducer.send(topic, key, value)
@@ -81,7 +68,7 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) with MessageHandler[(Stri
 
   private def reportThroughput : Unit = {
     val current = System.currentTimeMillis()
-    LOG.info(s"Task $taskId Throughput: ${((count - lastCount), ((current - lastTime) / 1000))} (messages, second)")
+    LOG.info(s"Task $taskId; Throughput: ${((count - lastCount), ((current - lastTime) / 1000))} (messages, second)")
     lastCount = count
     lastTime = current
   }

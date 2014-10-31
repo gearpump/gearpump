@@ -19,22 +19,16 @@
 package org.apache.gearpump.streaming.examples.kafka
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.Handler.DefaultHandler
-import org.apache.gearpump.streaming.task.{Handler, MessageHandler, TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 
-class Split(conf: Configs) extends TaskActor(conf) with MessageHandler[String] {
+class Split(conf: Configs) extends TaskActor(conf) {
 
   override def onStart(taskContext : TaskContext) : Unit = {
   }
 
-  def onNext(msg: Message): Unit = {
-    DefaultHandler
-    doNext(msg)
-  }
-
-  def next(msg : String) : Unit = {
-    msg.split("\\s+").foreach(
+  override def onNext[T](msg : Message[T]) : Unit = {
+    msg.msg.asInstanceOf[String].split("\\s+").foreach(
       word => output(new Message(word, System.currentTimeMillis())))
   }
 }

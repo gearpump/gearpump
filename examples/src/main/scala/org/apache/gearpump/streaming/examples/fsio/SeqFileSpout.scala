@@ -19,7 +19,7 @@ package org.apache.gearpump.streaming.examples.fsio
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.examples.fsio.SeqFileSpout._
-import org.apache.gearpump.streaming.task.{MessageHandler, TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
@@ -40,9 +40,9 @@ class SeqFileSpout(config: HadoopConfig) extends TaskActor(config ) {
     LOG.info("sequence file spout initiated")
   }
 
-  override def onNext(msg: Message) = {
+  override def onNext[T](msg: Message[T]) = {
     if(reader.next(key, value)){
-      output(Message(key + "++" + value))
+      output(Message[String](key + "++" + value))
     } else {
       reader.close()
       reader = new SequenceFile.Reader(hadoopConf, Reader.file(inputPath))

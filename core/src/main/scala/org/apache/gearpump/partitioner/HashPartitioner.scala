@@ -21,7 +21,7 @@ package org.apache.gearpump.partitioner
 import org.apache.gearpump.Message
 
 class HashPartitioner extends Partitioner {
-  override def getPartition(msg : Message, partitionNum : Int) : Int = {
+  override def getPartition[T<%java.io.Serializable](msg : Message[T], partitionNum : Int) : Int = {
     (msg.msg.hashCode & Integer.MAX_VALUE) % partitionNum
   }
 }

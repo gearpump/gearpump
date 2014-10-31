@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.{ResourceRequest, Resource}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RecoverTasks, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
@@ -60,7 +60,6 @@ class AppMaster (config : Configs) extends Actor {
 
   private val registerData = config.appMasterRegisterData
 
-  private val name = appDescription.name
   private val taskSet = new TaskSet(config, DAG(appDescription.dag))
 
   private var clockService : ActorRef = null
@@ -103,7 +102,7 @@ class AppMaster (config : Configs) extends Actor {
 
 
   def masterMsgHandler: Receive = {
-    case ResourceAllocated(allocations) => {
+    case ResourceAllocated(allocations) =>
       LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
       //group resource by worker
       val actorToWorkerId = mutable.HashMap.empty[ActorRef, Int]
@@ -117,7 +116,6 @@ class AppMaster (config : Configs) extends Actor {
         context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig))
         currentExecutorId += 1
       })
-    }
   }
 
   def appManagerMsgHandler: Receive = {
@@ -129,6 +127,13 @@ class AppMaster (config : Configs) extends Actor {
           LOG.info(s"Sending back AppMasterDataDetailRequest $appId")
           sender ! AppMasterDataDetail(appId = appId, appDescription = appDescription)
       }
+    case ReplayFromTimestampWindowTrailingEdge =>
+      implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
+      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
+        startClock = clock.clock
+        taskLocations = taskLocations.empty
+        startedTasks = startedTasks.empty
+        context.children.foreach(_ ! RestartTasks(startClock))}
   }
 
   def executorMsgHandler: Receive = {
@@ -204,7 +209,7 @@ class AppMaster (config : Configs) extends Actor {
           val executorByPath = context.actorSelection("../app_0_executor_0")
 
           val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
-          executor ! LaunchTask(taskId, config, taskDescription.taskClass)
+          executor ! LaunchTask(taskId, config, taskDescription)
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
           launchTask(remainResources subtract usedResource)

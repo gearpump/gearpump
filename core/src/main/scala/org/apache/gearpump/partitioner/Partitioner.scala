@@ -21,6 +21,6 @@ package org.apache.gearpump.partitioner
 import org.apache.gearpump.Message
 
 trait Partitioner extends Serializable {
-  def getPartition(msg : Message, partitionNum : Int) : Int
+  def getPartition[T<%java.io.Serializable](msg : Message[T], partitionNum : Int) : Int
 }
 

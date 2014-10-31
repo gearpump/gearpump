@@ -23,16 +23,16 @@ import com.esotericsoftware.kryo.{Kryo, Serializer}
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.task._
 
-class MessageSerializer extends Serializer[Message] {
-  override def write(kryo: Kryo, output: Output, obj: Message) = {
+class MessageSerializer extends Serializer[Message[java.io.Serializable]] {
+  override def write(kryo: Kryo, output: Output, obj: Message[java.io.Serializable]) = {
     output.writeLong(obj.timestamp)
     kryo.writeClassAndObject(output, obj.msg)
   }
 
-  override def read(kryo: Kryo, input: Input, typ: Class[Message]): Message = {
+  override def read(kryo: Kryo, input: Input, typ: Class[Message[java.io.Serializable]]): Message[java.io.Serializable] = {
     var timeStamp = input.readLong()
     val msg = kryo.readClassAndObject(input)
-    return new Message(msg.asInstanceOf[java.io.Serializable], timeStamp)
+    return new Message[java.io.Serializable](msg.asInstanceOf[java.io.Serializable], timeStamp)
   }
 }
 

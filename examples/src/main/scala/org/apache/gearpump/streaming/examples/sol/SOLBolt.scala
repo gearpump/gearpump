@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.examples.sol.SOLBolt.SOLBazHandler
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
@@ -30,17 +29,11 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.duration.FiniteDuration
 
 object SOLBolt {
-  implicit object SOLBazHandler extends Handler[Baz](
-  {
-    case b:Baz =>
-      b
-  }
-  )
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[SOLBolt])
 }
 
-class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) with MessageHandler[Baz] {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[SOLBolt])
-
+class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) {
+  import org.apache.gearpump.streaming.examples.sol.SOLBolt._
   private var msgCount : Long = 0
   private var scheduler : Cancellable = null
   private var snapShotWordCount : Long = 0
@@ -53,13 +46,7 @@ class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) with MessageHand
     snapShotTime = System.currentTimeMillis()
   }
 
-  def onNext(msg: Message): Unit = {
-    output(msg)
-    SOLBazHandler
-    doNext(msg)
-  }
-
-  def next(msg : Baz) : Unit = {
+  override def onNext[T](msg : Message[T]) : Unit = {
     println(s"SOLBolt next Baz")
     msgCount = msgCount + 1
   }
