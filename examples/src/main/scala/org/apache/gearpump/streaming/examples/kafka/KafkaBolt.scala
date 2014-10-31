@@ -65,24 +65,26 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
   private val topic = config.getProducerTopic
   private val kafkaProducer = config.getProducer[String, String]()
   private val storageManager = new StorageManager[String, String](
-    s"${conf.appId}_${taskId}",
+    s"taskId_${conf.appId}_${taskId.groupId}_${taskId.index}",
     config.getKeyValueStoreFactory.getKeyValueStore[String, String](conf),
     new String2SerDe("UTF8"),
     config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, (String, String)](conf)
   )
-
 
   private var count = 0L
   private var lastCount = 0L
   private var lastTime = System.currentTimeMillis()
   private var scheduler: Cancellable = null
 
+  private var lastCheckpointTime = System.currentTimeMillis()
+  private val checkpointIntervalMS = config.getStorageCheckpointIntervalMS
 
   override def onStart(taskContext : TaskContext): Unit = {
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput)
     storageManager.start()
+    storageManager.restore(taskContext.startTime)
   }
 
   override def onNext(msg: Message): Unit = {
@@ -92,6 +94,11 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     storageManager.put(key, value)
     kafkaProducer.send(topic, key, value)
     count += 1
+
+    val timestamp = System.currentTimeMillis()
+    if (shouldCheckpoint) {
+      storageManager.checkpoint(timestamp)
+    }
   }
 
   override def onStop(): Unit = {
@@ -104,6 +111,11 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     LOG.info(s"Task $taskId; Throughput: ${((count - lastCount), ((current - lastTime) / 1000))} (messages, second)")
     lastCount = count
     lastTime = current
+  }
+
+  private def shouldCheckpoint: Boolean = {
+    val current = System.currentTimeMillis()
+    (current - lastCheckpointTime) > checkpointIntervalMS
   }
 }
 

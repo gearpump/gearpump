@@ -21,9 +21,10 @@ package org.apache.gearpump.streaming.transaction.storage.api
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.checkpoint.api.{CheckpointSerDe, Checkpoint, CheckpointManager, Source}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
+import org.slf4j.{Logger, LoggerFactory}
 
 object StorageManager {
-  class StoreCheckpointSerDe[ K, V](keyValueSerDe: KeyValueSerDe[K, V])
+  class StoreCheckpointSerDe[K, V](keyValueSerDe: KeyValueSerDe[K, V])
     extends CheckpointSerDe[TimeStamp, (K, V)] {
     override def toKeyBytes(key: TimeStamp): Array[Byte] = {
       longToByteArray(key)
@@ -41,6 +42,8 @@ object StorageManager {
       keyValueSerDe.fromBytes(bytes)
     }
   }
+
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[StorageManager[_, _]])
 }
 
 class StorageManager[K, V](id: String,
@@ -53,7 +56,7 @@ class StorageManager[K, V](id: String,
 
   private var states: Map[K, V] = Map.empty[K, V]
   private val source : Source = new Source {
-    def name: String = id
+    def name: String = s"storage_${id}"
     def partition: Int = 0
   }
   private val checkpointSerDe = new StoreCheckpointSerDe[K, V](keyValueSerDe)

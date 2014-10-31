@@ -66,6 +66,7 @@ object KafkaConfig {
 
   // storage config
   val KV_STORE_FACTORY = "kafka.storage.kv.store.factory"
+  val STORAGE_CHECKPOINT_INTERVAL_MS = "kafka.storage.checkpoint.interval.ms"
 
   def apply(): Map[String, _] = new KafkaConfig().toMap
 
@@ -206,6 +207,10 @@ object KafkaConfig {
 
     def getKeyValueStoreFactory = {
       getInstance[KeyValueStoreFactory](KV_STORE_FACTORY)
+    }
+
+    def getStorageCheckpointIntervalMS = {
+      getInt(STORAGE_CHECKPOINT_INTERVAL_MS)
     }
   }
 
