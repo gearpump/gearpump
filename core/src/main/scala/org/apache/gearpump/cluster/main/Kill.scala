@@ -24,8 +24,8 @@ import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.{MasterClient, MasterProxy}
-import org.apache.gearpump.util.{Util, Configs}
 import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.{Configs, Util}
 import org.slf4j.{Logger, LoggerFactory}
 
 object Kill extends App with ArgumentsParser {

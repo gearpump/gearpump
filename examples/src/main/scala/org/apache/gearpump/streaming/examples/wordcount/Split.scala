@@ -54,6 +54,6 @@ class Split(conf : Configs) extends TaskActor(conf) {
         output(new Message(msg, System.currentTimeMillis()))
       }
     }
-    self ! Message("continue")
+    self ! Message("continue", System.currentTimeMillis())
   }
 }

@@ -18,22 +18,19 @@
 
 package org.apache.gearpump.cluster
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
-import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster._
-import org.apache.gearpump.cluster.MasterToAppMaster.{ReplayFromTimestampWindowTrailingEdge, AppMastersData, AppMastersDataRequest}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{Constants, Configs}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 class MasterClient(master : ActorRef) {
-  private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
+  implicit val timeout = Constants.FUTURE_TIMEOUT
 
   def submitApplication(appMaster : Class[_ <: Actor], config : Configs, app : Application) : Int = {
     val result = Await.result( (master ? SubmitApplication(appMaster, config, app)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)

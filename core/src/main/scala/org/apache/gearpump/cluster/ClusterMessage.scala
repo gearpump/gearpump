@@ -19,7 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.cluster.scheduler.{ResourceRequest, ResourceAllocation, Resource}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.util.Configs
 
 import scala.util.Try
@@ -58,6 +58,8 @@ trait AppMasterRegisterData
 object AppMasterToMaster {
   case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resource: Resource, registerData : AppMasterRegisterData)
   case class RequestResource(appId: Int, request: ResourceRequest)
+  case class SaveAppData(appId: Int, key: String, value: Any)
+  case class GetAppData(appId: Int, key: String)
 }
 
 object MasterToAppMaster {
@@ -71,6 +73,8 @@ object MasterToAppMaster {
   case class AppMasterDataDetailRequest(appId: Int)
   case class AppMasterDataDetail(val appId: Int,  val appDescription: Application)
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
+  case class GetAppDataResult(key: String, value: Any)
+  case object AppDataReceived
 }
 
 object AppMasterToWorker {
