@@ -16,30 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.transaction.storage.api
 
-trait Source {
-  def name: String
+trait KeyValueStore[K, V] {
+  def get(key: K): Option[V]
 
-  def partition: Int
+  def put(key: K, value: V): Option[V]
+
+  def putAll(kvs: List[(K, V)]): Unit
+
+  def delete(key: K): Option[V]
+
+  def flush(): Unit
+
+  def close(): Unit
 }
 
-object Checkpoint {
-  def apply[K, V](records: List[(K, V)]): Checkpoint[K, V] = new Checkpoint(records)
-
-  def empty[K, V]: Checkpoint[K, V] = new Checkpoint(List.empty[(K, V)])
-}
-
-class Checkpoint[K, V](val records: List[(K, V)])
-
-trait CheckpointSerDe[K, V] {
-  def toKeyBytes(key: K): Array[Byte]
-  def fromKeyBytes(bytes: Array[Byte]): K
-
-  def toValueBytes(value: V): Array[Byte]
-  def fromValueBytes(bytes: Array[Byte]): V
-}
-
-trait CheckpointFilter[K, V] {
-  def filter(records: List[(K, V)], predicate: K): Option[(K, V)]
+trait KeyValueSerDe[K, V] {
+  def toBytes(kv: (K, V)): Array[Byte]
+  def fromBytes(bytes: Array[Byte]): (K, V)
 }

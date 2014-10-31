@@ -16,15 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.checkpoint.kafka
 
 import kafka.admin.AdminUtils
 import kafka.common.{TopicExistsException, TopicAndPartition}
-import org.apache.gearpump.streaming.transaction.api.{CheckpointSerDe, Checkpoint, Source, CheckpointManager}
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable.{Map => MutableMap}
 import org.I0Itec.zkclient.ZkClient
+import org.apache.gearpump.streaming.transaction.lib.kafka.{KafkaUtil, MessageIterator, KafkaProducer}
+import org.apache.gearpump.streaming.transaction.checkpoint.api.{CheckpointManager, CheckpointSerDe, Source, Checkpoint}
 
 
 object KafkaCheckpointManager {
@@ -40,7 +40,7 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
                              fetchSize: Int,
                              zkClient: ZkClient
                              ) extends CheckpointManager[K, V] {
-  import org.apache.gearpump.streaming.transaction.kafka.KafkaCheckpointManager._
+  import org.apache.gearpump.streaming.transaction.checkpoint.kafka.KafkaCheckpointManager._
 
   private var sources: Array[Source] = null
   private var checkpointTopicAndPartitions: Array[TopicAndPartition] = null

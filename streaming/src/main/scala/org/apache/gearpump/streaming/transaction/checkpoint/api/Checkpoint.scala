@@ -16,26 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.transaction.checkpoint.api
 
-/**
- * CheckpointManager checkpoints message and its timestamp to a persistent system
- * such that we could replay messages around or after given time
- */
-trait CheckpointManager[K, V] {
-  def start(): Unit
+trait Source {
+  def name: String
 
-  def register(sources: Array[Source]): Unit
-
-  def writeCheckpoint(source: Source, checkpoint: Checkpoint[K, V],
-                      checkpointSerDe: CheckpointSerDe[K, V]): Unit
-
-  def readCheckpoint(source: Source,
-                     checkpointSerDe: CheckpointSerDe[K, V]): Checkpoint[K, V]
-
-  def sourceAndCheckpoints(checkpointSerDe: CheckpointSerDe[K, V]): Map[Source, Checkpoint[K, V]]
-
-  def close(): Unit
+  def partition: Int
 }
 
+object Checkpoint {
+  def apply[K, V](records: List[(K, V)]): Checkpoint[K, V] = new Checkpoint(records)
 
+  def unit[K, V](key: K, value: V) = new Checkpoint(List((key, value)))
+
+  def empty[K, V]: Checkpoint[K, V] = new Checkpoint(List.empty[(K, V)])
+}
+
+class Checkpoint[K, V](val records: List[(K, V)])
+
+trait CheckpointSerDe[K, V] {
+  def toKeyBytes(key: K): Array[Byte]
+  def fromKeyBytes(bytes: Array[Byte]): K
+
+  def toValueBytes(value: V): Array[Byte]
+  def fromValueBytes(bytes: Array[Byte]): V
+}
+
+trait CheckpointFilter[K, V] {
+  def filter(records: List[(K, V)], predicate: K): Option[(K, V)]
+}
