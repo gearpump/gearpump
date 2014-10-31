@@ -80,6 +80,7 @@ class StorageManager[K, V](id: String,
   }
 
   override def close(): Unit = {
+    checkpointManager.close()
     store.close()
   }
 
