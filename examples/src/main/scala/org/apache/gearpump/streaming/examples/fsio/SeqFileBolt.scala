@@ -60,7 +60,7 @@ class SeqFileBolt(config: HadoopConfig) extends TaskActor(config) {
     LOG.info("sequence file bolt initiated")
   }
 
-  def onNext[T](msg: Message[T]): Unit = {
+  override def onNext(msg: Message): Unit = {
     val kv = msg.msg.asInstanceOf[String].split("\\+\\+")
     key.set(kv(0))
     value.set(kv(1))

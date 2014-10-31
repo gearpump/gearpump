@@ -16,10 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump
+package org.apache.gearpump.streaming.transaction.lib.kafka
 
-case class Message(msg: java.io.Serializable, timestamp: TimeStamp = Message.noTimeStamp)
+import kafka.common.TopicAndPartition
+import org.apache.gearpump.streaming.transaction.checkpoint.api.Source
 
-object Message {
-  val noTimeStamp : TimeStamp = 0L
+object KafkaSource {
+  def apply(name: String, partition: Int): KafkaSource = {
+    KafkaSource(TopicAndPartition(name, partition))
+  }
 }
+
+case class KafkaSource(topicAndPartition: TopicAndPartition) extends Source {
+  override def name: String = topicAndPartition.topic
+  override def partition: Int = topicAndPartition.partition
+}
+

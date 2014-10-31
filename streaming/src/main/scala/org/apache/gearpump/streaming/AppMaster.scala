@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming
 
+import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
@@ -40,12 +41,13 @@ import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class AppMaster (config : Configs) extends Actor {
 
   import org.apache.gearpump.streaming.AppMaster._
+  implicit val timeout = Constants.FUTURE_TIMEOUT
 
   val masterExecutorId = config.executorId
   var currentExecutorId = masterExecutorId + 1
@@ -63,17 +65,23 @@ class AppMaster (config : Configs) extends Actor {
   private val taskSet = new TaskSet(config, DAG(appDescription.dag))
 
   private var clockService : ActorRef = null
+  private val START_CLOCK = "startClock"
   private var startClock : TimeStamp = 0L
 
   private var taskLocations = Map.empty[HostPort, Set[TaskId]]
   private var executorIdToTasks = Map.empty[Int, Set[TaskId]]
 
   private var startedTasks = Set.empty[TaskId]
+  private var updateScheduler : Cancellable = null
+  private var store : AppDataStore = null
 
   override def receive : Receive = null
 
   override def preStart: Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
+    updateScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+      new FiniteDuration(5, TimeUnit.SECONDS))(snapshotStartClock)
+
     val dag = DAG(appDescription.dag)
 
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
@@ -87,19 +95,25 @@ class AppMaster (config : Configs) extends Actor {
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
     case AppMasterRegistered(appId, master) =>
       LOG.info(s"AppMasterRegistered received for appID: $appId")
-
-      LOG.info("Sending request resource to master...")
-      val resourceRequests = taskSet.getResourceRequests()
-      resourceRequests.foreach(master ! RequestResource(appId, _))
-
       killSelf.cancel()
       this.master = master
       context.watch(master)
-      context.become(messageHandler)
+      store = new RemoteAppDataStore(appId, master)
+
+      LOG.info(s"try to recover start clock")
+      store.get(START_CLOCK).map{clock =>
+        if(clock != null){
+          startClock = clock.asInstanceOf[TimeStamp]
+          LOG.info(s"recover start clock sucessfully and the start clock is ${new Date(startClock)}")
+        }
+        LOG.info("Sending request resource to master...")
+        val resourceRequests = taskSet.getResourceRequests()
+        resourceRequests.foreach(master ! RequestResource(appId, _))
+        context.become(messageHandler)
+      }
   }
 
   def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse appManagerMsgHandler orElse workerMsgHandler orElse clientMsgHandler orElse executorMsgHandler orElse terminationWatch
-
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) =>
@@ -224,7 +238,6 @@ class AppMaster (config : Configs) extends Actor {
     }
   }
 
-  implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
   def clientMsgHandler : Receive = {
     case RecoverTasks(minClock, tasks) =>
       LOG.info(s"Restarting to clock $minClock...")
@@ -282,6 +295,16 @@ class AppMaster (config : Configs) extends Actor {
         cancelSend.isCancelled && cancelSuicide.isCancelled
       }
     }
+  }
+
+  private def snapshotStartClock : Unit = {
+    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map { clock =>
+      store.put(START_CLOCK, clock.clock)
+    }
+  }
+
+  override def postStop : Unit = {
+    updateScheduler.cancel()
   }
 }
 

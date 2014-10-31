@@ -27,21 +27,21 @@ class ClockTracker[T<:java.io.Serializable](flowControl : FlowControl)  {
 import org.apache.gearpump.streaming.task.ClockTracker._
 
   private var minClock : TimeStamp = Long.MaxValue
-  private var candidateMinClock: MinClockSince[T] = null
+  private var candidateMinClock: MinClockSince = null
 
-  private var newReceivedMsg : Message[java.io.Serializable] = null
+  private var newReceivedMsg : Message = null
 
   private var unprocessedMsgCount : Long = 0
 
   /**
    * This method may replace the msg with a new message.
    */
-  def onReceive(msg: Message[T]): Message[T] = {
+  def onReceive(msg: Message): Message = {
     if (msg.timestamp == Message.noTimeStamp) {
       return msg
     }
 
-    newReceivedMsg = msg.asInstanceOf[Message[java.io.Serializable]]
+    newReceivedMsg = msg
     unprocessedMsgCount += 1
     minClock = Math.min(minClock, msg.timestamp)
 
@@ -56,8 +56,8 @@ import org.apache.gearpump.streaming.task.ClockTracker._
        * MinClockSince will still be able to differentiate these three messages
        * by testing object.eq.
        */
-      val shadowMsg = msg.copy().asInstanceOf[Message[T]]
-      candidateMinClock = new MinClockSince[T](shadowMsg, flowControl)
+      val shadowMsg = msg.copy().asInstanceOf[Message]
+      candidateMinClock = new MinClockSince(shadowMsg, flowControl)
       shadowMsg
     } else {
       candidateMinClock.receiveNewMsg(msg)
@@ -68,7 +68,7 @@ import org.apache.gearpump.streaming.task.ClockTracker._
   /**
    * return true if there are changes to self min clock
    */
-  def onProcess(msg: Message[T]): Boolean = {
+  def onProcess(msg: Message): Boolean = {
     if (msg.timestamp == Message.noTimeStamp) {
       return false
     }
@@ -125,17 +125,17 @@ import org.apache.gearpump.streaming.task.ClockTracker._
 
 object ClockTracker {
 
-  class MinClockSince[T<:java.io.Serializable](val head: Message[T], flow: FlowControl) {
+  class MinClockSince(val head: Message, flow: FlowControl) {
     private var minClock = head.timestamp
     private var ackThreshold: Array[Long] = null
 
     private var firstMsgProcessed = false
 
-    def receiveNewMsg(msg: Message[T]): Unit = {
+    def receiveNewMsg(msg: Message): Unit = {
       minClock = Math.min(minClock, msg.timestamp)
     }
 
-    def processMsg(msg: Message[T]): Option[TimeStamp] = {
+    def processMsg(msg: Message): Option[TimeStamp] = {
       if (flow.allMessagesAcked) {
         Some(minClock)
       } else if (!firstMsgProcessed && msg.eq(this.head)) {

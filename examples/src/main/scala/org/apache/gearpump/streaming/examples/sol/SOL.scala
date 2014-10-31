@@ -32,8 +32,7 @@ object SOL extends App with ArgumentsParser {
     "bolt"-> CLIOption[Int]("<bolt number>", required = false, defaultValue = Some(2)),
     "runseconds" -> CLIOption[Int]("<run seconds>", required = false, defaultValue = Some(60)),
     "bytesPerMessage" -> CLIOption[Int]("<size of each message>", required = false, defaultValue = Some(100)),
-    "stages"-> CLIOption[Int]("<how many stages to run>", required = false, defaultValue = Some(2)),
-    "jar"-> CLIOption[String]("<jar file holding TaskActors>", required = false, defaultValue = Some("examples/target/gearpump-examples-0.1.jar")))
+    "stages"-> CLIOption[Int]("<how many stages to run>", required = false, defaultValue = Some(2)))
 
       start()
 
@@ -47,7 +46,7 @@ object SOL extends App with ArgumentsParser {
     val bytesPerMessage = config.getInt("bytesPerMessage")
     val stages = config.getInt("stages")
     val runseconds = config.getInt("runseconds")
-    val jar = config.getString("jar")
+    val jar = "examples/target/gearpump-examples-0.1.jar"
 
     Console.out.println("Master URL: " + masters)
 

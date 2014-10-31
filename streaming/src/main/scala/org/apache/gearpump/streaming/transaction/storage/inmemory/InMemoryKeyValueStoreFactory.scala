@@ -16,30 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.transaction.storage.inmemory
 
-trait Source {
-  def name: String
+import org.apache.gearpump.streaming.transaction.storage.api.{KeyValueStore, KeyValueStoreFactory}
+import org.apache.gearpump.util.Configs
 
-  def partition: Int
-}
-
-object Checkpoint {
-  def apply[K, V](records: List[(K, V)]): Checkpoint[K, V] = new Checkpoint(records)
-
-  def empty[K, V]: Checkpoint[K, V] = new Checkpoint(List.empty[(K, V)])
-}
-
-class Checkpoint[K, V](val records: List[(K, V)])
-
-trait CheckpointSerDe[K, V] {
-  def toKeyBytes(key: K): Array[Byte]
-  def fromKeyBytes(bytes: Array[Byte]): K
-
-  def toValueBytes(value: V): Array[Byte]
-  def fromValueBytes(bytes: Array[Byte]): V
-}
-
-trait CheckpointFilter[K, V] {
-  def filter(records: List[(K, V)], predicate: K): Option[(K, V)]
+class InMemoryKeyValueStoreFactory extends KeyValueStoreFactory {
+  override def getKeyValueStore[K, V](conf: Configs): KeyValueStore[K, V] = {
+    new InMemoryKeyValueStore[K, V]
+  }
 }

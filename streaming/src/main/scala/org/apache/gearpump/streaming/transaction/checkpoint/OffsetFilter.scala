@@ -16,19 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.checkpoint
 
-import kafka.common.TopicAndPartition
-import org.apache.gearpump.streaming.transaction.api.Source
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.transaction.checkpoint.api.CheckpointFilter
 
-object KafkaSource {
-  def apply(name: String, partition: Int): KafkaSource = {
-    KafkaSource(TopicAndPartition(name, partition))
+class OffsetFilter extends CheckpointFilter[TimeStamp, Long] {
+  override def filter(timeAndOffsets: List[(TimeStamp, Long)],
+             predicate: TimeStamp): Option[(TimeStamp, Long)] = {
+    timeAndOffsets.sortBy(_._1).find(_._1 >= predicate)
   }
 }
 
-case class KafkaSource(topicAndPartition: TopicAndPartition) extends Source {
-  override def name: String = topicAndPartition.topic
-  override def partition: Int = topicAndPartition.partition
+class RelaxedTimeFilter(delta: Long) extends OffsetFilter {
+  override def filter(timeAndOffsets: List[(TimeStamp, Long)],
+             timestamp: TimeStamp): Option[(TimeStamp, Long)] = {
+    super.filter(timeAndOffsets, timestamp - delta)
+  }
 }
 

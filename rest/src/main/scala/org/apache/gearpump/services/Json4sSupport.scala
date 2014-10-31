@@ -18,19 +18,15 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.{Actor, ActorSystem, ActorRef, ActorContext}
-import org.apache.gearpump.cluster.AppMasterInfo
-import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.task.TaskActor
-import org.apache.gearpump.streaming.{TaskDescription, AppDescription}
-import org.apache.gearpump.util.{Configs, Graph}
-import org.slf4j.{LoggerFactory, Logger}
-import spray.httpx.Json4sJacksonSupport
-import org.json4s._
 import java.util.UUID
 
-import scala.collection.parallel.mutable
-import scala.concurrent.ExecutionContext
+import akka.actor.Actor
+import org.apache.gearpump.cluster.AppMasterInfo
+import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.util.{Configs, Graph}
+import org.json4s._
+import spray.httpx.Json4sJacksonSupport
 
 object Json4sSupport extends Json4sJacksonSupport {
   implicit def json4sJacksonFormats: Formats = jackson.Serialization.formats(NoTypeHints) + new UUIDFormat + new AppMasterInfoSerializer + new AppDescriptionSerializer

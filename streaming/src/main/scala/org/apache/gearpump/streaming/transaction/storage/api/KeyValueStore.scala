@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -17,9 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.sol
+package org.apache.gearpump.streaming.transaction.storage.api
 
-trait Baz extends java.io.Serializable
-case class Foo(msg: String) extends Baz
+trait KeyValueStore[K, V] {
+  def get(key: K): Option[V]
 
-case class Bar(msg: String) extends Baz
+  def put(key: K, value: V): Option[V]
+
+  def putAll(kvs: List[(K, V)]): Unit
+
+  def delete(key: K): Option[V]
+
+  def flush(): Unit
+
+  def close(): Unit
+}
+
+trait KeyValueSerDe[K, V] {
+  def toBytes(kv: (K, V)): Array[Byte]
+  def fromBytes(bytes: Array[Byte]): (K, V)
+}

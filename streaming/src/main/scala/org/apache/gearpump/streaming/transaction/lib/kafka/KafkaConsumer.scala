@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import kafka.common.TopicAndPartition
 
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.api.TimeExtractor
+import org.apache.gearpump.streaming.transaction.checkpoint.TimeExtractor
 import org.slf4j.{Logger, LoggerFactory}
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -50,7 +50,7 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
                     socketBufferSize: Int, fetchSize: Int,
                     zkClient: ZkClient, fetchThreshold: Int,
                     timeExtractor: TimeExtractor[KafkaMessage])  {
-  import org.apache.gearpump.streaming.transaction.kafka.KafkaConsumer._
+  import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConsumer._
 
   private val leaders: Map[TopicAndPartition, Broker] = topicAndPartitions.map {
     tp => {

@@ -16,34 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.checkpoint.api
 
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+/**
+ * CheckpointManager checkpoints message and its timestamp to a persistent system
+ * such that we could replay messages around or after given time
+ */
+trait CheckpointManager[K, V] {
+  def start(): Unit
 
-import scala.collection.mutable.ArrayBuffer
+  def register(sources: Array[Source]): Unit
 
-class KafkaProducer[K, V](config: ProducerConfig,
-                    batchSize: Int) {
+  def writeCheckpoint(source: Source, checkpoint: Checkpoint[K, V],
+                      checkpointSerDe: CheckpointSerDe[K, V]): Unit
 
-  private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
-  private val producer = new Producer[K, V](config)
+  def readCheckpoint(source: Source,
+                     checkpointSerDe: CheckpointSerDe[K, V]): Checkpoint[K, V]
 
-  def send(topic: String, key: K, msg: V): Unit = send(topic, key, key, msg)
+  def sourceAndCheckpoints(checkpointSerDe: CheckpointSerDe[K, V]): Map[Source, Checkpoint[K, V]]
 
-  def send(topic: String, key: K, partKey: Any, msg: V): Unit = {
-    buffer += new KeyedMessage[K, V](topic, key, partKey, msg)
-    if (buffer.size >= batchSize) {
-      flush()
-    }
-  }
-
-  def flush(): Unit = {
-    producer.send(buffer: _*)
-    buffer.clear()
-  }
-
-  def close(): Unit = {
-    flush()
-    producer.close()
-  }
+  def close(): Unit
 }
+
+

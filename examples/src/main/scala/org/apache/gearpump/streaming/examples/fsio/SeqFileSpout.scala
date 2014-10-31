@@ -40,9 +40,9 @@ class SeqFileSpout(config: HadoopConfig) extends TaskActor(config ) {
     LOG.info("sequence file spout initiated")
   }
 
-  override def onNext[T](msg: Message[T]) = {
+  override def onNext(msg: Message) = {
     if(reader.next(key, value)){
-      output(Message[String](key + "++" + value))
+      output(Message(key + "++" + value))
     } else {
       reader.close()
       reader = new SequenceFile.Reader(hadoopConf, Reader.file(inputPath))

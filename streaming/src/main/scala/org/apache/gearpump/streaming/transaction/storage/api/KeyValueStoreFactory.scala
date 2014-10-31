@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump
+package org.apache.gearpump.streaming.transaction.storage.api
 
-case class Message(msg: java.io.Serializable, timestamp: TimeStamp = Message.noTimeStamp)
+import org.apache.gearpump.util.Configs
 
-object Message {
-  val noTimeStamp : TimeStamp = 0L
+trait KeyValueStoreFactory {
+  def getKeyValueStore[K, V](conf: Configs): KeyValueStore[K, V]
 }

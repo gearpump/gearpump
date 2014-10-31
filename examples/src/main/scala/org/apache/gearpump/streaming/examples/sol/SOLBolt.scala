@@ -46,7 +46,7 @@ class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) {
     snapShotTime = System.currentTimeMillis()
   }
 
-  override def onNext[T](msg : Message[T]) : Unit = {
+  override def onNext(msg : Message) : Unit = {
     println(s"SOLBolt next Baz")
     msgCount = msgCount + 1
   }

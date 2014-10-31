@@ -21,15 +21,35 @@ package org.apache.gearpump.streaming.examples.kafka
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
-import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
+import org.apache.gearpump.streaming.transaction.storage.api.{KeyValueSerDe, StorageManager}
 import org.apache.gearpump.util.Configs
+import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.FiniteDuration
 
 object KafkaBolt {
+
+  class String2SerDe(encoding: String) extends KeyValueSerDe[String, String] {
+    override def toBytes(kv: (String, String)): Array[Byte] = {
+      val (key, value) = kv
+      val keyBytes = intToByteArray(key.length) ++ key.getBytes(encoding)
+      val valueBytes = intToByteArray(value.length) ++ value.getBytes(encoding)
+      keyBytes ++ valueBytes
+    }
+
+    override def fromBytes(bytes: Array[Byte]): (String, String) = {
+      val keyLen = byteArrayToInt(bytes.take(4))
+      val key = new String(bytes.drop(4).take(keyLen), encoding)
+      val valLen = byteArrayToInt(bytes.drop(4 + keyLen).take(4))
+      val value = new String(bytes.drop(4 + keyLen + 4).take(valLen))
+      (key, value)
+    }
+  }
+
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaBolt])
 }
 
@@ -40,25 +60,42 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
   private val config = conf.config
   private val topic = config.getProducerTopic
   private val kafkaProducer = config.getProducer[String, String]()
+  private val storageManager = new StorageManager[String, String](
+    s"taskId_${conf.appId}_${taskId.groupId}_${taskId.index}",
+    config.getKeyValueStoreFactory.getKeyValueStore[String, String](conf),
+    new String2SerDe("UTF8"),
+    config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, (String, String)](conf)
+  )
 
   private var count = 0L
   private var lastCount = 0L
   private var lastTime = System.currentTimeMillis()
   private var scheduler: Cancellable = null
 
+  private var lastCheckpointTime = System.currentTimeMillis()
+  private val checkpointIntervalMS = config.getStorageCheckpointIntervalMS
+
   override def onStart(taskContext : TaskContext): Unit = {
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput)
+    storageManager.start()
+    storageManager.restore(taskContext.startTime)
   }
 
-  override def onNext[T](msg: Message[T]): Unit = {
+  override def onNext(msg: Message): Unit = {
     type Tuple = (String,String)
     val kvMessage = msg.msg.asInstanceOf[Tuple]
     val key = kvMessage._1
     val value = kvMessage._2
+    storageManager.put(key, value)
     kafkaProducer.send(topic, key, value)
     count += 1
+
+    val timestamp = System.currentTimeMillis()
+    if (shouldCheckpoint) {
+      storageManager.checkpoint(timestamp)
+    }
   }
 
   override def onStop(): Unit = {
@@ -71,6 +108,11 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     LOG.info(s"Task $taskId; Throughput: ${((count - lastCount), ((current - lastTime) / 1000))} (messages, second)")
     lastCount = count
     lastTime = current
+  }
+
+  private def shouldCheckpoint: Boolean = {
+    val current = System.currentTimeMillis()
+    (current - lastCheckpointTime) > checkpointIntervalMS
   }
 }
 

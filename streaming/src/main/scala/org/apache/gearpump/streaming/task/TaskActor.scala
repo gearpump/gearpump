@@ -30,14 +30,7 @@ import org.apache.gearpump.util.Configs
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
 
-trait PipeLine[M[_]] {
-  TaskActor =>
-  def onNext[T](msg : M[T]) : Unit
-}
-
-abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport with PipeLine[Message] {
-  type Serializable = java.io.Serializable
-
+abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   import org.apache.gearpump.streaming.task.TaskActor._
 
   private val appId = conf.appId
@@ -68,9 +61,11 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
 
   def onStart(context : TaskContext) : Unit
 
+  def onNext(message : Message) : Unit
+
   def onStop() : Unit = {}
 
-  def output[T<:java.io.Serializable](msg : Message[T]) : Unit = {
+  def output(msg : Message) : Unit = {
     if (null == outputTaskIds || outputTaskIds.length == 0) {
       return
     }
@@ -171,7 +166,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
           case AckRequest(taskId, seq) =>
             transport(Ack(this.taskId, seq), taskId)
             LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
-          case m : Message[Serializable] =>
+          case m : Message =>
             val updated = clockTracker.onProcess(m)
             if (updated) {
               tryToSyncToClockService
@@ -202,7 +197,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
         tryToSyncToClockService
       }
       doHandleMessage
-    case msg : Message[Serializable] =>
+    case msg : Message =>
       if (msg.timestamp != Message.noTimeStamp) {
         latencies.update(System.currentTimeMillis() - msg.timestamp)
       }
@@ -246,7 +241,7 @@ object TaskActor {
       new MergedPartitioner(partitioners :+ partitioner, newPartitionStart, newPartitionEnd)
     }
 
-    def getPartitions[T<:java.io.Serializable](msg : Message[T]) : Array[Int] = {
+    def getPartitions(msg : Message) : Array[Int] = {
       var start = 0
       val length = partitioners.length
       val result = new Array[Int](length)

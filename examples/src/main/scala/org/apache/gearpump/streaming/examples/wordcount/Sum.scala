@@ -46,7 +46,7 @@ class Sum (conf : Configs) extends TaskActor(conf) {
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
   }
 
-  override def onNext[T](msg : Message[T]) : Unit = {
+  override def onNext(msg : Message) : Unit = {
     if (null == msg) {
       return
     }
@@ -69,26 +69,6 @@ class Sum (conf : Configs) extends TaskActor(conf) {
 
 object Sum {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Sum])
-}
-
-// Not used right now - experimenting with lifting message handling out of TaskActor
-trait MessageHandler[M[_]] {
-  def onNext[T<%java.io.Serializable,U<%java.io.Serializable](t: T): M[U]
-}
-case class SumHandler extends MessageHandler[Message] {
-  private val map : HashMap[String, Long] = new HashMap[String, Long]()
-
-  private var wordCount : Long = 0
-  private var snapShotTime : Long = System.currentTimeMillis()
-  private var snapShotWordCount : Long = 0
-
-  override def onNext[T<%java.io.Serializable,U<%java.io.Serializable](msg:T): Message[U] = {
-    val current = map.getOrElse(msg.asInstanceOf[String], 0L)
-    wordCount += 1
-    map.put(msg.asInstanceOf[String], current + 1)
-    Message[U](wordCount.asInstanceOf[U],System.currentTimeMillis())
-  }
-
 }
 
 

@@ -23,9 +23,9 @@ import kafka.serializer.StringDecoder
 import kafka.utils.ZkUtils
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
-import org.apache.gearpump.streaming.transaction.api.{OffsetManager, RelaxedTimeFilter}
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.kafka.KafkaSource
+import org.apache.gearpump.streaming.transaction.checkpoint.{OffsetManager, RelaxedTimeFilter}
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
 import org.apache.gearpump.util.Configs
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
@@ -89,7 +89,7 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
     self ! Message("start", System.currentTimeMillis())
   }
 
-  override def onNext[T](msg: Message[T]): Unit = {
+  override def onNext(msg: Message): Unit = {
 
     @annotation.tailrec
     def fetchAndEmit(msgNum: Int, tpIndex: Int): Unit = {

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.kafka
+package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import java.util.Properties
 
@@ -27,11 +27,13 @@ import kafka.serializer.Decoder
 import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
-import org.apache.gearpump.streaming.transaction.api.{TimeExtractor, OffsetFilter, CheckpointManagerFactory}
+import org.apache.gearpump.streaming.transaction.checkpoint.TimeExtractor
+import org.apache.gearpump.streaming.transaction.storage.api.KeyValueStoreFactory
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import org.apache.gearpump.streaming.transaction.checkpoint.api.CheckpointManagerFactory
 
 object KafkaConfig {
   // consumer config
@@ -61,6 +63,10 @@ object KafkaConfig {
 
   // filtering config
   val CHECKPOINT_MESSAGE_DELAY_MS = "kafka.checkpoint.message.delay.ms"
+
+  // storage config
+  val KV_STORE_FACTORY = "kafka.storage.kv.store.factory"
+  val STORAGE_CHECKPOINT_INTERVAL_MS = "kafka.storage.checkpoint.interval.ms"
 
   def apply(): Map[String, _] = new KafkaConfig().toMap
 
@@ -198,13 +204,21 @@ object KafkaConfig {
     def getCheckpointId = {
       getInt(CHECKPOINT_ID)
     }
+
+    def getKeyValueStoreFactory = {
+      getInstance[KeyValueStoreFactory](KV_STORE_FACTORY)
+    }
+
+    def getStorageCheckpointIntervalMS = {
+      getInt(STORAGE_CHECKPOINT_INTERVAL_MS)
+    }
   }
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaConfig])
 }
 
 class KafkaConfig {
-  import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig._
+  import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
 
   LOG.info("Loading Kafka configurations...")
   val config = ConfigFactory.load("kafka.conf")

@@ -32,8 +32,7 @@ object SequenceFileIO extends App with ArgumentsParser{
     "sink"-> CLIOption[Int]("<sequence file writer number>", required = false, defaultValue = Some(2)),
     "runseconds" -> CLIOption[Int]("<run seconds>", required = false, defaultValue = Some(60)),
     "input"-> CLIOption[String]("<input file path>", required = true),
-    "output"-> CLIOption[String]("<output file directory>", required = true),
-    "jar"-> CLIOption[String]("<jar file holding TaskActors>", required = false, defaultValue = Some("examples/target/gearpump-examples-0.1.jar"))
+    "output"-> CLIOption[String]("<output file directory>", required = true)
   )
 
   start()
@@ -47,7 +46,7 @@ object SequenceFileIO extends App with ArgumentsParser{
     val runseconds = config.getInt("runseconds")
     val input = config.getString("input")
     val output = config.getString("output")
-    val jar = config.getString("jar")
+    val jar = "examples/target/gearpump-examples-0.1.jar"
 
     Console.out.println("Master URL: " + masters)
     getApplication(spout, bolt, input, output, jar).map(application => {

@@ -22,7 +22,7 @@ import org.apache.gearpump.streaming._
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.transaction.kafka.KafkaConfig
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
@@ -53,8 +53,7 @@ object KafkaWordCount extends App with ArgumentsParser {
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
     "kafka_bolt" -> CLIOption[Int]("<hom many kafka bolt tasks", required = false, defaultValue = Some(4)),
-    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)),
-    "jar"-> CLIOption[String]("<jar file holding TaskActors>", required = false, defaultValue = Some("examples/target/gearpump-examples-0.1.jar")))
+    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
 
   val config = parse(args)
 
@@ -63,7 +62,7 @@ object KafkaWordCount extends App with ArgumentsParser {
     val masters = config.getString("master")
     Console.out.println("Master URL: " + masters)
 
-    val jar = config.getString("jar")
+    val jar = "examples/target/gearpump-examples-0.1.jar"
 
     new KafkaWordCount().getApplication(
       Configs(KafkaConfig()), config.getInt("kafka_spout"), config.getInt("split"),

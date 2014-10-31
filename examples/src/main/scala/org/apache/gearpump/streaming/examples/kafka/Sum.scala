@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.examples.kafka
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{PipeLine, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -33,7 +33,7 @@ class Sum (conf : Configs) extends TaskActor(conf) {
 
   }
 
-  override def onNext[T](msg : Message[T]) : Unit = {
+  override def onNext(msg : Message) : Unit = {
     if (null == msg) {
       return
     }

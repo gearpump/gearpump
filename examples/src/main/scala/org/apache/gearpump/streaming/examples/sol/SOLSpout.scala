@@ -25,11 +25,6 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.util.Configs
 
-object SOLSpout {
-  val BYTES_PER_MESSAGE = "bytesPerMessage"
-  val Start = Message("start")
-}
-
 class SOLSpout(conf : Configs) extends TaskActor(conf) {
   import org.apache.gearpump.streaming.examples.sol.SOLSpout._
 
@@ -44,7 +39,6 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     self ! Start
     val s = SerializationExtension(context.system)
     val serializer = s.findSerializerFor("hello")
-    val serialized = serializer.toBinary("hello")
 
     Console.println(s"Active serialization for string is: $serializer")
 
@@ -53,11 +47,11 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
 
   private def prepareRandomMessage = {
     rand = new Random()
-    val differentMessages = 100;
+    val differentMessages = 100
     messages = new Array(differentMessages)
 
     0.until(differentMessages).map { index =>
-      val sb = new StringBuilder(sizeInBytes);
+      val sb = new StringBuilder(sizeInBytes)
       //Even though java encodes strings in UCS2, the serialized version sent by the tuples
       // is UTF8, so it should be a single byte
       0.until(sizeInBytes).foldLeft(sb){(sb, j) =>
@@ -67,25 +61,23 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     }
   }
 
-  override def onNext[T](msg : Message[T]) : Unit = {
+  override def onNext(msg : Message) : Unit = {
     val message = messages(rand.nextInt(messages.length))
-    println(s"SOLSpout next!!! $message")
-    val num = new Integer(message.substring(0,6))
-    val omsg = (num % 2) match {
-      case 0 =>
-        Foo(message)
-      case _ =>
-        Bar(message)
-    }
-    output(new Message(omsg, System.currentTimeMillis()))
+    output(new Message(message, System.currentTimeMillis()))
     messageCount = messageCount + 1L
 
     self ! messageSourceMinClock
   }
 
   // messageSourceMinClock represent the min clock of the message source
-  private def messageSourceMinClock : Message[String] = {
+  private def messageSourceMinClock : Message = {
     Message("tick", System.currentTimeMillis())
   }
+}
+
+object SOLSpout {
+  val BYTES_PER_MESSAGE = "bytesPerMessage"
+
+  val Start = Message("start")
 }
 

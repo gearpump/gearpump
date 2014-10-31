@@ -21,8 +21,10 @@ package org.apache.gearpump.cluster
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import akka.cluster.Cluster
 import akka.contrib.datareplication.Replicator._
-import akka.contrib.datareplication.{DataReplication, GSet}
+import akka.contrib.datareplication.{LWWMap, DataReplication, GSet}
+import akka.pattern.ask
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
@@ -36,6 +38,7 @@ import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 /**
@@ -45,7 +48,7 @@ import scala.util.{Failure, Success}
 /**
  * This state will be persisted across the masters.
  */
-class ApplicationState(val appId : Int, val attemptId : Int, val state : Any) extends Serializable {
+class ApplicationState(val appId : Int, val attemptId : Int, val appMasterClass : Class[_ <: Actor], val app : Application, val state : Any) extends Serializable {
 
   override def equals(other: Any): Boolean = {
     if (other.isInstanceOf[ApplicationState]) {
@@ -69,6 +72,8 @@ class ApplicationState(val appId : Int, val attemptId : Int, val state : Any) ex
 private[cluster] class AppManager() extends Actor with Stash {
 
   import org.apache.gearpump.cluster.AppManager._
+  import context.dispatcher
+  implicit val timeout = Constants.FUTURE_TIMEOUT
 
   private var master: ActorRef = null
   private var executorCount: Int = 0
@@ -84,6 +89,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   private val STATE = "masterstate"
   private val TIMEOUT = Duration(5, TimeUnit.SECONDS)
   private val replicator = DataReplication(context.system).replicator
+  implicit val cluster = Cluster(context.system)
 
   //TODO: We can use this state for appmaster HA to recover a new App master
   private var state: Set[ApplicationState] = Set.empty[ApplicationState]
@@ -129,7 +135,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       stash()
   }
 
-  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse terminationWatch
+  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse appDataStoreService orElse terminationWatch
 
   def masterHAMsgHandler: Receive = {
     case update: UpdateResponse => LOG.info(s"we get update $update")
@@ -143,7 +149,8 @@ private[cluster] class AppManager() extends Actor with Stash {
       val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app), appId.toString)
 
       LOG.info(s"Persist master state writeQuorum: ${writeQuorum}, timeout: ${TIMEOUT}...")
-      replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + new ApplicationState(appId, 0, null))
+      val appState = new ApplicationState(appId, 0, appMasterClass, app, null)
+      replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + appState)
       sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
       appId += 1
     case ShutdownApplication(appId) =>
@@ -153,6 +160,7 @@ private[cluster] class AppManager() extends Actor with Stash {
         case Some(info) =>
           val worker = info.worker
           LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
+          cleanApplicationData(appId)
           worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
           sender ! ShutdownApplicationResult(Success(appId))
         case None =>
@@ -213,19 +221,72 @@ private[cluster] class AppManager() extends Actor with Stash {
         case None =>
           sender ! AppMasterDataDetail(appId = appId, appDescription = null)
       }
+  }
 
+  def appDataStoreService: Receive = {
+    case SaveAppData(appId, key, value) =>
+      val (_, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      if(info != null){
+        LOG.debug(s"saving application data $key for application $appId")
+        replicator ! Update(appId.toString, LWWMap(), WriteTo(writeQuorum), TIMEOUT)(_ + (key -> value))
+      } else {
+        LOG.error(s"no match application for app$appId when saving application data")
+      }
+      sender ! AppDataReceived
+    case GetAppData(appId, key) =>
+      val appMaster = sender
+      (replicator ? new Get(appId.toString, ReadFrom(readQuorum), TIMEOUT, None)).asInstanceOf[Future[ReplicatorMessage]].map{
+        case GetSuccess(_, appData: LWWMap, _) =>
+          if(appData.get(key).nonEmpty){
+            appMaster ! GetAppDataResult(key, appData.get(key).get)
+          } else {
+            appMaster ! GetAppDataResult(key, null)
+          }
+        case _ =>
+          LOG.error(s"failed to get application $appId data, the request key is $key")
+          appMaster ! GetAppDataResult(key, null)
+      }
   }
 
   def terminationWatch: Receive = {
-    //TODO: fix this
     case terminate: Terminated => {
       terminate.getAddressTerminated()
-      //TODO: Check whether this belongs to a app master
       LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
-
-      //TODO: we need to find out whether it is a normal terminaiton, or abnormal.
-      // The appMaster HA can be implemented by restoring the state from Set[ApplicationState]
+      //Now we assume that the only normal way to stop the application is submitting a ShutdownApplication request
+      val application = appMasterRegistry.find{appInfo =>
+        val (_, (actorRef, _)) = appInfo
+        actorRef.compareTo(terminate.actor) == 0
+      }
+      if(application.nonEmpty){
+        val appId = application.get._1
+        (replicator ? new Get(STATE, ReadFrom(readQuorum), TIMEOUT, None)).asInstanceOf[Future[ReplicatorMessage]].map{
+          case GetSuccess(_, replicatedState: GSet, _) =>
+            val appState = replicatedState.value.find(_.asInstanceOf[ApplicationState].appId == appId)
+            if(appState.nonEmpty){
+              self ! RecoverApplication(appState.get.asInstanceOf[ApplicationState])
+            }
+          case _ =>
+            LOG.error(s"failed to recover application $appId, can not find application state")
+        }
+      }
     }
+  }
+
+  def selfMsgHandler: Receive = {
+    case RecoverApplication(applicationStatus) =>
+      val appId = applicationStatus.appId
+      LOG.info(s"AppManager Recovering Application $appId...")
+      val appMasterClass = applicationStatus.appMasterClass
+      context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, Configs.empty, applicationStatus.app), appId.toString)
+  }
+
+  case class RecoverApplication(applicationStatus : ApplicationState)
+
+  private def cleanApplicationData(appId : Int) : Unit = {
+    appMasterRegistry -= appId
+    replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(set =>
+      GSet(set.value.filter(_.asInstanceOf[ApplicationState].appId != appId)))
+    replicator ! Delete(appId.toString)
   }
 }
 

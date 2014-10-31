@@ -47,12 +47,11 @@ object WordCount extends App with ArgumentsParser {
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
-    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)),
-    "jar"-> CLIOption[String]("<jar file holding TaskActors>", required = false, defaultValue = Some("examples/target/gearpump-examples-0.1.jar")))
+    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
 
-  def closure: String => Message[Int] = {
+  def closure: String => Message = {
     var count:Int = 0
-    def counter(t: String): Message[Int] = {
+    def counter(t: String): Message = {
       count = count + 1
       Message(count)
     }
@@ -64,7 +63,7 @@ object WordCount extends App with ArgumentsParser {
 
     val masters = config.getString("master")
     Console.out.println("Master URL: " + masters)
-    val jar = config.getString("jar")
+    val jar = "examples/target/gearpump-examples-0.1.jar"
 
     new WordCount().getApplication(config.getInt("split"), config.getInt("sum"), jar).map(application => {
       val context = ClientContext(masters)
