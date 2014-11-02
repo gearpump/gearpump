@@ -62,7 +62,6 @@ class AppMaster (config : Configs) extends Actor {
 
   private val registerData = config.appMasterRegisterData
 
-  private val name = appDescription.name
   private val taskSet = new TaskSet(config, DAG(appDescription.dag))
 
   private var clockService : ActorRef = null
@@ -117,7 +116,7 @@ class AppMaster (config : Configs) extends Actor {
   def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse appManagerMsgHandler orElse workerMsgHandler orElse clientMsgHandler orElse executorMsgHandler orElse terminationWatch
 
   def masterMsgHandler: Receive = {
-    case ResourceAllocated(allocations) => {
+    case ResourceAllocated(allocations) =>
       LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
       //group resource by worker
       val actorToWorkerId = mutable.HashMap.empty[ActorRef, Int]
@@ -131,7 +130,6 @@ class AppMaster (config : Configs) extends Actor {
         context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig))
         currentExecutorId += 1
       })
-    }
   }
 
   def appManagerMsgHandler: Receive = {
@@ -144,6 +142,7 @@ class AppMaster (config : Configs) extends Actor {
           sender ! AppMasterDataDetail(appId = appId, appDescription = appDescription)
       }
     case ReplayFromTimestampWindowTrailingEdge =>
+      implicit val timeout = akka.util.Timeout(3, TimeUnit.SECONDS)
       (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
         startClock = clock.clock
         taskLocations = taskLocations.empty
@@ -224,7 +223,7 @@ class AppMaster (config : Configs) extends Actor {
           val executorByPath = context.actorSelection("../app_0_executor_0")
 
           val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
-          executor ! LaunchTask(taskId, config, taskDescription.taskClass)
+          executor ! LaunchTask(taskId, config, taskDescription)
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
           launchTask(remainResources subtract usedResource)

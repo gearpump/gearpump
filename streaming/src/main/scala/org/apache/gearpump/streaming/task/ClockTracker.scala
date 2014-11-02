@@ -23,11 +23,11 @@ import org.apache.gearpump.{Message, TimeStamp}
 /**
  * Clocktracker will keep track of all pending messages on current task
  */
-class ClockTracker(flowControl : FlowControl)  {
+class ClockTracker[T<:java.io.Serializable](flowControl : FlowControl)  {
 import org.apache.gearpump.streaming.task.ClockTracker._
 
   private var minClock : TimeStamp = Long.MaxValue
-  private var candidateMinClock : MinClockSince = null
+  private var candidateMinClock: MinClockSince = null
 
   private var newReceivedMsg : Message = null
 
@@ -56,7 +56,7 @@ import org.apache.gearpump.streaming.task.ClockTracker._
        * MinClockSince will still be able to differentiate these three messages
        * by testing object.eq.
        */
-      val shadowMsg = msg.copy()
+      val shadowMsg = msg.copy().asInstanceOf[Message]
       candidateMinClock = new MinClockSince(shadowMsg, flowControl)
       shadowMsg
     } else {

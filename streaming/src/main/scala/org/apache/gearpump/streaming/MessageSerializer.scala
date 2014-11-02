@@ -30,9 +30,9 @@ class MessageSerializer extends Serializer[Message] {
   }
 
   override def read(kryo: Kryo, input: Input, typ: Class[Message]): Message = {
-    var timeStamp = input.readLong()
+    val timeStamp = input.readLong()
     val msg = kryo.readClassAndObject(input)
-    return new Message(msg.asInstanceOf[java.io.Serializable], timeStamp)
+    new Message(msg.asInstanceOf[java.io.Serializable], timeStamp)
   }
 }
 
@@ -45,7 +45,7 @@ class TaskIdSerializer  extends Serializer[TaskId] {
   override def read(kryo: Kryo, input: Input, typ: Class[TaskId]): TaskId = {
     val groupId = input.readInt()
     val index = input.readInt()
-    return new TaskId(groupId, index)
+    new TaskId(groupId, index)
   }
 }
 
@@ -62,7 +62,7 @@ class AckRequestSerializer extends Serializer[AckRequest] {
     val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
     val id = input.readInt()
     val seq = input.readLong()
-    return new AckRequest(taskId, Seq(id, seq))
+    new AckRequest(taskId, Seq(id, seq))
   }
 }
 
@@ -79,6 +79,6 @@ class AckSerializer extends Serializer[Ack] {
     val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
     val id = input.readInt()
     val seq = input.readLong()
-    return new Ack(taskId, Seq(id, seq))
+    new Ack(taskId, Seq(id, seq))
   }
 }

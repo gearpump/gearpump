@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -70,3 +70,5 @@ class Sum (conf : Configs) extends TaskActor(conf) {
 object Sum {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Sum])
 }
+
+

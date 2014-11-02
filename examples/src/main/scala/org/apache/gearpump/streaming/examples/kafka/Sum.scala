@@ -18,19 +18,14 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import java.util.concurrent.TimeUnit
-
-import akka.actor.Cancellable
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.HashMap
-import scala.concurrent.duration.FiniteDuration
 
 class Sum (conf : Configs) extends TaskActor(conf) {
-  import org.apache.gearpump.streaming.examples.kafka.Sum._
 
   private val map : HashMap[String, Long] = new HashMap[String, Long]()
 
@@ -42,11 +37,11 @@ class Sum (conf : Configs) extends TaskActor(conf) {
     if (null == msg) {
       return
     }
-    val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
+    val current = map.getOrElse(msg.asInstanceOf[String], 0L)
     val word = msg.msg.asInstanceOf[String]
     val count = current + 1
     map.put(word, count)
-    output(new Message(s"${msg.timestamp}" -> s"${word}:${count}", System.currentTimeMillis()))
+    output(new Message(s"${msg.timestamp}" -> s"$word:$count", System.currentTimeMillis()))
   }
 
   override def onStop() : Unit = {

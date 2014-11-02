@@ -18,25 +18,17 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import kafka.api.{FetchRequestBuilder, TopicMetadataRequest}
-import kafka.common.ErrorMapping._
 import kafka.common.TopicAndPartition
-import kafka.consumer.SimpleConsumer
-import kafka.message.MessageAndOffset
 import kafka.serializer.StringDecoder
-import kafka.utils.{Utils, ZkUtils}
-
+import kafka.utils.ZkUtils
 import org.apache.gearpump.streaming.ConfigsHelper._
-import org.apache.gearpump.streaming.transaction.checkpoint.{RelaxedTimeFilter, OffsetManager}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
+import org.apache.gearpump.streaming.transaction.checkpoint.{OffsetManager, RelaxedTimeFilter}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
-import org.apache.gearpump.streaming.transaction.lib.kafka.{KafkaMessage, KafkaSource, KafkaUtil}
-import org.apache.gearpump.{TimeStamp, Message}
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
 import org.apache.gearpump.util.Configs
+import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.collection.JavaConversions._
 
 
 object KafkaSpout {
@@ -46,7 +38,7 @@ object KafkaSpout {
   }
 
   case class Broker(host: String, port: Int) {
-    override def toString = s"${host}:${port}"
+    override def toString = s"$host:$port"
   }
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaSpout])
@@ -90,7 +82,7 @@ class KafkaSpout(conf: Configs) extends TaskActor(conf) {
         val source = entry._1
         val offset = entry._2
         val topicAndPartition = TopicAndPartition(source.name, source.partition)
-        LOG.info(s"set start offsets for ${topicAndPartition}")
+        LOG.info(s"set start offsets for $topicAndPartition")
         consumer.setStartOffset(topicAndPartition, offset)
     }
     consumer.start()

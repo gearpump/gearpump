@@ -22,7 +22,7 @@ import java.util.Random
 
 import akka.serialization.SerializationExtension
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.util.Configs
 
 class SOLSpout(conf : Configs) extends TaskActor(conf) {
@@ -39,7 +39,6 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     self ! Start
     val s = SerializationExtension(context.system)
     val serializer = s.findSerializerFor("hello")
-    val serialized = serializer.toBinary("hello")
 
     Console.println(s"Active serialization for string is: $serializer")
 
@@ -48,11 +47,11 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
 
   private def prepareRandomMessage = {
     rand = new Random()
-    val differentMessages = 100;
+    val differentMessages = 100
     messages = new Array(differentMessages)
 
     0.until(differentMessages).map { index =>
-      val sb = new StringBuilder(sizeInBytes);
+      val sb = new StringBuilder(sizeInBytes)
       //Even though java encodes strings in UCS2, the serialized version sent by the tuples
       // is UTF8, so it should be a single byte
       0.until(sizeInBytes).foldLeft(sb){(sb, j) =>
@@ -76,8 +75,9 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
   }
 }
 
-object SOLSpout{
+object SOLSpout {
   val BYTES_PER_MESSAGE = "bytesPerMessage"
 
   val Start = Message("start")
 }
+

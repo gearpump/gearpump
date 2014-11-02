@@ -47,7 +47,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   private var outputTaskIds : Array[TaskId] = null
   private var flowControl : FlowControl = null
-  private var clockTracker : ClockTracker = null
+  private var clockTracker : ClockTracker[java.io.Serializable] = null
 
   private var unackedClockSyncTimestamp : TimeStamp = 0
   private var needSyncToClockService = false
@@ -61,7 +61,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   def onStart(context : TaskContext) : Unit
 
-  def onNext(msg : Message) : Unit
+  def onNext(message : Message) : Unit
 
   def onStop() : Unit = {}
 
@@ -157,7 +157,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
     }
   }
 
-  private def doHandleMessage : Unit = {
+  private def doHandleMessage: Unit = {
     var done = false
     while (flowControl.allowSendingMoreMessages() && !done) {
       val msg = queue.poll()

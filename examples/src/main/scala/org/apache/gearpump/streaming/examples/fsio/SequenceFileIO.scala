@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.examples.fsio
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription, _}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 import org.apache.hadoop.conf.Configuration
@@ -46,27 +46,38 @@ object SequenceFileIO extends App with ArgumentsParser{
     val runseconds = config.getInt("runseconds")
     val input = config.getString("input")
     val output = config.getString("output")
+    val jar = "examples/target/gearpump-examples-0.1.jar"
 
     Console.out.println("Master URL: " + masters)
-    val context = ClientContext(masters)
+    getApplication(spout, bolt, input, output, jar).map(application => {
 
-    val appId = context.submit(getApplication(spout, bolt, input, output))
-    System.out.println(s"We get application id: $appId")
+      val context = ClientContext(masters)
 
-    Thread.sleep(runseconds * 1000)
+      val appId = context.submit(application)
+      System.out.println(s"We get application id: $appId")
 
-    System.out.println(s"Shutting down application $appId")
+      Thread.sleep(runseconds * 1000)
 
-    context.shutdown(appId)
-    context.destroy()
+      System.out.println(s"Shutting down application $appId")
+
+      context.shutdown(appId)
+      context.destroy()
+    })
+    System.out.println("Failed to load application")
+
+
   }
 
-  def getApplication(spoutNum : Int, boltNum : Int, input : String, output : String) : AppDescription = {
+  def getApplication(spoutNum : Int, boltNum : Int, input : String, output : String, jarName: String) : Option[AppDescription] = {
     val config = HadoopConfig.empty.withValue(SeqFileSpout.INPUT_PATH, input).withValue(SeqFileBolt.OUTPUT_PATH, output).withHadoopConf(new Configuration())
     val partitioner = new ShufflePartitioner()
-    val spout = TaskDescription(classOf[SeqFileSpout], spoutNum)
-    val bolt = TaskDescription(classOf[SeqFileBolt], boltNum)
-    val app = AppDescription("SequenceFileIO", config, Graph(spout ~ partitioner ~> bolt))
+    val jar = new java.io.File(jarName)
+    val app: Option[AppDescription] = jar.map(jar => {
+      val spout = TaskDescription(SeqFileSpout.getClass.getCanonicalName, spoutNum, jar)
+      val bolt = TaskDescription(SeqFileBolt.getClass.getCanonicalName, boltNum, jar)
+      val app = AppDescription("SequenceFileIO", config, Graph(spout ~ partitioner ~> bolt))
+      app
+    })
     app
   }
 }

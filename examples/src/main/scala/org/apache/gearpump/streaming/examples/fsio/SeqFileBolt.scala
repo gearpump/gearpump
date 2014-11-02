@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.examples.fsio.SeqFileBolt._
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
@@ -30,10 +30,14 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SeqFileBolt(config: HadoopConfig) extends TaskActor(config){
+object SeqFileBolt {
+  val OUTPUT_PATH = "outputpath"
+}
+
+class SeqFileBolt(config: HadoopConfig) extends TaskActor(config) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileBolt])
   val outputPath = new Path(config.getString(OUTPUT_PATH) + System.getProperty("file.separator") + this.taskId)
-  var writer: SequenceFile.Writer = null;
+  var writer: SequenceFile.Writer = null
   val textClass = new Text().getClass
   val key = new Text()
   val value = new Text()
@@ -76,8 +80,4 @@ class SeqFileBolt(config: HadoopConfig) extends TaskActor(config){
     snapShotKVCount = msgCount
     snapShotTime = current
   }
-}
-
-object SeqFileBolt{
-  val OUTPUT_PATH = "outputpath"
 }

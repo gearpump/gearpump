@@ -18,22 +18,18 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import java.util.Properties
-
-import akka.actor.Cancellable
-import kafka.producer.ProducerConfig
-import org.apache.gearpump.streaming.transaction.storage.inmemory.InMemoryKeyValueStore
-import org.apache.gearpump.{Message, TimeStamp}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
-import org.apache.gearpump.util.Configs
-import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeUnit
 
-import org.slf4j.{Logger, LoggerFactory}
+import akka.actor.Cancellable
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
 import org.apache.gearpump.streaming.transaction.storage.api.{KeyValueSerDe, StorageManager}
-import org.apache.gearpump.streaming.transaction.checkpoint.api.CheckpointSerDe
+import org.apache.gearpump.util.Configs
+import org.apache.gearpump.{Message, TimeStamp}
+import org.slf4j.{Logger, LoggerFactory}
+
+import scala.concurrent.duration.FiniteDuration
 
 object KafkaBolt {
 
@@ -88,7 +84,8 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
   }
 
   override def onNext(msg: Message): Unit = {
-    val kvMessage = msg.msg.asInstanceOf[(String, String)]
+    type Tuple = (String,String)
+    val kvMessage = msg.msg.asInstanceOf[Tuple]
     val key = kvMessage._1
     val value = kvMessage._2
     storageManager.put(key, value)
