@@ -16,7 +16,7 @@ object Build extends sbt.Build {
   val codahaleVersion = "3.0.2"
   val commonsLangVersion = "3.3.2"
   val commonsHttpVersion = "3.1"
-  val gearPumpVersion = "0.1"
+  val gearPumpVersion = "0.2"
   val dataReplicationVersion = "0.4"
   val hadoopVersion = "2.4.1"
   val jgraphtVersion = "0.9.0"
