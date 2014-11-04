@@ -31,6 +31,7 @@ object Build extends sbt.Build {
   val spraySwaggerVersion = "0.5.0"
   val swaggerUiVersion = "2.0.24"
   val scalaTestVersion = "2.2.0"
+  val scalaCheckVersion = "1.11.3"
 
   val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings ++
     Seq(
@@ -137,10 +138,11 @@ object Build extends sbt.Build {
   lazy val kafka = Project(
     id = "gearpump-examples-kafka",
     base = file("examples/kafka"),
-    settings = commonSettings  ++
+    settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test"
         )
       )
   ) dependsOn streaming
