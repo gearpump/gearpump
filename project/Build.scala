@@ -11,23 +11,23 @@ object Build extends sbt.Build {
     override def get(key: String) = Some(value)
   }
   
-  val akkaVersion = "2.3.5"
+  val akkaVersion = "2.3.6"
   val kyroVersion = "0.3.2"
   val codahaleVersion = "3.0.2"
   val commonsLangVersion = "3.3.2"
   val commonsHttpVersion = "3.1"
   val gearPumpVersion = "0.2"
-  val dataReplicationVersion = "0.4"
-  val hadoopVersion = "2.4.1"
+  val dataReplicationVersion = "0.7"
+  val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
   val json4sVersion = "3.2.10"
   val kafkaVersion = "0.8.1.1"
-  val slf4jVersion = "1.7.5"
+  val slf4jVersion = "1.7.7"
   val scalaVersionNumber = "2.10.4"
-  val sprayVersion = "1.3.1"
+  val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.2.6"
-  val spraySwaggerVersion = "0.4.3"
-  val swaggerUiVersion = "2.0.21"
+  val spraySwaggerVersion = "0.5.0"
+  val swaggerUiVersion = "2.0.24"
 
   val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++
     Seq(
@@ -49,12 +49,12 @@ object Build extends sbt.Build {
     settings = commonSettings ++ 
       Seq(
         resolvers ++= Seq(
+          "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
           "maven-repo" at "http://repo.maven.apache.org/maven2",
           "maven1-repo" at "http://repo1.maven.org/maven2",
           "maven2-repo" at "http://mvnrepository.com",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
-          "clockfly" at "http://dl.bintray.com/clockfly/maven",
-          "patrik" at "http://dl.bintray.com/patriknw/maven"
+          "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
       )
   )  dependsOn(core, streaming, examples, rest)
