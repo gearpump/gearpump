@@ -21,95 +21,104 @@ package org.apache.gearpump.transport.netty;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferOutputStream;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MessageBatch {
+
+  private static final Logger log = LoggerFactory.getLogger(MessageBatch.class);
+
   private int buffer_size;
-  private ArrayList<TaskMessage> msgs;
+  private List<TaskMessage> messages;
   private int encoded_length;
 
   MessageBatch(int buffer_size) {
     this.buffer_size = buffer_size;
-    msgs = new ArrayList<TaskMessage>();
+    messages = new ArrayList<>();
     encoded_length = 0;
   }
 
-  void add(TaskMessage obj) {
-    if (obj == null)
-      throw new RuntimeException("null object forbidded in message batch");
+  void add(TaskMessage taskMessage) {
+    if (taskMessage == null) {
+      throw new RuntimeException("null object forbidden in a message batch");
+    }
 
-    TaskMessage msg = (TaskMessage) obj;
-    msgs.add(msg);
-    encoded_length += msgEncodeLength(msg);
+    messages.add(taskMessage);
+    encoded_length += msgEncodeLength(taskMessage);
   }
 
 
   TaskMessage get(int index) {
-    return msgs.get(index);
+    return messages.get(index);
   }
 
   /**
    * try to add a TaskMessage to a batch
    *
-   * @param taskMsg
+   * @param taskMsg - {@link org.apache.gearpump.transport.netty.TaskMessage}
    * @return false if the msg could not be added due to buffer size limit; true otherwise
    */
   boolean tryAdd(TaskMessage taskMsg) {
-    if ((encoded_length + msgEncodeLength(taskMsg)) > buffer_size)
-      return false;
-    add(taskMsg);
-    return true;
+    if ((encoded_length + msgEncodeLength(taskMsg)) <= buffer_size) {
+      add(taskMsg);
+      return true;
+    }
+    return false;
   }
 
   private int msgEncodeLength(TaskMessage taskMsg) {
-    if (taskMsg == null) return 0;
-
-    int size = 12; //LONG + INT
-    if (taskMsg.message() != null)
-      size += taskMsg.message().length;
+    int size = 0;
+    if (taskMsg != null) {
+      size = 12; //LONG + INT
+      if (taskMsg.message() != null) {
+        size += taskMsg.message().length;
+      }
+    }
     return size;
   }
 
   /**
-   * Has this batch used up allowed buffer size
    *
-   * @return
+   * @return true, if allowed buffer is Full
    */
   boolean isFull() {
     return encoded_length >= buffer_size;
   }
 
   /**
-   * true if this batch doesn't have any messages
    *
-   * @return
+   * @return true, if no messages in this batch
    */
   boolean isEmpty() {
-    return msgs.isEmpty();
+    return messages.isEmpty();
   }
 
   /**
-   * # of msgs in this batch
    *
-   * @return
+   * @return number of messages available in this batch
    */
   int size() {
-    return msgs.size();
+    return messages.size();
   }
 
   /**
    * create a buffer containing the encoding of this batch
    */
-  ChannelBuffer buffer() throws Exception {
-    ChannelBufferOutputStream bout = new ChannelBufferOutputStream(ChannelBuffers.directBuffer(encoded_length));
-
-    for (TaskMessage msg : msgs)
-      writeTaskMessage(bout, msg);
-
-    bout.close();
-
-    return bout.buffer();
+  ChannelBuffer buffer() throws IOException {
+    try (ChannelBufferOutputStream bout =
+             new ChannelBufferOutputStream(ChannelBuffers.directBuffer(encoded_length))) {
+      for (TaskMessage msg : messages) {
+        writeTaskMessage(bout, msg);
+      }
+      return bout.buffer();
+    } catch (IOException e) {
+      log.error("Error while writing Tasks to Channel Buffer - {}", e.getMessage());
+    }
+    return null;
   }
 
   /**
@@ -120,16 +129,18 @@ public class MessageBatch {
    * len ... int(4)
    * payload ... byte[]     *
    */
-  private void writeTaskMessage(ChannelBufferOutputStream bout, TaskMessage message) throws Exception {
+  private void writeTaskMessage(ChannelBufferOutputStream bout,
+                                TaskMessage message) throws IOException {
     int payload_len = 0;
-    if (message.message() != null)
+    if (message.message() != null) {
       payload_len = message.message().length;
-
+    }
     long task_id = message.task();
 
     bout.writeLong(task_id);
     bout.writeInt(payload_len);
-    if (payload_len > 0)
+    if (payload_len > 0) {
       bout.write(message.message());
+    }
   }
 }
