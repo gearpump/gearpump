@@ -6,7 +6,6 @@ import scala.collection.immutable.Map.WithDefault
 
 object Build extends sbt.Build {
 
-
   class DefaultValueMap[+B](value : B) extends WithDefault[String, B](null, (key) => value) {
     override def get(key: String) = Some(value)
   }
@@ -57,7 +56,8 @@ object Build extends sbt.Build {
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
       )
-  )  dependsOn(core, streaming, examples, rest)
+  )  dependsOn(core, streaming) aggregate(fsio, kafka, sol, wordcount, rest)
+
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -65,7 +65,6 @@ object Build extends sbt.Build {
     settings = commonSettings  ++
     Seq(
         packResourceDir := Map(baseDirectory.value / "src/main/resources" -> "conf"),
-
         libraryDependencies ++= Seq(
         "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
         "com.codahale.metrics" % "metrics-core" % codahaleVersion,
@@ -100,15 +99,38 @@ object Build extends sbt.Build {
       )
   )  dependsOn(core)
   
-  lazy val examples = Project(
-    id = "gearpump-examples",
-    base = file("examples"),
+  lazy val fsio = Project(
+    id = "gearpump-examples-fsio",
+    base = file("examples/fsio"),
     settings = commonSettings  ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion
         )
       )
+  ) dependsOn(streaming)
+
+  lazy val kafka = Project(
+    id = "gearpump-examples-kafka",
+    base = file("examples/kafka"),
+    settings = commonSettings  ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
+        )
+      )
+  ) dependsOn(streaming)
+
+  lazy val sol = Project(
+    id = "gearpump-examples-sol",
+    base = file("examples/sol"),
+    settings = commonSettings
+  ) dependsOn(streaming)
+
+  lazy val wordcount = Project(
+    id = "gearpump-examples-wordcount",
+    base = file("examples/wordcount"),
+    settings = commonSettings
   ) dependsOn(streaming)
 
   lazy val rest = Project(
@@ -129,5 +151,5 @@ object Build extends sbt.Build {
           "org.webjars" % "swagger-ui" % swaggerUiVersion
         )
       ) 
-  ) dependsOn(core, streaming, examples)
+  ) dependsOn(streaming)
 }
