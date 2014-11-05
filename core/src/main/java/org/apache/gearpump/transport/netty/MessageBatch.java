@@ -63,19 +63,20 @@ public class MessageBatch {
    * @return false if the msg could not be added due to buffer size limit; true otherwise
    */
   boolean tryAdd(TaskMessage taskMsg) {
-    if ((encoded_length + msgEncodeLength(taskMsg)) > buffer_size) {
-      return false;
+    if ((encoded_length + msgEncodeLength(taskMsg)) <= buffer_size) {
+      add(taskMsg);
+      return true;
     }
-    add(taskMsg);
-    return true;
+    return false;
   }
 
   private int msgEncodeLength(TaskMessage taskMsg) {
-    if (taskMsg == null) return 0;
-
-    int size = 12; //LONG + INT
-    if (taskMsg.message() != null) {
-      size += taskMsg.message().length;
+    int size = 0;
+    if (taskMsg != null) {
+      size = 12; //LONG + INT
+      if (taskMsg.message() != null) {
+        size += taskMsg.message().length;
+      }
     }
     return size;
   }
