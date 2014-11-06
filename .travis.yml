@@ -1,0 +1,13 @@
+language: java
+before_install: sudo pip install codecov
+script: mvn -Pjacoco test
+jdk:
+  - oraclejdk7
+  - oraclejdk8
+cache:
+  directories:
+    - $HOME/.m2
+    - $HOME/.ivy2
+git:
+  depth: 1
+after_success: codecov
