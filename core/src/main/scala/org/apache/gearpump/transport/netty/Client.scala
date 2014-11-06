@@ -51,10 +51,9 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
   def receive = messageHandler orElse connectionHandler
 
   def messageHandler : Receive = {
-    case msg: TaskMessage => {
+    case msg: TaskMessage =>
       batch += msg
-    }
-    case flush @ Flush(flushChannel)  => {
+    case flush @ Flush(flushChannel)  =>
       if (!channel.eq(flushChannel)) {
         Unit //Drop, as it belong to old channel flush message
       }
@@ -66,31 +65,26 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
         import context.dispatcher
         context.system.scheduler.scheduleOnce(new FiniteDuration(5, TimeUnit.MILLISECONDS))(self ! flush)
       }
-    }
   }
 
   def connectionHandler : Receive = {
-    case ChannelReady(channel) => {
+    case ChannelReady(channel) =>
       this.channel = channel
       self ! Flush(channel)
-    }
-    case Connect(tries) => {
+    case Connect(tries) =>
       if (null == channel) {
         connect(tries)
       } else {
         LOG.error("there already exsit a channel, will not establish a new one...")
       }
-    }
-    case CompareAndReconnectIfEqual(oldChannel) => {
+    case CompareAndReconnectIfEqual(oldChannel) =>
       if (oldChannel == channel) {
         channel = null
         self ! Connect(0)
       }
-    }
-    case Close => {
-      close
+    case Close =>
+      close()
       context.become(closed)
-    }
   }
 
   def closed : Receive = {
@@ -121,7 +115,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     var messageBatch: MessageBatch = null
 
     while (msgs.hasNext) {
-      val message: TaskMessage = msgs.next
+      val message: TaskMessage = msgs.next()
       if (null == messageBatch) {
         messageBatch = new MessageBatch(conf.messageBatchSize)
       }
@@ -137,7 +131,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     }
   }
 
-  private def close {
+  private def close() {
     LOG.info(s"closing netty client $name...")
     if (null != channel) {
       channel.close()
@@ -146,8 +140,8 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     batch.clear()
   }
 
-  override def postStop = {
-    close
+  override def postStop() = {
+    close()
   }
 
   private def flushRequest(channel: Channel, requests: MessageBatch) {
@@ -201,7 +195,7 @@ object Client {
       pipeline.addLast("decoder", new MessageDecoder)
       pipeline.addLast("encoder", new MessageEncoder)
       pipeline.addLast("handler", new ClientErrorHandler(name))
-      return pipeline
+      pipeline
     }
   }
 

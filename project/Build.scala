@@ -11,7 +11,7 @@ object Build extends sbt.Build {
   }
   
   val akkaVersion = "2.3.6"
-  val kyroVersion = "0.3.2"
+  val kryoVersion = "0.3.2"
   val codahaleVersion = "3.0.2"
   val commonsLangVersion = "3.3.2"
   val commonsHttpVersion = "3.1"
@@ -27,6 +27,7 @@ object Build extends sbt.Build {
   val sprayJsonVersion = "1.2.6"
   val spraySwaggerVersion = "0.5.0"
   val swaggerUiVersion = "2.0.24"
+  val scalaTestVersion = "2.2.0"
 
   val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++
     Seq(
@@ -82,7 +83,7 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
         "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
-        "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion,
+        "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
       )
     ) 
@@ -97,7 +98,7 @@ object Build extends sbt.Build {
           "org.apache.kafka" %% "kafka" % kafkaVersion
         )
       )
-  )  dependsOn(core)
+  )  dependsOn core
   
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
@@ -108,7 +109,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion
         )
       )
-  ) dependsOn(streaming)
+  ) dependsOn streaming
 
   lazy val kafka = Project(
     id = "gearpump-examples-kafka",
@@ -119,19 +120,19 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion
         )
       )
-  ) dependsOn(streaming)
+  ) dependsOn streaming
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",
     base = file("examples/sol"),
     settings = commonSettings
-  ) dependsOn(streaming)
+  ) dependsOn streaming
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
     base = file("examples/wordcount"),
     settings = commonSettings
-  ) dependsOn(streaming)
+  ) dependsOn streaming
 
   lazy val rest = Project(
     id = "gearpump-rest",
@@ -148,8 +149,9 @@ object Build extends sbt.Build {
           "com.gettyimages" %% "spray-swagger" % spraySwaggerVersion excludeAll( ExclusionRule(organization = "org.json4s"), ExclusionRule(organization = "io.spray") ),
           "org.json4s" %% "json4s-jackson" % json4sVersion,
           "org.json4s" %% "json4s-native"   % json4sVersion,
-          "org.webjars" % "swagger-ui" % swaggerUiVersion
+          "org.webjars" % "swagger-ui" % swaggerUiVersion,
+          "org.scalatest" %% "scalatest" % scalaTestVersion
         )
       ) 
-  ) dependsOn(streaming)
+  ) dependsOn streaming
 }
