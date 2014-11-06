@@ -63,7 +63,16 @@ object AppMasterToMaster {
 }
 
 object MasterToAppMaster {
-  case class ResourceAllocated(allocations: Array[ResourceAllocation])
+  case class ResourceAllocated(allocations: Array[ResourceAllocation]){
+    override def equals(other: Any): Boolean = {
+      other match {
+        case that: ResourceAllocated =>
+          allocations.sortBy(_.workerId).sameElements(that.allocations.sortBy(_.workerId))
+        case _ =>
+          false
+      }
+    }
+  }
   case class AppMasterRegistered(appId: Int, master : ActorRef)
   case object ShutdownAppMaster
   case class AppMasterData(appId: Int, appData: AppMasterInfo)
