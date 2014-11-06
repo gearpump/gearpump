@@ -1,9 +1,15 @@
-language: java
+language:
+  - java
+  - scala
+
 before_install: sudo pip install codecov
-script: mvn -Pjacoco test
+script: sbt jacoco:cover
 jdk:
   - oraclejdk7
-  - oraclejdk8
+scala:
+  - 2.10.4
+  - 2.11.2
+
 cache:
   directories:
     - $HOME/.m2
