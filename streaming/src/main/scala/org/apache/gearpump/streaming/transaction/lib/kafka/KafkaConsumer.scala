@@ -38,7 +38,7 @@ object KafkaConsumer {
   }
 
   case class Broker(host: String, port: Int) {
-    override def toString = s"${host}:${port}"
+    override def toString = s"$host:$port"
   }
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaConsumer])

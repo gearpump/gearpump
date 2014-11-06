@@ -30,7 +30,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 object Kill extends App with ArgumentsParser {
 
-  private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
+  private val LOG: Logger = LoggerFactory.getLogger(Kill.getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
@@ -40,7 +40,7 @@ object Kill extends App with ArgumentsParser {
     val config = parse(args)
 
     val masters = config.getString("master")
-    Console.out.println("Master URL: " + masters)
+    LOG.info("Master URL: {}", masters)
 
     implicit val timeout = Timeout(5, TimeUnit.SECONDS)
     val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
@@ -48,6 +48,7 @@ object Kill extends App with ArgumentsParser {
     val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
 
     val client = new MasterClient(master)
+    LOG.info("Client ")
     client.shutdownApplication(config.getInt("appid"))
 
     system.shutdown()

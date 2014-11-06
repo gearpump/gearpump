@@ -33,11 +33,11 @@ class ParseResult(optionMap : Map[String, String], remainArguments : Array[Strin
 }
 
 
-trait ArgumentsParser {
+trait  ArgumentsParser {
 
   val ignoreUnknownArgument = false
 
-  def help:Unit = {
+  def help : Unit = {
     Console.println("Usage:")
     var usage = List(s"java ${this.getClass} " + options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") + " " + remainArgs.map(k => s"<$k>").mkString(" "))
     options.map(kv => if(kv._2.required) {
