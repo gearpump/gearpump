@@ -33,15 +33,10 @@ public class MessageDecoder extends FrameDecoder {
    *  len ... int(4)
    *  payload ... byte[]     *
    */
-  protected Object decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buf) throws Exception {
-    // Make sure that we have received at least a short
+  protected List<TaskMessage> decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buf) {
+    List<TaskMessage> taskMessageList = null;
+    // Make sure that we have received at least a short message
     long available = buf.readableBytes();
-    if (available < 8) {
-      //need more data
-      return null;
-    }
-
-    List<Object> ret = new ArrayList<Object>();
 
     // Use while loop, try to decode as more messages as possible in single call
     while (available >= 8) {
@@ -65,11 +60,13 @@ public class MessageDecoder extends FrameDecoder {
 
       // Read the length field.
       int length = buf.readInt();
-
       available -= 4;
+      if (taskMessageList == null || taskMessageList.isEmpty()) {
+        taskMessageList = new ArrayList<>();
+      }
 
       if (length <= 0) {
-        ret.add(new TaskMessage(task, null));
+        taskMessageList.add(new TaskMessage(task, null));
         break;
       }
 
@@ -84,16 +81,10 @@ public class MessageDecoder extends FrameDecoder {
       // There's enough bytes in the buffer. Read it.
       ChannelBuffer payload = buf.readBytes(length);
 
-
       // Successfully decoded a frame.
       // Return a TaskMessage object
-      ret.add(new TaskMessage(task, payload.array()));
+      taskMessageList.add(new TaskMessage(task, payload.array()));
     }
-
-    if (ret.size() == 0) {
-      return null;
-    } else {
-      return ret;
-    }
+    return taskMessageList;
   }
 }
