@@ -1,0 +1,19 @@
+language:
+  - java
+  - scala
+
+before_install: sudo pip install codecov
+script: sbt jacoco:cover
+jdk:
+  - oraclejdk7
+scala:
+  - 2.10.4
+  - 2.11.2
+
+cache:
+  directories:
+    - $HOME/.m2
+    - $HOME/.ivy2
+git:
+  depth: 1
+after_success: codecov
