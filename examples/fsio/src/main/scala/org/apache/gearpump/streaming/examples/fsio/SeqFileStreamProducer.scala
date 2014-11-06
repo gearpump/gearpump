@@ -18,15 +18,15 @@
 package org.apache.gearpump.streaming.examples.fsio
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.examples.fsio.SeqFileSpout._
+import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProducer._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
 import org.slf4j.{Logger, LoggerFactory}
 
-class SeqFileSpout(config: HadoopConfig) extends TaskActor(config ){
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileSpout])
+class SeqFileStreamProducer(config: HadoopConfig) extends TaskActor(config ){
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileStreamProducer])
   val value = new Text()
   val key = new Text()
   var reader: SequenceFile.Reader = null
@@ -55,7 +55,7 @@ class SeqFileSpout(config: HadoopConfig) extends TaskActor(config ){
   }
 }
 
-object SeqFileSpout{
+object SeqFileStreamProducer{
   def INPUT_PATH = "inputpath"
 
   val Start = Message("start")

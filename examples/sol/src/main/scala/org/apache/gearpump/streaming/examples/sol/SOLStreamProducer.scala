@@ -25,11 +25,10 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 
-class SOLSpout(conf : Configs) extends TaskActor(conf) {
-  import org.apache.gearpump.streaming.examples.sol.SOLSpout._
+class SOLStreamProducer(conf : Configs) extends TaskActor(conf) {
+  import org.apache.gearpump.streaming.examples.sol.SOLStreamProducer._
 
-  private val sizeInBytes = conf.getInt(SOLSpout.BYTES_PER_MESSAGE)
-
+  private val sizeInBytes = conf.getInt(SOLStreamProducer.BYTES_PER_MESSAGE)
   private var messages : Array[String] = null
   private var rand : Random = null
   private var messageCount : Long = 0
@@ -40,19 +39,16 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     val s = SerializationExtension(context.system)
     val serializer = s.findSerializerFor("hello")
     val serialized = serializer.toBinary("hello")
-
     Console.println(s"Active serialization for string is: $serializer")
-
-
   }
 
   private def prepareRandomMessage = {
     rand = new Random()
-    val differentMessages = 100;
+    val differentMessages = 100
     messages = new Array(differentMessages)
 
     0.until(differentMessages).map { index =>
-      val sb = new StringBuilder(sizeInBytes);
+      val sb = new StringBuilder(sizeInBytes)
       //Even though java encodes strings in UCS2, the serialized version sent by the tuples
       // is UTF8, so it should be a single byte
       0.until(sizeInBytes).foldLeft(sb){(sb, j) =>
@@ -66,7 +62,6 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
     val message = messages(rand.nextInt(messages.length))
     output(new Message(message, System.currentTimeMillis()))
     messageCount = messageCount + 1L
-
     self ! messageSourceMinClock
   }
 
@@ -76,8 +71,7 @@ class SOLSpout(conf : Configs) extends TaskActor(conf) {
   }
 }
 
-object SOLSpout{
+object SOLStreamProducer{
   val BYTES_PER_MESSAGE = "bytesPerMessage"
-
   val Start = Message("start")
 }

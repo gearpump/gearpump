@@ -27,15 +27,15 @@ import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
 
 class KafkaWordCount {
-  def getApplication(config: Configs, kafkaSpoutNum: Int, splitNum: Int,
-                     sumNum: Int, kafkaBoltNum: Int) : AppDescription = {
+  def getApplication(config: Configs, kafkaStreamProducerNum: Int, splitNum: Int,
+                     sumNum: Int, kafkaStreamProcessorNum: Int) : AppDescription = {
     val partitioner = new HashPartitioner()
-    val kafkaSpout = TaskDescription(classOf[KafkaSpout], kafkaSpoutNum)
+    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer], kafkaStreamProducerNum)
     val split = TaskDescription(classOf[Split], splitNum)
     val sum = TaskDescription(classOf[Sum], sumNum)
-    val kafkaBolt = TaskDescription(classOf[KafkaBolt], kafkaBoltNum)
+    val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor], kafkaStreamProcessorNum)
     val app = AppDescription("KafkaWordCount", config,
-      Graph(kafkaSpout ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaBolt))
+      Graph(kafkaStreamProducer ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaStreamProcessor))
     app
   }
 }
@@ -44,10 +44,10 @@ object KafkaWordCount extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
-    "kafka_spout" -> CLIOption[Int]("<hom many kafka spout tasks>", required = false, defaultValue = Some(1)),
+    "kafka_stream_producer" -> CLIOption[Int]("<hom many kafka producer tasks>", required = false, defaultValue = Some(1)),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
-    "kafka_bolt" -> CLIOption[Int]("<hom many kafka bolt tasks", required = false, defaultValue = Some(4)),
+    "kafka_stream_processor" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(4)),
     "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
   val config = parse(args)
 
@@ -59,8 +59,8 @@ object KafkaWordCount extends App with ArgumentsParser {
     val context = ClientContext(masters)
 
     val appId = context.submit(new KafkaWordCount().getApplication(
-      Configs(KafkaConfig()), config.getInt("kafka_spout"), config.getInt("split"),
-      config.getInt("sum"), config.getInt("kafka_bolt")))
+      Configs(KafkaConfig()), config.getInt("kafka_stream_producer"), config.getInt("split"),
+      config.getInt("sum"), config.getInt("kafka_stream_processor")))
 
     System.out.println(s"We get application id: $appId")
 

@@ -28,8 +28,8 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[SOLBolt])
+class SOLStreamProcessor(conf : Configs) extends TaskActor(conf : Configs) {
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[SOLStreamProcessor])
 
   private var msgCount : Long = 0
   private var scheduler : Cancellable = null
@@ -39,7 +39,7 @@ class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) {
   override def onStart(taskContext : TaskContext) : Unit = {
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
+      new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount())
     snapShotTime = System.currentTimeMillis()
   }
 
@@ -52,9 +52,9 @@ class SOLBolt(conf : Configs) extends TaskActor(conf : Configs) {
     scheduler.cancel()
   }
 
-  def reportWordCount : Unit = {
+  def reportWordCount() : Unit = {
     val current : Long = System.currentTimeMillis()
-    LOG.info(s"Task $taskId Throughput: ${((msgCount - snapShotWordCount), ((current - snapShotTime) / 1000))} (words, second)")
+    LOG.info(s"Task $taskId Throughput: ${(msgCount - snapShotWordCount, (current - snapShotTime) / 1000)} (words, second)")
     snapShotWordCount = msgCount
     snapShotTime = current
   }
