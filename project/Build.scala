@@ -28,6 +28,7 @@ object Build extends sbt.Build {
   val sprayJsonVersion = "1.2.6"
   val spraySwaggerVersion = "0.4.3"
   val swaggerUiVersion = "2.0.21"
+  val scalaTestVersion = "2.1.3"
 
   val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++
     Seq(
@@ -82,6 +83,8 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+        "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
+        "org.scalatest" %% "scalatest" % scalaTestVersion,
         "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kyroVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
