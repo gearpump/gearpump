@@ -29,7 +29,7 @@ class MasterProxy(masters: Iterable[HostPort])
   import org.apache.gearpump.cluster.MasterProxy._
 
   val contacts = masters.map { master =>
-    s"akka.tcp://${MASTER}@${master.host}:${master.port}/user/${MASTER}"
+    s"akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER"
   }.map { url =>
     context.actorSelection(url)
   }
@@ -63,10 +63,9 @@ class MasterProxy(masters: Iterable[HostPort])
       contacts foreach { _ ! Identify(None) }
       context.become(establishing)
     case _: ActorIdentity ⇒ // ok, from previous establish, already handled
-    case msg => {
+    case msg =>
       LOG.info(s"Get msg ${msg.getClass.getSimpleName}, forwarding to ${receptionist.path}")
       receptionist forward msg
-    }
   }
 }
 

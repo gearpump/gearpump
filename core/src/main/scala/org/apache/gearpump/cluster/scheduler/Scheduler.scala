@@ -37,7 +37,7 @@ abstract class Scheduler extends Actor{
         resources.put(id, (sender, Resource.empty))
       }
     case ResourceUpdate(workerId, resource) =>
-      LOG.info(s"Resource update id: ${workerId}, slots: ${resource.slots}....")
+      LOG.info(s"Resource update id: $workerId, slots: ${resource.slots}....")
       if(resources.contains(workerId)) {
         resources.update(workerId, (sender, resource))
         allocateResource()

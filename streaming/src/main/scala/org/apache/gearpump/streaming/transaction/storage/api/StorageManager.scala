@@ -56,7 +56,7 @@ class StorageManager[K, V](id: String,
 
   private var states: Map[K, V] = Map.empty[K, V]
   private val source : Source = new Source {
-    def name: String = s"storage_${id}"
+    def name: String = s"storage_$id"
     def partition: Int = 0
   }
   private val checkpointSerDe = new StoreCheckpointSerDe[K, V](keyValueSerDe)

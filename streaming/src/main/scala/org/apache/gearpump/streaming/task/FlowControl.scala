@@ -71,7 +71,7 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
       }
       index += 1
     }
-    return true
+    true
   }
 }
 

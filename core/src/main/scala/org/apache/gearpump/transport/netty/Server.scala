@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.transport.netty
 
-import java.util.List
+import java.util
 
 import akka.actor.{Actor, ActorRef, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
@@ -45,17 +45,16 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
 
   def channelManager : Receive = {
     case AddChannel(channel) => allChannels.add(channel)
-    case CloseChannel(channel) => {
+    case CloseChannel(channel) =>
       import context.dispatcher
       future {
         channel.close.awaitUninterruptibly
         allChannels.remove(channel)
       }
-    }
   }
 
   def msgHandler : Receive = {
-    case MsgBatch(msgs) => {
+    case MsgBatch(msgs) =>
       msgs.groupBy(_.task()).map { taskBatch =>
         val (taskId, taskMessages) = taskBatch
         val actor = lookupActor.lookupLocalActor(taskId)
@@ -67,10 +66,9 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
           actor.get.tell(msg, Actor.noSender)
         }
       }
-    }
   }
 
-  override def postStop = {
+  override def postStop() = {
     allChannels.close.awaitUninterruptibly
   }
 }
@@ -84,7 +82,7 @@ object Server {
       pipeline.addLast("decoder", new MessageDecoder)
       pipeline.addLast("encoder", new MessageEncoder)
       pipeline.addLast("handler", new ServerHandler(server))
-      return pipeline
+      pipeline
     }
   }
 
@@ -95,7 +93,7 @@ object Server {
     }
 
     override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
-      val msgs: List[TaskMessage] = e.getMessage.asInstanceOf[List[TaskMessage]]
+      val msgs: util.List[TaskMessage] = e.getMessage.asInstanceOf[util.List[TaskMessage]]
       if (msgs != null) {
         server ! MsgBatch(msgs)
       }

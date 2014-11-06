@@ -36,15 +36,15 @@ class MasterClient(master : ActorRef) {
     val result = Await.result( (master ? SubmitApplication(appMaster, config, app)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)
     result.appId match {
       case Success(appId) => appId
-      case Failure(ex) => throw(ex)
+      case Failure(ex) => throw ex
     }
   }
 
   def shutdownApplication(appId : Int) : Unit = {
     val result = Await.result((master ? ShutdownApplication(appId)).asInstanceOf[Future[ShutdownApplicationResult]], Duration.Inf)
     result.appId match {
-      case Success(_) => Unit
-      case Failure(ex) => throw(ex)
+      case Success(_) =>
+      case Failure(ex) => throw ex
     }
   }
 

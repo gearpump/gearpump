@@ -113,7 +113,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
         mergedPartitioner.add(partitioner, taskParallism)
       }
 
-      LOG.info(s"task: $taskId partitioner: ${partitioner}")
+      LOG.info(s"task: $taskId partitioner: $partitioner")
 
       outputTaskIds = edges.flatMap {nodeEdgeNode =>
         val (_, _, taskgroupId) = nodeEdgeNode
@@ -213,7 +213,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
         tryToSyncToClockService
       }
     case RestartTasks(timestamp) =>
-      LOG.info(s"Restarting myself ${taskId} from timestamp $timestamp...")
+      LOG.info(s"Restarting myself $taskId from timestamp $timestamp...")
       throw new RestartException
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)

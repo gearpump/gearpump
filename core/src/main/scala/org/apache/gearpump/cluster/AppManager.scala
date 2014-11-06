@@ -51,15 +51,15 @@ import scala.util.{Failure, Success}
 class ApplicationState(val appId : Int, val attemptId : Int, val appMasterClass : Class[_ <: Actor], val app : Application, val state : Any) extends Serializable {
 
   override def equals(other: Any): Boolean = {
-    if (other.isInstanceOf[ApplicationState]) {
-      val that = other.asInstanceOf[ApplicationState]
-      if (appId == that.appId && attemptId == that.attemptId) {
-        true
-      } else {
+    other match {
+      case that: ApplicationState =>
+        if (appId == that.appId && attemptId == that.attemptId) {
+          true
+        } else {
+          false
+        }
+      case _ =>
         false
-      }
-    } else {
-      false
     }
   }
 
@@ -102,11 +102,11 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   replicator ! new Get(STATE, ReadFrom(readQuorum), TIMEOUT, None)
 
-  override def preStart: Unit = {
+  override def preStart(): Unit = {
     replicator ! Subscribe(STATE, self)
   }
 
-  override def postStop: Unit = {
+  override def postStop(): Unit = {
     replicator ! Unsubscribe(STATE, self)
   }
 
@@ -119,15 +119,15 @@ private[cluster] class AppManager() extends Actor with Stash {
         set + appState.asInstanceOf[ApplicationState]
       }
       appId = state.map(_.appId).size
-      LOG.info(s"Successfully recoeved application states for ${state.map(_.appId)}, nextAppId: ${appId}....")
+      LOG.info(s"Successfully received application states for ${state.map(_.appId)}, nextAppId: $appId....")
       context.become(receiveHandler)
       unstashAll()
     case x: GetFailure =>
-      LOG.info("GetFailure We cannot find any exisitng state, start a fresh one...")
+      LOG.info("GetFailure We cannot find any existing state, start a fresh one...")
       context.become(receiveHandler)
       unstashAll()
     case x: NotFound =>
-      LOG.info("We cannot find any exisitng state, start a fresh one...")
+      LOG.info("We cannot find any existing state, start a fresh one...")
       context.become(receiveHandler)
       unstashAll()
     case msg =>
@@ -148,7 +148,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       LOG.info(s"AppManager Submiting Application $appId...")
       val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app), appId.toString)
 
-      LOG.info(s"Persist master state writeQuorum: ${writeQuorum}, timeout: ${TIMEOUT}...")
+      LOG.info(s"Persist master state writeQuorum: $writeQuorum, timeout: $TIMEOUT...")
       val appState = new ApplicationState(appId, 0, appMasterClass, app, null)
       replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + appState)
       sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
@@ -249,7 +249,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   }
 
   def terminationWatch: Receive = {
-    case terminate: Terminated => {
+    case terminate: Terminated =>
       terminate.getAddressTerminated()
       LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
       //Now we assume that the only normal way to stop the application is submitting a ShutdownApplication request
@@ -269,7 +269,6 @@ private[cluster] class AppManager() extends Actor with Stash {
             LOG.error(s"failed to recover application $appId, can not find application state")
         }
       }
-    }
   }
 
   def selfMsgHandler: Receive = {
@@ -310,7 +309,7 @@ private[cluster] object AppManager {
     def receive : Receive = waitForResourceAllocation
 
     def waitForResourceAllocation : Receive = {
-      case ResourceAllocated(allocations) => {
+      case ResourceAllocated(allocations) =>
         LOG.info(s"Resource allocated for appMaster $app Id")
         val allocation = allocations(0)
         val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
@@ -322,7 +321,6 @@ private[cluster] object AppManager {
 
         allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
         context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))
-      }
     }
 
     def waitForActorSystemToStart(worker : ActorRef, masterConfig : Configs) : Receive = {
@@ -338,7 +336,7 @@ private[cluster] object AppManager {
           val hostAndPort = address.split(":")
           HostPort(hostAndPort(0), hostAndPort(1).toInt)
         }
-        LOG.info(s"Create master proxy on target actor system ${systemPath}")
+        LOG.info(s"Create master proxy on target actor system $systemPath")
         val masterProxyConfig = Props(classOf[MasterProxy], masterAddress)
         sender ! CreateActor(masterProxyConfig, "masterproxy")
         context.become(waitForMasterProxyToStart(masterConfig))

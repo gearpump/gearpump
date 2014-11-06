@@ -44,9 +44,9 @@ object KafkaUtil {
 
   def getBroker(zkClient: ZkClient, topic: String, partition: Int): Broker = {
     val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
-      .getOrElse(throw new Exception(s"leader not available for TopicAndPartition(${topic}, ${partition})"))
+      .getOrElse(throw new Exception(s"leader not available for TopicAndPartition($topic, $partition)"))
     val broker = ZkUtils.getBrokerInfo(zkClient, leader)
-      .getOrElse(throw new Exception(s"broker info not found for leader ${leader}"))
+      .getOrElse(throw new Exception(s"broker info not found for leader $leader"))
     Broker(broker.host, broker.port)
   }
 }

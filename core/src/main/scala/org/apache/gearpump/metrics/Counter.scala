@@ -26,7 +26,7 @@ import com.codahale.metrics.{Counter => CodaHaleCounter}
 class Counter(counter : CodaHaleCounter, sampleRate : Int = 1) {
   private var sampleCount = 0L
 
-  def inc {
+  def inc() {
     inc(1)
   }
 
