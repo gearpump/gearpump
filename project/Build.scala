@@ -1,3 +1,4 @@
+import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import sbt.Keys._
 import sbt._
 import xerial.sbt.Pack._
@@ -29,7 +30,7 @@ object Build extends sbt.Build {
   val swaggerUiVersion = "2.0.24"
   val scalaTestVersion = "2.2.0"
 
-  val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++
+  val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++ jacoco.settings ++
     Seq(
       scalaVersion := scalaVersionNumber,
       version := gearPumpVersion,
