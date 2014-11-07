@@ -65,7 +65,7 @@ class PriorityScheduler extends Scheduler{
           if(availableResource.nonEmpty){
             val (workerId, (worker, resource)) = availableResource.get
             allocated = allocated.add(request.resource)
-            appMaster ! ResourceAllocated(Array(ResourceAllocation(request.resource, worker, request.workerId)))
+            appMaster ! ResourceAllocated(Array(ResourceAllocation(request.resource, worker, workerId)))
             resourcesSnapShot.update(workerId, (worker, resource.subtract(request.resource)))
           } else {
             scheduleLater = scheduleLater :+ PendingRequest(appMaster, request, timeStamp)
