@@ -67,7 +67,7 @@ object MasterToAppMaster {
     override def equals(other: Any): Boolean = {
       other match {
         case that: ResourceAllocated =>
-          allocations.sameElements(that.allocations)
+          allocations.sortBy(_.workerId).sameElements(that.allocations.sortBy(_.workerId))
         case _ =>
           false
       }

@@ -83,8 +83,8 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-        "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
-        "org.scalatest" %% "scalatest" % scalaTestVersion,
+        "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
+        "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
