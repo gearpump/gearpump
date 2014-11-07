@@ -22,6 +22,13 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
   ```
   This will generate scripts under core/target/pack/bin, examples/target/pack/bin and rest/target/pack/bin
 
+###How to test
+  ```bash
+  ## Build Gearpump
+  sbt clean jacoco:cover
+  ```
+  This will generate test coverage reports for each component under its target/jacoco/html/index.html.
+
 ##How to Package for distribution
   ```bash
   ## Package Gearpump
