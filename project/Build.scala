@@ -58,7 +58,7 @@ object Build extends sbt.Build {
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
       )
-  )  dependsOn(core, streaming) aggregate(fsio, kafka, sol, wordcount, rest)
+  )  aggregate(core, streaming, fsio, kafka, sol, wordcount, rest)
 
 
   lazy val core = Project(
@@ -101,7 +101,7 @@ object Build extends sbt.Build {
           "org.apache.kafka" %% "kafka" % kafkaVersion
         )
       )
-  )  dependsOn core
+  )  dependsOn(core % "test->test;compile->compile")
   
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
