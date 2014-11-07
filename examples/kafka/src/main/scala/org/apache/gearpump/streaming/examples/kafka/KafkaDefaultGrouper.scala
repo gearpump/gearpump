@@ -22,13 +22,13 @@ import org.apache.gearpump.streaming.task.TaskId
 import kafka.common.TopicAndPartition
 
 /**
- * default grouper groups TopicAndPartitions among Spouts by partitions
+ * default grouper groups TopicAndPartitions among StreamProducers by partitions
  *
  * e.g. given 2 topics (topicA with 2 partitions and topicB with 3 partitions) and
- * 2 spouts (spout0 and spout1)
+ * 2 streamProducers (streamProducer0 and streamProducer1)
  *
- * spout0 gets (topicA, partition1), (topicB, partition1) and (topicA, partition3)
- * spout1 gets (topicA, partition2), (topicB, partition2)
+ * streamProducer0 gets (topicA, partition1), (topicB, partition1) and (topicA, partition3)
+ * streamProducer1 gets (topicA, partition2), (topicB, partition2)
  */
 class KafkaDefaultGrouper {
   def group(topicAndPartitions: Array[TopicAndPartition],

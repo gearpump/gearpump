@@ -40,18 +40,18 @@ object HadoopConfig {
 
   private def serializeHadoopConf(conf: Configuration) : Array[Byte] = {
     val out = new ByteArrayOutputStream()
-    val dataout = new DataOutputStream(out)
-    conf.write(dataout)
-    dataout.close()
+    val dataOut = new DataOutputStream(out)
+    conf.write(dataOut)
+    dataOut.close()
     out.toByteArray
   }
 
   private def deserializeHadoopConf(bytes: Array[Byte]) : Configuration = {
     val in = new ByteArrayInputStream(bytes)
-    val datain = new DataInputStream(in)
+    val dataIn = new DataInputStream(in)
     val result= new Configuration()
-    result.readFields(datain)
-    datain.close()
+    result.readFields(dataIn)
+    dataIn.close()
     result
   }
 }

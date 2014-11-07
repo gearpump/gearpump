@@ -18,14 +18,9 @@
 
 package org.apache.gearpump.serializer
 
-import java.math.BigInteger
-import java.util
-import java.util._
-
-import akka.actor.ActorRef
-import com.esotericsoftware.kryo.{KryoSerializable, Kryo, Serializer}
+import com.esotericsoftware.kryo.{Kryo, Serializer}
 import org.apache.gearpump.util.{Configs, Constants}
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 
 class GearpumpSerialization {
   val config = Configs.SYSTEM_DEFAULT_CONFIG
@@ -53,6 +48,6 @@ class GearpumpSerialization {
 
   private final def configToMap(path: String) = {
     import scala.collection.JavaConverters._
-    config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k -> v.toString) }
+    config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ k -> v.toString }
   }
 }

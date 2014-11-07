@@ -40,28 +40,25 @@ class SendLater extends Actor {
   val express = Express(context.system)
 
   def receive : Receive = {
-    case TaskLocations(locations) => {
+    case TaskLocations(locations) =>
       val result = locations.flatMap { kv =>
         val (host, set) = kv
         set.map(taskId => (TaskId.toLong(taskId), host))
       }
       express.remoteAddressMap.send(result)
       express.remoteAddressMap.future().map(_ => TaskLocationReady).pipeTo(self)
-    }
     case CleanTaskLocations =>
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
       taskLocationReady = false
-    case msg : TaskMessage => {
+    case msg : TaskMessage =>
       queue.add(msg)
       if (taskLocationReady) {
         sendPendingMessages()
       }
-    }
-    case TaskLocationReady => {
+    case TaskLocationReady =>
       taskLocationReady = true
       sendPendingMessages()
     }
-  }
 
   def sendPendingMessages() : Unit = {
     var done = false

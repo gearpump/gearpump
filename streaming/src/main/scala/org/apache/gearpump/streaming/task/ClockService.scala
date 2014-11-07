@@ -82,19 +82,16 @@ import org.apache.gearpump.streaming.task.ClockService._
 
   def reportGlobalMinClock : Unit = {
     val minTimeStamp = new Date(minClock)
-    LOG.info(s"Application minClock tracking: ${minTimeStamp}")
+    LOG.info(s"Application minClock tracking: $minTimeStamp")
   }
 }
 
 object ClockService {
 
-  class TaskGroupClock(val taskgroup : TaskGroup, var minClock : TimeStamp = Long.MaxValue, var taskClocks : Array[TimeStamp] = null) extends Comparable[TaskGroupClock] {
+  class TaskGroupClock(val taskgroup : TaskGroup, var minClock : TimeStamp = Long.MaxValue,
+                       var taskClocks : Array[TimeStamp] = null) extends Comparable[TaskGroupClock] {
     override def equals(obj: Any): Boolean = {
-      if (this.eq(obj.asInstanceOf[AnyRef])) {
-        return true
-      } else {
-        return false
-      }
+      this.eq(obj.asInstanceOf[AnyRef])
     }
 
     override def compareTo(o: TaskGroupClock): Int = {

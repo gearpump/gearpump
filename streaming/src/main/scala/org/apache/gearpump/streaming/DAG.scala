@@ -51,8 +51,7 @@ object DAG {
   }
 }
 
-case class DAG(val tasks : Map[Int, TaskDescription], val graph : Graph[Int, Partitioner]) extends Serializable {
-
+case class DAG(tasks : Map[Int, TaskDescription], graph : Graph[Int, Partitioner]) extends Serializable {
   /**
    *
    */

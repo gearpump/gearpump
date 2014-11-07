@@ -18,11 +18,7 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import java.util.Properties
-
 import akka.actor.Cancellable
-import kafka.producer.ProducerConfig
-import org.apache.gearpump.streaming.transaction.storage.inmemory.InMemoryKeyValueStore
 import org.apache.gearpump.{Message, TimeStamp}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
@@ -33,9 +29,8 @@ import java.util.concurrent.TimeUnit
 
 import org.slf4j.{Logger, LoggerFactory}
 import org.apache.gearpump.streaming.transaction.storage.api.{KeyValueSerDe, StorageManager}
-import org.apache.gearpump.streaming.transaction.checkpoint.api.CheckpointSerDe
 
-object KafkaBolt {
+object KafkaStreamProcessor {
 
   class String2SerDe(encoding: String) extends KeyValueSerDe[String, String] {
     override def toBytes(kv: (String, String)): Array[Byte] = {
@@ -54,12 +49,12 @@ object KafkaBolt {
     }
   }
 
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaBolt])
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaStreamProcessor])
 }
 
-class KafkaBolt(conf: Configs) extends TaskActor(conf) {
+class KafkaStreamProcessor(conf: Configs) extends TaskActor(conf) {
 
-  import org.apache.gearpump.streaming.examples.kafka.KafkaBolt._
+  import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProcessor._
 
   private val config = conf.config
   private val topic = config.getProducerTopic
@@ -82,7 +77,7 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
   override def onStart(taskContext : TaskContext): Unit = {
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput)
+      new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput())
     storageManager.start()
     storageManager.restore(taskContext.startTime)
   }
@@ -106,9 +101,9 @@ class KafkaBolt(conf: Configs) extends TaskActor(conf) {
     scheduler.cancel()
   }
 
-  private def reportThroughput : Unit = {
+  private def reportThroughput() : Unit = {
     val current = System.currentTimeMillis()
-    LOG.info(s"Task $taskId; Throughput: ${((count - lastCount), ((current - lastTime) / 1000))} (messages, second)")
+    LOG.info(s"Task $taskId; Throughput: ${(count - lastCount, (current - lastTime) / 1000)} (messages, second)")
     lastCount = count
     lastTime = current
   }

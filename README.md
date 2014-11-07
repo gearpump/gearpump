@@ -220,3 +220,6 @@ void
 Acknowledge
 ========================
 The netty transport code work is based on apache storm. Thanks to apache storm contributors.
+
+[![Build Status](https://travis-ci.org/intel-hadoop/gearpump.png?branch=master)](https://travis-ci.org/intel-hadoop/gearpump)
+[![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)

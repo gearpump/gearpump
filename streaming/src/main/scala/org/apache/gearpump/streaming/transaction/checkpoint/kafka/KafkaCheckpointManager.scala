@@ -53,7 +53,7 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
   override def register(sources: Array[Source]): Unit = {
     this.sources = sources
     this.checkpointTopicAndPartitions =
-      sources.map(getCheckpointTopicAndPartition(_))
+      sources.map(getCheckpointTopicAndPartition)
   }
 
   override def writeCheckpoint(source: Source,
@@ -117,10 +117,9 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
           val topic = tp.topic
           AdminUtils.createTopic(zkClient, topic, 1, checkpointReplicas)
         } catch {
-          case tee: TopicExistsException => {
-            LOG.info(s"${tp} already exists")
+          case tee: TopicExistsException =>
+            LOG.info(s"$tp already exists")
             existingTopics += tp
-          }
           case e: Exception => throw e
         }
       }
@@ -128,7 +127,7 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
   }
 
   private def getCheckpointTopic(id: Int, topic: String, partition: Int): String  = {
-    s"checkpoint_${id}_${topic}_${partition}"
+    s"checkpoint_${id}_${topic}_$partition"
   }
 
   private def getCheckpointTopicAndPartition(source: Source): TopicAndPartition = {
