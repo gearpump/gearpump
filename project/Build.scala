@@ -32,23 +32,6 @@ object Build extends sbt.Build {
 
   val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++ Seq(jacoco.settings:_*) ++ 
     Seq(
-      scalaVersion := scalaVersionNumber,
-      version := gearPumpVersion,
-      organization := "com.github.intel-hadoop",
-      crossPaths := false,
-      scalacOptions ++= Seq(
-        "-Yclosure-elim",
-        "-Yinline"
-      ),
-      packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
-      packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
-  )
-
-  lazy val root = Project(
-    id = "gearpump",
-    base = file("."),
-    settings = commonSettings ++ 
-      Seq(
         resolvers ++= Seq(
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
           "maven-repo" at "http://repo.maven.apache.org/maven2",
@@ -57,7 +40,24 @@ object Build extends sbt.Build {
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
-      )
+    ) ++
+    Seq(
+      scalaVersion := scalaVersionNumber,
+      version := gearPumpVersion,
+      organization := "com.github.intel-hadoop",
+      crossPaths := false,
+      scalacOptions ++= Seq(
+        "-Yclosure-elim",
+        "-Yinline"
+    ),
+    packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
+    packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
+  )
+
+  lazy val root = Project(
+    id = "gearpump",
+    base = file("."),
+    settings = commonSettings 
   )  aggregate(core, streaming, fsio, kafka, sol, wordcount, rest)
 
 
