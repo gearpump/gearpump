@@ -4,6 +4,7 @@
 GearPump
 ========
 
+[![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
 
 
