@@ -65,8 +65,8 @@ object SOL extends App with ArgumentsParser {
   def getApplication(spoutNum : Int, boltNum : Int, bytesPerMessage : Int, stages : Int) : AppDescription = {
     val config = Configs.empty.withValue(SOLStreamProducer.BYTES_PER_MESSAGE, bytesPerMessage)
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SOLStreamProducer], spoutNum)
-    val streamProcessor = TaskDescription(classOf[SOLStreamProcessor], boltNum)
+    val streamProducer = TaskDescription(classOf[SOLStreamProducer].getCanonicalName, spoutNum)
+    val streamProcessor = TaskDescription(classOf[SOLStreamProcessor].getCanonicalName, boltNum)
 
     var computation : Any = streamProducer ~ partitioner ~> streamProcessor
     computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>

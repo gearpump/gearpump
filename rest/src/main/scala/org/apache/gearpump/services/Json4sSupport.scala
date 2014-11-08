@@ -78,9 +78,9 @@ object Json4sSupport extends Json4sJacksonSupport {
             JObject(JField("taskClass", JString(node2)) :: JField("parallism", JInt(parallism2)) :: Nil) ::
             Nil) =>
             Tuple3(
-              TaskDescription(Class.forName(node1).asInstanceOf[Actor].getClass, parallism1.toInt),
+              TaskDescription(Class.forName(node1).asInstanceOf[Actor].getClass.getCanonicalName, parallism1.toInt),
               Class.forName(partitioner).asInstanceOf[Partitioner],
-              TaskDescription(Class.forName(node2).asInstanceOf[Actor].getClass, parallism2.toInt))
+              TaskDescription(Class.forName(node2).asInstanceOf[Actor].getClass.getCanonicalName, parallism2.toInt))
 
         }.toList
         val dag:Graph[TaskDescription,Partitioner] = Graph.empty
@@ -95,14 +95,14 @@ object Json4sSupport extends Json4sJacksonSupport {
         }
         ).toList
         val dagVertices = x.dag.vertex.map(f => {
-          JObject(JField("taskClass", JString(f.taskClass.getCanonicalName))::JField("parallism", JInt(f.parallism))::Nil)
+          JObject(JField("taskClass", JString(f.taskClass))::JField("parallism", JInt(f.parallism))::Nil)
         }).toList
         val dagEdges = x.dag.edges.map(f => {
           val (node1, edge, node2) = f
           JArray(
-            JObject(JField("taskClass",JString(node1.taskClass.getCanonicalName))::JField("parallism",JInt(node1.parallism))::Nil)::
+            JObject(JField("taskClass",JString(node1.taskClass))::JField("parallism",JInt(node1.parallism))::Nil)::
             JString(edge.getClass.getCanonicalName)::
-            JObject(JField("taskClass",JString(node2.taskClass.getCanonicalName))::JField("parallism",JInt(node2.parallism))::Nil)::
+            JObject(JField("taskClass",JString(node2.taskClass))::JField("parallism",JInt(node2.parallism))::Nil)::
             Nil
           )
         }).toList

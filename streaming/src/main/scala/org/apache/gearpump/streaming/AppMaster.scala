@@ -224,7 +224,7 @@ class AppMaster (config : Configs) extends Actor {
           val executorByPath = context.actorSelection("../app_0_executor_0")
 
           val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
-          executor ! LaunchTask(taskId, config, taskDescription.taskClass)
+          executor ! LaunchTask(taskId, config, ActorUtil.loadClass(taskDescription.taskClass))
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
           launchTask(remainResources subtract usedResource)

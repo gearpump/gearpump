@@ -49,8 +49,7 @@ object ConfigsHelper {
       val taskDescriptions = requests.get(workerId).unwrapped().asInstanceOf[util.HashMap[String, Int]].asScala
       for(taskDescription <- taskDescriptions){
         val (taskClass, parallism) = taskDescription
-        val taskClazz = Class.forName(taskClass).asInstanceOf[Class[Actor]]
-        result = result :+ (TaskDescription(taskClazz, parallism), WorkerLocality(workerId.toInt))
+        result = result :+ (TaskDescription(taskClass, parallism), WorkerLocality(workerId.toInt))
       }
     }
     result

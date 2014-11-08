@@ -56,4 +56,8 @@ object ActorUtil {
       false
     }
   }
+
+  def loadClass(className: String): Class[_<:Actor] = {
+    Class.forName(className).asSubclass(classOf[Actor])
+  }
  }

@@ -22,6 +22,6 @@ import akka.actor.Actor
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.util.{Configs, Graph, ReferenceEqual}
 
-case class TaskDescription(taskClass: Class[_ <: Actor], parallism : Int) extends ReferenceEqual
+case class TaskDescription(taskClass: String, parallism : Int) extends ReferenceEqual
 
 case class AppDescription(name : String, conf : Configs, dag: Graph[TaskDescription, Partitioner]) extends org.apache.gearpump.cluster.Application
