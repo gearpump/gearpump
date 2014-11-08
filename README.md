@@ -1,7 +1,7 @@
 GearPump
 ========
 
-[![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)
+[![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master)
 [![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)
 
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
