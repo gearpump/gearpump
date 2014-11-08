@@ -30,10 +30,10 @@ class KafkaWordCount {
   def getApplication(config: Configs, kafkaStreamProducerNum: Int, splitNum: Int,
                      sumNum: Int, kafkaStreamProcessorNum: Int) : AppDescription = {
     val partitioner = new HashPartitioner()
-    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer], kafkaStreamProducerNum)
-    val split = TaskDescription(classOf[Split], splitNum)
-    val sum = TaskDescription(classOf[Sum], sumNum)
-    val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor], kafkaStreamProcessorNum)
+    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getCanonicalName, kafkaStreamProducerNum)
+    val split = TaskDescription(classOf[Split]getCanonicalName, splitNum)
+    val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
+    val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor].getCanonicalName, kafkaStreamProcessorNum)
     val app = AppDescription("KafkaWordCount", config,
       Graph(kafkaStreamProducer ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaStreamProcessor))
     app

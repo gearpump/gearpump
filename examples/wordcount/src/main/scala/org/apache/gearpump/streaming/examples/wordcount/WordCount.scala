@@ -29,8 +29,8 @@ class WordCount  {
   def getApplication(splitNum : Int, sumNum : Int) : AppDescription = {
     val config = Configs.empty
     val partitioner = new HashPartitioner()
-    val split = TaskDescription(classOf[Split], splitNum)
-    val sum = TaskDescription(classOf[Sum], sumNum)
+    val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
+    val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
     val app = AppDescription("wordCount", config, Graph(split ~ partitioner ~> sum))
     app
   }

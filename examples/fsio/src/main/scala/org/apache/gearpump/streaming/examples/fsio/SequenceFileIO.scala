@@ -64,8 +64,8 @@ object SequenceFileIO extends App with ArgumentsParser{
   def getApplication(spoutNum : Int, boltNum : Int, input : String, output : String) : AppDescription = {
     val config = HadoopConfig.empty.withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output).withHadoopConf(new Configuration())
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer], spoutNum)
-    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor], boltNum)
+    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getCanonicalName, spoutNum)
+    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getCanonicalName, boltNum)
     val app = AppDescription("SequenceFileIO", config, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app
   }

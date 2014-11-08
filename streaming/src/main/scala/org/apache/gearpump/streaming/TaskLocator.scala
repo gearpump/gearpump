@@ -19,7 +19,7 @@ package org.apache.gearpump.streaming
 
 import akka.actor.Actor
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{ActorUtil, Configs}
 
 import scala.collection.mutable.Queue
 
@@ -32,15 +32,15 @@ class TaskLocator(config : Configs) {
     val taskLocations : Array[(TaskDescription, Locality)] = ConfigsHelper.loadUserAllocation(ConfigFactory.empty())
     for(taskLocation <- taskLocations){
       val (taskDescription, locality) = taskLocation
-      val localityQueue = userScheduledTask.getOrElse(taskDescription.taskClass, Queue.empty[Locality])
+      val localityQueue = userScheduledTask.getOrElse(ActorUtil.loadClass(taskDescription.taskClass), Queue.empty[Locality])
       0.until(taskDescription.parallism).foreach(_ => localityQueue.enqueue(locality))
-      userScheduledTask += (taskDescription.taskClass -> localityQueue)
+      userScheduledTask += (ActorUtil.loadClass(taskDescription.taskClass) -> localityQueue)
     }
   }
 
   def locateTask(taskDescription : TaskDescription) : Locality = {
-    if(userScheduledTask.contains(taskDescription.taskClass)){
-      val localityQueue = userScheduledTask.get(taskDescription.taskClass).get
+    if(userScheduledTask.contains(ActorUtil.loadClass(taskDescription.taskClass))){
+      val localityQueue = userScheduledTask.get(ActorUtil.loadClass(taskDescription.taskClass)).get
       if(localityQueue.size > 0){
         return localityQueue.dequeue()
       }
