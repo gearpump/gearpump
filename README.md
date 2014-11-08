@@ -2,6 +2,7 @@ GearPump
 ========
 
 [![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)
+[![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)
 
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
 
@@ -227,6 +228,3 @@ void
 Acknowledge
 ========================
 The netty transport code work is based on apache storm. Thanks to apache storm contributors.
-
-[![Build Status](https://travis-ci.org/intel-hadoop/gearpump.png?branch=master)](https://travis-ci.org/intel-hadoop/gearpump)
-[![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)
