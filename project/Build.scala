@@ -153,7 +153,7 @@ object Build extends sbt.Build {
           "org.json4s" %% "json4s-jackson" % json4sVersion,
           "org.json4s" %% "json4s-native"   % json4sVersion,
           "org.webjars" % "swagger-ui" % swaggerUiVersion,
-          "org.scalatest" %% "scalatest" % scalaTestVersion
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
         )
       ) 
   ) dependsOn streaming
