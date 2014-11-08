@@ -1,12 +1,11 @@
-#####This is an on-going effort, and not mature yet. There is no at least once or exactly once, load balance yet, though we want to build support for those in weeks. We will update the wiki about the detailed status, th e design, and the plan as soon as possible.
-
-
 GearPump
 ========
 
 [![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)
+
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
 
+#####This is an on-going effort, and not mature yet. There is no at least once or exactly once, load balance yet, though we want to build support for those in weeks. We will update the wiki about the detailed status, th e design, and the plan as soon as possible.
 
 A Actor Driven streaming framework. The idea is inspired by MillWheel, Storm, spark streaming, and SAMZA.
 
