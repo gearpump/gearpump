@@ -6,11 +6,11 @@ GearPump
 
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
 
-#####This is an on-going effort, and not mature yet. There is no at least once or exactly once, load balance yet, though we want to build support for those in weeks. We will update the wiki about the detailed status, th e design, and the plan as soon as possible.
+#####This is an on-going effort that's not mature yet. Presently there is no load balancing yet, though we want to build support for those in weeks. We will update the wiki about the detailed status and design.
 
-A Actor Driven streaming framework. The idea is inspired by MillWheel, Storm, spark streaming, and SAMZA.
+An Actor Driven streaming framework, inspired by MillWheel, Storm, Spark Streaming, and Samza.
 
-A initial benchmarks shows that we can process 2million messages/second (100 bytes per message) with latency around 30ms on a cluster of 4 nodes.
+Per initial benchmarks we are able to process 2 million messages/second (100 bytes per message) with a 30ms latency on a 4-node cluster.
 
 
 ###Actor Hierarchy
