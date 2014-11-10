@@ -34,7 +34,7 @@ object Shell extends App with ArgumentsParser {
   Console.out.println("Master URL: " + masters)
 
   def shell() = {
-    val java = System.getenv("JAVA_HOME") + "/bin/java"
+    val java = System.getProperty("java.home") + "/bin/java"
     val scalaHome = System.getenv("SCALA_HOME")
     if (null == scalaHome || "" == scalaHome) {
       LOG.info("Please set SCALA_HOME env")
