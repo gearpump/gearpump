@@ -174,7 +174,7 @@ private[cluster] object Worker {
             }
         }
       } else {
-        val java = System.getenv("JAVA_HOME") + "/bin/java"
+        val java = System.getProperty("java.home") + "/bin/java"
         val command = List(java) ++ context.jvmArguments ++ List("-cp", context.classPath.mkString(File.pathSeparator), context.mainClass) ++ context.arguments
         LOG.info(s"Starting executor process $command...")
 
