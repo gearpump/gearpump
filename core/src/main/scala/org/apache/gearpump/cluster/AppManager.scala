@@ -314,7 +314,7 @@ private[cluster] object AppManager {
         val allocation = allocations(0)
         val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
         LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
-        val name = actorNameForExecutor(appId, masterExecutorId)
+        val name = ActorUtil.actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
 
         val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
@@ -351,7 +351,5 @@ private[cluster] object AppManager {
         //my job has completed. kill myself
         self ! PoisonPill
     }
-
-    private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
   }
 }

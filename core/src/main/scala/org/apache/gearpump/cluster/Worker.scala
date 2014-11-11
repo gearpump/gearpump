@@ -59,12 +59,12 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       context.watch(master)
       LOG.info(s"Worker $id Registered ....")
       sender ! ResourceUpdate(id, resource)
-      context.become(appMasterMsgHandler orElse terminationWatch(master) orElse ActorUtil.defaultMsgHandler(self))
+      context.become(appMasterMsgHandler orElse terminationWatch(master) orElse schedulerMsgHandler orElse ActorUtil.defaultMsgHandler(self))
   }
 
   def appMasterMsgHandler : Receive = {
     case shutdown @ ShutdownExecutor(appId, executorId, reason : String) =>
-      val actorName = actorNameForExecutor(appId, executorId)
+      val actorName = ActorUtil.actorNameForExecutor(appId, executorId)
       LOG.info(s"Worker shutting down executor: $actorName due to: $reason")
 
       if (context.child(actorName).isDefined) {
@@ -78,7 +78,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       if (resource.lessThan(launch.resource)) {
         sender ! ExecutorLaunchRejected("There is no free resource on this machine", launch.resource)
       } else {
-        val actorName = actorNameForExecutor(launch.appId, launch.executorId)
+        val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
         val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch), actorName)
 
@@ -113,8 +113,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         }
       }
   }
-
-  private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
 
   import context.dispatcher
