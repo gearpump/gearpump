@@ -60,4 +60,6 @@ object ActorUtil {
   def loadClass(className: String): Class[_<:Actor] = {
     Class.forName(className).asSubclass(classOf[Actor])
   }
+
+  def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
  }
