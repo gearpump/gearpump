@@ -38,7 +38,7 @@ object TestUtil{
 
   class MiniCluster{
     private val mockMasterIP = "127.0.0.1"
-    private val mockMasterPort = 4000
+    private val mockMasterPort = 4123
 
     private implicit val system = ActorSystem(MASTER, MASTER_CONFIG.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(mockMasterPort)).
