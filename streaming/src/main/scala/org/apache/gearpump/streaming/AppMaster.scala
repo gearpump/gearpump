@@ -316,9 +316,7 @@ object AppMaster {
 
   class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs) extends Actor {
 
-    private def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
-
-    val name = actorNameForExecutor(appId, executorId)
+    val name = ActorUtil.actorNameForExecutor(appId, executorId)
     val selfPath = ActorUtil.getFullPath(context)
 
     val launch = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
