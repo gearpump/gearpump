@@ -2,12 +2,13 @@ Git PR merge process for Gearpump
 ------------------------------------
 
 1. Fork to create a <git-user-id>/gearpump repo, as branches can't be created in intel-hadoop/gearpump.
-2. Add intel-hadoop/gearpump as an external repo 'upstream'
+2. Add intel-hadoop/gearpump as an external repo 'upstream' by following the [guide](https://help.github.com/articles/configuring-a-remote-for-a-fork/).
 3. Periodically sync the forked master with the main master with "git pull --rebase upstream master"
  and "git push origin master". No work should ever be done in the forked master.
 4. Create a branch on <git-user_id>/gearpump and do some work in it.
-5. Open a PR, which is a one-click thing in github.com; it knows you likely are opening a PR against upstream master.
-6. Merge PR, delete branch.
+5. Ensure all the unit tests are passed by running command "sbt test".
+6. Open a PR, which is a one-click thing in github.com; it knows you likely are opening a PR against upstream master. [Guide](https://help.github.com/articles/creating-a-pull-request) is here.
+7. [Merge PR](https://help.github.com/articles/merging-a-pull-request), [delete branch](https://help.github.com/articles/deleting-unused-branches).
 
 You can skip using branches in your fork if desired, and just work out
 of your master. Less overhead, but, you can't pursue different
