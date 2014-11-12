@@ -18,15 +18,16 @@
 
 package org.apache.gearpump.streaming.examples.sol
 
-import org.apache.gearpump.streaming._
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.{Partitioner, ShufflePartitioner}
-import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.client.{Starter, ClientContext}
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription, _}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
+import org.slf4j.{Logger, LoggerFactory}
 
 class SOL extends Starter with ArgumentsParser {
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[SOL])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
@@ -53,19 +54,4 @@ class SOL extends Starter with ArgumentsParser {
     val app = AppDescription("sol", appConfig, dag)
     app
   }
-
-  override def main(args: Array[String]): Unit = {
-    val config = parse(args)
-    val masters = config.getString("master")
-    val runseconds = config.getInt("runseconds")
-    Console.out.println("Master URL: " + masters)
-    val context = ClientContext(masters)
-    val appId = context.submit(application(config))
-    System.out.println(s"We get application id: $appId")
-    Thread.sleep(runseconds * 1000)
-    System.out.println(s"Shutting down application $appId")
-    context.shutdown(appId)
-    context.destroy()
-  }
-
 }

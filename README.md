@@ -53,11 +53,15 @@ Per initial benchmarks we are able to process 2 million messages/second (100 byt
   core/target/pack/bin/local -port 3000
   ```
 
-2. Start WordCount Example
+2. Start WordCount or SOL Example
   
   ```bash
   ## Create Application
   target/pack/bin/gear app -jar ./examples/wordcount/target/pack/lib/gearmp-examples-wordcount-0.2.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master 127.0.0.1:3000
+  ```
+  ```bash
+  ## Create Application
+  target/pack/bin/gear app -jar ./examples/sol/target/pack/lib/gearpump-examples-sol-0.2.jar org.apache.gearpump.streaming.examples.sol.SOL -master 127.0.0.1:3000
   ```
 
 

@@ -18,16 +18,16 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
-import org.apache.gearpump.streaming._
-import org.apache.gearpump.cluster.main.{Starter, ParseResult, ArgumentsParser, CLIOption}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.client.Starter
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription, _}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
-
+import org.slf4j.{Logger, LoggerFactory}
 
 class WordCount extends Starter with ArgumentsParser {
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[WordCount])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
@@ -45,19 +45,6 @@ class WordCount extends Starter with ArgumentsParser {
     val sum = TaskDescription(classOf[Sum], sumNum)
     val app = AppDescription("wordCount", appConfig, Graph(split ~ partitioner ~> sum))
     app
-  }
-
-  override def main(args: Array[String]): Unit = {
-    val config = parse(args)
-    val masters = config.getString("master")
-    Console.out.println("Master URL: " + masters)
-    val context = ClientContext(masters)
-    val appId = context.submit(application(config))
-    System.out.println(s"We get application id: $appId")
-    Thread.sleep(config.getInt("runseconds") * 1000)
-    System.out.println(s"Shutting down application $appId")
-    context.shutdown(appId)
-    context.destroy()
   }
 
 }

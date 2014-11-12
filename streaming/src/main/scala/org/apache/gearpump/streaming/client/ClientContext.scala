@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
 import org.apache.gearpump.cluster.{Application, MasterClient, MasterProxy}
-import org.apache.gearpump.streaming.{AppDescription, AppMaster, JarsForTasks, TaskConfiguration}
+import org.apache.gearpump.streaming._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Configs, Util}

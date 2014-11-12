@@ -2,11 +2,11 @@ package org.apache.gearpump.cluster.streaming
 
 import java.net.{URL, URLClassLoader}
 
-import org.apache.gearpump.cluster.main.{Starter, CLIOption, ArgumentsParser}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import org.apache.gearpump.streaming.client.Starter
 import org.slf4j.{Logger, LoggerFactory}
 
 object Application extends App with ArgumentsParser {
-
   val LOG: Logger = LoggerFactory.getLogger(Application.getClass)
 
   override val ignoreUnknownArgument = true

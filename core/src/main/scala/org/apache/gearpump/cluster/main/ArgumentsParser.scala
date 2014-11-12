@@ -32,15 +32,6 @@ class ParseResult(optionMap : Map[String, String], remainArguments : Array[Strin
   def remainArgs = this.remainArguments
 }
 
-trait Starter {
-
-  def main(args: Array[String]): Unit
-
-  def application(config: ParseResult): org.apache.gearpump.cluster.Application
-
-}
-
-
 trait  ArgumentsParser {
 
   val ignoreUnknownArgument = false
