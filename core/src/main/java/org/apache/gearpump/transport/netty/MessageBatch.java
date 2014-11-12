@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.transport.netty;
 
+import com.google.common.io.Closeables;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferOutputStream;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -109,14 +110,18 @@ public class MessageBatch {
    * create a buffer containing the encoding of this batch
    */
   ChannelBuffer buffer() throws IOException {
-    try (ChannelBufferOutputStream bout =
-             new ChannelBufferOutputStream(ChannelBuffers.directBuffer(encoded_length))) {
+    ChannelBufferOutputStream bout =
+        new ChannelBufferOutputStream(ChannelBuffers.directBuffer(encoded_length));
+
+    try {
       for (TaskMessage msg : messages) {
         writeTaskMessage(bout, msg);
       }
       return bout.buffer();
     } catch (IOException e) {
       log.error("Error while writing Tasks to Channel Buffer - {}", e.getMessage());
+    } finally {
+      Closeables.close(bout, false);
     }
     return null;
   }
