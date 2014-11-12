@@ -22,18 +22,18 @@ import com.codahale.metrics.{Meter => CodaHaleMeter}
 
 class Meter(meter : CodaHaleMeter, sampleRate : Int = 1) {
   private var sampleCount = 0L
+  private var toBeMarked = 0L
 
   def mark() {
     meter.mark(1)
   }
 
   def mark(n: Long) {
-    val start = sampleCount / sampleRate
-    val end = (sampleCount + 1) / sampleRate
-
+    toBeMarked += n
+    sampleCount += 1
     if (null != meter && sampleCount % sampleRate == 0) {
-      meter.mark((end - start) * sampleRate)
+      meter.mark(toBeMarked)
+      toBeMarked = 0
     }
-    sampleCount += n
   }
 }

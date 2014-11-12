@@ -25,19 +25,18 @@ import com.codahale.metrics.{Counter => CodaHaleCounter}
  */
 class Counter(counter : CodaHaleCounter, sampleRate : Int = 1) {
   private var sampleCount = 0L
+  private var toBeIncremented = 0L
 
   def inc() {
     inc(1)
   }
 
   def inc(n: Long) {
-    val start = sampleCount / sampleRate
-    val end = (sampleCount + 1) / sampleRate
-
-
+    toBeIncremented += n
+    sampleCount += 1
     if (null != counter && sampleCount % sampleRate == 0) {
-      counter.inc((end - start) * sampleRate)
+      counter.inc(toBeIncremented)
+      toBeIncremented = 0
     }
-    sampleCount += n
   }
 }
