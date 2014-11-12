@@ -19,7 +19,7 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
-import org.apache.gearpump.cluster.{MasterProxy, Worker}
+import org.apache.gearpump.cluster.MasterProxy
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Configs
 import org.apache.gearpump.util.Constants._
@@ -37,7 +37,8 @@ object Worker extends App {
     HostPort(hostAndPort(0), hostAndPort(1).toInt)
   }
   val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER)
-  val worker = system.actorOf(Props(classOf[Worker], masterProxy), classOf[Worker].getSimpleName + id)
+  val worker = system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], masterProxy),
+    classOf[org.apache.gearpump.cluster.Worker].getSimpleName + id)
 
   system.awaitTermination
 

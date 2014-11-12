@@ -30,7 +30,6 @@ package object streaming {
           b = fis.read()
         }
         if (!JarsForTasks.jars.contains(clazz.getCanonicalName)) {
-          LOG.info(s"JarsForTasks setting ${clazz.getCanonicalName}")
           JarsForTasks.jars += (clazz.getCanonicalName -> TaskJar(file.getName, buf.toArray))
         } else {
           LOG.error(s"Could not open ${file.getName}")

@@ -39,12 +39,9 @@ class ClientContext(masters: Iterable[HostPort]) {
   def submit(app : Application) : Int = {
     val appDescription = app.asInstanceOf[AppDescription]
     appDescription.dag.vertex.map(taskDescription => {
-      LOG.info(s"in dag taskDescription ${taskDescription.taskClass}")
       JarsForTasks.jars.get(taskDescription.taskClass).map(jar => {
-        LOG.info(s"Setting taskDescription ${taskDescription.taskClass}")
         taskDescription.config = Option(TaskConfiguration(None,Option(jar)))
       })
-
     })
     val client = new MasterClient(master)
     client.submitApplication(classOf[AppMaster], Configs.empty, app)

@@ -66,7 +66,7 @@ class Executor(config : Configs)  extends Actor {
 
           })
         case None =>
-          // TODO handle TaskClass made available via alternative methods. ClassLoader will probably need to
+          // TODO handle TaskClass made available via alternative loading methods. ClassLoader will probably need to
           // be referenced elsewhere so Class.forName is probably incorrect
           val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
           LOG.info(s"Loading ${taskDescription.taskClass}")

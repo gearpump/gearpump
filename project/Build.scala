@@ -51,30 +51,7 @@ object Build extends sbt.Build {
         "-Yclosure-elim",
         "-Yinline"
       )
-    )
-
-  lazy val root = Project(
-    id = "gearpump",
-    base = file("."),
-    settings = commonSettings ++ 
-      packSettings ++ 
-      Seq(
-        packMain := Map("gear" -> "org.apache.gearpump.streaming.main.Gear",
-                        "local" -> "org.apache.gearpump.cluster.main.Local",
-                        "master" -> "org.apache.gearpump.cluster.main.Master",
-                        "worker" -> "org.apache.gearpump.cluster.main.Worker"
-                       ),
-        packExclude := Seq(fsio.id, kafka.id, sol.id, wordcount.id),
-        packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
-        packExpandedClasspath := true,
-        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
-      )
-  ) aggregate(core, streaming, fsio, kafka, sol, wordcount, rest)
-
-  lazy val core = Project(
-    id = "gearpump-core",
-    base = file("core"),
-    settings = commonSettings  ++
+    ) ++
     Seq(
         libraryDependencies ++= Seq(
         "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
@@ -100,6 +77,30 @@ object Build extends sbt.Build {
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
       )
     ) 
+
+  lazy val root = Project(
+    id = "gearpump",
+    base = file("."),
+    settings = commonSettings ++ 
+      packSettings ++ 
+      Seq(
+        packMain := Map("gear" -> "org.apache.gearpump.streaming.main.Gear",
+                        "local" -> "org.apache.gearpump.cluster.main.Local",
+                        "master" -> "org.apache.gearpump.cluster.main.Master",
+                        "worker" -> "org.apache.gearpump.cluster.main.Worker",
+                        "rest" -> "org.apache.gearpump.cluster.main.Rest"
+                       ),
+        packExclude := Seq(fsio.id, kafka.id, sol.id, wordcount.id),
+        packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
+        packExpandedClasspath := true,
+        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
+      )
+  ) aggregate(core, streaming, fsio, kafka, sol, wordcount, rest)
+
+  lazy val core = Project(
+    id = "gearpump-core",
+    base = file("core"),
+    settings = commonSettings 
   )
 
   lazy val streaming = Project(
