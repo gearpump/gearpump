@@ -30,27 +30,22 @@ import org.slf4j.{Logger, LoggerFactory}
 object Replay extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
+  implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
+    "master" -> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
     "appid" -> CLIOption("<application id>", required = true))
 
-  def start = {
-    val config = parse(args)
+  val config = parse(args)
+  val masters = config.getString("master")
+  Console.out.println("Master URL: " + masters)
+  val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
+    .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
+  val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
 
-    val masters = config.getString("master")
-    Console.out.println("Master URL: " + masters)
+  val client = new MasterClient(master)
+  client.replayFromTimestampWindowTrailingEdge(config.getInt("appid"))
 
-    implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-    val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
-      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
-    val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
+  system.shutdown()
 
-    val client = new MasterClient(master)
-    client.replayFromTimestampWindowTrailingEdge(config.getInt("appid"))
-
-    system.shutdown()
-  }
-
-  start
 }

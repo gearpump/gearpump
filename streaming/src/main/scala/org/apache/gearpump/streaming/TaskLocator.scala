@@ -24,7 +24,7 @@ import org.apache.gearpump.util.{ActorUtil, Configs}
 import scala.collection.mutable.Queue
 
 class TaskLocator(config : Configs) {
-  private var userScheduledTask = Map.empty[Class[_ <: Actor], Queue[Locality]]
+  private var userScheduledTask = Map.empty[String, Queue[Locality]]
 
   initTasks()
 
@@ -32,15 +32,15 @@ class TaskLocator(config : Configs) {
     val taskLocations : Array[(TaskDescription, Locality)] = ConfigsHelper.loadUserAllocation(ConfigFactory.empty())
     for(taskLocation <- taskLocations){
       val (taskDescription, locality) = taskLocation
-      val localityQueue = userScheduledTask.getOrElse(ActorUtil.loadClass(taskDescription.taskClass), Queue.empty[Locality])
+      val localityQueue = userScheduledTask.getOrElse(taskDescription.taskClass, Queue.empty[Locality])
       0.until(taskDescription.parallism).foreach(_ => localityQueue.enqueue(locality))
-      userScheduledTask += (ActorUtil.loadClass(taskDescription.taskClass) -> localityQueue)
+      userScheduledTask += (taskDescription.taskClass -> localityQueue)
     }
   }
 
   def locateTask(taskDescription : TaskDescription) : Locality = {
-    if(userScheduledTask.contains(ActorUtil.loadClass(taskDescription.taskClass))){
-      val localityQueue = userScheduledTask.get(ActorUtil.loadClass(taskDescription.taskClass)).get
+    if(userScheduledTask.contains(taskDescription.taskClass)){
+      val localityQueue = userScheduledTask.get(taskDescription.taskClass).get
       if(localityQueue.size > 0){
         return localityQueue.dequeue()
       }

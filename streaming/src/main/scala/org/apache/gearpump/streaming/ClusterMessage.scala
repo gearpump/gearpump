@@ -26,7 +26,7 @@ import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Configs
 
 object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
+  case class LaunchTask(taskId: TaskId, config : Configs, taskDescription: TaskDescription)
   case class Recover(startTime : TimeStamp)
   case class RecoverTasks(startTime : TimeStamp, tasks : Iterable[TaskId])
   case class RestartTasks(timeStamp : TimeStamp)
