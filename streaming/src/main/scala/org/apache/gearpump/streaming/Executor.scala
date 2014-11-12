@@ -69,7 +69,7 @@ class Executor(config : Configs)  extends Actor {
           // TODO handle TaskClass made available via alternative methods. ClassLoader will probably need to
           // be referenced elsewhere so Class.forName is probably incorrect
           val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
-          LOG.info(s"Trying to load ${taskDescription.taskClass}")
+          LOG.info(s"Loading ${taskDescription.taskClass}")
           val task = context.actorOf(Props(Class.forName(taskDescription.taskClass), config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
       }
     }

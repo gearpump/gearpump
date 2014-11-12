@@ -16,11 +16,9 @@ package object streaming {
   type TaskIndex = Int
 
   implicit def classToTaskJar(clazz: Class[_<:TaskActor]): String = {
-    LOG.info("in classToTaskJar")
     val classLoader = clazz.getClassLoader;
     val urlClassLoader = classLoader.asInstanceOf[URLClassLoader]
     val file = urlClassLoader.getURLs().map(url => {
-      LOG.info(s"url.getFile ${url.getFile}")
       val file = new java.io.File(url.getFile)
       if (file.exists) {
         val fis = new FileInputStream(file)
