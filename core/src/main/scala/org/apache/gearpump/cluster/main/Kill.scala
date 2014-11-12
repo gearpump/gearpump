@@ -31,28 +31,22 @@ import org.slf4j.{Logger, LoggerFactory}
 object Kill extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Kill.getClass)
+  implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
+    "master" -> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
     "appid" -> CLIOption("<application id>", required = true))
 
-  def start = {
-    val config = parse(args)
+  val config = parse(args)
+  val masters = config.getString("master")
+  LOG.info("Master URL: {}", masters)
+  val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
+    .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
+  val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
+  val client = new MasterClient(master)
+  LOG.info("Client ")
+  client.shutdownApplication(config.getInt("appid"))
 
-    val masters = config.getString("master")
-    LOG.info("Master URL: {}", masters)
+  system.shutdown()
 
-    implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-    val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
-      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
-    val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
-
-    val client = new MasterClient(master)
-    LOG.info("Client ")
-    client.shutdownApplication(config.getInt("appid"))
-
-    system.shutdown()
-  }
-
-  start
 }

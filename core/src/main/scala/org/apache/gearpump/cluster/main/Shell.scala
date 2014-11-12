@@ -29,7 +29,6 @@ object Shell extends App with ArgumentsParser {
     "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true))
 
   val config = parse(args)
-
   val masters = config.getString("master")
   Console.out.println("Master URL: " + masters)
 

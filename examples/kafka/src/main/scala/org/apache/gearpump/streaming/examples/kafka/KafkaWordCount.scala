@@ -18,7 +18,8 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import org.apache.gearpump.streaming._
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.client.ClientContext
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
@@ -26,21 +27,7 @@ import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
 
-class KafkaWordCount {
-  def getApplication(config: Configs, kafkaStreamProducerNum: Int, splitNum: Int,
-                     sumNum: Int, kafkaStreamProcessorNum: Int) : AppDescription = {
-    val partitioner = new HashPartitioner()
-    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getCanonicalName, kafkaStreamProducerNum)
-    val split = TaskDescription(classOf[Split]getCanonicalName, splitNum)
-    val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
-    val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor].getCanonicalName, kafkaStreamProcessorNum)
-    val app = AppDescription("KafkaWordCount", config,
-      Graph(kafkaStreamProducer ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaStreamProcessor))
-    app
-  }
-}
-
-object KafkaWordCount extends App with ArgumentsParser {
+class KafkaWordCount extends Starter with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
@@ -49,28 +36,34 @@ object KafkaWordCount extends App with ArgumentsParser {
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
     "kafka_stream_processor" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(4)),
     "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
-  val config = parse(args)
 
-  def start(): Unit = {
+  override def application(config: ParseResult) : AppDescription = {
+    val kafkaStreamProducerNum = config.getInt("kafka_stream_producer")
+    val splitNum = config.getInt("split")
+    val sumNum = config.getInt("sum")
+    val kafkaStreamProcessorNum = config.getInt("kafka_stream_processor")
+    val appConfig = Configs(KafkaConfig())
+    val partitioner = new HashPartitioner()
+    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer], kafkaStreamProducerNum)
+    val split = TaskDescription(classOf[Split], splitNum)
+    val sum = TaskDescription(classOf[Sum], sumNum)
+    val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor], kafkaStreamProcessorNum)
+    val computation = kafkaStreamProducer ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaStreamProcessor
+    val app = AppDescription("KafkaWordCount", appConfig, Graph(computation))
+    app
+  }
 
+  override def main(args: Array[String]): Unit = {
+    val config = parse(args)
     val masters = config.getString("master")
     Console.out.println("Master URL: " + masters)
-
     val context = ClientContext(masters)
-
-    val appId = context.submit(new KafkaWordCount().getApplication(
-      Configs(KafkaConfig()), config.getInt("kafka_stream_producer"), config.getInt("split"),
-      config.getInt("sum"), config.getInt("kafka_stream_processor")))
-
+    val appId = context.submit(application(config))
     System.out.println(s"We get application id: $appId")
-
     Thread.sleep(config.getInt("runseconds") * 1000)
-
     System.out.println(s"Shutting down application $appId")
-
     context.shutdown(appId)
     context.destroy()
   }
 
-  start()
 }

@@ -23,7 +23,7 @@ import akka.pattern.ask
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
-import org.apache.gearpump.util.{Constants, Configs}
+import org.apache.gearpump.util.{Configs, Constants}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}

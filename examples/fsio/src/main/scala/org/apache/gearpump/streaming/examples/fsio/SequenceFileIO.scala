@@ -17,7 +17,8 @@
  */
 package org.apache.gearpump.streaming.examples.fsio
 
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import org.apache.gearpump.streaming._
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
 import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.client.ClientContext
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
@@ -25,7 +26,8 @@ import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 import org.apache.hadoop.conf.Configuration
 
-object SequenceFileIO extends App with ArgumentsParser{
+class SequenceFileIO extends Starter with ArgumentsParser {
+
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "source"-> CLIOption[Int]("<sequence file reader number>", required = false, defaultValue = Some(2)),
@@ -35,38 +37,31 @@ object SequenceFileIO extends App with ArgumentsParser{
     "output"-> CLIOption[String]("<output file directory>", required = true)
   )
 
-  start()
-
-  def start(): Unit ={
-    val config = parse(args)
-
-    val masters = config.getString("master")
-    val spout = config.getInt("source")
-    val bolt = config.getInt("sink")
-    val runseconds = config.getInt("runseconds")
+  override def application(config: ParseResult) : AppDescription = {
+    val spoutNum = config.getInt("source")
+    val boltNum = config.getInt("sink")
     val input = config.getString("input")
     val output = config.getString("output")
+    val appConfig = HadoopConfig.empty.withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output).withHadoopConf(new Configuration())
+    val partitioner = new ShufflePartitioner()
+    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer], spoutNum)
+    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor], boltNum)
+    val app = AppDescription("SequenceFileIO", appConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
+    app
+  }
 
+  override def main(args: Array[String]): Unit = {
+    val config = parse(args)
+    val masters = config.getString("master")
+    val runseconds = config.getInt("runseconds")
     Console.out.println("Master URL: " + masters)
     val context = ClientContext(masters)
-
-    val appId = context.submit(getApplication(spout, bolt, input, output))
+    val appId = context.submit(application(config))
     System.out.println(s"We get application id: $appId")
-
     Thread.sleep(runseconds * 1000)
-
     System.out.println(s"Shutting down application $appId")
-
     context.shutdown(appId)
     context.destroy()
   }
 
-  def getApplication(spoutNum : Int, boltNum : Int, input : String, output : String) : AppDescription = {
-    val config = HadoopConfig.empty.withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output).withHadoopConf(new Configuration())
-    val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getCanonicalName, spoutNum)
-    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getCanonicalName, boltNum)
-    val app = AppDescription("SequenceFileIO", config, Graph(streamProducer ~ partitioner ~> streamProcessor))
-    app
-  }
 }
