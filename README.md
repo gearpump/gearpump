@@ -1,15 +1,16 @@
 GearPump
 ========
 
-[![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)
+[![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master)
+[![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)
 
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
 
-#####This is an on-going effort, and not mature yet. There is no at least once or exactly once, load balance yet, though we want to build support for those in weeks. We will update the wiki about the detailed status, th e design, and the plan as soon as possible.
+#####This is an on-going effort that's not mature yet. Presently there is no load balancing yet, though we want to build support for those in weeks. We will update the wiki about the detailed status and design.
 
-A Actor Driven streaming framework. The idea is inspired by MillWheel, Storm, spark streaming, and SAMZA.
+An Actor Driven streaming framework, inspired by MillWheel, Storm, Spark Streaming, and Samza.
 
-A initial benchmarks shows that we can process 2million messages/second (100 bytes per message) with latency around 30ms on a cluster of 4 nodes.
+Per initial benchmarks we are able to process 2 million messages/second (100 bytes per message) with a 30ms latency on a 4-node cluster.
 
 
 ###Actor Hierarchy
@@ -52,11 +53,15 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
   core/target/pack/bin/local -port 3000
   ```
 
-2. Start WordCount Example
+2. Start WordCount or SOL Example
   
   ```bash
   ## Create Application
-  target/pack/bin/wordcount -master 127.0.0.1:3000
+  target/pack/bin/gear app -jar ./examples/wordcount/target/pack/lib/gearmp-examples-wordcount-0.2.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master 127.0.0.1:3000
+  ```
+  ```bash
+  ## Create Application
+  target/pack/bin/gear app -jar ./examples/sol/target/pack/lib/gearpump-examples-sol-0.2.jar org.apache.gearpump.streaming.examples.sol.SOL -master 127.0.0.1:3000
   ```
 
 
@@ -88,7 +93,7 @@ A initial benchmarks shows that we can process 2million messages/second (100 byt
 4. Start Client Example Code
   ```bash
   ## Create Application
-  target/pack/bin/wordcount -master 127.0.0.1:3000
+  target/pack/bin/gear app -jar ./examples/wordcount/target/pack/lib/gearmp-examples-wordcount-0.2.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master 127.0.0.1:3000
   ```
 
 ###Master HA
@@ -227,6 +232,3 @@ void
 Acknowledge
 ========================
 The netty transport code work is based on apache storm. Thanks to apache storm contributors.
-
-[![Build Status](https://travis-ci.org/intel-hadoop/gearpump.png?branch=master)](https://travis-ci.org/intel-hadoop/gearpump)
-[![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)

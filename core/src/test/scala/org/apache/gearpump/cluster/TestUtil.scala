@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.cluster
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor._
 import akka.testkit.TestActorRef
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import org.apache.gearpump.util.Constants._
@@ -25,8 +25,10 @@ import org.apache.gearpump.util.Constants._
 import scala.collection.JavaConverters._
 
 object TestUtil{
-  private val MASTER_CONFIG = {
-    val config = ConfigFactory.parseURL(getClass.getResource("/test.conf"))
+  val TEST_CONFIG = ConfigFactory.parseURL(getClass.getResource("/test.conf"))
+
+  val MASTER_CONFIG = {
+    val config = TEST_CONFIG
     if (config.hasPath(MASTER)) {
       config.getConfig(MASTER).withFallback(config)
     } else {
@@ -38,7 +40,7 @@ object TestUtil{
 
   class MiniCluster{
     private val mockMasterIP = "127.0.0.1"
-    private val mockMasterPort = 4000
+    private val mockMasterPort = 4123
 
     private implicit val system = ActorSystem(MASTER, MASTER_CONFIG.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(mockMasterPort)).

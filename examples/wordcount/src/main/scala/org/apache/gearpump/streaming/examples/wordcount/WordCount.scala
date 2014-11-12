@@ -18,51 +18,34 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.client.Starter
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription, _}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
+import org.slf4j.{Logger, LoggerFactory}
 
-class WordCount  {
-  def getApplication(splitNum : Int, sumNum : Int) : AppDescription = {
-    val config = Configs.empty
-    val partitioner = new HashPartitioner()
-    val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
-    val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
-    val app = AppDescription("wordCount", config, Graph(split ~ partitioner ~> sum))
-    app
-  }
-}
-
-object WordCount extends App with ArgumentsParser {
+class WordCount extends Starter with ArgumentsParser {
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[WordCount])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
-    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
-  val config = parse(args)
+    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60))
+  )
 
-  def start(): Unit = {
-
-    val masters = config.getString("master")
-    Console.out.println("Master URL: " + masters)
-
-    val context = ClientContext(masters)
-
-    val appId = context.submit(new WordCount().getApplication(config.getInt("split"), config.getInt("sum")))
-    System.out.println(s"We get application id: $appId")
-
-    Thread.sleep(config.getInt("runseconds") * 1000)
-
-    System.out.println(s"Shutting down application $appId")
-
-    context.shutdown(appId)
-    context.destroy()
+  override def application(config: ParseResult) : AppDescription = {
+    val splitNum = config.getInt("split")
+    val sumNum = config.getInt("sum")
+    val appConfig = Configs.empty
+    val partitioner = new HashPartitioner()
+    val split = TaskDescription(classOf[Split], splitNum)
+    val sum = TaskDescription(classOf[Sum], sumNum)
+    val app = AppDescription("wordCount", appConfig, Graph(split ~ partitioner ~> sum))
+    app
   }
 
-  start()
 }
 
