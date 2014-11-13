@@ -17,6 +17,7 @@
  */
 package org.apache.gearpump.services
 
+import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.streaming.StreamingTestUtil
@@ -34,6 +35,7 @@ object RestTestUtil {
       miniCluster = TestUtil.startMiniCluster
       val master = miniCluster.mockMaster
       StreamingTestUtil.startAppMaster(miniCluster, appId)
+      implicit val system = ActorSystem("Rest")
       RestServices.start(master)
     }
 

@@ -22,35 +22,46 @@ import org.specs2.mutable.Specification
 import spray.routing.{RouteConcatenation, Route, HttpService}
 import spray.testkit.Specs2RouteTest
 
-class AppMastersServiceSpecActor(_system:ActorSystem) extends Specification with Actor with AppMastersServiceSpec {
-  implicit def actorSystem: ActorSystem
-  def this() = this(ActorSystem("RestSpec"))
+/*
+class AppMastersServiceSpec extends AppMastersServiceSpecActor {
 
-  def receive: Actor.Receive = {
-    case _ =>
-  }
+
+}
+
+class AppMastersServiceSpecActor extends AppMastersServiceSpecBase with Actor {
+  val appMastersService = new AppMastersService(restTest.miniCluster.mockMaster, context, system.dispatcher)
+  def receive = runRoute(appMastersService.routes)
+}
+*/
+
+class AppMastersServiceSpecBase extends Specification with Specs2RouteTest with HttpService  {
+  args(sequential = true)
+  implicit def actorRefFactory = system
 
   val restTest = RestTestUtil.startRestServices
-  val appMastersService = new AppMastersService(restTest.miniCluster.mockMaster, context, _system.dispatcher)
 
+  val smallRoute =
+    get {
+      pathSingleSlash {
+        complete {
+          <html>
+            <body>
+              <h1>Say hello to <i>spray</i>!</h1>
+            </body>
+          </html>
+        }
+      } ~
+        path("appmasters") {
+          complete("success")
+        }
+    }
 
   "The AppMastersService" should {
-
     "return a json structure of appmastersdata for GET request" in {
-      Get("/appmasters") ~> testroute ~> check {
+      Get("/appmasters") ~> smallRoute ~> check {
         responseAs[String] === "success"
       }
     }
   }
-}
-
-trait AppMastersServiceSpec extends HttpService  {
-
-  val testroute = runRoute(routes ~
-    get {
-      path("appmasters") {
-        complete("success")
-      }
-    })
 
 }
