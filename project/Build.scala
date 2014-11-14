@@ -165,7 +165,7 @@ object Build extends sbt.Build {
         libraryDependencies ++= Seq(
           "io.spray" %%  "spray-can"       % sprayVersion,
           "io.spray" %%  "spray-routing"   % sprayVersion,
-          "io.spray" %%  "spray-testkit"   % sprayVersion,
+          "io.spray" %%  "spray-testkit"   % sprayVersion % "test",
           "io.spray" %%  "spray-httpx"     % sprayVersion,
           "io.spray" %%  "spray-client"    % sprayVersion,
           "io.spray" %%  "spray-json"    % sprayJsonVersion,
@@ -176,5 +176,5 @@ object Build extends sbt.Build {
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
         )
       ) 
-  ) dependsOn streaming
+  ) dependsOn(streaming % "test->test;compile->compile")
 }
