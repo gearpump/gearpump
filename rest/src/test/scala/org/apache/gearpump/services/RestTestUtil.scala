@@ -18,6 +18,7 @@
 package org.apache.gearpump.services
 
 import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.streaming.StreamingTestUtil
@@ -25,18 +26,18 @@ import org.apache.gearpump.streaming.StreamingTestUtil
 
 object RestTestUtil {
 
-  def startRestServices = new RestTest
+  val startRestServices:RestTest = new RestTest().startRestServices
 
   class RestTest {
-    var miniCluster:MiniCluster = null
+    val miniCluster:MiniCluster = TestUtil.startMiniCluster
+    val appId = 0
+    val master = miniCluster.mockMaster
+    StreamingTestUtil.startAppMaster(miniCluster, appId)
 
     def startRestServices = {
-      val appId = 0
-      miniCluster = TestUtil.startMiniCluster
-      val master = miniCluster.mockMaster
-      StreamingTestUtil.startAppMaster(miniCluster, appId)
-      implicit val system = ActorSystem("Rest")
+      implicit val system = ActorSystem("Rest", TestUtil.TEST_CONFIG)
       RestServices.start(master)
+      this
     }
 
     def shutdown = {

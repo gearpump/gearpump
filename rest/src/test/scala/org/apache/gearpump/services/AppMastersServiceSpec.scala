@@ -17,49 +17,24 @@
  */
 package org.apache.gearpump.services
 
-import akka.actor.{Actor, ActorSystem}
+import org.apache.gearpump.cluster.AppMasterInfo
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+import org.scalatest.{WordSpecLike, Matchers, BeforeAndAfterAll}
 import org.specs2.mutable.Specification
-import spray.routing.{RouteConcatenation, Route, HttpService}
 import spray.testkit.Specs2RouteTest
 
-/*
-class AppMastersServiceSpec extends AppMastersServiceSpecActor {
 
+class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppMastersService  {
+  import org.apache.gearpump.services.Json4sSupport._
+  def actorRefFactory = system
+  val restUtil = RestTestUtil.startRestServices
+  val master = restUtil.miniCluster.mockMaster
 
-}
-
-class AppMastersServiceSpecActor extends AppMastersServiceSpecBase with Actor {
-  val appMastersService = new AppMastersService(restTest.miniCluster.mockMaster, context, system.dispatcher)
-  def receive = runRoute(appMastersService.routes)
-}
-*/
-
-class AppMastersServiceSpecBase extends Specification with Specs2RouteTest with HttpService  {
-  args(sequential = true)
-  implicit def actorRefFactory = system
-
-  val restTest = RestTestUtil.startRestServices
-
-  val smallRoute =
-    get {
-      pathSingleSlash {
-        complete {
-          <html>
-            <body>
-              <h1>Say hello to <i>spray</i>!</h1>
-            </body>
-          </html>
-        }
-      } ~
-        path("appmasters") {
-          complete("success")
-        }
-    }
-
-  "The AppMastersService" should {
+  "AppMastersService" should {
     "return a json structure of appmastersdata for GET request" in {
-      Get("/appmasters") ~> smallRoute ~> check {
-        responseAs[String] === "success"
+      Get("/appmasters") ~> routes ~> check {
+        restUtil.shutdown
+        responseAs[AppMastersData] === AppMastersData(List(AppMasterData(0,AppMasterInfo(null))))
       }
     }
   }

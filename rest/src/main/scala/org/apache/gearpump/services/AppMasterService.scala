@@ -19,7 +19,7 @@
 package org.apache.gearpump.services
 
 
-import akka.actor.{ActorContext, ActorRef}
+import akka.actor.{Actor, ActorContext, ActorRef}
 import akka.pattern.ask
 import com.wordnik.swagger.annotations._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail, AppMasterDataDetailRequest, AppMasterDataRequest}
@@ -32,11 +32,18 @@ import scala.util.{Failure, Success, Try}
 
 
 @Api(value = "/appmaster", description = "AppMaster Info.")
-class AppMasterService(val master:ActorRef, val context: ActorContext, executionContext: ExecutionContext) extends HttpService {
-  import org.apache.gearpump.services.Json4sSupport._
+class AppMasterServiceActor(val master:ActorRef) extends Actor with AppMasterService   {
   def actorRefFactory = context
-  implicit val executionContextRef:ExecutionContext = executionContext
+  def receive = runRoute(readRoute)
+
+}
+
+@Api(value = "/appmaster", description = "AppMaster Info.")
+trait AppMasterService extends HttpService {
+  import org.apache.gearpump.services.Json4sSupport._
+  implicit val ec: ExecutionContext = actorRefFactory.dispatcher
   implicit val timeout = Constants.FUTURE_TIMEOUT
+  val master:ActorRef
 
   val routes = readRoute 
 
