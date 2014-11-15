@@ -31,26 +31,31 @@ import org.slf4j.{Logger, LoggerFactory}
 object Info extends App with ArgumentsParser {
 
   private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
-  implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true))
+    "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true))
 
-  val config = parse(args)
-  val masters = config.getString("master")
-  Console.out.println("Master URL: " + masters)
-  val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
-    .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
-  val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
+  def start = {
+    val config = parse(args)
 
-  val client = new MasterClient(master)
+    val masters = config.getString("master")
+    Console.out.println("Master URL: " + masters)
 
-  val AppMastersData(appMasters) = client.listApplications
-  appMasters.foreach { appData =>
-    Console.println("== Application Information ==")
-    Console.println("====================================")
-    Console.println(s"application: ${appData.appId}, worker: ${appData.appData.worker}")
+    implicit val timeout = Timeout(5, TimeUnit.SECONDS)
+    val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG
+      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
+    val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
+
+    val client = new MasterClient(master)
+
+    val AppMastersData(appMasters) = client.listApplications
+    appMasters.foreach { appData =>
+      Console.println("== Application Information ==")
+      Console.println("====================================")
+      Console.println(s"application: ${appData.appId}, worker: ${appData.appData.worker}")
+    }
+    system.shutdown()
   }
-  system.shutdown()
 
+  start
 }
