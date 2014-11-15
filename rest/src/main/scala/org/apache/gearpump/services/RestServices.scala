@@ -73,14 +73,10 @@ class RestServices(masters: ActorRef) extends Actor with HttpService with Defaul
 object RestServices {
   def start(master:ActorRef)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
-    Console.println("point a")
     val services = system.actorOf(Props(classOf[RestServices], master), "rest-services")
     val config = system.settings.config
-    Console.println("point b")
     val port = config.getInt("gearpump.rest-services.port")
-    Console.println("point c")
     val host = config.getString("gearpump.rest-services.host")
-    Console.println("point d")
     IO(Http) ! Http.Bind(services, interface = host, port = port)
   }
 }
