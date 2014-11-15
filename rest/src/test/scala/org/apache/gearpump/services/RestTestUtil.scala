@@ -17,11 +17,17 @@
  */
 package org.apache.gearpump.services
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorSystem
+import akka.io.IO
+import akka.pattern.ask
+import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.streaming.StreamingTestUtil
+import spray.can.Http
 
 
 object RestTestUtil {
@@ -33,15 +39,18 @@ object RestTestUtil {
     val appId = 0
     val master = miniCluster.mockMaster
     StreamingTestUtil.startAppMaster(miniCluster, appId)
+    implicit val system = ActorSystem("Rest", TestUtil.TEST_CONFIG)
+    private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
     def startRestServices = {
-      implicit val system = ActorSystem("Rest", TestUtil.TEST_CONFIG)
       RestServices.start(master)
       this
     }
 
     def shutdown = {
       miniCluster.shutDown
+      IO(Http) ? Http.CloseAll
+      system.shutdown()
     }
   }
 
