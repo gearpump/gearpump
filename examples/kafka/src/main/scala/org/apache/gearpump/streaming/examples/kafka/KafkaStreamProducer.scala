@@ -18,35 +18,34 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
+import org.apache.gearpump.Message
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.ConfigsHelper._
+import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.streaming.task.TaskContext
+import org.apache.gearpump.streaming.transaction.checkpoint.{OffsetManager, RelaxedTimeFilter}
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig.ConfigToKafka
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
+import org.apache.gearpump.util.Configs
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+import akka.actor.actorRef2Scala
 import kafka.common.TopicAndPartition
 import kafka.serializer.StringDecoder
 import kafka.utils.ZkUtils
 
-import org.apache.gearpump.streaming.ConfigsHelper._
-import org.apache.gearpump.streaming.transaction.checkpoint.{RelaxedTimeFilter, OffsetManager}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
-import org.apache.gearpump.{TimeStamp, Message}
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
-import org.apache.gearpump.util.Configs
+
+
 import org.slf4j.{Logger, LoggerFactory}
 
 object KafkaStreamProducer {
-
-  object Broker {
-    def toString(brokers: List[Broker]) = brokers.mkString(",")
-  }
-
-  case class Broker(host: String, port: Int) {
-    override def toString = s"$host:$port"
-  }
-
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaStreamProducer])
 }
 
 
 /**
- * connect gearpump with Kafka
+ * connect gearpump with kafka
  */
 class KafkaStreamProducer(conf: Configs) extends TaskActor(conf) {
 
@@ -118,7 +117,7 @@ class KafkaStreamProducer(conf: Configs) extends TaskActor(conf) {
       }
     }
     fetchAndEmit(0, 0)
-    self ! Message("continue", Message.noTimeStamp)
+    self ! Message("continue", System.currentTimeMillis())
   }
 
   override def onStop(): Unit = {

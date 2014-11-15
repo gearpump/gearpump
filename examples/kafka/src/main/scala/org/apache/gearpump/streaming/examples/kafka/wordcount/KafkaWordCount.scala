@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.examples.kafka.wordcount
 
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.client.ClientContext
+import org.apache.gearpump.streaming.examples.kafka.{KafkaStreamProcessor, KafkaStreamProducer}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
