@@ -32,7 +32,21 @@ object Checkpoint {
   def empty[K, V]: Checkpoint[K, V] = new Checkpoint(List.empty[(K, V)])
 }
 
-class Checkpoint[K, V](val records: List[(K, V)])
+class Checkpoint[K, V](val records: List[(K, V)]) {
+  def canEqual(other: Any): Boolean = other.isInstanceOf[Checkpoint[K, V]]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: Checkpoint[K, V] =>
+      (that canEqual this) &&
+        records == that.records
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(records)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+}
 
 trait CheckpointSerDe[K, V] {
   def toKeyBytes(key: K): Array[Byte]

@@ -37,6 +37,7 @@ object Build extends sbt.Build {
   val swaggerUiVersion = "2.0.24"
   val scalaTestVersion = "2.2.0"
   val scalaCheckVersion = "1.11.3"
+  val mockitoVersion = "1.10.8"
 
   val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++ 
     Seq(
@@ -140,7 +141,9 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.kafka" %% "kafka" % kafkaVersion
+          "org.apache.kafka" %% "kafka" % kafkaVersion,
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
   )  dependsOn(core % "test->test;compile->compile")
