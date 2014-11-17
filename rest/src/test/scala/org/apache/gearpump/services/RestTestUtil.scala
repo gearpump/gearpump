@@ -23,7 +23,6 @@ import akka.actor.ActorSystem
 import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.streaming.StreamingTestUtil
@@ -47,8 +46,8 @@ object RestTestUtil {
       this
     }
 
-    def shutdown = {
-      miniCluster.shutDown
+    def shutdown() = {
+      miniCluster.shutDown()
       IO(Http) ? Http.CloseAll
       system.shutdown()
     }

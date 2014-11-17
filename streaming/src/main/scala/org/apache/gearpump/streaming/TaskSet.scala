@@ -23,18 +23,18 @@ import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable.Queue
+import scala.collection.mutable
 
 class TaskSet(config : Configs, dag : DAG) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[TaskSet])
   private var taskMap = Map.empty[TaskId, TaskLaunchData]
-  private var taskQueues = Map.empty[Locality, Queue[TaskLaunchData]]
+  private var taskQueues = Map.empty[Locality, mutable.Queue[TaskLaunchData]]
   private val taskLocator = new TaskLocator(config)
   var totalTaskCount = 0
 
   init(dag)
 
-  def getResourceRequests(): Array[ResourceRequest] ={
+  def fetchResourceRequests(): Array[ResourceRequest] ={
     var resourceRequests = Array.empty[ResourceRequest]
     taskQueues.foreach(params => {
       val (locality, tasks) = params
@@ -50,7 +50,7 @@ class TaskSet(config : Configs, dag : DAG) {
     resourceRequests
   }
 
-  def hasUnlaunchedTask : Boolean = {
+  def hasNotLaunchedTask : Boolean = {
     for(tasks <- taskQueues){
       val (_, taskQueue) = tasks
       if(taskQueue.size > 0)
@@ -61,11 +61,11 @@ class TaskSet(config : Configs, dag : DAG) {
 
   def scheduleTaskOnWorker(workerId : Int) : TaskLaunchData = {
     val locality = WorkerLocality(workerId)
-    val taskQueue = taskQueues.getOrElse(locality, Queue.empty[TaskLaunchData])
+    val taskQueue = taskQueues.getOrElse(locality, mutable.Queue.empty[TaskLaunchData])
     if(taskQueue.nonEmpty) {
       return taskQueue.dequeue()
     } else {
-      val nonLocalityQueue = taskQueues.getOrElse(NonLocality, Queue.empty[TaskLaunchData])
+      val nonLocalityQueue = taskQueues.getOrElse(NonLocality, mutable.Queue.empty[TaskLaunchData])
       if(nonLocalityQueue.nonEmpty){
         return nonLocalityQueue.dequeue()
       }
@@ -83,7 +83,7 @@ class TaskSet(config : Configs, dag : DAG) {
   }
 
   private def addTask(taskLaunchData : TaskLaunchData, locality : Locality = NonLocality): Unit = {
-    val taskQueue = taskQueues.getOrElse(locality, Queue.empty[TaskLaunchData])
+    val taskQueue = taskQueues.getOrElse(locality, mutable.Queue.empty[TaskLaunchData])
     taskQueue.enqueue(taskLaunchData)
     taskQueues += (locality -> taskQueue)
   }
@@ -92,7 +92,7 @@ class TaskSet(config : Configs, dag : DAG) {
   private def init(dag : DAG): Unit ={
     dag.tasks.foreach { params =>
       val (taskGroupId, taskDescription) = params
-      0.until(taskDescription.parallism).map((taskIndex: Int) => {
+      0.until(taskDescription.parallelism).map((taskIndex: Int) => {
         val taskId = TaskId(taskGroupId, taskIndex)
         val locality = taskLocator.locateTask(taskDescription)
         val taskLaunchData = TaskLaunchData(taskId, taskDescription, dag.subGraph(taskGroupId))
@@ -101,7 +101,7 @@ class TaskSet(config : Configs, dag : DAG) {
         totalTaskCount += 1
       })
     }
-    val nonLocalityQueue = taskQueues.getOrElse(NonLocality, Queue.empty[TaskLaunchData])
+    val nonLocalityQueue = taskQueues.getOrElse(NonLocality, mutable.Queue.empty[TaskLaunchData])
     //reorder the tasks to distributing fairly on workers
     val taskQueue = nonLocalityQueue.sortBy(_.taskId.index)
     taskQueues += (NonLocality -> taskQueue)

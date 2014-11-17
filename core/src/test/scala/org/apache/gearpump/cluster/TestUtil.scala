@@ -59,6 +59,6 @@ object TestUtil{
       TestActorRef(props)
     }
 
-    def shutDown = system.shutdown()
+    def shutDown() = system.shutdown()
   }
 }

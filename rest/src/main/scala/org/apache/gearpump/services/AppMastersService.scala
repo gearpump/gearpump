@@ -19,7 +19,7 @@
 package org.apache.gearpump.services
 
 
-import akka.actor.{Actor, ActorContext, ActorRef}
+import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import com.wordnik.swagger.annotations._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest}
@@ -30,30 +30,6 @@ import spray.routing.HttpService
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-/*
-@Api(value = "/appmasters", description = "AppMasters Info.")
-class AppMastersService(val master:ActorRef, val context: ActorContext, executionContext: ExecutionContext) extends HttpService {
-  import org.apache.gearpump.services.Json4sSupport._
-  def actorRefFactory = context
-  implicit val executionContextRef:ExecutionContext = executionContext
-  implicit val timeout = Constants.FUTURE_TIMEOUT
-
-  val routes = readRoute 
-
-  @ApiOperation(value = "Get AppMasters Info", notes = "Returns AppMasters Info ", httpMethod = "GET", response = classOf[AppMastersData])
-  @ApiResponses(Array(
-    new ApiResponse(code = 404, message = "AppMasters not found")
-  ))
-  def readRoute = get { 
-     path("appmasters") {
-       onComplete((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]]) {
-         case Success(value:AppMastersData) => complete(value)
-         case Failure(ex)    => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-       }
-    }
-  }
-}
-*/
 @Api(value = "/appmasters", description = "AppMasters Info.")
 class AppMastersServiceActor(val master:ActorRef) extends Actor with AppMastersService   {
   def actorRefFactory = context
