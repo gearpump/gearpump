@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.cluster
 
+import java.util.UUID
+
 import akka.actor._
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToMaster._
@@ -95,7 +97,7 @@ private[cluster] class Master extends Actor with Stash {
 
   def clientMsgHandler : Receive = {
     case app : SubmitApplication =>
-      LOG.info(s"Receive from client, SubmitApplication $app")
+      LOG.info(s"Receive from client, SubmitApplicationWithJar $app")
       appManager.forward(app)
     case app : ShutdownApplication =>
       LOG.info(s"Receive from client, Shutting down Application ${app.appId}")

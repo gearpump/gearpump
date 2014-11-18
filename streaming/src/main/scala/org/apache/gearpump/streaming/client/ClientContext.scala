@@ -22,12 +22,14 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
-import org.apache.gearpump.cluster.{Application, MasterClient, MasterProxy}
+import org.apache.gearpump.cluster.{AppJar, Application, MasterClient, MasterProxy}
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Configs, Util}
 import org.slf4j.{LoggerFactory, Logger}
+
+import scala.collection.mutable.ListBuffer
 
 class ClientContext(masters: Iterable[HostPort]) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[ClientContext])
@@ -36,15 +38,9 @@ class ClientContext(masters: Iterable[HostPort]) {
 
   val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
 
-  def submit(app : Application) : Int = {
-    val appDescription = app.asInstanceOf[AppDescription]
-    appDescription.dag.vertex.map(taskDescription => {
-      JarsForTasks.jars.get(taskDescription.taskClass).map(jar => {
-        taskDescription.config = Option(TaskConfiguration(None,Option(jar)))
-      })
-    })
+  def submit(app : Application, jar: Option[AppJar]) : Int = {
     val client = new MasterClient(master)
-    client.submitApplication(classOf[AppMaster], Configs.empty, app)
+    client.submitApplication(classOf[AppMaster], Configs.empty, app, jar)
   }
 
   def shutdown(appId : Int) : Unit = {

@@ -17,12 +17,13 @@
  */
 package org.apache.gearpump.streaming.client
 
-import org.apache.gearpump.cluster.main.{ParseResult, ArgumentsParser}
+import org.apache.gearpump.cluster.main.{AppSubmitter, Starter, ParseResult, ArgumentsParser}
+import org.apache.gearpump.streaming.AppDescription
 import org.slf4j.{LoggerFactory, Logger}
 
-trait Starter {
+trait StreamingStarter extends Starter {
   this: ArgumentsParser =>
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[Starter])
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[StreamingStarter])
 
   def main(args: Array[String]): Unit = {
     val config = parse(args)
@@ -30,14 +31,13 @@ trait Starter {
     val runseconds = config.getInt("runseconds")
     LOG.info("Master URL: " + masters)
     val context = ClientContext(masters)
-    val appId = context.submit(application(config))
+    val app = application(config).asInstanceOf[AppDescription]
+    val appId = context.submit(app, Option(AppSubmitter.jars(0)))
     LOG.info(s"We get application id: $appId")
     Thread.sleep(runseconds * 1000)
     LOG.info(s"Shutting down application $appId")
     context.shutdown(appId)
     context.destroy()
   }
-
-  def application(config: ParseResult): org.apache.gearpump.cluster.Application
 
 }

@@ -15,10 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.main
+package org.apache.gearpump.cluster.main
 
-import org.apache.gearpump.cluster.main.{Replay, Info, Shell, Kill}
-import org.apache.gearpump.cluster.streaming.Application
 import org.slf4j.{Logger, LoggerFactory}
 
 object Gear extends App {
@@ -38,7 +36,7 @@ object Gear extends App {
           case "replay" =>
             Replay.main(Array.empty[String])
           case "app" =>
-            Application.main(Array.empty[String])
+            AppSubmitter.main(Array.empty[String])
 
         }
       case None =>
@@ -71,7 +69,7 @@ object Gear extends App {
       case "replay" =>
         Replay.main(commandArgs)
       case "app" =>
-        Application.main(commandArgs)
+        AppSubmitter.main(commandArgs)
     }
   }
 

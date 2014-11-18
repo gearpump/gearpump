@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.cluster
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.util.Configs
@@ -43,7 +45,7 @@ object MasterToWorker {
  */
 
 object ClientToMaster {
-  case class SubmitApplication(appMaster: Class[_ <: Actor], config: Configs, appDescription: Application)
+  case class SubmitApplication(appMaster: Class[_ <: Actor], config: Configs, appDescription: Application, appJar: Option[AppJar])
   case class ShutdownApplication(appId: Int)
 }
 

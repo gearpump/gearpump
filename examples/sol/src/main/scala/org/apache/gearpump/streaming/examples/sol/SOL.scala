@@ -18,15 +18,15 @@
 
 package org.apache.gearpump.streaming.examples.sol
 
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
+import org.apache.gearpump.cluster.main.{Starter, ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.{Partitioner, ShufflePartitioner}
-import org.apache.gearpump.streaming.client.{Starter, ClientContext}
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription, _}
+import org.apache.gearpump.streaming.client.StreamingStarter
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
 import org.slf4j.{Logger, LoggerFactory}
 
-class SOL extends Starter with ArgumentsParser {
+class SOL extends StreamingStarter with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SOL])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -44,8 +44,8 @@ class SOL extends Starter with ArgumentsParser {
     val stages = config.getInt("stages")
     val appConfig = Configs.empty.withValue(SOLStreamProducer.BYTES_PER_MESSAGE, bytesPerMessage)
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SOLStreamProducer], spoutNum)
-    val streamProcessor = TaskDescription(classOf[SOLStreamProcessor], boltNum)
+    val streamProducer = TaskDescription(classOf[SOLStreamProducer].getCanonicalName, spoutNum)
+    val streamProcessor = TaskDescription(classOf[SOLStreamProcessor].getCanonicalName, boltNum)
     var computation : Any = streamProducer ~ partitioner ~> streamProcessor
     computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
       c ~ partitioner ~> streamProcessor.copy()

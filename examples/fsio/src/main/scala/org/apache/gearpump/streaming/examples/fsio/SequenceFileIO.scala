@@ -17,16 +17,18 @@
  */
 package org.apache.gearpump.streaming.examples.fsio
 
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.ShufflePartitioner
-import org.apache.gearpump.streaming.client.Starter
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription, _}
+import org.apache.gearpump.streaming.client.StreamingStarter
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
+import scala.collection.JavaConversions._
 
-class SequenceFileIO extends Starter with ArgumentsParser {
+class SequenceFileIO extends StreamingStarter with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SequenceFileIO])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -43,10 +45,11 @@ class SequenceFileIO extends Starter with ArgumentsParser {
     val boltNum = config.getInt("sink")
     val input = config.getString("input")
     val output = config.getString("output")
-    val appConfig = HadoopConfig.empty.withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output).withHadoopConf(new Configuration())
+    val fsioConf = ConfigFactory.load("fsio.conf").entrySet.map(entry => (entry.getKey, entry.getValue.unwrapped)).toMap
+    val appConfig = HadoopConfig(fsioConf).withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output).withHadoopConf(new Configuration())
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer], spoutNum)
-    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor], boltNum)
+    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getCanonicalName, spoutNum)
+    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getCanonicalName, boltNum)
     val app = AppDescription("SequenceFileIO", appConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app
   }

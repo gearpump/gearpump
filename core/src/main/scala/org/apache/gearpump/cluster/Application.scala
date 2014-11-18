@@ -18,8 +18,10 @@
 
 package org.apache.gearpump.cluster
 
+case class AppJar(name: String, bytes: Array[Byte])
 
 /**
  * Subtype this for user defined application
  */
+
 trait Application

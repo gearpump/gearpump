@@ -25,8 +25,8 @@ import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.task.{TaskActor, CleanTaskLocations, TaskLocations}
-import org.apache.gearpump.util.{Constants, Configs}
+import org.apache.gearpump.streaming.task.{CleanTaskLocations, TaskActor, TaskLocations}
+import org.apache.gearpump.util.{Configs, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
 class Executor(config : Configs)  extends Actor {
@@ -50,28 +50,9 @@ class Executor(config : Configs)  extends Actor {
   def appMasterMsgHandler : Receive = {
     case LaunchTask(taskId, config, taskDescription) => {
       LOG.info(s"Launching Task $taskId for app: $appId, ${taskDescription.taskClass}")
-      taskDescription.config match {
-        case Some(taskConfig) =>
-          taskConfig.jar.map(taskJar => {
-            var fos = new java.io.FileOutputStream(taskJar.name)
-            new java.io.PrintStream(fos).write(taskJar.bytes)
-            fos.close
-            var classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:"+taskJar.name)),
-              Thread.currentThread().getContextClassLoader())
-            LOG.info(s"Loading ${taskDescription.taskClass} as subClass of TaskActor")
-            val taskClass = classLoader.loadClass(taskDescription.taskClass).asSubclass(classOf[TaskActor])
-            LOG.info(s"Loaded ${taskClass.getCanonicalName}")
-            val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
-            val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
-
-          })
-        case None =>
-          // TODO handle TaskClass made available via alternative loading methods. ClassLoader will probably need to
-          // be referenced elsewhere so Class.forName is probably incorrect
-          val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
-          LOG.info(s"Loading ${taskDescription.taskClass}")
-          val task = context.actorOf(Props(Class.forName(taskDescription.taskClass), config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
-      }
+      val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
+      LOG.info(s"Loading ${taskDescription.taskClass}")
+      val task = context.actorOf(Props(Class.forName(taskDescription.taskClass), config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }
     case taskLocations : TaskLocations =>
       sendLater.forward(taskLocations)

@@ -16,7 +16,7 @@ object Build extends sbt.Build {
   val codahaleVersion = "3.0.2"
   val commonsLangVersion = "3.3.2"
   val commonsHttpVersion = "3.1"
-  val gearPumpVersion = "0.2"
+  val gearPumpVersion = "0.2-SNAPSHOT"
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
@@ -31,7 +31,7 @@ object Build extends sbt.Build {
   val swaggerUiVersion = "2.0.24"
   val scalaTestVersion = "2.2.0"
 
-  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ 
+  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++ 
     Seq(
         resolvers ++= Seq(
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
@@ -84,7 +84,7 @@ object Build extends sbt.Build {
     settings = commonSettings ++ 
       packSettings ++ 
       Seq(
-        packMain := Map("gear" -> "org.apache.gearpump.streaming.main.Gear",
+        packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
                         "local" -> "org.apache.gearpump.cluster.main.Local",
                         "master" -> "org.apache.gearpump.cluster.main.Master",
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
@@ -95,7 +95,7 @@ object Build extends sbt.Build {
         packExpandedClasspath := true,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
-  ) aggregate(core, streaming, fsio, kafka, sol, wordcount, rest)
+  ).dependsOn(core, streaming).aggregate(core, streaming, fsio, kafka, sol, wordcount, rest)
 
   lazy val core = Project(
     id = "gearpump-core",

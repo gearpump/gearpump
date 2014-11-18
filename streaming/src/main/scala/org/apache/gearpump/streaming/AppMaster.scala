@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming
 
 import java.util.Date
 import java.util.concurrent.TimeUnit
+import java.io.{ByteArrayOutputStream, FileInputStream, File}
 
 import akka.actor._
 import akka.pattern.{ask, pipe}
@@ -41,6 +42,7 @@ import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.concurrent._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -57,6 +59,7 @@ class AppMaster (config : Configs) extends Actor {
 
   private val appId = config.appId
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
+  private val appJar = loadJar
   private val masterProxy = config.masterProxy
   private var master : ActorRef = null
 
@@ -91,6 +94,31 @@ class AppMaster (config : Configs) extends Actor {
     clockService = context.actorOf(Props(classOf[ClockService], dag))
 
     context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
+  }
+
+  def loadJar: Option[AppJar] = {
+    val fileName: Option[String] = Option[String](System.getProperty("app.jar"))
+    fileName match {
+      case Some(name) =>
+        LOG.info(s"APPMASTER app.jar name = $name")
+        val file = new File(name)
+        if(file.exists) {
+          val fis = new FileInputStream(file)
+          val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
+          val buf = ListBuffer[Byte]()
+          var b = fis.read()
+          while (b != -1) {
+            buf.append(b.byteValue)
+            b = fis.read()
+          }
+          return Option(AppJar(name, buf.toArray))
+        }
+        LOG.info("APPMASTER app.jar is NULL")
+        None
+      case None =>
+        LOG.info("APPMASTER app.jar is NULL")
+        None
+      }
   }
 
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
@@ -128,7 +156,7 @@ class AppMaster (config : Configs) extends Actor {
         val (worker, resource) = workerAndResources
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
         val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withStartTime(startClock).withWorkerId(actorToWorkerId.get(worker).get)
-        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig))
+        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig, appJar))
         currentExecutorId += 1
       })
     }
@@ -317,12 +345,13 @@ object AppMaster {
 
   case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
 
-  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs) extends Actor {
+  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs, jar: Option[AppJar]) extends Actor {
 
     val name = ActorUtil.actorNameForExecutor(appId, executorId)
     val selfPath = ActorUtil.getFullPath(context)
-
-    val launch = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
+    val extraClasspath = context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
+    val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
+    val launch = ExecutorContext(classPath, context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
 
     worker ! LaunchExecutor(appId, executorId, resource, launch)
 

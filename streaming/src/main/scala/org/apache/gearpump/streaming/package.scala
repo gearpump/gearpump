@@ -3,6 +3,7 @@ package org.apache.gearpump
 import java.io.{ByteArrayOutputStream, FileInputStream}
 import java.net.URLClassLoader
 
+import org.apache.gearpump.cluster.AppJar
 import org.apache.gearpump.streaming.task.TaskActor
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -10,11 +11,10 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.parallel.mutable
 
 package object streaming {
-  private val LOG: Logger = LoggerFactory.getLogger("org.apache.gearpump.streaming")
 
   type TaskGroup = Int
   type TaskIndex = Int
-
+/*
   implicit def classToTaskJar(clazz: Class[_<:TaskActor]): String = {
     val classLoader = clazz.getClassLoader;
     val urlClassLoader = classLoader.asInstanceOf[URLClassLoader]
@@ -30,7 +30,7 @@ package object streaming {
           b = fis.read()
         }
         if (!JarsForTasks.jars.contains(clazz.getCanonicalName)) {
-          JarsForTasks.jars += (clazz.getCanonicalName -> TaskJar(file.getName, buf.toArray))
+          JarsForTasks.jars += (clazz.getCanonicalName -> AppJar(file.getName, buf.toArray))
         } else {
           LOG.error(s"Could not open ${file.getName}")
           None
@@ -41,6 +41,7 @@ package object streaming {
   }
 
   object JarsForTasks {
-    val jars = scala.collection.mutable.Map[String, TaskJar]()
+    val jars = scala.collection.mutable.Map[String, AppJar]()
   }
+  */
 }

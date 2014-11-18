@@ -15,12 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.cluster.main
 
-package org.apache.gearpump.streaming
+import org.slf4j.{LoggerFactory, Logger}
 
-import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.util.{Configs, Graph, ReferenceEqual}
+trait Starter {
+  this: ArgumentsParser =>
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[Starter])
 
-case class TaskDescription(taskClass: String, parallism : Int) extends ReferenceEqual
+  def main(args: Array[String]): Unit 
 
-case class AppDescription(name : String, conf : Configs, dag: Graph[TaskDescription, Partitioner]) extends org.apache.gearpump.cluster.Application
+  def application(config: ParseResult): org.apache.gearpump.cluster.Application
+
+}

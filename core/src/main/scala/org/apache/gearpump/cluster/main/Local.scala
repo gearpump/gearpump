@@ -20,6 +20,7 @@ package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
+import org.apache.gearpump.cluster.Master
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{ActorUtil, Configs}
 import org.slf4j.{Logger, LoggerFactory}
@@ -32,9 +33,9 @@ object Local extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] =
     Array("ip"->CLIOption[String]("<master ip address>",required = false, defaultValue = Some("127.0.0.1")),
-          "port"->CLIOption("<master port>",required = true),
-          "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
-          "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(2)))
+      "port"->CLIOption("<master port>",required = true),
+      "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
+      "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(2)))
 
   val config = parse(args)
 
@@ -53,7 +54,7 @@ object Local extends App with ArgumentsParser {
       withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip)).
       withValue("gearpump.cluster.masters",  ConfigValueFactory.fromAnyRef(List(s"$ip:$port").asJava))
     )
-    val master = system.actorOf(Props[org.apache.gearpump.cluster.Master], MASTER)
+    val master = system.actorOf(Props[Master], MASTER)
     val masterPath = ActorUtil.getSystemPath(system) + s"/user/$MASTER"
     LOG.info(s"master is started at $masterPath...")
 
