@@ -26,10 +26,10 @@ import scala.collection.JavaConversions._
 object DAG {
 
   def apply (graph : Graph[TaskDescription, Partitioner]) : DAG = {
-    val iter = graph.topologicalOrderIterator
+    val topologicalOrderIterator = graph.topologicalOrderIterator
 
     val outputGraph = Graph.empty[Int, Partitioner]
-    val (_, tasks) = iter.foldLeft((0, Map.empty[Int, TaskDescription])) { (first, task) =>
+    val (_, tasks) = topologicalOrderIterator.foldLeft((0, Map.empty[Int, TaskDescription])) { (first, task) =>
       val (taskId, tasks) = first
       outputGraph.addVertex(taskId)
       (taskId + 1, tasks + (taskId -> task))
@@ -64,8 +64,8 @@ case class DAG(tasks : Map[Int, TaskDescription], graph : Graph[Int, Partitioner
     val newMap = newGraph.vertex.foldLeft(Map.empty[Int, TaskDescription]){ (map, vertex) =>
       val task = tasks.get(vertex).get
 
-      //clean out other indegree and out-degree tasks' data except the task parallism
-      map + (vertex -> task.copy(null, task.parallism))
+      //clean out other in-degree and out-degree tasks' data except the task parallelism
+      map + (vertex -> task.copy(null, task.parallelism))
     }
     new DAG(newMap, newGraph)
   }

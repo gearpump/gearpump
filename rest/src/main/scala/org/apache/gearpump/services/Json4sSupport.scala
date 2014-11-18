@@ -55,9 +55,9 @@ object Json4sSupport extends Json4sJacksonSupport {
         AppMasterInfo(null)
     },
     { //to json
-      case x:AppMasterInfo =>
+      case appMasterInfo:AppMasterInfo =>
         JObject(
-          JField("worker", JString(x.worker.path.address.toString)) :: Nil)
+          JField("worker", JString(appMasterInfo.worker.path.address.toString)) :: Nil)
     }
     )
   )
@@ -88,26 +88,26 @@ object Json4sSupport extends Json4sJacksonSupport {
         AppDescription(name,conf,dag)
     },
     { //to json
-      case x:AppDescription =>
-        val confKeys = x.conf.config.map(f => {
+      case appDescription:AppDescription =>
+        val confKeys = appDescription.conf.config.map(f => {
           val (key,value) = f
           JField(key, JString(value.toString))
         }
         ).toList
-        val dagVertices = x.dag.vertex.map(f => {
-          JObject(JField("taskClass", JString(f.taskClass))::JField("parallism", JInt(f.parallism))::Nil)
+        val dagVertices = appDescription.dag.vertex.map(f => {
+          JObject(JField("taskClass", JString(f.taskClass))::JField("parallelism", JInt(f.parallelism))::Nil)
         }).toList
-        val dagEdges = x.dag.edges.map(f => {
+        val dagEdges = appDescription.dag.edges.map(f => {
           val (node1, edge, node2) = f
           JArray(
-            JObject(JField("taskClass",JString(node1.taskClass))::JField("parallism",JInt(node1.parallism))::Nil)::
+            JObject(JField("taskClass",JString(node1.taskClass))::JField("parallelism",JInt(node1.parallelism))::Nil)::
             JString(edge.getClass.getCanonicalName)::
-            JObject(JField("taskClass",JString(node2.taskClass))::JField("parallism",JInt(node2.parallism))::Nil)::
+            JObject(JField("taskClass",JString(node2.taskClass))::JField("parallelism",JInt(node2.parallelism))::Nil)::
             Nil
           )
         }).toList
         JObject(
-          JField("name", JString(x.name)) :: JField("conf", JObject(confKeys)) :: JField("dag",
+          JField("name", JString(appDescription.name)) :: JField("conf", JObject(confKeys)) :: JField("dag",
             JObject(JField("vertex", JArray(dagVertices.toList)) :: JField("edge", JArray(dagEdges)) ::Nil)) :: Nil)
     }
     )

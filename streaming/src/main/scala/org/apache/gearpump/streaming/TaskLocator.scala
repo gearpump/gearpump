@@ -21,10 +21,10 @@ import akka.actor.Actor
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.util.{ActorUtil, Configs}
 
-import scala.collection.mutable.Queue
+import scala.collection.mutable
 
 class TaskLocator(config : Configs) {
-  private var userScheduledTask = Map.empty[Class[_ <: Actor], Queue[Locality]]
+  private var userScheduledTask = Map.empty[Class[_ <: Actor], mutable.Queue[Locality]]
 
   initTasks()
 
@@ -32,8 +32,8 @@ class TaskLocator(config : Configs) {
     val taskLocations : Array[(TaskDescription, Locality)] = ConfigsHelper.loadUserAllocation(ConfigFactory.empty())
     for(taskLocation <- taskLocations){
       val (taskDescription, locality) = taskLocation
-      val localityQueue = userScheduledTask.getOrElse(ActorUtil.loadClass(taskDescription.taskClass), Queue.empty[Locality])
-      0.until(taskDescription.parallism).foreach(_ => localityQueue.enqueue(locality))
+      val localityQueue = userScheduledTask.getOrElse(ActorUtil.loadClass(taskDescription.taskClass), mutable.Queue.empty[Locality])
+      0.until(taskDescription.parallelism).foreach(_ => localityQueue.enqueue(locality))
       userScheduledTask += (ActorUtil.loadClass(taskDescription.taskClass) -> localityQueue)
     }
   }

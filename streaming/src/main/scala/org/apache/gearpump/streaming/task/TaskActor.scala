@@ -89,7 +89,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
     }
   }
 
-  final override def postStop : Unit = {
+  final override def postStop() : Unit = {
     onStop()
   }
 
@@ -109,7 +109,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
       this.partitioner = edges.foldLeft(MergedPartitioner.empty) { (mergedPartitioner, nodeEdgeNode) =>
         val (_, partitioner, taskgroupId) = nodeEdgeNode
-        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallism
+        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallelism
         mergedPartitioner.add(partitioner, taskParallism)
       }
 
@@ -117,7 +117,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
       outputTaskIds = edges.flatMap {nodeEdgeNode =>
         val (_, _, taskgroupId) = nodeEdgeNode
-        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallism
+        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallelism
 
         LOG.info(s"get output taskIds, groupId: $taskgroupId, parallism: $taskParallism")
 
@@ -140,7 +140,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
     context.parent ! GetStartClock
   }
 
-  private def tryToSyncToClockService : Unit = {
+  private def tryToSyncToClockService() : Unit = {
     if (unackedClockSyncTimestamp == 0) {
       appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
       needSyncToClockService = false
@@ -157,7 +157,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
     }
   }
 
-  private def doHandleMessage : Unit = {
+  private def doHandleMessage() : Unit = {
     var done = false
     while (flowControl.allowSendingMoreMessages() && !done) {
       val msg = queue.poll()
@@ -169,7 +169,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
           case m : Message =>
             val updated = clockTracker.onProcess(m)
             if (updated) {
-              tryToSyncToClockService
+              tryToSyncToClockService()
             }
 
             onNext(m)
@@ -194,9 +194,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       flowControl.receiveAck(taskId, seq)
       val updated = clockTracker.onAck(ack)
       if (updated) {
-        tryToSyncToClockService
+        tryToSyncToClockService()
       }
-      doHandleMessage
+      doHandleMessage()
     case msg : Message =>
       if (msg.timestamp != Message.noTimeStamp) {
         latencies.update(System.currentTimeMillis() - msg.timestamp)
@@ -205,12 +205,12 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       val updatedMessage = clockTracker.onReceive(msg)
       queue.add(updatedMessage)
 
-      doHandleMessage
+      doHandleMessage()
     case ClockUpdated(timestamp) =>
       minClock = timestamp
       unackedClockSyncTimestamp = 0
       if (needSyncToClockService) {
-        tryToSyncToClockService
+        tryToSyncToClockService()
       }
     case RestartTasks(timestamp) =>
       LOG.info(s"Restarting myself $taskId from timestamp $timestamp...")
