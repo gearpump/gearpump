@@ -16,27 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.metrics
+package org.apache.gearpump.streaming.examples.kafka.topn
 
-import com.codahale.metrics.{Counter => CodaHaleCounter}
+class Rankings[T] extends Serializable {
+  private var rankings: List[(T, Long)] = newRankings
 
-/**
- * sampleRate: take a data point for every sampleRate...
- */
-class Counter(counter : CodaHaleCounter, sampleRate : Int = 1) {
-  private var sampleCount = 0L
-  private var toBeIncremented = 0L
-
-  def inc() {
-    inc(1)
+  def update(r: (T, Long)): Unit = {
+    rankings :+= r
+  }
+  def update(obj: T, count: Long): Unit = {
+    update((obj, count))
   }
 
-  def inc(n: Long) {
-    toBeIncremented += n
-    sampleCount += 1
-    if (null != counter && sampleCount % sampleRate == 0) {
-      counter.inc(toBeIncremented)
-      toBeIncremented = 0
-    }
+  def getTopN(n: Int): List[(T, Long)] = {
+    rankings.sortBy(_._2).reverse.take(n)
+  }
+
+  def clear(): Unit = {
+    rankings = newRankings
+  }
+
+  private def newRankings: List[(T, Long)] = {
+    List.empty[(T, Long)]
   }
 }
+
+

@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.{ActorRef, Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
 import com.gettyimages.spray.swagger._
 import com.typesafe.config.ConfigFactory
@@ -30,13 +30,24 @@ import spray.routing.HttpService
 import scala.concurrent.ExecutionContext
 import scala.reflect.runtime.universe._
 
-class RestServices(master: ActorRef)(implicit executionContext:ExecutionContext) extends Actor with HttpService with DefaultJsonProtocol {
-
+class RestServices(masters: ActorRef) extends Actor with HttpService with DefaultJsonProtocol {
   def actorRefFactory = context
+  implicit val executionContext:ExecutionContext = context.dispatcher
 
-  val appMastersService = new AppMastersService(master, context, executionContext)
+  val appMastersService = new AppMastersService {
+    val master = masters
+    def actorRefFactory = context
+  }
 
-  val appMasterService = new AppMasterService(master, context, executionContext)
+  val appMasterService = new AppMasterService {
+    val master = masters
+    def actorRefFactory = context
+  }
+
+  override def preStart: Unit = {
+    context.actorOf(Props(classOf[AppMastersServiceActor], masters), "appMastersService")
+    context.actorOf(Props(classOf[AppMasterServiceActor], masters), "appMasterService")
+  }
 
   def receive = runRoute(appMastersService.routes ~ appMasterService.routes ~ swaggerService.routes ~
       get {
@@ -62,8 +73,8 @@ class RestServices(master: ActorRef)(implicit executionContext:ExecutionContext)
 object RestServices {
   def start(master:ActorRef)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
-    val services = system.actorOf(Props(new RestServices(master)), "rest-services")
-    val config = ConfigFactory.load()
+    val services = system.actorOf(Props(classOf[RestServices], master), "rest-services")
+    val config = system.settings.config
     val port = config.getInt("gearpump.rest-services.port")
     val host = config.getString("gearpump.rest-services.host")
     IO(Http) ! Http.Bind(services, interface = host, port = port)

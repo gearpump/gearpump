@@ -26,7 +26,6 @@ import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeUnit
-
 import org.slf4j.{Logger, LoggerFactory}
 import org.apache.gearpump.streaming.transaction.storage.api.{KeyValueSerDe, StorageManager}
 
@@ -93,6 +92,7 @@ class KafkaStreamProcessor(conf: Configs) extends TaskActor(conf) {
     val timestamp = System.currentTimeMillis()
     if (shouldCheckpoint) {
       storageManager.checkpoint(timestamp)
+      lastCheckpointTime = timestamp
     }
   }
 

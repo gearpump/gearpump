@@ -1,6 +1,8 @@
 import sbt.Keys._
 import sbt._
 import xerial.sbt.Pack._
+import xerial.sbt.Sonatype._
+import xerial.sbt.Sonatype.SonatypeKeys._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 
 import scala.collection.immutable.Map.WithDefault
@@ -30,8 +32,9 @@ object Build extends sbt.Build {
   val spraySwaggerVersion = "0.5.0"
   val swaggerUiVersion = "2.0.24"
   val scalaTestVersion = "2.2.0"
+  val scalaCheckVersion = "1.11.3"
 
-  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++ 
+  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++ 
     Seq(
         resolvers ++= Seq(
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
@@ -47,12 +50,32 @@ object Build extends sbt.Build {
       version := gearPumpVersion,
       organization := "com.github.intel-hadoop",
       crossPaths := false,
-      scalacOptions ++= Seq(
-        "-Yclosure-elim",
-        "-Yinline"
-      )
-    ) ++
-    Seq(
+      scalacOptions ++= Seq("-Yclosure-elim","-Yinline"),
+      packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
+      packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf")),
+      pomExtra := {
+      <url>https://github.com/intel-hadoop/gearpump</url>
+      <licenses>
+        <license>
+          <name>Apache 2</name>
+          <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+      </licenses>
+      <scm>
+        <connection>scm:git:github.com/intel-hadoop/gearpump</connection>
+        <developerConnection>scm:git:git@github.com:intel-hadoop/gearpump</developerConnection>
+        <url>github.com/intel-hadoop/gearpump</url>
+      </scm>
+      <developers>
+        <developer>
+          <id>gearpump</id>
+          <name>Gearpump Team</name>
+          <url>https://github.com/intel-hadoop/teams/gearpump</url>
+        </developer>
+      </developers>
+    }
+  ) ++
+  Seq(
         libraryDependencies ++= Seq(
         "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
         "com.codahale.metrics" % "metrics-core" % codahaleVersion,
@@ -76,7 +99,7 @@ object Build extends sbt.Build {
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
       )
-    ) 
+  ) 
 
   lazy val root = Project(
     id = "gearpump",
@@ -131,7 +154,8 @@ object Build extends sbt.Build {
     settings = commonSettings ++ packSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test"
         )
       )
   ) dependsOn streaming
@@ -156,7 +180,7 @@ object Build extends sbt.Build {
         libraryDependencies ++= Seq(
           "io.spray" %%  "spray-can"       % sprayVersion,
           "io.spray" %%  "spray-routing"   % sprayVersion,
-          "io.spray" %%  "spray-testkit"   % sprayVersion,
+          "io.spray" %%  "spray-testkit"   % sprayVersion % "test",
           "io.spray" %%  "spray-httpx"     % sprayVersion,
           "io.spray" %%  "spray-client"    % sprayVersion,
           "io.spray" %%  "spray-json"    % sprayJsonVersion,
@@ -167,5 +191,5 @@ object Build extends sbt.Build {
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
         )
       ) 
-  ) dependsOn streaming
+  ) dependsOn(streaming % "test->test;compile->compile")
 }

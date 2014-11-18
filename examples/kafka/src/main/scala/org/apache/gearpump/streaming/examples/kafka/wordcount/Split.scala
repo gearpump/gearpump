@@ -16,38 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.examples.kafka.wordcount
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
-import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable
-
-class Sum (conf : Configs) extends TaskActor(conf) {
-
-  private val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
+class Split(conf: Configs) extends TaskActor(conf) {
 
   override def onStart(taskContext : TaskContext) : Unit = {
-
   }
 
   override def onNext(msg : Message) : Unit = {
-    if (null == msg) {
-      return
-    }
-    val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
-    val word = msg.msg.asInstanceOf[String]
-    val count = current + 1
-    map.put(word, count)
-    output(new Message(s"${msg.timestamp}" -> s"$word:$count", System.currentTimeMillis()))
+    msg.msg.asInstanceOf[String].split("\\s+").foreach(
+      word => output(new Message(word, System.currentTimeMillis())))
   }
-
-  override def onStop() : Unit = {
-  }
-}
-
-object Sum {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[Sum])
 }
