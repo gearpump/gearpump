@@ -38,7 +38,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   val remoteClientMap = Agent(Map.empty[HostPort, ActorRef])
 
-  val conf = Map.empty[String, Any]
+  val conf = system.settings.config
 
   lazy val (context, serverPort, localHost) = init
 
