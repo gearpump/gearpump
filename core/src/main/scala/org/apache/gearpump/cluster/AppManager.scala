@@ -110,7 +110,7 @@ private[cluster] class AppManager() extends Actor with Stash {
     replicator ! Unsubscribe(STATE, self)
   }
 
-  LOG.info("Recoving application state....")
+  LOG.info("Recovering application state....")
   context.become(waitForMasterState)
 
   def waitForMasterState: Receive = {

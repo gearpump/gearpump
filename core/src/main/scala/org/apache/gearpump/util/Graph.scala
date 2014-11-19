@@ -73,7 +73,7 @@ class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) e
   }
 
   def addGraph(other : Graph[N, E]) : Graph[N, E] = {
-    var newGraph = graph.clone().asInstanceOf[DefaultDirectedGraph[N, Edge[E]]]
+    val newGraph = graph.clone().asInstanceOf[DefaultDirectedGraph[N, Edge[E]]]
     Graphs.addGraph(newGraph, other.graph)
     new Graph(newGraph)
   }
@@ -109,20 +109,18 @@ object Graph {
   def apply[N, E](elems: Array[GraphElement]*) = {
     val backStoreGraph = empty[N, E]
     val graph = elems.foldLeft(backStoreGraph) { (g, array) =>
-      array.foreach { elem =>
-        elem match {
-          case Node(node) =>
-            g.addVertex(node.asInstanceOf[N])
-          case NodeConnection(node1, edge, node2) =>
-            g.addEdge(node1.asInstanceOf[N], edge.asInstanceOf[E], node2.asInstanceOf[N])
-        }
+      array.foreach {
+        case Node(node) =>
+          g.addVertex(node.asInstanceOf[N])
+        case NodeConnection(node1, edge, node2) =>
+          g.addEdge(node1.asInstanceOf[N], edge.asInstanceOf[E], node2.asInstanceOf[N])
       }
       g
     }
     graph
   }
 
-  def apply[N, E](backStoreGraph: Graph[N, E], edges : Tuple3[N, E, N]*) = {
+  def apply[N, E](backStoreGraph: Graph[N, E], edges : (N, E, N)*) = {
     edges.foreach {nodeEdgeNode =>
       val (node1, edge, node2) = nodeEdgeNode
       backStoreGraph.addEdge(node1, edge, node2)
@@ -139,7 +137,7 @@ object Graph {
     def toArray(input: Any, output: Array[Any]): Array[Any] = {
       var result = output
       input match {
-        case node1 ~> node2 => {
+        case node1 ~> node2 =>
           result = result :+ node2
           node1 match {
             case n ~ e =>
@@ -149,7 +147,6 @@ object Graph {
               result = result :+ null
               toArray(node1, result)
           }
-        }
         case node =>
           result = result :+ node
           result
@@ -157,8 +154,8 @@ object Graph {
     }
 
     element match {
-      case _ ~> _ => {
-        var result = toArray(element, Array.empty[Any]).reverse
+      case _ ~> _ =>
+        val result = toArray(element, Array.empty[Any]).reverse
 
         0.until(result.length - 1, 2).foldLeft(Array.empty[GraphElement]) { (output, index) =>
           val node1 = result(index)
@@ -166,10 +163,8 @@ object Graph {
           val node2 = result(index + 2)
           output :+ NodeConnection(node1, edge, node2)
         }
-      }
-      case _ => {
+      case _ =>
         Array(Node(element))
-      }
     }
   }
 

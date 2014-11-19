@@ -18,8 +18,7 @@
 
 package org.apache.gearpump.services
 
-
-import akka.actor.{Actor, ActorContext, ActorRef}
+import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import com.wordnik.swagger.annotations._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail, AppMasterDataDetailRequest, AppMasterDataRequest}
@@ -30,12 +29,10 @@ import spray.routing.HttpService
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-
 @Api(value = "/appmaster", description = "AppMaster Info.")
 class AppMasterServiceActor(val master:ActorRef) extends Actor with AppMasterService   {
   def actorRefFactory = context
   def receive = runRoute(readRoute)
-
 }
 
 @Api(value = "/appmaster", description = "AppMaster Info.")

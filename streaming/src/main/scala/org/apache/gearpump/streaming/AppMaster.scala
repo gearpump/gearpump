@@ -78,10 +78,10 @@ class AppMaster (config : Configs) extends Actor {
 
   override def receive : Receive = null
 
-  override def preStart: Unit = {
+  override def preStart(): Unit = {
     LOG.info(s"AppMaster[$appId] is launched $appDescription")
     updateScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(5, TimeUnit.SECONDS))(snapshotStartClock)
+      new FiniteDuration(5, TimeUnit.SECONDS))(snapshotStartClock())
 
     val dag = DAG(appDescription.dag)
 
@@ -108,7 +108,7 @@ class AppMaster (config : Configs) extends Actor {
           LOG.info(s"recover start clock sucessfully and the start clock is ${new Date(startClock)}")
         }
         LOG.info("Sending request resource to master...")
-        val resourceRequests = taskSet.getResourceRequests()
+        val resourceRequests = taskSet.fetchResourceRequests()
         resourceRequests.foreach(master ! RequestResource(appId, _))
         context.become(messageHandler)
       }
@@ -117,7 +117,7 @@ class AppMaster (config : Configs) extends Actor {
   def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse appManagerMsgHandler orElse workerMsgHandler orElse clientMsgHandler orElse executorMsgHandler orElse terminationWatch
 
   def masterMsgHandler: Receive = {
-    case ResourceAllocated(allocations) => {
+    case ResourceAllocated(allocations) =>
       LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
       //group resource by worker
       val actorToWorkerId = mutable.HashMap.empty[ActorRef, Int]
@@ -131,7 +131,6 @@ class AppMaster (config : Configs) extends Actor {
         context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig))
         currentExecutorId += 1
       })
-    }
   }
 
   def appManagerMsgHandler: Receive = {
@@ -152,14 +151,14 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def executorMsgHandler: Receive = {
-    case RegisterTask(taskId, executorId, host) => {
+    case RegisterTask(taskId, executorId, host) =>
       LOG.info(s"Task $taskId has been Launched for app $appId")
 
-      var taskIds = taskLocations.get(host).getOrElse(Set.empty[TaskId])
+      var taskIds = taskLocations.getOrElse(host, Set.empty[TaskId])
       taskIds += taskId
       taskLocations += host -> taskIds
 
-      var taskSetForExecutorId = executorIdToTasks.get(executorId).getOrElse(Set.empty[TaskId])
+      var taskSetForExecutorId = executorIdToTasks.getOrElse(executorId, Set.empty[TaskId])
       taskSetForExecutorId += taskId
       executorIdToTasks += executorId -> taskSetForExecutorId
 
@@ -172,16 +171,15 @@ class AppMaster (config : Configs) extends Actor {
           executor ! TaskLocations(taskLocations)
         }
       }
-    }
 
     case clock : UpdateClock =>
       clockService forward clock
     case GetLatestMinClock =>
       clockService forward GetLatestMinClock
 
-    case task: TaskFinished => {
+    case task: TaskFinished =>
       val taskId = task.taskId
-      LOG.info(s"Task ${taskId} has been finished for app $appId")
+      LOG.info(s"Task $taskId has been finished for app $appId")
 
       taskLocations.keys.foreach { host =>
         if (taskLocations.contains(host)) {
@@ -199,7 +197,6 @@ class AppMaster (config : Configs) extends Actor {
           LOG.info(s"Task failed, taskId: $taskId for app $appId")
           //TODO: Reschedule the task to other nodes
       }
-    }
   }
 
   def selfMsgHandler : Receive = {
@@ -209,13 +206,13 @@ class AppMaster (config : Configs) extends Actor {
   }
 
   def workerMsgHandler : Receive = {
-    case RegisterExecutor(executor, executorId, resource, workerId) => {
+    case RegisterExecutor(executor, executorId, resource, workerId) =>
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
 
       def launchTask(remainResources: Resource): Unit = {
-        if (remainResources.greaterThan(Resource.empty) && taskSet.hasUnlaunchedTask) {
+        if (remainResources.greaterThan(Resource.empty) && taskSet.hasNotLaunchedTask) {
           val TaskLaunchData(taskId, taskDescription, dag) = taskSet.scheduleTaskOnWorker(workerId)
           //Launch task
 
@@ -231,12 +228,10 @@ class AppMaster (config : Configs) extends Actor {
         }
       }
       launchTask(resource)
-    }
-    case ExecutorLaunchRejected(reason, resource, ex) => {
+    case ExecutorLaunchRejected(reason, resource, ex) =>
       LOG.error(s"Executor Launch failed reason：$reason", ex)
       LOG.info(s"reallocate resource $resource to start appmaster")
       master ! RequestResource(appId, ResourceRequest(resource))
-    }
   }
 
   def clientMsgHandler : Receive = {
@@ -250,7 +245,7 @@ class AppMaster (config : Configs) extends Actor {
 
       //allocate resource for failed tasks
       taskSet.taskFailed(tasks)
-      val resourceRequests = taskSet.getResourceRequests()
+      val resourceRequests = taskSet.fetchResourceRequests()
       resourceRequests.foreach(master ! RequestResource(appId, _))
 
       //restart existing tasks
@@ -285,7 +280,7 @@ class AppMaster (config : Configs) extends Actor {
 
     val cancelSend = context.system.scheduler.schedule(Duration.Zero, Duration(2, TimeUnit.SECONDS))(action)
     val cancelSuicide = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
-    return new Cancellable {
+    new Cancellable {
       def cancel(): Boolean = {
         val result1 = cancelSend.cancel()
         val result2 = cancelSuicide.cancel()
@@ -298,13 +293,13 @@ class AppMaster (config : Configs) extends Actor {
     }
   }
 
-  private def snapshotStartClock : Unit = {
+  private def snapshotStartClock() : Unit = {
     (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map { clock =>
       store.put(START_CLOCK, clock.clock)
     }
   }
 
-  override def postStop : Unit = {
+  override def postStop() : Unit = {
     updateScheduler.cancel()
   }
 }
@@ -331,7 +326,7 @@ object AppMaster {
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
         val executorProps = Props(classOf[Executor], executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
         sender ! BindLifeCycle(worker)
-        context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender)
+        context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender())
         context.stop(self)
     }
   }

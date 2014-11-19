@@ -80,7 +80,7 @@ object MasterToAppMaster {
   case class AppMastersData(appMasters: List[AppMasterData])
   case object AppMastersDataRequest
   case class AppMasterDataDetailRequest(appId: Int)
-  case class AppMasterDataDetail(val appId: Int,  val appDescription: Application)
+  case class AppMasterDataDetail(appId: Int, appDescription: Application)
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
   case class GetAppDataResult(key: String, value: Any)
   case object AppDataReceived

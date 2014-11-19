@@ -15,26 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterInfo
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
 
-
-class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppMastersService  {
+class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMasterService {
   import org.apache.gearpump.services.Json4sSupport._
   def actorRefFactory = system
   Thread.sleep(1000)
   val restUtil = RestTestUtil.startRestServices
   val master = restUtil.miniCluster.mockMaster
 
-  "AppMastersService" should {
-    "return a json structure of appMastersData for GET request" in {
-      Get("/appmasters") ~> routes ~> check {
+  "AppMasterService" should {
+//    "return a JSON structure for GET request when detail = true" in {
+//      Get("/appmaster/0?detail=true") ~> routes ~> check {
+//        restUtil.shutdown()
+//        responseAs[String] === AppMasterDataDetail(0, AppDescription("test", Configs.empty, Graph.empty)).toString
+//      }
+//    }
+    "return a JSON structure for GET request when detail = false" in {
+      Get("/appmaster/0?detail=false") ~> routes ~> check {
         restUtil.shutdown()
-        responseAs[AppMastersData] === AppMastersData(List(AppMasterData(0,AppMasterInfo(null))))
+        responseAs[AppMasterData] === AppMasterData(0, AppMasterInfo(null))
       }
     }
   }
