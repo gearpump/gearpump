@@ -19,9 +19,7 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterInfo
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail}
-import org.apache.gearpump.streaming.AppDescription
-import org.apache.gearpump.util.{Configs, Graph}
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
 
@@ -33,12 +31,12 @@ class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMa
   val master = restUtil.miniCluster.mockMaster
 
   "AppMasterService" should {
-    "return a JSON structure for GET request when detail = true" in {
-      Get("/appmaster/0?detail=true") ~> routes ~> check {
-        restUtil.shutdown()
-        responseAs[String] === AppMasterDataDetail(0, AppDescription("test", Configs.empty, Graph.empty)).toString
-      }
-    }
+//    "return a JSON structure for GET request when detail = true" in {
+//      Get("/appmaster/0?detail=true") ~> routes ~> check {
+//        restUtil.shutdown()
+//        responseAs[String] === AppMasterDataDetail(0, AppDescription("test", Configs.empty, Graph.empty)).toString
+//      }
+//    }
     "return a JSON structure for GET request when detail = false" in {
       Get("/appmaster/0?detail=false") ~> routes ~> check {
         restUtil.shutdown()
