@@ -53,11 +53,23 @@ Per initial benchmarks we are able to process 2 million messages/second (100 byt
   core/target/pack/bin/local -port 3000
   ```
 
-2. Start WordCount Example
+2. Start WordCount or SOL Example
   
   ```bash
-  ## Create Application
-  target/pack/bin/wordcount -master 127.0.0.1:3000
+  ## Run WordCount example
+  target/pack/bin/gear app -jar ./examples/wordcount/target/pack/lib/gearpump-examples-wordcount-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master 127.0.0.1:3000
+  ```
+  ```bash
+  ## Run SOL examples
+  target/pack/bin/gear app -jar ./examples/sol/target/pack/lib/gearpump-examples-sol-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.sol.SOL -master 127.0.0.1:3000
+  ```
+  ```bash
+  ## Run KafkaWordCount example
+  target/pack/bin/gear app -jar ./examples/kafka/target/pack/lib/gearpump-examples-kafka-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.kafka.KafkaWordCount -master 127.0.0.1:3000
+  ```
+  ```bash
+  ## Run Fsio example
+  target/pack/bin/gear app -jar ./examples/fsio/target/pack/lib/gearpump-examples-fsio-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.fsio.SequenceFileIO -master 127.0.0.1:3000
   ```
 
 
@@ -88,8 +100,8 @@ Per initial benchmarks we are able to process 2 million messages/second (100 byt
   
 4. Start Client Example Code
   ```bash
-  ## Create Application
-  target/pack/bin/wordcount -master 127.0.0.1:3000
+  ## Run WordCount example
+  target/pack/bin/gear app -jar ./examples/wordcount/target/pack/lib/gearmp-examples-wordcount-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master 127.0.0.1:3000
   ```
 
 ###Master HA

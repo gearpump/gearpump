@@ -48,7 +48,7 @@ import scala.util.{Failure, Success}
 /**
  * This state will be persisted across the masters.
  */
-class ApplicationState(val appId : Int, val attemptId : Int, val appMasterClass : Class[_ <: Actor], val app : Application, val state : Any) extends Serializable {
+class ApplicationState(val appId : Int, val attemptId : Int, val appMasterClass : Class[_ <: Actor], val app : Application, val jar: Option[AppJar], state : Any) extends Serializable {
 
   override def equals(other: Any): Boolean = {
     other match {
@@ -144,12 +144,12 @@ private[cluster] class AppManager() extends Actor with Stash {
   }
 
   def clientMsgHandler: Receive = {
-    case submitApp@SubmitApplication(appMasterClass, config, app) =>
+    case submitApp@SubmitApplication(appMasterClass, config, app, jar) =>
       LOG.info(s"AppManager Submiting Application $appId...")
-      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app), appId.toString)
+      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app, jar), appId.toString)
 
       LOG.info(s"Persist master state writeQuorum: $writeQuorum, timeout: $TIMEOUT...")
-      val appState = new ApplicationState(appId, 0, appMasterClass, app, null)
+      val appState = new ApplicationState(appId, 0, appMasterClass, app, jar, null)
       replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + appState)
       sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
       appId += 1
@@ -276,7 +276,7 @@ private[cluster] class AppManager() extends Actor with Stash {
       val appId = applicationStatus.appId
       LOG.info(s"AppManager Recovering Application $appId...")
       val appMasterClass = applicationStatus.appMasterClass
-      context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, Configs.empty, applicationStatus.app), appId.toString)
+      context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, Configs.empty, applicationStatus.jar, applicationStatus.app), appId.toString)
   }
 
   case class RecoverApplication(applicationStatus : ApplicationState)
@@ -298,7 +298,7 @@ private[cluster] object AppManager {
   /**
    * Start and watch Single AppMaster's lifecycle
    */
-  class AppMasterStarter(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
+  class AppMasterStarter(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application, jar: Option[AppJar]) extends Actor {
 
     val systemConfig = context.system.settings.config
 
@@ -317,7 +317,7 @@ private[cluster] object AppManager {
         val name = ActorUtil.actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
 
-        val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
+        val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
 
         allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
         context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))

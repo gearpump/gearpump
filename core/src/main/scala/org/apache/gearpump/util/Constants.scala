@@ -44,6 +44,7 @@ object Constants {
   val GEARPUMP_CLUSTER_MASTERS = "gearpump.cluster.masters"
   val GEARPUMP_APPMASTER_ARGS = "gearpump.streaming.appmaster.vmargs"
   val GEARPUMP_EXECUTOR_ARGS = "gearpump.streaming.executor.vmargs"
+  val GEARPUMP_EXECUTOR_EXTRA_CLASSPATH = "gearpump.streaming.executor.extraClasspath"
 
   //config for construction of executor
   val APP_MASTER = "appMaster"

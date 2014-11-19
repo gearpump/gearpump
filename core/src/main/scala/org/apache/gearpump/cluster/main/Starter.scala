@@ -15,7 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.cluster.main
 
-package org.apache.gearpump.cluster
+import org.slf4j.{LoggerFactory, Logger}
 
-case class ExecutorContext(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String], jar: Option[AppJar])
+trait Starter {
+  this: ArgumentsParser =>
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[Starter])
+
+  def main(args: Array[String]): Unit 
+
+  def application(config: ParseResult): org.apache.gearpump.cluster.Application
+
+}
