@@ -69,7 +69,7 @@ Per initial benchmarks we are able to process 2 million messages/second (100 byt
   ```
   ```bash
   ## Run Fsio example
-  target/pack/bin/gear app -jar ./examples/fsio/target/pack/lib/gearpump-examples-fsio-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.fsio.SequenceFileIO -master 127.0.0.1:3000
+  target/pack/bin/gear app -jar ./examples/fsio/target/pack/lib/gearpump-examples-fsio-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.fsio.SequenceFileIO -master 127.0.0.1:3000 -input <input> -output <output>
   ```
 
 

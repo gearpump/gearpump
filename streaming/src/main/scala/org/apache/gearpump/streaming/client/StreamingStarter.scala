@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.streaming.client
 
+import java.net.URLClassLoader
+
 import org.apache.gearpump.cluster.main.{AppSubmitter, Starter, ParseResult, ArgumentsParser}
 import org.apache.gearpump.streaming.AppDescription
 import org.slf4j.{LoggerFactory, Logger}
@@ -32,7 +34,7 @@ trait StreamingStarter extends Starter {
     LOG.info("Master URL: " + masters)
     val context = ClientContext(masters)
     val app = application(config).asInstanceOf[AppDescription]
-    val appId = context.submit(app, Option(AppSubmitter.jars(0)))
+    val appId = context.submit(app, app.conf, Option(AppSubmitter.jars(0)))
     LOG.info(s"We get application id: $appId")
     Thread.sleep(runseconds * 1000)
     LOG.info(s"Shutting down application $appId")

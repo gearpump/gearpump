@@ -22,7 +22,7 @@ import org.apache.gearpump.cluster.main.{ParseResult, ArgumentsParser, CLIOption
 import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.client.{StreamingStarter, ClientContext}
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.{Configs, Graph}
 import org.apache.gearpump.util.Graph._
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
@@ -45,11 +45,12 @@ class SequenceFileIO extends StreamingStarter with ArgumentsParser {
     val boltNum = config.getInt("sink")
     val input = config.getString("input")
     val output = config.getString("output")
-    val fsioConf = ConfigFactory.load("fsio.conf").entrySet.map(entry => (entry.getKey, entry.getValue.unwrapped)).toMap
-    val appConfig = HadoopConfig(fsioConf).withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output).withHadoopConf(new Configuration())
+    val fsioConf = ConfigFactory.load("fsio.conf")
+    val appConfig = Configs(fsioConf.entrySet.map(entry => (entry.getKey, entry.getValue.unwrapped)).toMap).withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output)
     val partitioner = new ShufflePartitioner()
     val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getCanonicalName, spoutNum)
     val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getCanonicalName, boltNum)
+    LOG.info(s"SequenceFileIO appConfig size = ${appConfig.config.size}")
     val app = AppDescription("SequenceFileIO", appConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app
   }

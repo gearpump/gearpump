@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.cluster
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
@@ -316,8 +317,11 @@ private[cluster] object AppManager {
         LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = ActorUtil.actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
-
-        val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
+        val extraClasspath = appConfig.getString(Constants.GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
+        LOG.info(s"AppManager config size =${appConfig.config.size}")
+        LOG.info(s"AppManager extraClassPath=$extraClasspath")
+        val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
+        val executionContext = ExecutorContext(classPath, context.system.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
 
         allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
         context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))

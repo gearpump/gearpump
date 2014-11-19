@@ -342,6 +342,7 @@ object AppMaster {
     val name = ActorUtil.actorNameForExecutor(appId, executorId)
     val selfPath = ActorUtil.getFullPath(context)
     val extraClasspath = context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
+    LOG.info(s"AppMaster extraClassPath=$extraClasspath")
     val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
     val launch = ExecutorContext(classPath, context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
     worker ! LaunchExecutor(appId, executorId, resource, launch)

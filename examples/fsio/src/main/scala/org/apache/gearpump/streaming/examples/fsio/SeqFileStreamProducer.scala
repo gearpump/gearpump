@@ -19,18 +19,20 @@ package org.apache.gearpump.streaming.examples.fsio
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProducer._
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
+import org.apache.gearpump.util.Configs
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
 import org.slf4j.{Logger, LoggerFactory}
 
-class SeqFileStreamProducer(config: HadoopConfig) extends TaskActor(config ){
+class SeqFileStreamProducer(config: Configs) extends TaskActor(config ){
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileStreamProducer])
   val value = new Text()
   val key = new Text()
   var reader: SequenceFile.Reader = null
-  val hadoopConf = config.hadoopConf
+  val hadoopConf = new Configuration()
   val fs = FileSystem.get(hadoopConf)
   val inputPath = new Path(config.getString(INPUT_PATH))
 

@@ -35,9 +35,9 @@ class ClientContext(masters: Iterable[HostPort]) {
 
   val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
 
-  def submit(app : Application, jar: Option[AppJar]) : Int = {
+  def submit(app : Application, config: Configs, jar: Option[AppJar]) : Int = {
     val client = new MasterClient(master)
-    client.submitApplication(classOf[AppMaster], Configs.empty, app, jar)
+    client.submitApplication(classOf[AppMaster], config, app, jar)
   }
 
   def shutdown(appId : Int) : Unit = {
