@@ -59,4 +59,11 @@ object Constants {
 
   //the time out for Future
   val FUTURE_TIMEOUT = akka.util.Timeout(5, TimeUnit.SECONDS)
+
+  val NETTY_BUFFER_SIZE = "gearpump.netty.buffer-size"
+  val NETTY_MAX_RETRIES = "gearpump.netty.max-retries"
+  val NETTY_BASE_SLEEP_MS = "gearpump.netty.base-sleep-ms"
+  val NETTY_MAX_SLEEP_MS = "gearpump.netty.max-sleep-ms"
+  val NETTY_MESSAGE_BATCH_SIZE = "gearpump.netty.message-batch-size"
+  val NETTY_FLUSH_CHECK_INTERVAL = "gearpump.netty.fulsh-check-interval"
 }
