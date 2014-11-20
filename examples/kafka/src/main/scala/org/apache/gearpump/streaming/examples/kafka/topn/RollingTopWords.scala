@@ -18,22 +18,19 @@
 
 package org.apache.gearpump.streaming.examples.kafka.topn
 
-import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.main.{ParseResult, ArgumentsParser, CLIOption}
-import org.apache.gearpump.streaming.client.{StreamingStarter, ClientContext}
-import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
-import org.apache.gearpump.streaming.AppDescription
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
 import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
+import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
 import org.slf4j.{Logger, LoggerFactory}
 
-class RollingTopWords extends StreamingStarter with ArgumentsParser {
+class RollingTopWords extends Starter with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[RollingTopWords])
 
-  import RollingTopWords._
+  import org.apache.gearpump.streaming.examples.kafka.topn.RollingTopWords._
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
@@ -56,7 +53,7 @@ class RollingTopWords extends StreamingStarter with ArgumentsParser {
     val rollingCount = TaskDescription(classOf[RollingCount].getCanonicalName, rcNum)
     val intermediateRanker = TaskDescription(classOf[Ranker].getCanonicalName, irNum)
     val totalRanker = TaskDescription(classOf[Ranker].getCanonicalName, 1)
-    val app = AppDescription("RollingTopWords", appConfig,
+    val app = AppDescription("RollingTopWords", classOf[AppMaster], appConfig,
       Graph(kafkaStreamProducer ~ partitioner ~> rollingCount ~ partitioner
         ~> intermediateRanker ~ partitioner ~> totalRanker)
     )

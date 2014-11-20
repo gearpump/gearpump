@@ -17,13 +17,27 @@
  */
 package org.apache.gearpump.cluster.main
 
-import org.slf4j.{LoggerFactory, Logger}
+import org.apache.gearpump.cluster.client.ClientContext
+import org.slf4j.{Logger, LoggerFactory}
 
 trait Starter {
   this: ArgumentsParser =>
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Starter])
 
-  def main(args: Array[String]): Unit 
+  def main(args: Array[String]): Unit = {
+    val config = parse(args)
+    val masters = config.getString("master")
+    val runseconds = config.getInt("runseconds")
+    LOG.info("Master URL: " + masters)
+    val context = ClientContext(masters)
+    val app = application(config)
+    val appId = context.submit(app, Option(AppSubmitter.jars(0)))
+    LOG.info(s"We get application id: $appId")
+    Thread.sleep(runseconds * 1000)
+    LOG.info(s"Shutting down application $appId")
+    context.shutdown(appId)
+    context.destroy()
+  }
 
   def application(config: ParseResult): org.apache.gearpump.cluster.Application
 
