@@ -26,6 +26,7 @@ import org.apache.gearpump.transport.netty.Server.ServerPipelineFactory
 import org.apache.gearpump.transport.{ActorLookupById, HostPort}
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.slf4j.{Logger, LoggerFactory}
+import com.typesafe.config.Config
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -41,7 +42,7 @@ object Context {
 class Context(system : ActorSystem, conf: NettyConfig) extends IContext {
 import org.apache.gearpump.transport.netty.Context._
 
-  def this(system : ActorSystem, conf : Map[String, Any]) {
+  def this(system : ActorSystem, conf : Config) {
     this(system, new NettyConfig(conf))
   }
 

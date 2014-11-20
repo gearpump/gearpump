@@ -32,8 +32,8 @@ import scala.util.{Failure, Success}
 class MasterClient(master : ActorRef) {
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
-  def submitApplication(appMaster : Class[_ <: Actor], config : Configs, app : Application, appJar: Option[AppJar]) : Int = {
-    val result = Await.result( (master ? SubmitApplication(appMaster, config, app, appJar)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)
+  def submitApplication(app : Application, appJar: Option[AppJar]) : Int = {
+    val result = Await.result( (master ? SubmitApplication(app, appJar)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)
     result.appId match {
       case Success(appId) => appId
       case Failure(ex) => throw ex

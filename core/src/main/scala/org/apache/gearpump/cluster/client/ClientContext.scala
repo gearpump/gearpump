@@ -16,28 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.client
+package org.apache.gearpump.cluster.client
 
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
-import org.apache.gearpump.cluster.{AppJar, Application, MasterClient, MasterProxy}
-import org.apache.gearpump.streaming.AppMaster
+import org.apache.gearpump.cluster._
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.{Util, Configs}
 import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.{Configs, Util}
+import org.slf4j.{LoggerFactory, Logger}
 
 class ClientContext(masters: Iterable[HostPort]) {
-
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[ClientContext])
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
   val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG)
 
   val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
 
-  def submit(app : Application, config: Configs, jar: Option[AppJar]) : Int = {
+  def submit(app : Application, jar: Option[AppJar]) : Int = {
     val client = new MasterClient(master)
-    client.submitApplication(classOf[AppMaster], config, app, jar)
+    client.submitApplication(app, jar)
   }
 
   def shutdown(appId : Int) : Unit = {

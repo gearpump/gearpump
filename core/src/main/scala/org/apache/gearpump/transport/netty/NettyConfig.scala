@@ -18,13 +18,16 @@
 
 package org.apache.gearpump.transport.netty
 
-class NettyConfig(conf: Map[String, Any]) {
+import com.typesafe.config.Config
+import org.apache.gearpump.util.Constants
 
-  val buffer_size = 5242880
-  val max_retries = 30
-  val base_sleep_ms = 100
-  val max_sleep_ms = 1000
-  val messageBatchSize = 262144
-  val flushCheckInterval = 10
+class NettyConfig(conf: Config) {
+
+  val buffer_size = conf.getInt(Constants.NETTY_BUFFER_SIZE)
+  val max_retries = conf.getInt(Constants.NETTY_MAX_RETRIES)
+  val base_sleep_ms = conf.getInt(Constants.NETTY_BASE_SLEEP_MS)
+  val max_sleep_ms = conf.getInt(Constants.NETTY_MAX_RETRIES)
+  val messageBatchSize = conf.getInt(Constants.NETTY_MESSAGE_BATCH_SIZE)
+  val flushCheckInterval = conf.getInt(Constants.NETTY_FLUSH_CHECK_INTERVAL)
 
 }

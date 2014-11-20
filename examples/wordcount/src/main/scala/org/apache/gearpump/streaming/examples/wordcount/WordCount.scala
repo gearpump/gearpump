@@ -18,15 +18,15 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
-import org.apache.gearpump.cluster.main.{ParseResult, ArgumentsParser, CLIOption}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.client.{StreamingStarter, ClientContext}
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
+import org.apache.gearpump.util.Configs._
 import org.slf4j.{Logger, LoggerFactory}
 
-class WordCount extends StreamingStarter with ArgumentsParser {
+class WordCount extends Starter with ArgumentsParser {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[WordCount])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -39,11 +39,11 @@ class WordCount extends StreamingStarter with ArgumentsParser {
   override def application(config: ParseResult) : AppDescription = {
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
-    val appConfig = Configs.empty
+    val appConfig = Configs(Configs.SYSTEM_DEFAULT_CONFIG)
     val partitioner = new HashPartitioner()
     val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
     val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
-    val app = AppDescription("wordCount", appConfig, Graph(split ~ partitioner ~> sum))
+    val app = AppDescription("wordCount", classOf[AppMaster], appConfig, Graph(split ~ partitioner ~> sum))
     app
   }
 }

@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming
 
-import java.io.{ByteArrayOutputStream, FileInputStream, File}
+import java.io.{ByteArrayOutputStream, File, FileInputStream}
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
@@ -46,7 +46,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-class AppMaster (config : Configs) extends Actor {
+class AppMaster (config : Configs) extends ApplicationMaster {
 
   import org.apache.gearpump.streaming.AppMaster._
   implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -342,9 +342,8 @@ object AppMaster {
     val name = ActorUtil.actorNameForExecutor(appId, executorId)
     val selfPath = ActorUtil.getFullPath(context)
     val extraClasspath = context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
-    LOG.info(s"AppMaster extraClassPath=$extraClasspath")
     val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
-    val launch = ExecutorContext(classPath, context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
+    val launch = ExecutorContext(classPath, executorConfig.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
     worker ! LaunchExecutor(appId, executorId, resource, launch)
 
     def receive : Receive = waitForActorSystemToStart

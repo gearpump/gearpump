@@ -18,12 +18,8 @@
 
 package org.apache.gearpump.cluster.main
 
-import akka.actor.ActorSystem
-import com.typesafe.config.ConfigValueFactory
+import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.services.RestServices
-import org.apache.gearpump.streaming.client.ClientContext
-import org.apache.gearpump.util.Configs
-import org.apache.gearpump.util.Constants._
 
 object Rest extends App with ArgumentsParser {
 
