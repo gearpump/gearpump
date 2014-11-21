@@ -20,13 +20,14 @@ package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterInfo
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
+import org.scalatest.BeforeAndAfterAll
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
 
 class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMasterService {
   import org.apache.gearpump.services.Json4sSupport._
   def actorRefFactory = system
-  Thread.sleep(1000)
+  Thread.sleep(500)
   val restUtil = RestTestUtil.startRestServices
   val master = restUtil.miniCluster.mockMaster
 
