@@ -19,6 +19,7 @@
 package org.apache.gearpump.streaming.task
 
 import org.slf4j.{Logger, LoggerFactory}
+import scala.collection.mutable
 
 class FlowControl(taskId : TaskId, outputTaskCount : Int) {
   import org.apache.gearpump.streaming.task.FlowControl._
@@ -27,6 +28,7 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
   private val ackWaterMark = new Array[Long](outputTaskCount)
   private val outputWaterMark = new Array[Long](outputTaskCount)
   private val ackRequestWaterMark = new Array[Long](outputTaskCount)
+  private val ackRequests = new Array[mutable.Queue[Long]](outputTaskCount).map(_ => mutable.Queue.empty[Long])
 
   def sendMessage(messagePartition : Int) : AckRequest = {
     outputWaterMark(messagePartition) += 1
@@ -34,6 +36,7 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
 
     if (outputWaterMark(messagePartition) > ackRequestWaterMark(messagePartition) + FLOW_CONTROL_RATE) {
       ackRequestWaterMark(messagePartition) = outputWaterMark(messagePartition)
+      ackRequests(messagePartition).enqueue(outputWaterMark(messagePartition))
       AckRequest(taskId, Seq(messagePartition, outputWaterMark(messagePartition)))
     } else {
       null
@@ -72,6 +75,10 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
       index += 1
     }
     true
+  }
+
+  def messageLost(seq : Seq): Boolean = {
+    ackRequests(seq.id).dequeue() != seq.seq
   }
 }
 

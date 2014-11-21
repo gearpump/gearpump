@@ -21,6 +21,7 @@ package org.apache.gearpump.streaming.task
 import java.util
 
 import akka.actor._
+import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.{GetStartClock, RestartException, RestartTasks, StartClock}
@@ -191,6 +192,10 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       //enqueue to handle the ackRequest and send back ack later
       queue.add(ackRequest)
     case ack @ Ack(taskId, seq) =>
+      if(flowControl.messageLost(seq)){
+        LOG.error(s"Failed! Some messages sent from actor $taskId are lost, try to replay...")
+        appMaster ! ReplayFromTimestampWindowTrailingEdge
+      }
       flowControl.receiveAck(taskId, seq)
       val updated = clockTracker.onAck(ack)
       if (updated) {
