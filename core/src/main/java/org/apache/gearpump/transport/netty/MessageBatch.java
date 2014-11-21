@@ -74,7 +74,7 @@ public class MessageBatch {
   private int msgEncodeLength(TaskMessage taskMsg) {
     int size = 0;
     if (taskMsg != null) {
-      size = 12; //LONG + INT
+      size = 20; //LONG + LONG + INT
       if (taskMsg.message() != null) {
         size += taskMsg.message().length;
       }
@@ -140,9 +140,11 @@ public class MessageBatch {
     if (message.message() != null) {
       payload_len = message.message().length;
     }
-    long task_id = message.task();
+    long target_id = message.targetTask();
+    long source_id = message.sourceTask();
 
-    bout.writeLong(task_id);
+    bout.writeLong(target_id);
+    bout.writeLong(source_id);
     bout.writeInt(payload_len);
     if (payload_len > 0) {
       bout.write(message.message());

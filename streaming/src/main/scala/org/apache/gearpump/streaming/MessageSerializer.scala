@@ -56,13 +56,15 @@ class AckRequestSerializer extends Serializer[AckRequest] {
     taskIdSerialzer.write(kryo, output, obj.taskId)
     output.writeInt(obj.seq.id)
     output.writeLong(obj.seq.seq)
+    output.writeInt(obj.sessionId)
   }
 
   override def read(kryo: Kryo, input: Input, typ: Class[AckRequest]): AckRequest = {
     val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
     val id = input.readInt()
     val seq = input.readLong()
-    new AckRequest(taskId, Seq(id, seq))
+    val sessionId = input.readInt()
+    new AckRequest(taskId, Seq(id, seq), sessionId)
   }
 }
 
@@ -73,12 +75,16 @@ class AckSerializer extends Serializer[Ack] {
     taskIdSerialzer.write(kryo, output, obj.taskId)
     output.writeInt(obj.seq.id)
     output.writeLong(obj.seq.seq)
+    output.writeLong(obj.actualReceivedNum)
+    output.writeInt(obj.sessionId)
   }
 
   override def read(kryo: Kryo, input: Input, typ: Class[Ack]): Ack = {
     val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
     val id = input.readInt()
     val seq = input.readLong()
-    new Ack(taskId, Seq(id, seq))
+    val actualReceivedNum = input.readLong()
+    val sessionId = input.readInt()
+    new Ack(taskId, Seq(id, seq), actualReceivedNum, sessionId)
   }
 }

@@ -95,7 +95,7 @@ import org.apache.gearpump.streaming.task.ClockTracker._
   def onAck(ack: Ack): Boolean = {
     if (unprocessedMsgCount == 0 && flowControl.allMessagesAcked) {
       candidateMinClock = null
-    if (minClock == Long.MaxValue) {
+      if (minClock == Long.MaxValue) {
         false
       } else {
         minClock = Long.MaxValue

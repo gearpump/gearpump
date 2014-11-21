@@ -21,16 +21,22 @@ package org.apache.gearpump.transport.netty;
 import java.nio.ByteBuffer;
 
 public class TaskMessage {
-  private long _task;
+  private long _targetTask;
+  private long _sourceTask;
   private byte[] _message;
 
-  public TaskMessage(long task, byte[] message) {
-    _task = task;
+  public TaskMessage(long targetTask, long sourceTask,  byte[] message) {
+    _targetTask = targetTask;
+    _sourceTask = sourceTask;
     _message = message;
   }
 
-  public long task() {
-    return _task;
+  public long targetTask() {
+    return _targetTask;
+  }
+
+  public long sourceTask(){
+    return _sourceTask;
   }
 
   public byte[] message() {
@@ -39,14 +45,16 @@ public class TaskMessage {
 
   public ByteBuffer serialize() {
     ByteBuffer bb = ByteBuffer.allocate(_message.length + 8);
-    bb.putLong(_task);
+    bb.putLong(_targetTask);
+    bb.putLong(_sourceTask);
     bb.put(_message);
     return bb;
   }
 
   public void deserialize(ByteBuffer packet) {
     if (packet == null) return;
-    _task = packet.getLong();
+    _targetTask = packet.getLong();
+    _sourceTask = packet.getLong();
     _message = new byte[packet.limit() - 8];
     packet.get(_message);
   }

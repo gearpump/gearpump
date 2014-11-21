@@ -23,6 +23,8 @@ import akka.agent.Agent
 import org.apache.gearpump.transport.netty.{Context, TaskMessage}
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.concurrent._
+
 case class HostPort(host: String, port: Int)
 
 trait ActorLookupById {
@@ -59,6 +61,18 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     localActorMap.sendOff(_ - id)
   }
 
+  def startClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
+    hostPorts.filter(!localHost.equals(_)).map(hostPort =>
+      remoteClientMap.alter { map =>
+        if (!map.contains(hostPort)) {
+          val actor = context.connect(hostPort)
+          map + (hostPort -> actor)
+        } else {
+          map
+        }
+      }).last
+  }
+
   def registerLocalActor(id : Long, actor: ActorRef): Unit = {
     LOG.info(s"RegisterLocalActor: $id")
     init
@@ -76,17 +90,9 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     if (remoteClient.isDefined) {
       remoteClient.get.tell(taskMessage, Actor.noSender)
     } else {
-      remoteClientMap.send { map =>
-        val expressActor = map.get(remote)
-        if (expressActor.isDefined) {
-          expressActor.get.tell(taskMessage, Actor.noSender)
-          map
-        } else {
-          val actor = context.connect(remote)
-          actor.tell(taskMessage, Actor.noSender)
-          map + (remote -> actor)
-        }
-      }
+      val errorMsg = "Clients has not been launched properly before transporting messages"
+      LOG.error(errorMsg)
+      throw new Exception(errorMsg)
     }
   }
 }

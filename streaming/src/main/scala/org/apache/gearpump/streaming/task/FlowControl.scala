@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.task
 
 import org.slf4j.{Logger, LoggerFactory}
 
-class FlowControl(taskId : TaskId, outputTaskCount : Int) {
+class FlowControl(taskId : TaskId, outputTaskCount : Int, sessionId : Int) {
   import org.apache.gearpump.streaming.task.FlowControl._
 
   private var outputWindow : Long = INITIAL_WINDOW_SIZE
@@ -32,18 +32,20 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
     outputWaterMark(messagePartition) += 1
     outputWindow -= 1
 
-    if (outputWaterMark(messagePartition) > ackRequestWaterMark(messagePartition) + FLOW_CONTROL_RATE) {
+    if (outputWaterMark(messagePartition) >= ackRequestWaterMark(messagePartition) + FLOW_CONTROL_RATE) {
       ackRequestWaterMark(messagePartition) = outputWaterMark(messagePartition)
-      AckRequest(taskId, Seq(messagePartition, outputWaterMark(messagePartition)))
+      AckRequest(taskId, Seq(messagePartition, outputWaterMark(messagePartition)), sessionId)
     } else {
       null
     }
   }
 
-  def receiveAck(sourceTask : TaskId, seq : Seq) : Unit = {
-    LOG.debug("get ack from downstream, current: " + this.taskId + "downstream: " + sourceTask + ", seq: " + seq + ", windows: " + outputWindow)
-    outputWindow += seq.seq - ackWaterMark(seq.id)
-    ackWaterMark(seq.id) = seq.seq
+  def receiveAck(ack: Ack) : Unit = {
+    LOG.debug("get ack from downstream, current: " + this.taskId + "downstream: " + ack.taskId + ", seq: " + ack.seq + ", windows: " + outputWindow)
+    if(ack.sessionId == this.sessionId){
+      outputWindow += ack.seq.seq - ackWaterMark(ack.seq.id)
+      ackWaterMark(ack.seq.id) = ack.seq.seq
+    }
   }
 
   /**
@@ -72,6 +74,20 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
       index += 1
     }
     true
+  }
+
+  def messageLossDetected(ack : Ack): Boolean = {
+    if(ack.sessionId == this.sessionId){
+      if(ack.seq.seq == ack.actualReceivedNum){
+        false
+      } else {
+        LOG.error(s"Expected: ${ack.seq.seq}, actual: ${ack.actualReceivedNum}, ack: $ack")
+        true
+      }
+    } else {
+      LOG.debug(s"Task $taskId received Ack message from last replay")
+      false
+    }
   }
 }
 
