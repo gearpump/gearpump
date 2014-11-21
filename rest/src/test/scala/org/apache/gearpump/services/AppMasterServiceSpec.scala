@@ -18,31 +18,37 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.AppMasterInfo
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail}
+import org.apache.gearpump.cluster.{AppMasterInfo, ApplicationMaster}
+import org.apache.gearpump.streaming.{AppMaster, AppDescription}
+import org.apache.gearpump.util.{Configs, Graph}
 import org.specs2.mutable.Specification
+import org.specs2.specification.{AfterExample, AfterEach, After}
 import spray.testkit.Specs2RouteTest
 
-class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMasterService {
-  import org.apache.gearpump.services.Json4sSupport._
+class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMasterService with AfterExample {
+  import org.apache.gearpump.services.AppMasterProtocol._
+  import spray.httpx.SprayJsonSupport._
   def actorRefFactory = system
-  Thread.sleep(1000)
+  Thread.sleep(500)
   val restUtil = RestTestUtil.startRestServices
   val master = restUtil.miniCluster.mockMaster
 
   "AppMasterService" should {
 //    "return a JSON structure for GET request when detail = true" in {
 //      Get("/appmaster/0?detail=true") ~> routes ~> check {
-//        restUtil.shutdown()
-//        responseAs[String] === AppMasterDataDetail(0, AppDescription("test", Configs.empty, Graph.empty)).toString
+//        responseAs[AppMasterDataDetail] === AppMasterDataDetail(0, AppDescription("test", classOf[AppMaster].getCanonicalName, Configs.empty, Graph.empty))
 //      }
 //    }
     "return a JSON structure for GET request when detail = false" in {
       Get("/appmaster/0?detail=false") ~> routes ~> check {
-        restUtil.shutdown()
         responseAs[AppMasterData] === AppMasterData(0, AppMasterInfo(null))
       }
     }
+  }
+
+  def after: Unit = {
+    restUtil.shutdown()
   }
 
 }

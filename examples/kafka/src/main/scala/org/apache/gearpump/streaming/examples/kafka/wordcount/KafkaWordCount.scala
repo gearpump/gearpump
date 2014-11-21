@@ -50,7 +50,7 @@ class KafkaWordCount extends Starter with ArgumentsParser {
     val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
     val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor].getCanonicalName, kafkaStreamProcessorNum)
     val computation = kafkaStreamProducer ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaStreamProcessor
-    val app = AppDescription("KafkaWordCount", classOf[AppMaster], appConfig, Graph(computation))
+    val app = AppDescription("KafkaWordCount", classOf[AppMaster].getCanonicalName, appConfig, Graph(computation))
     app
   }
 
