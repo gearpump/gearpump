@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor._
+import akka.remote.DisassociatedEvent
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster._
@@ -49,7 +50,12 @@ private[cluster] class Master extends Actor with Stash {
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
 
-  override def receive : Receive = workerMsgHandler orElse appMasterMsgHandler orElse clientMsgHandler orElse terminationWatch orElse ActorUtil.defaultMsgHandler(self)
+  override def receive : Receive = workerMsgHandler orElse
+    appMasterMsgHandler orElse
+    clientMsgHandler orElse
+    terminationWatch orElse
+    disassociated orElse
+    ActorUtil.defaultMsgHandler(self)
 
   final val undefinedUid = 0
   @tailrec final def newUid(): Int = {
@@ -105,6 +111,12 @@ private[cluster] class Master extends Actor with Stash {
       appManager.forward(app)
   }
 
+  def disassociated : Receive = {
+    case disassociated : DisassociatedEvent =>
+      LOG.info(s" disassociated ${disassociated.remoteAddress}")
+      //LOG.info(s"remote lifecycle events are "+systemConfig.getString("akka.remote.log-remote-lifecycle-events"))
+  }
+
   def terminationWatch : Receive = {
     case t : Terminated =>
       val actor = t.actor
@@ -123,6 +135,7 @@ private[cluster] class Master extends Actor with Stash {
     val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULING_SCHEDULER))
     appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
     scheduler = context.actorOf(Props(schedulerClass))
+    context.system.eventStream.subscribe(self, classOf[DisassociatedEvent]);
   }
 }
 

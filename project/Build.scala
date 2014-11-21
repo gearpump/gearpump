@@ -16,9 +16,13 @@ object Build extends sbt.Build {
   val akkaVersion = "2.3.6"
   val kryoVersion = "0.3.2"
   val codahaleVersion = "3.0.2"
-  val commonsLangVersion = "3.3.2"
+  val commonsCodecVersion = "1.6"
   val commonsHttpVersion = "3.1"
+  val commonsLangVersion = "3.3.2"
+  val commonsLoggingVersion = "1.1.3"
+  val findbugsVersion = "2.0.1"
   val gearPumpVersion = "0.2-SNAPSHOT"
+  val guavaVersion = "15.0"
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
@@ -85,8 +89,12 @@ object Build extends sbt.Build {
         "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
         "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
         "org.fusesource" % "sigar" % sigarVersion classifier("native"),
+        "com.google.code.findbugs" % "jsr305" % findbugsVersion,
         "org.apache.commons" % "commons-lang3" % commonsLangVersion,
+        "commons-logging" % "commons-logging" % commonsLoggingVersion,
         "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
+        "commons-codec" % "commons-codec" % commonsCodecVersion,
+        "com.google.guava" % "guava" % guavaVersion,
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
         "com.typesafe.akka" %% "akka-remote" % akkaVersion,
         "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
