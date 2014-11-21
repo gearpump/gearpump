@@ -19,7 +19,7 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
-import org.apache.gearpump.cluster.{MasterProxy, Worker}
+import org.apache.gearpump.cluster.MasterProxy
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Configs
 import org.apache.gearpump.util.Constants._
@@ -34,7 +34,7 @@ object Worker extends App with ArgumentsParser {
 
   val options = Array.empty[(String, CLIOption[Any])]
 
-  def start() = {
+  def start(): Unit = {
     worker()
   }
 
@@ -50,9 +50,10 @@ object Worker extends App with ArgumentsParser {
     }
     val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER)
 
-    val worker = system.actorOf(Props(classOf[Worker], masterProxy), classOf[Worker].getSimpleName + id)
+    system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], masterProxy),
+      classOf[org.apache.gearpump.cluster.Worker].getSimpleName + id)
 
-    system.awaitTermination
+    system.awaitTermination()
   }
 
   start()
