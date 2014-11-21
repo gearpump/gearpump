@@ -18,4 +18,4 @@
 
 package org.apache.gearpump.cluster
 
-case class ExecutorContext(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String])
+case class ExecutorContext(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String], jar: Option[AppJar])

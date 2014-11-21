@@ -18,12 +18,13 @@ object Build extends sbt.Build {
   val codahaleVersion = "3.0.2"
   val commonsLangVersion = "3.3.2"
   val commonsHttpVersion = "3.1"
-  val gearpumpVersion = "0.2-SNAPSHOT"
+  val gearPumpVersion = "0.2-SNAPSHOT"
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
   val json4sVersion = "3.2.10"
   val kafkaVersion = "0.8.1.1"
+  val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
   val scalaVersionNumber = "2.10.4"
   val sprayVersion = "1.3.2"
@@ -33,7 +34,7 @@ object Build extends sbt.Build {
   val scalaTestVersion = "2.2.0"
   val scalaCheckVersion = "1.11.3"
 
-  val commonSettings = Defaults.defaultSettings ++ packAutoSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings ++
+  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++ 
     Seq(
         resolvers ++= Seq(
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
@@ -46,7 +47,7 @@ object Build extends sbt.Build {
     ) ++
     Seq(
       scalaVersion := scalaVersionNumber,
-      version := gearpumpVersion,
+      version := gearPumpVersion,
       organization := "com.github.intel-hadoop",
       crossPaths := false,
       scalacOptions ++= Seq("-Yclosure-elim","-Yinline"),
@@ -73,21 +74,8 @@ object Build extends sbt.Build {
         </developer>
       </developers>
     }
-  )
-
-  lazy val root = Project(
-    id = "gearpump",
-    base = file("."),
-    settings = commonSettings 
-  )  aggregate(core, streaming, fsio, kafka, sol, wordcount, rest)
-
-
-  lazy val core = Project(
-    id = "gearpump-core",
-    base = file("core"),
-    settings = commonSettings  ++
-    Seq(
-        packResourceDir := Map(baseDirectory.value / "src/main/resources" -> "conf"),
+  ) ++
+  Seq(
         libraryDependencies ++= Seq(
         "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
         "com.codahale.metrics" % "metrics-core" % codahaleVersion,
@@ -96,6 +84,7 @@ object Build extends sbt.Build {
         "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
         "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
         "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
+        "org.fusesource" % "sigar" % sigarVersion classifier("native"),
         "org.apache.commons" % "commons-lang3" % commonsLangVersion,
         "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
@@ -110,7 +99,31 @@ object Build extends sbt.Build {
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
       )
-    ) 
+  ) 
+
+  lazy val root = Project(
+    id = "gearpump",
+    base = file("."),
+    settings = commonSettings ++ 
+      packSettings ++ 
+      Seq(
+        packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
+                        "local" -> "org.apache.gearpump.cluster.main.Local",
+                        "master" -> "org.apache.gearpump.cluster.main.Master",
+                        "worker" -> "org.apache.gearpump.cluster.main.Worker",
+                        "rest" -> "org.apache.gearpump.cluster.main.Rest"
+                       ),
+        packExclude := Seq(fsio.id, kafka.id, sol.id, wordcount.id),
+        packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
+        packExpandedClasspath := true,
+        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
+      )
+  ).dependsOn(core, streaming).aggregate(core, streaming, fsio, kafka, sol, wordcount, rest)
+
+  lazy val core = Project(
+    id = "gearpump-core",
+    base = file("core"),
+    settings = commonSettings 
   )
 
   lazy val streaming = Project(
@@ -127,7 +140,7 @@ object Build extends sbt.Build {
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
     base = file("examples/fsio"),
-    settings = commonSettings  ++
+    settings = commonSettings  ++ packSettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion
@@ -138,7 +151,7 @@ object Build extends sbt.Build {
   lazy val kafka = Project(
     id = "gearpump-examples-kafka",
     base = file("examples/kafka"),
-    settings = commonSettings ++
+    settings = commonSettings ++ packSettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
@@ -150,13 +163,13 @@ object Build extends sbt.Build {
   lazy val sol = Project(
     id = "gearpump-examples-sol",
     base = file("examples/sol"),
-    settings = commonSettings
+    settings = commonSettings ++ packSettings
   ) dependsOn streaming
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
     base = file("examples/wordcount"),
-    settings = commonSettings
+    settings = commonSettings ++ packSettings
   ) dependsOn streaming
 
   lazy val rest = Project(

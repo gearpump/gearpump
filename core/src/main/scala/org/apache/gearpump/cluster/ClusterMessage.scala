@@ -43,7 +43,7 @@ object MasterToWorker {
  */
 
 object ClientToMaster {
-  case class SubmitApplication(appMaster: Class[_ <: Actor], config: Configs, appDescription: Application)
+  case class SubmitApplication(appDescription: Application, appJar: Option[AppJar])
   case class ShutdownApplication(appId: Int)
 }
 

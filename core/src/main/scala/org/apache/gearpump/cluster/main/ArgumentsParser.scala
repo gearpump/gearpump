@@ -32,14 +32,16 @@ class ParseResult(optionMap : Map[String, String], remainArguments : Array[Strin
   def remainArgs = this.remainArguments
 }
 
-
 trait  ArgumentsParser {
 
   val ignoreUnknownArgument = false
 
   def help : Unit = {
     Console.println("Usage:")
-    var usage = List(s"java ${this.getClass} " + options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") + " " + remainArgs.map(k => s"<$k>").mkString(" "))
+    var usage = List(s"java ${this.getClass} " +
+      options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") +
+      " " +
+      remainArgs.map(k => s"<$k>").mkString(" "))
     options.map(kv => if(kv._2.required) {
       usage = usage :+ s"-${kv._1}  (required:${kv._2.required})"
     } else {
@@ -62,21 +64,25 @@ trait  ArgumentsParser {
 
         case key :: value :: rest if key.startsWith("-") && !value.startsWith("-") =>
           val fixedKey = key.substring(1)
-          config += fixedKey -> value
           if (!options.map(_._1).contains(fixedKey)) {
             if (!ignoreUnknownArgument) {
               help
               throw new Exception(s"found unknown option $fixedKey")
+            } else {
+              List[String](key, value).foreach(f=>{remainArgs :+= f;})
             }
+          } else {
+            config += fixedKey -> value
           }
           doParse(rest)
 
         case key :: rest if key.startsWith("-") =>
           val fixedKey = key.substring(1)
-          config += fixedKey -> ""
           if (!options.map(_._1).contains(fixedKey)) {
             help
             throw new Exception(s"found unknown option $fixedKey")
+          } else {
+            config += fixedKey -> "true"
           }
           doParse(rest)
 
@@ -95,13 +101,14 @@ trait  ArgumentsParser {
     }
     )
 
-    if (remainArgs.length != this.remainArgs.length ||
-    options.length != config.keySet.size) {
+    if (!ignoreUnknownArgument && (remainArgs.length != this.remainArgs.length ||
+    options.length != config.keySet.size)) {
       help
       Console.println(s"Unknown or missing arguments...")
       System.exit(-1)
     }
 
-    new ParseResult(config, args)
+    new ParseResult(config, remainArgs)
   }
+
 }

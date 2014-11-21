@@ -18,7 +18,8 @@
 
 package org.apache.gearpump.cluster
 
-import java.io.File
+import java.io.{PrintStream, FileOutputStream, File}
+import java.net.URL
 import java.util
 import java.util.concurrent.TimeUnit
 
@@ -172,8 +173,19 @@ private[cluster] object Worker {
             }
         }
       } else {
+        val appJar = context.jar
+        val (jvmArguments, classPath) = appJar match {
+          case Some(jar) =>
+            var fos = new FileOutputStream(jar.name)
+            new PrintStream(fos).write(jar.bytes)
+            fos.close
+            var file = new URL("file:"+jar.name)
+            (context.jvmArguments :+ "-Dapp.jar="+file.getFile, context.classPath :+ file.getFile)
+          case None =>
+            (context.jvmArguments, context.classPath)
+        }
         val java = System.getProperty("java.home") + "/bin/java"
-        val command = List(java) ++ context.jvmArguments ++ List("-cp", context.classPath.mkString(File.pathSeparator), context.mainClass) ++ context.arguments
+        val command = List(java) ++ jvmArguments ++ List("-cp", classPath.mkString(File.pathSeparator), context.mainClass) ++ context.arguments
         LOG.info(s"Starting executor process $command...")
 
         val process = Process(command).run(new ProcessLogRedirector())

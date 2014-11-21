@@ -23,7 +23,7 @@ import java.util.UUID
 import akka.actor.Actor
 import org.apache.gearpump.cluster.AppMasterInfo
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, AppMaster, TaskDescription}
 import org.apache.gearpump.util.{Configs, Graph}
 import org.json4s._
 import spray.httpx.Json4sJacksonSupport
@@ -85,7 +85,7 @@ object Json4sSupport extends Json4sJacksonSupport {
         }.toList
         val dag:Graph[TaskDescription,Partitioner] = Graph.empty
         Graph(dag, tuples:_*)
-        AppDescription(name,conf,dag)
+        AppDescription(name,classOf[AppMaster],conf,dag)
     },
     { //to json
       case appDescription:AppDescription =>
