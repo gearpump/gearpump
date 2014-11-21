@@ -28,12 +28,12 @@ import org.apache.gearpump.util.Configs
 object AppMasterToExecutor {
   case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
   case class Recover(startTime : TimeStamp)
-  case class RecoverTasks(startTime : TimeStamp, tasks : Iterable[TaskId])
   case class RestartTasks(timeStamp : TimeStamp)
   case object GetStartClock
   case class StartClock(clock : TimeStamp)
   case object RestartClockService
   class RestartException extends Exception
+  class MsgLostException extends Exception
 }
 
 object ExecutorToAppMaster {

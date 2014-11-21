@@ -18,19 +18,24 @@
 
 package org.apache.gearpump.streaming.task
 
-import akka.actor.{Actor, ExtendedActorSystem}
+import akka.actor.{ActorRef, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.transport.netty.TaskMessage
+import org.apache.gearpump.util.ActorUtil
+
+import scala.collection.mutable
 
 trait ExpressTransport {
   this: TaskActor =>
 
   final val express = Express(context.system)
-  final val sendLater = context.actorSelection("../sendlater")
   final val system = context.system.asInstanceOf[ExtendedActorSystem]
   final val serializer = new FastKryoSerializer(system)
   final def local = express.localHost
+  lazy val sourceId = TaskId.toLong(this.taskId)
+
+  final val senderLater = new SendLater(express, self, serializer)
 
   def transport(msg : AnyRef, remotes : TaskId *) = {
 
@@ -41,21 +46,68 @@ trait ExpressTransport {
       val localActor = express.lookupLocalActor(transportId)
       if (localActor.isDefined) {
         //local
-        localActor.get.tell(msg, Actor.noSender)
+        senderLater.sendToLocal(transportId)
+        ActorUtil.sendMsgWithSourceId(msg, localActor.get, sourceId, self)
       } else {
       //remote
         if (null == serializedMessage) {
           serializedMessage = serializer.serialize(msg)
         }
-        val taskMessage = new TaskMessage(transportId, serializedMessage)
+        val taskMessage = new TaskMessage(transportId, sourceId, serializedMessage)
 
         val remoteAddress = express.lookupRemoteAddress(transportId)
         if (remoteAddress.isDefined) {
-          express.transport(taskMessage, remoteAddress.get)
+          senderLater.sendToRemote(transportId)
+          express.transport(taskMessage, remoteAddress.get, self)
         } else {
-          sendLater ! taskMessage
+          senderLater.addMessage(transportId, taskMessage)
         }
       }
     }
+  }
+
+  def sendMsgInBuffer: Unit = senderLater.emptyBuffer
+}
+
+class SendLater(express: Express, sender: ActorRef, serializer: FastKryoSerializer){
+  private var buffer = Map.empty[Long, mutable.Queue[TaskMessage]]
+
+  def addMessage(transportId: Long, taskMessage: TaskMessage) = {
+    val queue = buffer.getOrElse(transportId, mutable.Queue.empty[TaskMessage])
+    queue.enqueue(taskMessage)
+    buffer += transportId -> queue
+  }
+
+  private def sendMsgInBuffer(transportId: Long) = {
+    val localActor = express.lookupLocalActor(transportId)
+    if (localActor.isDefined) {
+      sendToLocal(transportId)
+    } else {
+      sendToRemote(transportId)
+    }
+  }
+
+  def sendToLocal(transportId: Long) = {
+    val queue = buffer.getOrElse(transportId, mutable.Queue.empty[TaskMessage])
+    while (queue.nonEmpty) {
+      val taskMessage = queue.dequeue()
+      val localActor = express.lookupLocalActor(transportId)
+      val msg = serializer.deserialize(taskMessage.message())
+      ActorUtil.sendMsgWithSourceId(msg, localActor.get, taskMessage.source(), sender)
+    }
+  }
+
+  def sendToRemote(transportId: Long) = {
+    val queue = buffer.getOrElse(transportId, mutable.Queue.empty[TaskMessage])
+    while (queue.nonEmpty) {
+      val taskMessage = queue.dequeue()
+      val remoteAddress = express.lookupRemoteAddress(transportId)
+      express.transport(taskMessage, remoteAddress.get, sender)
+    }
+  }
+
+  def emptyBuffer: Unit = {
+    buffer.keySet.foreach(sendMsgInBuffer)
+    buffer = Map.empty[Long, mutable.Queue[TaskMessage]]
   }
 }

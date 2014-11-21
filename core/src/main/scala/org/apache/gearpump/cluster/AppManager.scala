@@ -139,7 +139,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse appDataStoreService orElse terminationWatch
 
   def masterHAMsgHandler: Receive = {
-    case update: UpdateResponse => LOG.info(s"we get update $update")
+    case update: UpdateResponse => LOG.debug(s"we get update $update")
     case Changed(STATE, data: GSet) =>
       LOG.info("Current elements: {}", data.value)
   }

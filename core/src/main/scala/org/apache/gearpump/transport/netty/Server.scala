@@ -23,9 +23,11 @@ import java.util
 import akka.actor.{Actor, ActorRef, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.ActorLookupById
+import org.apache.gearpump.util.ActorUtil
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.Message
 
 import scala.collection.JavaConversions._
 import scala.concurrent.future
@@ -39,7 +41,6 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
   val system = context.system.asInstanceOf[ExtendedActorSystem]
 
   val serializer = new FastKryoSerializer(system)
-
 
   def receive = msgHandler orElse channelManager
 
@@ -63,7 +64,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
           val msg = serializer.deserialize(taskMessage.message())
-          actor.get.tell(msg, Actor.noSender)
+          ActorUtil.sendMsgWithSourceId(msg, actor.get, taskMessage.source())
         }
       }
   }
@@ -110,5 +111,7 @@ object Server {
   case class CloseChannel(channel: Channel)
 
   case class MsgBatch(messages: Iterable[TaskMessage])
+
+  case class MsgWithSenderId(msg: Message, taskId: Long)
 
 }

@@ -148,7 +148,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     val future: ChannelFuture = channel.write(requests)
     future.fail { (channel, ex) =>
       channel.close
-      LOG.info(s"failed to send requests to ${channel.getRemoteAddress}", ex)
+      LOG.error(s"failed to send requests to ${channel.getRemoteAddress}", ex)
       self ! CompareAndReconnectIfEqual(channel)
     }
   }

@@ -17,6 +17,7 @@
  */
 package org.apache.gearpump.streaming
 
+import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.streaming.AppMaster.TaskLaunchData
 import org.apache.gearpump.streaming.task.TaskId
@@ -34,7 +35,7 @@ class TaskSet(config : Configs, dag : DAG) {
 
   init(dag)
 
-  def fetchResourceRequests(): Array[ResourceRequest] ={
+  def fetchResourceRequests(normalize: Boolean = false): Array[ResourceRequest] ={
     var resourceRequests = Array.empty[ResourceRequest]
     taskQueues.foreach(params => {
       val (locality, tasks) = params
@@ -43,8 +44,13 @@ class TaskSet(config : Configs, dag : DAG) {
         case locality: WorkerLocality =>
           resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size), locality.workerId, relaxation = Relaxation.SPECIFICWORKER)
         case _ =>
-          if(tasks.size > 0)
-            resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size))
+          if(tasks.size > 0){
+            if(normalize){
+              resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size), relaxation = Relaxation.ONEWORKER)
+            } else {
+              resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size))
+            }
+          }
       }
     })
     resourceRequests

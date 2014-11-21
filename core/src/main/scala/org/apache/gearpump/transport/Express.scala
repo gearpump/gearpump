@@ -23,6 +23,8 @@ import akka.agent.Agent
 import org.apache.gearpump.transport.netty.{Context, TaskMessage}
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.concurrent._
+
 case class HostPort(host: String, port: Int)
 
 trait ActorLookupById {
@@ -59,6 +61,18 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     localActorMap.sendOff(_ - id)
   }
 
+  def initRemoteClient(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
+    hostPorts.filter(!localHost.equals(_)).map(hostPort =>
+      remoteClientMap.alter { map =>
+        if (!map.contains(hostPort)) {
+          val actor = context.connect(hostPort)
+          map + (hostPort -> actor)
+        } else {
+          map
+        }
+      }).last
+  }
+
   def registerLocalActor(id : Long, actor: ActorRef): Unit = {
     LOG.info(s"RegisterLocalActor: $id")
     init
@@ -70,20 +84,21 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   def lookupRemoteAddress(id : Long) = remoteAddressMap.get().get(id)
 
   //transport to remote address
-  def transport(taskMessage: TaskMessage, remote: HostPort): Unit = {
+  def transport(taskMessage: TaskMessage, remote: HostPort, sender: ActorRef = Actor.noSender): Unit = {
 
     val remoteClient = remoteClientMap.get.get(remote)
     if (remoteClient.isDefined) {
-      remoteClient.get.tell(taskMessage, Actor.noSender)
+      remoteClient.get.tell(taskMessage, sender)
     } else {
+      LOG.error("remote client has not been launched")
       remoteClientMap.send { map =>
         val expressActor = map.get(remote)
         if (expressActor.isDefined) {
-          expressActor.get.tell(taskMessage, Actor.noSender)
+          expressActor.get.tell(taskMessage, sender)
           map
         } else {
           val actor = context.connect(remote)
-          actor.tell(taskMessage, Actor.noSender)
+          actor.tell(taskMessage, sender)
           map + (remote -> actor)
         }
       }

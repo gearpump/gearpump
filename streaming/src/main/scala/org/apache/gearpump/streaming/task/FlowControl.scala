@@ -19,22 +19,34 @@
 package org.apache.gearpump.streaming.task
 
 import org.slf4j.{Logger, LoggerFactory}
+import scala.collection.mutable
 
-class FlowControl(taskId : TaskId, outputTaskCount : Int) {
+class FlowControl(taskId : TaskId, outputTaskCount : Int, replayId : Int) {
   import org.apache.gearpump.streaming.task.FlowControl._
 
   private var outputWindow : Long = INITIAL_WINDOW_SIZE
   private val ackWaterMark = new Array[Long](outputTaskCount)
   private val outputWaterMark = new Array[Long](outputTaskCount)
   private val ackRequestWaterMark = new Array[Long](outputTaskCount)
+  private val ackRequests = new Array[mutable.Queue[Long]](outputTaskCount).map(_ => mutable.Queue.empty[Long])
 
   def sendMessage(messagePartition : Int) : AckRequest = {
     outputWaterMark(messagePartition) += 1
     outputWindow -= 1
 
-    if (outputWaterMark(messagePartition) > ackRequestWaterMark(messagePartition) + FLOW_CONTROL_RATE) {
+    if (outputWaterMark(messagePartition) >= ackRequestWaterMark(messagePartition) + FLOW_CONTROL_RATE) {
       ackRequestWaterMark(messagePartition) = outputWaterMark(messagePartition)
-      AckRequest(taskId, Seq(messagePartition, outputWaterMark(messagePartition)))
+      ackRequests(messagePartition).enqueue(outputWaterMark(messagePartition))
+      AckRequest(taskId, Seq(messagePartition, outputWaterMark(messagePartition)), replayId)
+    } else {
+      null
+    }
+  }
+
+  def firstAckRequest(messagePartition : Int): AckRequest = {
+    if(outputWaterMark(messagePartition) == 0){
+      ackRequests(messagePartition).enqueue(0)
+      AckRequest(taskId, Seq(messagePartition, 0), replayId)
     } else {
       null
     }
@@ -72,6 +84,24 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
       index += 1
     }
     true
+  }
+
+  def messageLost(ack : Ack): Boolean = {
+    if(ack.replayId == this.replayId){
+      if(ackRequests(ack.seq.id).nonEmpty){
+        val neededAck = ackRequests(ack.seq.id).dequeue()
+        val result = neededAck != ack.seq.seq
+        if(result){
+          LOG.error(s"Message lost detected in $taskId! Needed: $neededAck actual: ${ack.seq.seq}")
+        }
+        result
+      } else {
+        true
+      }
+    } else {
+      LOG.debug(s"Task $taskId received Ack message from last replay")
+      false
+    }
   }
 }
 

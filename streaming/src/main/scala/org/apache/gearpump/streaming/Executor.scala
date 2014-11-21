@@ -18,17 +18,24 @@
 
 package org.apache.gearpump.streaming
 
-import akka.actor.{Actor, Props, Terminated}
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
+import akka.actor._
 import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.task.{CleanTaskLocations, TaskLocations}
+import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
+import org.apache.gearpump.transport.{HostPort, Express}
 import org.apache.gearpump.util.{Constants, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
-class Executor(config : Configs)  extends Actor {
+import scala.concurrent.duration._
 
+case object TaskLocationReady
+
+class Executor(config : Configs)  extends Actor {
+  import context.dispatcher
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Executor])
 
   val appMaster = config.appMaster
@@ -41,9 +48,17 @@ class Executor(config : Configs)  extends Actor {
   context.parent ! RegisterExecutor(self, executorId, resource, workerId)
   context.watch(appMaster)
 
-  val sendLater = context.actorOf(Props[SendLater], "sendlater")
+  val express = Express(context.system)
 
   def receive : Receive = appMasterMsgHandler orElse terminationWatch
+
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+      case _: MsgLostException =>
+        appMaster ! ReplayFromTimestampWindowTrailingEdge
+        Restart
+      case _: RestartException => Restart
+    }
 
   def appMasterMsgHandler : Receive = {
     case LaunchTask(taskId, config, taskClass) => {
@@ -51,11 +66,18 @@ class Executor(config : Configs)  extends Actor {
       val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
       val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }
-    case taskLocations : TaskLocations =>
-      sendLater.forward(taskLocations)
+    case TaskLocations(locations) =>
+      val result = locations.flatMap { kv =>
+        val (host, set) = kv
+        set.map(taskId => (TaskId.toLong(taskId), host))
+      }
+      express.initRemoteClient(locations.keySet).map { _ =>
+        express.remoteAddressMap.send(result)
+        express.remoteAddressMap.future().map(result => context.children.foreach(_ ! TaskLocationReady))
+      }
     case r @ RestartTasks(clock) =>
       LOG.info(s"Executor received restart tasks at time: $clock")
-      sendLater.forward(CleanTaskLocations)
+      express.remoteAddressMap.send(Map.empty[Long, HostPort])
       this.startClock = clock
       context.children.foreach(_ ! r)
     case GetStartClock =>

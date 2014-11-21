@@ -31,8 +31,8 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RecoverTasks, RestartTasks}
+import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
@@ -78,6 +78,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
   private var startedTasks = Set.empty[TaskId]
   private var updateScheduler : Cancellable = null
   private var store : AppDataStore = null
+  private var restarting = true
 
   override def receive : Receive = null
 
@@ -142,7 +143,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
       }
   }
 
-  def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse appManagerMsgHandler orElse workerMsgHandler orElse clientMsgHandler orElse executorMsgHandler orElse terminationWatch
+  def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse appManagerMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) =>
@@ -171,11 +172,20 @@ class AppMaster (config : Configs) extends ApplicationMaster {
           sender ! AppMasterDataDetail(appId = appId, appDescription = appDescription)
       }
     case ReplayFromTimestampWindowTrailingEdge =>
-      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{clock =>
-        startClock = clock.clock
-        taskLocations = taskLocations.empty
-        startedTasks = startedTasks.empty
-        context.children.foreach(_ ! RestartTasks(startClock))}
+      if(!restarting){
+        (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map { clock =>
+          startClock = clock.clock
+          taskLocations = taskLocations.empty
+          startedTasks = startedTasks.empty
+
+          if(taskSet.hasNotLaunchedTask){
+            val resourceRequests = taskSet.fetchResourceRequests(true)
+            resourceRequests.foreach(master ! RequestResource(appId, _))
+          }
+          context.children.foreach(_ ! RestartTasks(startClock))
+        }
+        this.restarting = true
+      }
   }
 
   def executorMsgHandler: Receive = {
@@ -194,6 +204,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
 
       LOG.info(s" started task size: ${startedTasks.size}, taskQueue size: ${taskSet.totalTaskCount}")
       if (startedTasks.size == taskSet.totalTaskCount) {
+        this.restarting = false
         context.children.foreach { executor =>
           LOG.info(s"Sending Task locations to executor ${executor.path.name}")
           executor ! TaskLocations(taskLocations)
@@ -262,24 +273,6 @@ class AppMaster (config : Configs) extends ApplicationMaster {
       master ! RequestResource(appId, ResourceRequest(resource))
   }
 
-  def clientMsgHandler : Receive = {
-    case RecoverTasks(minClock, tasks) =>
-      LOG.info(s"Restarting to clock $minClock...")
-
-      //clean the state
-      startClock = minClock
-      taskLocations = taskLocations.empty
-      startedTasks = startedTasks.empty
-
-      //allocate resource for failed tasks
-      taskSet.taskFailed(tasks)
-      val resourceRequests = taskSet.fetchResourceRequests()
-      resourceRequests.foreach(master ! RequestResource(appId, _))
-
-      //restart existing tasks
-      context.children.foreach(_ ! RestartTasks(startClock))
-  }
-
   //TODO: We an task is down, we need to recover
   def terminationWatch : Receive = {
     case Terminated(actor) =>
@@ -294,9 +287,10 @@ class AppMaster (config : Configs) extends ApplicationMaster {
       val executorId = actor.path.name.toInt
       LOG.error(s"Executor is down ${actor.path.name}, executorId: $executorId")
 
-      val taskSet = executorIdToTasks(executorId)
+      val tasks = executorIdToTasks(executorId)
+      taskSet.taskFailed(tasks)
 
-      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(clock => RecoverTasks(clock.clock, taskSet)).pipeTo(self)
+      self ! ReplayFromTimestampWindowTrailingEdge
     } else {
       LOG.error(s"=============terminiated unknown actorss===============${actor.path}")
     }

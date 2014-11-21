@@ -22,15 +22,21 @@ import java.nio.ByteBuffer;
 
 public class TaskMessage {
   private long _task;
+  private long _source;
   private byte[] _message;
 
-  public TaskMessage(long task, byte[] message) {
+  public TaskMessage(long task, long source,  byte[] message) {
     _task = task;
+    _source = source;
     _message = message;
   }
 
   public long task() {
     return _task;
+  }
+
+  public long source(){
+    return _source;
   }
 
   public byte[] message() {
@@ -40,6 +46,7 @@ public class TaskMessage {
   public ByteBuffer serialize() {
     ByteBuffer bb = ByteBuffer.allocate(_message.length + 8);
     bb.putLong(_task);
+    bb.putLong(_source);
     bb.put(_message);
     return bb;
   }
@@ -47,6 +54,7 @@ public class TaskMessage {
   public void deserialize(ByteBuffer packet) {
     if (packet == null) return;
     _task = packet.getLong();
+    _source = packet.getLong();
     _message = new byte[packet.limit() - 8];
     packet.get(_message);
   }
