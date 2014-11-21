@@ -18,10 +18,12 @@
 
 package org.apache.gearpump.streaming
 
+import akka.actor.Actor
+import org.apache.gearpump.cluster.ApplicationMaster
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.util.{Configs, Graph, ReferenceEqual}
 
 case class TaskDescription(taskClass: String, parallelism : Int) extends ReferenceEqual
 
-case class AppDescription(name : String, conf : Configs, dag: Graph[TaskDescription, Partitioner])
+case class AppDescription(name : String, appMaster : Class[_ <: ApplicationMaster], conf: Configs, dag: Graph[TaskDescription, Partitioner])
   extends org.apache.gearpump.cluster.Application

@@ -19,7 +19,7 @@
 package org.apache.gearpump.util
 
 import akka.actor.ActorRef
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
 import org.apache.gearpump.util.Constants._
@@ -81,6 +81,8 @@ object Configs {
 
   def apply(config : Map[String, _]) = new Configs(config)
 
+  def apply(config : Config) = new Configs(config.toMap)
+
 
   //for production
   val SYSTEM_DEFAULT_CONFIG = ConfigFactory.load()
@@ -103,6 +105,13 @@ object Configs {
     }
   }
 
+  implicit class ConfigHelper(config: Config) {
+    def toMap: Map[String, _] = {
+      import scala.collection.JavaConversions._
+      config.entrySet.map(entry => (entry.getKey, entry.getValue.unwrapped)).toMap
+    }
+  }
+
   implicit class MapHelper(config: Map[String, _]) {
     def getInt(key : String) : Int = {
       config.get(key).get.asInstanceOf[Int]
@@ -119,5 +128,6 @@ object Configs {
     def getResource(key : String) : Resource = {
       config.get(key).get.asInstanceOf[Resource]
     }
+
   }
 }

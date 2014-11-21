@@ -23,6 +23,8 @@ import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProcessor._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.util.Configs
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
@@ -30,7 +32,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SeqFileStreamProcessor(config: HadoopConfig) extends TaskActor(config){
+class SeqFileStreamProcessor(config: Configs) extends TaskActor(config){
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileStreamProcessor])
   val outputPath = new Path(config.getString(OUTPUT_PATH) + System.getProperty("file.separator") + this.taskId)
   var writer: SequenceFile.Writer = null
@@ -44,7 +46,7 @@ class SeqFileStreamProcessor(config: HadoopConfig) extends TaskActor(config){
   private var snapShotTime : Long = 0
 
   override def onStart(taskContext : TaskContext) = {
-    val hadoopConf = config.hadoopConf
+    val hadoopConf = new Configuration()
     val fs = FileSystem.get(hadoopConf)
     fs.deleteOnExit(outputPath)
     writer = SequenceFile.createWriter(hadoopConf, Writer.file(outputPath), Writer.keyClass(textClass), Writer.valueClass(textClass))

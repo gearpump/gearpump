@@ -18,8 +18,18 @@
 
 package org.apache.gearpump.cluster
 
+import akka.actor.Actor
+import org.apache.gearpump.util.Configs
+
+
+case class AppJar(name: String, bytes: Array[Byte])
 
 /**
  * Subtype this for user defined application
  */
-trait Application
+trait Application {
+  val appMaster : Class[_ <: ApplicationMaster]
+  val conf: Configs
+}
+
+trait ApplicationMaster extends Actor

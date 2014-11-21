@@ -15,26 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.services.RestServices
+import org.slf4j.{Logger, LoggerFactory}
 
-object Rest extends App with ArgumentsParser {
+trait Starter {
+  this: ArgumentsParser =>
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[Starter])
 
-  override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true))
-
-  def start(): Unit = {
+  def main(args: Array[String]): Unit = {
     val config = parse(args)
     val masters = config.getString("master")
-    Console.out.println("Master URL: " + masters)
-    val clientContext = ClientContext(masters)
-    implicit val system = clientContext.system
-    RestServices.start(clientContext.master)
+    val runseconds = config.getInt("runseconds")
+    LOG.info("Master URL: " + masters)
+    val context = ClientContext(masters)
+    val app = application(config)
+    val appId = context.submit(app, Option(AppSubmitter.jars(0)))
+    LOG.info(s"We get application id: $appId")
+    Thread.sleep(runseconds * 1000)
+    LOG.info(s"Shutting down application $appId")
+    context.shutdown(appId)
+    context.destroy()
   }
 
-  start()
+  def application(config: ParseResult): org.apache.gearpump.cluster.Application
 
 }

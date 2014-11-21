@@ -18,12 +18,13 @@
 
 package org.apache.gearpump.cluster
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.cluster.Cluster
 import akka.contrib.datareplication.Replicator._
-import akka.contrib.datareplication.{LWWMap, DataReplication, GSet}
+import akka.contrib.datareplication.{DataReplication, GSet, LWWMap}
 import akka.pattern.ask
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
@@ -48,7 +49,7 @@ import scala.util.{Failure, Success}
 /**
  * This state will be persisted across the masters.
  */
-class ApplicationState(val appId : Int, val attemptId : Int, val appMasterClass : Class[_ <: Actor], val app : Application, val state : Any) extends Serializable {
+class ApplicationState(val appId : Int, val attemptId : Int, val app : Application, val jar: Option[AppJar], state : Any) extends Serializable {
 
   override def equals(other: Any): Boolean = {
     other match {
@@ -71,8 +72,8 @@ class ApplicationState(val appId : Int, val attemptId : Int, val appMasterClass 
 
 private[cluster] class AppManager() extends Actor with Stash {
 
-  import org.apache.gearpump.cluster.AppManager._
   import context.dispatcher
+  import org.apache.gearpump.cluster.AppManager._
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
   private var master: ActorRef = null
@@ -144,12 +145,12 @@ private[cluster] class AppManager() extends Actor with Stash {
   }
 
   def clientMsgHandler: Receive = {
-    case submitApp@SubmitApplication(appMasterClass, config, app) =>
+    case submitApp@SubmitApplication(app, jar) =>
       LOG.info(s"AppManager Submiting Application $appId...")
-      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, config, app), appId.toString)
+      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, app, jar), appId.toString)
 
       LOG.info(s"Persist master state writeQuorum: $writeQuorum, timeout: $TIMEOUT...")
-      val appState = new ApplicationState(appId, 0, appMasterClass, app, null)
+      val appState = new ApplicationState(appId, 0, app, jar, null)
       replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + appState)
       sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
       appId += 1
@@ -275,8 +276,7 @@ private[cluster] class AppManager() extends Actor with Stash {
     case RecoverApplication(applicationStatus) =>
       val appId = applicationStatus.appId
       LOG.info(s"AppManager Recovering Application $appId...")
-      val appMasterClass = applicationStatus.appMasterClass
-      context.actorOf(Props(classOf[AppMasterStarter], appId, appMasterClass, Configs.empty, applicationStatus.app), appId.toString)
+      context.actorOf(Props(classOf[AppMasterStarter], appId, applicationStatus.app.conf, applicationStatus.jar, applicationStatus.app), appId.toString)
   }
 
   case class RecoverApplication(applicationStatus : ApplicationState)
@@ -298,7 +298,7 @@ private[cluster] object AppManager {
   /**
    * Start and watch Single AppMaster's lifecycle
    */
-  class AppMasterStarter(appId : Int, appMasterClass : Class[_ <: Actor], appConfig : Configs, app : Application) extends Actor {
+  class AppMasterStarter(appId : Int, app : Application, jar: Option[AppJar]) extends Actor {
 
     val systemConfig = context.system.settings.config
 
@@ -312,12 +312,14 @@ private[cluster] object AppManager {
       case ResourceAllocated(allocations) =>
         LOG.info(s"Resource allocated for appMaster $app Id")
         val allocation = allocations(0)
-        val appMasterConfig = appConfig.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
+        val appMasterConfig = app.conf.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
         LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = ActorUtil.actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
-
-        val executionContext = ExecutorContext(Util.getCurrentClassPath, context.system.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath))
+        val maybeExtraClasspath = app.conf.config.get(Constants.GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
+        val extraClasspath = maybeExtraClasspath.getOrElse("").asInstanceOf[String]
+        val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
+        val executionContext = ExecutorContext(classPath, appMasterConfig.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
 
         allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
         context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))
@@ -345,7 +347,7 @@ private[cluster] object AppManager {
     def waitForMasterProxyToStart(masterConfig : Configs) : Receive = {
       case ActorCreated(masterProxy, "masterproxy") =>
         LOG.info(s"Master proxy is created, create appmaster...")
-        val masterProps = Props(appMasterClass, masterConfig.withMasterProxy(masterProxy))
+        val masterProps = Props(app.appMaster, masterConfig.withMasterProxy(masterProxy))
         sender ! CreateActor(masterProps, "appmaster")
 
         //my job has completed. kill myself
