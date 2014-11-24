@@ -24,7 +24,8 @@ import spray.testkit.Specs2RouteTest
 
 
 class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppMastersService  {
-  import org.apache.gearpump.services.Json4sSupport._
+  import org.apache.gearpump.services.AppMasterProtocol._
+  import spray.httpx.SprayJsonSupport._
   def actorRefFactory = system
   Thread.sleep(1000)
   val restUtil = RestTestUtil.startRestServices

@@ -187,7 +187,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   def appMasterMessage: Receive = {
     case RegisterAppMaster(appMaster, appId, executorId, slots, registerData: AppMasterInfo) =>
       val appMasterPath = appMaster.path.address.toString
-      val workerPath = registerData.worker.path.address.toString
+      val workerPath = registerData.worker //registerData.worker.path.address.toString
       LOG.info(s"Register AppMaster for app: $appId appMaster=$appMasterPath worker=$workerPath")
       context.watch(appMaster)
       appMasterRegistry += appId -> (appMaster, registerData)
@@ -291,6 +291,7 @@ private[cluster] class AppManager() extends Actor with Stash {
 
 case class AppMasterInfo(worker : ActorRef) extends AppMasterRegisterData
 
+
 private[cluster] object AppManager {
   private val masterExecutorId = -1
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppManager])
@@ -347,7 +348,8 @@ private[cluster] object AppManager {
     def waitForMasterProxyToStart(masterConfig : Configs) : Receive = {
       case ActorCreated(masterProxy, "masterproxy") =>
         LOG.info(s"Master proxy is created, create appmaster...")
-        val masterProps = Props(app.appMaster, masterConfig.withMasterProxy(masterProxy))
+        val appMasterClass = Class.forName(app.appMaster).asSubclass(classOf[ApplicationMaster])
+        val masterProps = Props(appMasterClass, masterConfig.withMasterProxy(masterProxy))
         sender ! CreateActor(masterProps, "appmaster")
 
         //my job has completed. kill myself

@@ -53,7 +53,7 @@ class RollingTopWords extends Starter with ArgumentsParser {
     val rollingCount = TaskDescription(classOf[RollingCount].getCanonicalName, rcNum)
     val intermediateRanker = TaskDescription(classOf[Ranker].getCanonicalName, irNum)
     val totalRanker = TaskDescription(classOf[Ranker].getCanonicalName, 1)
-    val app = AppDescription("RollingTopWords", classOf[AppMaster], appConfig,
+    val app = AppDescription("RollingTopWords", classOf[AppMaster].getCanonicalName, appConfig,
       Graph(kafkaStreamProducer ~ partitioner ~> rollingCount ~ partitioner
         ~> intermediateRanker ~ partitioner ~> totalRanker)
     )

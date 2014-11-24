@@ -32,7 +32,7 @@ object Build extends sbt.Build {
   val slf4jVersion = "1.7.7"
   val scalaVersionNumber = "2.10.4"
   val sprayVersion = "1.3.2"
-  val sprayJsonVersion = "1.2.6"
+  val sprayJsonVersion = "1.3.1"
   val spraySwaggerVersion = "0.5.0"
   val swaggerUiVersion = "2.0.24"
   val scalaTestVersion = "2.2.0"

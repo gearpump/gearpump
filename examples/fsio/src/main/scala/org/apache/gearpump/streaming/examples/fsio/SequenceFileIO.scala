@@ -49,7 +49,7 @@ class SequenceFileIO extends Starter with ArgumentsParser {
     val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getCanonicalName, spoutNum)
     val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getCanonicalName, boltNum)
     LOG.info(s"SequenceFileIO appConfig size = ${appConfig.config.size}")
-    val app = AppDescription("SequenceFileIO", classOf[AppMaster], appConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
+    val app = AppDescription("SequenceFileIO", classOf[AppMaster].getCanonicalName, appConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app
   }
 }

@@ -28,7 +28,7 @@ case class AppJar(name: String, bytes: Array[Byte])
  * Subtype this for user defined application
  */
 trait Application {
-  val appMaster : Class[_ <: ApplicationMaster]
+  val appMaster : String
   val conf: Configs
 }
 
