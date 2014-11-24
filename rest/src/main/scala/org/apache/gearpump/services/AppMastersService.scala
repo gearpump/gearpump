@@ -38,7 +38,8 @@ class AppMastersServiceActor(val master:ActorRef) extends Actor with AppMastersS
 }
 @Api(value = "/appmasters", description = "AppMasters Info.")
 trait AppMastersService extends HttpService {
-  import org.apache.gearpump.services.Json4sSupport._
+  import org.apache.gearpump.services.AppMasterProtocol._
+  import spray.httpx.SprayJsonSupport._
   implicit val ec: ExecutionContext = actorRefFactory.dispatcher
   implicit val timeout = Constants.FUTURE_TIMEOUT
   val master:ActorRef

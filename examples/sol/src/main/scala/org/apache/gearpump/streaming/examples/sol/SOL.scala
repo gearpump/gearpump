@@ -50,7 +50,7 @@ class SOL extends Starter with ArgumentsParser {
       c ~ partitioner ~> streamProcessor.copy()
     }
     val dag = Graph[TaskDescription, Partitioner](computation)
-    val app = AppDescription("sol", classOf[AppMaster], appConfig, dag)
+    val app = AppDescription("sol", classOf[AppMaster].getCanonicalName, appConfig, dag)
     app
   }
 }
