@@ -67,7 +67,7 @@ class StorageManager[K, V](id: String,
   }
 
   def checkpoint(timestamp: TimeStamp): Checkpoint[TimeStamp, (K, V)] = {
-    val checkpoint = Checkpoint(states.map(kv => (timestamp, kv)).toList)
+    val checkpoint = Checkpoint(states.toList.map(kv => (timestamp, kv)))
     states = Map.empty[K, V]
     checkpointManager.writeCheckpoint(source, checkpoint, checkpointSerDe)
     checkpoint
