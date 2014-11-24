@@ -18,12 +18,10 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail}
-import org.apache.gearpump.cluster.{AppMasterInfo, ApplicationMaster}
-import org.apache.gearpump.streaming.{AppMaster, AppDescription}
-import org.apache.gearpump.util.{Configs, Graph}
+import org.apache.gearpump.cluster.AppMasterInfo
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.specs2.mutable.Specification
-import org.specs2.specification.{AfterExample, AfterEach, After}
+import org.specs2.specification.AfterExample
 import spray.testkit.Specs2RouteTest
 
 class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMasterService with AfterExample {

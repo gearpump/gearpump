@@ -21,7 +21,6 @@ package org.apache.gearpump.services
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
 import com.gettyimages.spray.swagger._
-import com.typesafe.config.ConfigFactory
 import com.wordnik.swagger.model.ApiInfo
 import spray.can._
 import spray.json._
@@ -44,7 +43,7 @@ class RestServices(masters: ActorRef) extends Actor with HttpService with Defaul
     def actorRefFactory = context
   }
 
-  override def preStart: Unit = {
+  override def preStart(): Unit = {
     context.actorOf(Props(classOf[AppMastersServiceActor], masters), "appMastersService")
     context.actorOf(Props(classOf[AppMasterServiceActor], masters), "appMasterService")
   }
