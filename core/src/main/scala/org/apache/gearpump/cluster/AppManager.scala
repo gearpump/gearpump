@@ -187,7 +187,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   def appMasterMessage: Receive = {
     case RegisterAppMaster(appMaster, appId, executorId, slots, registerData: AppMasterInfo) =>
       val appMasterPath = appMaster.path.address.toString
-      val workerPath = registerData.worker //registerData.worker.path.address.toString
+      val workerPath = registerData.worker.path.address.toString
       LOG.info(s"Register AppMaster for app: $appId appMaster=$appMasterPath worker=$workerPath")
       context.watch(appMaster)
       appMasterRegistry += appId -> (appMaster, registerData)
