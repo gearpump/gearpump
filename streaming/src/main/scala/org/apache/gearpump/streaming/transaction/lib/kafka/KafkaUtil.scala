@@ -18,6 +18,9 @@
 
 package org.apache.gearpump.streaming.transaction.lib.kafka
 
+import java.net.InetAddress
+
+import akka.actor.{ExtendedActorSystem, ActorContext}
 import kafka.utils.ZkUtils
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConsumer.Broker
 import org.I0Itec.zkclient.ZkClient
@@ -48,5 +51,10 @@ object KafkaUtil {
     val broker = ZkUtils.getBrokerInfo(zkClient, leader)
       .getOrElse(throw new Exception(s"broker info not found for leader $leader"))
     Broker(broker.host, broker.port)
+  }
+
+  def getHost(context: ActorContext): String = {
+    val address = context.system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+    InetAddress.getByName(address.host.get).getHostName
   }
 }

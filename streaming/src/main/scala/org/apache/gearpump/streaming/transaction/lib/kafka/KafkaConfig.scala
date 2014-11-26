@@ -28,6 +28,7 @@ import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
 import org.apache.gearpump.streaming.transaction.checkpoint.TimeExtractor
+import org.apache.gearpump.streaming.transaction.lib.kafka.grouper.KafkaGrouperFactory
 import org.apache.gearpump.streaming.transaction.storage.api.KeyValueStoreFactory
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -67,6 +68,9 @@ object KafkaConfig {
   // storage config
   val KV_STORE_FACTORY = "kafka.storage.kv.store.factory"
   val STORAGE_CHECKPOINT_INTERVAL_MS = "kafka.storage.checkpoint.interval.ms"
+
+  // grouper config
+  val GROUPER_FACTORY_CLASS = "kafka.grouper.factory.class"
 
   def apply(): Map[String, _] = new KafkaConfig().toMap
 
@@ -211,6 +215,10 @@ object KafkaConfig {
 
     def getStorageCheckpointIntervalMS = {
       getInt(STORAGE_CHECKPOINT_INTERVAL_MS)
+    }
+
+    def getGrouperFactory = {
+      getInstance[KafkaGrouperFactory](GROUPER_FACTORY_CLASS)
     }
   }
 

@@ -18,12 +18,13 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
+import java.net.InetAddress
+
 import akka.actor.actorRef2Scala
 import kafka.common.TopicAndPartition
 import kafka.serializer.StringDecoder
 import kafka.utils.ZkUtils
 import org.apache.gearpump.{Message, TimeStamp}
-import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.streaming.transaction.checkpoint.{OffsetManager, RelaxedTimeFilter}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig.ConfigToKafka
@@ -35,7 +36,6 @@ object KafkaStreamProducer {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaStreamProducer])
 }
 
-
 /**
  * connect gearpump with kafka
  */
@@ -44,16 +44,15 @@ class KafkaStreamProducer(conf: Configs) extends TaskActor(conf) {
   import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer._
 
   private val config = conf.config
-  private val grouper = new KafkaDefaultGrouper
+  private val grouper = config.getGrouperFactory.getKafkaGrouper(conf, context)
   private val emitBatchSize = config.getConsumerEmitBatchSize
 
   private val topicAndPartitions: Array[TopicAndPartition] = {
     val original = ZkUtils.getPartitionsForTopics(config.getZkClient(), config.getConsumerTopics)
       .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toArray
-    val grouped = grouper.group(original,
-      conf.dag.tasks(taskId.groupId).parallelism, taskId)
+    val grouped = grouper.group(original)
     grouped.foreach(tp =>
-      LOG.info(s"spout $taskId has been assigned partition (${tp.topic}, ${tp.partition})"))
+      LOG.info(s"StreamProducer $taskId has been assigned partition (${tp.topic}, ${tp.partition})"))
     grouped
   }
 
