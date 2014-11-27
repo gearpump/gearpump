@@ -16,10 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.transaction.lib.kafka.grouper
 
-import org.apache.gearpump.streaming.task.TaskId
+import akka.actor.ActorContext
 import kafka.common.TopicAndPartition
+import org.apache.gearpump.streaming.ConfigsHelper._
+import org.apache.gearpump.streaming.{TaskIndex, TaskDescription}
+import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.util.Configs
+
+class KafkaDefaultGrouperFactory extends KafkaGrouperFactory {
+  override def getKafkaGrouper(conf: Configs, context: ActorContext): KafkaGrouper = {
+    val taskNum = conf.dag.tasks(conf.taskId.groupId).parallelism
+    val taskIndex = conf.taskId.index
+    new KafkaDefaultGrouper(taskNum, taskIndex)
+  }
+}
 
 /**
  * default grouper groups TopicAndPartitions among StreamProducers by partitions
@@ -30,12 +42,8 @@ import kafka.common.TopicAndPartition
  * streamProducer0 gets (topicA, partition1), (topicB, partition1) and (topicA, partition3)
  * streamProducer1 gets (topicA, partition2), (topicB, partition2)
  */
-class KafkaDefaultGrouper {
-  def group(topicAndPartitions: Array[TopicAndPartition],
-                     taskNum: Int, taskId: TaskId): Array[TopicAndPartition] = {
-    val taskToTopicAndPartitions = topicAndPartitions.groupBy(tp => tp.partition % taskNum).map(params =>
-      (TaskId(taskId.groupId, params._1), params._2)
-    )
-    taskToTopicAndPartitions(taskId)
+class KafkaDefaultGrouper(taskNum: Int, taskIndex: Int) extends KafkaGrouper {
+  def group(topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition] = {
+    0.until(topicAndPartitions.size).filter(_ % taskNum == taskIndex).map(i => topicAndPartitions(i)).toArray
   }
 }
