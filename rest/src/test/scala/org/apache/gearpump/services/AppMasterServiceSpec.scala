@@ -19,18 +19,27 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterInfo
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetail, AppMasterData}
+import org.apache.gearpump.services.RestTestUtil.RestTest
+import org.apache.gearpump.streaming.{AppMaster, AppDescription}
+import org.apache.gearpump.util.{Configs, Graph}
+import org.slf4j.{LoggerFactory, Logger}
 import org.specs2.mutable.Specification
-import org.specs2.specification.AfterExample
+import org.specs2.specification.{BeforeExample, AfterExample}
 import spray.testkit.Specs2RouteTest
 
-class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMasterService with AfterExample {
+class AppMasterServiceSpec extends Specification with Specs2RouteTest
+with AppMasterService with AfterExample with BeforeExample {
   import org.apache.gearpump.services.AppMasterProtocol._
   import spray.httpx.SprayJsonSupport._
   def actorRefFactory = system
   Thread.sleep(500)
-  val restUtil = RestTestUtil.startRestServices
+  val restUtil = before
   val master = restUtil.miniCluster.mockMaster
+
+  def before: RestTest = {
+    RestTestUtil.startRestServices
+  }
 
   "AppMasterService" should {
 //    "return a JSON structure for GET request when detail = true" in {

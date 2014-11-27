@@ -90,7 +90,7 @@ object AppMasterProtocol extends DefaultJsonProtocol  {
         appDescription.toJson
       case _ =>
         JsObject(
-          "appMaster" -> JsString(obj.appMaster),
+          "appMaster" -> JsNull,
           "conf" -> JsNull
         )
     }
