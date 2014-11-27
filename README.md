@@ -12,9 +12,11 @@ An Actor Driven streaming framework, inspired by MillWheel, Storm, Spark Streami
 
 Per initial benchmarks we are able to process 2 million messages/second (100 bytes per message) with a 30ms latency on a 4-node cluster.
 
+###Why we name it Gearpump
+The name Gearpump is a reference the engineering term “Gear Pump”, which is a super simple pump that consists of only two gears, but is very powerful at streaming water from left to right.
 
 ###Actor Hierarchy
-![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/actor_hierachy.png)
+![](https://raw.githubusercontent.com/intel-hadoop/gearpump/master/doc/actor_hierarchy.png)
 
 ###How to Build
   ```bash
@@ -65,7 +67,7 @@ Per initial benchmarks we are able to process 2 million messages/second (100 byt
   ```
   ```bash
   ## Run KafkaWordCount example
-  target/pack/bin/gear app -jar ./examples/kafka/target/pack/lib/gearpump-examples-kafka-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.kafka.KafkaWordCount -master 127.0.0.1:3000
+  target/pack/bin/gear app -jar ./examples/kafka/target/pack/lib/gearpump-examples-kafka-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount -master 127.0.0.1:3000
   ```
   ```bash
   ## Run Fsio example
