@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.transaction.lib.kafka
 
+import java.nio.channels.ClosedByInterruptException
+
 import kafka.common.TopicAndPartition
 
 import org.I0Itec.zkclient.ZkClient
@@ -113,13 +115,21 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
     }
 
     override def run(): Unit = {
-      while (!Thread.currentThread.isInterrupted) {
-        fetchMessage
-        if (hasNextSet.isEmpty) {
-          LOG.debug("no messages from all TopicAndPartitions, sleeping")
-          Thread.sleep(noMessageSleepMS)
+      try {
+        while (!Thread.currentThread.isInterrupted) {
+          fetchMessage
+          if (hasNextSet.isEmpty) {
+            LOG.debug("no messages from any TopicAndPartition, sleeping")
+            Thread.sleep(noMessageSleepMS)
+          }
         }
+      } catch {
+        case e: InterruptedException => LOG.info("fetch thread got interrupted exception")
+        case e: ClosedByInterruptException => LOG.info("fetch thread closed by interrupt exception")
+      } finally {
+        iterators.values.foreach(_.close())
       }
+
     }
 
     private def fetchMessage = {
