@@ -18,9 +18,8 @@
 
 package org.apache.gearpump.cluster
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.ActorRef
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
-import org.apache.gearpump.util.Configs
 
 import scala.util.Try
 

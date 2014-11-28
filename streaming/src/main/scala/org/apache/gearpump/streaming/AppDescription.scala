@@ -18,8 +18,6 @@
 
 package org.apache.gearpump.streaming
 
-import akka.actor.Actor
-import org.apache.gearpump.cluster.ApplicationMaster
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.util.{Configs, Graph, ReferenceEqual}
 

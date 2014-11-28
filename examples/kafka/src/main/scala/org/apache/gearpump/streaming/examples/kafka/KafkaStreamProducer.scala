@@ -18,8 +18,6 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import java.net.InetAddress
-
 import akka.actor.actorRef2Scala
 import kafka.common.TopicAndPartition
 import kafka.serializer.StringDecoder

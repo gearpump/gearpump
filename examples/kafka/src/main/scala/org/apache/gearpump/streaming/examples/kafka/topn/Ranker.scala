@@ -46,7 +46,7 @@ class Ranker(conf: Configs) extends TaskActor(conf) {
     val timestamp = msg.timestamp
     if (timestamp - lastEmitTime > emitFrequencyMS) {
       val topnR = rankings.getTopN(topn)
-      LOG.info(s"top ${topn} words in last ${windowLengthMS / 1000.0 } seconds: ${topnR.toString}")
+      LOG.info(s"top $topn words in last ${windowLengthMS / 1000.0 } seconds: ${topnR.toString}")
       topnR.foreach(r => output(Message(r, timestamp)))
       lastEmitTime = timestamp
       rankings.clear()
