@@ -19,11 +19,8 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterInfo
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetail, AppMasterData}
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.apache.gearpump.services.RestTestUtil.RestTest
-import org.apache.gearpump.streaming.{AppMaster, AppDescription}
-import org.apache.gearpump.util.{Configs, Graph}
-import org.slf4j.{LoggerFactory, Logger}
 import org.specs2.mutable.Specification
 import org.specs2.specification.{BeforeExample, AfterExample}
 import spray.testkit.Specs2RouteTest

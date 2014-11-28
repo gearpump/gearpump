@@ -22,17 +22,17 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
 class Sum (conf : Configs) extends TaskActor(conf) {
   import org.apache.gearpump.streaming.examples.wordcount.Sum._
 
-  private val map : HashMap[String, Long] = new HashMap[String, Long]()
+  private val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
 
   private var wordCount : Long = 0
   private var snapShotTime : Long = System.currentTimeMillis()
@@ -59,9 +59,9 @@ class Sum (conf : Configs) extends TaskActor(conf) {
     scheduler.cancel()
   }
 
-  def reportWordCount : Unit = {
+  def reportWordCount() : Unit = {
     val current : Long = System.currentTimeMillis()
-    LOG.info(s"Task $taskId Throughput: ${((wordCount - snapShotWordCount), ((current - snapShotTime) / 1000))} (words, second)")
+    LOG.info(s"Task $taskId Throughput: ${(wordCount - snapShotWordCount, (current - snapShotTime) / 1000)} (words, second)")
     snapShotWordCount = wordCount
     snapShotTime = current
   }

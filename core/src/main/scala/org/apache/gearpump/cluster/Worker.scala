@@ -56,7 +56,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
     case WorkerRegistered(id) =>
       this.id = id
       killSelf.cancel()
-      master = sender
+      master = sender()
       context.watch(master)
       LOG.info(s"Worker $id Registered ....")
       sender ! ResourceUpdate(id, resource)
@@ -209,7 +209,7 @@ private[cluster] object Worker {
     }
 
     override def preStart: Unit = {
-      executorHandler.exitValue.map(ExecutorResult(_)).pipeTo(self)
+      executorHandler.exitValue.map(ExecutorResult).pipeTo(self)
     }
 
     override def receive: Receive = {

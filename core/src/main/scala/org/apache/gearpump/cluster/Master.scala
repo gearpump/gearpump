@@ -135,7 +135,7 @@ private[cluster] class Master extends Actor with Stash {
     val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULING_SCHEDULER))
     appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
     scheduler = context.actorOf(Props(schedulerClass))
-    context.system.eventStream.subscribe(self, classOf[DisassociatedEvent]);
+    context.system.eventStream.subscribe(self, classOf[DisassociatedEvent])
   }
 }
 

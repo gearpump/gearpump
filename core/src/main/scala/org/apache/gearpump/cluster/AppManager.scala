@@ -97,7 +97,7 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   val masterClusterSize = systemconfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).size()
 
-  //optimize write path, we can tollerate one master down for recovery.
+  //optimize write path, we can tolerate one master down for recovery.
   val writeQuorum = Math.min(2, masterClusterSize / 2 + 1)
   val readQuorum = masterClusterSize + 1 - writeQuorum
 
