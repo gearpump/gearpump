@@ -49,13 +49,18 @@ class MessageIterator(host: String,
   def next: (Long, Array[Byte], Array[Byte]) = {
     val mo = iter.next()
     val message = mo.message
-    val offset = mo.offset
-    val key = Utils.readBytes(message.key)
-    val payload = Utils.readBytes(message.payload)
 
     readMessages += 1
     nextOffset = mo.nextOffset
-    (offset, key, payload)
+
+    val offset = mo.offset
+    val payload = Utils.readBytes(message.payload)
+    if (message.key == null) {
+      (offset, null, payload)
+    } else {
+      val key = Utils.readBytes(message.key)
+      (offset, key, payload)
+    }
   }
 
 

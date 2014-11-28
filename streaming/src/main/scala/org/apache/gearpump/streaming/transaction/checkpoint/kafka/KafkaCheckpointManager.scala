@@ -85,6 +85,9 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
       def fetch(records: List[(K, V)]): List[(K, V)] = {
         if (msgIter.hasNext) {
           val (_, key, payload) = msgIter.next
+          if (null == key) {
+            throw new RuntimeException("checkpoint key should not be null")
+          }
           val r: (K, V) = (checkpointSerDe.fromKeyBytes(key), checkpointSerDe.fromValueBytes(payload))
           fetch(records :+ r)
         } else {
