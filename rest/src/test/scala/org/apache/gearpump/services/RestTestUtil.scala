@@ -28,10 +28,12 @@ import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.streaming.StreamingTestUtil
 import spray.can.Http
 
+import scala.util.Try
+
 
 object RestTestUtil {
 
-  val startRestServices:RestTest = new RestTest().startRestServices
+  val startRestServices:Try[RestTest] = Try(new RestTest().startRestServices)
 
   class RestTest {
     val miniCluster:MiniCluster = TestUtil.startMiniCluster

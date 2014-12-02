@@ -19,24 +19,47 @@ package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterInfo
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+import org.slf4j.{LoggerFactory, Logger}
 import org.specs2.mutable.Specification
+import org.specs2.specification.{BeforeExample, AfterExample}
 import spray.testkit.Specs2RouteTest
 
+import scala.util.{Failure, Success}
 
-class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppMastersService  {
+
+class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppMastersService with AfterExample with BeforeExample  {
   import org.apache.gearpump.services.AppMasterProtocol._
   import spray.httpx.SprayJsonSupport._
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMastersServiceSpec])
   def actorRefFactory = system
-  Thread.sleep(1000)
-  val restUtil = RestTestUtil.startRestServices
-  val master = restUtil.miniCluster.mockMaster
+  val restUtil = before
+  val master = restUtil match {
+    case Success(v) =>
+      v.miniCluster.mockMaster
+    case Failure(v) =>
+      LOG.error("Could not start rest services", v)
+      null
+  }
+
+  def before = {
+    Thread.sleep(1000)
+    RestTestUtil.startRestServices
+  }
 
   "AppMastersService" should {
     "return a json structure of appMastersData for GET request" in {
       Get("/appmasters") ~> routes ~> check {
-        restUtil.shutdown()
         responseAs[AppMastersData] === AppMastersData(List(AppMasterData(0,AppMasterInfo(null))))
       }
+    }
+  }
+
+  def after: Unit = {
+    restUtil match {
+      case Success(v) =>
+        v.shutdown()
+      case Failure(v) =>
+        LOG.error("Could not start rest services", v)
     }
   }
 

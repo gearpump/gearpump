@@ -20,21 +20,29 @@ package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterInfo
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
-import org.apache.gearpump.services.RestTestUtil.RestTest
+import org.slf4j.{LoggerFactory, Logger}
 import org.specs2.mutable.Specification
-import org.specs2.specification.{BeforeExample, AfterExample}
+import org.specs2.specification.{AfterExample, BeforeExample}
 import spray.testkit.Specs2RouteTest
 
-class AppMasterServiceSpec extends Specification with Specs2RouteTest
-with AppMasterService with AfterExample with BeforeExample {
+import scala.util.{Failure, Success}
+
+class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMasterService with AfterExample with BeforeExample {
   import org.apache.gearpump.services.AppMasterProtocol._
   import spray.httpx.SprayJsonSupport._
+  private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMastersServiceSpec])
   def actorRefFactory = system
-  Thread.sleep(500)
   val restUtil = before
-  val master = restUtil.miniCluster.mockMaster
+  val master = restUtil match {
+    case Success(v) =>
+      v.miniCluster.mockMaster
+    case Failure(v) =>
+      LOG.error("Could not start rest services", v)
+      null
+  }
 
-  def before: RestTest = {
+  def before = {
+    Thread.sleep(1000)
     RestTestUtil.startRestServices
   }
 
@@ -52,7 +60,12 @@ with AppMasterService with AfterExample with BeforeExample {
   }
 
   def after: Unit = {
-    restUtil.shutdown()
+    restUtil match {
+      case Success(v) =>
+        v.shutdown()
+      case Failure(v) =>
+        LOG.error("Could not start rest services", v)
+    }
   }
 
 }
