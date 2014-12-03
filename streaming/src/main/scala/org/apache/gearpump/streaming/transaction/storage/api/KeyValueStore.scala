@@ -31,8 +31,3 @@ trait KeyValueStore[K, V] {
 
   def close(): Unit
 }
-
-trait KeyValueSerDe[K, V] {
-  def toBytes(kv: (K, V)): Array[Byte]
-  def fromBytes(bytes: Array[Byte]): (K, V)
-}

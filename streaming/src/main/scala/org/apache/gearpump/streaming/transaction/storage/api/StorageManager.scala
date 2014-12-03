@@ -20,35 +20,51 @@ package org.apache.gearpump.streaming.transaction.storage.api
 
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.checkpoint.api.{CheckpointSerDe, Checkpoint, CheckpointManager, Source}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
 import org.slf4j.{Logger, LoggerFactory}
 
+import com.twitter.bijection._
+
+import scala.util.{Failure, Success}
+
 object StorageManager {
-  class StoreCheckpointSerDe[K, V](keyValueSerDe: KeyValueSerDe[K, V])
+
+  class StoreCheckpointSerDe[K: Codec, V: Codec]
     extends CheckpointSerDe[TimeStamp, (K, V)] {
+
+    implicit def kvInjection: Injection[(K, V), Array[Byte]] = {
+      implicit val buf = Bufferable.viaInjection[(K, V),
+        (Array[Byte], Array[Byte])]
+      Bufferable.injectionOf[(K, V)]
+    }
+
     override def toKeyBytes(key: TimeStamp): Array[Byte] = {
-      longToByteArray(key)
+      Injection[Long, Array[Byte]](key)
     }
 
     override def toValueBytes(value: (K, V)): Array[Byte] = {
-      keyValueSerDe.toBytes(value)
+      Injection[(K, V), Array[Byte]](value)
     }
 
     override def fromKeyBytes(bytes: Array[Byte]): TimeStamp = {
-      byteArrayToLong(bytes)
+      Injection.invert[Long, Array[Byte]](bytes) match {
+        case Success(l) => l
+        case Failure(e) => throw e
+      }
     }
 
     override def fromValueBytes(bytes: Array[Byte]): (K, V) = {
-      keyValueSerDe.fromBytes(bytes)
+      Injection.invert[(K, V), Array[Byte]](bytes) match {
+        case Success(kv) => kv
+        case Failure(e) => throw e
+      }
     }
   }
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[StorageManager[_, _]])
 }
 
-class StorageManager[K, V](id: String,
+class StorageManager[K: Codec, V: Codec](id: String,
                            store: KeyValueStore[K, V],
-                           keyValueSerDe: KeyValueSerDe[K, V],
                            checkpointManager: CheckpointManager[TimeStamp, (K, V)]
                            )
   extends KeyValueStore[K, V] {
@@ -59,7 +75,7 @@ class StorageManager[K, V](id: String,
     def name: String = s"storage_$id"
     def partition: Int = 0
   }
-  private val checkpointSerDe = new StoreCheckpointSerDe[K, V](keyValueSerDe)
+  private val checkpointSerDe = new StoreCheckpointSerDe[K, V]()
 
   def start(): Unit = {
     checkpointManager.register(Array(source))
