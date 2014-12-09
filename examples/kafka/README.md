@@ -99,7 +99,7 @@ Finally, let's run the KafkaWordCount example.
    ./target/pack/bin/gear app -jar ./examples/kafka/target/pack/lib/gearpump-examples-kafka-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount -master 127.0.0.1:3000
    ```
 
-One more step is to verify that we've suceeded in producing data to Kafka.
+One more step is to verify that we've succeeded in producing data to Kafka.
 
 ```bash
    $KAFKA_PATH/bin/kafka-console-consumer.sh --zookeeper localhost:2181 --from-beginning --topic topic2
