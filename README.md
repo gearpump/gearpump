@@ -42,7 +42,7 @@ The name Gearpump is a reference the engineering term “Gear Pump”, which is 
 ##How to Install to /usr/local
   ```bash
   ## Run Build step above
-  cd core/target/pack
+  cd target/pack
   sudo make install PREFIX="/usr/local"
   ```
   This will install scripts to run local, master or shell to `/usr/local/bin` and jars to `/usr/local/lib`.
@@ -53,7 +53,7 @@ The name Gearpump is a reference the engineering term “Gear Pump”, which is 
 1. Start Local Cluster in same process
   ```bash
   ## By default, it will create 4 workers
-  ./core/target/pack/bin/local -port 3000
+  ./target/pack/bin/local -port 3000
   ```
 
 2. Start an Example
@@ -97,19 +97,19 @@ The name Gearpump is a reference the engineering term “Gear Pump”, which is 
 3. On node1, Start Master
   ```bash
   ## on node1
-  target/pack/bin/master -ip node1 -port 3000  
+  bin/master -ip node1 -port 3000
   ```
 
 4. On any machine, Start workers. You can start multiple workers on same on different machines. Worker will read the master location information "gearpump.cluster.masters" from `reference.conf`.
 
   ```bash
-  target/pack/bin/worker
+  bin/worker
   ```
   
-5. Start a Client Example
+5. Distribute the application jar to the client node, then start a Client Example
   ```bash
   ## Run WordCount example
-  target/pack/bin/gear app -jar ./examples/wordcount/target/pack/lib/gearmp-examples-wordcount-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master 127.0.0.1:3000
+  bin/gear app -jar application/jar/path/gearmp-examples-wordcount-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master 127.0.0.1:3000
   ```
 
 ###Master HA
@@ -130,13 +130,13 @@ We allow to start master on multiple nodes. For example, if we start master on 5
 2. On node1, node2, node3, Start Master
   ```bash
   ## on node1
-  target/pack/bin/master -ip node1 -port 3000  
+  bin/master -ip node1 -port 3000
   
   ## on node2
-  target/pack/bin/master -ip node2 -port 3000  
+  bin/master -ip node2 -port 3000
   
   ## on node3
-  target/pack/bin/master -ip node3 -port 3000  
+  bin/master -ip node3 -port 3000
   ```  
 
 3. You can kill any node, the master HA will take effect. It can take up to 15 seconds for master node to fail-over. You can change the fail-over timeout time by setting "master.akka.cluster.auto-down-unreachable-after"
