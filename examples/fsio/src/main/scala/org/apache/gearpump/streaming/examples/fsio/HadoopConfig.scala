@@ -36,7 +36,9 @@ class HadoopConfig(config: Map[String, _]) extends Configs(config) {
 object HadoopConfig {
   def empty = new HadoopConfig(Map.empty[String, Any])
 
-  def apply(config : Map[String, _]) = new HadoopConfig(config)
+  def apply(config: Map[String, _]) = new HadoopConfig(config)
+
+  def apply(config: Configs) = new HadoopConfig(config.config)
 
   private def serializeHadoopConf(conf: Configuration) : Array[Byte] = {
     val out = new ByteArrayOutputStream()
