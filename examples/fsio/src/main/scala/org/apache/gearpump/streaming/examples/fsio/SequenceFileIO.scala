@@ -23,6 +23,7 @@ import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
+import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
@@ -45,11 +46,12 @@ class SequenceFileIO extends Starter with ArgumentsParser {
     val input = config.getString("input")
     val output = config.getString("output")
     val appConfig = Configs(ConfigFactory.load("fsio.conf")).withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output)
+    val hadoopConfig = HadoopConfig(appConfig).withHadoopConf(new Configuration())
     val partitioner = new ShufflePartitioner()
     val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getCanonicalName, spoutNum)
     val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getCanonicalName, boltNum)
     LOG.info(s"SequenceFileIO appConfig size = ${appConfig.config.size}")
-    val app = AppDescription("SequenceFileIO", classOf[AppMaster].getCanonicalName, appConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
+    val app = AppDescription("SequenceFileIO", classOf[AppMaster].getCanonicalName, hadoopConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app
   }
 }
