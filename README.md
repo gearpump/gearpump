@@ -1,87 +1,30 @@
-GearPump
-========
+## GearPump [![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master) [![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)
 
-[![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master)
-[![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)
+GearPump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
 
-#####This is an on-going effort that's not mature yet. Presently there is no load balancing yet, though we want to build support for those in weeks. We will update the wiki about the detailed status and design.
+We model streaming within the Akka actor hierarchy.
 
-Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the Akka framework and a desire to improve on existing streaming frameworks.
-
-Per initial benchmarks we are able to process 13 million messages/second (100 bytes per message) with a 30ms latency on a 4-node cluster.
-
-###Why we name it Gearpump
-The name Gearpump is a reference the engineering term “Gear Pump”, which is a super simple pump that consists of only two gears, but is very powerful at streaming water from left to right.
-
-###Actor Hierarchy
 ![](https://raw.githubusercontent.com/intel-hadoop/gearpump/master/doc/actor_hierarchy.png)
 
-###How to Build
+Per initial benchmarks we are able to process 11 million messages/second (100 bytes per message) with a 17ms latency on a 4-node cluster.
+
+![](https://raw.githubusercontent.com/intel-hadoop/gearpump/master/doc/dashboard.png)
+
+
+## Getting Started: WordCount
+
+1. Clone the GearPump repository
+
   ```bash
-  ## Build Gearpump
-  sbt clean publishLocal pack
-  ```
-  This will generate scripts under `core/target/pack/bin`, `examples/target/pack/bin` and `rest/target/pack/bin`.
-
-###How to test
-  ```bash
-  ## Build Gearpump
-  sbt clean jacoco:cover
-  ```
-  This will generate test coverage reports for each component under its `target/jacoco/html/index.html`.
-
-##How to Package for distribution
-  ```bash
-  ## Package Gearpump
-  sbt clean pack-archive
-  ```
-  This will produce `target/gearpump${version}.tar.gz` which contains the `./bin` and `./lib` files.
-
-##How to Install to /usr/local
-  ```bash
-  ## Run Build step above
-  cd target/pack
-  sudo make install PREFIX="/usr/local"
-  ```
-  This will install scripts to run local, master or shell to `/usr/local/bin` and jars to `/usr/local/lib`.
-
-
-###Local Mode
-
-1. Start Local Cluster in same process
-  ```bash
-  ## By default, it will create 4 workers
-  ./target/pack/bin/local -port 3000
+  git clone https://github.com/intel-hadoop/gearpump.git
+  cd gearpump
   ```
 
-2. Start an Example
+2. Start master
 
-   * Run WordCount example
-  ```bash
-  ./target/pack/bin/gear app -jar ./examples/wordcount/target/pack/lib/gearpump-examples-wordcount-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master 127.0.0.1:3000
-  ```
-
-  * Run SOL example
-  ```bash
-  ./target/pack/bin/gear app -jar ./examples/sol/target/pack/lib/gearpump-examples-sol-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.sol.SOL -master 127.0.0.1:3000
-  ```
-
-  * Run Fsio example
-  ```bash
-  ./target/pack/bin/gear app -jar ./examples/fsio/target/pack/lib/gearpump-examples-fsio-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.fsio.SequenceFileIO -master 127.0.0.1:3000 -input <input> -output <output>
-  ```
-
-  * Run KafkaWordCount example             
-    Please follow the step-by-step guide [here](https://github.com/intel-hadoop/gearpump/blob/master/examples/kafka/README.md)
-
-
-
-
-###Cluster Mode
-
-1. modify `core/src/main/resources/reference.conf` and set "gearpump.cluster.masters" to a list of master nodes before build.
+  We support [Master HA](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples#master-ha) and allow master to start on multiple nodes. Modify `core/src/main/resources/reference.conf` and set `gearpump.cluster.masters` to the list of nodes you plan to start master on (e.g. node1).
 
   ```
   gearpump {
@@ -92,160 +35,90 @@ The name Gearpump is a reference the engineering term “Gear Pump”, which is 
   }
   ```
 
-2. [Build a package](#how-to-package-for-distribution) and distribute it to all nodes.
-  
-3. On node1, Start Master
+  Build a package, distribute to all nodes, and extract it.
+
+  ```bash
+  sbt clean pack-archive
+  ```
+
+  Start master on the nodes you set in the conf previously.
+
   ```bash
   ## on node1
+  cd gearpump-$VERSION
   bin/master -ip node1 -port 3000
   ```
 
-4. On any machine, Start workers. You can start multiple workers on same on different machines. Worker will read the master location information "gearpump.cluster.masters" from `reference.conf`.
+3. Start worker
+
+  Start multiple workers on one or more nodes. Worker will read the master location information  `gearpump.cluster.masters` from `reference.conf`.
 
   ```bash
   bin/worker
   ```
-  
-5. Distribute the application jar to the client node, then start a Client Example
+
+4. Distribute application jar and run
+
+  Distribute wordcount jar `examples/wordcount/target/gearpump-examples-wordcount-$VERSION.jar` to one of cluster nodes and run with
+
   ```bash
   ## Run WordCount example
-  bin/gear app -jar application/jar/path/gearmp-examples-wordcount-0.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master 127.0.0.1:3000
+  bin/gear app -jar gearpump-examples-wordcount-$VERSION.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master node1:3000
   ```
 
-###Master HA
+Check the wiki pages for more on [build](https://github.com/intel-hadoop/gearpump/wiki/Build) and [running examples in local modes](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples).
 
-We allow to start master on multiple nodes. For example, if we start master on 5 nodes, then we can at most tolerate 2 master nodes failure. 
+## How to write a GearPump Application
 
-1. modify `core/src/main/resources/reference.conf` and set "gearpump.cluster.masters" to a list of master nodes.
+This is what a [GearPump WordCount](https://github.com/intel-hadoop/gearpump/tree/master/examples/wordcount/src/main/scala/org/apache/gearpump/streaming/examples/wordcount) looks like.
 
-  ```
-  gearpump {
-   ...
-  cluster {
-    masters = ["node1:3000", "node2:3000", "node3:3000"]
+  ```scala
+  class WordCount extends Starter with ArgumentsParser {
+    private val LOG: Logger = LoggerFactory.getLogger(classOf[WordCount])
+
+    override val options: Array[(String, CLIOption[Any])] = Array(
+      "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
+      "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
+      "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
+      "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60))
+    )
+
+    override def application(config: ParseResult) : AppDescription = {
+      val splitNum = config.getInt("split")
+      val sumNum = config.getInt("sum")
+      val appConfig = Configs(Configs.SYSTEM_DEFAULT_CONFIG)
+      val partitioner = new HashPartitioner()
+      val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
+      val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
+      val app = AppDescription("wordCount", classOf[AppMaster].getCanonicalName, appConfig, Graph(split ~ partitioner ~> sum))
+      app
+    }
   }
-  }
   ```
 
-2. On node1, node2, node3, Start Master
-  ```bash
-  ## on node1
-  bin/master -ip node1 -port 3000
-  
-  ## on node2
-  bin/master -ip node2 -port 3000
-  
-  ## on node3
-  bin/master -ip node3 -port 3000
-  ```  
+For detailed description on writing a GearPump application, please check [Write GearPump Applications](https://github.com/intel-hadoop/gearpump/wiki/Write-GearPump-Applications) on the wiki.
 
-3. You can kill any node, the master HA will take effect. It can take up to 15 seconds for master node to fail-over. You can change the fail-over timeout time by setting "master.akka.cluster.auto-down-unreachable-after"
-  
-###Metrics and Dashboard
-Gearpump use Graphite for the metrics dashboard. By default, metrics is disabled. If you want to use metrics, you need to install a graphite to get the metrics.
+## Further information
 
-After that, you need to configure the `core/src/main/resources/reference.conf`
+For more documentation and implementation details, please visit [GearPump Wiki](https://github.com/intel-hadoop/gearpump/wiki).
 
-  ```
-  gearpump.metrics.enabled = true         ## Default is false, thus metrics is not enabled.
-  gearpump.metrics.graphite.host = "your actual graphite host name or ip"  
-  gearpump.metrics.graphite.port = 2003   ## Your graphite port
-  gearpump.metrics.sample.rate = 10       ## this means we will sample 1 message for every 10 messages
-  ```
-  
-For guide about how to install and configure Graphite, please check the Graphite website http://graphite.wikidot.com/.	For guide about how to use Grafana, please check guide in [doc/dashboard/README.md](doc/dashboard/README.md)
+We'll have QnA and discussions at [GearPump User List](https://groups.google.com/forum/#!forum/gearpump-user).
 
-Here is how it looks like for grafana dashboard:
+Issues should be reported to [GearPump GitHub issue tracker](https://github.com/intel-hadoop/gearpump/issues) and contributions are welcomed via [pull requests](https://github.com/intel-hadoop/gearpump/pulls)
 
-![](https://raw.githubusercontent.com/intel-hadoop/gearpump/master/doc/dashboard.png)
+## Contributors (alphabetically)
 
-Serialization
-========================
+* [Weihua Jiang](https://github.com/whjiang)
+* [Kam Kasravi](https://github.com/kkasravi)
+* [Suneel Marthi](https://github.com/smarthi)
+* [Huafeng Wang](https://github.com/huafengw)
+* [Manu Zhang](https://github.com/manuzhang)
+* [Sean Zhong](https://github.com/clockfly)
 
-The configuration for serialization is:
+## License
 
-```
-gearpump {
-  serializers {
-    "org.apache.gearpump.Message" = "org.apache.gearpump.streaming.MessageSerializer"
-    "org.apache.gearpump.streaming.task.AckRequest" = "org.apache.gearpump.streaming.AckRequestSerializer"
-    "org.apache.gearpump.streaming.task.Ack" = "org.apache.gearpump.streaming.AckSerializer"
+Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
 
-    ## Use default serializer for this type
-    "scala.Tuple2" = ""
-  }
-}
-```
+## Acknowledgement
 
-We use library kryo and akka-kryo library https://github.com/romix/akka-kryo-serialization. The following list contains supported value types.
-
-```
-
-# gearpump types
-Message
-AckRequest
-Ack
-
-# akka types
-akka.actor.ActorRef
-
-# scala types
-scala.Enumeration#Value
-scala.collection.mutable.Map[_, _]
-scala.collection.immutable.SortedMap[_, _]
-scala.collection.immutable.Map[_, _]
-scala.collection.immutable.SortedSet[_]
-scala.collection.immutable.Set[_]
-scala.collection.mutable.SortedSet[_]
-scala.collection.mutable.Set[_]
-scala.collection.generic.MapFactory[scala.collection.Map]
-scala.collection.generic.SetFactory[scala.collection.Set]
-scala.collection.Traversable[_]
-Tuple2
-Tuple3
-
-
-# java complex types
-byte[]
-char[]
-short[]
-int[]
-long[]
-float[]
-double[]
-boolean[]
-String[]
-Object[]
-BigInteger
-BigDecimal
-Class
-Date
-Enum
-EnumSet
-Currency
-StringBuffer
-StringBuilder
-TreeSet
-Collection
-TreeMap
-Map
-TimeZone
-Calendar
-Locale
-
-## Primitive types
-int
-String
-float
-boolean
-byte
-char
-short
-long
-double
-void
-```
-
-Acknowledge
-========================
-The netty transport code work is based on apache storm. Thanks to apache storm contributors.
+The netty transport code work is based on [Apache Storm](http://storm.apache.org). Thanks Apache Storm contributors.
