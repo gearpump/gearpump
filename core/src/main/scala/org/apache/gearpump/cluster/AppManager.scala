@@ -340,17 +340,14 @@ private[cluster] object AppManager {
           HostPort(hostAndPort(0), hostAndPort(1).toInt)
         }
         LOG.info(s"Create master proxy on target actor system $systemPath")
-        val masterProxyConfig = Props(classOf[MasterProxy], masterAddress)
-        sender ! CreateActor(masterProxyConfig, "masterproxy")
+        sender ! CreateActor(classOf[MasterProxy].getCanonicalName, "masterproxy", masterAddress)
         context.become(waitForMasterProxyToStart(masterConfig))
     }
 
     def waitForMasterProxyToStart(masterConfig : Configs) : Receive = {
       case ActorCreated(masterProxy, "masterproxy") =>
         LOG.info(s"Master proxy is created, create appmaster...")
-        val appMasterClass = Class.forName(app.appMaster).asSubclass(classOf[ApplicationMaster])
-        val masterProps = Props(appMasterClass, masterConfig.withMasterProxy(masterProxy))
-        sender ! CreateActor(masterProps, "appmaster")
+        sender ! CreateActor(app.appMaster, "appmaster", masterConfig.withMasterProxy(masterProxy))
 
         //my job has completed. kill myself
         self ! PoisonPill

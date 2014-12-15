@@ -20,6 +20,7 @@ package org.apache.gearpump.util
 
 import akka.actor._
 import com.typesafe.config.Config
+import org.apache.gearpump.cluster.ApplicationMaster
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
@@ -52,7 +53,7 @@ object ActorSystemBooter  {
   }
 
   case class BindLifeCycle(actor : ActorRef)
-  case class CreateActor(props : Props, name : String)
+  case class CreateActor(clazz : String, name : String, args : scala.Any*)
   case class ActorCreated(actor : ActorRef, name : String)
 
   case class RegisterActorSystem(systemPath : String)
@@ -65,8 +66,10 @@ object ActorSystemBooter  {
         context.watch(actor)
       // Send PoisonPill to the daemon to kill the actorsystem
 
-      case CreateActor(props : Props, name : String) =>
-        LOG.info(s"creating actor $name")
+      case CreateActor(clazz, name, args) =>
+        LOG.info(s"creating actor $name with class name '$clazz'")
+        val classZ = Class.forName(clazz)
+        val props = Props(classZ, args)
         val actor = context.actorOf(props, name)
         sender ! ActorCreated(actor, name)
       case PoisonPill =>
