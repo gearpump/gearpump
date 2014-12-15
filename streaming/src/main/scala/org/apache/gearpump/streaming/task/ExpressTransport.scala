@@ -34,8 +34,9 @@ trait ExpressTransport {
   final val serializer = new FastKryoSerializer(system)
   final def local = express.localHost
   lazy val sourceId = TaskId.toLong(this.taskId)
+  lazy val mockActorRef = ActorUtil.mockActorRefForTask(sourceId, context)
 
-  final val senderLater = new SendLater(express, self, serializer)
+  lazy val senderLater = new SendLater(express, serializer, mockActorRef)
 
   def transport(msg : AnyRef, remotes : TaskId *) = {
 
@@ -47,7 +48,7 @@ trait ExpressTransport {
       if (localActor.isDefined) {
         //local
         senderLater.sendToLocal(transportId)
-        ActorUtil.sendMsgWithSourceId(msg, localActor.get, sourceId, self)
+        localActor.get.tell(msg, mockActorRef)
       } else {
       //remote
         if (null == serializedMessage) {
@@ -58,7 +59,7 @@ trait ExpressTransport {
         val remoteAddress = express.lookupRemoteAddress(transportId)
         if (remoteAddress.isDefined) {
           senderLater.sendToRemote(transportId)
-          express.transport(taskMessage, remoteAddress.get, self)
+          express.transport(taskMessage, remoteAddress.get)
         } else {
           senderLater.addMessage(transportId, taskMessage)
         }
@@ -66,10 +67,10 @@ trait ExpressTransport {
     }
   }
 
-  def sendMsgInBuffer: Unit = senderLater.emptyBuffer
+  def emptyBuffer: Unit = senderLater.emptyBuffer
 }
 
-class SendLater(express: Express, sender: ActorRef, serializer: FastKryoSerializer){
+class SendLater(express: Express, serializer: FastKryoSerializer, sender: ActorRef){
   private var buffer = Map.empty[Long, mutable.Queue[TaskMessage]]
 
   def addMessage(transportId: Long, taskMessage: TaskMessage) = {
@@ -93,7 +94,7 @@ class SendLater(express: Express, sender: ActorRef, serializer: FastKryoSerializ
       val taskMessage = queue.dequeue()
       val localActor = express.lookupLocalActor(transportId)
       val msg = serializer.deserialize(taskMessage.message())
-      ActorUtil.sendMsgWithSourceId(msg, localActor.get, taskMessage.source(), sender)
+      localActor.get.tell(msg, sender)
     }
   }
 
@@ -102,7 +103,7 @@ class SendLater(express: Express, sender: ActorRef, serializer: FastKryoSerializ
     while (queue.nonEmpty) {
       val taskMessage = queue.dequeue()
       val remoteAddress = express.lookupRemoteAddress(transportId)
-      express.transport(taskMessage, remoteAddress.get, sender)
+      express.transport(taskMessage, remoteAddress.get)
     }
   }
 

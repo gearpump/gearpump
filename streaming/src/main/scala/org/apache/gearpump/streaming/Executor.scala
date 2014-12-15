@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming
 
-import akka.actor.SupervisorStrategy.{Escalate, Restart}
+import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
@@ -71,7 +71,7 @@ class Executor(config : Configs)  extends Actor {
         val (host, set) = kv
         set.map(taskId => (TaskId.toLong(taskId), host))
       }
-      express.initRemoteClient(locations.keySet).map { _ =>
+      express.startClients(locations.keySet).map { _ =>
         express.remoteAddressMap.send(result)
         express.remoteAddressMap.future().map(result => context.children.foreach(_ ! TaskLocationReady))
       }

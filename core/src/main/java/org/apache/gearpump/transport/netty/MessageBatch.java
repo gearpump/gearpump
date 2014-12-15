@@ -140,8 +140,8 @@ public class MessageBatch {
     if (message.message() != null) {
       payload_len = message.message().length;
     }
-    long task_id = message.task();
-    long source_id = message.source();
+    long task_id = message.targetTask();
+    long source_id = message.sourceTask();
 
     bout.writeLong(task_id);
     bout.writeLong(source_id);

@@ -20,8 +20,6 @@ package org.apache.gearpump.util
 
 import akka.actor.Actor.Receive
 import akka.actor._
-import org.apache.gearpump.Message
-import org.apache.gearpump.transport.netty.Server.MsgWithSenderId
 import org.slf4j.{Logger, LoggerFactory}
 
 object ActorUtil {
@@ -65,12 +63,7 @@ object ActorUtil {
 
   def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
-  def sendMsgWithSourceId(msg: AnyRef, target: ActorRef, sourceId: Long, sender: ActorRef = Actor.noSender): Unit ={
-    msg match {
-      case message: Message =>
-        target.tell(MsgWithSenderId(message, sourceId), sender)
-      case _ =>
-        target.tell(msg, sender)
-    }
+  def mockActorRefForTask(taskId: Long, context: ActorContext): ActorRef = {
+    context.system.actorFor("MockTaskActor/" + taskId.toString)
   }
  }

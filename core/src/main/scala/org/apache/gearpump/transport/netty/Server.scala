@@ -27,7 +27,6 @@ import org.apache.gearpump.util.ActorUtil
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.gearpump.Message
 
 import scala.collection.JavaConversions._
 import scala.concurrent.future
@@ -43,6 +42,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
   val serializer = new FastKryoSerializer(system)
 
   def receive = msgHandler orElse channelManager
+  private var taskIdtoActorRef = Map.empty[Long, ActorRef]
 
   def channelManager : Receive = {
     case AddChannel(channel) => allChannels.add(channel)
@@ -56,7 +56,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
 
   def msgHandler : Receive = {
     case MsgBatch(msgs) =>
-      msgs.groupBy(_.task()).map { taskBatch =>
+      msgs.groupBy(_.targetTask()).map { taskBatch =>
         val (taskId, taskMessages) = taskBatch
         val actor = lookupActor.lookupLocalActor(taskId)
 
@@ -64,7 +64,11 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
           val msg = serializer.deserialize(taskMessage.message())
-          ActorUtil.sendMsgWithSourceId(msg, actor.get, taskMessage.source())
+          if(!taskIdtoActorRef.contains(taskMessage.sourceTask())){
+            val actorRef = ActorUtil.mockActorRefForTask(taskMessage.sourceTask(), context)
+            taskIdtoActorRef += taskMessage.sourceTask() -> actorRef
+          }
+          actor.get.tell(msg, taskIdtoActorRef.get(taskMessage.sourceTask()).get)
         }
       }
   }
@@ -111,7 +115,5 @@ object Server {
   case class CloseChannel(channel: Channel)
 
   case class MsgBatch(messages: Iterable[TaskMessage])
-
-  case class MsgWithSenderId(msg: Message, taskId: Long)
 
 }

@@ -61,7 +61,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     localActorMap.sendOff(_ - id)
   }
 
-  def initRemoteClient(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
+  def startClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
     hostPorts.filter(!localHost.equals(_)).map(hostPort =>
       remoteClientMap.alter { map =>
         if (!map.contains(hostPort)) {
@@ -84,24 +84,15 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   def lookupRemoteAddress(id : Long) = remoteAddressMap.get().get(id)
 
   //transport to remote address
-  def transport(taskMessage: TaskMessage, remote: HostPort, sender: ActorRef = Actor.noSender): Unit = {
+  def transport(taskMessage: TaskMessage, remote: HostPort): Unit = {
 
     val remoteClient = remoteClientMap.get.get(remote)
     if (remoteClient.isDefined) {
-      remoteClient.get.tell(taskMessage, sender)
+      remoteClient.get.tell(taskMessage, Actor.noSender)
     } else {
-      LOG.error("remote client has not been launched")
-      remoteClientMap.send { map =>
-        val expressActor = map.get(remote)
-        if (expressActor.isDefined) {
-          expressActor.get.tell(taskMessage, sender)
-          map
-        } else {
-          val actor = context.connect(remote)
-          actor.tell(taskMessage, sender)
-          map + (remote -> actor)
-        }
-      }
+      val errorMsg = "Clients has not been launched properly before transporting messages"
+      LOG.error(errorMsg)
+      throw new Exception(errorMsg)
     }
   }
 }

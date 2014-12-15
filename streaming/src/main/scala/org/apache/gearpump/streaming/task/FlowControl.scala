@@ -19,16 +19,14 @@
 package org.apache.gearpump.streaming.task
 
 import org.slf4j.{Logger, LoggerFactory}
-import scala.collection.mutable
 
-class FlowControl(taskId : TaskId, outputTaskCount : Int, replayId : Int) {
+class FlowControl(taskId : TaskId, outputTaskCount : Int, ackToken : Int) {
   import org.apache.gearpump.streaming.task.FlowControl._
 
   private var outputWindow : Long = INITIAL_WINDOW_SIZE
   private val ackWaterMark = new Array[Long](outputTaskCount)
   private val outputWaterMark = new Array[Long](outputTaskCount)
   private val ackRequestWaterMark = new Array[Long](outputTaskCount)
-  private val ackRequests = new Array[mutable.Queue[Long]](outputTaskCount).map(_ => mutable.Queue.empty[Long])
 
   def sendMessage(messagePartition : Int) : AckRequest = {
     outputWaterMark(messagePartition) += 1
@@ -36,8 +34,7 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int, replayId : Int) {
 
     if (outputWaterMark(messagePartition) >= ackRequestWaterMark(messagePartition) + FLOW_CONTROL_RATE) {
       ackRequestWaterMark(messagePartition) = outputWaterMark(messagePartition)
-      ackRequests(messagePartition).enqueue(outputWaterMark(messagePartition))
-      AckRequest(taskId, Seq(messagePartition, outputWaterMark(messagePartition)), replayId)
+      AckRequest(taskId, Seq(messagePartition, outputWaterMark(messagePartition)), ackToken)
     } else {
       null
     }
@@ -45,17 +42,18 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int, replayId : Int) {
 
   def firstAckRequest(messagePartition : Int): AckRequest = {
     if(outputWaterMark(messagePartition) == 0){
-      ackRequests(messagePartition).enqueue(0)
-      AckRequest(taskId, Seq(messagePartition, 0), replayId)
+      AckRequest(taskId, Seq(messagePartition, 0), ackToken)
     } else {
       null
     }
   }
 
-  def receiveAck(sourceTask : TaskId, seq : Seq) : Unit = {
-    LOG.debug("get ack from downstream, current: " + this.taskId + "downstream: " + sourceTask + ", seq: " + seq + ", windows: " + outputWindow)
-    outputWindow += seq.seq - ackWaterMark(seq.id)
-    ackWaterMark(seq.id) = seq.seq
+  def receiveAck(ack: Ack) : Unit = {
+    LOG.debug("get ack from downstream, current: " + this.taskId + "downstream: " + ack.taskId + ", seq: " + ack.seq + ", windows: " + outputWindow)
+    if(ack.ackToken == this.ackToken){
+      outputWindow += ack.seq.seq - ackWaterMark(ack.seq.id)
+      ackWaterMark(ack.seq.id) = ack.seq.seq
+    }
   }
 
   /**
@@ -87,15 +85,11 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int, replayId : Int) {
   }
 
   def messageLost(ack : Ack): Boolean = {
-    if(ack.replayId == this.replayId){
-      if(ackRequests(ack.seq.id).nonEmpty){
-        val neededAck = ackRequests(ack.seq.id).dequeue()
-        val result = neededAck != ack.seq.seq
-        if(result){
-          LOG.error(s"Message lost detected in $taskId! Needed: $neededAck actual: ${ack.seq.seq}")
-        }
-        result
+    if(ack.ackToken == this.ackToken){
+      if(ack.seq.seq - ack.receivedMsgSinceLastAck == ackWaterMark(ack.seq.id)){
+        false
       } else {
+        LOG.error(s"Expected: ${ack.seq.seq}, actual: ${ackWaterMark(ack.seq.id) + ack.receivedMsgSinceLastAck}, ack: $ack")
         true
       }
     } else {
