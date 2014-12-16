@@ -55,7 +55,6 @@ object Build extends sbt.Build {
       scalaVersion := scalaVersionNumber,
       version := gearPumpVersion,
       organization := "com.github.intel-hadoop",
-      crossPaths := false,
       scalacOptions ++= Seq("-Yclosure-elim","-Yinline"),
       packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
       packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf")),
