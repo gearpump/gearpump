@@ -41,7 +41,7 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   Build a package, distribute to all nodes, and extract it.
 
   ```bash
-  sbt clean pack-archive
+  sbt clean packArchive
   ```
 
   Start master on the nodes you set in the conf previously.
