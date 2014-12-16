@@ -12,6 +12,9 @@ Per initial benchmarks we are able to process 11 million messages/second (100 by
 
 ![](https://raw.githubusercontent.com/intel-hadoop/gearpump/master/doc/dashboard.png)
 
+## Technical papers
+There is a 20 pages technical paper on typesafe blog, with technical highlights https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka
+
 
 ## Getting Started: WordCount
 
