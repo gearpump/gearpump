@@ -43,7 +43,7 @@ class WordCount extends Starter with ArgumentsParser {
     val partitioner = new HashPartitioner()
     val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
     val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
-    val app = AppDescription("wordCount", classOf[AppMaster].getCanonicalName, appConfig, Graph(split ~ partitioner ~> sum))
+    val app = AppDescription("wordCount", "Foo"/*classOf[AppMaster].getCanonicalName*/, appConfig, Graph(split ~ partitioner ~> sum))
     app
   }
 }

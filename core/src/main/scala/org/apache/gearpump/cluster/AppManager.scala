@@ -41,7 +41,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 /**
  * AppManager is dedicated part of Master to manager applicaitons
  */
@@ -165,7 +165,7 @@ private[cluster] class AppManager() extends Actor with Stash {
           worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
           sender ! ShutdownApplicationResult(Success(appId))
         case None =>
-          val errorMsg = s"Find to find regisration information for appId: $appId"
+          val errorMsg = s"Failed to find regisration information for appId: $appId"
           LOG.error(errorMsg)
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
@@ -222,6 +222,8 @@ private[cluster] class AppManager() extends Actor with Stash {
         case None =>
           sender ! AppMasterDataDetail(appId = appId, appDescription = null)
       }
+    case invalidAppMaster: InvalidAppMaster =>
+      cleanApplicationData(appId)
   }
 
   def appDataStoreService: Receive = {
@@ -342,15 +344,21 @@ private[cluster] object AppManager {
         LOG.info(s"Create master proxy on target actor system $systemPath")
         val masterProxyConfig = Props(classOf[MasterProxy], masterAddress)
         sender ! CreateActor(masterProxyConfig, "masterproxy")
-        context.become(waitForMasterProxyToStart(masterConfig))
+        context.become(waitForMasterProxyToStart(worker, masterConfig))
     }
 
-    def waitForMasterProxyToStart(masterConfig : Configs) : Receive = {
+    def waitForMasterProxyToStart(worker: ActorRef, masterConfig : Configs) : Receive = {
       case ActorCreated(masterProxy, "masterproxy") =>
         LOG.info(s"Master proxy is created, create appmaster...")
-        val appMasterClass = Class.forName(app.appMaster).asSubclass(classOf[ApplicationMaster])
-        val masterProps = Props(appMasterClass, masterConfig.withMasterProxy(masterProxy))
-        sender ! CreateActor(masterProps, "appmaster")
+        val appMasterClass = Try(Class.forName(app.appMaster).asSubclass(classOf[ApplicationMaster]))
+        appMasterClass match {
+          case Success(clazz) =>
+            val masterProps = Props(clazz, masterConfig.withMasterProxy(masterProxy))
+            sender ! CreateActor(masterProps, "appmaster")
+          case Failure(e) =>
+            worker ! ShutdownExecutor(appId, masterExecutorId, e.getMessage)
+            master ! InvalidAppMaster(appId, app.appMaster)
+        }
 
         //my job has completed. kill myself
         self ! PoisonPill
