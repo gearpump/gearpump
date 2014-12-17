@@ -40,14 +40,6 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int, sessionId : Int) {
     }
   }
 
-  def firstAckRequest(messagePartition : Int): AckRequest = {
-    if(outputWaterMark(messagePartition) == 0){
-      AckRequest(taskId, Seq(messagePartition, 0), sessionId)
-    } else {
-      null
-    }
-  }
-
   def receiveAck(ack: Ack) : Unit = {
     LOG.debug("get ack from downstream, current: " + this.taskId + "downstream: " + ack.taskId + ", seq: " + ack.seq + ", windows: " + outputWindow)
     if(ack.sessionId == this.sessionId){
@@ -84,7 +76,7 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int, sessionId : Int) {
     true
   }
 
-  def messageLost(ack : Ack): Boolean = {
+  def messageLostDetected(ack : Ack): Boolean = {
     if(ack.sessionId == this.sessionId){
       if(ack.seq.seq == ack.actualReceivedNum){
         false

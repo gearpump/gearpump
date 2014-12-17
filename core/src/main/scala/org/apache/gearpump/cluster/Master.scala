@@ -58,7 +58,7 @@ private[cluster] class Master extends Actor with Stash {
 
   final val undefinedUid = 0
   @tailrec final def newUid(): Int = {
-    val uid = Util.randInt
+    val uid = Util.randInt()
     if (uid == undefinedUid) newUid()
     else uid
   }

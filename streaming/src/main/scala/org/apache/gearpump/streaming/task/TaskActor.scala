@@ -52,11 +52,10 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
 
   private var unackedClockSyncTimestamp : TimeStamp = 0
   private var needSyncToClockService = false
-  private var startClockReceived = false
 
   private var minClock : TimeStamp = 0L
-  private var receivedMsgCounter : ReceivedMsgCounter = null
-  private val sessionId = Util.randInt
+  private val receivedMsgCounter : ReceivedMsgCounter = new ReceivedMsgCounter(taskId)
+  private val sessionId = Util.randInt()
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -82,12 +81,6 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
 
     while (start < partitions.length) {
       val partition = partitions(start)
-
-      val firstAckRequest = flowControl.firstAckRequest(partition)
-      if(null != firstAckRequest) {
-        LOG.debug(s"Task $taskId send first ackrequest")
-        transport(firstAckRequest, outputTaskIds(partition))
-      }
 
       transport(msg, outputTaskIds(partition))
       val ackRequest = flowControl.sendMessage(partition)
@@ -144,9 +137,8 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
 
     this.flowControl = new FlowControl(taskId, outputTaskIds.length, sessionId)
     this.clockTracker = new ClockTracker(flowControl)
-    this.receivedMsgCounter = new ReceivedMsgCounter(taskId)
 
-    context.become(waitForStartClock orElse handleMessage)
+    context.become(waitForStartClock orElse stashMessages)
 
     context.parent ! GetStartClock
   }
@@ -170,7 +162,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
 
   private def doHandleMessage() : Unit = {
     var done = false
-    while (flowControl.allowSendingMoreMessages() && startClockReceived && !done) {
+    while (flowControl.allowSendingMoreMessages() && !done) {
       val msg = queue.poll()
       if (msg != null) {
         msg match {
@@ -191,14 +183,25 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
     }
   }
 
+  private def sendFirstAckRequests() : Unit = {
+    for(i <- 0 until outputTaskIds.length) {
+      val firstAckRequest = AckRequest(taskId, Seq(i, 0), sessionId)
+      transport(firstAckRequest, outputTaskIds(i))
+    }
+  }
+
   def waitForStartClock : Receive = {
     case StartClock(clock) =>
       onStart(new TaskContext(clock))
-      this.startClockReceived = true
-      context.become(handleMessage)
+      context.become(handleMessages)
+      sendFirstAckRequests()
   }
 
-  def handleMessage : Receive = {
+  def stashMessages = stashAndHandleMessages(handlNow = false)
+
+  def handleMessages = stashAndHandleMessages(handlNow = true)
+
+  def stashAndHandleMessages(handlNow: Boolean) : Receive = {
     case ackRequest : AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
       val ack = receivedMsgCounter.receiveAckRequest(ackRequest, sender)
@@ -206,7 +209,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
         queue.add(SendAck(ack, ackRequest.taskId))
       }
     case ack: Ack =>
-      if(flowControl.messageLost(ack)){
+      if(flowControl.messageLostDetected(ack)){
         LOG.error(s"Failed! Some messages sent from actor ${this.taskId} to $taskId are lost, try to replay...")
         throw new MsgLostException
       }
@@ -215,7 +218,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
       if (updated) {
         tryToSyncToClockService()
       }
-      doHandleMessage()
+      if (handlNow) {
+        doHandleMessage()
+      }
     case msg: Message =>
       if(!sender.equals(self)){
         receivedMsgCounter.receiveMsg(sender)
@@ -225,7 +230,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
       }
       val updatedMessage = clockTracker.onReceive(msg)
       queue.add(updatedMessage)
-      doHandleMessage()
+      if (handlNow) {
+        doHandleMessage()
+      }
     case ClockUpdated(timestamp) =>
       minClock = timestamp
       unackedClockSyncTimestamp = 0
@@ -237,7 +244,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
       express.unregisterLocalActor(TaskId.toLong(taskId))
       throw new RestartException
     case TaskLocationReady =>
-      emptyBuffer
+      senderLater.sendAllPendingMsgs()
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
   }

@@ -64,8 +64,6 @@ trait ExpressTransport {
       }
     }
   }
-
-  def emptyBuffer: Unit = senderLater.emptyBuffer
 }
 
 class SendLater(express: Express, serializer: FastKryoSerializer, sender: ActorRef){
@@ -77,7 +75,7 @@ class SendLater(express: Express, serializer: FastKryoSerializer, sender: ActorR
     buffer += transportId -> queue
   }
 
-  private def sendMsgInBuffer(transportId: Long) = {
+  private def sendPendingMessages(transportId: Long) = {
     val localActor = express.lookupLocalActor(transportId)
     if (localActor.isDefined) {
       sendToLocal(transportId)
@@ -105,8 +103,8 @@ class SendLater(express: Express, serializer: FastKryoSerializer, sender: ActorR
     }
   }
 
-  def emptyBuffer: Unit = {
-    buffer.keySet.foreach(sendMsgInBuffer)
+  def sendAllPendingMsgs(): Unit = {
+    buffer.keySet.foreach(sendPendingMessages)
     buffer = Map.empty[Long, mutable.Queue[TaskMessage]]
   }
 }

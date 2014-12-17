@@ -42,7 +42,7 @@ object Util {
     masters.toList
   }
 
-  def randInt: Int = {
+  def randInt(): Int = {
     ThreadLocalRandom.current.nextInt()
   }
 }

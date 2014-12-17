@@ -64,7 +64,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
           val msg = serializer.deserialize(taskMessage.message())
-          actor.get.tell(msg, taskIdActorRefTranslation.getActorRef(taskMessage.sourceTask()))
+          actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask()))
         }
       }
   }
@@ -109,7 +109,7 @@ object Server {
   class TaskIdActorRefTranslation(context: ActorContext) {
     private var taskIdtoActorRef = Map.empty[Long, ActorRef]
 
-    def getActorRef(taskId: Long): ActorRef = {
+    def translateToActorRef(taskId: Long): ActorRef = {
       if(!taskIdtoActorRef.contains(taskId)){
         val actorRef = mockActorRefForTask(taskId)
         taskIdtoActorRef += taskId -> actorRef

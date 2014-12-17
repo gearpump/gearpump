@@ -24,7 +24,7 @@ case class Seq(id: Int, seq: Long)
 
 //Here the sessionId filed is used to distinguish messages between different replays after the application restart
 case class AckRequest(taskId: TaskId, seq: Seq, sessionId: Int)
-
+//Here the seq field represents the expected number of received messages and the actualReceivedNum field means the actual received number since start
 case class Ack(taskId: TaskId, seq: Seq, actualReceivedNum: Long, sessionId: Int)
 
 case class UpdateClock(taskId: TaskId, time: TimeStamp)

@@ -68,8 +68,8 @@ class Executor(config : Configs)  extends Actor {
     }
     case TaskLocations(locations) =>
       val result = locations.flatMap { kv =>
-        val (host, set) = kv
-        set.map(taskId => (TaskId.toLong(taskId), host))
+        val (host, taskIdList) = kv
+        taskIdList.map(taskId => (TaskId.toLong(taskId), host))
       }
       express.startClients(locations.keySet).map { _ =>
         express.remoteAddressMap.send(result)
