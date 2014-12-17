@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.task
 
+import org.apache.gearpump.util.{Constants, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
 class FlowControl(taskId : TaskId, outputTaskCount : Int) {
@@ -78,6 +79,6 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int) {
 object FlowControl {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[FlowControl])
 
-  final val INITIAL_WINDOW_SIZE = 1024 * 16
-  final val FLOW_CONTROL_RATE = 100
+  final val INITIAL_WINDOW_SIZE: Long= Configs.SYSTEM_DEFAULT_CONFIG.getLong(Constants.GEARPUMP_FLOWCONTROL_WINDOW_SIZE)
+  final val FLOW_CONTROL_RATE: Int = Configs.SYSTEM_DEFAULT_CONFIG.getInt(Constants.GEARPUMP_FLOWCONTROL_RATE)
 }

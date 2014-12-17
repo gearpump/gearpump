@@ -42,7 +42,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
 
   private val appMaster : ActorRef = conf.appMaster
 
-  private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
+  private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](FlowControl.INITIAL_WINDOW_SIZE.toInt)
   private var partitioner : MergedPartitioner = null
 
   private var outputTaskIds : Array[TaskId] = null

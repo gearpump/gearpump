@@ -46,6 +46,8 @@ object Constants {
   val GEARPUMP_APPMASTER_EXTRA_CLASSPATH = "gearpump.streaming.appmaster.extraClasspath"
   val GEARPUMP_EXECUTOR_ARGS = "gearpump.streaming.executor.vmargs"
   val GEARPUMP_EXECUTOR_EXTRA_CLASSPATH = "gearpump.streaming.executor.extraClasspath"
+  val GEARPUMP_FLOWCONTROL_WINDOW_SIZE = "gearpump.streaming.flowcontrol.initial-window-size"
+  val GEARPUMP_FLOWCONTROL_RATE = "gearpump.streaming.flowcontrol.flow-control-rate"
 
   //config for construction of executor
   val APP_MASTER = "appMaster"
