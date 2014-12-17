@@ -27,12 +27,12 @@ import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
 import org.slf4j.{Logger, LoggerFactory}
 
-class SeqFileStreamProducer(config: Configs) extends TaskActor(config ){
+class SeqFileStreamProducer(config: HadoopConfig) extends TaskActor(config ){
   private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileStreamProducer])
   val value = new Text()
   val key = new Text()
   var reader: SequenceFile.Reader = null
-  val hadoopConf = new Configuration()
+  val hadoopConf = config.hadoopConf
   val fs = FileSystem.get(hadoopConf)
   val inputPath = new Path(config.getString(INPUT_PATH))
 

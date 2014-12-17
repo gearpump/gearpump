@@ -38,8 +38,9 @@ object Build extends sbt.Build {
   val scalaTestVersion = "2.2.0"
   val scalaCheckVersion = "1.11.3"
   val mockitoVersion = "1.10.8"
+  val bijectionVersion = "0.7.0"
 
-  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++ 
+  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
         resolvers ++= Seq(
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
@@ -142,6 +143,7 @@ object Build extends sbt.Build {
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.kafka" %% "kafka" % kafkaVersion,
+          "com.twitter" %% "bijection-core" % bijectionVersion,
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )

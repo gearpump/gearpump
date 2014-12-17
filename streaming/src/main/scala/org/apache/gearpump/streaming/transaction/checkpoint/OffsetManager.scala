@@ -21,19 +21,26 @@ package org.apache.gearpump.streaming.transaction.checkpoint
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.checkpoint.api.{Checkpoint, Source, CheckpointManager, CheckpointSerDe}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
-
+import com.twitter.bijection._
 import org.slf4j.{LoggerFactory, Logger}
 
+import scala.util.{Failure, Success}
 
 object OffsetManager {
   object OffsetSerDe extends CheckpointSerDe[TimeStamp, Long] {
-    override def toKeyBytes(timestamp: TimeStamp): Array[Byte] = longToByteArray(timestamp)
+    override def toKeyBytes(timestamp: TimeStamp): Array[Byte] = Injection[Long, Array[Byte]](timestamp)
 
-    override def toValueBytes(offset: Long): Array[Byte] = longToByteArray(offset)
+    override def toValueBytes(offset: Long): Array[Byte] = Injection[Long, Array[Byte]](offset)
 
-    override def fromKeyBytes(bytes: Array[Byte]): TimeStamp = byteArrayToLong(bytes)
+    override def fromKeyBytes(bytes: Array[Byte]): TimeStamp = Injection.invert[Long, Array[Byte]](bytes) match {
+      case Success(t) => t
+      case Failure(e) => throw e
+    }
 
-    override def fromValueBytes(bytes: Array[Byte]): Long = byteArrayToLong(bytes)
+    override def fromValueBytes(bytes: Array[Byte]): Long = Injection.invert[Long, Array[Byte]](bytes) match {
+      case Success(l) => l
+      case Failure(e) => throw e
+    }
   }
 
   private val LOG: Logger = LoggerFactory.getLogger(classOf[OffsetManager])
@@ -102,7 +109,4 @@ class OffsetManager(checkpointManager: CheckpointManager[TimeStamp, Long],
   def close(): Unit = {
     checkpointManager.close()
   }
-
-
-
 }

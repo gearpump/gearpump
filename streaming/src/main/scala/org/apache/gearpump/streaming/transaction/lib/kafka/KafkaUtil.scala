@@ -25,26 +25,7 @@ import kafka.utils.ZkUtils
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConsumer.Broker
 import org.I0Itec.zkclient.ZkClient
 
-import java.nio.ByteBuffer
-
 object KafkaUtil {
-
-  def longToByteArray(long: Long): Array[Byte] = {
-    ByteBuffer.allocate(8).putLong(long).array()
-  }
-
-  def byteArrayToLong(bytes: Array[Byte]): Long = {
-    ByteBuffer.wrap(bytes).getLong
-  }
-
-  def intToByteArray(int: Int): Array[Byte] = {
-    ByteBuffer.allocate(4).putInt(int).array()
-  }
-
-  def byteArrayToInt(bytes: Array[Byte]): Int = {
-    ByteBuffer.wrap(bytes).getInt
-  }
-
   def getBroker(zkClient: ZkClient, topic: String, partition: Int): Broker = {
     val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
       .getOrElse(throw new Exception(s"leader not available for TopicAndPartition($topic, $partition)"))

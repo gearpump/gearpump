@@ -21,33 +21,15 @@ package org.apache.gearpump.streaming.examples.kafka
 import akka.actor.Cancellable
 import org.apache.gearpump.{Message, TimeStamp}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import org.apache.gearpump.util.Configs
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeUnit
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.gearpump.streaming.transaction.storage.api.{KeyValueSerDe, StorageManager}
+import org.apache.gearpump.streaming.transaction.storage.api.StorageManager
+
 
 object KafkaStreamProcessor {
-
-  class String2SerDe(encoding: String) extends KeyValueSerDe[String, String] {
-    override def toBytes(kv: (String, String)): Array[Byte] = {
-      val (key, value) = kv
-      val keyBytes = intToByteArray(key.length) ++ key.getBytes(encoding)
-      val valueBytes = intToByteArray(value.length) ++ value.getBytes(encoding)
-      keyBytes ++ valueBytes
-    }
-
-    override def fromBytes(bytes: Array[Byte]): (String, String) = {
-      val keyLen = byteArrayToInt(bytes.take(4))
-      val key = new String(bytes.drop(4).take(keyLen), encoding)
-      val valLen = byteArrayToInt(bytes.drop(4 + keyLen).take(4))
-      val value = new String(bytes.drop(4 + keyLen + 4).take(valLen))
-      (key, value)
-    }
-  }
-
   private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaStreamProcessor])
 }
 
@@ -61,7 +43,6 @@ class KafkaStreamProcessor(conf: Configs) extends TaskActor(conf) {
   private val storageManager = new StorageManager[String, String](
     s"taskId_${conf.appId}_${taskId.groupId}_${taskId.index}",
     config.getKeyValueStoreFactory.getKeyValueStore[String, String](conf),
-    new String2SerDe("UTF8"),
     config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, (String, String)](conf)
   )
 

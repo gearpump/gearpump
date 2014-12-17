@@ -20,6 +20,7 @@ package org.apache.gearpump.util
 
 import akka.actor._
 import com.typesafe.config.Config
+import org.apache.gearpump.cluster.ApplicationMaster
 import org.slf4j.{Logger, LoggerFactory}
 
 /**

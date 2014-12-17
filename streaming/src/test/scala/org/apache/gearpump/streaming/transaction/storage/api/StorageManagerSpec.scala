@@ -18,9 +18,9 @@
 
 package org.apache.gearpump.streaming.transaction.storage.api
 
+import com.twitter.bijection._
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.checkpoint.api.{CheckpointSerDe, Checkpoint, Source, CheckpointManager}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
 import org.apache.gearpump.streaming.transaction.storage.api.StorageManager.StoreCheckpointSerDe
 import org.apache.gearpump.streaming.transaction.storage.inmemory.InMemoryKeyValueStore
 import org.mockito.Mockito._
@@ -30,38 +30,25 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{PropSpec, Matchers}
 import org.scalatest.prop.PropertyChecks
 
+import scala.util.Try
+
 class StorageManagerSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
-  val kvSerDe = new KeyValueSerDe[String, String] {
-    val ENCODING = "UTF8"
-    val KEYLEN_SIZE = 4
-    val VALLEN_SIZE = 4
-
-    override def toBytes(kv: (String, String)): Array[Byte] = {
-      val (k, v) = kv
-      val kb = k.getBytes(ENCODING)
-      val vb = v.getBytes(ENCODING)
-      intToByteArray(kb.length) ++ kb ++
-      intToByteArray(vb.length) ++ vb
+  case class StringWrapper(s: String)
+  implicit val stringWrapperCodec = new Codec[StringWrapper] {
+    override def apply(sw: StringWrapper): Array[Byte] = {
+      Injection[String, Array[Byte]](sw.s)
     }
-
-    override def fromBytes(bytes: Array[Byte]): (String, String) = {
-      val kl = byteArrayToInt(bytes.take(KEYLEN_SIZE))
-      val k = new String(bytes.drop(KEYLEN_SIZE).take(kl), ENCODING)
-      val vl = byteArrayToInt(bytes.drop(KEYLEN_SIZE + kl).take(VALLEN_SIZE))
-      val v = new String(bytes.drop(KEYLEN_SIZE + kl + VALLEN_SIZE).take(vl), ENCODING)
-      (k, v)
+    override def invert(b: Array[Byte]): Try[StringWrapper] = {
+      Injection.invert[String, Array[Byte]](b) map (new StringWrapper(_))
     }
   }
-  val checkpointManager = mock[CheckpointManager[TimeStamp, (String, String)]]
-  doNothing().when(checkpointManager).writeCheckpoint(
-    any(classOf[Source]),
-    any(classOf[Checkpoint[TimeStamp, (String, String)]]),
-    any(classOf[CheckpointSerDe[TimeStamp, (String, String)]]))
+
+  val stringWrapperGen = Gen.alphaStr map (new StringWrapper(_))
 
   property("StoreCheckpointSerDe should serde timestamp and kv tuple") {
-    forAll { (k: String, v: String) =>
-      val serDe = new StoreCheckpointSerDe[String, String](kvSerDe)
+    forAll(stringWrapperGen, stringWrapperGen) { (k: StringWrapper, v: StringWrapper) =>
+      val serDe = new StoreCheckpointSerDe[StringWrapper, StringWrapper]()
       val time = System.currentTimeMillis()
       serDe.fromKeyBytes(serDe.toKeyBytes(time)) shouldBe time
       serDe.fromValueBytes(serDe.toValueBytes(k -> v)) shouldBe (k -> v)
@@ -74,10 +61,16 @@ class StorageManagerSpec extends PropSpec with PropertyChecks with Matchers with
   } yield (k, v)
   val kvMapGen = Gen.containerOf[List, (String, String)](kvGen) suchThat (_.size > 0) map (_.toMap)
 
-  property("StorageManager puts a single kv pair") {
+  val checkpointManager = mock[CheckpointManager[TimeStamp, (String, String)]]
+  doNothing().when(checkpointManager).writeCheckpoint(
+    any(classOf[Source]),
+    any(classOf[Checkpoint[TimeStamp, (String, String)]]),
+    any(classOf[CheckpointSerDe[TimeStamp, (String, String)]]))
+
+   property("StorageManager puts a single kv pair") {
     forAll { (id: String, k: String, v1: String, v2: String) =>
       val kvStore = new InMemoryKeyValueStore[String, String]
-      val storageManager = new StorageManager[String, String](id, kvStore, kvSerDe, checkpointManager)
+      val storageManager = new StorageManager[String, String](id, kvStore, checkpointManager)
       storageManager.put(k, v1) shouldBe None
       storageManager.get(k) shouldBe Some(v1)
       storageManager.put(k, v2) shouldBe Some(v1)
@@ -88,7 +81,7 @@ class StorageManagerSpec extends PropSpec with PropertyChecks with Matchers with
   property("StorageManager deletes a key") {
     forAll { (id: String, k: String, v: String) =>
       val kvStore = new InMemoryKeyValueStore[String, String]
-      val storageManager = new StorageManager[String, String](id, kvStore, kvSerDe, checkpointManager)
+      val storageManager = new StorageManager[String, String](id, kvStore, checkpointManager)
       storageManager.put(k, v) shouldBe None
       storageManager.get(k) shouldBe Some(v)
       storageManager.delete(k) shouldBe Some(v)
@@ -99,7 +92,7 @@ class StorageManagerSpec extends PropSpec with PropertyChecks with Matchers with
   property("StorageManager puts a list of kv pairs") {
     forAll(Gen.alphaStr, kvMapGen) { (id: String, kvm: Map[String, String]) =>
       val kvStore = new InMemoryKeyValueStore[String, String]
-      val storageManager = new StorageManager[String, String](id, kvStore, kvSerDe, checkpointManager)
+      val storageManager = new StorageManager[String, String](id, kvStore, checkpointManager)
       storageManager.putAll(kvm.toList)
       kvm.foreach(kv => storageManager.get(kv._1) shouldBe Some(kv._2))
     }
@@ -115,7 +108,7 @@ class StorageManagerSpec extends PropSpec with PropertyChecks with Matchers with
     forAll(Gen.alphaStr, checkpointGen) {
       (id: String, checkpoint: Checkpoint[TimeStamp, (String, String)]) =>
       val kvStore = new InMemoryKeyValueStore[String, String]
-      val storageManager = new StorageManager[String, String](id, kvStore, kvSerDe, checkpointManager)
+      val storageManager = new StorageManager[String, String](id, kvStore, checkpointManager)
 
       checkpoint.records.foreach { r =>
         val (k, v) = r._2

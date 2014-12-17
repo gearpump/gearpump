@@ -122,7 +122,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
     val resourceConfig = systemConfig.getAnyRef(Constants.WORKER_RESOURCE).asInstanceOf[util.HashMap[String, Int]]
     this.resource = Resource(resourceConfig.get("slots"))
     masterProxy ! RegisterNewWorker
-    context.become(waitForMasterConfirm(repeatActionUtil(30)(null)))
+    context.become(waitForMasterConfirm(repeatActionUtil(30)(Unit)))
   }
 
   private def repeatActionUtil(seconds: Int)(action : => Unit) : Cancellable = {
