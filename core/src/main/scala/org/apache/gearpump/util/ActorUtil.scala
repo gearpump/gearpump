@@ -63,7 +63,4 @@ object ActorUtil {
 
   def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
 
-  def mockActorRefForTask(taskId: Long, context: ActorContext): ActorRef = {
-    context.system.actorFor("MockTaskActor/" + taskId.toString)
-  }
  }

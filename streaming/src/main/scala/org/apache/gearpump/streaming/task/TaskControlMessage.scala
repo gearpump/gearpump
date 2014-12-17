@@ -22,9 +22,10 @@ import org.apache.gearpump.TimeStamp
 
 case class Seq(id: Int, seq: Long)
 
-case class AckRequest(taskId: TaskId, seq: Seq, ackToken: Int)
+//Here the sessionId filed is used to distinguish messages between different replays after the application restart
+case class AckRequest(taskId: TaskId, seq: Seq, sessionId: Int)
 
-case class Ack(taskId: TaskId, seq: Seq, ackToken: Int, receivedMsgSinceLastAck: Int)
+case class Ack(taskId: TaskId, seq: Seq, actualReceivedNum: Long, sessionId: Int)
 
 case class UpdateClock(taskId: TaskId, time: TimeStamp)
 

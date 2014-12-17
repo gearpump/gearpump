@@ -22,7 +22,6 @@ import akka.actor.{ActorRef, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.transport.netty.TaskMessage
-import org.apache.gearpump.util.ActorUtil
 
 import scala.collection.mutable
 
@@ -34,9 +33,8 @@ trait ExpressTransport {
   final val serializer = new FastKryoSerializer(system)
   final def local = express.localHost
   lazy val sourceId = TaskId.toLong(this.taskId)
-  lazy val mockActorRef = ActorUtil.mockActorRefForTask(sourceId, context)
 
-  lazy val senderLater = new SendLater(express, serializer, mockActorRef)
+  val senderLater = new SendLater(express, serializer, self)
 
   def transport(msg : AnyRef, remotes : TaskId *) = {
 
@@ -48,7 +46,7 @@ trait ExpressTransport {
       if (localActor.isDefined) {
         //local
         senderLater.sendToLocal(transportId)
-        localActor.get.tell(msg, mockActorRef)
+        localActor.get.tell(msg, self)
       } else {
       //remote
         if (null == serializedMessage) {

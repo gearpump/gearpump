@@ -27,12 +27,9 @@ import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.TaskLocationReady
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{Util, Configs}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.collection.immutable
 
 abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
   import org.apache.gearpump.streaming.task.TaskActor._
@@ -59,8 +56,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
 
   private var minClock : TimeStamp = 0L
   private var receivedMsgCounter : ReceivedMsgCounter = null
-  private val ackToken = ThreadLocalRandom.current.nextInt()
-  private var actorRefToTaskId = Map.empty[ActorRef, TaskId]
+  private val sessionId = Util.randInt
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -146,7 +142,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
       this.outputTaskIds = Array.empty[TaskId]
     }
 
-    this.flowControl = new FlowControl(taskId, outputTaskIds.length, ackToken)
+    this.flowControl = new FlowControl(taskId, outputTaskIds.length, sessionId)
     this.clockTracker = new ClockTracker(flowControl)
     this.receivedMsgCounter = new ReceivedMsgCounter(taskId)
 
@@ -178,9 +174,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
       val msg = queue.poll()
       if (msg != null) {
         msg match {
-          case Ack(targetTask, seq, ackToken, msgCountSinceLastAck) =>
-            transport(Ack(this.taskId, seq, ackToken, msgCountSinceLastAck), targetTask)
-            LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", received message since last Ack: " + msgCountSinceLastAck)
+          case SendAck(ack, targetTask) =>
+            transport(ack, targetTask)
+            LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", received message: " + ack.actualReceivedNum)
           case m : Message =>
             val updated = clockTracker.onProcess(m)
             if (updated) {
@@ -205,19 +201,10 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
   def handleMessage : Receive = {
     case ackRequest : AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
-      val ack = receivedMsgCounter.receiveAckRequest(ackRequest)
+      val ack = receivedMsgCounter.receiveAckRequest(ackRequest, sender)
       if(null != ack){
-        queue.add(ack)
+        queue.add(SendAck(ack, ackRequest.taskId))
       }
-    case msg: Message =>
-      val taskId = parseActorRefToTaskId(sender)
-      receivedMsgCounter.receiveMsg(taskId)
-      if (msg.timestamp != Message.noTimeStamp) {
-        latencies.update(System.currentTimeMillis() - msg.timestamp)
-      }
-      val updatedMessage = clockTracker.onReceive(msg)
-      queue.add(updatedMessage)
-      doHandleMessage()
     case ack: Ack =>
       if(flowControl.messageLost(ack)){
         LOG.error(s"Failed! Some messages sent from actor ${this.taskId} to $taskId are lost, try to replay...")
@@ -228,6 +215,16 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
       if (updated) {
         tryToSyncToClockService()
       }
+      doHandleMessage()
+    case msg: Message =>
+      if(!sender.equals(self)){
+        receivedMsgCounter.receiveMsg(sender)
+      }
+      if (msg.timestamp != Message.noTimeStamp) {
+        latencies.update(System.currentTimeMillis() - msg.timestamp)
+      }
+      val updatedMessage = clockTracker.onReceive(msg)
+      queue.add(updatedMessage)
       doHandleMessage()
     case ClockUpdated(timestamp) =>
       minClock = timestamp
@@ -243,20 +240,6 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
       emptyBuffer
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
-  }
-
-  private def parseActorRefToTaskId(actorRef: ActorRef): TaskId = {
-    if (actorRefToTaskId.contains(actorRef)) {
-      actorRefToTaskId.get(actorRef).get
-    } else if (actorRef.equals(self)){
-      this.taskId
-    } else if (actorRef.path.parent.toString.endsWith("MockTaskActor")) {
-      val taskId = TaskId.fromLong(actorRef.path.name.toString.toLong)
-      actorRefToTaskId += actorRef -> taskId
-      taskId
-    } else {
-      null
-    }
   }
 }
 
@@ -298,17 +281,15 @@ object TaskActor {
   }
 
   class ReceivedMsgCounter(task_id: TaskId) {
-    private var receivedMsgCount = Map.empty[TaskId, MsgCount]
-    private var lastAcked = Map.empty[TaskId, Long]
+    private var receivedMsgCount = Map.empty[ActorRef, MsgCount]
 
-    def receiveAckRequest(ackRequest: AckRequest): Ack = {
-      //Here we temporarily save the source taskId to the Ack message
-      if (receivedMsgCount.contains(ackRequest.taskId)) {
-        Ack(ackRequest.taskId, ackRequest.seq, ackRequest.ackToken, getMsgCountSinceLastAck(ackRequest.taskId))
+    def receiveAckRequest(ackRequest: AckRequest, sender: ActorRef): Ack = {
+      if (receivedMsgCount.contains(sender)) {
+        Ack(task_id, ackRequest.seq, receivedMsgCount.get(sender).get.num, ackRequest.sessionId)
       } else {
         if(ackRequest.seq.seq == 0){ //We got the first AckRequest before the real messages
-          receivedMsgCount += ackRequest.taskId -> new MsgCount(0L)
-          Ack(ackRequest.taskId, ackRequest.seq, ackRequest.ackToken, 0)
+          receivedMsgCount += sender -> new MsgCount(0L)
+          Ack(task_id, ackRequest.seq, 0, ackRequest.sessionId)
         } else {
           LOG.debug(s"task $task_id get unkonwn AckRequest $ackRequest from ${ackRequest.taskId}")
           null
@@ -316,29 +297,22 @@ object TaskActor {
       }
     }
 
-    def receiveMsg(taskId: TaskId): Unit = {
-      if(null != taskId && !taskId.equals(task_id)){
-        if (receivedMsgCount.contains(taskId)) {
-          receivedMsgCount.get(taskId).get.increment
-        } else {
-          LOG.debug(s"Task $task_id received message before receive the first AckRequest")
-        }
+    def receiveMsg(sender: ActorRef): Unit = {
+      if (receivedMsgCount.contains(sender)) {
+        receivedMsgCount.get(sender).get.increment
+      } else {
+        LOG.debug(s"Task $task_id received message before receive the first AckRequest")
       }
     }
 
-    private def getMsgCountSinceLastAck(taskId: TaskId): Int = {
-      val totalReceived = receivedMsgCount.get(taskId).get.num
-      val msgCountSinceLastAck = totalReceived - lastAcked.getOrElse(taskId, 0L)
-      lastAcked += taskId -> totalReceived
-      msgCountSinceLastAck.toInt
-    }
-
-    def shouldHandleMsg(taskId: TaskId): Boolean = {
-      receivedMsgCount.contains(taskId)
+    def shouldHandleMsg(sender: ActorRef): Boolean = {
+      receivedMsgCount.contains(sender)
     }
 
     private class MsgCount(var num: Long){
       def increment() = num += 1
     }
   }
+
+  case class SendAck(ack: Ack, targetTask: TaskId)
 }

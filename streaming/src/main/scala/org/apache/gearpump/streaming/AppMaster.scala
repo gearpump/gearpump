@@ -78,6 +78,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
   private var startedTasks = Set.empty[TaskId]
   private var updateScheduler : Cancellable = null
   private var store : AppDataStore = null
+  //When the AppMaster trying to replay, the replay command should not be handled again.
   private var restarting = true
 
   override def receive : Receive = null

@@ -56,14 +56,14 @@ public class MessageDecoder extends FrameDecoder {
 
       available -= 8;
 
-      long task = buf.readLong();
+      long targetTask = buf.readLong();
 
       if(available < 8) {
         buf.resetReaderIndex();
         break;
       }
       available -= 8;
-      long source = buf.readLong();
+      long sourceTask = buf.readLong();
 
       // Make sure that we have received at least an integer (length)
       if (available < 4) {
@@ -78,7 +78,7 @@ public class MessageDecoder extends FrameDecoder {
       available -= 4;
 
       if (length <= 0) {
-        taskMessageList.add(new TaskMessage(task, source, null));
+        taskMessageList.add(new TaskMessage(targetTask, sourceTask, null));
         break;
       }
 
@@ -95,7 +95,7 @@ public class MessageDecoder extends FrameDecoder {
 
       // Successfully decoded a frame.
       // Return a TaskMessage object
-      taskMessageList.add(new TaskMessage(task, source, payload.array()));
+      taskMessageList.add(new TaskMessage(targetTask, sourceTask, payload.array()));
     }
 
     return taskMessageList.size() == 0 ? null : taskMessageList;
