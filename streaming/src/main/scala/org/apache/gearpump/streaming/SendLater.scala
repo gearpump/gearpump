@@ -33,7 +33,7 @@ class SendLater extends Actor {
   import context.dispatcher
   import org.apache.gearpump.streaming.SendLater.LOG
 
-  private[this] val queue : util.ArrayDeque[TaskMessage] = new util.ArrayDeque[TaskMessage](SendLater.INITIAL_WINDOW_SIZE)
+  private[this] val queue : util.ArrayDeque[TaskMessage] = new util.ArrayDeque[TaskMessage](FlowControl.INITIAL_WINDOW_SIZE.toInt)
 
   private var taskLocationReady = false
 
@@ -79,6 +79,5 @@ class SendLater extends Actor {
 }
 
 object SendLater {
-  val INITIAL_WINDOW_SIZE = 1024 * 16
   val LOG: Logger = LoggerFactory.getLogger(classOf[SendLater])
  }
