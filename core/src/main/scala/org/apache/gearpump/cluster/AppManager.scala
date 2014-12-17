@@ -253,19 +253,6 @@ private[cluster] class AppManager() extends Actor with Stash {
     case invalidAppMaster: InvalidAppMaster =>
       LOG.info(s"InvalidAppMaster adding to appMasterRegistry ${invalidAppMaster.appId}")
       appMasterRegistry += invalidAppMaster.appId -> Right(invalidAppMaster)
-      val maybeEither = appMasterRegistry.get(invalidAppMaster.appId)
-      maybeEither match {
-        case Some(either) =>
-          if(either.isLeft) {
-            val (ref, info) = either.left.get
-            LOG.info(s"GOT ref ${ref.path.address.toString}")
-          } else {
-            val invalid = either.right.get
-            LOG.info(s"GOT invalid ${invalid.appId}")
-          }
-        case None =>
-          LOG.info(s"NOT THERE")
-      }
   }
 
   def appDataStoreService: Receive = {
