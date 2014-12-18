@@ -23,14 +23,15 @@ import java.util
 import akka.actor._
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.AppMasterToExecutor.{GetStartClock, RestartException, RestartTasks, StartClock}
+import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.streaming.TaskLocationReady
+import org.apache.gearpump.util.{Util, Configs}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
 
-abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
+abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
   import org.apache.gearpump.streaming.task.TaskActor._
 
   private val appId = conf.appId
@@ -53,6 +54,8 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
   private var needSyncToClockService = false
 
   private var minClock : TimeStamp = 0L
+  private val receivedMsgTracker : ReceivedMsgTracker = new ReceivedMsgTracker(taskId)
+  private val sessionId = Util.randInt()
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -132,10 +135,10 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       this.outputTaskIds = Array.empty[TaskId]
     }
 
-    this.flowControl = new FlowControl(taskId, outputTaskIds.length)
+    this.flowControl = new FlowControl(taskId, outputTaskIds.length, sessionId)
     this.clockTracker = new ClockTracker(flowControl)
 
-    context.become(waitForStartClock)
+    context.become(waitForStartClock orElse stashMessages)
 
     context.parent ! GetStartClock
   }
@@ -163,9 +166,9 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       val msg = queue.poll()
       if (msg != null) {
         msg match {
-          case AckRequest(taskId, seq) =>
-            transport(Ack(this.taskId, seq), taskId)
-            LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", my seq: " + seq)
+          case SendAck(ack, targetTask) =>
+            transport(ack, targetTask)
+            LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", received message: " + ack.actualReceivedNum)
           case m : Message =>
             val updated = clockTracker.onProcess(m)
             if (updated) {
@@ -180,32 +183,56 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
     }
   }
 
+  private def sendFirstAckRequests() : Unit = {
+    for(i <- 0 until outputTaskIds.length) {
+      val firstAckRequest = AckRequest(taskId, Seq(i, 0), sessionId)
+      transport(firstAckRequest, outputTaskIds(i))
+    }
+  }
+
   def waitForStartClock : Receive = {
     case StartClock(clock) =>
       onStart(new TaskContext(clock))
-      context.become(handleMessage)
+      context.become(handleMessages)
+      sendFirstAckRequests()
   }
 
-  def handleMessage : Receive = {
+  def stashMessages = stashAndHandleMessages(handlNow = false)
+
+  def handleMessages = stashAndHandleMessages(handlNow = true)
+
+  def stashAndHandleMessages(handlNow: Boolean) : Receive = {
     case ackRequest : AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
-      queue.add(ackRequest)
-    case ack @ Ack(taskId, seq) =>
-      flowControl.receiveAck(taskId, seq)
+      val ack = receivedMsgTracker.generateAckResponse(ackRequest, sender)
+      if(null != ack){
+        queue.add(SendAck(ack, ackRequest.taskId))
+      }
+    case ack: Ack =>
+      if(flowControl.messageLossDetected(ack)){
+        LOG.error(s"Failed! Some messages sent from actor ${this.taskId} to $taskId are lost, try to replay...")
+        throw new MsgLostException
+      }
+      flowControl.receiveAck(ack)
       val updated = clockTracker.onAck(ack)
       if (updated) {
         tryToSyncToClockService()
       }
-      doHandleMessage()
-    case msg : Message =>
+      if (handlNow) {
+        doHandleMessage()
+      }
+    case msg: Message =>
+      if(!sender.equals(self)){
+        receivedMsgTracker.receiveMsg(sender)
+      }
       if (msg.timestamp != Message.noTimeStamp) {
         latencies.update(System.currentTimeMillis() - msg.timestamp)
       }
-
       val updatedMessage = clockTracker.onReceive(msg)
       queue.add(updatedMessage)
-
-      doHandleMessage()
+      if (handlNow) {
+        doHandleMessage()
+      }
     case ClockUpdated(timestamp) =>
       minClock = timestamp
       unackedClockSyncTimestamp = 0
@@ -214,7 +241,10 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport {
       }
     case RestartTasks(timestamp) =>
       LOG.info(s"Restarting myself $taskId from timestamp $timestamp...")
+      express.unregisterLocalActor(TaskId.toLong(taskId))
       throw new RestartException
+    case TaskLocationReady =>
+      sendLater.sendAllPendingMsgs()
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
   }
@@ -256,4 +286,36 @@ object TaskActor {
   object MergedPartitioner {
     def empty = new MergedPartitioner(Array.empty[Partitioner], Array.empty[Int], Array.empty[Int])
   }
+
+  class ReceivedMsgTracker(task_id: TaskId) {
+    private var receivedMsgCount = Map.empty[ActorRef, MsgCount]
+
+    def generateAckResponse(ackRequest: AckRequest, sender: ActorRef): Ack = {
+      if (receivedMsgCount.contains(sender)) {
+        Ack(task_id, ackRequest.seq, receivedMsgCount.get(sender).get.num, ackRequest.sessionId)
+      } else {
+        if(ackRequest.seq.seq == 0){ //We got the first AckRequest before the real messages
+          receivedMsgCount += sender -> new MsgCount(0L)
+          Ack(task_id, ackRequest.seq, 0, ackRequest.sessionId)
+        } else {
+          LOG.debug(s"task $task_id get unkonwn AckRequest $ackRequest from ${ackRequest.taskId}")
+          null
+        }
+      }
+    }
+
+    def receiveMsg(sender: ActorRef): Unit = {
+      if (receivedMsgCount.contains(sender)) {
+        receivedMsgCount.get(sender).get.increment
+      } else {
+        LOG.debug(s"Task $task_id received message before receive the first AckRequest")
+      }
+    }
+
+    private class MsgCount(var num: Long){
+      def increment() = num += 1
+    }
+  }
+
+  case class SendAck(ack: Ack, targetTask: TaskId)
 }

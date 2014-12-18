@@ -34,7 +34,7 @@ class TaskSet(config : Configs, dag : DAG) {
 
   init(dag)
 
-  def fetchResourceRequests(): Array[ResourceRequest] ={
+  def fetchResourceRequests(fromOneWorker: Boolean = false): Array[ResourceRequest] ={
     var resourceRequests = Array.empty[ResourceRequest]
     taskQueues.foreach(params => {
       val (locality, tasks) = params
@@ -43,8 +43,13 @@ class TaskSet(config : Configs, dag : DAG) {
         case locality: WorkerLocality =>
           resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size), locality.workerId, relaxation = Relaxation.SPECIFICWORKER)
         case _ =>
-          if(tasks.size > 0)
-            resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size))
+          if(tasks.size > 0){
+            if(fromOneWorker){
+              resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size), relaxation = Relaxation.ONEWORKER)
+            } else {
+              resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size))
+            }
+          }
       }
     })
     resourceRequests

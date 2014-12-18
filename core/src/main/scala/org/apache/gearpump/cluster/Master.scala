@@ -27,12 +27,11 @@ import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.util.{ActorUtil, Constants}
+import org.apache.gearpump.util.{Util, ActorUtil, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.forkjoin.ThreadLocalRandom
 
 private[cluster] class Master extends Actor with Stash {
 
@@ -59,7 +58,7 @@ private[cluster] class Master extends Actor with Stash {
 
   final val undefinedUid = 0
   @tailrec final def newUid(): Int = {
-    val uid = ThreadLocalRandom.current.nextInt()
+    val uid = Util.randInt()
     if (uid == undefinedUid) newUid()
     else uid
   }

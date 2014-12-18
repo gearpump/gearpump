@@ -22,6 +22,8 @@ import java.io.File
 
 import org.apache.gearpump.transport.HostPort
 
+import scala.concurrent.forkjoin.ThreadLocalRandom
+
 object Util {
   def getCurrentClassPath : Array[String] = {
     val classpath = System.getProperty("java.class.path");
@@ -38,5 +40,9 @@ object Util {
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
     }
     masters.toList
+  }
+
+  def randInt(): Int = {
+    ThreadLocalRandom.current.nextInt()
   }
 }

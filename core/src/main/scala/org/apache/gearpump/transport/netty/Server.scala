@@ -20,7 +20,7 @@ package org.apache.gearpump.transport.netty
 
 import java.util
 
-import akka.actor.{Actor, ActorRef, ExtendedActorSystem}
+import akka.actor.{ActorContext, Actor, ActorRef, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.ActorLookupById
 import org.jboss.netty.channel._
@@ -40,8 +40,9 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
 
   val serializer = new FastKryoSerializer(system)
 
-
   def receive = msgHandler orElse channelManager
+  //As we will only transfer TaskId on the wire, this object will translate taskId to or from ActorRef
+  private val taskIdActorRefTranslation = new TaskIdActorRefTranslation(context)
 
   def channelManager : Receive = {
     case AddChannel(channel) => allChannels.add(channel)
@@ -55,7 +56,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
 
   def msgHandler : Receive = {
     case MsgBatch(msgs) =>
-      msgs.groupBy(_.task()).map { taskBatch =>
+      msgs.groupBy(_.targetTask()).map { taskBatch =>
         val (taskId, taskMessages) = taskBatch
         val actor = lookupActor.lookupLocalActor(taskId)
 
@@ -63,7 +64,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
           val msg = serializer.deserialize(taskMessage.message())
-          actor.get.tell(msg, Actor.noSender)
+          actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask()))
         }
       }
   }
@@ -102,6 +103,22 @@ object Server {
     override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
       LOG.error("server errors in handling the request", e.getCause)
       server ! CloseChannel(e.getChannel)
+    }
+  }
+
+  class TaskIdActorRefTranslation(context: ActorContext) {
+    private var taskIdtoActorRef = Map.empty[Long, ActorRef]
+
+    def translateToActorRef(taskId: Long): ActorRef = {
+      if(!taskIdtoActorRef.contains(taskId)){
+        val actorRef = mockActorRefForTask(taskId)
+        taskIdtoActorRef += taskId -> actorRef
+      }
+      taskIdtoActorRef.get(taskId).get
+    }
+
+    private def mockActorRefForTask(taskId: Long): ActorRef = {
+      context.system.actorFor("MockTaskActor/" + taskId.toString)
     }
   }
 
