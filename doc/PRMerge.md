@@ -31,4 +31,5 @@ working" or "got it working" or "more fix" or "merged <git-user-id>/gearpump to 
 If commits have already been pushed to <git-user-id>/gearpump fork on github, you will have to
 "git push --force" to overwrite them with squashed commits.
 
-About how to squash several commits into one, please check http://gitready.com/advanced/2009/02/10/squashing-commits-with-rebase.html
+About how to squash several commits into one, please check http://gitready.com/advanced/2009/02/10/squashing-commits-with-rebase.html 
+or https://github.com/edx/edx-platform/wiki/How-to-Rebase-a-Pull-Request
