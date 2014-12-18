@@ -13,7 +13,7 @@ object Build extends sbt.Build {
     override def get(key: String) = Some(value)
   }
   
-  val akkaVersion = "2.3.6"
+  val akkaVersion = "2.3.8"
   val kryoVersion = "0.3.2"
   val codahaleVersion = "3.0.2"
   val commonsCodecVersion = "1.6"
