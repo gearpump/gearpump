@@ -56,6 +56,7 @@ trait AppMasterRegisterData
 
 object AppMasterToMaster {
   case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resource: Resource, registerData : AppMasterRegisterData)
+  case class InvalidAppMaster(appId: Int, appMaster: String)
   case class RequestResource(appId: Int, request: ResourceRequest)
   case class SaveAppData(appId: Int, key: String, value: Any)
   case class GetAppData(appId: Int, key: String)

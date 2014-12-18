@@ -23,6 +23,8 @@ import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ApplicationMaster
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.util.{Failure, Success, Try}
+
 /**
  * Start a actor system, and will send the system adress to report back actor
  * Example usage: main reportBackActorPath
@@ -55,6 +57,7 @@ object ActorSystemBooter  {
   case class BindLifeCycle(actor : ActorRef)
   case class CreateActor(clazz : String, name : String, args : scala.Any*)
   case class ActorCreated(actor : ActorRef, name : String)
+  case class ActorCreationFailed(name : String, reason: Throwable)
 
   case class RegisterActorSystem(systemPath : String)
 
@@ -68,10 +71,15 @@ object ActorSystemBooter  {
 
       case CreateActor(clazz, name, args) =>
         LOG.info(s"creating actor $name with class name '$clazz'")
-        val classZ = Class.forName(clazz)
-        val props = Props(classZ, args)
-        val actor = context.actorOf(props, name)
-        sender ! ActorCreated(actor, name)
+        val classZ = Try(Class.forName(clazz))
+        classZ match {
+          case Success(clazzType) =>
+            val props = Props(clazzType, args)
+            val actor = context.actorOf(props, name)
+            sender ! ActorCreated(actor, name)
+          case Failure(e) =>
+            sender ! ActorCreationFailed(clazz, e)
+        }
       case PoisonPill =>
         context.stop(self)
       case Terminated(actor) =>
