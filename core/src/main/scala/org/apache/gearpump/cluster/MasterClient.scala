@@ -27,7 +27,7 @@ import org.apache.gearpump.util.{Constants, Configs}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 /**
  * Stateless, thread safe
