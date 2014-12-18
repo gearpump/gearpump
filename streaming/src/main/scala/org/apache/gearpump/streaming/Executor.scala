@@ -45,6 +45,8 @@ class Executor(config : Configs)  extends Actor {
   val workerId = config.workerId
   var startClock : TimeStamp = config.startTime
 
+  LOG.info(s"Executor ${executorId} has been started, start to register itself...")
+
   context.parent ! RegisterExecutor(self, executorId, resource, workerId)
   context.watch(appMaster)
 
@@ -55,6 +57,7 @@ class Executor(config : Configs)  extends Actor {
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case _: MsgLostException =>
+        LOG.info("We got MessageLossException from task, replaying application...")
         appMaster ! ReplayFromTimestampWindowTrailingEdge
         Restart
       case _: RestartException => Restart
