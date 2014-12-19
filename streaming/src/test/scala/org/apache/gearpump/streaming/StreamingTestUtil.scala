@@ -26,12 +26,14 @@ import org.apache.gearpump.util.{Configs, Graph}
 
 object StreamingTestUtil {
   private var executorId = 0
+  val testUserName = "testuser"
 
   def startAppMaster(miniCluster: MiniCluster, appId: Int,
                      app: AppDescription = AppDescription("test", classOf[AppMaster].getCanonicalName, Configs.empty, Graph.empty)): TestActorRef[AppMaster] = {
     val config = Configs.empty.withAppDescription(app).withExecutorId(executorId).withAppId(appId).
       withMasterProxy(miniCluster.mockMaster).withResource(Resource.empty)
       .withAppMasterRegisterData(AppMasterInfo(miniCluster.worker))
+      .withUserName(testUserName)
     val props = Props(classOf[AppMaster], config)
     executorId += 1
     miniCluster.launchActor(props).asInstanceOf[TestActorRef[AppMaster]]

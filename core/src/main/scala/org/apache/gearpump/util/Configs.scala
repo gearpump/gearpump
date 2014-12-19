@@ -53,6 +53,9 @@ class Configs(val config: Map[String, _])  extends Serializable{
   def withAppId(appId : Int) = withValue(APPID, appId)
   def appId : Int = getInt(APPID)
 
+  def withUserName(user : String) = withValue(USERNAME, user)
+  def username : String = getString(USERNAME)
+
   def withAppDescription(appDesc : Application) = withValue(APP_DESCRIPTION, appDesc)
 
   def appDescription : Application = getAnyRef(APP_DESCRIPTION).asInstanceOf[Application]

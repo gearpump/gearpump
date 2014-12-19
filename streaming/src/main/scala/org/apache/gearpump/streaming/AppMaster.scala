@@ -60,6 +60,8 @@ class AppMaster (config : Configs) extends ApplicationMaster {
 
   private val appId = config.appId
 
+  private val username = config.username
+
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
@@ -89,7 +91,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
   override def receive : Receive = null
 
   override def preStart(): Unit = {
-    LOG.info(s"AppMaster[$appId] is launched $appDescription")
+    LOG.info(s"AppMaster[$appId] is launched by $username $appDescription")
     updateScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(snapshotStartClock())
 
@@ -166,7 +168,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
       groupedResource.map((workerAndResources) => {
         val (worker, resource) = workerAndResources
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
-        val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withStartTime(startClock).withWorkerId(actorToWorkerId.get(worker).get)
+        val executorConfig = appDescription.conf.withAppId(appId).withUserName(username).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withStartTime(startClock).withWorkerId(actorToWorkerId.get(worker).get)
         context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig, appJar), s"launcher${currentExecutorId}")
         currentExecutorId += 1
       })
@@ -283,7 +285,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
 
           val executorByPath = context.actorSelection("../app_0_executor_0")
 
-          val config = appDescription.conf.withAppId(appId).withExecutorId(executorId).withAppMaster(self).withDag(dag)
+          val config = appDescription.conf.withAppId(appId).withUserName(username).withExecutorId(executorId).withAppMaster(self).withDag(dag)
           executor ! LaunchTask(taskId, config, ActorUtil.loadClass(taskDescription.taskClass))
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
@@ -359,13 +361,15 @@ object AppMaster {
 
   class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs, jar: Option[AppJar]) extends Actor {
 
+    val username = executorConfig.username
+
     private val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId)
 
     val name = ActorUtil.actorNameForExecutor(appId, executorId)
     val selfPath = ActorUtil.getFullPath(context)
     val extraClasspath = context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
     val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
-    val launch = ExecutorContext(classPath, executorConfig.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
+    val launch = ExecutorContext(classPath, executorConfig.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
     worker ! LaunchExecutor(appId, executorId, resource, launch)
 
     implicit val executionContext = context.dispatcher

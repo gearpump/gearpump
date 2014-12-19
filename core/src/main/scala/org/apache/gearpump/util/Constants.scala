@@ -24,6 +24,7 @@ object Constants {
 
   //config for construction of appMaster
   val APPID = "appId"
+  val USERNAME = "username"
   val APP_DESCRIPTION =  "appDescription"
   val SINGLETON_MANAGER = "singleton"
   val MASTER = "master"
@@ -70,6 +71,7 @@ object Constants {
   val NETTY_FLUSH_CHECK_INTERVAL = "gearpump.netty.fulsh-check-interval"
 
   val NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname"
+  val GEAR_USERNAME = "gear.username"
   // Application jar property
   val GEAR_APP_JAR = "gear.app.jar"
 }

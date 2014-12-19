@@ -193,7 +193,9 @@ private[cluster] object Worker {
         var host = Try(context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)).map(
           host => List(s"-D${Constants.NETTY_TCP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
 
-        val command = List(java) ++ jvmArguments ++ host ++
+        val username = List(s"-D${Constants.GEAR_USERNAME}=${ctx.username}")
+
+        val command = List(java) ++ jvmArguments ++ host ++ username ++
           List("-cp", classPath.mkString(File.pathSeparator), ctx.mainClass) ++ ctx.arguments
         LOG.info(s"Starting executor process $command...")
 

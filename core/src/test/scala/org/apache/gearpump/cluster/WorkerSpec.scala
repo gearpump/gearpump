@@ -82,7 +82,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
 
       val executorName = ActorUtil.actorNameForExecutor(appId, executorId)
       val reportBack = "dummy"   //This is an actor path which the ActorSystemBooter will report back to, not needed in this test.
-      val executionContext = ExecutorContext(Util.getCurrentClassPath, workerSystem.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(executorName, reportBack), None)
+      val executionContext = ExecutorContext(Util.getCurrentClassPath, workerSystem.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(executorName, reportBack), None, username = "user")
 
       //Test LaunchExecutor
       worker.tell(LaunchExecutor(appId, executorId, Resource(101), executionContext), mockMaster.ref)
