@@ -19,9 +19,8 @@
 package org.apache.gearpump.streaming.transaction.checkpoint.api
 
 trait Source {
-  def name: String
-
-  def partition: Int
+  val name: String
+  val partition: Int
 }
 
 object Checkpoint {
@@ -56,6 +55,3 @@ trait CheckpointSerDe[K, V] {
   def fromValueBytes(bytes: Array[Byte]): V
 }
 
-trait CheckpointFilter[K, V] {
-  def filter(records: List[(K, V)], predicate: K): Option[(K, V)]
-}

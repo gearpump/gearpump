@@ -28,7 +28,7 @@ object KafkaSource {
 }
 
 case class KafkaSource(topicAndPartition: TopicAndPartition) extends Source {
-  override def name: String = topicAndPartition.topic
-  override def partition: Int = topicAndPartition.partition
+  val name: String = topicAndPartition.topic
+  val partition: Int = topicAndPartition.partition
 }
 

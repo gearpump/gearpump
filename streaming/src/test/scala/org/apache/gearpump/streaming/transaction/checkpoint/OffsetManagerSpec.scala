@@ -34,8 +34,8 @@ class OffsetManagerSpec extends PropSpec with PropertyChecks with Matchers with 
     n <- Gen.alphaStr
     p <- Gen.choose(1, 100)
   } yield new Source {
-      override def name: String = n
-      override def partition: Int = p
+      val name: String = n
+      val partition: Int = p
     }
   val timeStampGen: Gen[TimeStamp] = Gen.choose(0L, 100L)
   val smallOffsetGen: Gen[Long] = Gen.choose(0L, 100L)
@@ -46,12 +46,12 @@ class OffsetManagerSpec extends PropSpec with PropertyChecks with Matchers with 
     any(classOf[Source]),
     any(classOf[Checkpoint[TimeStamp, Long]]),
     any(classOf[CheckpointSerDe[TimeStamp, Long]]))
-  val filter = mock[OffsetFilter]
+
 
   property("OffsetManager should only record the smallest offset at a timestamp for a source") {
     forAll(sourceGen, timeStampGen, smallOffsetGen, largeOffsetGen) {
       (source: Source, time: TimeStamp, smallOffset: Long, largeOffset: Long) =>
-        val offsetManager = new OffsetManager(checkpointManager, filter)
+        val offsetManager = new OffsetManager(checkpointManager)
         offsetManager.update(source, time, largeOffset) shouldBe true
         offsetManager.update(source, time, smallOffset) shouldBe true
         offsetManager.update(source, time, largeOffset) shouldBe false
@@ -75,7 +75,7 @@ class OffsetManagerSpec extends PropSpec with PropertyChecks with Matchers with 
   property("OffsetManager should checkpoint updated offsets for sources at timestamps") {
     forAll(sourceAndCheckpointMapGen) {
       (sourceCheckpointMap: Map[Source, Checkpoint[TimeStamp, Long]]) =>
-        val offsetManager = new OffsetManager(checkpointManager, filter)
+        val offsetManager = new OffsetManager(checkpointManager)
         sourceCheckpointMap.foreach(sourceAndCheckpoint => {
           sourceAndCheckpoint._2.records.foreach(timeAndOffset => {
             offsetManager.update(sourceAndCheckpoint._1, timeAndOffset._1, timeAndOffset._2)

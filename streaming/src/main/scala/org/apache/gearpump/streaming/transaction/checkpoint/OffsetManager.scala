@@ -18,11 +18,15 @@
 
 package org.apache.gearpump.streaming.transaction.checkpoint
 
-import org.apache.gearpump.TimeStamp
+import java.io.Serializable
+
+import _root_.kafka.common.TopicAndPartition
+import _root_.kafka.serializer.Decoder
+import org.apache.gearpump.{Message, TimeStamp}
 import org.apache.gearpump.streaming.transaction.checkpoint.api.{Checkpoint, Source, CheckpointManager, CheckpointSerDe}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
 import com.twitter.bijection._
 import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConsumer
 import org.slf4j.{LoggerFactory, Logger}
 
 import scala.util.{Failure, Success}
@@ -47,8 +51,7 @@ object OffsetManager {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 }
 
-class OffsetManager(checkpointManager: CheckpointManager[TimeStamp, Long],
-                    filter: OffsetFilter) {
+class OffsetManager(checkpointManager: CheckpointManager[TimeStamp, Long]) {
   import org.apache.gearpump.streaming.transaction.checkpoint.OffsetManager._
 
   private var offsetsByTimeAndSource = Map.empty[(Source, TimeStamp), Long]
@@ -98,16 +101,49 @@ class OffsetManager(checkpointManager: CheckpointManager[TimeStamp, Long],
     checkpointsBySource
   }
 
-  def loadStartOffsets(timestamp: TimeStamp): Map[Source, Long] = {
-    checkpointManager.sourceAndCheckpoints(OffsetSerDe).foldLeft(Map.empty[Source, Long]) { (accum, iter) =>
-      filter.filter(iter._2.records, timestamp) match {
-        case Some((_, offset)) => accum + (iter._1 -> offset)
-        case None => accum
-      }
+  def replay[T <: Serializable](consumer: KafkaConsumer, startTime: TimeStamp,
+             msgDecoder: Decoder[T], msgFilter: TimeStampFilter,
+             msgHandler: Message => Unit): Map[Source, Long] = {
+    val startEndOffsets = loadStartEndOffsets(startTime)
+    startEndOffsets.foreach {
+      case (source, offsets) =>
+        val (startOffset, endOffset) = offsets
+        val topicAndPartition = TopicAndPartition(source.name, source.partition)
+        LOG.info(s"replay messages for $topicAndPartition from ${startOffset} to ${endOffset}")
+        consumer.setStartEndOffsets(topicAndPartition, startOffset, Some(endOffset))
+        consumer.start(topicAndPartition)
+    }
+    startEndOffsets.map {
+      case (source, offsets) =>
+        val (startOffset, endOffset) = offsets
+        val topicAndPartition = TopicAndPartition(source.name, source.partition)
+        startOffset.to(endOffset) foreach {
+          offset =>
+            val (kafkaMsg, time) = consumer.takeNextMessage(topicAndPartition)
+            if (kafkaMsg.offset != offset) {
+              LOG.error(s"unexpected offset. expected: ${offset}; actual: ${kafkaMsg.offset}")
+            }
+            val message = Message(msgDecoder.fromBytes(kafkaMsg.msg), time)
+            msgFilter.filter(message, startTime).map(msgHandler)
+        }
+        source -> (endOffset + 1)
     }
   }
 
   def close(): Unit = {
     checkpointManager.close()
+  }
+
+  private def loadStartEndOffsets(startTime: TimeStamp): Map[Source, (Long, Long)] = {
+    checkpointManager.sourceAndCheckpoints(OffsetSerDe)
+      .foldLeft(Map.empty[Source, (Long, Long)]) { (accum, iter) =>
+        val (source, checkpoints) = iter
+        val recordsToReplay = checkpoints.records.sortBy(_._2).dropWhile(_._1 < startTime)
+        if (recordsToReplay.nonEmpty) {
+          accum + (source -> (recordsToReplay.head._2, recordsToReplay.last._2))
+        } else {
+          accum
+        }
+    }
   }
 }
