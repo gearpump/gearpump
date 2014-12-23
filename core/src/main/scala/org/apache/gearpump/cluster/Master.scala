@@ -27,6 +27,7 @@ import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
+import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.apache.gearpump.util.{Util, ActorUtil, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -104,6 +105,7 @@ private[cluster] class Master extends Actor with Stash {
       appManager.forward(app)
     case app : ShutdownApplication =>
       LOG.info(s"Receive from client, Shutting down Application ${app.appId}")
+      scheduler ! ApplicationFinished(app.appId)
       appManager.forward(app)
     case app : ReplayFromTimestampWindowTrailingEdge =>
       LOG.info(s"Receive from client, Replaying Application ${app.appId} from timestamp window trailing edge")
@@ -123,7 +125,7 @@ private[cluster] class Master extends Actor with Stash {
       LOG.info("Let's filter out dead resources...")
       // filter out dead worker resource
       if(workers.keySet.contains(actor)){
-        scheduler ! WorkerTerminated(actor)
+        scheduler ! WorkerTerminated(workers.get(actor).get)
         workers -= actor
       }
   }
@@ -139,5 +141,5 @@ private[cluster] class Master extends Actor with Stash {
 }
 
 object Master{
-  case class WorkerTerminated(worker : ActorRef)
+  case class WorkerTerminated(workerId : Int)
 }

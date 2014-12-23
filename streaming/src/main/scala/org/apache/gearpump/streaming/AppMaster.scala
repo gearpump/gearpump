@@ -28,10 +28,11 @@ import akka.remote.RemoteScope
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
+import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
+import org.apache.gearpump.cluster.scheduler._
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
@@ -78,6 +79,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
   private var startedTasks = Set.empty[TaskId]
   private var updateScheduler : Cancellable = null
   private var store : AppDataStore = null
+  private var allocationTimeOut: Cancellable = null
   //When the AppMaster trying to replay, the replay command should not be handled again.
   private var restarting = true
 
@@ -148,8 +150,12 @@ class AppMaster (config : Configs) extends ApplicationMaster {
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) =>
-      LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
-      //group resource by worker
+      if (null != allocationTimeOut) {
+        allocationTimeOut.cancel()
+      }
+      if (!enoughResourcesAllocated(allocations)) {
+        allocationTimeOut = context.system.scheduler.scheduleOnce(Duration(30, TimeUnit.SECONDS), self, AllocateResourceTimeOut)
+      }
       val actorToWorkerId = mutable.HashMap.empty[ActorRef, Int]
       val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(Resource.empty)((totalResource, request) => totalResource add request.resource)).toArray
       allocations.foreach(allocation => actorToWorkerId.put(allocation.worker, allocation.workerId))
@@ -161,6 +167,20 @@ class AppMaster (config : Configs) extends ApplicationMaster {
         context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig, appJar))
         currentExecutorId += 1
       })
+    case AllocateResourceTimeOut =>
+      if (startedTasks.size < taskSet.totalTaskCount) {
+        LOG.error(s"AppMaster did not receive enough resource to launch ${taskSet.size} tasks, " +
+          s"shutting down the application...")
+        master ! ShutdownApplication(appId)
+      }
+  }
+
+  private def enoughResourcesAllocated(allocations: Array[ResourceAllocation]): Boolean = {
+    val totalAllocated = allocations.foldLeft(Resource.empty){ (totalResource, resourceAllocation) =>
+      totalResource.add(resourceAllocation.resource)
+    }
+    LOG.info(s"AppMaster $appId received resource $totalAllocated, ${taskSet.size} tasks remain to be launched")
+    totalAllocated.slots == taskSet.size
   }
 
   def appManagerMsgHandler: Receive = {
@@ -331,6 +351,8 @@ object AppMaster {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMaster])
 
   case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
+
+  case object AllocateResourceTimeOut
 
   class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs, jar: Option[AppJar]) extends Actor {
 

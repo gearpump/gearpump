@@ -23,6 +23,7 @@ import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
+import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
@@ -47,6 +48,18 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       val scheduler = system.actorOf(Props(classOf[PriorityScheduler]))
       scheduler ! ResourceUpdate(workerId1, Resource(100))
       expectMsg(UpdateResourceFailed(s"ResourceUpdate failed! The worker $workerId1 has not been registered into master"))
+    }
+
+    "drop application's resource requests when the application is removed" in {
+      val scheduler = system.actorOf(Props(classOf[PriorityScheduler]))
+      val request1 = ResourceRequest(Resource(40), 0, Priority.HIGH, Relaxation.ANY)
+      val request2 = ResourceRequest(Resource(20), 0, Priority.HIGH, Relaxation.ANY)
+      scheduler.tell(RequestResource(appId, request1), mockAppMaster.ref)
+      scheduler.tell(RequestResource(appId, request2), mockAppMaster.ref)
+      scheduler.tell(ApplicationFinished(appId), mockAppMaster.ref)
+      scheduler.tell(WorkerRegistered(workerId1), mockWorker1.ref)
+      scheduler.tell(ResourceUpdate(workerId1, Resource(100)), mockWorker1.ref)
+      mockAppMaster.expectNoMsg(5 seconds)
     }
   }
 

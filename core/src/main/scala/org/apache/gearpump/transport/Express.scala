@@ -20,6 +20,7 @@ package org.apache.gearpump.transport
 
 import akka.actor._
 import akka.agent.Agent
+import org.apache.gearpump.transport.netty.Client.Close
 import org.apache.gearpump.transport.netty.{Context, TaskMessage}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -62,6 +63,8 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   }
 
   def startClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
+    val clientsToClose = remoteClientMap.get().filterKeys(!hostPorts.contains(_)).keySet
+    closeClients(clientsToClose)
     hostPorts.filter(!localHost.equals(_)).map(hostPort =>
       remoteClientMap.alter { map =>
         if (!map.contains(hostPort)) {
@@ -70,7 +73,17 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
         } else {
           map
         }
-      }).last
+      }).lastOption.getOrElse(Future(Map.empty[HostPort, ActorRef]))
+  }
+
+  def closeClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
+    remoteClientMap.alter { map =>
+      map.filterKeys(hostPorts.contains).foreach{ hostAndClient =>
+        val (_, client) = hostAndClient
+        client ! Close
+      }
+      map -- hostPorts
+    }
   }
 
   def registerLocalActor(id : Long, actor: ActorRef): Unit = {
