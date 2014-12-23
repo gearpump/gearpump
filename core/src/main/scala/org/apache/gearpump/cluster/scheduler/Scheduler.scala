@@ -39,14 +39,16 @@ abstract class Scheduler extends Actor{
     case ResourceUpdate(workerId, resource) =>
       LOG.info(s"Resource update id: $workerId, slots: ${resource.slots}....")
       if(resources.contains(workerId)) {
+        val resourceReturned = resource.greaterThan(resources.get(workerId).get._2)
         resources.update(workerId, (sender, resource))
-        allocateResource()
+        if(resourceReturned){
+          allocateResource()
+        }
       }
       else {
         sender ! UpdateResourceFailed(s"ResourceUpdate failed! The worker $workerId has not been registered into master")
       }
-    case WorkerTerminated(actor) =>
-      val workerId = actor.path.name.toInt
+    case WorkerTerminated(workerId) =>
       if(resources.contains(workerId)){
         resources -= workerId
       }

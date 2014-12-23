@@ -123,7 +123,7 @@ private[cluster] class Master extends Actor with Stash {
       LOG.info("Let's filter out dead resources...")
       // filter out dead worker resource
       if(workers.keySet.contains(actor)){
-        scheduler ! WorkerTerminated(actor)
+        scheduler ! WorkerTerminated(workers.get(actor).get)
         workers -= actor
       }
   }
@@ -139,5 +139,5 @@ private[cluster] class Master extends Actor with Stash {
 }
 
 object Master{
-  case class WorkerTerminated(worker : ActorRef)
+  case class WorkerTerminated(workerId : Int)
 }

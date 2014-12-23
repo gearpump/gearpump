@@ -70,7 +70,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
         } else {
           map
         }
-      }).last
+      }).lastOption.getOrElse(Future(Map.empty[HostPort, ActorRef]))
   }
 
   def registerLocalActor(id : Long, actor: ActorRef): Unit = {

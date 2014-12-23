@@ -111,4 +111,8 @@ class TaskSet(config : Configs, dag : DAG) {
     val taskQueue = nonLocalityQueue.sortBy(_.taskId.index)
     taskQueues += (NonLocality -> taskQueue)
   }
+
+  def size = taskQueues.values.foldLeft(0){ (unLaunchedTaskNum, taskQueue) =>
+    unLaunchedTaskNum + taskQueue.size
+  }
 }
