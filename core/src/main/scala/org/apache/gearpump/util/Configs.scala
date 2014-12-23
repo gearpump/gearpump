@@ -19,7 +19,7 @@
 package org.apache.gearpump.util
 
 import akka.actor.ActorRef
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ConfigParseOptions, Config, ConfigFactory}
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
 import org.apache.gearpump.util.Constants._
@@ -83,25 +83,33 @@ object Configs {
 
   def apply(config : Config) = new Configs(config.toMap)
 
+  private val CUSTER_FILE = ConfigFactory.parseResourcesAnySyntax("gear.conf",
+    ConfigParseOptions.defaults.setAllowMissing(true))
 
-  //for production
-  val SYSTEM_DEFAULT_CONFIG = ConfigFactory.load()
+  private val APPLICATION_FILE = ConfigFactory.parseResourcesAnySyntax("application.conf")
 
-  val MASTER_CONFIG = {
-    val config = SYSTEM_DEFAULT_CONFIG
-    if (config.hasPath(MASTER)) {
-      config.getConfig(MASTER).withFallback(config)
+  private def loadClusterConfig() : Config = ConfigFactory.load(CUSTER_FILE)
+
+  /**
+   * Will load file application.conf and fallback to cluster.conf
+   */
+  def loadApplicationConfig() : Config = ConfigFactory.load(APPLICATION_FILE.withFallback(CUSTER_FILE))
+
+  def loadMasterConfig() : Config = {
+    val cluster = loadClusterConfig()
+    if (cluster.hasPath(MASTER)) {
+      cluster.getConfig(MASTER).withFallback(cluster)
     } else {
-      config
+      cluster
     }
   }
 
-  val WORKER_CONFIG = {
-    val config = SYSTEM_DEFAULT_CONFIG
-    if (config.hasPath(WORKER)) {
-      config.getConfig(WORKER).withFallback(config)
+  def loadWorkerConfig() : Config = {
+    val cluster = loadClusterConfig()
+    if (cluster.hasPath(WORKER)) {
+      cluster.getConfig(WORKER).withFallback(cluster)
     } else {
-      config
+      cluster
     }
   }
 

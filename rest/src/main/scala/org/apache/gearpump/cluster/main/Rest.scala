@@ -20,6 +20,7 @@ package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.services.RestServices
+import org.apache.gearpump.util.Configs
 
 object Rest extends App with ArgumentsParser {
 
@@ -30,7 +31,8 @@ object Rest extends App with ArgumentsParser {
     val config = parse(args)
     val masters = config.getString("master")
     Console.out.println("Master URL: " + masters)
-    val clientContext = ClientContext(masters)
+    val systemConfig = Configs.loadApplicationConfig()
+    val clientContext = ClientContext(masters, systemConfig)
     implicit val system = clientContext.system
     RestServices.start(clientContext.master)
   }

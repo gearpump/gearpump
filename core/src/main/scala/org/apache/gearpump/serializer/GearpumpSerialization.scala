@@ -19,11 +19,13 @@
 package org.apache.gearpump.serializer
 
 import com.esotericsoftware.kryo.{Kryo, Serializer}
+import com.typesafe.config.{ConfigFactory, Config}
 import org.apache.gearpump.util.{Configs, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
 class GearpumpSerialization {
-  val config = Configs.SYSTEM_DEFAULT_CONFIG
+  val config = GearpumpSerialization.getConfig()
+
   private val LOG: Logger = LoggerFactory.getLogger(classOf[GearpumpSerialization])
 
   def customize(kryo: Kryo): Unit  = {
@@ -40,7 +42,8 @@ class GearpumpSerialization {
         kryo.register(keyClass)
       } else {
         val valueClass = Class.forName(value)
-        kryo.register(keyClass, valueClass.newInstance().asInstanceOf[Serializer[_]])
+        val register = kryo.register(keyClass, valueClass.newInstance().asInstanceOf[Serializer[_]])
+        LOG.debug(s"Registering ${keyClass}, id: ${register.getId}")
       }
     }
     kryo.setReferences(false)
@@ -49,5 +52,19 @@ class GearpumpSerialization {
   private final def configToMap(path: String) = {
     import scala.collection.JavaConverters._
     config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ k -> v.toString }
+  }
+}
+
+object GearpumpSerialization {
+  private var config : Config = null
+
+  def init(config : Config) = {
+    if (this.config == null) {
+      this.config = config
+    }
+  }
+
+  def getConfig() = {
+    config
   }
 }
