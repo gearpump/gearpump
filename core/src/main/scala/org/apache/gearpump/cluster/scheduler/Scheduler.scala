@@ -22,6 +22,7 @@ import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
+import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
@@ -39,22 +40,29 @@ abstract class Scheduler extends Actor{
     case ResourceUpdate(workerId, resource) =>
       LOG.info(s"Resource update id: $workerId, slots: ${resource.slots}....")
       if(resources.contains(workerId)) {
+        val resourceReturned = resource.greaterThan(resources.get(workerId).get._2)
         resources.update(workerId, (sender, resource))
-        allocateResource()
+        if(resourceReturned){
+          allocateResource()
+        }
       }
       else {
         sender ! UpdateResourceFailed(s"ResourceUpdate failed! The worker $workerId has not been registered into master")
       }
-    case WorkerTerminated(actor) =>
-      val workerId = actor.path.name.toInt
+    case WorkerTerminated(workerId) =>
       if(resources.contains(workerId)){
         resources -= workerId
       }
+    case ApplicationFinished(appId) =>
+      doneApplication(appId)
   }
 
   def allocateResource(): Unit
+
+  def doneApplication(appId: Int): Unit
 }
 
 object Scheduler{
-  case class PendingRequest(appMaster: ActorRef, request: ResourceRequest, timeStamp: TimeStamp)
+  case class PendingRequest(appId: Int, appMaster: ActorRef, request: ResourceRequest, timeStamp: TimeStamp)
+  case class ApplicationFinished(appId: Int)
 }
