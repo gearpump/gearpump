@@ -276,7 +276,7 @@ private[cluster] class AppManager() extends Actor with Stash {
     case RecoverApplication(applicationStatus) =>
       val appId = applicationStatus.appId
       LOG.info(s"AppManager Recovering Application $appId...")
-      context.actorOf(Props(classOf[AppMasterStarter], appId, applicationStatus.app.conf, applicationStatus.jar, applicationStatus.app), appId.toString)
+      context.actorOf(Props(classOf[AppMasterStarter], appId, applicationStatus.app, applicationStatus.jar), appId.toString)
   }
 
   case class RecoverApplication(applicationStatus : ApplicationState)
