@@ -31,7 +31,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
+import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
@@ -148,7 +148,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
 
   def masterMsgHandler: Receive = {
     case ResourceAllocated(allocations) =>
-      LOG.info(s"AppMaster $appId received ResourceAllocated $allocations")
+      verifyAllocatedResources(allocations)
       //group resource by worker
       val actorToWorkerId = mutable.HashMap.empty[ActorRef, Int]
       val groupedResource = allocations.groupBy(_.worker).mapValues(_.foldLeft(Resource.empty)((totalResource, request) => totalResource add request.resource)).toArray
@@ -161,6 +161,17 @@ class AppMaster (config : Configs) extends ApplicationMaster {
         context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig, appJar))
         currentExecutorId += 1
       })
+  }
+
+  private def verifyAllocatedResources(allocations: Array[ResourceAllocation]): Unit = {
+    val totalAllocated = allocations.foldLeft(Resource.empty){ (totalResource, resourceAllocation) =>
+      totalResource.add(resourceAllocation.resource)
+    }
+    LOG.info(s"AppMaster $appId received Resource $totalAllocated")
+    if (totalAllocated.slots < taskSet.size) {
+      LOG.error(s"AppMaster did not receive enough resource to launch ${taskSet.size} tasks, " +
+        s"you may add more Worker or wait for other application to release resource")
+    }
   }
 
   def appManagerMsgHandler: Receive = {
