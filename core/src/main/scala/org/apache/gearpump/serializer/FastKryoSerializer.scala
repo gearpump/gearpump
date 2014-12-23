@@ -23,6 +23,9 @@ import com.romix.akka.serialization.kryo.KryoSerializer
 
 class FastKryoSerializer(system: ExtendedActorSystem) {
 
+  // Init kryo serialization, reading custom kryo serializer
+  GearpumpSerialization.init(system.settings.config)
+
   private val serializer = new KryoSerializer(system).serializerPool.fetch()
 
   def serialize(message: AnyRef) : Array[Byte] = {

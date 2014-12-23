@@ -18,6 +18,7 @@
 package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
 trait Starter {
@@ -29,7 +30,7 @@ trait Starter {
     val masters = config.getString("master")
     val runseconds = config.getInt("runseconds")
     LOG.info("Master URL: " + masters)
-    val context = ClientContext(masters)
+    val context = ClientContext(masters, Configs.loadApplicationConfig())
     val app = application(config)
     val appId = context.submit(app, Option(AppSubmitter.jars(0)))
     LOG.info(s"We get application id: $appId")
