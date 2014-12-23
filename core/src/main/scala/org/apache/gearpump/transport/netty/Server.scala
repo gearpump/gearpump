@@ -64,7 +64,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
           val msg = serializer.deserialize(taskMessage.message())
-          actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask()))
+          actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask(), taskMessage.sessionId()))
         }
       }
   }
@@ -109,16 +109,18 @@ object Server {
   class TaskIdActorRefTranslation(context: ActorContext) {
     private var taskIdtoActorRef = Map.empty[Long, ActorRef]
 
-    def translateToActorRef(taskId: Long): ActorRef = {
+    def translateToActorRef(taskId: Long, sessionId : Int): ActorRef = {
       if(!taskIdtoActorRef.contains(taskId)){
-        val actorRef = mockActorRefForTask(taskId)
+        val actorRef = fakeActorRefForTask(taskId, sessionId)
         taskIdtoActorRef += taskId -> actorRef
       }
       taskIdtoActorRef.get(taskId).get
     }
 
-    private def mockActorRefForTask(taskId: Long): ActorRef = {
-      context.system.actorFor("MockTaskActor/" + taskId.toString)
+    // Create a 1-1 mapping fake ActorRef for task
+    // The path is fake, don't use the ActorRef directly
+    private def fakeActorRefForTask(taskId: Long, sessonId : Int): ActorRef = {
+      context.system.actorFor(s"/tasks/doNotUseFakeActorRef/${sessonId}${taskId}")
     }
   }
 

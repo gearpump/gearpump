@@ -21,15 +21,25 @@ package org.apache.gearpump.transport.netty;
 import java.nio.ByteBuffer;
 
 public class TaskMessage {
+
+  // When network partition happen, there may be several task instances of
+  // same taskId co-existing for a short period of time. When they send messages
+  // to same target task, it may cause confusion.
+  // With sessionId, we can know which messages are from an old session, and which
+  // are from new session. Messages of old sesson will be dropped.
+  private int _sessionId;
   private long _targetTask;
   private long _sourceTask;
   private byte[] _message;
 
-  public TaskMessage(long targetTask, long sourceTask,  byte[] message) {
+  public TaskMessage(int sessionId, long targetTask, long sourceTask,  byte[] message) {
+    _sessionId = sessionId;
     _targetTask = targetTask;
     _sourceTask = sourceTask;
     _message = message;
   }
+
+  public int sessionId() {return _sessionId; }
 
   public long targetTask() {
     return _targetTask;
@@ -42,21 +52,4 @@ public class TaskMessage {
   public byte[] message() {
     return _message;
   }
-
-  public ByteBuffer serialize() {
-    ByteBuffer bb = ByteBuffer.allocate(_message.length + 8);
-    bb.putLong(_targetTask);
-    bb.putLong(_sourceTask);
-    bb.put(_message);
-    return bb;
-  }
-
-  public void deserialize(ByteBuffer packet) {
-    if (packet == null) return;
-    _targetTask = packet.getLong();
-    _sourceTask = packet.getLong();
-    _message = new byte[packet.limit() - 8];
-    packet.get(_message);
-  }
-
 }
