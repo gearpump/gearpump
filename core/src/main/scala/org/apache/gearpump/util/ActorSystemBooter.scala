@@ -48,7 +48,7 @@ object ActorSystemBooter  {
    def main (args: Array[String]) {
     val name = args(0)
     val reportBack = args(1)
-    val config = Configs.SYSTEM_DEFAULT_CONFIG
+    val config = Configs.loadApplicationConfig()
     create(config).boot(name, reportBack).awaitTermination
   }
 

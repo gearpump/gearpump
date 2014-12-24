@@ -39,7 +39,7 @@ object Worker extends App with ArgumentsParser {
   }
 
   def worker(): Unit = {
-    val config = Configs.WORKER_CONFIG
+    val config = Configs.loadWorkerConfig()
 
     val id = uuid
     val system = ActorSystem(id, config)
