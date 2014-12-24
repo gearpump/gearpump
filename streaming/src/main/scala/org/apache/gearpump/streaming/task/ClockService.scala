@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{Actor, Cancellable}
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.{DAG, TaskGroup}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.FiniteDuration
@@ -39,7 +40,7 @@ import org.apache.gearpump.streaming.task.ClockService._
   private val taskGroupLookup = new util.HashMap[TaskGroup, TaskGroupClock]()
   private var scheduler : Cancellable = null
 
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[ClockService])
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override def receive = clockService
 

@@ -29,7 +29,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.duration.FiniteDuration
 
 class SOLStreamProcessor(conf : Configs) extends TaskActor(conf : Configs) {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[SOLStreamProcessor])
 
   private var msgCount : Long = 0
   private var scheduler : Cancellable = null

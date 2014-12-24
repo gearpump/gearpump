@@ -28,7 +28,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.mutable
 
 class PriorityScheduler extends Scheduler{
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[PriorityScheduler])
 
   private var resourceRequests = new mutable.PriorityQueue[PendingRequest]()(requestOrdering)
 

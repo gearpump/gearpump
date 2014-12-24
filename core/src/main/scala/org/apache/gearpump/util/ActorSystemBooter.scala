@@ -44,7 +44,6 @@ class ActorSystemBooter(config : Config) {
 }
 
 object ActorSystemBooter  {
-  val LOG: Logger = LoggerFactory.getLogger(classOf[ActorSystemBooter])
 
   def create(config : Config) : ActorSystemBooter = new ActorSystemBooter(config)
 
@@ -64,6 +63,7 @@ object ActorSystemBooter  {
   object RegisterActorSystemTimeOut
 
   class Daemon(name : String, reportBack : String) extends Actor {
+    val LOG: Logger = LogUtil.getLogger(getClass, context = name)
 
     LOG.info(s"RegisterActorSystem to ${reportBack}")
     val reportBackActor = context.actorSelection(reportBack)

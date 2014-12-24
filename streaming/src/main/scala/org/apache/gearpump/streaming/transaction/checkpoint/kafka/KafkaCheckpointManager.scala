@@ -20,16 +20,12 @@ package org.apache.gearpump.streaming.transaction.checkpoint.kafka
 
 import kafka.admin.AdminUtils
 import kafka.common.{TopicExistsException, TopicAndPartition}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.streaming.transaction.lib.kafka.{KafkaUtil, MessageIterator, KafkaProducer}
 import org.apache.gearpump.streaming.transaction.checkpoint.api.{CheckpointManager, CheckpointSerDe, Source, Checkpoint}
-
-
-object KafkaCheckpointManager {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaCheckpointManager[_, _]])
-}
 
 class KafkaCheckpointManager[K, V](checkpointId: Int,
                              checkpointReplicas: Int,
@@ -40,7 +36,8 @@ class KafkaCheckpointManager[K, V](checkpointId: Int,
                              fetchSize: Int,
                              zkClient: ZkClient
                              ) extends CheckpointManager[K, V] {
-  import org.apache.gearpump.streaming.transaction.checkpoint.kafka.KafkaCheckpointManager._
+
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   private var sources: Array[Source] = null
   private var checkpointTopicAndPartitions: Array[TopicAndPartition] = null

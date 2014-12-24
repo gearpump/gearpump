@@ -23,12 +23,13 @@ import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
 abstract class Scheduler extends Actor{
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[Scheduler])
+  val LOG: Logger = LogUtil.getLogger(getClass)
   protected var resources = new mutable.HashMap[Int, (ActorRef, Resource)]
 
   def handleScheduleMessage : Receive = {

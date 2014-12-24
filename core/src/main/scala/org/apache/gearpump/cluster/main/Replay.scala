@@ -24,12 +24,12 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.{MasterClient, MasterProxy}
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{Configs, Util}
+import org.apache.gearpump.util.{LogUtil, Configs, Util}
 import org.slf4j.{Logger, LoggerFactory}
 
 object Replay extends App with ArgumentsParser {
 
-  private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),

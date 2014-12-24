@@ -33,7 +33,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.duration.FiniteDuration
 
 class SeqFileStreamProcessor(config: HadoopConfig) extends TaskActor(config){
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileStreamProcessor])
+
   val outputPath = new Path(config.getString(OUTPUT_PATH) + System.getProperty("file.separator") + this.taskId)
   var writer: SequenceFile.Writer = null
   val textClass = new Text().getClass

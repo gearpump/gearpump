@@ -26,14 +26,14 @@ import akka.util.Timeout
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{Configs, Util}
+import org.apache.gearpump.util.{LogUtil, Configs, Util}
 import org.slf4j.{LoggerFactory, Logger}
 
 import scala.collection.mutable.ListBuffer
 
 //TODO: add interface to query master here
 class ClientContext(masters: Iterable[HostPort]) {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[ClientContext])
+  private val LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
   val system = ActorSystem(s"client${Util.randInt()}" , Configs.loadApplicationConfig())
 

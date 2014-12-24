@@ -28,15 +28,7 @@ import java.util.concurrent.TimeUnit
 import org.slf4j.{Logger, LoggerFactory}
 import org.apache.gearpump.streaming.transaction.storage.api.StorageManager
 
-
-object KafkaStreamProcessor {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaStreamProcessor])
-}
-
 class KafkaStreamProcessor(conf: Configs) extends TaskActor(conf) {
-
-  import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProcessor._
-
   private val config = conf.config
   private val topic = config.getProducerTopic
   private val kafkaProducer = config.getProducer[String, String]()

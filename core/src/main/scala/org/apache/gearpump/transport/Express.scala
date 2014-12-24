@@ -22,6 +22,7 @@ import akka.actor._
 import akka.agent.Agent
 import org.apache.gearpump.transport.netty.Client.Close
 import org.apache.gearpump.transport.netty.{Context, TaskMessage}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent._
@@ -111,7 +112,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 }
 
 object Express extends ExtensionId[Express] with ExtensionIdProvider {
-  val LOG: Logger = LoggerFactory.getLogger(classOf[Express])
+  val LOG: Logger = LogUtil.getLogger(getClass)
 
   override def get(system: ActorSystem): Express = super.get(system)
 

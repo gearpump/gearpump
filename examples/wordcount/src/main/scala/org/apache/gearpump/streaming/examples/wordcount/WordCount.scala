@@ -23,11 +23,12 @@ import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{Configs, Graph}
+import org.apache.gearpump.util.{LogUtil, Configs, Graph}
+import org.apache.gearpump.util.Configs._
 import org.slf4j.{Logger, LoggerFactory}
 
 object WordCount extends App with ArgumentsParser {
-  private val LOG: Logger = LoggerFactory.getLogger(this.getClass)
+  private val LOG: Logger = LogUtil.getLogger(getClass)
   val RUN_FOR_EVER = -1
 
   override val options: Array[(String, CLIOption[Any])] = Array(

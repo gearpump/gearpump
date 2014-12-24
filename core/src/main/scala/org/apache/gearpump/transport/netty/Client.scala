@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Actor
 import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.LogUtil
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
 import org.slf4j.{Logger, LoggerFactory}
@@ -168,7 +169,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
 
 
 object Client {
-  val LOG: Logger = LoggerFactory.getLogger(classOf[Client])
+  val LOG: Logger = LogUtil.getLogger(getClass)
 
   //Reconnect if current channel equals channel
   case class CompareAndReconnectIfEqual(channel: Channel)

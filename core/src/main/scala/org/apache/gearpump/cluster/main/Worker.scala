@@ -21,14 +21,14 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import org.apache.gearpump.cluster.MasterProxy
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{LogUtil, Configs}
 import org.apache.gearpump.util.Constants._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
 
 object Worker extends App with ArgumentsParser {
-  val LOG : Logger = LoggerFactory.getLogger(Worker.getClass)
+  val LOG : Logger = LogUtil.getLogger(getClass)
 
   def uuid = java.util.UUID.randomUUID.toString
 
