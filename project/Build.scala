@@ -122,6 +122,10 @@ object Build extends sbt.Build {
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
                         "rest" -> "org.apache.gearpump.cluster.main.Rest"
                        ),
+        packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
+                           "master" -> Seq("-DlogFilename=master"),
+                           "worker" -> Seq("-DlogFilename=worker")
+                        ),
         packExclude := Seq(fsio.id, kafka.id, sol.id, wordcount.id),
         packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
         packExpandedClasspath := true,
