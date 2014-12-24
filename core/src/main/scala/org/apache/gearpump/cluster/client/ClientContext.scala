@@ -22,16 +22,17 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Configs, Util}
 import org.slf4j.{LoggerFactory, Logger}
 
-class ClientContext(masters: Iterable[HostPort]) {
+class ClientContext(masters: Iterable[HostPort], systemConfig : Config) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[ClientContext])
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-  val system = ActorSystem("client", Configs.SYSTEM_DEFAULT_CONFIG)
+  val system = ActorSystem("client", systemConfig)
 
   val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
 
@@ -57,9 +58,9 @@ object ClientContext {
    * masterList is a list of master node address
    * host1:port,host2:port2,host3:port3
    */
-  def apply(masterList : String) = {
-    new ClientContext(Util.parseHostList(masterList))
+  def apply(masterList : String, config : Config) = {
+    new ClientContext(Util.parseHostList(masterList), config)
   }
 
-  def apply(masters: Iterable[HostPort]) = new ClientContext(masters)
+  def apply(masters: Iterable[HostPort], config : Config) = new ClientContext(masters, config)
 }

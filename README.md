@@ -32,7 +32,16 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
 
 2. Start master
 
-  We support [Master HA](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples#master-ha) and allow master to start on multiple nodes. Modify `core/src/main/resources/reference.conf` and set `gearpump.cluster.masters` to the list of nodes you plan to start master on (e.g. node1).
+  We support [Master HA](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples#master-ha) and allow master to start on multiple nodes. 
+
+  Build a package, distribute to all nodes, and extract it.
+
+  ```bash
+  ## The target package path: target/gearpump-$VERSION.tar.gz
+  sbt clean pack-archive
+  ```
+  
+  Modify `conf/gear.conf` and set `gearpump.cluster.masters` to the list of nodes you plan to start master on (e.g. node1).
 
   ```
   gearpump {
@@ -41,12 +50,6 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
       masters = ["node1:3000"]
     }
   }
-  ```
-
-  Build a package, distribute to all nodes, and extract it.
-
-  ```bash
-  sbt clean pack-archive
   ```
 
   Start master on the nodes you set in the conf previously.
@@ -59,7 +62,18 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
 
 3. Start worker
 
-  Start multiple workers on one or more nodes. Worker will read the master location information  `gearpump.cluster.masters` from `reference.conf`.
+  Start multiple workers on one or more nodes. 
+  
+  Modify `conf/gear.conf` and make sure `gearpump.cluster.masters` points to the list of masters you started.  (e.g. node1).
+
+  ```
+  gearpump {
+   ...
+    cluster {
+      masters = ["node1:3000"]
+    }
+  }
+  ```
 
   ```bash
   bin/worker
@@ -73,6 +87,8 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   ## Run WordCount example
   bin/gear app -jar gearpump-examples-wordcount-$VERSION.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master node1:3000
   ```
+  
+  User can change the configuration by providing a "application.conf" in classpath. "application.conf" follows HCON format.
 
 Check the wiki pages for more on [build](https://github.com/intel-hadoop/gearpump/wiki/Build) and [running examples in local modes](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples).
 
@@ -82,23 +98,16 @@ This is what a [GearPump WordCount](https://github.com/intel-hadoop/gearpump/tre
 
   ```scala
   class WordCount extends Starter with ArgumentsParser {
-    private val LOG: Logger = LoggerFactory.getLogger(classOf[WordCount])
-
-    override val options: Array[(String, CLIOption[Any])] = Array(
-      "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
-      "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
-      "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
-      "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60))
-    )
 
     override def application(config: ParseResult) : AppDescription = {
-      val splitNum = config.getInt("split")
-      val sumNum = config.getInt("sum")
-      val appConfig = Configs(Configs.SYSTEM_DEFAULT_CONFIG)
       val partitioner = new HashPartitioner()
       val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
       val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
-      val app = AppDescription("wordCount", classOf[AppMaster].getCanonicalName, appConfig, Graph(split ~ partitioner ~> sum))
+      
+      // Here we define the dag
+      val dag = Graph(split ~ partitioner ~> sum)
+      
+      val app = AppDescription("wordCount", classOf[AppMaster].getCanonicalName, appConfig, dag)
       app
     }
   }

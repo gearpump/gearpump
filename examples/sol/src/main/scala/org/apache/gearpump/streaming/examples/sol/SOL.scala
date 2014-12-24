@@ -41,7 +41,7 @@ class SOL extends Starter with ArgumentsParser {
     val boltNum = config.getInt("streamProcessor")
     val bytesPerMessage = config.getInt("bytesPerMessage")
     val stages = config.getInt("stages")
-    val appConfig = Configs(Configs.SYSTEM_DEFAULT_CONFIG).withValue(SOLStreamProducer.BYTES_PER_MESSAGE, bytesPerMessage)
+    val appConfig = Configs(Configs.loadApplicationConfig()).withValue(SOLStreamProducer.BYTES_PER_MESSAGE, bytesPerMessage)
     val partitioner = new ShufflePartitioner()
     val streamProducer = TaskDescription(classOf[SOLStreamProducer].getCanonicalName, spoutNum)
     val streamProcessor = TaskDescription(classOf[SOLStreamProcessor].getCanonicalName, boltNum)

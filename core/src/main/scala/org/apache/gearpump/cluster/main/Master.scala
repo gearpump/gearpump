@@ -56,7 +56,7 @@ object Master extends App with ArgumentsParser {
 
   def master(ip:String, port : Int): Unit = {
 
-    var masterConfig = Configs.MASTER_CONFIG
+    var masterConfig = Configs.loadMasterConfig()
       val masters = masterConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
 
     if (!verifyMaster(ip, port, masters)) {
