@@ -173,19 +173,22 @@ private[cluster] object Worker {
             }
         }
       } else {
+        var tempFile : File = null
         val appJar = context.jar
         val (jvmArguments, classPath) = appJar match {
           case Some(jar) =>
-            var fos = new FileOutputStream(jar.name)
+            tempFile = File.createTempFile(jar.name, ".jar")
+            var fos = new FileOutputStream(tempFile)
             new PrintStream(fos).write(jar.bytes)
             fos.close
-            var file = new URL("file:"+jar.name)
+            var file = new URL("file:"+tempFile)
             (context.jvmArguments :+ "-Dapp.jar="+file.getFile, context.classPath :+ file.getFile)
           case None =>
             (context.jvmArguments, context.classPath)
         }
         val java = System.getProperty("java.home") + "/bin/java"
-        val command = List(java) ++ jvmArguments ++ List("-cp", classPath.mkString(File.pathSeparator), context.mainClass) ++ context.arguments
+        val logArgs = List(s"-Dapplication=${launch.appId}", s"-Dexecutor=${launch.executorId}")
+        val command = List(java) ++ jvmArguments ++ logArgs ++ List("-cp", classPath.mkString(File.pathSeparator), context.mainClass) ++ context.arguments
         LOG.info(s"Starting executor process $command...")
 
         val process = Process(command).run(new ProcessLogRedirector())
@@ -194,10 +197,14 @@ private[cluster] object Worker {
           override def destroy = {
             LOG.info(s"destroying executor process ${context.mainClass}")
             process.destroy()
+            if(tempFile != null)
+              tempFile.delete()
           }
 
           override def exitValue: Future[Try[Int]] = future {
             val exit = process.exitValue()
+            if(tempFile != null)
+              tempFile.delete()
             if (exit == 0) {
               Success(0)
             } else {
