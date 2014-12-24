@@ -13,11 +13,7 @@ public class GearpumpFileAppender extends RollingFileAppender{
   ///set correct log file name and folder
   @Override
   public void activateOptions() {
-    if(getSystemEnv("executor")!=null)
-      setExecutorLogFileName();
-    else
-      setDaemonLogFileName();
-
+    setDaemonLogFileName();
     super.activateOptions();
   }
 
@@ -30,16 +26,6 @@ public class GearpumpFileAppender extends RollingFileAppender{
       postfix = fileName.substring(dotPos);
     }
     fileName = getLogDir() + "/"+ prefix + "-" + getHostname() + postfix;
-  }
-
-  private void setExecutorLogFileName() {
-    String appId = getSystemEnv("application");
-    String executorId = getSystemEnv("executor");
-    fileName = getLogDir() + "/applicationData/app-" + appId + "/executor-" + executorId + ".log";
-  }
-
-  private String getSystemEnv(String name) {
-    return System.getProperty(name);
   }
 
   ///return the hostname
@@ -59,7 +45,7 @@ public class GearpumpFileAppender extends RollingFileAppender{
     if(logDir==null) {
       logDir = System.getenv("GEARPUMP_LOG_DIR");
       if(logDir==null)
-        logDir = "log";
+        logDir = "logs";
     }
     return logDir;
   }

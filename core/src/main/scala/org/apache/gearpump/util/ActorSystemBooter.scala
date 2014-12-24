@@ -49,6 +49,7 @@ object ActorSystemBooter  {
     val name = args(0)
     val reportBack = args(1)
     val config = Configs.loadApplicationConfig()
+    Configs.setApplicationLogging()
     create(config).boot(name, reportBack).awaitTermination
   }
 

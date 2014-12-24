@@ -57,7 +57,9 @@ object Master extends App with ArgumentsParser {
   def master(ip:String, port : Int): Unit = {
 
     var masterConfig = Configs.loadMasterConfig()
-      val masters = masterConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
+    val masters = masterConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
+
+    Configs.setServerLogging()
 
     if (!verifyMaster(ip, port, masters)) {
       LOG.error(s"The provided ip $ip and port $port doesn't conform with config at gearpump.cluster.masters: ${masters.mkString(", ")}")

@@ -41,6 +41,8 @@ object Worker extends App with ArgumentsParser {
   def worker(): Unit = {
     val config = Configs.loadWorkerConfig()
 
+    Configs.setServerLogging()
+
     val id = uuid
     val system = ActorSystem(id, config)
 

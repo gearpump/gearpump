@@ -54,6 +54,8 @@ object Local extends App with ArgumentsParser {
       withValue("gearpump.cluster.masters",  ConfigValueFactory.fromAnyRef(List(s"$ip:$port").asJava))
     )
 
+    Configs.setServerLogging()
+
     val master = system.actorOf(Props[org.apache.gearpump.cluster.Master], MASTER)
     val masterPath = ActorUtil.getSystemPath(system) + s"/user/$MASTER"
     LOG.info(s"master is started at $masterPath...")

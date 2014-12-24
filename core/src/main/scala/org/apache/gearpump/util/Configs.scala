@@ -18,11 +18,14 @@
 
 package org.apache.gearpump.util
 
+import java.util.Properties
+
 import akka.actor.ActorRef
 import com.typesafe.config.{ConfigParseOptions, Config, ConfigFactory}
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
 import org.apache.gearpump.util.Constants._
+import org.apache.log4j.PropertyConfigurator
 
 /**
  * Immutable configuration
@@ -110,6 +113,24 @@ object Configs {
       cluster.getConfig(WORKER).withFallback(cluster)
     } else {
       cluster
+    }
+  }
+
+  def setServerLogging() : Unit = {
+    val log4jConfStream = getClass().getClassLoader.getResourceAsStream("log4j-server.properties")
+    if(log4jConfStream!=null) {
+      val props = new Properties()
+      props.load(log4jConfStream)
+      PropertyConfigurator.configure(props)
+    }
+  }
+
+  def setApplicationLogging() : Unit = {
+    val log4jConfStream = getClass().getClassLoader.getResourceAsStream("log4j-application.properties")
+    if(log4jConfStream!=null) {
+      val props = new Properties()
+      props.load(log4jConfStream)
+      PropertyConfigurator.configure(props)
     }
   }
 
