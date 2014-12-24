@@ -32,6 +32,10 @@ class ParseResult(optionMap : Map[String, String], remainArguments : Array[Strin
   def remainArgs = this.remainArguments
 }
 
+/**
+ * Parse command line arguments
+ * Grammar: -option1 value1 -option2 value3 -flag1 -flag2 remainArg1 remainArg2...
+ */
 trait  ArgumentsParser {
 
   val ignoreUnknownArgument = false

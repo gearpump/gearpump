@@ -30,7 +30,7 @@ object Ranker {
 class Ranker(conf: Configs) extends TaskActor(conf) {
 
   import org.apache.gearpump.streaming.examples.kafka.topn.Ranker._
-  import org.apache.gearpump.streaming.examples.kafka.topn.RollingTopWords.Config._
+  import org.apache.gearpump.streaming.examples.kafka.topn.Config._
 
   private val config = conf.config
   private val windowLengthMS = getWindowLengthMS(config)

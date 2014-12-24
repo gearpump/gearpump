@@ -18,8 +18,10 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.examples.kafka.topn.RollingTopWords._
 import org.apache.gearpump.streaming.examples.kafka.{KafkaStreamProcessor, KafkaStreamProducer}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
@@ -27,8 +29,8 @@ import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
 import org.slf4j.{Logger, LoggerFactory}
 
-class KafkaWordCount extends Starter with ArgumentsParser {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaWordCount])
+object KafkaWordCount extends App with ArgumentsParser {
+  private val LOG: Logger = LoggerFactory.getLogger(getClass())
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
@@ -38,7 +40,7 @@ class KafkaWordCount extends Starter with ArgumentsParser {
     "kafka_stream_processor" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(4)),
     "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
 
-  override def application(config: ParseResult) : AppDescription = {
+  def application(config: ParseResult) : AppDescription = {
     val kafkaStreamProducerNum = config.getInt("kafka_stream_producer")
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
@@ -54,4 +56,10 @@ class KafkaWordCount extends Starter with ArgumentsParser {
     app
   }
 
+  val config = parse(args)
+  val context = ClientContext(config.getString("master"))
+  val appId = context.submit(application(config))
+  Thread.sleep(config.getInt("runseconds") * 1000)
+  context.shutdown(appId)
+  context.cleanup()
 }

@@ -29,6 +29,9 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
+/**
+ * Stateless, thread safe
+ */
 class MasterClient(master : ActorRef) {
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
@@ -53,6 +56,9 @@ class MasterClient(master : ActorRef) {
     result
   }
 
+  /**
+   * Internal API, will be removed in future
+   */
   def replayFromTimestampWindowTrailingEdge(appId : Int) = {
     val result = Await.result((master ? ReplayFromTimestampWindowTrailingEdge(appId)).asInstanceOf[Future[ReplayApplicationResult]], Duration.Inf)
     result

@@ -18,27 +18,44 @@
 
 package org.apache.gearpump.cluster.client
 
+import java.io.{ByteArrayOutputStream, FileInputStream}
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
-import com.typesafe.config.Config
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Configs, Util}
 import org.slf4j.{LoggerFactory, Logger}
 
-class ClientContext(masters: Iterable[HostPort], systemConfig : Config) {
+import scala.collection.mutable.ListBuffer
+
+//TODO: add interface to query master here
+class ClientContext(masters: Iterable[HostPort]) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[ClientContext])
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-  val system = ActorSystem("client", systemConfig)
+  val system = ActorSystem(s"client${Util.randInt()}" , Configs.loadApplicationConfig())
 
   val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
 
-  def submit(app : Application, jar: Option[AppJar]) : Int = {
+  /**
+   * Submit an applicaiton with default jar setting. Use java property
+   * "gear.app.jar" if defined. Otherwise, will assume the jar is on
+   * the target runtime classpath, and will not send it.
+   */
+  def submit(app : Application) : Int = {
+    submit(app, System.getProperty(GEAR_APP_JAR))
+  }
+
+  def submit(app : Application, jarPath: String) : Int = {
     val client = new MasterClient(master)
-    client.submitApplication(app, jar)
+    if (jarPath == null) {
+      client.submitApplication(app, None)
+    } else {
+      val appJar = loadFile(jarPath)
+      client.submitApplication(app, Option(appJar))
+    }
   }
 
   def shutdown(appId : Int) : Unit = {
@@ -46,10 +63,21 @@ class ClientContext(masters: Iterable[HostPort], systemConfig : Config) {
     client.shutdownApplication(appId)
   }
 
-  //TODO: add interface to query master here
-
-  def destroy() : Unit = {
+  def cleanup() : Unit = {
     system.shutdown()
+  }
+
+  private def loadFile(jarPath : String) : AppJar = {
+    val jarFile = new java.io.File(jarPath)
+    val fis = new FileInputStream(jarFile)
+    val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
+    val buf = ListBuffer[Byte]()
+    var b = fis.read()
+    while (b != -1) {
+      buf.append(b.byteValue)
+      b = fis.read()
+    }
+    AppJar(jarFile.getName, buf.toArray)
   }
 }
 
@@ -58,9 +86,9 @@ object ClientContext {
    * masterList is a list of master node address
    * host1:port,host2:port2,host3:port3
    */
-  def apply(masterList : String, config : Config) = {
-    new ClientContext(Util.parseHostList(masterList), config)
+  def apply(masterList : String) = {
+    new ClientContext(Util.parseHostList(masterList))
   }
 
-  def apply(masters: Iterable[HostPort], config : Config) = new ClientContext(masters, config)
+  def apply(masters: Iterable[HostPort]) = new ClientContext(masters)
 }
