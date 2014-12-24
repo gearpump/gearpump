@@ -61,5 +61,6 @@ object Local extends App with ArgumentsParser {
       system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], master), classOf[org.apache.gearpump.cluster.Worker].getSimpleName + id)
     }
   }
+
   start()
 }

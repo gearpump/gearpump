@@ -123,14 +123,17 @@ private[cluster] class AppManager() extends Actor with Stash {
       LOG.info(s"Successfully received application states for ${state.map(_.appId)}, nextAppId: $appId....")
       context.become(receiveHandler)
       unstashAll()
+      logStart
     case x: GetFailure =>
       LOG.info("GetFailure We cannot find any existing state, start a fresh one...")
       context.become(receiveHandler)
       unstashAll()
+      logStart
     case x: NotFound =>
       LOG.info("We cannot find any existing state, start a fresh one...")
       context.become(receiveHandler)
       unstashAll()
+      logStart
     case msg =>
       LOG.info(s"Get information ${msg.getClass.getSimpleName}")
       stash()
@@ -286,6 +289,11 @@ private[cluster] class AppManager() extends Actor with Stash {
     replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(set =>
       GSet(set.value.filter(_.asInstanceOf[ApplicationState].appId != appId)))
     replicator ! Delete(appId.toString)
+  }
+
+  private def logStart : Unit = {
+    System.out.println("Application Manager started. Ready for application running...")
+    LOG.info("Application Manager started. Ready for application running...")
   }
 }
 

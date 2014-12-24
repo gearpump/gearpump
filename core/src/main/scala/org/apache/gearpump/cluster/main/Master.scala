@@ -97,7 +97,7 @@ object Master extends App with ArgumentsParser {
     Runtime.getRuntime().addShutdownHook(new Thread() {
       override def run() : Unit = {
         if (!system.isTerminated) {
-          System.out.println("Triggering shutdown hook....")
+          LOG.info("Triggering shutdown hook....")
 
           system.stop(masterProxy)
           val cluster = Cluster(system)
