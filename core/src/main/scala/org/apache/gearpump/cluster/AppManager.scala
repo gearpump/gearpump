@@ -19,7 +19,7 @@
 package org.apache.gearpump.cluster
 
 import java.io.File
-import java.util.concurrent.{TimeoutException, TimeUnit}
+import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.cluster.Cluster
@@ -40,7 +40,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import scala.concurrent.duration.{FiniteDuration, Duration}
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success}
 /**
  * AppManager is dedicated part of Master to manager applicaitons
@@ -85,7 +85,8 @@ private[cluster] class AppManager() extends Actor with Stash {
   def receive: Receive = null
 
   //from appid to appMaster data
-  private var appMasterRegistry = Map.empty[Int, Either[(ActorRef, AppMasterInfo), InvalidAppMaster]]
+  private var appMasterRegistry = Map.empty[Int, (ActorRef, AppMasterInfo)]
+  private var clientRegistry = Map.empty[Int, ActorRef]
 
   private val STATE = "masterstate"
   private val TIMEOUT = Duration(5, TimeUnit.SECONDS)
@@ -152,48 +153,33 @@ private[cluster] class AppManager() extends Actor with Stash {
       LOG.info(s"Persist master state writeQuorum: $writeQuorum, timeout: $TIMEOUT...")
       val appState = new ApplicationState(appId, 0, app, jar, null)
       replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + appState)
-      sender.tell(SubmitApplicationResult(Success(appId)), context.parent)
+      clientRegistry += appId -> sender
       appId += 1
     case ShutdownApplication(appId) =>
       LOG.info(s"App Manager Shutting down application $appId")
-      val maybeEither = appMasterRegistry.get(appId)
-      maybeEither match {
-        case Some(either) =>
-          if (either.isLeft) {
-            val (appMaster, info) = either.left.get
-            val worker = info.worker
-            LOG.info(s"Shutdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
-            cleanApplicationData(appId)
-            worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
-            sender ! ShutdownApplicationResult(Success(appId))
-          } else {
-            val invalidAppMaster = either.right.get
-            val errorMsg = s"Invalid AppMaster ${invalidAppMaster.appMaster}"
-            sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
-          }
+      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(info) match {
+        case Some(info) =>
+          val worker = info.worker
+          LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
+          cleanApplicationData(appId)
+          worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
+          sender ! ShutdownApplicationResult(Success(appId))
         case None =>
-          val errorMsg = s"Failed to find regisration information for appId: $appId"
+          val errorMsg = s"Find to find regisration information for appId: $appId"
           LOG.error(errorMsg)
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
     case ReplayFromTimestampWindowTrailingEdge(appId) =>
       LOG.info(s"App Manager Replaying application $appId")
-      val maybeEither = appMasterRegistry.get(appId)
-      maybeEither match {
-        case Some(either) =>
-          if (either.isLeft) {
-            val (appMaster, _) = either.left.get
-            LOG.info(s"Replaying application: $appId")
-            appMaster forward ReplayFromTimestampWindowTrailingEdge
-            sender ! ReplayApplicationResult(Success(appId))
-          } else {
-            val invalidAppMaster = either.right.get
-            val errorMsg = s"Invalid AppMaster ${invalidAppMaster.appMaster}"
-            LOG.error(errorMsg)
-            sender ! ReplayApplicationResult(Failure(new Exception(errorMsg)))
-          }
+      val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(appMaster) match {
+        case Some(ref) =>
+          LOG.info(s"Replaying application: $appId")
+          ref forward ReplayFromTimestampWindowTrailingEdge
+          sender ! ReplayApplicationResult(Success(appId))
         case None =>
-          val errorMsg = s"Failed to find regisration information for appId: $appId"
+          val errorMsg = s"Can not find regisration information for appId: $appId"
           LOG.error(errorMsg)
           sender ! ReplayApplicationResult(Failure(new Exception(errorMsg)))
       }
@@ -205,74 +191,64 @@ private[cluster] class AppManager() extends Actor with Stash {
       val workerPath = registerData.worker.path.address.toString
       LOG.info(s"Register AppMaster for app: $appId appMaster=$appMasterPath worker=$workerPath")
       context.watch(appMaster)
-      appMasterRegistry += appId -> Left((appMaster, registerData))
+      appMasterRegistry += appId -> (appMaster, registerData)
       sender ! AppMasterRegistered(appId, context.parent)
+      val client = clientRegistry.get(appId)
+      client match {
+        case Some(client) =>
+          client.tell(SubmitApplicationResult(Success(appId)), context.parent)
+          clientRegistry -= appId
+        case None =>
+      }
     case AppMastersDataRequest =>
       val appMastersData = collection.mutable.ListBuffer[AppMasterData]()
       appMasterRegistry.foreach(pair => {
-        val (id, either) = pair
-        if(either.isLeft) {
-          val (appMaster: ActorRef, info: AppMasterInfo) = either.left.get
-          appMastersData += AppMasterData(id, info)
-        }
+        val (id, (appMaster:ActorRef, info:AppMasterInfo)) = pair
+        appMastersData += AppMasterData(id,info)
       }
       )
       sender ! AppMastersData(appMastersData.toList)
     case appMasterDataRequest: AppMasterDataRequest =>
       val appId = appMasterDataRequest.appId
-      val maybeEither = appMasterRegistry.get(appId)
-      maybeEither match {
-        case Some(either) =>
-          if (either.isLeft) {
-            val (appMaster, info) = either.left.get
-            val worker = info.worker
-            sender ! AppMasterData(appId = appId, appData = info)
-          } else {
-            sender ! AppMasterData(appId = appId, appData = null)
-          }
+      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(info) match {
+        case a@Some(data) =>
+          val worker = a.get.worker
+          sender ! AppMasterData(appId = appId, appData = data)
         case None =>
           sender ! AppMasterData(appId = appId, appData = null)
       }
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       val appId = appMasterDataDetailRequest.appId
-      val maybeEither = appMasterRegistry.get(appId)
-      maybeEither match {
-        case Some(either) =>
-          if (either.isLeft) {
-            val (appMaster, info) = either.left.get
-            val appM = appMaster
-            val path = appM.toString
-            LOG.info(s"AppManager forwarding AppMasterDataRequest to AppMaster $path")
-            appM forward appMasterDataDetailRequest
-          } else {
-            sender ! AppMasterDataDetail(appId = appId, appDescription = null)
-          }
+      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(appMaster) match {
+        case a@Some(appMaster) =>
+          val appM:ActorRef = a.get
+          val path = appM.toString
+          LOG.info(s"AppManager forwarding AppMasterDataRequest to AppMaster $path")
+          appM forward appMasterDataDetailRequest
         case None =>
           sender ! AppMasterDataDetail(appId = appId, appDescription = null)
       }
     case invalidAppMaster: InvalidAppMaster =>
-      LOG.info(s"InvalidAppMaster adding to appMasterRegistry ${invalidAppMaster.appId}")
-      appMasterRegistry += invalidAppMaster.appId -> Right(invalidAppMaster)
+      LOG.info(s"InvalidAppMaster notifying client")
+      val client = clientRegistry.get(invalidAppMaster.appId)
+      client match {
+        case Some(client) =>
+          client.tell(SubmitApplicationResult(Failure(new Exception(s"Invalid AppMaster ${invalidAppMaster.appMaster}", invalidAppMaster.reason))), context.parent)
+          clientRegistry -= invalidAppMaster.appId
+        case None =>
+      }
   }
 
   def appDataStoreService: Receive = {
     case SaveAppData(appId, key, value) =>
-      val maybeEither = appMasterRegistry.get(appId)
-      maybeEither match {
-        case Some(either) =>
-          if (either.isLeft) {
-            val (_, info) = either.left.get
-            if (info != null) {
-              LOG.debug(s"saving application data $key for application $appId")
-              replicator ! Update(appId.toString, LWWMap(), WriteTo(writeQuorum), TIMEOUT)(_ + (key -> value))
-            } else {
-              LOG.error(s"no match application for app$appId when saving application data")
-            }
-          } else {
-            LOG.error(s"no match application for app$appId when saving application data")
-          }
-        case None =>
-          LOG.error(s"no match application for app$appId when saving application data")
+      val (_, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      if(info != null){
+        LOG.debug(s"saving application data $key for application $appId")
+        replicator ! Update(appId.toString, LWWMap(), WriteTo(writeQuorum), TIMEOUT)(_ + (key -> value))
+      } else {
+        LOG.error(s"no match application for app$appId when saving application data")
       }
       sender ! AppDataReceived
     case GetAppData(appId, key) =>
@@ -295,14 +271,9 @@ private[cluster] class AppManager() extends Actor with Stash {
       terminate.getAddressTerminated()
       LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
       //Now we assume that the only normal way to stop the application is submitting a ShutdownApplication request
-      val application = appMasterRegistry.find{pair =>
-        val (appId, maybeAppInfo) = pair
-        if(maybeAppInfo.isLeft) {
-          val (actorRef, _) = maybeAppInfo.left.get
-          actorRef.compareTo(terminate.actor) == 0
-        } else {
-          false
-        }
+      val application = appMasterRegistry.find{appInfo =>
+        val (_, (actorRef, _)) = appInfo
+        actorRef.compareTo(terminate.actor) == 0
       }
       if(application.nonEmpty){
         val appId = application.get._1
@@ -398,7 +369,7 @@ private[cluster] object AppManager {
         import context.dispatcher
         val appMasterTimeout = context.system.scheduler.scheduleOnce(
           FiniteDuration(waitForAppMasterTimeout, TimeUnit.SECONDS), self,
-          ActorCreationFailed(app.appMaster, new Exception(s"waitForAppMaster took longer than $waitForAppMasterTimeout")))
+          ActorCreationFailed(app.appMaster, new Exception(s"Timeout creating AppMaster. Took longer than $waitForAppMasterTimeout")))
         context.become(waitForAppMasterToStart(worker, Option(appMasterTimeout), masterConfig))
     }
 
@@ -414,7 +385,7 @@ private[cluster] object AppManager {
         self ! PoisonPill
       case ActorCreationFailed(name, reason) =>
         worker ! ShutdownExecutor(appId, masterExecutorId, reason.getMessage)
-        context.parent ! InvalidAppMaster(appId, app.appMaster)
+        context.parent ! InvalidAppMaster(appId, app.appMaster, reason)
         cancellable match {
           case Some(c) =>
             c.cancel

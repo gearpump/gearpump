@@ -28,6 +28,8 @@ import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Configs, Util}
 import org.slf4j.{LoggerFactory, Logger}
 
+import scala.util.Try
+
 class ClientContext(masters: Iterable[HostPort]) {
   private val LOG: Logger = LoggerFactory.getLogger(classOf[ClientContext])
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
@@ -35,7 +37,7 @@ class ClientContext(masters: Iterable[HostPort]) {
 
   val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
 
-  def submit(app : Application, jar: Option[AppJar]) : Int = {
+  def submit(app : Application, jar: Option[AppJar]) : Try[Int] = {
     val client = new MasterClient(master)
     client.submitApplication(app, jar)
   }

@@ -27,17 +27,14 @@ import org.apache.gearpump.util.{Constants, Configs}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 class MasterClient(master : ActorRef) {
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
-  def submitApplication(app : Application, appJar: Option[AppJar]) : Int = {
+  def submitApplication(app : Application, appJar: Option[AppJar]) : Try[Int] = {
     val result = Await.result( (master ? SubmitApplication(app, appJar)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)
-    result.appId match {
-      case Success(appId) => appId
-      case Failure(ex) => throw ex
-    }
+    result.appId
   }
 
   def shutdownApplication(appId : Int) : Unit = {

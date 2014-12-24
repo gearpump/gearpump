@@ -20,6 +20,8 @@ package org.apache.gearpump.cluster.main
 import org.apache.gearpump.cluster.client.ClientContext
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.util.{Failure, Success}
+
 trait Starter {
   this: ArgumentsParser =>
   private val LOG: Logger = LoggerFactory.getLogger(classOf[Starter])
@@ -32,11 +34,17 @@ trait Starter {
     val context = ClientContext(masters)
     val app = application(config)
     val appId = context.submit(app, Option(AppSubmitter.jars(0)))
-    LOG.info(s"We get application id: $appId")
-    Thread.sleep(runseconds * 1000)
-    LOG.info(s"Shutting down application $appId")
-    context.shutdown(appId)
-    context.destroy()
+    appId match {
+      case Success(appId) =>
+        LOG.info(s"We get application id: $appId")
+        Thread.sleep(runseconds * 1000)
+        LOG.info(s"Shutting down application $appId")
+        context.shutdown(appId)
+        context.destroy()
+      case Failure(failure) =>
+        LOG.error("Failed to launch application", failure)
+        context.destroy()
+    }
   }
 
   def application(config: ParseResult): org.apache.gearpump.cluster.Application
