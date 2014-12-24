@@ -25,6 +25,7 @@ import kafka.common.TopicAndPartition
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.checkpoint.TimeExtractor
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -43,7 +44,7 @@ object KafkaConsumer {
     override def toString = s"$host:$port"
   }
 
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaConsumer])
+  private val LOG: Logger = LogUtil.getLogger(classOf[KafkaConsumer])
 }
 
 

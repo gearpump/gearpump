@@ -30,6 +30,7 @@ import org.I0Itec.zkclient.serialize.ZkSerializer
 import org.apache.gearpump.streaming.transaction.checkpoint.TimeExtractor
 import org.apache.gearpump.streaming.transaction.lib.kafka.grouper.KafkaGrouperFactory
 import org.apache.gearpump.streaming.transaction.storage.api.KeyValueStoreFactory
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
@@ -222,7 +223,7 @@ object KafkaConfig {
     }
   }
 
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaConfig])
+  private val LOG: Logger = LogUtil.getLogger(classOf[KafkaConfig])
 }
 
 class KafkaConfig {

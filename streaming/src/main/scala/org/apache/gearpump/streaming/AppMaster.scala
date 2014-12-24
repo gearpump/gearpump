@@ -58,6 +58,9 @@ class AppMaster (config : Configs) extends ApplicationMaster {
   import context.dispatcher
 
   private val appId = config.appId
+
+  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
+
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
   private val appJar = loadJar
   private val masterProxy = config.masterProxy
@@ -328,13 +331,14 @@ class AppMaster (config : Configs) extends ApplicationMaster {
 }
 
 object AppMaster {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMaster])
 
   case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
 
   object LaunchActorSystemTimeOut
 
   class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs, jar: Option[AppJar]) extends Actor {
+
+    private val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId)
 
     val name = ActorUtil.actorNameForExecutor(appId, executorId)
     val selfPath = ActorUtil.getFullPath(context)

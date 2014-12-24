@@ -74,6 +74,9 @@ private[cluster] class AppManager() extends Actor with Stash {
 
   import context.dispatcher
   import org.apache.gearpump.cluster.AppManager._
+
+  private val LOG: Logger = LogUtil.getLogger(classOf[AppManager])
+
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
   private var master: ActorRef = null
@@ -294,12 +297,12 @@ case class AppMasterInfo(worker : ActorRef) extends AppMasterRegisterData
 
 private[cluster] object AppManager {
   private val masterExecutorId = -1
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[AppManager])
 
   /**
    * Start and watch Single AppMaster's lifecycle
    */
   class AppMasterStarter(appId : Int, app : Application, jar: Option[AppJar]) extends Actor {
+    private val LOG: Logger = LogUtil.getLogger(classOf[AppManager], app = appId)
 
     val systemConfig = context.system.settings.config
 

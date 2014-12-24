@@ -23,7 +23,7 @@ import akka.actor._
 import org.slf4j.{Logger, LoggerFactory}
 
 object ActorUtil {
-   private val LOG: Logger = LoggerFactory.getLogger(ActorUtil.getClass)
+   private val LOG: Logger = LogUtil.getLogger(ActorUtil.getClass)
 
   def getSystemPath(system : ActorSystem) : String = {
     system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.toString

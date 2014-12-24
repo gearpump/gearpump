@@ -19,6 +19,7 @@ package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterInfo
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{LoggerFactory, Logger}
 import org.specs2.mutable.Specification
 import org.specs2.specification.{BeforeExample, AfterExample}
@@ -30,7 +31,7 @@ import scala.util.{Failure, Success}
 class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppMastersService with AfterExample with BeforeExample  {
   import org.apache.gearpump.services.AppMasterProtocol._
   import spray.httpx.SprayJsonSupport._
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[AppMastersServiceSpec])
+  private val LOG: Logger = LogUtil.getLogger(classOf[AppMastersServiceSpec])
   def actorRefFactory = system
   val restUtil = before
   val master = restUtil match {

@@ -23,13 +23,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
-object Ranker {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[Ranker])
-}
-
 class Ranker(conf: Configs) extends TaskActor(conf) {
-
-  import org.apache.gearpump.streaming.examples.kafka.topn.Ranker._
   import org.apache.gearpump.streaming.examples.kafka.topn.Config._
 
   private val config = conf.config

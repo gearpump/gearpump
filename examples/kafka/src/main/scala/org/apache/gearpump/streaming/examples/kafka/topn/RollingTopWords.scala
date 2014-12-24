@@ -25,13 +25,11 @@ import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{Configs, Graph}
+import org.apache.gearpump.util.{LogUtil, Configs, Graph}
 import org.slf4j.{Logger, LoggerFactory}
 
 object RollingTopWords extends App with ArgumentsParser {
-  private val LOG: Logger = LoggerFactory.getLogger(getClass())
-
-  import org.apache.gearpump.streaming.examples.kafka.topn.RollingTopWords._
+  private val LOG: Logger = LogUtil.getLogger(getClass())
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),

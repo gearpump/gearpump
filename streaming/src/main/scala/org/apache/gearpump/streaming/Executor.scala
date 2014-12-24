@@ -27,7 +27,7 @@ import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
 import org.apache.gearpump.transport.{HostPort, Express}
-import org.apache.gearpump.util.{Constants, Configs}
+import org.apache.gearpump.util.{LogUtil, Constants, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration._
@@ -36,10 +36,13 @@ case object TaskLocationReady
 
 class Executor(config : Configs)  extends Actor {
   import context.dispatcher
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[Executor])
+
+  val executorId = config.executorId
+
+  private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId,
+  app = config.appId)
 
   val appMaster = config.appMaster
-  val executorId = config.executorId
   val resource = config.resource
   val appId = config.appId
   val workerId = config.workerId

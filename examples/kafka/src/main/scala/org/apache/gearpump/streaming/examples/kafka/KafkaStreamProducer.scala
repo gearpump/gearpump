@@ -30,16 +30,10 @@ import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
 import org.apache.gearpump.util.Configs
 import org.slf4j.{Logger, LoggerFactory}
 
-object KafkaStreamProducer {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[KafkaStreamProducer])
-}
-
 /**
  * connect gearpump with kafka
  */
 class KafkaStreamProducer(conf: Configs) extends TaskActor(conf) {
-
-  import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer._
 
   private val config = conf.config
   private val grouper = config.getGrouperFactory.getKafkaGrouper(conf, context)

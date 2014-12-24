@@ -32,7 +32,7 @@ import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.util.{ActorUtil, Constants, ProcessLogRedirector}
+import org.apache.gearpump.util.{LogUtil, ActorUtil, Constants, ProcessLogRedirector}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration._
@@ -50,7 +50,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
   private var id = -1
   override def receive : Receive = null
   var master : ActorRef = null
-  val LOG : Logger = LoggerFactory.getLogger(classOf[Worker].getName + id)
+  val LOG : Logger = LogUtil.getLogger(classOf[Worker], worker = id)
 
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
     case WorkerRegistered(id) =>
@@ -149,12 +149,13 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
 }
 
 private[cluster] object Worker {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[Worker])
 
   case class ExecutorResult(result : Try[Int])
 
   class ExecutorWatcher(launch: LaunchExecutor) extends Actor {
     import context.dispatcher
+
+    private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
 
     private val executorHandler = {
       val ctx = launch.executorContext

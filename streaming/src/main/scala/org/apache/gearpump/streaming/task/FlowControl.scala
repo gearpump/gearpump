@@ -18,10 +18,13 @@
 
 package org.apache.gearpump.streaming.task
 
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 class FlowControl(taskId : TaskId, outputTaskCount : Int, sessionId : Int) {
   import org.apache.gearpump.streaming.task.FlowControl._
+
+  private val LOG: Logger = LogUtil.getLogger(getClass, task = taskId)
 
   private var outputWindow : Long = INITIAL_WINDOW_SIZE
   private val ackWaterMark = new Array[Long](outputTaskCount)
@@ -92,8 +95,6 @@ class FlowControl(taskId : TaskId, outputTaskCount : Int, sessionId : Int) {
 }
 
 object FlowControl {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[FlowControl])
-
   final val INITIAL_WINDOW_SIZE = 1024 * 16
   final val FLOW_CONTROL_RATE = 100
 }

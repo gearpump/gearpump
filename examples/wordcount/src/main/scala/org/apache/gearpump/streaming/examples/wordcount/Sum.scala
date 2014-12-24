@@ -30,7 +30,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
 class Sum (conf : Configs) extends TaskActor(conf) {
-  import org.apache.gearpump.streaming.examples.wordcount.Sum._
+  import org.apache.gearpump.streaming.ConfigsHelper._
 
   private val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
 
@@ -65,8 +65,4 @@ class Sum (conf : Configs) extends TaskActor(conf) {
     snapShotWordCount = wordCount
     snapShotTime = current
   }
-}
-
-object Sum {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[Sum])
 }

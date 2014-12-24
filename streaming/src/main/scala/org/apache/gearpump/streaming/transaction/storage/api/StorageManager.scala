@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming.transaction.storage.api
 
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.checkpoint.api.{CheckpointSerDe, Checkpoint, CheckpointManager, Source}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 import com.twitter.bijection._
@@ -60,7 +61,7 @@ object StorageManager {
     }
   }
 
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[StorageManager[_, _]])
+  private val LOG: Logger = LogUtil.getLogger(this.getClass)
 }
 
 class StorageManager[K: Codec, V: Codec](id: String,

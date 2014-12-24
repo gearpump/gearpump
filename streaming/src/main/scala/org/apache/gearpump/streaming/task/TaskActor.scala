@@ -27,7 +27,7 @@ import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.TaskLocationReady
-import org.apache.gearpump.util.{Util, Configs}
+import org.apache.gearpump.util.{LogUtil, Util, Configs}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -36,6 +36,8 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
 
   private val appId = conf.appId
   protected val taskId : TaskId =  conf.taskId
+
+  val LOG: Logger = LogUtil.getLogger(this.getClass, app = appId, executor = conf.executorId, task = taskId)
 
   private val metricName = s"app$appId.task${taskId.groupId}_${taskId.index}"
   private val latencies = Metrics(context.system).histogram(s"$metricName.latency")
@@ -257,7 +259,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
 }
 
 object TaskActor {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[TaskActor])
+
   val INITIAL_WINDOW_SIZE = 1024 * 16
   val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000 //3 seconds
 
@@ -295,6 +297,8 @@ object TaskActor {
 
   // If the message comes from an unknown source, securityChecker will drop it
   class SecurityChecker(task_id: TaskId, self : ActorRef) {
+    private val LOG: Logger = LogUtil.getLogger(classOf[SecurityChecker], task = task_id)
+
     private var receivedMsgCount = Map.empty[ActorRef, MsgCount]
 
     def generateAckResponse(ackRequest: AckRequest, sender: ActorRef): Ack = {

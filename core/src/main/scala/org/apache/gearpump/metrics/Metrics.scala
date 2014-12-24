@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
 import com.codahale.metrics.{MetricFilter, MetricRegistry, ScheduledReporter}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 class Metrics(val system: ExtendedActorSystem) extends Extension {
@@ -97,7 +98,7 @@ import org.apache.gearpump.metrics.Metrics._
 }
 
 object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
-  val LOG: Logger = LoggerFactory.getLogger(classOf[Metrics])
+  val LOG: Logger = LogUtil.getLogger(classOf[Metrics])
 
   override def get(system: ActorSystem): Metrics = super.get(system)
 

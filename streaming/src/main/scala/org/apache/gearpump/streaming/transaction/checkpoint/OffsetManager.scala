@@ -22,6 +22,7 @@ import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.checkpoint.api.{Checkpoint, Source, CheckpointManager, CheckpointSerDe}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaUtil._
 import com.twitter.bijection._
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{LoggerFactory, Logger}
 
 import scala.util.{Failure, Success}
@@ -43,7 +44,7 @@ object OffsetManager {
     }
   }
 
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[OffsetManager])
+  private val LOG: Logger = LogUtil.getLogger(classOf[OffsetManager])
 }
 
 class OffsetManager(checkpointManager: CheckpointManager[TimeStamp, Long],

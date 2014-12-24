@@ -27,7 +27,7 @@ import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.util.{Util, ActorUtil, Constants}
+import org.apache.gearpump.util.{LogUtil, Util, ActorUtil, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
@@ -35,7 +35,7 @@ import scala.collection.immutable
 
 private[cluster] class Master extends Actor with Stash {
 
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[Master])
+  private val LOG: Logger = LogUtil.getLogger(classOf[Master])
   private val systemConfig : Config = context.system.settings.config
   // resources and resourceRequests can be dynamically constructed by
   // heartbeat of worker and appmaster when master singleton is migrated.
