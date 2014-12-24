@@ -175,27 +175,29 @@ private[cluster] object Worker {
         }
       } else {
         val appJar = ctx.jar
+        var tempFile : File = null
         val (jvmArguments, classPath) = appJar match {
           case Some(jar) =>
-            var fos = new FileOutputStream(jar.name)
+            tempFile = File.createTempFile(jar.name, ".jar")
+            var fos = new FileOutputStream(tempFile)
             new PrintStream(fos).write(jar.bytes)
             fos.close
-            var file = new URL("file:"+jar.name)
+            var file = new URL("file:"+tempFile)
             (ctx.jvmArguments :+ "-Dapp.jar="+file.getFile, ctx.classPath :+ file.getFile)
           case None =>
             (ctx.jvmArguments, ctx.classPath)
         }
         val java = System.getProperty("java.home") + "/bin/java"
+        val logArgs = List(s"-D${Constants.APPLICATION_ID}=${launch.appId}", s"-D${Constants.EXECUTOR_ID}=${launch.executorId}")
 
         // pass hostname as a JVM parameter, so that child actorsystem can read it
         // in priority
-
         var host = Try(context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)).map(
           host => List(s"-D${Constants.NETTY_TCP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
 
         val username = List(s"-D${Constants.GEAR_USERNAME}=${ctx.username}")
 
-        val command = List(java) ++ jvmArguments ++ host ++ username ++
+        val command = List(java) ++ jvmArguments ++ host ++ username ++ logArgs ++
           List("-cp", classPath.mkString(File.pathSeparator), ctx.mainClass) ++ ctx.arguments
         LOG.info(s"Starting executor process $command...")
 
@@ -205,6 +207,7 @@ private[cluster] object Worker {
           override def destroy = {
             LOG.info(s"destroying executor process ${ctx.mainClass}")
             process.destroy()
+            deleteTempFile
           }
 
           override def exitValue: Future[Try[Int]] = future {
@@ -213,6 +216,13 @@ private[cluster] object Worker {
               Success(0)
             } else {
               Failure(new Exception(s"Executor exit with error, exit value: $exit"))
+            }
+          }
+
+          def deleteTempFile : Unit = {
+            if(tempFile != null) {
+              tempFile.delete()
+              tempFile = null
             }
           }
         }

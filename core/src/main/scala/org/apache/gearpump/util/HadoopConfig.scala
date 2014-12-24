@@ -15,11 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.examples.fsio
+package org.apache.gearpump.util
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 
-import org.apache.gearpump.util.Configs
 import org.apache.gearpump.util.Constants._
 import org.apache.hadoop.conf.Configuration
 

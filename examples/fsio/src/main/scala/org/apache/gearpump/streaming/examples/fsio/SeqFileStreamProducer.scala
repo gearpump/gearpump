@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.examples.fsio
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProducer._
 import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{HadoopConfig, Configs}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
