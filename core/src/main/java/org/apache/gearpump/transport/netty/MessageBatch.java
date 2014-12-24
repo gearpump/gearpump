@@ -39,7 +39,7 @@ public class MessageBatch {
 
   MessageBatch(int buffer_size) {
     this.buffer_size = buffer_size;
-    messages = new ArrayList<>();
+    messages = new ArrayList<TaskMessage>();
     encoded_length = 0;
   }
 
@@ -74,7 +74,7 @@ public class MessageBatch {
   private int msgEncodeLength(TaskMessage taskMsg) {
     int size = 0;
     if (taskMsg != null) {
-      size = 20; //LONG + LONG + INT
+      size = 24; //sessionId(INT) + sourceTask(LONG) + targetTask(LONG) + messageLength(INT)
       if (taskMsg.message() != null) {
         size += taskMsg.message().length;
       }
@@ -130,7 +130,9 @@ public class MessageBatch {
    * write a TaskMessage into a stream
    * <p/>
    * Each TaskMessage is encoded as:
-   * task ... long(8)
+   * sessionId ... int(4)
+   * source task ... Long(8)
+   * target task ... long(8)
    * len ... int(4)
    * payload ... byte[]     *
    */
@@ -143,6 +145,8 @@ public class MessageBatch {
     long target_id = message.targetTask();
     long source_id = message.sourceTask();
 
+    int sessionId = message.sessionId();
+    bout.writeInt(sessionId);
     bout.writeLong(target_id);
     bout.writeLong(source_id);
     bout.writeInt(payload_len);

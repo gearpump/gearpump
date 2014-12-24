@@ -29,24 +29,32 @@ import java.util.List;
 public class MessageDecoder extends FrameDecoder {
   /*
    * Each TaskMessage is encoded as:
-   *  task (>=0) ... short(8)
+   *  sessionId ... int(4)
+   *  source task ... long(8)
+   *  target task ... long(8)
    *  len ... int(4)
    *  payload ... byte[]     *
    */
   protected List<TaskMessage> decode(ChannelHandlerContext ctx, Channel channel,
                                      ChannelBuffer buf) {
 
+    final int SESION_LENGTH = 4; //int
+    final int SOURCE_TASK_LENGTH = 8; //long
+    final int TARGET_TASK_LENGTH = 8; //long
+    final int MESSAGE_LENGTH = 4; //int
+    final int HEADER_LENGTH = SESION_LENGTH + SOURCE_TASK_LENGTH + TARGET_TASK_LENGTH + MESSAGE_LENGTH;
+
     // Make sure that we have received at least a short message
     long available = buf.readableBytes();
-    if (available < 8) {
+    if (available < HEADER_LENGTH) {
       //need more data
       return null;
     }
 
-    List<TaskMessage> taskMessageList = new ArrayList<>();
+    List<TaskMessage> taskMessageList = new ArrayList<TaskMessage>();
 
     // Use while loop, try to decode as more messages as possible in single call
-    while (available >= 8) {
+    while (available >= HEADER_LENGTH) {
 
       // Mark the current buffer position before reading task/len field
       // because the whole frame might not be in the buffer yet.
@@ -54,31 +62,16 @@ public class MessageDecoder extends FrameDecoder {
       // there's not enough bytes in the buffer.
       buf.markReaderIndex();
 
-      available -= 8;
-
+      int sessionId = buf.readInt();
       long targetTask = buf.readLong();
-
-      if(available < 8) {
-        buf.resetReaderIndex();
-        break;
-      }
-      available -= 8;
       long sourceTask = buf.readLong();
-
-      // Make sure that we have received at least an integer (length)
-      if (available < 4) {
-        // need more data
-        buf.resetReaderIndex();
-        break;
-      }
-
       // Read the length field.
       int length = buf.readInt();
 
-      available -= 4;
+      available -= HEADER_LENGTH;
 
       if (length <= 0) {
-        taskMessageList.add(new TaskMessage(targetTask, sourceTask, null));
+        taskMessageList.add(new TaskMessage(sessionId, targetTask, sourceTask, null));
         break;
       }
 
@@ -95,7 +88,7 @@ public class MessageDecoder extends FrameDecoder {
 
       // Successfully decoded a frame.
       // Return a TaskMessage object
-      taskMessageList.add(new TaskMessage(targetTask, sourceTask, payload.array()));
+      taskMessageList.add(new TaskMessage(sessionId, targetTask, sourceTask, payload.array()));
     }
 
     return taskMessageList.size() == 0 ? null : taskMessageList;

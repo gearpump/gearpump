@@ -54,8 +54,11 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
   private var needSyncToClockService = false
 
   private var minClock : TimeStamp = 0L
-  private val receivedMsgTracker : ReceivedMsgTracker = new ReceivedMsgTracker(taskId)
-  private val sessionId = Util.randInt()
+
+  // securityChecker will be responsible of dropping messages from
+  // unknown sources
+  private val securityChecker  = new SecurityChecker(taskId, self)
+  protected val sessionId = Util.randInt()
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -204,7 +207,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
   def stashAndHandleMessages(handlNow: Boolean) : Receive = {
     case ackRequest : AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
-      val ack = receivedMsgTracker.generateAckResponse(ackRequest, sender)
+      val ack = securityChecker.generateAckResponse(ackRequest, sender)
       if(null != ack){
         queue.add(SendAck(ack, ackRequest.taskId))
       }
@@ -221,18 +224,21 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
       if (handlNow) {
         doHandleMessage()
       }
-    case msg: Message =>
-      if(!sender.equals(self)){
-        receivedMsgTracker.receiveMsg(sender)
+    case inputMessage: Message =>
+
+      val messageAfterCheck = securityChecker.checkMessage(inputMessage, sender)
+      messageAfterCheck match {
+        case Some(msg) =>
+          if (msg.timestamp != Message.noTimeStamp) {
+            latencies.update(System.currentTimeMillis() - msg.timestamp)
+          }
+          val updatedMessage = clockTracker.onReceive(msg)
+          queue.add(updatedMessage)
+          if (handlNow) {
+            doHandleMessage()
+          }
       }
-      if (msg.timestamp != Message.noTimeStamp) {
-        latencies.update(System.currentTimeMillis() - msg.timestamp)
-      }
-      val updatedMessage = clockTracker.onReceive(msg)
-      queue.add(updatedMessage)
-      if (handlNow) {
-        doHandleMessage()
-      }
+
     case ClockUpdated(timestamp) =>
       minClock = timestamp
       unackedClockSyncTimestamp = 0
@@ -287,7 +293,8 @@ object TaskActor {
     def empty = new MergedPartitioner(Array.empty[Partitioner], Array.empty[Int], Array.empty[Int])
   }
 
-  class ReceivedMsgTracker(task_id: TaskId) {
+  // If the message comes from an unknown source, securityChecker will drop it
+  class SecurityChecker(task_id: TaskId, self : ActorRef) {
     private var receivedMsgCount = Map.empty[ActorRef, MsgCount]
 
     def generateAckResponse(ackRequest: AckRequest, sender: ActorRef): Ack = {
@@ -304,11 +311,17 @@ object TaskActor {
       }
     }
 
-    def receiveMsg(sender: ActorRef): Unit = {
-      if (receivedMsgCount.contains(sender)) {
-        receivedMsgCount.get(sender).get.increment
-      } else {
+    // If the message comes from an unknown source, then drop it
+    def checkMessage(message : Message, sender: ActorRef): Option[Message] = {
+      if(sender.equals(self)){
+        Some(message)
+      } else if (!receivedMsgCount.contains(sender)) {
+          // This is an illegal message,
         LOG.debug(s"Task $task_id received message before receive the first AckRequest")
+        None
+      } else {
+        receivedMsgCount.get(sender).get.increment()
+        Some(message)
       }
     }
 

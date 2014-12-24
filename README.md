@@ -67,7 +67,7 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
 
 4. Distribute application jar and run
 
-  Distribute wordcount jar `examples/wordcount/target/gearpump-examples-wordcount-$VERSION.jar` to one of cluster nodes and run with
+  Distribute wordcount jar `examples/wordcount/target/pack/lib/gearpump-examples-wordcount-$VERSION.jar` to one of cluster nodes and run with
 
   ```bash
   ## Run WordCount example

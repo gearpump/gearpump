@@ -54,7 +54,7 @@ trait ExpressTransport {
         if (null == serializedMessage) {
           serializedMessage = serializer.serialize(msg)
         }
-        val taskMessage = new TaskMessage(transportId, sourceId, serializedMessage)
+        val taskMessage = new TaskMessage(sessionId, transportId, sourceId, serializedMessage)
 
         val remoteAddress = express.lookupRemoteAddress(transportId)
         if (remoteAddress.isDefined) {
