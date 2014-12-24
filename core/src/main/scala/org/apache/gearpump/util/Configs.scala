@@ -83,18 +83,17 @@ object Configs {
 
   def apply(config : Config) = new Configs(config.toMap)
 
-  private val CLUSTER_FILE = ConfigFactory.parseResourcesAnySyntax("gear.conf",
+  private val CUSTER_FILE = ConfigFactory.parseResourcesAnySyntax("gear.conf",
     ConfigParseOptions.defaults.setAllowMissing(true))
 
   private val APPLICATION_FILE = ConfigFactory.parseResourcesAnySyntax("application.conf")
 
-  private def loadClusterConfig() : Config = ConfigFactory.load(CLUSTER_FILE)
+  private def loadClusterConfig() : Config = ConfigFactory.load(CUSTER_FILE)
 
   /**
    * Will load file application.conf and fallback to cluster.conf
    */
-
-  def loadApplicationConfig() : Config = ConfigFactory.load(APPLICATION_FILE.withFallback(CLUSTER_FILE))
+  def loadApplicationConfig() : Config = ConfigFactory.load(APPLICATION_FILE.withFallback(CUSTER_FILE))
 
   def loadMasterConfig() : Config = {
     val cluster = loadClusterConfig()

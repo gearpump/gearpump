@@ -188,9 +188,9 @@ private[cluster] object Worker {
 
         // pass hostname as a JVM parameter, so that child actorsystem can read it
         // in priority
-
-        var host = Try(context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)).map(
-          host => List(s"-D${Constants.NETTY_TCP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
+        val NETTY_HOSTNAME = "akka.remote.netty.tcp.hostname"
+        var host = Try(context.system.settings.config.getString(NETTY_HOSTNAME)).map(
+          host => List(s"-D${NETTY_HOSTNAME}=${host}")).getOrElse(List.empty[String])
 
         val command = List(java) ++ jvmArguments ++ host ++
           List("-cp", classPath.mkString(File.pathSeparator), ctx.mainClass) ++ ctx.arguments

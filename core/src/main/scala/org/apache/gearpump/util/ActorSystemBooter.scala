@@ -100,5 +100,9 @@ object ActorSystemBooter  {
       LOG.info(s"Actor System $name is shutting down...")
       context.system.shutdown()
     }
+
+    override def preStart : Unit = {
+
+    }
   }
 }
