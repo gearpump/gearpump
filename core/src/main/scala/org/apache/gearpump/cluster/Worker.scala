@@ -157,15 +157,15 @@ private[cluster] object Worker {
     import context.dispatcher
 
     private val executorHandler = {
-      val context = launch.executorContext
+      val ctx = launch.executorContext
       if (System.getProperty("LOCAL") != null) {
         new ExecutorHandler {
           override def destroy = Unit // we cannot forcefully terminate a future by scala limit
           override def exitValue : Future[Try[Int]] = future {
               try {
-                val clazz = Class.forName(context.mainClass)
+                val clazz = Class.forName(ctx.mainClass)
                 val main = clazz.getMethod("main", classOf[Array[String]])
-                main.invoke(null, context.arguments)
+                main.invoke(null, ctx.arguments)
                 Success(0)
               } catch {
                 case e: Throwable => Failure(e)
@@ -173,26 +173,34 @@ private[cluster] object Worker {
             }
         }
       } else {
-        val appJar = context.jar
+        val appJar = ctx.jar
         val (jvmArguments, classPath) = appJar match {
           case Some(jar) =>
             var fos = new FileOutputStream(jar.name)
             new PrintStream(fos).write(jar.bytes)
             fos.close
             var file = new URL("file:"+jar.name)
-            (context.jvmArguments :+ "-Dapp.jar="+file.getFile, context.classPath :+ file.getFile)
+            (ctx.jvmArguments :+ "-Dapp.jar="+file.getFile, ctx.classPath :+ file.getFile)
           case None =>
-            (context.jvmArguments, context.classPath)
+            (ctx.jvmArguments, ctx.classPath)
         }
         val java = System.getProperty("java.home") + "/bin/java"
-        val command = List(java) ++ jvmArguments ++ List("-cp", classPath.mkString(File.pathSeparator), context.mainClass) ++ context.arguments
+
+        // pass hostname as a JVM parameter, so that child actorsystem can read it
+        // in priority
+
+        var host = Try(context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)).map(
+          host => List(s"-D${Constants.NETTY_TCP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
+
+        val command = List(java) ++ jvmArguments ++ host ++
+          List("-cp", classPath.mkString(File.pathSeparator), ctx.mainClass) ++ ctx.arguments
         LOG.info(s"Starting executor process $command...")
 
         val process = Process(command).run(new ProcessLogRedirector())
 
         new ExecutorHandler {
           override def destroy = {
-            LOG.info(s"destroying executor process ${context.mainClass}")
+            LOG.info(s"destroying executor process ${ctx.mainClass}")
             process.destroy()
           }
 
