@@ -28,7 +28,7 @@ import org.apache.hadoop.io.{SequenceFile, Text}
 import org.slf4j.{Logger, LoggerFactory}
 
 class SeqFileStreamProducer(config: HadoopConfig) extends TaskActor(config ){
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[SeqFileStreamProducer])
+
   val value = new Text()
   val key = new Text()
   var reader: SequenceFile.Reader = null

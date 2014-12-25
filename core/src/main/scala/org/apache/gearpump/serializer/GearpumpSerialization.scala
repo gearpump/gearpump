@@ -20,13 +20,13 @@ package org.apache.gearpump.serializer
 
 import com.esotericsoftware.kryo.{Kryo, Serializer}
 import com.typesafe.config.{ConfigFactory, Config}
-import org.apache.gearpump.util.{Configs, Constants}
+import org.apache.gearpump.util.{LogUtil, Configs, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
 class GearpumpSerialization {
   val config = GearpumpSerialization.getConfig()
 
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[GearpumpSerialization])
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   def customize(kryo: Kryo): Unit  = {
 

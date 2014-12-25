@@ -24,6 +24,7 @@ import java.util.concurrent._
 import akka.actor.{ActorRef, ActorSystem, Props}
 import org.apache.gearpump.transport.netty.Server.ServerPipelineFactory
 import org.apache.gearpump.transport.{ActorLookupById, HostPort}
+import org.apache.gearpump.util.LogUtil
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.slf4j.{Logger, LoggerFactory}
 import com.typesafe.config.Config
@@ -32,7 +33,7 @@ import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 
 object Context {
-  private final val LOG: Logger = LoggerFactory.getLogger(classOf[Context])
+  private final val LOG: Logger = LogUtil.getLogger(getClass)
 
   implicit def toCloseable(fun : () => Any)  = new Closeable {
     override def close = fun()

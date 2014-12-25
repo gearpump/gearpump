@@ -23,6 +23,8 @@ import java.util
 import akka.actor.{ActorContext, Actor, ActorRef, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.ActorLookupById
+import org.apache.gearpump.transport.netty.Server._
+import org.apache.gearpump.util.LogUtil
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.{Logger, LoggerFactory}
@@ -31,6 +33,7 @@ import scala.collection.JavaConversions._
 import scala.concurrent.future
 
 class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) extends Actor {
+  private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = name)
 
   import org.apache.gearpump.transport.netty.Server._
 
@@ -75,7 +78,6 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
 }
 
 object Server {
-  private[netty] final val LOG: Logger = LoggerFactory.getLogger(classOf[Server])
 
   class ServerPipelineFactory(server: ActorRef) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
@@ -88,6 +90,7 @@ object Server {
   }
 
   class ServerHandler(server: ActorRef) extends SimpleChannelUpstreamHandler {
+    private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = server.path.name)
 
     override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
       server ! AddChannel(e.getChannel)

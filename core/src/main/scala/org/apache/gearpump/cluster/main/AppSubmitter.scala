@@ -2,10 +2,10 @@ package org.apache.gearpump.cluster.main
 
 import java.net.{URL, URLClassLoader}
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.gearpump.util.Constants
+import org.apache.gearpump.util.{LogUtil, Constants}
 
 object AppSubmitter extends App with ArgumentsParser {
-  val LOG: Logger = LoggerFactory.getLogger(AppSubmitter.getClass)
+  val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val ignoreUnknownArgument = true
 

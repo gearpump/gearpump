@@ -28,14 +28,14 @@ import akka.contrib.pattern.{ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.{Master => MasterClass}
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{Configs, Constants}
+import org.apache.gearpump.util.{LogUtil, Configs, Constants}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
 object Master extends App with ArgumentsParser {
-  private val LOG: Logger = LoggerFactory.getLogger(Master.getClass)
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   val options: Array[(String, CLIOption[Any])] = 
     Array("ip"->CLIOption[String]("<master ip address>",required = true),

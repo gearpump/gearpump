@@ -20,10 +20,11 @@ package org.apache.gearpump.cluster.main
 
 import java.io.{File, PrintWriter}
 
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 object Shell extends App with ArgumentsParser {
 
-  private val LOG: Logger = LoggerFactory.getLogger(Local.getClass)
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true))

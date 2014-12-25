@@ -17,11 +17,12 @@
  */
 package org.apache.gearpump.cluster.main
 
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 object Gear extends App {
 
-  private val LOG: Logger = LoggerFactory.getLogger(Gear.getClass)
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   def usage(commandOption: Option[String]) = {
     commandOption match {

@@ -21,12 +21,13 @@ package org.apache.gearpump.cluster
 import akka.actor._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 class MasterProxy(masters: Iterable[HostPort])
   extends Actor with Stash {
 
-  import org.apache.gearpump.cluster.MasterProxy._
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   val contacts = masters.map { master =>
     s"akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER"
@@ -67,8 +68,4 @@ class MasterProxy(masters: Iterable[HostPort])
       LOG.info(s"Get msg ${msg.getClass.getSimpleName}, forwarding to ${receptionist.path}")
       receptionist forward msg
   }
-}
-
-object MasterProxy {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[MasterProxy])
 }
