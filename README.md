@@ -37,6 +37,8 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   Build a package, distribute to all nodes, and extract it.
 
   ```bash
+  
+  ## Please use scala 2.11
   ## The target package path: target/gearpump-$VERSION.tar.gz
   sbt clean pack-archive
   ```
