@@ -93,7 +93,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
 
     LOG.info("Initializing Clock service ....")
-    clockService = context.actorOf(Props(classOf[ClockService], dag))
+    clockService = context.actorOf(Props(classOf[ClockService], dag), "clockservice")
 
     context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
   }
@@ -158,7 +158,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
         val (worker, resource) = workerAndResources
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
         val executorConfig = appDescription.conf.withAppId(appId).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withStartTime(startClock).withWorkerId(actorToWorkerId.get(worker).get)
-        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig, appJar))
+        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig, appJar), s"launcher${currentExecutorId}")
         currentExecutorId += 1
       })
   }
@@ -332,6 +332,8 @@ object AppMaster {
 
   case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
 
+  object LaunchActorSystemTimeOut
+
   class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs, jar: Option[AppJar]) extends Actor {
 
     val name = ActorUtil.actorNameForExecutor(appId, executorId)
@@ -341,15 +343,22 @@ object AppMaster {
     val launch = ExecutorContext(classPath, executorConfig.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
     worker ! LaunchExecutor(appId, executorId, resource, launch)
 
-    def receive : Receive = waitForActorSystemToStart
+    implicit val executionContext = context.dispatcher
+    val timeout = context.system.scheduler.scheduleOnce(Duration(15, TimeUnit.SECONDS), self, LaunchActorSystemTimeOut)
 
+    def receive : Receive = waitForActorSystemToStart
 
     def waitForActorSystemToStart : Receive = {
       case RegisterActorSystem(systemPath) =>
+        timeout.cancel()
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
         val executorProps = Props(classOf[Executor], executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
         sender ! BindLifeCycle(worker)
         context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender())
+        context.stop(self)
+      case LaunchActorSystemTimeOut =>
+        LOG.error("The Executor ActorSystem has not been started in time, cannot start Executor" +
+          "in it...")
         context.stop(self)
     }
   }

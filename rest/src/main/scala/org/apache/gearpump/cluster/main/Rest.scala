@@ -32,7 +32,7 @@ object Rest extends App with ArgumentsParser {
     val masters = config.getString("master")
     Console.out.println("Master URL: " + masters)
     val systemConfig = Configs.loadApplicationConfig()
-    val clientContext = ClientContext(masters, systemConfig)
+    val clientContext = ClientContext(masters)
     implicit val system = clientContext.system
     RestServices.start(clientContext.master)
   }

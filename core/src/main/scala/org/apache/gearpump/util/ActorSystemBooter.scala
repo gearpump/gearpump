@@ -18,10 +18,14 @@
 
 package org.apache.gearpump.util
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ApplicationMaster
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.concurrent.duration.Duration
 
 /**
  * Start a actor system, and will send the system adress to report back actor
@@ -35,7 +39,6 @@ class ActorSystemBooter(config : Config) {
     val system = ActorSystem(name, config)
     // daemon path: http://{system}@{ip}:{port}/daemon
     system.actorOf(Props(classOf[Daemon], name, reportBackActor), "daemon")
-    LOG.info(s"Booting Actor System $name reporting back url: $reportBackActor")
     system
   }
 }
@@ -45,7 +48,7 @@ object ActorSystemBooter  {
 
   def create(config : Config) : ActorSystemBooter = new ActorSystemBooter(config)
 
-   def main (args: Array[String]) {
+  def main (args: Array[String]) {
     val name = args(0)
     val reportBack = args(1)
     val config = Configs.loadApplicationConfig()
@@ -59,15 +62,29 @@ object ActorSystemBooter  {
 
   case class RegisterActorSystem(systemPath : String)
 
+  object RegisterActorSystemTimeOut
+
   class Daemon(name : String, reportBack : String) extends Actor {
-    def receive : Receive = {
+
+    LOG.info(s"RegisterActorSystem to ${reportBack}")
+    val reportBackActor = context.actorSelection(reportBack)
+    reportBackActor ! RegisterActorSystem(ActorUtil.getSystemPath(context.system))
+
+    implicit val executionContext = context.dispatcher
+    val timeout = context.system.scheduler.scheduleOnce(Duration(25, TimeUnit.SECONDS), self, RegisterActorSystemTimeOut)
+
+    def receive : Receive =  {
+      case RegisterActorSystemTimeOut =>
+        LOG.error("RegisterActorSystemTimeOut..., killing myself... ")
+        context.stop(self)
       //Bind life cycle with sender, if sender dies, the daemon dies, then the system dies
       case BindLifeCycle(actor) =>
+        timeout.cancel()
         LOG.info(s"ActorSystem $name Binding life cycle with actor: $actor")
         context.watch(actor)
       // Send PoisonPill to the daemon to kill the actorsystem
-
       case CreateActor(clazz, name, args) =>
+        timeout.cancel()
         LOG.info(s"creating actor $name with class name '$clazz'")
         val classZ = Class.forName(clazz)
         val props = Props(classZ, args)
@@ -83,11 +100,6 @@ object ActorSystemBooter  {
     override def postStop : Unit = {
       LOG.info(s"Actor System $name is shutting down...")
       context.system.shutdown()
-    }
-
-    override def preStart : Unit = {
-      val reportBackActor = context.actorSelection(reportBack)
-      reportBackActor ! RegisterActorSystem(ActorUtil.getSystemPath(context.system))
     }
   }
 }

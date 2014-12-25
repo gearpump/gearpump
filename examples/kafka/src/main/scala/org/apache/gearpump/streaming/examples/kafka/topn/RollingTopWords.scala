@@ -18,7 +18,8 @@
 
 package org.apache.gearpump.streaming.examples.kafka.topn
 
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
@@ -27,8 +28,8 @@ import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
 import org.slf4j.{Logger, LoggerFactory}
 
-class RollingTopWords extends Starter with ArgumentsParser {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[RollingTopWords])
+object RollingTopWords extends App with ArgumentsParser {
+  private val LOG: Logger = LoggerFactory.getLogger(getClass())
 
   import org.apache.gearpump.streaming.examples.kafka.topn.RollingTopWords._
 
@@ -39,7 +40,7 @@ class RollingTopWords extends Starter with ArgumentsParser {
     "intermediate_ranker" -> CLIOption[Int]("<how many intermediate ranker tasks>", required = false, defaultValue = Some(4)),
     "runseconds" -> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
 
-  override def application(config: ParseResult) : AppDescription = {
+  def application(config: ParseResult) : AppDescription = {
     val windowConfig = Map(
       Config.EMIT_FREQUENCY_MS -> 1000,
       Config.WINDOW_LENGTH_MS -> 5000,
@@ -60,16 +61,20 @@ class RollingTopWords extends Starter with ArgumentsParser {
     app
   }
 
+  val config = parse(args)
+  val context = ClientContext(config.getString("master"))
+  val appId = context.submit(application(config))
+  Thread.sleep(config.getInt("runseconds") * 1000)
+  context.shutdown(appId)
+  context.cleanup()
 }
 
-object RollingTopWords {
-  object Config {
-    val EMIT_FREQUENCY_MS = "emit.frequency.ms"
-    val WINDOW_LENGTH_MS = "window.length.ms"
-    val TOPN = "topn"
+object Config {
+  val EMIT_FREQUENCY_MS = "emit.frequency.ms"
+  val WINDOW_LENGTH_MS = "window.length.ms"
+  val TOPN = "topn"
 
-    def getEmitFrequencyMS(config: Map[String, _]) = config.get(EMIT_FREQUENCY_MS).get.asInstanceOf[Int]
-    def getWindowLengthMS(config: Map[String, _]) = config.get(WINDOW_LENGTH_MS).get.asInstanceOf[Int]
-    def getTopN(config: Map[String, _]) = config.get(TOPN).get.asInstanceOf[Int]
-  }
+  def getEmitFrequencyMS(config: Map[String, _]) = config.get(EMIT_FREQUENCY_MS).get.asInstanceOf[Int]
+  def getWindowLengthMS(config: Map[String, _]) = config.get(WINDOW_LENGTH_MS).get.asInstanceOf[Int]
+  def getTopN(config: Map[String, _]) = config.get(TOPN).get.asInstanceOf[Int]
 }

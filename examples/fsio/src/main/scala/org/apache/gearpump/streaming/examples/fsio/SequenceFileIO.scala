@@ -18,7 +18,8 @@
 package org.apache.gearpump.streaming.examples.fsio
 
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
@@ -28,8 +29,8 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
 
-class SequenceFileIO extends Starter with ArgumentsParser {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[SequenceFileIO])
+object SequenceFileIO extends App with ArgumentsParser {
+  private val LOG: Logger = LoggerFactory.getLogger(getClass())
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
@@ -40,7 +41,7 @@ class SequenceFileIO extends Starter with ArgumentsParser {
     "output"-> CLIOption[String]("<output file directory>", required = true)
   )
 
-  override def application(config: ParseResult) : AppDescription = {
+  def application(config: ParseResult) : AppDescription = {
     val spoutNum = config.getInt("source")
     val boltNum = config.getInt("sink")
     val input = config.getString("input")
@@ -54,4 +55,11 @@ class SequenceFileIO extends Starter with ArgumentsParser {
     val app = AppDescription("SequenceFileIO", classOf[AppMaster].getCanonicalName, hadoopConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app
   }
+
+  val config = parse(args)
+  val context = ClientContext(config.getString("master"))
+  val appId = context.submit(application(config))
+  Thread.sleep(config.getInt("runseconds") * 1000)
+  context.shutdown(appId)
+  context.cleanup()
 }

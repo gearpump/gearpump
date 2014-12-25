@@ -18,15 +18,16 @@
 
 package org.apache.gearpump.streaming.examples.sol
 
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.{Partitioner, ShufflePartitioner}
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
 import org.slf4j.{Logger, LoggerFactory}
 
-class SOL extends Starter with ArgumentsParser {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[SOL])
+object SOL extends App with ArgumentsParser {
+  private val LOG: Logger = LoggerFactory.getLogger(getClass())
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
@@ -36,7 +37,7 @@ class SOL extends Starter with ArgumentsParser {
     "bytesPerMessage" -> CLIOption[Int]("<size of each message>", required = false, defaultValue = Some(100)),
     "stages"-> CLIOption[Int]("<how many stages to run>", required = false, defaultValue = Some(2)))
 
-  override def application(config: ParseResult) : AppDescription = {
+  def application(config: ParseResult) : AppDescription = {
     val spoutNum = config.getInt("streamProducer")
     val boltNum = config.getInt("streamProcessor")
     val bytesPerMessage = config.getInt("bytesPerMessage")
@@ -53,4 +54,11 @@ class SOL extends Starter with ArgumentsParser {
     val app = AppDescription("sol", classOf[AppMaster].getCanonicalName, appConfig, dag)
     app
   }
+
+  val config = parse(args)
+  val context = ClientContext(config.getString("master"))
+  val appId = context.submit(application(config))
+  Thread.sleep(config.getInt("runseconds") * 1000)
+  context.shutdown(appId)
+  context.cleanup()
 }

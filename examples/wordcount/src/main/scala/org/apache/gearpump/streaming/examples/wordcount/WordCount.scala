@@ -18,25 +18,26 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult, Starter}
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Configs, Graph}
-import org.apache.gearpump.util.Configs._
 import org.slf4j.{Logger, LoggerFactory}
 
-class WordCount extends Starter with ArgumentsParser {
-  private val LOG: Logger = LoggerFactory.getLogger(classOf[WordCount])
+object WordCount extends App with ArgumentsParser {
+  private val LOG: Logger = LoggerFactory.getLogger(this.getClass)
+  val RUN_FOR_EVER = -1
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
-    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60))
+    "runseconds"-> CLIOption[Int]("<how long to run this example, set to -1 if run forever>", required = false, defaultValue = Some(60))
   )
 
-  override def application(config: ParseResult) : AppDescription = {
+  def application(config: ParseResult) : AppDescription = {
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
     val appConfig = Configs.loadApplicationConfig()
@@ -46,5 +47,12 @@ class WordCount extends Starter with ArgumentsParser {
     val app = AppDescription("wordCount", classOf[AppMaster].getCanonicalName, Configs(appConfig), Graph(split ~ partitioner ~> sum))
     app
   }
+
+  val config = parse(args)
+  val context = ClientContext(config.getString("master"))
+  val appId = context.submit(application(config))
+  Thread.sleep(config.getInt("runseconds") * 1000)
+  context.shutdown(appId)
+  context.cleanup()
 }
 
