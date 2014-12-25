@@ -33,7 +33,7 @@ class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppM
   import spray.httpx.SprayJsonSupport._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
-  val restUtil = before
+  val restUtil = RestTestUtil.startRestServices
   val master = restUtil match {
     case Success(v) =>
       v.miniCluster.mockMaster
@@ -43,8 +43,6 @@ class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppM
   }
 
   def before = {
-    Thread.sleep(1000)
-    RestTestUtil.startRestServices
   }
 
   "AppMastersService" should {
@@ -58,6 +56,7 @@ class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppM
   def after: Unit = {
     restUtil match {
       case Success(v) =>
+        LOG.info("shutting down the cluster....")
         v.shutdown()
       case Failure(v) =>
         LOG.error("Could not start rest services", v)

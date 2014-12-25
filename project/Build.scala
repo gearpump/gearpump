@@ -30,7 +30,7 @@ object Build extends sbt.Build {
   val kafkaVersion = "0.8.2-beta"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
-  val scalaVersionNumber = "2.11.3"
+  val scalaVersionNumber = "2.11.4"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
   val spraySwaggerVersion = "0.5.0"

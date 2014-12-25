@@ -18,13 +18,16 @@
 
 package org.apache.gearpump.services
 
+
 import org.apache.gearpump.cluster.AppMasterInfo
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.{LoggerFactory, Logger}
 import org.specs2.mutable.Specification
-import org.specs2.specification.{AfterExample, BeforeExample}
+import org.specs2.specification.{BeforeExample, AfterExample}
 import spray.testkit.Specs2RouteTest
+
+import scala.util.{Failure, Success}
 
 import scala.util.{Failure, Success}
 
@@ -33,7 +36,8 @@ class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMa
   import spray.httpx.SprayJsonSupport._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
-  val restUtil = before
+  var restUtil = RestTestUtil.startRestServices
+
   val master = restUtil match {
     case Success(v) =>
       v.miniCluster.mockMaster
@@ -43,8 +47,6 @@ class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMa
   }
 
   def before = {
-    Thread.sleep(1000)
-    RestTestUtil.startRestServices
   }
 
   "AppMasterService" should {
@@ -63,6 +65,7 @@ class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMa
   def after: Unit = {
     restUtil match {
       case Success(v) =>
+        LOG.info("shutting down the cluster....")
         v.shutdown()
       case Failure(v) =>
         LOG.error("Could not start rest services", v)

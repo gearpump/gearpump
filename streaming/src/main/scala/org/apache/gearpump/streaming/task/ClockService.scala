@@ -29,6 +29,7 @@ import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
 
 /**
  * The clockService will maintain a global view of message timestamp in the application
@@ -77,8 +78,10 @@ import org.apache.gearpump.streaming.task.ClockService._
   }
 
   private def minClock : TimeStamp = {
-    val taskGroup = taskGroupClocks.first()
-    taskGroup.minClock
+    Try {
+      val taskGroup = taskGroupClocks.first()
+      taskGroup.minClock
+    }.getOrElse(0)
   }
 
   def reportGlobalMinClock() : Unit = {

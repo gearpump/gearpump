@@ -40,19 +40,16 @@ object TestUtil{
 
   class MiniCluster{
     private val mockMasterIP = "127.0.0.1"
-    private val mockMasterPort = 4123
 
-    private implicit val system = ActorSystem(MASTER, MASTER_CONFIG.
-      withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(mockMasterPort)).
-      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(mockMasterIP)).
-      withValue("gearpump.cluster.masters",  ConfigValueFactory.fromAnyRef(List(s"$mockMasterIP:$mockMasterPort").asJava)))
+    private implicit val system = ActorSystem("system", MASTER_CONFIG.
+      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(mockMasterIP)))
 
     val mockMaster: ActorRef = {
-      system.actorOf(Props(classOf[Master]))
+      system.actorOf(Props(classOf[Master]), "master")
     }
 
     val worker: ActorRef = {
-      system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], mockMaster))
+      system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], mockMaster), "worker")
     }
 
     def launchActor(props: Props): TestActorRef[Actor] = {

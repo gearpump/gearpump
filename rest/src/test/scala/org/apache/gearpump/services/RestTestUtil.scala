@@ -33,7 +33,7 @@ import scala.util.Try
 
 object RestTestUtil {
 
-  val startRestServices:Try[RestTest] = Try(new RestTest().startRestServices)
+  def startRestServices:Try[RestTest] = Try(new RestTest().startRestServices)
 
   class RestTest {
     val miniCluster:MiniCluster = TestUtil.startMiniCluster

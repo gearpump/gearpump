@@ -239,6 +239,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
           if (handlNow) {
             doHandleMessage()
           }
+        case None =>
       }
 
     case ClockUpdated(timestamp) =>
