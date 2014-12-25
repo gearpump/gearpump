@@ -98,7 +98,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   //TODO: We can use this state for appmaster HA to recover a new App master
   private var state: Set[ApplicationState] = Set.empty[ApplicationState]
 
-  val masterClusterSize = systemconfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).size()
+  val masterClusterSize = Math.max(1, systemconfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).size())
 
   //optimize write path, we can tolerate one master down for recovery.
   val writeQuorum = Math.min(2, masterClusterSize / 2 + 1)
