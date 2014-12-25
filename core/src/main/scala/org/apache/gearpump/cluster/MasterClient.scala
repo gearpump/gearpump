@@ -18,16 +18,16 @@
 
 package org.apache.gearpump.cluster
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.ActorRef
 import akka.pattern.ask
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
-import org.apache.gearpump.util.{Constants, Configs}
+import org.apache.gearpump.util.Constants
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success}
 
 /**
  * Stateless, thread safe
@@ -35,9 +35,12 @@ import scala.util.{Try, Failure, Success}
 class MasterClient(master : ActorRef) {
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
-  def submitApplication(app : Application, appJar: Option[AppJar]) : Try[Int] = {
+  def submitApplication(app : Application, appJar: Option[AppJar]) : Int = {
     val result = Await.result( (master ? SubmitApplication(app, appJar)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)
-    result.appId
+    result.appId match {
+      case Success(appId) => appId
+      case Failure(ex) => throw ex
+    }
   }
 
   def shutdownApplication(appId : Int) : Unit = {
