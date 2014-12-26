@@ -35,6 +35,7 @@ object WorkerToMaster {
 object MasterToWorker {
   case class WorkerRegistered(workerId : Int)
   case class UpdateResourceFailed(reason : String = null, ex: Throwable = null)
+  case object UpdateResourceSucceed
 }
 
 /**
@@ -93,5 +94,7 @@ object AppMasterToWorker {
 
 object WorkerToAppMaster {
   case class ExecutorLaunchRejected(reason: String = null, resource : Resource, ex: Throwable = null)
+  case class ShutdownExecutorSucceed(appId: Int, executorId: Int)
+  case class ShutdownExecutorFailed(reason: String = null, ex: Throwable = null)
 }
 

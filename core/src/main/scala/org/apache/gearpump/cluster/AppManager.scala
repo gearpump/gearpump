@@ -70,7 +70,7 @@ class ApplicationState(val appId : Int, val attemptId : Int, val app : Applicati
   }
 }
 
-private[cluster] class AppManager() extends Actor with Stash {
+private[cluster] class AppManager() extends Actor with Stash with TimeOutScheduler{
 
   import context.dispatcher
   import org.apache.gearpump.cluster.AppManager._
@@ -143,7 +143,7 @@ private[cluster] class AppManager() extends Actor with Stash {
   def receiveHandler = {
     System.out.println("Application Manager started. Ready for application submission...")
     LOG.info("Application Manager started. Ready for application submission...")
-    masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse appDataStoreService orElse terminationWatch
+    masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse workerMessage orElse appDataStoreService orElse terminationWatch
   }
 
   def masterHAMsgHandler: Receive = {
@@ -170,7 +170,8 @@ private[cluster] class AppManager() extends Actor with Stash {
           val worker = info.worker
           LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
           cleanApplicationData(appId)
-          worker ! ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
+          val shutdown = ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
+          sendMsgWithTimeOutCallBack(worker, shutdown, 30, shutDownExecutorTimeOut())
           sender ! ShutdownApplicationResult(Success(appId))
         case None =>
           val errorMsg = s"Find to find regisration information for appId: $appId"
@@ -190,6 +191,17 @@ private[cluster] class AppManager() extends Actor with Stash {
           LOG.error(errorMsg)
           sender ! ReplayApplicationResult(Failure(new Exception(errorMsg)))
       }
+  }
+
+  def workerMessage: Receive = {
+    case ShutdownExecutorSucceed(appId, executorId) =>
+      LOG.info(s"Shut down executor $executorId for application $appId successfully")
+    case failed: ShutdownExecutorFailed =>
+      LOG.error(failed.reason)
+  }
+  
+  private def shutDownExecutorTimeOut(): Unit = {
+    LOG.error(s"Shut down executor time out")
   }
 
   def appMasterMessage: Receive = {

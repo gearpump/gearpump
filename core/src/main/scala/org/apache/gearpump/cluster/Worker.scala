@@ -32,7 +32,7 @@ import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.util.{LogUtil, ActorUtil, Constants, ProcessLogRedirector}
+import org.apache.gearpump.util._
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration._
@@ -43,7 +43,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * masterProxy is used to resolve the master
  */
-private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
+private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOutScheduler{
   private val systemConfig : Config = context.system.settings.config
   private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()
@@ -59,8 +59,12 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
       master = sender()
       context.watch(master)
       LOG.info(s"Worker $id Registered ....")
-      sender ! ResourceUpdate(id, resource)
-      context.become(appMasterMsgHandler orElse terminationWatch(master) orElse schedulerMsgHandler orElse ActorUtil.defaultMsgHandler(self))
+      sendMsgWithTimeOutCallBack(sender, ResourceUpdate(id, resource), 30, updateResourceTimeOut())
+      context.become(appMasterMsgHandler orElse terminationWatch(master) orElse ActorUtil.defaultMsgHandler(self))
+  }
+
+  private def updateResourceTimeOut(): Unit = {
+    LOG.error(s"Worker $id update resource time out")
   }
 
   def appMasterMsgHandler : Receive = {
@@ -73,6 +77,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         context.child(actorName).get.forward(shutdown)
       } else {
         LOG.info(s"There is no child $actorName, ignore this message")
+        sender ! ShutdownExecutorFailed(s"Can not find executor $executorId for app $appId")
       }
     case launch : LaunchExecutor =>
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
@@ -88,12 +93,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         master ! ResourceUpdate(id, resource)
         context.watch(executor)
       }
-  }
-
-  def schedulerMsgHandler : Receive = {
     case UpdateResourceFailed(reason, ex) =>
       LOG.error(reason)
       context.stop(self)
+    case UpdateResourceSucceed =>
+      LOG.info(s"Worker $id update resource succeed")
   }
 
   def terminationWatch(master : ActorRef) : Receive = {
@@ -110,7 +114,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor{
         if (allocated.isDefined) {
           resource = resource.add(allocated.get)
           allocatedResource = allocatedResource - actor
-          master ! ResourceUpdate(id, resource)
+          sendMsgWithTimeOutCallBack(master, ResourceUpdate(id, resource), 30, updateResourceTimeOut())
         }
       }
   }
@@ -236,6 +240,7 @@ private[cluster] object Worker {
     override def receive: Receive = {
       case ShutdownExecutor(appId, executorId, reason : String) =>
         executorHandler.destroy
+        sender ! ShutdownExecutorSucceed(appId, executorId)
         context.stop(self)
       case ExecutorResult(executorResult) =>
         executorResult match {
