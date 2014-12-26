@@ -1,10 +1,11 @@
+This documents are for commitors which have direct write permission to intel-hadoop/gearpump
+
 Commit Guideline
 ========================
 1.	For all commit(except doc), must create an issue id.
-2.	For all commit log message, must contain the issue id,
-Like this: fix #issueId, comments.
+2.	For all commit log message, must contain the issue id, Like this: fix #issueId, comments.
 3.	For all PR, the title must contains issue Id.
-4.	We use rebase and squash instead of merge to ensure the log message is clean. Check next section for details.
+4.	We use rebase and squash instead of merge to ensure the log message is clean. Check section "Pull Request merge process for Gearpump"
 5.	Every commit (except doc) must have 1 guy to review before commit.
 
 Pull Request merge process for Gearpump
