@@ -29,8 +29,9 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.JavaConverters._
 
 object Worker extends App with ArgumentsParser {
+  val config = Configs.loadWorkerConfig()
   val LOG : Logger = {
-    LogUtil.loadConfiguration(ProcessType.WORKER)
+    LogUtil.loadConfiguration(config, ProcessType.WORKER)
     //delay creation of LOG instance to avoid creating an empty log file as we reset the log file name here
     LogUtil.getLogger(getClass)
   }
@@ -44,8 +45,6 @@ object Worker extends App with ArgumentsParser {
   }
 
   def worker(): Unit = {
-    val config = Configs.loadWorkerConfig()
-
     val id = uuid
     val system = ActorSystem(id, config)
 

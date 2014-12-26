@@ -3,9 +3,11 @@ package org.apache.gearpump.util
 import java.net.InetAddress
 import java.util.Properties
 
+import com.typesafe.config.Config
 import org.apache.log4j.PropertyConfigurator
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.util.Try
 import scala.util.Try
 
 object LogUtil {
@@ -46,7 +48,7 @@ object LogUtil {
     }
   }
 
-  def loadConfiguration(processType : ProcessType.ProcessType) : Unit = {
+  def loadConfiguration(config : Config, processType : ProcessType.ProcessType) : Unit = {
     setHostnameSystemProperty
 
     //set log file name
@@ -62,8 +64,12 @@ object LogUtil {
     processType match {
       case ProcessType.APPLICATION =>
         props.setProperty("log4j.rootLogger", "${gearpump.application.logger}")
+        val appLogDir = config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
+        props.setProperty("gearpump.application.log.rootdir", appLogDir)
       case _ =>
         props.setProperty("log4j.rootLogger", "${gearpump.root.logger}")
+        val daemonLogDir = config.getString(Constants.GEARPUMP_LOG_DAEMON_DIR)
+        props.setProperty("gearpump.log.dir", daemonLogDir)
     }
 
     PropertyConfigurator.configure(props)

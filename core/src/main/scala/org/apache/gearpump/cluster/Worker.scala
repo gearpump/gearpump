@@ -188,7 +188,7 @@ private[cluster] object Worker {
             (ctx.jvmArguments, ctx.classPath)
         }
         val java = System.getProperty("java.home") + "/bin/java"
-        val logArgs = List(s"-D${Constants.APPLICATION_ID}=${launch.appId}", s"-D${Constants.EXECUTOR_ID}=${launch.executorId}")
+        val logArgs = List(s"-D${Constants.GEAR_APPLICATION_ID}=${launch.appId}", s"-D${Constants.GEAR_EXECUTOR_ID}=${launch.executorId}")
 
         // pass hostname as a JVM parameter, so that child actorsystem can read it
         // in priority

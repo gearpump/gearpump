@@ -48,6 +48,9 @@ object Constants {
   val GEARPUMP_EXECUTOR_ARGS = "gearpump.streaming.executor.vmargs"
   val GEARPUMP_EXECUTOR_EXTRA_CLASSPATH = "gearpump.streaming.executor.extraClasspath"
 
+  val GEARPUMP_LOG_DAEMON_DIR = "gearpump.log.daemon.dir"
+  val GEARPUMP_LOG_APPLICATION_DIR = "gearpump.log.application.dir"
+
   //config for construction of executor
   val APP_MASTER = "appMaster"
   val EXECUTOR_ID = "executorId"
@@ -72,7 +75,8 @@ object Constants {
 
   val NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname"
   val GEAR_USERNAME = "gear.username"
-  val APPLICATION_ID = "gear.applicationId"
+  val GEAR_APPLICATION_ID = "gear.applicationId"
+  val GEAR_EXECUTOR_ID = "gear.executorId"
   // Application jar property
   val GEAR_APP_JAR = "gear.app.jar"
 }

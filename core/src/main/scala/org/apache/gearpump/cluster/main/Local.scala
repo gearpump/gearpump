@@ -28,9 +28,9 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.JavaConverters._
 
 object Local extends App with ArgumentsParser {
-
+  val masterConfig = Configs.loadMasterConfig()
   private val LOG: Logger = {
-    LogUtil.loadConfiguration(ProcessType.LOCAL)
+    LogUtil.loadConfiguration(masterConfig, ProcessType.LOCAL)
     LogUtil.getLogger(getClass)
   }
 
@@ -52,7 +52,7 @@ object Local extends App with ArgumentsParser {
       System.setProperty("LOCAL", "true")
     }
 
-    implicit val system = ActorSystem(MASTER, Configs.loadMasterConfig().
+    implicit val system = ActorSystem(MASTER, masterConfig.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
       withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip)).
       withValue("gearpump.cluster.masters",  ConfigValueFactory.fromAnyRef(List(s"$ip:$port").asJava))
