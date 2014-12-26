@@ -99,9 +99,9 @@ Check the wiki pages for more on [build](https://github.com/intel-hadoop/gearpum
 This is what a [GearPump WordCount](https://github.com/intel-hadoop/gearpump/tree/master/examples/wordcount/src/main/scala/org/apache/gearpump/streaming/examples/wordcount) looks like.
 
   ```scala
-  class WordCount extends Starter with ArgumentsParser {
+  class WordCount extends App with ArgumentsParser {
 
-    override def application(config: ParseResult) : AppDescription = {
+    def application(config: ParseResult) : AppDescription = {
       val partitioner = new HashPartitioner()
       val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
       val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
@@ -112,6 +112,10 @@ This is what a [GearPump WordCount](https://github.com/intel-hadoop/gearpump/tre
       val app = AppDescription("wordCount", classOf[AppMaster].getCanonicalName, appConfig, dag)
       app
     }
+    
+    val config = parse(args)
+    val context = ClientContext(config.getString("master"))
+    context.submit(application(config))
   }
   ```
 
