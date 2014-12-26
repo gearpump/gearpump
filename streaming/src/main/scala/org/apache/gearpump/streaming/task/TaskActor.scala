@@ -298,6 +298,7 @@ object TaskActor {
 
   // If the message comes from an unknown source, securityChecker will drop it
   class SecurityChecker(task_id: TaskId, self : ActorRef) {
+
     private val LOG: Logger = LogUtil.getLogger(getClass, task = task_id)
 
     private var receivedMsgCount = Map.empty[ActorRef, MsgCount]

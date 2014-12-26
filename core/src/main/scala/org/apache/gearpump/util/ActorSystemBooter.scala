@@ -67,7 +67,9 @@ object ActorSystemBooter  {
   class Daemon(name : String, reportBack : String) extends Actor {
     val LOG: Logger = LogUtil.getLogger(getClass, context = name)
 
-    LOG.info(s"RegisterActorSystem to ${reportBack}")
+    val username = Option(System.getProperty(Constants.GEAR_USERNAME)).getOrElse("not_defined")
+    LOG.info(s"RegisterActorSystem to ${reportBack}, current user: $username")
+    
     val reportBackActor = context.actorSelection(reportBack)
     reportBackActor ! RegisterActorSystem(ActorUtil.getSystemPath(context.system))
 

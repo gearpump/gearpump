@@ -149,9 +149,9 @@ private[cluster] class AppManager() extends Actor with Stash {
   }
 
   def clientMsgHandler: Receive = {
-    case submitApp@SubmitApplication(app, jar) =>
+    case submitApp@SubmitApplication(app, jar, username) =>
       LOG.info(s"AppManager Submiting Application $appId...")
-      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, app, jar), appId.toString)
+      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, app, jar, username), appId.toString)
 
       LOG.info(s"Persist master state writeQuorum: $writeQuorum, timeout: $TIMEOUT...")
       val appState = new ApplicationState(appId, 0, app, jar, null)
@@ -318,7 +318,7 @@ private[cluster] object AppManager {
   /**
    * Start and watch Single AppMaster's lifecycle
    */
-  class AppMasterStarter(appId : Int, app : Application, jar: Option[AppJar]) extends Actor {
+  class AppMasterStarter(appId : Int, app : Application, jar: Option[AppJar], username : String) extends Actor {
     private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
     val systemConfig = context.system.settings.config
@@ -335,13 +335,14 @@ private[cluster] object AppManager {
         LOG.info(s"Resource allocated for appMaster $app Id")
         val allocation = allocations(0)
         val appMasterConfig = app.conf.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
+        .withUserName(username)
         LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = ActorUtil.actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)
         val maybeExtraClasspath = app.conf.config.get(Constants.GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
         val extraClasspath = maybeExtraClasspath.getOrElse("").asInstanceOf[String]
         val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
-        val executionContext = ExecutorContext(classPath, appMasterConfig.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar)
+        val executionContext = ExecutorContext(classPath, appMasterConfig.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
 
         allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
         context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))
