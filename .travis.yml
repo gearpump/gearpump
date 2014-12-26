@@ -3,7 +3,8 @@ language:
   - scala
 
 before_install: sudo pip install codecov
-script: sbt clean coverage test jacoco:check
+
+script: sbt clean coverage test
 jdk:
   - oraclejdk7
 scala:
