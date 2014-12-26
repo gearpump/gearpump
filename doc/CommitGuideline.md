@@ -41,7 +41,7 @@ No work should ever be done in the forked master. Another way to do this is to
   Work on the branch, make changes, then push to your forked gearpump repo http://github.com/<git-user_id>/gearpump
 
   ```
-  git push origin
+  git push origin branch_issueId
   ```
 
 5. When there is changes in upstream/master, rebase your work on upstream/master. with
@@ -65,13 +65,13 @@ No work should ever be done in the forked master. Another way to do this is to
 7. After rebase, now you have a clean log history. push to your remote working branch
 
   ```
-  git push origin
+  git push origin branch_issueId
   ```
 
   If commits have already been pushed to <git-user-id>/gearpump fork on github, you will have to "git push --force" to overwrite them with squashed commits.
 
   ```
-  git push origin -f
+  git push origin -f branch_issueId
   ```
 
 8. Ensure all the unit tests are passed by running command "sbt test".
