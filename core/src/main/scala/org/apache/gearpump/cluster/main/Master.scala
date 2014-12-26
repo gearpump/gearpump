@@ -36,8 +36,9 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
 object Master extends App with ArgumentsParser {
+  var masterConfig = Configs.loadMasterConfig()
   private val LOG: Logger = {
-    LogUtil.loadConfiguration(ProcessType.MASTER)
+    LogUtil.loadConfiguration(masterConfig, ProcessType.MASTER)
     LogUtil.getLogger(getClass)
   }
 
@@ -59,8 +60,6 @@ object Master extends App with ArgumentsParser {
   }
 
   def master(ip:String, port : Int): Unit = {
-
-    var masterConfig = Configs.loadMasterConfig()
     val masters = masterConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
 
     if (!verifyMaster(ip, port, masters)) {

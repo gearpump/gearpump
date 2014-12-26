@@ -54,7 +54,7 @@ object ActorSystemBooter  {
     val reportBack = args(1)
     val config = Configs.loadApplicationConfig()
 
-    LogUtil.loadConfiguration(ProcessType.APPLICATION)
+    LogUtil.loadConfiguration(config, ProcessType.APPLICATION)
 
     create(config).boot(name, reportBack).awaitTermination
   }
