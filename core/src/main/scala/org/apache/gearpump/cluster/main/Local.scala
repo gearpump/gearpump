@@ -21,6 +21,7 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{Props, ActorSystem}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.LogUtil.ProcessType
 import org.apache.gearpump.util.{LogUtil, ActorUtil, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -28,7 +29,10 @@ import scala.collection.JavaConverters._
 
 object Local extends App with ArgumentsParser {
 
-  private val LOG: Logger = LogUtil.getLogger(getClass)
+  private val LOG: Logger = {
+    LogUtil.loadConfiguration(ProcessType.LOCAL)
+    LogUtil.getLogger(getClass)
+  }
 
   override val options: Array[(String, CLIOption[Any])] =
     Array("ip"->CLIOption[String]("<master ip address>",required = false, defaultValue = Some("127.0.0.1")),
@@ -62,5 +66,6 @@ object Local extends App with ArgumentsParser {
       system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], master), classOf[org.apache.gearpump.cluster.Worker].getSimpleName + id)
     }
   }
+
   start()
 }

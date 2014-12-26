@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ApplicationMaster
+import org.apache.gearpump.util.LogUtil.ProcessType
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.Duration
@@ -52,6 +53,9 @@ object ActorSystemBooter  {
     val name = args(0)
     val reportBack = args(1)
     val config = Configs.loadApplicationConfig()
+
+    LogUtil.loadConfiguration(ProcessType.APPLICATION)
+
     create(config).boot(name, reportBack).awaitTermination
   }
 

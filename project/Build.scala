@@ -106,7 +106,8 @@ object Build extends sbt.Build {
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
-        "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
+        "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
+        "org.apache.hadoop" % "hadoop-common" % hadoopVersion
       )
   ) 
 
@@ -122,6 +123,10 @@ object Build extends sbt.Build {
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
                         "rest" -> "org.apache.gearpump.cluster.main.Rest"
                        ),
+        packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
+                           "master" -> Seq("-DlogFilename=master"),
+                           "worker" -> Seq("-DlogFilename=worker")
+                        ),
         packExclude := Seq(fsio.id, kafka.id, sol.id, wordcount.id),
         packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
         packExpandedClasspath := true,
@@ -152,12 +157,7 @@ object Build extends sbt.Build {
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
     base = file("examples/fsio"),
-    settings = commonSettings  ++ packSettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
-        )
-      )
+    settings = commonSettings  ++ packSettings
   ) dependsOn streaming
 
   lazy val kafka = Project(

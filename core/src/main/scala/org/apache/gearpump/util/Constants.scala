@@ -72,6 +72,7 @@ object Constants {
 
   val NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname"
   val GEAR_USERNAME = "gear.username"
+  val APPLICATION_ID = "gear.applicationId"
   // Application jar property
   val GEAR_APP_JAR = "gear.app.jar"
 }

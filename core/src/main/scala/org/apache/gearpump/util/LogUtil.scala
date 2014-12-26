@@ -1,8 +1,18 @@
 package org.apache.gearpump.util
 
+import java.net.InetAddress
+import java.util.Properties
+
+import org.apache.log4j.PropertyConfigurator
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.util.Try
+
 object LogUtil {
+  object ProcessType extends Enumeration {
+    type ProcessType = Value
+    val MASTER, WORKER, LOCAL, APPLICATION = Value
+  }
 
   def getLogger[T](clazz : Class[T], context : String = null, master : Any = null, worker : Any = null, executor : Any = null, task : Any = null, app : Any = null) : Logger = {
 
@@ -34,5 +44,34 @@ object LogUtil {
     } else {
       LoggerFactory.getLogger(clazz.getSimpleName)
     }
+  }
+
+  def loadConfiguration(processType : ProcessType.ProcessType) : Unit = {
+    setHostnameSystemProperty
+
+    //set log file name
+    val propName = s"gearpump.${processType.toString.toLowerCase}.log.file"
+    System.setProperty("gearpump.log.file", "${" + propName + "}")
+
+    val props = new Properties()
+    val log4jConfStream = getClass().getClassLoader.getResourceAsStream("log4j.properties")
+    if(log4jConfStream!=null) {
+      props.load(log4jConfStream)
+    }
+
+    processType match {
+      case ProcessType.APPLICATION =>
+        props.setProperty("log4j.rootLogger", "${gearpump.application.logger}")
+      case _ =>
+        props.setProperty("log4j.rootLogger", "${gearpump.root.logger}")
+    }
+
+    PropertyConfigurator.configure(props)
+  }
+
+  private def setHostnameSystemProperty : Unit = {
+    val hostname = Try(InetAddress.getLocalHost.getHostName).getOrElse("local")
+    //as log4j missing the HOSTNAME system property, add it to system property, just like logback does
+    System.setProperty("HOSTNAME", hostname)
   }
 }

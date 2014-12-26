@@ -140,7 +140,11 @@ private[cluster] class AppManager() extends Actor with Stash {
       stash()
   }
 
-  def receiveHandler = masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse appDataStoreService orElse terminationWatch
+  def receiveHandler = {
+    System.out.println("Application Manager started. Ready for application submission...")
+    LOG.info("Application Manager started. Ready for application submission...")
+    masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse appDataStoreService orElse terminationWatch
+  }
 
   def masterHAMsgHandler: Receive = {
     case update: UpdateResponse => LOG.debug(s"we get update $update")
