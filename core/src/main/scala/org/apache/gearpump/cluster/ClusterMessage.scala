@@ -45,12 +45,14 @@ object MasterToWorker {
 object ClientToMaster {
   case class SubmitApplication(appDescription: Application, appJar: Option[AppJar], username : String = System.getProperty("user.name"))
   case class ShutdownApplication(appId: Int)
+  case class ResolveAppId(appId: Int)
 }
 
 object MasterToClient {
   case class SubmitApplicationResult(appId : Try[Int])
   case class ShutdownApplicationResult(appId : Try[Int])
   case class ReplayApplicationResult(appId: Try[Int])
+  case class ResolveAppIdResult(appMaster: Try[ActorRef])
 }
 
 trait AppMasterRegisterData

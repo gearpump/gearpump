@@ -22,7 +22,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
-import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.util.Constants
 
 import scala.concurrent.duration.Duration
@@ -39,6 +39,14 @@ class MasterClient(master : ActorRef) {
     val result = Await.result( (master ? SubmitApplication(app, appJar)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)
     result.appId match {
       case Success(appId) => appId
+      case Failure(ex) => throw ex
+    }
+  }
+
+  def resolveAppId(appId: Int): ActorRef = {
+    val result = Await.result((master ? ResolveAppId(appId)).asInstanceOf[Future[ResolveAppIdResult]], Duration.Inf)
+    result.appMaster match {
+      case Success(appMaster) => appMaster
       case Failure(ex) => throw ex
     }
   }
