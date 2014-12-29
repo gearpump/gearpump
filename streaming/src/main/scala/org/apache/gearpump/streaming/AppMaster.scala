@@ -33,7 +33,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.scheduler._
-import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RestartTasks}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTask, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.task._
@@ -236,7 +236,7 @@ class AppMaster (config : Configs) extends ApplicationMaster {
           executor ! TaskLocations(taskLocations)
         }
       }
-
+      sender ! StartClock(startClock)
     case clock : UpdateClock =>
       clockService forward clock
     case GetLatestMinClock =>
@@ -388,6 +388,9 @@ object AppMaster {
       case LaunchActorSystemTimeOut =>
         LOG.error("The Executor ActorSystem has not been started in time, cannot start Executor" +
           "in it...")
+        context.stop(self)
+      case rejected: ExecutorLaunchRejected =>
+        context.parent ! rejected
         context.stop(self)
     }
   }

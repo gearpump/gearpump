@@ -27,11 +27,11 @@ import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.TaskLocationReady
-import org.apache.gearpump.util.{LogUtil, Util, Configs}
+import org.apache.gearpump.util.{TimeOutScheduler, LogUtil, Util, Configs}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
 
-abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
+abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport with TimeOutScheduler{
   import org.apache.gearpump.streaming.task.TaskActor._
 
   private val appId = conf.appId
@@ -103,7 +103,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
 
   final override def preStart() : Unit = {
 
-    appMaster ! RegisterTask(taskId, conf.executorId, local)
+    sendMsgWithTimeOutCallBack(appMaster, RegisterTask(taskId, conf.executorId, local), 10, registerTaskTimeOut())
 
     val graph = conf.dag.graph
     LOG.info(s"TaskInit... taskId: $taskId")
@@ -144,8 +144,11 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport{
     this.clockTracker = new ClockTracker(flowControl)
 
     context.become(waitForStartClock orElse stashMessages)
+  }
 
-    context.parent ! GetStartClock
+  private def registerTaskTimeOut(): Unit = {
+    LOG.error(s"Task $taskId failed to register to AppMaster of application $appId")
+    throw new RestartException
   }
 
   private def tryToSyncToClockService() : Unit = {

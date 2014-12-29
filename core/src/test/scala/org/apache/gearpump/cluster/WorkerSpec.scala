@@ -53,6 +53,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
       mockMaster watch worker
       mockMaster.expectMsg(RegisterNewWorker)
       mockMaster.expectTerminated(worker, 31 seconds)
+      workerSystem.shutdown()
     }
   }
 
@@ -68,6 +69,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
 
       worker.tell(UpdateResourceFailed("Test resource update failed", new Exception()), mockMaster.ref)
       mockMaster.expectTerminated(worker, 5 seconds)
+      workerSystem.shutdown()
     }
   }
 
@@ -97,6 +99,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
 
       mockMaster.ref ! PoisonPill
       masterProxy.expectMsg(RegisterWorker(workerId))
+      workerSystem.shutdown()
     }
   }
 }
