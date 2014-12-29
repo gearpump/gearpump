@@ -30,7 +30,7 @@ import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
@@ -190,6 +190,16 @@ private[cluster] class AppManager() extends Actor with Stash with TimeOutSchedul
           val errorMsg = s"Can not find regisration information for appId: $appId"
           LOG.error(errorMsg)
           sender ! ReplayApplicationResult(Failure(new Exception(errorMsg)))
+      }
+    case ResolveAppId(appId) =>
+      LOG.info(s"App Manager Resolving appId $appId to ActorRef")
+      val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
+      if (null != appMaster) {
+        sender ! ResolveAppIdResult(Success(appMaster))
+      } else {
+        val errorMsg = s"Can not find regisration information for appId: $appId"
+        LOG.error(errorMsg)
+        sender ! ResolveAppIdResult(Failure(new Exception(errorMsg)))
       }
   }
 

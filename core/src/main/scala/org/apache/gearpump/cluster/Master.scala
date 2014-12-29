@@ -112,6 +112,9 @@ private[cluster] class Master extends Actor with Stash {
     case app : ReplayFromTimestampWindowTrailingEdge =>
       LOG.info(s"Receive from client, Replaying Application ${app.appId} from timestamp window trailing edge")
       appManager.forward(app)
+    case app : ResolveAppId =>
+      LOG.info(s"Receive from client, resolving appId ${app.appId} to ActorRef")
+      appManager.forward(app)
   }
 
   def disassociated : Receive = {

@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.cluster.util
+package org.apache.gearpump.util
 
 import akka.actor._
 import akka.testkit.{TestActorRef, TestProbe, ImplicitSender, TestKit}
