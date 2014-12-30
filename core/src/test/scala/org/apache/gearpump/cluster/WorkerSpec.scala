@@ -65,7 +65,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
       mockMaster.expectMsg(RegisterNewWorker)
 
       worker.tell(WorkerRegistered(workerId), mockMaster.ref)
-      mockMaster.expectMsg(ResourceUpdate(workerId, Resource(workerSlots)))
+      mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(workerSlots)))
 
       worker.tell(UpdateResourceFailed("Test resource update failed", new Exception()), mockMaster.ref)
       mockMaster.expectTerminated(worker, 5 seconds)
@@ -80,7 +80,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
       masterProxy.expectMsg(RegisterNewWorker)
 
       worker.tell(WorkerRegistered(workerId), mockMaster.ref)
-      mockMaster.expectMsg(ResourceUpdate(workerId, Resource(100)))
+      mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(100)))
 
       val executorName = ActorUtil.actorNameForExecutor(appId, executorId)
       val reportBack = "dummy"   //This is an actor path which the ActorSystemBooter will report back to, not needed in this test.
@@ -91,11 +91,11 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
       mockMaster.expectMsg(ExecutorLaunchRejected("There is no free resource on this machine", Resource(101)))
 
       worker.tell(LaunchExecutor(appId, executorId, Resource(5), executionContext), mockMaster.ref)
-      mockMaster.expectMsg(ResourceUpdate(workerId, Resource(95)))
+      mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(95)))
 
       //Test terminationWatch
       worker ! ShutdownExecutor(appId, executorId, "Test shut down executor")
-      mockMaster.expectMsg(ResourceUpdate(workerId, Resource(100)))
+      mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(100)))
 
       mockMaster.ref ! PoisonPill
       masterProxy.expectMsg(RegisterWorker(workerId))

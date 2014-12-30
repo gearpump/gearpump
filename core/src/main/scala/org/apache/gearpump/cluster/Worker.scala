@@ -59,7 +59,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       master = sender()
       context.watch(master)
       LOG.info(s"Worker $id Registered ....")
-      sendMsgWithTimeOutCallBack(sender, ResourceUpdate(id, resource), 30, updateResourceTimeOut())
+      sendMsgWithTimeOutCallBack(sender, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
       context.become(appMasterMsgHandler orElse terminationWatch(master) orElse ActorUtil.defaultMsgHandler(self))
   }
 
@@ -90,7 +90,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
         resource = resource.subtract(launch.resource)
         allocatedResource = allocatedResource + (executor -> launch.resource)
-        master ! ResourceUpdate(id, resource)
+        sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         context.watch(executor)
       }
     case UpdateResourceFailed(reason, ex) =>
@@ -114,7 +114,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         if (allocated.isDefined) {
           resource = resource.add(allocated.get)
           allocatedResource = allocatedResource - actor
-          sendMsgWithTimeOutCallBack(master, ResourceUpdate(id, resource), 30, updateResourceTimeOut())
+          sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         }
       }
   }

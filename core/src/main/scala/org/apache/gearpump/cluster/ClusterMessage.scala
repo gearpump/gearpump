@@ -29,7 +29,7 @@ import scala.util.Try
 object WorkerToMaster {
   case object RegisterNewWorker
   case class RegisterWorker(workerId: Int)
-  case class ResourceUpdate(workerId: Int, resource: Resource)
+  case class ResourceUpdate(worker: ActorRef, workerId: Int, resource: Resource)
 }
 
 object MasterToWorker {
