@@ -19,16 +19,15 @@
 package org.apache.gearpump.streaming.examples.kafka
 
 import akka.actor.actorRef2Scala
-import kafka.common.TopicAndPartition
-import kafka.serializer.StringDecoder
-import kafka.utils.ZkUtils
-import org.apache.gearpump.{Message, TimeStamp}
+import com.twitter.bijection.Injection
+import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, TimeReplayableSource, MessageDecoder}
+import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
-import org.apache.gearpump.streaming.transaction.checkpoint.{OffsetManager, RelaxedTimeFilter}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig.ConfigToKafka
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
 import org.apache.gearpump.util.Configs
-import org.slf4j.{Logger, LoggerFactory}
+
+import scala.util.{Failure, Success}
 
 /**
  * connect gearpump with kafka
@@ -36,80 +35,34 @@ import org.slf4j.{Logger, LoggerFactory}
 class KafkaStreamProducer(conf: Configs) extends TaskActor(conf) {
 
   private val config = conf.config
-  private val grouper = config.getGrouperFactory.getKafkaGrouper(conf, context)
-  private val emitBatchSize = config.getConsumerEmitBatchSize
-
-  private val topicAndPartitions: Array[TopicAndPartition] = {
-    val original = ZkUtils.getPartitionsForTopics(config.getZkClient(), config.getConsumerTopics)
-      .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toArray
-    val grouped = grouper.group(original)
-    grouped.foreach(tp =>
-      LOG.info(s"StreamProducer $taskId has been assigned partition (${tp.topic}, ${tp.partition})"))
-    grouped
+  private val batchSize = config.getConsumerEmitBatchSize
+  private val msgDecoder: MessageDecoder = new MessageDecoder {
+    override def fromBytes(bytes: Array[Byte]): Message = {
+      Injection.invert[String, Array[Byte]](bytes) match {
+        case Success(s) => Message(s, System.currentTimeMillis())
+        case Failure(e) => throw e
+      }
+    }
   }
 
-  private val consumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
-  private val decoder = new StringDecoder()
-  private val offsetManager = new OffsetManager(
-    config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, Long](conf),
-    new RelaxedTimeFilter(config.getCheckpointMessageDelayMS))
-  private val commitIntervalMS = config.getCheckpointCommitIntervalMS
-  private var lastCommitTime = System.currentTimeMillis()
+  private val filter: TimeStampFilter = new TimeStampFilter {
+    override def filter(msg: Message, predicate: TimeStamp): Option[Message] = {
+      Option(msg).find(_.timestamp >= predicate)
+    }
+  }
+
+  private val source: TimeReplayableSource = KafkaSource(conf, msgDecoder)
+  private var startTime: TimeStamp = 0L
 
   override def onStart(taskContext: TaskContext): Unit = {
-    offsetManager.register(topicAndPartitions.map(KafkaSource(_)))
-    offsetManager.start()
-    offsetManager.loadStartOffsets(taskContext.startTime).foreach{
-      entry =>
-        val source = entry._1
-        val offset = entry._2
-        val topicAndPartition = TopicAndPartition(source.name, source.partition)
-        LOG.info(s"set start offsets for $topicAndPartition")
-        consumer.setStartOffset(topicAndPartition, offset)
-    }
-    consumer.start()
+    startTime = taskContext.startTime
+    LOG.info(s"start time $startTime")
+    source.setStartTime(startTime)
     self ! Message("start", System.currentTimeMillis())
   }
 
   override def onNext(msg: Message): Unit = {
-
-    @annotation.tailrec
-    def fetchAndEmit(msgNum: Int, tpIndex: Int): Unit = {
-      if (msgNum < emitBatchSize) {
-        val msgWithTime = consumer.nextMessageWithTime(topicAndPartitions(tpIndex))
-        if (msgWithTime != null) {
-          val kafkaMsg = msgWithTime._1
-          val timestamp =  msgWithTime._2
-          output(new Message(decoder.fromBytes(kafkaMsg.msg), timestamp))
-          offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
-        } else {
-          LOG.debug(s"no more messages from ${topicAndPartitions(tpIndex)}")
-        }
-        if (shouldCommitCheckpoint) {
-          LOG.info("committing checkpoint...")
-          offsetManager.checkpoint
-          lastCommitTime = System.currentTimeMillis()
-        }
-        // poll message from each TopicAndPartition in a round-robin way
-        // TODO: make it configurable
-        if (tpIndex + 1 == topicAndPartitions.size) {
-          fetchAndEmit(msgNum + 1, 0)
-        } else {
-          fetchAndEmit(msgNum + 1, tpIndex + 1)
-        }
-      }
-    }
-    fetchAndEmit(0, 0)
+    source.pull(batchSize).foreach(msg => filter.filter(msg, startTime).map(output))
     self ! Message("continue", System.currentTimeMillis())
-  }
-
-  override def onStop(): Unit = {
-    consumer.close()
-    offsetManager.close()
-  }
-
-  private def shouldCommitCheckpoint: Boolean = {
-    val now = System.currentTimeMillis()
-    (now - lastCommitTime) > commitIntervalMS
   }
 }
