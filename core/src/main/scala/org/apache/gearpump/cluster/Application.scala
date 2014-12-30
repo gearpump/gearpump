@@ -78,3 +78,5 @@ case class AppMasterContext(appId : Int, username : String, masterExecutorId : I
                             resource : Resource,  appJar : Option[AppJar],
                             masterProxy : ActorRef,  registerData : AppMasterRegisterData)
   extends AppMasterContextInterface
+
+case class BaseAppDescription(name : String, appMaster : String, conf: UserConfig) extends Application
