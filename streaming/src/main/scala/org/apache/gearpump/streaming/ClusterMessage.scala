@@ -25,7 +25,7 @@ import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
 import org.apache.gearpump.transport.HostPort
 
 object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, config : TaskContext, taskClass: Class[_ <: Actor])
+  case class LaunchTask(taskId: TaskId, taskContext: TaskContext, taskClass: Class[_ <: Actor])
   case class RestartTasks(timeStamp : TimeStamp)
   case class StartClock(clock : TimeStamp)
   case object RestartClockService
