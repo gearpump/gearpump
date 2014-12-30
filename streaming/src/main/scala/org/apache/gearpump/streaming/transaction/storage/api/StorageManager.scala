@@ -73,8 +73,8 @@ class StorageManager[K: Codec, V: Codec](id: String,
 
   private var states: Map[K, V] = Map.empty[K, V]
   private val source : Source = new Source {
-    def name: String = s"storage_$id"
-    def partition: Int = 0
+    val name: String = s"storage_$id"
+    val partition: Int = 0
   }
   private val checkpointSerDe = new StoreCheckpointSerDe[K, V]()
 

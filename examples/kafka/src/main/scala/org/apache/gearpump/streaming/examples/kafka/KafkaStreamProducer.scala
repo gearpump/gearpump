@@ -20,11 +20,11 @@ package org.apache.gearpump.streaming.examples.kafka
 
 import akka.actor.actorRef2Scala
 import kafka.common.TopicAndPartition
-import kafka.serializer.StringDecoder
+import kafka.serializer.{Decoder, StringDecoder}
 import kafka.utils.ZkUtils
 import org.apache.gearpump.{Message, TimeStamp}
 import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
-import org.apache.gearpump.streaming.transaction.checkpoint.{OffsetManager, RelaxedTimeFilter}
+import org.apache.gearpump.streaming.transaction.checkpoint.{TimeStampFilter, OffsetManager}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig.ConfigToKafka
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
 import org.apache.gearpump.util.Configs
@@ -44,30 +44,30 @@ class KafkaStreamProducer(conf: Configs) extends TaskActor(conf) {
       .flatMap(tps => { tps._2.map(TopicAndPartition(tps._1, _)) }).toArray
     val grouped = grouper.group(original)
     grouped.foreach(tp =>
-      LOG.info(s"StreamProducer $taskId has been assigned partition (${tp.topic}, ${tp.partition})"))
+      LOG.info(s"KafkaStreamProducer $taskId has been assigned partition (${tp.topic}, ${tp.partition})"))
     grouped
   }
 
   private val consumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
-  private val decoder = new StringDecoder()
+  private val decoder: Decoder[String] = new StringDecoder()
   private val offsetManager = new OffsetManager(
-    config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, Long](conf),
-    new RelaxedTimeFilter(config.getCheckpointMessageDelayMS))
+    config.getCheckpointManagerFactory.getCheckpointManager[TimeStamp, Long](conf))
+  private val msgFilter = new TimeStampFilter(config.getCheckpointMessageDelayMS)
   private val commitIntervalMS = config.getCheckpointCommitIntervalMS
   private var lastCommitTime = System.currentTimeMillis()
 
   override def onStart(taskContext: TaskContext): Unit = {
+    LOG.info(s"start time ${taskContext.startTime}")
     offsetManager.register(topicAndPartitions.map(KafkaSource(_)))
     offsetManager.start()
-    offsetManager.loadStartOffsets(taskContext.startTime).foreach{
-      entry =>
-        val source = entry._1
-        val offset = entry._2
-        val topicAndPartition = TopicAndPartition(source.name, source.partition)
-        LOG.info(s"set start offsets for $topicAndPartition")
-        consumer.setStartOffset(topicAndPartition, offset)
+    val replayConsumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
+    offsetManager.replay[String](replayConsumer, taskContext.startTime, decoder, msgFilter, output).foreach {
+      case(source, offset) =>
+        consumer.setStartEndOffsets(TopicAndPartition(source.name, source.partition), offset, None)
     }
-    consumer.start()
+    replayConsumer.close()
+    consumer.startAll()
+
     self ! Message("start", System.currentTimeMillis())
   }
 
@@ -76,20 +76,21 @@ class KafkaStreamProducer(conf: Configs) extends TaskActor(conf) {
     @annotation.tailrec
     def fetchAndEmit(msgNum: Int, tpIndex: Int): Unit = {
       if (msgNum < emitBatchSize) {
-        val msgWithTime = consumer.nextMessageWithTime(topicAndPartitions(tpIndex))
+        val msgWithTime = consumer.pollNextMessage(topicAndPartitions(tpIndex))
         if (msgWithTime != null) {
           val kafkaMsg = msgWithTime._1
           val timestamp =  msgWithTime._2
-          output(new Message(decoder.fromBytes(kafkaMsg.msg), timestamp))
+          output(Message(decoder.fromBytes(kafkaMsg.msg), timestamp))
           offsetManager.update(KafkaSource(kafkaMsg.topicAndPartition), timestamp, kafkaMsg.offset)
+          if (shouldCommitCheckpoint) {
+            offsetManager.checkpoint
+            lastCommitTime = System.currentTimeMillis()
+            LOG.info(s"committing checkpoint at $lastCommitTime with offset ${kafkaMsg.offset}")
+          }
         } else {
           LOG.debug(s"no more messages from ${topicAndPartitions(tpIndex)}")
         }
-        if (shouldCommitCheckpoint) {
-          LOG.info("committing checkpoint...")
-          offsetManager.checkpoint
-          lastCommitTime = System.currentTimeMillis()
-        }
+
         // poll message from each TopicAndPartition in a round-robin way
         // TODO: make it configurable
         if (tpIndex + 1 == topicAndPartitions.size) {

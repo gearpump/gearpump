@@ -79,16 +79,24 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
 
   private val incomingQueue = topicAndPartitions.map(_ -> new LinkedBlockingQueue[(KafkaMessage, TimeStamp)]()).toMap
 
-  def start(): Unit = {
+  def startAll(): Unit = {
     fetchThreads.foreach(_._2.start())
   }
 
-  def setStartOffset(topicAndPartition: TopicAndPartition, startOffset: Long): Unit = {
-    fetchThreads(leaders(topicAndPartition)).setStartOffset(topicAndPartition, startOffset)
+  def start(topicAndPartition: TopicAndPartition): Unit = {
+    fetchThreads(leaders(topicAndPartition)).start()
   }
 
-  def nextMessageWithTime(topicAndPartition: TopicAndPartition): (KafkaMessage, TimeStamp) = {
+  def setStartEndOffsets(topicAndPartition: TopicAndPartition, startOffset: Long, endOffset: Option[Long]): Unit = {
+    fetchThreads(leaders(topicAndPartition)).setStartEndOffsets(topicAndPartition, startOffset, endOffset)
+  }
+
+  def pollNextMessage(topicAndPartition: TopicAndPartition): (KafkaMessage, TimeStamp) = {
     incomingQueue(topicAndPartition).poll()
+  }
+
+  def takeNextMessage(topicAndPartition: TopicAndPartition): (KafkaMessage, TimeStamp) = {
+    incomingQueue(topicAndPartition).take()
   }
 
   def close(): Unit = {
@@ -101,9 +109,6 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
     private var topicAndPartitions: List[TopicAndPartition] = List.empty[TopicAndPartition]
     private var iterators: Map[TopicAndPartition, MessageIterator] = Map.empty[TopicAndPartition, MessageIterator]
 
-    private val noMessageSleepMS = 100
-    private var hasNextSet: Set[TopicAndPartition] = Set.empty[TopicAndPartition]
-
     def addTopicAndPartition(topicAndPartition: TopicAndPartition) = {
       topicAndPartitions :+= topicAndPartition
       val iter = new MessageIterator(host, port, topicAndPartition.topic, topicAndPartition.partition,
@@ -111,18 +116,15 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
       iterators += topicAndPartition -> iter
     }
 
-    def setStartOffset(topicAndPartition: TopicAndPartition, offset: Long): Unit = {
-      iterators(topicAndPartition).setStartOffset(offset)
+    def setStartEndOffsets(topicAndPartition: TopicAndPartition, startOffset: Long, endOffset: Option[Long]): Unit = {
+      iterators(topicAndPartition).setStartEndOffsets(startOffset, endOffset)
     }
 
     override def run(): Unit = {
       try {
-        while (!Thread.currentThread.isInterrupted) {
+        while (!Thread.currentThread.isInterrupted
+        && !hasNext) {
           fetchMessage
-          if (hasNextSet.isEmpty) {
-            LOG.debug("no messages from any TopicAndPartition, sleeping")
-            Thread.sleep(noMessageSleepMS)
-          }
         }
       } catch {
         case e: InterruptedException => LOG.info("fetch thread got interrupted exception")
@@ -130,7 +132,6 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
       } finally {
         iterators.values.foreach(_.close())
       }
-
     }
 
     private def fetchMessage = {
@@ -143,13 +144,14 @@ class KafkaConsumer(topicAndPartitions: Array[TopicAndPartition],
               val (offset, key, payload) = iter.next
               val msg = KafkaMessage(tp, offset, key, payload)
               queue.put((msg, timeExtractor(msg)))
-              hasNextSet += tp
-            } else {
-              hasNextSet -= tp
             }
           }
         }
       }
+    }
+
+    private def hasNext: Boolean = {
+      iterators.values.forall(_.hasNext == false)
     }
   }
 }

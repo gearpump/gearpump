@@ -18,20 +18,14 @@
 
 package org.apache.gearpump.streaming.transaction.checkpoint
 
-import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.transaction.checkpoint.api.CheckpointFilter
+import org.apache.gearpump.{TimeStamp, Message}
 
-class OffsetFilter extends CheckpointFilter[TimeStamp, Long] {
-  override def filter(timeAndOffsets: List[(TimeStamp, Long)],
-             predicate: TimeStamp): Option[(TimeStamp, Long)] = {
-    timeAndOffsets.sortBy(_._1).find(_._1 >= predicate)
+class TimeStampFilter(delta: Long) {
+  def filter(msgs: List[Message], predicate: TimeStamp): List[Message] = {
+    msgs.filter(_.timestamp >= (predicate - delta))
+  }
+
+  def filter(msg: Message, predicate: TimeStamp): Option[Message] = {
+    Some(msg).filter(_.timestamp >= (predicate - delta))
   }
 }
-
-class RelaxedTimeFilter(delta: Long) extends OffsetFilter {
-  override def filter(timeAndOffsets: List[(TimeStamp, Long)],
-             timestamp: TimeStamp): Option[(TimeStamp, Long)] = {
-    super.filter(timeAndOffsets, timestamp - delta)
-  }
-}
-

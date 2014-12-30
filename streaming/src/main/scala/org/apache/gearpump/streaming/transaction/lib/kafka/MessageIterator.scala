@@ -33,17 +33,17 @@ class MessageIterator(host: String,
                       soBufferSize: Int,
                       fetchSize: Int,
                       clientId: String) {
-
-
   private val consumer = new SimpleConsumer(host, port, soTimeout, soBufferSize, clientId)
   private var startOffset = consumer.earliestOrLatestOffset(TopicAndPartition(topic, partition),
     OffsetRequest.EarliestTime, -1)
   private var iter = iterator(startOffset)
   private var readMessages = 0L
   private var nextOffset = startOffset
+  private var endOffset: Option[Long] = None
 
-  def setStartOffset(startOffset: Long): Unit = {
+  def setStartEndOffsets(startOffset: Long, endOffset: Option[Long]): Unit = {
     this.startOffset = startOffset
+    this.endOffset = endOffset
   }
 
   def next: (Long, Array[Byte], Array[Byte]) = {
@@ -63,10 +63,12 @@ class MessageIterator(host: String,
     }
   }
 
-
   @annotation.tailrec
   final def hasNext: Boolean = {
-    if (iter.hasNext) {
+    if (endOffset.isDefined && nextOffset > endOffset.get) {
+      close()
+      false
+    } else if (iter.hasNext) {
       true
     } else if (0 == readMessages) {
       close()
