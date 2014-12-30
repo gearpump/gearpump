@@ -15,23 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.gearpump.cluster
+package org.apache.gearpump.distributedshell
 
 import akka.actor.Actor
 import org.apache.gearpump.util.Configs
+import org.slf4j.{LoggerFactory, Logger}
+import sys.process._
 
+class ShellTask(config: Configs) extends Actor {
+  private val LOG: Logger = LoggerFactory.getLogger(getClass)
 
-case class AppJar(name: String, bytes: Array[Byte])
+  LOG.info(s"ShellTask started!")
 
-/**
- * Subtype this for user defined application
- */
-trait Application {
-  val appMaster : String
-  val conf: Configs
+  override def receive: Receive = {
+    case ShellCommand(command, args) =>
+      val result = s"$command $args" !!
+
+      LOG.info(s"Task execute shell command '$command $args', result is $result")
+  }
 }
-
-trait ApplicationMaster extends Actor
-
-case class BaseAppDescription(name : String, appMaster : String, conf: Configs) extends Application

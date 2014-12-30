@@ -127,13 +127,13 @@ object Build extends sbt.Build {
                            "master" -> Seq("-DlogFilename=master"),
                            "worker" -> Seq("-DlogFilename=worker")
                         ),
-        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id),
+        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, experiments.id),
         packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
         packExpandedClasspath := true,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
   ).dependsOn(core, streaming).aggregate(core, streaming, fsio, examples_kafka,
-      sol, wordcount, rest, external_kafka)
+      sol, wordcount, rest, external_kafka, experiments)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -215,4 +215,10 @@ object Build extends sbt.Build {
         )
       ) 
   ) dependsOn(streaming % "test->test;compile->compile")
+
+  lazy val experiments = Project(
+    id = "gearpump-experiments",
+    base = file("experiments"),
+    settings = commonSettings ++ packSettings
+  )  dependsOn(core % "test->test;compile->compile")
 }

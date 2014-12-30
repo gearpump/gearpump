@@ -77,6 +77,10 @@ class Configs(val config: Map[String, _])  extends Serializable{
 
   def withWorkerId(id : Int) = withValue(WORKER_ID, id)
   def workerId : Int = getInt(WORKER_ID)
+
+  def withConfig(other: Configs) = {
+    Configs(config ++ other.config)
+  }
 }
 
 object Configs {
