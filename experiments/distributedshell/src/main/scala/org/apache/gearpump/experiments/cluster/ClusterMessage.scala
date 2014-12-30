@@ -15,24 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.experiments.cluster
 
-package org.apache.gearpump.cluster
-
-import akka.actor.Actor
-import org.apache.gearpump.jarstore.{JarFileContainer}
+import akka.actor.{ActorRef, Actor}
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.util.Configs
 
-
-case class AppJar(name: String, container: JarFileContainer)
-
-/**
- * Subtype this for user defined application
- */
-trait Application {
-  val appMaster : String
-  val conf: Configs
+object AppMasterToExecutor {
+  case class LaunchTask(config: Configs, taskClass: Class[_ <: Actor])
+  case class MsgToTask(msg: Any)
 }
 
-trait ApplicationMaster extends Actor
-
-case class BaseAppDescription(name : String, appMaster : String, conf: Configs) extends Application
+object ExecutorToAppMaster {
+  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, workerId : Int)
+  case class ResponsesFromTasks(executorId: Int, msgs: List[Any])
+}

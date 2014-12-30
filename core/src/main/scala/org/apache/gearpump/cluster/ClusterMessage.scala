@@ -65,6 +65,7 @@ object AppMasterToMaster {
   case class RequestResource(appId: Int, request: ResourceRequest)
   case class SaveAppData(appId: Int, key: String, value: Any)
   case class GetAppData(appId: Int, key: String)
+  case object GetAllWorkers
 }
 
 object MasterToAppMaster {
@@ -88,6 +89,7 @@ object MasterToAppMaster {
   case class AppMasterDataDetail(appId: Int, appDescription: Application)
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
   case class GetAppDataResult(key: String, value: Any)
+  case class WorkerList(workers: List[Int])
   case object AppDataReceived
 }
 

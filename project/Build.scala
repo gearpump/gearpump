@@ -140,14 +140,14 @@ object Build extends sbt.Build {
                            "master" -> Seq("-DlogFilename=master"),
                            "worker" -> Seq("-DlogFilename=worker")
                         ),
-        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, examples.id),
+        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, examples.id, distributedshell.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
   ).dependsOn(core, streaming, rest, external_kafka).aggregate(core, streaming, fsio, examples_kafka,
-      sol, wordcount, rest, external_kafka, examples)
+      sol, wordcount, rest, external_kafka, examples, distributedshell)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -231,4 +231,10 @@ object Build extends sbt.Build {
         )
       ) 
   ) dependsOn(streaming % "test->test;compile->compile")
+
+  lazy val distributedshell = Project(
+    id = "gearpump-experiments-distributedshell",
+    base = file("experiments/distributedshell"),
+    settings = commonSettings ++ packSettings
+  )  dependsOn(core % "test->test;compile->compile")
 }
