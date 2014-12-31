@@ -127,12 +127,13 @@ object Build extends sbt.Build {
                            "master" -> Seq("-DlogFilename=master"),
                            "worker" -> Seq("-DlogFilename=worker")
                         ),
-        packExclude := Seq(fsio.id, kafka.id, sol.id, wordcount.id),
+        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id),
         packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
         packExpandedClasspath := true,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
-  ).dependsOn(core, streaming).aggregate(core, streaming, fsio, kafka, sol, wordcount, rest)
+  ).dependsOn(core, streaming).aggregate(core, streaming, fsio, examples_kafka,
+      sol, wordcount, rest, external_kafka)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -143,33 +144,43 @@ object Build extends sbt.Build {
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
-    settings = commonSettings ++
+    settings = commonSettings
+  )  dependsOn(core % "test->test;compile->compile")
+
+  lazy val external_kafka = Project(
+    id = "gearpump-external-kafka",
+    base = file("external/kafka"),
+    settings = commonSettings ++ packSettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.kafka" %% "kafka" % kafkaVersion,
           "com.twitter" %% "bijection-core" % bijectionVersion,
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  )  dependsOn(core % "test->test;compile->compile")
-  
-  lazy val fsio = Project(
-    id = "gearpump-examples-fsio",
-    base = file("examples/fsio"),
-    settings = commonSettings  ++ packSettings
   ) dependsOn streaming
 
-  lazy val kafka = Project(
+  lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
     base = file("examples/kafka"),
     settings = commonSettings ++ packSettings ++
       Seq(
         libraryDependencies ++= Seq(
+          "org.apache.kafka" %% "kafka" % kafkaVersion,
+          "com.twitter" %% "bijection-core" % bijectionVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test"
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
+  ) dependsOn(streaming, external_kafka)
+
+  lazy val fsio = Project(
+    id = "gearpump-examples-fsio",
+    base = file("examples/fsio"),
+    settings = commonSettings  ++ packSettings
   ) dependsOn streaming
 
   lazy val sol = Project(
