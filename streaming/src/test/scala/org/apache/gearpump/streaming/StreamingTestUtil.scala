@@ -34,6 +34,7 @@ object StreamingTestUtil {
       withMasterProxy(miniCluster.mockMaster).withResource(Resource.empty)
       .withAppMasterRegisterData(AppMasterInfo(miniCluster.worker))
       .withUserName(testUserName)
+      .withAppjar(None)
     val props = Props(classOf[AppMaster], config)
     executorId += 1
     miniCluster.launchActor(props).asInstanceOf[TestActorRef[AppMaster]]

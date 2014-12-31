@@ -42,7 +42,7 @@ object Replay extends App with ArgumentsParser {
     Console.out.println("Master URL: " + masters)
 
     implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-    val system = ActorSystem("client", Configs.loadApplicationConfig()
+    val system = ActorSystem("client", Configs.load.application
       .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
     val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
 

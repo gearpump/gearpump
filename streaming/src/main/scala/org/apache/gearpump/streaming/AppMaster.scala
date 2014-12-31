@@ -36,6 +36,7 @@ import org.apache.gearpump.cluster.scheduler._
 import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTask, RestartTasks}
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
+import org.apache.gearpump.streaming.storage.{InMemoryAppStoreOnMaster, AppDataStore}
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
@@ -65,7 +66,8 @@ class AppMaster (config : Configs) extends ApplicationMaster {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
   private val appDescription = config.appDescription.asInstanceOf[AppDescription]
-  private val appJar = loadJar
+  private val appJar = config.appjar
+
   private val masterProxy = config.masterProxy
   private var master : ActorRef = null
 
@@ -105,38 +107,13 @@ class AppMaster (config : Configs) extends ApplicationMaster {
     context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
   }
 
-  def loadJar: Option[AppJar] = {
-    val fileName: Option[String] = Option[String](System.getProperty("app.jar"))
-    fileName match {
-      case Some(name) =>
-        LOG.info(s"APPMASTER app.jar name = $name")
-        val file = new File(name)
-        if(file.exists) {
-          val fis = new FileInputStream(file)
-          val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
-          val buf = ListBuffer[Byte]()
-          var b = fis.read()
-          while (b != -1) {
-            buf.append(b.byteValue)
-            b = fis.read()
-          }
-          return Option(AppJar(name, buf.toArray))
-        }
-        LOG.info("APPMASTER app.jar is NULL")
-        None
-      case None =>
-        LOG.info("APPMASTER app.jar is NULL")
-        None
-    }
-  }
-
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
     case AppMasterRegistered(appId, master) =>
       LOG.info(s"AppMasterRegistered received for appID: $appId")
       killSelf.cancel()
       this.master = master
       context.watch(master)
-      store = new RemoteAppDataStore(appId, master)
+      store = new InMemoryAppStoreOnMaster(appId, master)
 
       LOG.info(s"try to recover start clock")
       store.get(START_CLOCK).map{clock =>

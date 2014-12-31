@@ -48,7 +48,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
 
   "The new started worker" should {
     "kill itself if no response from Master after registering" in {
-      val workerSystem = ActorSystem("WorkerSystem", TestUtil.TEST_CONFIG)
+      val workerSystem = ActorSystem("WorkerSystem", TestUtil.DEFAULT_CONFIG)
       val worker = workerSystem.actorOf(Props(classOf[Worker], mockMaster.ref))
       mockMaster watch worker
       mockMaster.expectMsg(RegisterNewWorker)
@@ -75,7 +75,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
 
   "Worker" should {
     "update its remaining resource when launching and shutting down executors" in {
-      val workerSystem = ActorSystem("WorkerSystem", TestUtil.TEST_CONFIG)
+      val workerSystem = ActorSystem("WorkerSystem", TestUtil.DEFAULT_CONFIG)
       val worker = workerSystem.actorOf(Props(classOf[Worker], masterProxy.ref))
       masterProxy.expectMsg(RegisterNewWorker)
 

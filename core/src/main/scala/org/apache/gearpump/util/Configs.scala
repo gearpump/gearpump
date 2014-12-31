@@ -21,7 +21,7 @@ package org.apache.gearpump.util
 import akka.actor.ActorRef
 import com.typesafe.config.{ConfigParseOptions, Config, ConfigFactory}
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{AppMasterRegisterData, Application}
+import org.apache.gearpump.cluster.{AppJar, AppMasterRegisterData, Application}
 import org.apache.gearpump.util.Constants._
 
 /**
@@ -66,6 +66,9 @@ class Configs(val config: Map[String, _])  extends Serializable{
   def withAppMaster(appMaster : ActorRef) = withValue(APP_MASTER, appMaster)
   def appMaster : ActorRef = getAnyRef(APP_MASTER).asInstanceOf[ActorRef]
 
+  def withAppjar(jar : Option[AppJar]) = withValue(APP_JAR, jar)
+  def appjar : Option[AppJar] = getAnyRef(APP_JAR).asInstanceOf[Option[AppJar]]
+
   def withExecutorId(executorId : Int) = withValue(EXECUTOR_ID, executorId)
   def executorId = config.getInt(EXECUTOR_ID)
 
@@ -86,34 +89,39 @@ object Configs {
 
   def apply(config : Config) = new Configs(config.toMap)
 
-  private val CLUSTER_FILE = ConfigFactory.parseResourcesAnySyntax("gear.conf",
-    ConfigParseOptions.defaults.setAllowMissing(true))
+  class RawConfig(config : Config) {
+    def master : Config = {
+      val gearpump = config.getConfig(GEARPUMP)
+      val master = config.getConfig(MASTER)
+      val base = config.getConfig(BASE)
+      gearpump.withFallback(master).withFallback(base).withFallback(config)
+    }
 
-  private val APPLICATION_FILE = ConfigFactory.parseResourcesAnySyntax("application.conf")
+    def worker : Config = {
+      val gearpump = config.getConfig(GEARPUMP)
+      val master = config.getConfig(WORKER)
+      val base = config.getConfig(BASE)
+      gearpump.withFallback(master).withFallback(base).withFallback(config)
+    }
 
-  private def loadClusterConfig() : Config = ConfigFactory.load(CLUSTER_FILE)
-
-  /**
-   * Will load file application.conf and fallback to cluster.conf
-   */
-  def loadApplicationConfig() : Config = ConfigFactory.load(APPLICATION_FILE.withFallback(CLUSTER_FILE))
-
-  def loadMasterConfig() : Config = {
-    val cluster = loadClusterConfig()
-    if (cluster.hasPath(MASTER)) {
-      cluster.getConfig(MASTER).withFallback(cluster)
-    } else {
-      cluster
+    def application : Config = {
+      val gearpump = config.getConfig(GEARPUMP)
+      val base = config.getConfig(BASE)
+      gearpump.withFallback(master).withFallback(base).withFallback(config)
     }
   }
 
-  def loadWorkerConfig() : Config = {
-    val cluster = loadClusterConfig()
-    if (cluster.hasPath(WORKER)) {
-      cluster.getConfig(WORKER).withFallback(cluster)
-    } else {
-      cluster
-    }
+  def load : RawConfig = {
+    load("application.conf")
+  }
+
+  def load(customConfigFieName : String) : RawConfig = {
+    val user = ConfigFactory.parseResourcesAnySyntax(customConfigFieName,
+      ConfigParseOptions.defaults.setAllowMissing(true))
+
+    val cluster = ConfigFactory.parseResourcesAnySyntax("gear.conf",
+      ConfigParseOptions.defaults.setAllowMissing(true))
+    new RawConfig(ConfigFactory.load(user.withFallback(cluster)))
   }
 
   implicit class ConfigHelper(config: Config) {
@@ -139,6 +147,5 @@ object Configs {
     def getResource(key : String) : Resource = {
       config.get(key).get.asInstanceOf[Resource]
     }
-
   }
 }

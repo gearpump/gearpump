@@ -183,9 +183,9 @@ private[cluster] object Worker {
         val (jvmArguments, classPath) = appJar match {
           case Some(jar) =>
             tempFile = File.createTempFile(jar.name, ".jar")
-            var fos = new FileOutputStream(tempFile)
-            new PrintStream(fos).write(jar.bytes)
-            fos.close
+
+            jar.container.copyToLocalFile(tempFile)
+
             var file = new URL("file:"+tempFile)
             (ctx.jvmArguments :+ "-Dapp.jar="+file.getFile, ctx.classPath :+ file.getFile)
           case None =>

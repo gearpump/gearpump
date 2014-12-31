@@ -20,6 +20,7 @@ object Build extends sbt.Build {
   val commonsHttpVersion = "3.1"
   val commonsLangVersion = "3.3.2"
   val commonsLoggingVersion = "1.1.3"
+  val commonsIOVersion = "2.4"
   val findbugsVersion = "2.0.1"
   val gearPumpVersion = "0.2-SNAPSHOT"
   val guavaVersion = "15.0"
@@ -107,7 +108,12 @@ object Build extends sbt.Build {
         "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
-        "org.apache.hadoop" % "hadoop-common" % hadoopVersion
+        "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
+        "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
+        "io.spray" %%  "spray-can"       % sprayVersion,
+        "io.spray" %%  "spray-routing"   % sprayVersion,
+        "commons-io" % "commons-io" % commonsIOVersion
+
       )
   ) 
 
@@ -129,7 +135,7 @@ object Build extends sbt.Build {
                         ),
         packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id),
         packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
-        packExpandedClasspath := true,
+        packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
   ).dependsOn(core, streaming).aggregate(core, streaming, fsio, examples_kafka,
@@ -201,8 +207,6 @@ object Build extends sbt.Build {
     settings = commonSettings  ++
       Seq(
         libraryDependencies ++= Seq(
-          "io.spray" %%  "spray-can"       % sprayVersion,
-          "io.spray" %%  "spray-routing"   % sprayVersion,
           "io.spray" %%  "spray-testkit"   % sprayVersion % "test",
           "io.spray" %%  "spray-httpx"     % sprayVersion,
           "io.spray" %%  "spray-client"    % sprayVersion,

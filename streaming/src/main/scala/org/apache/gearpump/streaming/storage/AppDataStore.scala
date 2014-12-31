@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming
+package org.apache.gearpump.streaming.storage
 
 import akka.actor.ActorRef
 import akka.pattern.ask
@@ -31,21 +31,8 @@ trait AppDataStore {
   def get(key: String) : Future[Any]
 }
 
-class RemoteAppDataStore(appId: Int, master: ActorRef) extends AppDataStore {
-  implicit val timeout = Constants.FUTURE_TIMEOUT
-  import scala.concurrent.ExecutionContext.Implicits.global
+object AppDataStore {
 
-  override def put(key: String, value: Any): Future[Any] = {
-    master.ask(SaveAppData(appId, key, value))
-  }
-
-  override def get(key: String): Future[Any] = {
-    master.ask(GetAppData(appId, key)).asInstanceOf[Future[GetAppDataResult]].map{result =>
-      if(result.key.equals(key)) {
-        result.value
-      } else {
-        null
-      }
-    }
-  }
 }
+
+
