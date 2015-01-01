@@ -20,19 +20,18 @@ package org.apache.gearpump.transport.netty
 
 import java.util
 
-import akka.actor.{ActorContext, Actor, ActorRef, ExtendedActorSystem}
+import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
 import org.apache.gearpump.transport.ActorLookupById
-import org.apache.gearpump.transport.netty.Server._
 import org.apache.gearpump.util.LogUtil
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
 import scala.concurrent.future
 
-class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) extends Actor {
+class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, deserializeFlag : Boolean) extends Actor {
   private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = name)
 
   import org.apache.gearpump.transport.netty.Server._
@@ -66,8 +65,13 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
         if (actor.isEmpty) {
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
-          val msg = serializer.deserialize(taskMessage.message())
-          actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask(), taskMessage.sessionId()))
+
+          if (deserializeFlag) {
+            val msg = serializer.deserialize(taskMessage.message())
+            actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask(), taskMessage.sessionId()))
+          } else {
+            actor.get.tell(taskMessage, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask(), taskMessage.sessionId()))
+          }
         }
       }
   }

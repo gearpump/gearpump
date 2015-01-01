@@ -18,14 +18,14 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, AppMaster, TaskDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{LogUtil, Configs, Graph}
-import org.apache.gearpump.util.Configs._
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.{Graph, LogUtil}
+import org.slf4j.Logger
 
 object WordCount extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -41,11 +41,10 @@ object WordCount extends App with ArgumentsParser {
   def application(config: ParseResult) : AppDescription = {
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
-    val appConfig = Configs.load.application
     val partitioner = new HashPartitioner()
-    val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
-    val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
-    val app = AppDescription("wordCount", classOf[AppMaster].getCanonicalName, Configs(appConfig), Graph(split ~ partitioner ~> sum))
+    val split = TaskDescription(classOf[Split].getName, splitNum)
+    val sum = TaskDescription(classOf[Sum].getName, sumNum)
+    val app = AppDescription("wordCount", classOf[AppMaster].getName, UserConfig.empty, Graph(split ~ partitioner ~> sum))
     app
   }
 
@@ -54,6 +53,6 @@ object WordCount extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }
 

@@ -19,12 +19,12 @@
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.{NewStartTime, TaskActor, TaskContext}
 
-class Split(conf: Configs) extends TaskActor(conf) {
+class Split(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
 
-  override def onStart(taskContext : TaskContext) : Unit = {
+  override def onStart(taskContext : NewStartTime) : Unit = {
   }
 
   override def onNext(msg : Message) : Unit = {

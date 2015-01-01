@@ -20,12 +20,12 @@ package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import java.net.InetAddress
 
-import akka.actor.{ExtendedActorSystem, ActorContext}
+import akka.actor.{ActorContext, ExtendedActorSystem}
 import kafka.admin.AdminUtils
 import kafka.common.TopicExistsException
 import kafka.utils.ZkUtils
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConsumer.Broker
 import org.I0Itec.zkclient.ZkClient
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConsumer.Broker
 
 object KafkaUtil {
   def getBroker(zkClient: ZkClient, topic: String, partition: Int): Broker = {

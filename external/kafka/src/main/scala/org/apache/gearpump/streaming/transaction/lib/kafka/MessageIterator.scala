@@ -19,9 +19,9 @@
 package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import kafka.api.{FetchRequestBuilder, OffsetRequest}
-import kafka.consumer.SimpleConsumer
 import kafka.common.ErrorMapping._
 import kafka.common.TopicAndPartition
+import kafka.consumer.SimpleConsumer
 import kafka.message.MessageAndOffset
 import kafka.utils.Utils
 

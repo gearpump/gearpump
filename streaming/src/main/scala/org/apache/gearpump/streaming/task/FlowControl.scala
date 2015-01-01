@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.task
 
 import org.apache.gearpump.util.LogUtil
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
 class FlowControl(taskId : TaskId, outputTaskCount : Int, sessionId : Int) {
   import org.apache.gearpump.streaming.task.FlowControl._

@@ -20,12 +20,14 @@ package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import kafka.common.TopicAndPartition
 import kafka.utils.ZkUtils
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.Storage.StorageEmpty
-import org.apache.gearpump.{Message, TimeStamp}
 import org.apache.gearpump.streaming.transaction.api._
-import org.apache.gearpump.streaming.transaction.lib.kafka.grouper.KafkaGrouper
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
-import org.apache.gearpump.util.{LogUtil, Configs}
+import org.apache.gearpump.streaming.transaction.lib.kafka.grouper.KafkaGrouper
+import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
 import scala.util.{Failure, Success}
@@ -34,16 +36,16 @@ import scala.util.{Failure, Success}
 object KafkaSource {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaSource])
 
-  def apply(conf: Configs, messageDecoder: MessageDecoder): KafkaSource = {
+  def apply(appId : Int, taskContext : TaskContext, conf: UserConfig, messageDecoder: MessageDecoder): KafkaSource = {
     val config = conf.config
-    val grouper = config.getGrouperFactory.getKafkaGrouper(conf)
+    val grouper = config.getGrouperFactory.getKafkaGrouper(taskContext)
     val topicAndPartitions = grouper.group(
       ZkUtils.getPartitionsForTopics(config.getZkClient(), config.getConsumerTopics)
       .flatMap { case (topic, partitions) =>
         partitions.map(TopicAndPartition(topic, _)) }.toArray)
     val consumer: KafkaConsumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
     val offsetManagers: Map[TopicAndPartition, KafkaOffsetManager] =
-      topicAndPartitions.map(tp => tp -> KafkaOffsetManager(conf, tp)).toMap
+      topicAndPartitions.map(tp => tp -> KafkaOffsetManager(appId, conf, tp)).toMap
     new KafkaSource(grouper, consumer, messageDecoder, offsetManagers)
   }
 }

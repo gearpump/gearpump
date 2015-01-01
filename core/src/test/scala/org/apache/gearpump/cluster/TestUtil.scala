@@ -17,23 +17,23 @@
  */
 package org.apache.gearpump.cluster
 
+import java.net.ServerSocket
+
 import akka.actor._
 import akka.testkit.TestActorRef
-import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
-import org.apache.gearpump.util.Configs
-import org.apache.gearpump.util.Constants._
+import com.typesafe.config.ConfigValueFactory
 
-import scala.collection.JavaConverters._
+import scala.util.Try
 
-object TestUtil{
-  val rawConfig = Configs.load("test.conf")
+object TestUtil {
+  val rawConfig = ClusterConfig.load("test.conf")
   val DEFAULT_CONFIG = rawConfig.application
   val MASTER_CONFIG = rawConfig.master
   val WORKER_CONFIG = rawConfig.worker
-  
+
   def startMiniCluster = new MiniCluster
 
-  class MiniCluster{
+  class MiniCluster {
     private val mockMasterIP = "127.0.0.1"
 
     private implicit val system = ActorSystem("system", MASTER_CONFIG.
@@ -52,5 +52,15 @@ object TestUtil{
     }
 
     def shutDown() = system.shutdown()
+  }
+
+  def findFreePort: Try[Int] = {
+    Try {
+      val socket = new ServerSocket(0);
+      socket.setReuseAddress(true);
+      val port = socket.getLocalPort();
+      socket.close;
+      port
+    }
   }
 }

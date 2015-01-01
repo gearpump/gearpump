@@ -26,7 +26,7 @@ import akka.actor.{Actor, Cancellable}
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.{DAG, TaskGroup}
 import org.apache.gearpump.util.LogUtil
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try

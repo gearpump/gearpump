@@ -19,17 +19,16 @@
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
-import org.apache.gearpump.util.{LogUtil, Configs}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.{NewStartTime, TaskActor, TaskContext}
 
 import scala.collection.mutable
 
-class Sum (conf : Configs) extends TaskActor(conf) {
+class Sum (taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
 
   private val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
 
-  override def onStart(taskContext : TaskContext) : Unit = {
+  override def onStart(taskContext : NewStartTime) : Unit = {
 
   }
 

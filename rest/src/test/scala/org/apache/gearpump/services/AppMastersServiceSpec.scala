@@ -20,9 +20,9 @@ package org.apache.gearpump.services
 import org.apache.gearpump.cluster.AppMasterInfo
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import org.apache.gearpump.util.LogUtil
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.Logger
 import org.specs2.mutable.Specification
-import org.specs2.specification.{BeforeExample, AfterExample}
+import org.specs2.specification.{AfterExample, BeforeExample}
 import spray.testkit.Specs2RouteTest
 
 import scala.util.{Failure, Success}

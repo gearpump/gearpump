@@ -20,19 +20,18 @@ package org.apache.gearpump.util
 
 import akka.actor.Actor.Receive
 import akka.actor._
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
 object ActorUtil {
    private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  def getSystemPath(system : ActorSystem) : String = {
-    system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.toString
+  def getSystemAddress(system : ActorSystem) : Address = {
+    system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
   }
 
-   def getFullPath(context: ActorContext): String = {
-     context.self.path.toStringWithAddress(
-       context.system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
-   }
+  def getFullPath(system : ActorSystem, path : ActorPath): String = {
+    path.toStringWithAddress(getSystemAddress(system))
+  }
 
    def defaultMsgHandler(actor : ActorRef) : Receive = {
      case msg : Any =>
@@ -43,8 +42,8 @@ object ActorUtil {
     val extendedSystem = system.asInstanceOf[ExtendedActorSystem]
     val clazz = system.getClass
     val m = clazz.getDeclaredMethod("printTree")
-    m.setAccessible(true);//Abracadabra
-    Console.out.print(m.invoke(system))
+    m.setAccessible(true);
+    LOG.info(m.invoke(system).asInstanceOf[String])
   }
 
   // Check whether a actor is child actor by simply examining name

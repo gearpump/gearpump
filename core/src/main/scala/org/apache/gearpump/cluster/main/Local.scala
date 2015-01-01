@@ -18,17 +18,18 @@
 
 package org.apache.gearpump.cluster.main
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
+import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
-import org.apache.gearpump.util.{LogUtil, ActorUtil, Configs}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.{ActorUtil, LogUtil}
+import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
 
 object Local extends App with ArgumentsParser {
-  val systemConfig = Configs.load.master.withFallback(Configs.load.worker)
+  val systemConfig = ClusterConfig.load.master.withFallback(ClusterConfig.load.worker)
 
   private val LOG: Logger = {
     LogUtil.loadConfiguration(systemConfig, ProcessType.LOCAL)
@@ -60,7 +61,7 @@ object Local extends App with ArgumentsParser {
     )
 
     val master = system.actorOf(Props[org.apache.gearpump.cluster.Master], MASTER)
-    val masterPath = ActorUtil.getSystemPath(system) + s"/user/$MASTER"
+    val masterPath = ActorUtil.getSystemAddress(system).toString + s"/user/$MASTER"
     LOG.info(s"master is started at $masterPath...")
 
     0.until(workerCount).foreach { id =>

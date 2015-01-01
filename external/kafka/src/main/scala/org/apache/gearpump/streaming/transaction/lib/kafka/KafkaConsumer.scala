@@ -19,13 +19,12 @@
 package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import java.nio.channels.ClosedByInterruptException
+import java.util.concurrent.LinkedBlockingQueue
 
 import kafka.common.TopicAndPartition
-
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
-import java.util.concurrent.LinkedBlockingQueue
 
 
 case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,

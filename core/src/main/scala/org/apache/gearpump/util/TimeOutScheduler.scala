@@ -19,8 +19,9 @@ package org.apache.gearpump.util
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
+
 import scala.concurrent.duration._
 
 trait TimeOutScheduler {

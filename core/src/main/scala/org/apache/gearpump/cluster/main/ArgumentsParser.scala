@@ -29,7 +29,7 @@ class ParseResult(optionMap : Map[String, String], remainArguments : Array[Strin
 
   def exists(key : String) = optionMap.get(key).isDefined
 
-  def remainArgs = this.remainArguments
+  def remainArgs : Array[String] = this.remainArguments
 }
 
 /**
@@ -42,7 +42,7 @@ trait  ArgumentsParser {
 
   def help : Unit = {
     Console.println("Usage:")
-    var usage = List(s"java ${this.getClass} " +
+    var usage = List(s"java ${removeTrailingDollarChar(this.getClass.toString)} " +
       options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") +
       " " +
       remainArgs.map(k => s"<$k>").mkString(" "))
@@ -54,65 +54,82 @@ trait  ArgumentsParser {
     usage.foreach(Console.println(_))
   }
 
+  private def removeTrailingDollarChar(className : String) : String = {
+    if (className.endsWith("$")) {
+      className.dropRight(1)
+    } else {
+      className
+    }
+  }
+
   val options : Array[(String, CLIOption[Any])]
   val remainArgs : Array[String] = Array.empty[String]
 
   def parse(args: Array[String]) : ParseResult = {
 
-    var config = Map.empty[String, String]
-    var remainArgs = Array.empty[String]
+    if (args == null || args.length == 0) {
+      help
+      null
+    }
+    else {
+      var config = Map.empty[String, String]
+      var remain = Array.empty[String]
 
-    def doParse(argument : List[String]) : Unit = {
-      argument match {
-        case Nil => Unit // true if everything processed successfully
+      def doParse(argument: List[String]): Unit = {
+        argument match {
+          case Nil => Unit // true if everything processed successfully
 
-        case key :: value :: rest if key.startsWith("-") && !value.startsWith("-") =>
-          val fixedKey = key.substring(1)
-          if (!options.map(_._1).contains(fixedKey)) {
-            if (!ignoreUnknownArgument) {
+          case key :: value :: rest if key.startsWith("-") && !value.startsWith("-") =>
+            val fixedKey = key.substring(1)
+            if (!options.map(_._1).contains(fixedKey)) {
+              if (!ignoreUnknownArgument) {
+                help
+                throw new Exception(s"found unknown option $fixedKey")
+              }
+            } else {
+              config += fixedKey -> value
+            }
+            doParse(rest)
+
+          case key :: rest if key.startsWith("-") =>
+            val fixedKey = key.substring(1)
+            if (!options.map(_._1).contains(fixedKey)) {
               help
               throw new Exception(s"found unknown option $fixedKey")
             } else {
-              List[String](key, value).foreach(f=>{remainArgs :+= f;})
+              config += fixedKey -> "true"
             }
-          } else {
-            config += fixedKey -> value
-          }
-          doParse(rest)
+            doParse(rest)
 
-        case key :: rest if key.startsWith("-") =>
-          val fixedKey = key.substring(1)
-          if (!options.map(_._1).contains(fixedKey)) {
-            help
-            throw new Exception(s"found unknown option $fixedKey")
-          } else {
-            config += fixedKey -> "true"
-          }
-          doParse(rest)
-
-        case value :: rest =>
-          remainArgs :+= value
-          doParse(rest)
+          case value :: rest =>
+            remain ++= value :: rest
+            doParse(Nil)
+        }
       }
-    }
-    doParse(args.toList)
+      doParse(args.toList)
 
-    options.foreach(pair => {
-      val (key, option) = pair
-      if (!config.contains(key) && !option.required) {
-        config += key -> option.defaultValue.getOrElse("").toString
+      options.foreach(pair => {
+        val (key, option) = pair
+        if (!config.contains(key) && !option.required) {
+          config += key -> option.defaultValue.getOrElse("").toString
+        }
       }
-    }
-    )
+      )
 
-    if (!ignoreUnknownArgument && (remainArgs.length != this.remainArgs.length ||
-    options.length != config.keySet.size)) {
-      help
-      Console.println(s"Unknown or missing arguments...")
-      System.exit(-1)
-    }
+      options.foreach { pair =>
+        val (key, value) = pair
+        if (config.get(key).isEmpty) {
+          help
+          throw new Exception(s"Missing option ${key}...")
+        }
+      }
 
-    new ParseResult(config, remainArgs)
+      if (remain.length < remainArgs.length) {
+        help
+        throw new Exception(s"Missing arguments ...")
+      }
+
+      new ParseResult(config, remain)
+    }
   }
-
 }

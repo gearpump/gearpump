@@ -18,41 +18,39 @@
 
 package org.apache.gearpump.cluster.client
 
-import java.io.{ByteArrayOutputStream, FileInputStream}
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
+import akka.pattern.ask
 import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.jarstore.JarFileContainer
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{LogUtil, Configs, Util}
-import org.slf4j.{LoggerFactory, Logger}
-import akka.pattern.ask
+import org.apache.gearpump.util.{LogUtil, Util}
+import org.slf4j.Logger
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
-import scala.collection.mutable.ListBuffer
 
 //TODO: add interface to query master here
 class ClientContext(masters: Iterable[HostPort]) {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
-  val config = Configs.load.application
+  private val config = ClusterConfig.load.application
 
-  val system = ActorSystem(s"client${Util.randInt()}" , config)
+  private val system = ActorSystem(s"client${Util.randInt}" , config)
   import system.dispatcher
 
-  val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
+  private val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
 
   LOG.info(s"Creating master proxy ${master} for master list: $masters")
 
   /**
    * Submit an applicaiton with default jar setting. Use java property
-   * "gear.app.jar" if defined. Otherwise, will assume the jar is on
+   * "gearpump.app.jar" if defined. Otherwise, will assume the jar is on
    * the target runtime classpath, and will not send it.
    */
   def submit(app : Application) : Int = {
@@ -69,12 +67,22 @@ class ClientContext(masters: Iterable[HostPort]) {
     }
   }
 
+  def replayFromTimestampWindowTrailingEdge(appId : Int) = {
+    val client = new MasterClient(master)
+    client.replayFromTimestampWindowTrailingEdge(appId)
+  }
+
+  def listApps = {
+    val client = new MasterClient(master)
+    client.listApplications
+  }
+
   def shutdown(appId : Int) : Unit = {
     val client = new MasterClient(master)
     client.shutdownApplication(appId)
   }
 
-  def cleanup() : Unit = {
+  def close() : Unit = {
     system.shutdown()
   }
 

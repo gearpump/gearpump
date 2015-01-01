@@ -22,18 +22,18 @@ import java.util.Random
 
 import akka.serialization.SerializationExtension
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.{NewStartTime, TaskActor, TaskContext}
 
-class SOLStreamProducer(conf : Configs) extends TaskActor(conf) {
+class SOLStreamProducer(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
   import org.apache.gearpump.streaming.examples.sol.SOLStreamProducer._
 
-  private val sizeInBytes = conf.getInt(SOLStreamProducer.BYTES_PER_MESSAGE)
+  private val sizeInBytes = conf.getInt(SOLStreamProducer.BYTES_PER_MESSAGE).get
   private var messages : Array[String] = null
   private var rand : Random = null
   private var messageCount : Long = 0
 
-  override def onStart(taskContext : TaskContext) : Unit = {
+  override def onStart(taskContext : NewStartTime) : Unit = {
     prepareRandomMessage
     self ! Start
     val s = SerializationExtension(context.system)
