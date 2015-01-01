@@ -7,6 +7,9 @@ import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 
 import scala.collection.immutable.Map.WithDefault
 
+import sbtassembly.Plugin._
+import AssemblyKeys._
+
 object Build extends sbt.Build {
 
   class DefaultValueMap[+B](value : B) extends WithDefault[String, B](null, (key) => value) {
@@ -31,6 +34,8 @@ object Build extends sbt.Build {
   val kafkaVersion = "0.8.2-beta"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
+  
+  val scalaVersionMajor = "scala-2.11"
   val scalaVersionNumber = "2.11.4"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
@@ -41,7 +46,7 @@ object Build extends sbt.Build {
   val mockitoVersion = "1.10.8"
   val bijectionVersion = "0.7.0"
 
-  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
+  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
         resolvers ++= Seq(
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
@@ -57,8 +62,6 @@ object Build extends sbt.Build {
       version := gearPumpVersion,
       organization := "com.github.intel-hadoop",
       scalacOptions ++= Seq("-Yclosure-elim","-Yinline"),
-      packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
-      packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf")),
       pomExtra := {
       <url>https://github.com/intel-hadoop/gearpump</url>
       <licenses>
@@ -80,8 +83,9 @@ object Build extends sbt.Build {
         </developer>
       </developers>
     }
-  ) ++
-  Seq(
+  ) 
+
+  val coreDependencies = Seq(
         libraryDependencies ++= Seq(
         "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
         "com.codahale.metrics" % "metrics-core" % codahaleVersion,
@@ -113,15 +117,18 @@ object Build extends sbt.Build {
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion
-
       )
-  ) 
+  )
+
+  val myAssemblySettings = assemblySettings ++ Seq(
+    assemblyOption in assembly ~= { _.copy(includeScala = false) }
+  )
 
   lazy val root = Project(
     id = "gearpump",
     base = file("."),
-    settings = commonSettings ++ 
-      packSettings ++ 
+    settings = commonSettings ++
+      packSettings ++
       Seq(
         packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
                         "local" -> "org.apache.gearpump.cluster.main.Local",
@@ -133,18 +140,19 @@ object Build extends sbt.Build {
                            "master" -> Seq("-DlogFilename=master"),
                            "worker" -> Seq("-DlogFilename=worker")
                         ),
-        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id),
-        packResourceDir := Map(baseDirectory.value / "conf" -> "conf"),
+        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, examples.id),
+        packResourceDir += (baseDirectory.value / "conf" -> "conf"),
+        packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
-  ).dependsOn(core, streaming).aggregate(core, streaming, fsio, examples_kafka,
-      sol, wordcount, rest, external_kafka)
+  ).dependsOn(core, streaming, rest, external_kafka).aggregate(core, streaming, fsio, examples_kafka,
+      sol, wordcount, rest, external_kafka, examples)
 
   lazy val core = Project(
     id = "gearpump-core",
     base = file("core"),
-    settings = commonSettings 
+    settings = commonSettings ++ coreDependencies
   )
 
   lazy val streaming = Project(
@@ -156,7 +164,7 @@ object Build extends sbt.Build {
   lazy val external_kafka = Project(
     id = "gearpump-external-kafka",
     base = file("external/kafka"),
-    settings = commonSettings ++ packSettings ++
+    settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.kafka" %% "kafka" % kafkaVersion,
@@ -166,45 +174,49 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn streaming
+  ) dependsOn (streaming % "provided")
 
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
     base = file("examples/kafka"),
-    settings = commonSettings ++ packSettings ++
+    settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.kafka" %% "kafka" % kafkaVersion,
-          "com.twitter" %% "bijection-core" % bijectionVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn(streaming, external_kafka)
+  ) dependsOn(streaming % "provided", external_kafka  % "provided")
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
     base = file("examples/fsio"),
-    settings = commonSettings  ++ packSettings
-  ) dependsOn streaming
+    settings = commonSettings
+  ) dependsOn (streaming % "provided")
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",
     base = file("examples/sol"),
-    settings = commonSettings ++ packSettings
-  ) dependsOn streaming
+    settings = commonSettings
+  ) dependsOn (streaming % "provided")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
     base = file("examples/wordcount"),
-    settings = commonSettings ++ packSettings
-  ) dependsOn streaming
+    settings = commonSettings
+  ) dependsOn (streaming % "provided")
 
+  lazy val examples = Project(
+    id = "gearpump-examples",
+    base = file("examples"),
+    settings = commonSettings ++ myAssemblySettings
+  ) dependsOn (wordcount, sol, fsio, examples_kafka)
+  
   lazy val rest = Project(
     id = "gearpump-rest",
     base = file("rest"),
-    settings = commonSettings  ++
+    settings = commonSettings  ++ 
       Seq(
         libraryDependencies ++= Seq(
           "io.spray" %%  "spray-testkit"   % sprayVersion % "test",
