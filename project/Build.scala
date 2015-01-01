@@ -146,6 +146,7 @@ object Build extends sbt.Build {
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
+
   ).dependsOn(core, streaming, rest, external_kafka).aggregate(core, streaming, fsio, examples_kafka,
       sol, wordcount, rest, external_kafka, examples)
 
