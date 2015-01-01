@@ -16,19 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.kafka.lib.grouper
 
-import org.apache.gearpump.TimeStamp
+import kafka.common.TopicAndPartition
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.TaskContext
 
-import scala.util.Try
-
-object Storage {
-  case object StorageEmpty extends Throwable
-  case class Overflow(max: Array[Byte]) extends Throwable
-  case class Underflow(min: Array[Byte]) extends Throwable
+trait KafkaGrouperFactory {
+  def getKafkaGrouper(conf: TaskContext): KafkaGrouper
 }
 
-trait Storage {
-  def lookUp(time: TimeStamp): Try[Array[Byte]]
-  def append(time: TimeStamp, offset: Array[Byte]): Unit
+trait KafkaGrouper {
+  def group(topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition]
 }
+
+

@@ -22,24 +22,22 @@ import org.apache.gearpump.{Message, TimeStamp}
 
 import scala.util.Try
 
-object MessageFilter {
-  /**
-   * default MessageFilter, simply return the Message
-   */
-  def apply(): MessageFilter = new MessageFilter {
-    override def filter(messageAndOffset: (Message, Long)): Option[Message] = {
-      Option(messageAndOffset._1)
-    }
-  }
-}
-
+/**
+ * filter offsets and store the mapping from timestamp to offset
+ */
 trait MessageFilter {
   def filter(messageAndOffset: (Message, Long)): Option[Message]
 }
 
+/**
+ * resolve timestamp to offset by look up the underlying storage
+ */
 trait OffsetTimeStampResolver {
   def resolveOffset(time: TimeStamp): Try[Long]
 }
 
+/**
+ * manages message's offset on TimeReplayableSource and timestamp
+ */
 trait OffsetManager extends MessageFilter with OffsetTimeStampResolver
 

@@ -16,39 +16,37 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.lib.kafka
+package org.apache.gearpump.streaming.kafka.lib
 
-import java.net.InetAddress
-
-import akka.actor.{ActorContext, ExtendedActorSystem}
 import kafka.admin.AdminUtils
 import kafka.common.TopicExistsException
 import kafka.utils.ZkUtils
 import org.I0Itec.zkclient.ZkClient
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConsumer.Broker
+import org.apache.gearpump.streaming.kafka.lib.KafkaConsumer.Broker
 
 object KafkaUtil {
   def getBroker(zkClient: ZkClient, topic: String, partition: Int): Broker = {
     val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
-      .getOrElse(throw new Exception(s"leader not available for TopicAndPartition($topic, $partition)"))
+      .getOrElse(throw new RuntimeException(s"leader not available for TopicAndPartition($topic, $partition)"))
     val broker = ZkUtils.getBrokerInfo(zkClient, leader)
-      .getOrElse(throw new Exception(s"broker info not found for leader $leader"))
+      .getOrElse(throw new RuntimeException(s"broker info not found for leader $leader"))
     Broker(broker.host, broker.port)
   }
 
-  def getHost(context: ActorContext): String = {
-    val address = context.system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-    InetAddress.getByName(address.host.get).getHostName
-  }
-
+  /**
+   *  create a new kafka topic
+   *  return true if topic already exists, and false otherwise
+   */
   def createTopic(zkClient: ZkClient, topic: String, replicas: Int): Boolean = {
     try {
       AdminUtils.createTopic(zkClient, topic, 1, replicas)
-      true
+      false
     } catch {
       case tee: TopicExistsException =>
-        false
+        true
       case e: Exception => throw e
     }
   }
+
+
 }

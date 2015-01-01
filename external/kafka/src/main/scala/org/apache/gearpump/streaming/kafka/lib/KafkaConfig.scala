@@ -16,18 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.lib.kafka
+package org.apache.gearpump.streaming.kafka.lib
 
-import java.util.Properties
+import java.util.{Properties, List => JList}
 
 import com.typesafe.config.ConfigFactory
 import kafka.common.TopicAndPartition
 import kafka.producer.ProducerConfig
-import kafka.serializer.Decoder
 import kafka.utils.ZKStringSerializer
 import org.I0Itec.zkclient.ZkClient
 import org.I0Itec.zkclient.serialize.ZkSerializer
-import org.apache.gearpump.streaming.transaction.lib.kafka.grouper.KafkaGrouperFactory
+import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouperFactory
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -43,8 +42,8 @@ object KafkaConfig {
   val CLIENT_ID = "kafka.consumer.client.id"
   val FETCH_MESSAGE_MAX_BYTES = "kafka.consumer.fetch.message.max.bytes"
   val CONSUMER_EMIT_BATCH_SIZE = "kafka.consumer.emit.batch.size"
-  val CONSUMER_DESERIALIZER_CLASS = "kafka.consumer.deserializer.class"
   val FETCH_THRESHOLD = "kafka.consumer.fetch.threshold"
+  val FETCH_SLEEP_MS = "kafka.consumer.fetch.sleep.ms"
 
   // producer config
   val PRODUCER_TOPIC = "kafka.producer.topic"
@@ -64,20 +63,26 @@ object KafkaConfig {
 
   implicit class ConfigToKafka(config: Map[String, _]) {
 
-    private def getString(key: String): String = {
-      config.get(key).get.asInstanceOf[String]
+    def get[T](key: String, defaultValue: Option[T] = None): T = {
+      val value = config.get(key) orElse defaultValue orElse
+        (throw new RuntimeException(s"${key} not found"))
+      value.get.asInstanceOf[T]
     }
 
-    private def getInt(key: String): Int = {
-      config.get(key).get.asInstanceOf[Int]
+    def getString(key: String, defaultValue: Option[String] = None): String = {
+      get[String](key, defaultValue)
     }
 
-    private def getInstance[C](key: String): C = {
-      Class.forName(getString(key)).newInstance().asInstanceOf[C]
+    def getInt(key: String, defaultValue: Option[Int] = None): Int = {
+      get[Int](key, defaultValue)
     }
 
-    private def getStringList(key: String): List[String] = {
-      config.get(key).get.asInstanceOf[java.util.List[String]].asScala.toList
+    def getInstance[C](key: String, defaultValue: Option[String] = None): C = {
+      Class.forName(getString(key, defaultValue)).newInstance().asInstanceOf[C]
+    }
+
+    def getStringList(key: String, defaultValue: Option[JList[String]] = None): List[String] = {
+      get[JList[String]](key, defaultValue).asScala.toList
     }
 
     def getConsumer(topicAndPartitions: Array[TopicAndPartition],
@@ -86,57 +91,58 @@ object KafkaConfig {
                     receiveBufferSize: Int = getSocketReceiveBufferBytes,
                     fetchSize: Int = getFetchMessageMaxBytes,
                     zkClient: ZkClient = getZkClient(),
-                    fetchThreshold: Int = getFetchThreshold): KafkaConsumer = {
-      new KafkaConsumer(topicAndPartitions, clientId, socketTimeout,
-        receiveBufferSize, fetchSize, zkClient, fetchThreshold)
+                    fetchThreshold: Int = getFetchThreshold,
+                    fetchSleepMS: Int = getFetchSleepMS): KafkaConsumer = {
+      KafkaConsumer(topicAndPartitions, clientId, socketTimeout,
+        receiveBufferSize, fetchSize, zkClient, fetchThreshold, fetchSleepMS)
     }
 
-    def getZookeeperConnect = {
+    def getZookeeperConnect: String = {
       getString(ZOOKEEPER_CONNECT)
     }
 
-    def getConsumerTopics = {
+    def getConsumerTopics: List[String] = {
       getStringList(CONSUMER_TOPICS)
     }
 
-    def getSocketTimeoutMS = {
+    def getSocketTimeoutMS: Int = {
       getInt(SOCKET_TIMEOUT_MS)
     }
 
-    def getSocketReceiveBufferBytes = {
+    def getSocketReceiveBufferBytes: Int = {
       getInt(SOCKET_RECEIVE_BUFFER_BYTES)
     }
 
-    def getFetchMessageMaxBytes = {
+    def getFetchMessageMaxBytes: Int = {
       getInt(FETCH_MESSAGE_MAX_BYTES)
     }
 
-    def getClientId = {
+    def getClientId: String = {
       getString(CLIENT_ID)
     }
 
-    def getConsumerEmitBatchSize = {
+    def getConsumerEmitBatchSize: Int = {
       getInt(CONSUMER_EMIT_BATCH_SIZE)
     }
 
-    def getConsumerDeserializer = {
-      getInstance[Decoder[_]](CONSUMER_DESERIALIZER_CLASS)
+    def getFetchSleepMS: Int = {
+      getInt(FETCH_SLEEP_MS)
     }
 
-    def getFetchThreshold = {
+    def getFetchThreshold: Int = {
       getInt(FETCH_THRESHOLD)
     }
 
     def getZkClient(zookeeperConnect: String = getZookeeperConnect,
                     sessionTimeout: Int = getSocketTimeoutMS,
                     connectionTimeout: Int = getSocketTimeoutMS,
-                    zkSerializer: ZkSerializer = ZKStringSerializer) = {
+                    zkSerializer: ZkSerializer = ZKStringSerializer): ZkClient = {
       new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
     }
 
     def getProducer[K, V](producerConfig: ProducerConfig = getProducerConfig(),
                           emitBatchSize: Int = getProducerEmitBatchSize): KafkaProducer[K, V] = {
-      new KafkaProducer[K, V](producerConfig, emitBatchSize)
+      KafkaProducer[K, V](producerConfig, emitBatchSize)
     }
 
     def getProducerConfig(brokerList: String = getMetadataBrokerList,
@@ -151,35 +157,35 @@ object KafkaConfig {
       new ProducerConfig(props)
     }
 
-    def getProducerTopic = {
+    def getProducerTopic: String = {
       getString(PRODUCER_TOPIC)
     }
 
-    def getProducerEmitBatchSize = {
+    def getProducerEmitBatchSize: Int = {
       getInt(PRODUCER_EMIT_BATCH_SIZE)
     }
 
-    def getProducerType = {
+    def getProducerType: String = {
       getString(PRODUCER_TYPE)
     }
 
-    def getSerializerClass = {
+    def getSerializerClass: String = {
       getString(SERIALIZER_CLASS)
     }
 
-    def getRequestRequiredAcks = {
+    def getRequestRequiredAcks: String = {
       getString(REQUEST_REQUIRED_ACKS)
     }
 
-    def getMetadataBrokerList = {
+    def getMetadataBrokerList: String = {
       getString(METADATA_BROKER_LIST)
     }
 
-    def getGrouperFactory = {
+    def getGrouperFactory: KafkaGrouperFactory = {
       getInstance[KafkaGrouperFactory](GROUPER_FACTORY_CLASS)
     }
 
-    def getStorageReplicas = {
+    def getStorageReplicas: Int = {
       getInt(STORAGE_REPLICAS)
     }
   }
@@ -188,7 +194,7 @@ object KafkaConfig {
 }
 
 class KafkaConfig {
-  import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
+  import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
 
   LOG.info("Loading Kafka configurations...")
   val config = ConfigFactory.load("kafka.conf")

@@ -21,18 +21,19 @@ package org.apache.gearpump.streaming.examples.kafka
 import akka.actor.actorRef2Scala
 import com.twitter.bijection.Injection
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
-import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource, TimeStampFilter}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig.ConfigToKafka
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
-import org.apache.gearpump.{Message, TimeStamp}
-
+import org.apache.gearpump.streaming.task.StartTime
+import org.apache.gearpump.streaming.kafka.KafkaSource
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, TimeReplayableSource, MessageDecoder}
+import org.apache.gearpump.{TimeStamp, Message}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import scala.util.{Failure, Success}
 
 /**
  * connect gearpump with kafka
  */
-class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
+class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
+  extends TaskActor(taskContext, conf) {
 
   private val config = conf.config
   private val batchSize = config.getConsumerEmitBatchSize
@@ -51,7 +52,8 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig) extends T
     }
   }
 
-  private val source: TimeReplayableSource = KafkaSource(taskContext.appId, taskContext, conf, msgDecoder)
+  private val source: TimeReplayableSource = KafkaSource(taskContext.appId, taskContext,
+    conf, msgDecoder)
   private var startTime: TimeStamp = 0L
 
   override def onStart(newStartTime: StartTime): Unit = {

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.lib.kafka.grouper
+package org.apache.gearpump.streaming.kafka.lib.grouper
 
 import kafka.common.TopicAndPartition
 import org.scalacheck.Gen

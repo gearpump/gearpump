@@ -16,17 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.lib.kafka
+package org.apache.gearpump.streaming.kafka.lib
 
 import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
 
 import scala.collection.mutable.ArrayBuffer
 
-class KafkaProducer[K, V](config: ProducerConfig,
-                    batchSize: Int) {
+object KafkaProducer {
+  def apply[K, V](config: ProducerConfig, batchSize: Int): KafkaProducer[K, V] = {
+    val producer = new Producer[K, V](config)
+    new KafkaProducer[K, V](producer, batchSize)
+  }
+}
+
+class KafkaProducer[K, V](producer: Producer[K, V], batchSize: Int) {
 
   private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
-  private val producer = new Producer[K, V](config)
 
   def send(topic: String, key: K, msg: V): Unit = send(topic, key, key, msg)
 
@@ -38,8 +43,10 @@ class KafkaProducer[K, V](config: ProducerConfig,
   }
 
   def flush(): Unit = {
-    producer.send(buffer: _*)
-    buffer.clear()
+    if (buffer.nonEmpty) {
+      producer.send(buffer: _*)
+      buffer.clear()
+    }
   }
 
   def close(): Unit = {
