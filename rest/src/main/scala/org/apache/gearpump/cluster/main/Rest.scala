@@ -18,9 +18,12 @@
 
 package org.apache.gearpump.cluster.main
 
+import akka.actor.{ActorSystem, Props}
+import org.apache.gearpump.cluster.MasterProxy
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.services.RestServices
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.util.{Util, Configs}
+import org.apache.gearpump.util.Constants._
 
 object Rest extends App with ArgumentsParser {
 
@@ -29,14 +32,13 @@ object Rest extends App with ArgumentsParser {
 
   def start(): Unit = {
     val config = parse(args)
-    val masters = config.getString("master")
-    Console.out.println("Master URL: " + masters)
-    val systemConfig = Configs.load.application
-    val clientContext = ClientContext(masters)
-    implicit val system = clientContext.system
-    RestServices.start(clientContext.master)
+    val masterList = config.getString("master")
+    Console.out.println("Master URL: " + masterList)
+
+    implicit val system = ActorSystem(s"rest" , Configs.load.application)
+    val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masterList)), MASTER)
+
+    RestServices.start(master)
   }
-
   start()
-
 }

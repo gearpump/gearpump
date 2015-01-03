@@ -61,7 +61,7 @@ object AppMasterProtocol extends DefaultJsonProtocol  {
   implicit object PartitionerFormat extends RootJsonFormat[Partitioner] {
     def write(obj: Partitioner): JsValue = {
       JsString(
-        obj.getClass.getCanonicalName
+        obj.getClass.getName
       )
     }
     def read(obj: JsValue): Partitioner = {

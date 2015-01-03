@@ -107,8 +107,6 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-        "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
-        "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
@@ -116,7 +114,11 @@ object Build extends sbt.Build {
         "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing"   % sprayVersion,
-        "commons-io" % "commons-io" % commonsIOVersion
+        "commons-io" % "commons-io" % commonsIOVersion,
+        "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
+        "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+        "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+        "org.mockito" % "mockito-core" % mockitoVersion % "test"
       )
   )
 
@@ -143,6 +145,9 @@ object Build extends sbt.Build {
         packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, examples.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
+
+        // The classpath should not be expanded. Otherwise, the classpath maybe too long.
+        // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )

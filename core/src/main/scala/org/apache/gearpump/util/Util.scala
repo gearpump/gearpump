@@ -19,22 +19,36 @@
 package org.apache.gearpump.util
 
 import java.io.File
+import java.net.ServerSocket
 
 import org.apache.gearpump.transport.HostPort
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.sys.process.Process
+import scala.util.Try
 
 object Util {
+  val LOG = LogUtil.getLogger(getClass)
+
   def getCurrentClassPath : Array[String] = {
     val classpath = System.getProperty("java.class.path");
     val classpathList = classpath.split(File.pathSeparator);
     classpathList
   }
 
+  def startProcess(options : Array[String], classPath : Array[String], mainClass : String,
+                   arguments : Array[String]) : Process = {
+    val java = System.getProperty("java.home") + "/bin/java"
+    val command = List(java) ++ options ++ List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
+    LOG.info(s"Starting executor process $command...")
+    val process = Process(command).run(new ProcessLogRedirector())
+    process
+  }
+
   /**
    * hostList format: host1:port1,host2:port2,host3:port3...
    */
-  def parseHostList(hostList : String) = {
+  def parseHostList(hostList : String) : List[HostPort] = {
     val masters = hostList.trim.split(",").map { address =>
       val hostAndPort = address.split(":")
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
@@ -42,7 +56,17 @@ object Util {
     masters.toList
   }
 
-  def randInt(): Int = {
+  def randInt: Int = {
     ThreadLocalRandom.current.nextInt()
+  }
+
+  def findFreePort: Try[Int] = {
+    Try {
+      val socket = new ServerSocket(0);
+      socket.setReuseAddress(true);
+      val port = socket.getLocalPort();
+      socket.close;
+      port
+    }
   }
 }

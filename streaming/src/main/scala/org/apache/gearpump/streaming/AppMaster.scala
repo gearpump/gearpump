@@ -48,30 +48,28 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-class AppMaster (config : Configs) extends ApplicationMaster {
+class AppMaster(appId : Int, username : String, masterExecutorId : Int, resource : Resource,
+                 appDescription : AppDescription, appJar : Option[AppJar], masterProxy : ActorRef,
+                 registerData : AppMasterRegisterData, config : Configs) extends ApplicationMaster {
+
+  def this(config : Configs)  = {
+    this(config.appId, config.username, config.executorId, config.resource,
+      config.appDescription.asInstanceOf[AppDescription], config.appjar,
+      config.masterProxy, config.appMasterRegisterData, config)
+  }
 
   import org.apache.gearpump.streaming.AppMaster._
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
-  val masterExecutorId = config.executorId
   var currentExecutorId = masterExecutorId + 1
-  val resource = config.resource
 
   import context.dispatcher
 
-  private val appId = config.appId
-
-  private val username = config.username
-
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
-  private val appDescription = config.appDescription.asInstanceOf[AppDescription]
-  private val appJar = config.appjar
-
-  private val masterProxy = config.masterProxy
   private var master : ActorRef = null
 
-  private val registerData = config.appMasterRegisterData
+
 
   private val name = appDescription.name
   private val taskSet = new TaskSet(config, DAG(appDescription.dag))
@@ -343,9 +341,9 @@ object AppMaster {
     private val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId)
 
     val name = ActorUtil.actorNameForExecutor(appId, executorId)
-    val selfPath = ActorUtil.getFullPath(context)
+    val selfPath = ActorUtil.getFullPath(context.system, self.path)
     val extraClasspath = context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
-    val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
+    val classPath = Array.concat(extraClasspath.split(File.pathSeparator))
     val launch = ExecutorContext(classPath, executorConfig.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
     worker ! LaunchExecutor(appId, executorId, resource, launch)
 

@@ -24,22 +24,27 @@ import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
 object Shell extends App with ArgumentsParser {
 
-  private val LOG: Logger = LogUtil.getLogger(getClass)
+  case object ShellStarted
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true))
 
-  val config = parse(args)
 
-  val masters = config.getString("master")
-  Console.out.println("Master URL: " + masters)
+  def shell() : Unit = {
+    val config = parse(args)
+    if (null == config) {
+      return
+    }
 
-  def shell() = {
+    val masters = config.getString("master")
+    Console.out.println("Master URL: " + masters)
+
+
     val java = System.getProperty("java.home") + "/bin/java"
     val scalaHome = System.getenv("SCALA_HOME")
     if (null == scalaHome || "" == scalaHome) {
-      LOG.info("Please set SCALA_HOME env")
-      System.exit(-1)
+      Console.out.println("Please set SCALA_HOME env")
+      throw new Exception("SCALA_HOME is not set")
     }
 
     System.setProperty("scala.home", scalaHome)
@@ -48,14 +53,24 @@ object Shell extends App with ArgumentsParser {
     System.setProperty("masterActorPath", masters)
 
     val file = File.createTempFile("scala_shell", ".scala")
+    Console.out.println()
 
-    val shell = getClass.getResourceAsStream("/shell.scala")
-    val content = scala.io.Source.fromInputStream(shell).mkString
-    shell.close()
+    val shell = Option(getClass.getResourceAsStream("/shell.scala"))
+
+    val content = shell match {
+      case Some(stream) => {
+        val data = scala.io.Source.fromInputStream (stream).mkString
+        stream.close()
+        data
+      }
+      case None => ""
+    }
 
     val printer = new PrintWriter(file.getAbsolutePath, "UTF-8")
     printer.print(content)
     printer.close()
+
+    Console.out.println(s"Starting shell file " + file.getAbsolutePath)
 
     scala.tools.nsc.MainGenericRunner.main(Array("-i", file.getAbsolutePath))
   }

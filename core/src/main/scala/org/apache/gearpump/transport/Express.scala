@@ -54,7 +54,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     LOG.info(s"bining to netty server $localHost")
 
     system.registerOnTermination(new Runnable {
-      override def run = context.term
+      override def run = context.close
     })
     (context, serverPort, localHost)
   }

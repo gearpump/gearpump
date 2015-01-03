@@ -47,12 +47,12 @@ object KafkaWordCount extends App with ArgumentsParser {
     val kafkaStreamProcessorNum = config.getInt("kafka_stream_processor")
     val appConfig = Configs(KafkaConfig())
     val partitioner = new HashPartitioner()
-    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getCanonicalName, kafkaStreamProducerNum)
-    val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
-    val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
-    val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor].getCanonicalName, kafkaStreamProcessorNum)
+    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getName, kafkaStreamProducerNum)
+    val split = TaskDescription(classOf[Split].getName, splitNum)
+    val sum = TaskDescription(classOf[Sum].getName, sumNum)
+    val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor].getName, kafkaStreamProcessorNum)
     val computation = kafkaStreamProducer ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaStreamProcessor
-    val app = AppDescription("KafkaWordCount", classOf[AppMaster].getCanonicalName, appConfig, Graph(computation))
+    val app = AppDescription("KafkaWordCount", classOf[AppMaster].getName, appConfig, Graph(computation))
     app
   }
 
@@ -61,5 +61,5 @@ object KafkaWordCount extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }

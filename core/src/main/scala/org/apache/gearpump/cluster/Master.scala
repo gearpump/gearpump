@@ -51,7 +51,7 @@ private[cluster] class Master extends Actor with Stash {
 
   private var workers = new immutable.HashMap[ActorRef, Int]
 
-  LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
+  LOG.info("master is started at " + ActorUtil.getFullPath(context.system, self.path) + "...")
 
   val jarStore = context.actorOf(JarStore.props(systemConfig.getString(Constants.GEAR_APP_JAR_STORE_ROOT_PATH)))
 
@@ -65,7 +65,7 @@ private[cluster] class Master extends Actor with Stash {
 
   final val undefinedUid = 0
   @tailrec final def newUid(): Int = {
-    val uid = Util.randInt()
+    val uid = Util.randInt
     if (uid == undefinedUid) newUid()
     else uid
   }
@@ -147,7 +147,7 @@ private[cluster] class Master extends Actor with Stash {
   }
 
   override def preStart(): Unit = {
-    val path = ActorUtil.getFullPath(context)
+    val path = ActorUtil.getFullPath(context.system, self.path)
     LOG.info(s"master path is $path")
     val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULING_SCHEDULER))
     appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)

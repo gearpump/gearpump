@@ -18,4 +18,12 @@
 
 package org.apache.gearpump.cluster
 
+/**
+ * classPath: When a worker create a executor, the parent worker's classpath will
+ * be automatically inherited, the application jar will also be added to runtime
+ * classpath automatically. Sometimes, you still want to add some extraclasspath,
+ * you can do this by specify classPath option.
+ *
+ *
+ */
 case class ExecutorContext(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String], jar: Option[AppJar], username : String)

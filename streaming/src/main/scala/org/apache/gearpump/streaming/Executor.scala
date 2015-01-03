@@ -31,22 +31,21 @@ import org.apache.gearpump.util.{LogUtil, Constants, Configs}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration._
+import org.apache.gearpump.cluster.scheduler.Resource
 
 case object TaskLocationReady
 
-class Executor(config : Configs)  extends Actor {
+class Executor(executorId : Int,appMaster : ActorRef, resource : Resource, appId : Int,
+               workerId: Int, var startClock : TimeStamp)  extends Actor {
+  def this(config : Configs) = {
+    this(config.executorId, config.appMaster, config.resource,
+      config.appId, config.workerId, config.startTime)
+  }
+
   import context.dispatcher
 
-  val executorId = config.executorId
-
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId,
-  app = config.appId)
-
-  val appMaster = config.appMaster
-  val resource = config.resource
-  val appId = config.appId
-  val workerId = config.workerId
-  var startClock : TimeStamp = config.startTime
+    app = appId)
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
 

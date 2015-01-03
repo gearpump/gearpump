@@ -183,15 +183,13 @@ private[cluster] object Worker {
         val (jvmArguments, classPath) = appJar match {
           case Some(jar) =>
             tempFile = File.createTempFile(jar.name, ".jar")
-
             jar.container.copyToLocalFile(tempFile)
-
             var file = new URL("file:"+tempFile)
-            (ctx.jvmArguments :+ "-Dapp.jar="+file.getFile, ctx.classPath :+ file.getFile)
+            (ctx.jvmArguments :+ "-Dapp.jar="+file.getFile, Util.getCurrentClassPath ++ ctx.classPath :+ file.getFile)
           case None =>
-            (ctx.jvmArguments, ctx.classPath)
+            (ctx.jvmArguments, Util.getCurrentClassPath ++ ctx.classPath)
         }
-        val java = System.getProperty("java.home") + "/bin/java"
+
         val logArgs = List(s"-D${Constants.GEAR_APPLICATION_ID}=${launch.appId}", s"-D${Constants.GEAR_EXECUTOR_ID}=${launch.executorId}")
 
         // pass hostname as a JVM parameter, so that child actorsystem can read it
@@ -201,11 +199,8 @@ private[cluster] object Worker {
 
         val username = List(s"-D${Constants.GEAR_USERNAME}=${ctx.username}")
 
-        val command = List(java) ++ jvmArguments ++ host ++ username ++ logArgs ++
-          List("-cp", classPath.mkString(File.pathSeparator), ctx.mainClass) ++ ctx.arguments
-        LOG.info(s"Starting executor process $command...")
-
-        val process = Process(command).run(new ProcessLogRedirector())
+        val options = jvmArguments ++ host ++ username ++ logArgs
+        val process = Util.startProcess(options, classPath, ctx.mainClass, ctx.arguments)
 
         new ExecutorHandler {
           override def destroy = {

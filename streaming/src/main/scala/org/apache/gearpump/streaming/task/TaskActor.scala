@@ -26,24 +26,25 @@ import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.streaming.TaskLocationReady
+import org.apache.gearpump.streaming.{DAG, TaskLocationReady}
 import org.apache.gearpump.util.{TimeOutScheduler, LogUtil, Util, Configs}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.{Logger, LoggerFactory}
 
-abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport with TimeOutScheduler{
+abstract class TaskActor(appId : Int, val taskId : TaskId, appMaster : ActorRef,
+                          executorId : Int, dag : DAG) extends Actor with ExpressTransport  with TimeOutScheduler{
+
+  def this(conf : Configs) = {
+    this(conf.appId, conf.taskId, conf.appMaster, conf.executorId, conf.dag)
+  }
+
   import org.apache.gearpump.streaming.task.TaskActor._
 
-  private val appId = conf.appId
-  protected val taskId : TaskId =  conf.taskId
-
-  val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = conf.executorId, task = taskId)
+  val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
   private val metricName = s"app$appId.task${taskId.groupId}_${taskId.index}"
   private val latencies = Metrics(context.system).histogram(s"$metricName.latency")
   private val throughput = Metrics(context.system).meter(s"$metricName.throughput")
-
-  private val appMaster : ActorRef = conf.appMaster
 
   private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
   private var partitioner : MergedPartitioner = null
@@ -60,7 +61,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
   // securityChecker will be responsible of dropping messages from
   // unknown sources
   private val securityChecker  = new SecurityChecker(taskId, self)
-  protected val sessionId = Util.randInt()
+  protected val sessionId = Util.randInt
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -103,11 +104,11 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
 
   final override def preStart() : Unit = {
 
-    sendMsgWithTimeOutCallBack(appMaster, RegisterTask(taskId, conf.executorId, local), 10, registerTaskTimeOut())
+    sendMsgWithTimeOutCallBack(appMaster, RegisterTask(taskId, executorId, local), 10, registerTaskTimeOut())
 
-    val graph = conf.dag.graph
+    val graph = dag.graph
     LOG.info(s"TaskInit... taskId: $taskId")
-    val outDegree = conf.dag.graph.outDegreeOf(taskId.groupId)
+    val outDegree = dag.graph.outDegreeOf(taskId.groupId)
 
     if (outDegree > 0) {
 
@@ -117,7 +118,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
 
       this.partitioner = edges.foldLeft(MergedPartitioner.empty) { (mergedPartitioner, nodeEdgeNode) =>
         val (_, partitioner, taskgroupId) = nodeEdgeNode
-        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallelism
+        val taskParallism = dag.tasks.get(taskgroupId).get.parallelism
         mergedPartitioner.add(partitioner, taskParallism)
       }
 
@@ -125,7 +126,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
 
       outputTaskIds = edges.flatMap {nodeEdgeNode =>
         val (_, _, taskgroupId) = nodeEdgeNode
-        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallelism
+        val taskParallism = dag.tasks.get(taskgroupId).get.parallelism
 
         LOG.info(s"get output taskIds, groupId: $taskgroupId, parallism: $taskParallism")
 

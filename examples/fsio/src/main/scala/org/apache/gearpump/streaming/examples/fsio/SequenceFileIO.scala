@@ -49,10 +49,10 @@ object SequenceFileIO extends App with ArgumentsParser {
     val appConfig = Configs(ConfigFactory.load("fsio.conf")).withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output)
     val hadoopConfig = HadoopConfig(appConfig).withHadoopConf(new Configuration())
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getCanonicalName, spoutNum)
-    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getCanonicalName, boltNum)
+    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getName, spoutNum)
+    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getName, boltNum)
     LOG.info(s"SequenceFileIO appConfig size = ${appConfig.config.size}")
-    val app = AppDescription("SequenceFileIO", classOf[AppMaster].getCanonicalName, hadoopConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
+    val app = AppDescription("SequenceFileIO", classOf[AppMaster].getName, hadoopConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app
   }
 
@@ -61,5 +61,5 @@ object SequenceFileIO extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }

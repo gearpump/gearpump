@@ -60,7 +60,7 @@ object Local extends App with ArgumentsParser {
     )
 
     val master = system.actorOf(Props[org.apache.gearpump.cluster.Master], MASTER)
-    val masterPath = ActorUtil.getSystemPath(system) + s"/user/$MASTER"
+    val masterPath = ActorUtil.getSystemAddress(system).toString + s"/user/$MASTER"
     LOG.info(s"master is started at $masterPath...")
 
     0.until(workerCount).foreach { id =>

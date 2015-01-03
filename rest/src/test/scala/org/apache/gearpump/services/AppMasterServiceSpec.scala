@@ -52,7 +52,7 @@ class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMa
   "AppMasterService" should {
 //    "return a JSON structure for GET request when detail = true" in {
 //      Get("/appmaster/0?detail=true") ~> routes ~> check {
-//        responseAs[AppMasterDataDetail] === AppMasterDataDetail(0, AppDescription("test", classOf[AppMaster].getCanonicalName, Configs.empty, Graph.empty))
+//        responseAs[AppMasterDataDetail] === AppMasterDataDetail(0, AppDescription("test", classOf[AppMaster].getName, Configs.empty, Graph.empty))
 //      }
 //    }
     "return a JSON structure for GET request when detail = false" in {

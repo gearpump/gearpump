@@ -38,27 +38,15 @@ object Gear extends App {
             Replay.main(Array.empty[String])
           case "app" =>
             AppSubmitter.main(Array.empty[String])
-
+          case x =>
+            throw new Exception("Unknown command " + x)
         }
       case None =>
         Console.println("Usage: app|info|kill|shell|replay ...")
-
     }
-    System.exit(-1)
   }
 
-  def start = {
-    args.length match {
-      case 0 =>
-        usage(None)
-      case a if(a < 3) =>
-        val command = args(0)
-        usage(Option(command))
-      case _ =>
-    }
-
-    val command = args(0)
-    val commandArgs = args.drop(1)
+  def executeCommand(command : String, commandArgs : Array[String]) = {
 
     command match {
       case "kill" =>
@@ -71,6 +59,22 @@ object Gear extends App {
         Replay.main(commandArgs)
       case "app" =>
         AppSubmitter.main(commandArgs)
+      case x =>
+        throw new Exception("Unknown command " + x)
+    }
+  }
+
+  def start = {
+    args.length match {
+      case 0 =>
+        usage(None)
+      case 1 =>
+        val command = args(0)
+        usage(Option(command))
+      case a if(a > 1) =>
+        val command = args(0)
+        val commandArgs = args.drop(1)
+        executeCommand(command, commandArgs)
     }
   }
 

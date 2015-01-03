@@ -23,6 +23,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
+import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.{MasterClient, MasterProxy}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{LogUtil, Configs, Util}
@@ -35,26 +36,24 @@ object Info extends App with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true))
 
-  def start = {
+  def start : Unit = {
     val config = parse(args)
+    if (null == config) {
+      return
+    }
 
     val masters = config.getString("master")
     Console.out.println("Master URL: " + masters)
 
-    implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-    val system = ActorSystem("client", Configs.load.application
-      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
-    val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
+    val client = ClientContext(masters)
 
-    val client = new MasterClient(master)
-
-    val AppMastersData(appMasters) = client.listApplications
+    val AppMastersData(appMasters) = client.listApps
     appMasters.foreach { appData =>
       Console.println("== Application Information ==")
       Console.println("====================================")
       Console.println(s"application: ${appData.appId}, worker: ${appData.appData.worker}")
     }
-    system.shutdown()
+    client.close()
   }
 
   start

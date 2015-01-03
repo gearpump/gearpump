@@ -29,7 +29,7 @@ object StreamingTestUtil {
   val testUserName = "testuser"
 
   def startAppMaster(miniCluster: MiniCluster, appId: Int,
-                     app: AppDescription = AppDescription("test", classOf[AppMaster].getCanonicalName, Configs.empty, Graph.empty)): TestActorRef[AppMaster] = {
+                     app: AppDescription = AppDescription("test", classOf[AppMaster].getName, Configs.empty, Graph.empty)): TestActorRef[AppMaster] = {
     val config = Configs.empty.withAppDescription(app).withExecutorId(executorId).withAppId(appId).
       withMasterProxy(miniCluster.mockMaster).withResource(Resource.empty)
       .withAppMasterRegisterData(AppMasterInfo(miniCluster.worker))

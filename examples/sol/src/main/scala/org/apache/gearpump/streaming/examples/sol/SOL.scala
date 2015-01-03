@@ -44,14 +44,14 @@ object SOL extends App with ArgumentsParser {
     val stages = config.getInt("stages")
     val appConfig = Configs(Configs.load.application).withValue(SOLStreamProducer.BYTES_PER_MESSAGE, bytesPerMessage)
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SOLStreamProducer].getCanonicalName, spoutNum)
-    val streamProcessor = TaskDescription(classOf[SOLStreamProcessor].getCanonicalName, boltNum)
+    val streamProducer = TaskDescription(classOf[SOLStreamProducer].getName, spoutNum)
+    val streamProcessor = TaskDescription(classOf[SOLStreamProcessor].getName, boltNum)
     var computation : Any = streamProducer ~ partitioner ~> streamProcessor
     computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
       c ~ partitioner ~> streamProcessor.copy()
     }
     val dag = Graph[TaskDescription, Partitioner](computation)
-    val app = AppDescription("sol", classOf[AppMaster].getCanonicalName, appConfig, dag)
+    val app = AppDescription("sol", classOf[AppMaster].getName, appConfig, dag)
     app
   }
 
@@ -60,5 +60,5 @@ object SOL extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }

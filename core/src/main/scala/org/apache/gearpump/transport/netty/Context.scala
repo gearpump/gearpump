@@ -63,9 +63,9 @@ import org.apache.gearpump.transport.netty.Context._
   }
 
 
-  def bind(name: String, lookupActor : ActorLookupById): Int = {
+  def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true): Int = {
     val taskDispatcher = system.settings.config.getString("gearpump.task-dispatcher")
-    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor).withDispatcher(taskDispatcher), name)
+    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor, deserializeFlag).withDispatcher(taskDispatcher), name)
     val (port, channel) = NettyUtil.newNettyServer(name, new ServerPipelineFactory(server), 5242880)
     val factory = channel.getFactory
     closeHandler.add{ () =>
@@ -92,7 +92,7 @@ import org.apache.gearpump.transport.netty.Context._
   /**
    * terminate this context
    */
-  def term {
+  def close {
 
     LOG.info(s"Context.term, cleanup resources...., we have ${closeHandler.size()} items to close...")
 

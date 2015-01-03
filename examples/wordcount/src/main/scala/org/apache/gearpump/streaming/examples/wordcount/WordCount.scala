@@ -43,9 +43,9 @@ object WordCount extends App with ArgumentsParser {
     val sumNum = config.getInt("sum")
     val appConfig = Configs.load.application
     val partitioner = new HashPartitioner()
-    val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
-    val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
-    val app = AppDescription("wordCount", classOf[AppMaster].getCanonicalName, Configs(appConfig), Graph(split ~ partitioner ~> sum))
+    val split = TaskDescription(classOf[Split].getName, splitNum)
+    val sum = TaskDescription(classOf[Sum].getName, sumNum)
+    val app = AppDescription("wordCount", classOf[AppMaster].getName, Configs(appConfig), Graph(split ~ partitioner ~> sum))
     app
   }
 
@@ -54,6 +54,6 @@ object WordCount extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }
 

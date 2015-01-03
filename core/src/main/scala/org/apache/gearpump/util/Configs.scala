@@ -18,8 +18,11 @@
 
 package org.apache.gearpump.util
 
+import java.io.File
+
 import akka.actor.ActorRef
 import com.typesafe.config.{ConfigParseOptions, Config, ConfigFactory}
+import org.apache.commons.io.FileUtils
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{AppJar, AppMasterRegisterData, Application}
 import org.apache.gearpump.util.Constants._
@@ -82,46 +85,94 @@ class Configs(val config: Map[String, _])  extends Serializable{
   def workerId : Int = getInt(WORKER_ID)
 }
 
+/**
+ *
+ * File Override rule:
+ *
+ * System Property > Custom configuration(by using -Dconfig.file)
+ * > gear.conf > reference.conf in (resource folder) > akka reference.conf
+ *
+ * Section Override rule:
+ *
+ * For master daemon: GEARPUMP_CONFIGS > MASTER > BASE > REMAIN
+ * (REMAIN: is defined as config excluding section GEARPUMP_CONFIGS, MASTER, BASE)
+ * For worker daemon: GEARPUMP_CONFIGS > WORKER > BASE > REMAIN
+ * For App(neither Master nor Worker): GEARPUMP_CONFIGS > BASE > REMAIN
+ *
+ * We will first use "File override rule" to get a full config, then use
+ * "Section Override rule" to determine configuration for master, worker, executor,
+ * and etc..
+ *
+ */
 object Configs {
+  val LOG = LogUtil.getLogger(getClass)
+
   def empty = new Configs(Map.empty[String, Any])
 
   def apply(config : Map[String, _]) = new Configs(config)
 
   def apply(config : Config) = new Configs(config.toMap)
 
-  class RawConfig(config : Config) {
+  class RawConfig(systemProperties : Config, gearpump : Config,
+                  masterConfig : Config, workerConfig: Config, base: Config, remain: Config) {
     def master : Config = {
-      val gearpump = config.getConfig(GEARPUMP)
-      val master = config.getConfig(MASTER)
-      val base = config.getConfig(BASE)
-      gearpump.withFallback(master).withFallback(base).withFallback(config)
+      systemProperties.withFallback(gearpump)
+        .withFallback(masterConfig).withFallback(base).withFallback(remain)
     }
 
     def worker : Config = {
-      val gearpump = config.getConfig(GEARPUMP)
-      val master = config.getConfig(WORKER)
-      val base = config.getConfig(BASE)
-      gearpump.withFallback(master).withFallback(base).withFallback(config)
+      systemProperties.withFallback(gearpump)
+        .withFallback(workerConfig).withFallback(base).withFallback(remain)
     }
 
     def application : Config = {
-      val gearpump = config.getConfig(GEARPUMP)
-      val base = config.getConfig(BASE)
-      gearpump.withFallback(master).withFallback(base).withFallback(config)
+      systemProperties.withFallback(gearpump)
+        .withFallback(base).withFallback(remain)
     }
   }
 
+  /**
+   * try to load system property config.file, or use application.conf
+   */
   def load : RawConfig = {
-    load("application.conf")
+    val file = Option(System.getProperty("config.file"))
+    file match {
+      case Some(path) =>
+        LOG.info("loading config file " + path + "..........")
+        load(path, false)
+      case None =>
+        LOG.info("loading config file application.conf...")
+        load("application.conf")
+    }
   }
 
-  def load(customConfigFieName : String) : RawConfig = {
-    val user = ConfigFactory.parseResourcesAnySyntax(customConfigFieName,
-      ConfigParseOptions.defaults.setAllowMissing(true))
+  def load(customConfigFieName : String, isResource : Boolean = true) : RawConfig = {
+    val user = if (isResource) {
+      ConfigFactory.parseResourcesAnySyntax(customConfigFieName,
+        ConfigParseOptions.defaults.setAllowMissing(true))
+    } else {
+      ConfigFactory.parseFileAnySyntax(new File(customConfigFieName),
+        ConfigParseOptions.defaults.setAllowMissing(true))
+    }
 
     val cluster = ConfigFactory.parseResourcesAnySyntax("gear.conf",
       ConfigParseOptions.defaults.setAllowMissing(true))
-    new RawConfig(ConfigFactory.load(user.withFallback(cluster)))
+
+    val all = ConfigFactory.load(user.withFallback(cluster))
+
+    val gearpump = all.getConfig(GEARPUMP_CONFIGS)
+    val master = all.getConfig(MASTER)
+    val base = all.getConfig(BASE)
+    val worker = all.getConfig(WORKER)
+
+    val remain = all.withoutPath(GEARPUMP_CONFIGS).withoutPath(MASTER).withoutPath(BASE).withOnlyPath(WORKER)
+
+    new RawConfig(ConfigFactory.systemProperties(), gearpump, master, worker, base, remain)
+  }
+
+  def save(targetPath : String, conf : Config, file : File) : Unit = {
+    val serialized = conf.atPath(targetPath).root().render()
+    FileUtils.write(file, serialized)
   }
 
   implicit class ConfigHelper(config: Config) {

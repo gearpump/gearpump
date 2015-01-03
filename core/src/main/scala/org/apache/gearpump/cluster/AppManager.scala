@@ -365,10 +365,10 @@ private[cluster] object AppManager {
 
         LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = ActorUtil.actorNameForExecutor(appId, masterExecutorId)
-        val selfPath = ActorUtil.getFullPath(context)
+        val selfPath = ActorUtil.getFullPath(context.system, self.path)
         val maybeExtraClasspath = app.conf.config.get(Constants.GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
         val extraClasspath = maybeExtraClasspath.getOrElse("").asInstanceOf[String]
-        val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
+        val classPath = Array.concat(extraClasspath.split(File.pathSeparator))
         val executionContext = ExecutorContext(classPath, appMasterConfig.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
 
         allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
@@ -389,7 +389,7 @@ private[cluster] object AppManager {
           HostPort(hostAndPort(0), hostAndPort(1).toInt)
         }
         LOG.info(s"Create master proxy on target actor system $systemPath")
-        sender ! CreateActor(classOf[MasterProxy].getCanonicalName, "masterproxy", masterAddress)
+        sender ! CreateActor(classOf[MasterProxy].getName, "masterproxy", masterAddress)
         context.become(waitForMasterProxyToStart(worker, masterConfig))
     }
 

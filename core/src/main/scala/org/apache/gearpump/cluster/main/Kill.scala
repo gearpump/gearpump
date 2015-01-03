@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
 import com.typesafe.config.ConfigValueFactory
+import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.{MasterClient, MasterProxy}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{LogUtil, Configs, Util}
@@ -36,22 +37,20 @@ object Kill extends App with ArgumentsParser {
     "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
     "appid" -> CLIOption("<application id>", required = true))
 
-  def start = {
+  def start : Unit = {
     val config = parse(args)
+
+    if (null == config) {
+      return
+    }
 
     val masters = config.getString("master")
     LOG.info("Master URL: {}", masters)
 
-    implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-    val system = ActorSystem("client", Configs.load.application
-      .withValue("akka.loglevel", ConfigValueFactory.fromAnyRef("WARNING")))
-    val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masters)), MASTER)
-
-    val client = new MasterClient(master)
+    val client = ClientContext(masters)
     LOG.info("Client ")
-    client.shutdownApplication(config.getInt("appid"))
-
-    system.shutdown()
+    client.shutdown(config.getInt("appid"))
+    client.close()
   }
 
   start

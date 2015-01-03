@@ -18,11 +18,15 @@
 
 package org.apache.gearpump.cluster
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.{Logger, LoggerFactory}
+
+import scala.concurrent.duration.Duration
 
 class MasterProxy(masters: Iterable[HostPort])
   extends Actor with Stash {
@@ -36,10 +40,17 @@ class MasterProxy(masters: Iterable[HostPort])
     context.actorSelection(url)
   }
 
-  contacts foreach { contact =>
-    LOG.info(s"sending identity to $contact")
-    contact ! Identify(None)
+
+  import context.dispatcher
+
+  def findMaster() = context.system.scheduler.schedule(Duration.Zero, Duration(1, TimeUnit.SECONDS)){
+    contacts foreach { contact =>
+      LOG.info(s"sending identity to $contact")
+      contact ! Identify(None)
+    }
   }
+
+  context.become(establishing(findMaster()))
 
   LOG.info("Master Proxy is started...")
 
@@ -47,14 +58,17 @@ class MasterProxy(masters: Iterable[HostPort])
     super.postStop()
   }
 
-  def receive = establishing
+  override def receive : Receive = {
+    case _=>
+  }
 
-  def establishing: Actor.Receive = {
+  def establishing(cancelFindMaster : Cancellable): Actor.Receive = {
     case ActorIdentity(_, Some(receptionist)) =>
       context watch receptionist
       LOG.info("Connected to [{}]", receptionist.path)
       context.watch(receptionist)
       unstashAll()
+      cancelFindMaster.cancel()
       context.become(active(receptionist))
     case ActorIdentity(_, None) => // ok, use another instead
     case msg =>
@@ -65,8 +79,7 @@ class MasterProxy(masters: Iterable[HostPort])
   def active(receptionist: ActorRef): Actor.Receive = {
     case Terminated(receptionist) ⇒
       LOG.info("Lost contact with [{}], restablishing connection", receptionist)
-      contacts foreach { _ ! Identify(None) }
-      context.become(establishing)
+      context.become(establishing(findMaster))
     case _: ActorIdentity ⇒ // ok, from previous establish, already handled
     case msg =>
       LOG.info(s"Get msg ${msg.getClass.getSimpleName}, forwarding to ${receptionist.path}")

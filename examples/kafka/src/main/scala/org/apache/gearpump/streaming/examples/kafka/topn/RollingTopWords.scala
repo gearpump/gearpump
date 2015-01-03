@@ -48,11 +48,11 @@ object RollingTopWords extends App with ArgumentsParser {
     val rcNum = config.getInt("rolling_count")
     val irNum = config.getInt("intermediate_ranker")
     val partitioner = new HashPartitioner()
-    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getCanonicalName, kafkaStreamProducerNum)
-    val rollingCount = TaskDescription(classOf[RollingCount].getCanonicalName, rcNum)
-    val intermediateRanker = TaskDescription(classOf[Ranker].getCanonicalName, irNum)
-    val totalRanker = TaskDescription(classOf[Ranker].getCanonicalName, 1)
-    val app = AppDescription("RollingTopWords", classOf[AppMaster].getCanonicalName, appConfig,
+    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getName, kafkaStreamProducerNum)
+    val rollingCount = TaskDescription(classOf[RollingCount].getName, rcNum)
+    val intermediateRanker = TaskDescription(classOf[Ranker].getName, irNum)
+    val totalRanker = TaskDescription(classOf[Ranker].getName, 1)
+    val app = AppDescription("RollingTopWords", classOf[AppMaster].getName, appConfig,
       Graph(kafkaStreamProducer ~ partitioner ~> rollingCount ~ partitioner
         ~> intermediateRanker ~ partitioner ~> totalRanker)
     )
@@ -64,7 +64,7 @@ object RollingTopWords extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }
 
 object Config {

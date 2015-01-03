@@ -29,7 +29,7 @@ object Constants {
   val SINGLETON_MANAGER = "singleton"
 
   val SHARE = "share"
-  val GEARPUMP = "gearpump"
+  val GEARPUMP_CONFIGS = "gearpumpconfigs"
   val BASE = "base"
   val MASTER = "master"
 
@@ -80,11 +80,15 @@ object Constants {
   val NETTY_FLUSH_CHECK_INTERVAL = "gearpump.netty.fulsh-check-interval"
 
   val NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname"
-  val GEAR_USERNAME = "gear.username"
-  val GEAR_APPLICATION_ID = "gear.applicationId"
-  val GEAR_EXECUTOR_ID = "gear.executorId"
+  val GEAR_USERNAME = "gearpump.username"
+  val GEAR_APPLICATION_ID = "gearpump.applicationId"
+  val GEAR_EXECUTOR_ID = "gearpump.executorId"
   // Application jar property
-  val GEAR_APP_JAR = "gear.app.jar"
+  val GEAR_APP_JAR = "gearpump.app.jar"
 
   val GEAR_APP_JAR_STORE_ROOT_PATH = "gearpump.jarstore.rootpath"
+
+  // Use java property -Dconfig.file=xxx.conf to set customized configuration
+  // Otherwise application.conf in classpath will be loaded
+  val CUSTOM_CONFIG_FILE = "config.file"
 }

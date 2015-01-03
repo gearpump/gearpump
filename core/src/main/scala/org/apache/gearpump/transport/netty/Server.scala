@@ -32,7 +32,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.JavaConversions._
 import scala.concurrent.future
 
-class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) extends Actor {
+class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, deserializeFlag : Boolean) extends Actor {
   private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = name)
 
   import org.apache.gearpump.transport.netty.Server._
@@ -66,8 +66,13 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById) ext
         if (actor.isEmpty) {
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
-          val msg = serializer.deserialize(taskMessage.message())
-          actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask(), taskMessage.sessionId()))
+
+          if (deserializeFlag) {
+            val msg = serializer.deserialize(taskMessage.message())
+            actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask(), taskMessage.sessionId()))
+          } else {
+            actor.get.tell(taskMessage, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask(), taskMessage.sessionId()))
+          }
         }
       }
   }

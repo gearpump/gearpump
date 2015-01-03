@@ -52,6 +52,8 @@ object Worker extends App with ArgumentsParser {
       val hostAndPort = address.split(":")
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
     }
+
+    LOG.info(s"Trying to connect to masters $masterAddress....")
     val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER)
 
     system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], masterProxy),
