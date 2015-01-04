@@ -34,16 +34,16 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
 
   We support [Master HA](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples#master-ha) and allow master to start on multiple nodes. 
 
-  Build a package, distribute to all nodes, and extract it.
+  Build a package
 
   ```bash
   
   ## Please use scala 2.11
   ## The target package path: target/gearpump-$VERSION.tar.gz
-  sbt clean pack-archive
+  sbt clean assembly pack-archive ## Or use: sbt clean assembly packArchive
   ```
   
-  Modify `conf/gear.conf` and set `gearpump.cluster.masters` to the list of nodes you plan to start master on (e.g. node1).
+  Distribute the package to all nodes, and extract it, modify `conf/gear.conf` on all nodes and set `gearpump.cluster.masters` to the list of nodes you plan to start master on (e.g. if you want to start master on node1, set like example below).
 
   ```
   gearpump {
@@ -54,7 +54,7 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   }
   ```
 
-  Start master on the nodes you set in the conf previously.
+  Only start master on the nodes you have configured in the gear.conf file.
 
   ```bash
   ## on node1
@@ -83,11 +83,11 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
 
 4. Distribute application jar and run
 
-  Distribute wordcount jar `examples/wordcount/target/pack/lib/gearpump-examples-wordcount-$VERSION.jar` to one of cluster nodes and run with
+  Distribute your application jar to one node of the cluster. For the built-in example jar, it is already located at `examples/gearpump-examples-assembly-$VERSION.jar`
 
   ```bash
-  ## Run WordCount example
-  bin/gear app -jar gearpump-examples-wordcount-$VERSION.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master node1:3000
+  ## To run WordCount example
+  bin/gear app -jar examples/gearpump-examples-assembly-$VERSION.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master node1:3000
   ```
   
   User can change the configuration by providing a "application.conf" in classpath. "application.conf" follows HCON format.
@@ -99,7 +99,7 @@ Check the wiki pages for more on [build](https://github.com/intel-hadoop/gearpum
 This is what a [GearPump WordCount](https://github.com/intel-hadoop/gearpump/tree/master/examples/wordcount/src/main/scala/org/apache/gearpump/streaming/examples/wordcount) looks like.
 
   ```scala
-  class WordCount extends App with ArgumentsParser {
+  object WordCount extends App with ArgumentsParser {
 
     def application(config: ParseResult) : AppDescription = {
       val partitioner = new HashPartitioner()
