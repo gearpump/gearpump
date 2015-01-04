@@ -40,7 +40,7 @@ object RestTestUtil {
     val appId = 0
     val master = miniCluster.mockMaster
     StreamingTestUtil.startAppMaster(miniCluster, appId)
-    implicit val system = ActorSystem("Rest", TestUtil.TEST_CONFIG)
+    implicit val system = ActorSystem("Rest", TestUtil.DEFAULT_CONFIG)
     private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
     def startRestServices = {

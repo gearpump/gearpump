@@ -52,7 +52,7 @@ object ActorSystemBooter  {
   def main (args: Array[String]) {
     val name = args(0)
     val reportBack = args(1)
-    val config = Configs.loadApplicationConfig()
+    val config = Configs.load.application
 
     LogUtil.loadConfiguration(config, ProcessType.APPLICATION)
 

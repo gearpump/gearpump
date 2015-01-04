@@ -27,7 +27,12 @@ object Constants {
   val USERNAME = "username"
   val APP_DESCRIPTION =  "appDescription"
   val SINGLETON_MANAGER = "singleton"
+
+  val SHARE = "share"
+  val GEARPUMP = "gearpump"
+  val BASE = "base"
   val MASTER = "master"
+
   val MASTER_WATCHER = "masterwatcher"
 
   val WORKER = "worker"
@@ -53,6 +58,7 @@ object Constants {
 
   //config for construction of executor
   val APP_MASTER = "appMaster"
+  val APP_JAR = "appJar"
   val EXECUTOR_ID = "executorId"
   val RESOURCE = "resource"
 
@@ -79,4 +85,6 @@ object Constants {
   val GEAR_EXECUTOR_ID = "gear.executorId"
   // Application jar property
   val GEAR_APP_JAR = "gear.app.jar"
+
+  val GEAR_APP_JAR_STORE_ROOT_PATH = "gearpump.jarstore.rootpath"
 }

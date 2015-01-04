@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.cluster
 
+import akka.actor.Actor.Receive
 import akka.actor._
 import akka.remote.DisassociatedEvent
 import com.typesafe.config.Config
@@ -28,7 +29,9 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
+import org.apache.gearpump.jarstore.{JarStore, JarFileContainer}
 import org.apache.gearpump.util.{LogUtil, Util, ActorUtil, Constants}
+import org.apache.hadoop.fs.Path
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
@@ -50,9 +53,12 @@ private[cluster] class Master extends Actor with Stash {
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context) + "...")
 
+  val jarStore = context.actorOf(JarStore.props(systemConfig.getString(Constants.GEAR_APP_JAR_STORE_ROOT_PATH)))
+
   override def receive : Receive = workerMsgHandler orElse
     appMasterMsgHandler orElse
     clientMsgHandler orElse
+    jarStoreService orElse
     terminationWatch orElse
     disassociated orElse
     ActorUtil.defaultMsgHandler(self)
@@ -76,6 +82,11 @@ private[cluster] class Master extends Actor with Stash {
       LOG.info(s"Register Worker $id....")
     case resourceUpdate : ResourceUpdate =>
       scheduler forward resourceUpdate
+  }
+
+  def jarStoreService : Receive = {
+    case GetJarFileContainer =>
+      jarStore forward GetJarFileContainer
   }
 
   def appMasterMsgHandler : Receive = {
@@ -147,4 +158,5 @@ private[cluster] class Master extends Actor with Stash {
 
 object Master{
   case class WorkerTerminated(workerId : Int)
+
 }

@@ -36,7 +36,7 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
 object Master extends App with ArgumentsParser {
-  var masterConfig = Configs.loadMasterConfig()
+  var masterConfig = Configs.load.master
   private val LOG: Logger = {
     LogUtil.loadConfiguration(masterConfig, ProcessType.MASTER)
     LogUtil.getLogger(getClass)

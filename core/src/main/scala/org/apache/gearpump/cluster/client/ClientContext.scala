@@ -23,11 +23,16 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
+import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.jarstore.JarFileContainer
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{LogUtil, Configs, Util}
 import org.slf4j.{LoggerFactory, Logger}
+import akka.pattern.ask
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 import scala.collection.mutable.ListBuffer
 
@@ -35,9 +40,15 @@ import scala.collection.mutable.ListBuffer
 class ClientContext(masters: Iterable[HostPort]) {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-  val system = ActorSystem(s"client${Util.randInt()}" , Configs.loadApplicationConfig())
+
+  val config = Configs.load.application
+
+  val system = ActorSystem(s"client${Util.randInt()}" , config)
+  import system.dispatcher
 
   val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
+
+  LOG.info(s"Creating master proxy ${master} for master list: $masters")
 
   /**
    * Submit an applicaiton with default jar setting. Use java property
@@ -69,15 +80,14 @@ class ClientContext(masters: Iterable[HostPort]) {
 
   private def loadFile(jarPath : String) : AppJar = {
     val jarFile = new java.io.File(jarPath)
-    val fis = new FileInputStream(jarFile)
-    val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
-    val buf = ListBuffer[Byte]()
-    var b = fis.read()
-    while (b != -1) {
-      buf.append(b.byteValue)
-      b = fis.read()
+
+    val uploadFile = (master ? GetJarFileContainer).asInstanceOf[Future[JarFileContainer]]
+      .map {container =>
+      container.copyFromLocal(new java.io.File(jarPath))
+      AppJar(jarFile.getName, container)
     }
-    AppJar(jarFile.getName, buf.toArray)
+
+    Await.result(uploadFile, Duration(15, TimeUnit.SECONDS))
   }
 }
 

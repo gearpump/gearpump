@@ -20,21 +20,16 @@ package org.apache.gearpump.cluster
 import akka.actor._
 import akka.testkit.TestActorRef
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+import org.apache.gearpump.util.Configs
 import org.apache.gearpump.util.Constants._
 
 import scala.collection.JavaConverters._
 
 object TestUtil{
-  val TEST_CONFIG = ConfigFactory.parseURL(getClass.getResource("/test.conf"))
-
-  val MASTER_CONFIG = {
-    val config = TEST_CONFIG
-    if (config.hasPath(MASTER)) {
-      config.getConfig(MASTER).withFallback(config)
-    } else {
-      config
-    }
-  }
+  val rawConfig = Configs.load("test.conf")
+  val DEFAULT_CONFIG = rawConfig.application
+  val MASTER_CONFIG = rawConfig.master
+  val WORKER_CONFIG = rawConfig.worker
   
   def startMiniCluster = new MiniCluster
 

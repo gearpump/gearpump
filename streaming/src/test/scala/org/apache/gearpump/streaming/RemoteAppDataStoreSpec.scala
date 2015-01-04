@@ -18,6 +18,7 @@
 package org.apache.gearpump.streaming
 
 import org.apache.gearpump.cluster.TestUtil
+import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.util.Constants
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
@@ -34,7 +35,7 @@ class RemoteAppDataStoreSpec extends WordSpec with Matchers with BeforeAndAfterA
       val miniCluster = TestUtil.startMiniCluster
       val master = miniCluster.mockMaster
       StreamingTestUtil.startAppMaster(miniCluster, appId)
-      val store = new RemoteAppDataStore(appId, master)
+      val store = new InMemoryAppStoreOnMaster(appId, master)
 
       Thread.sleep(500)
 

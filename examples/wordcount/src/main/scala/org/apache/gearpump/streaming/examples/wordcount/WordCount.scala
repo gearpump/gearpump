@@ -41,7 +41,7 @@ object WordCount extends App with ArgumentsParser {
   def application(config: ParseResult) : AppDescription = {
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
-    val appConfig = Configs.loadApplicationConfig()
+    val appConfig = Configs.load.application
     val partitioner = new HashPartitioner()
     val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
     val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)

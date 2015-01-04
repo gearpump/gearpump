@@ -360,8 +360,9 @@ private[cluster] object AppManager {
       case ResourceAllocated(allocations) =>
         LOG.info(s"Resource allocated for appMaster $app Id")
         val allocation = allocations(0)
-        val appMasterConfig = app.conf.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource)
-        .withUserName(username)
+        val appMasterConfig = app.conf.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource).withUserName(username)
+        .withAppjar(jar)
+
         LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = ActorUtil.actorNameForExecutor(appId, masterExecutorId)
         val selfPath = ActorUtil.getFullPath(context)

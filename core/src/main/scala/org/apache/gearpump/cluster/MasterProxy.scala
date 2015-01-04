@@ -32,10 +32,14 @@ class MasterProxy(masters: Iterable[HostPort])
   val contacts = masters.map { master =>
     s"akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER"
   }.map { url =>
+    LOG.info(s"Contacts point URL: $url")
     context.actorSelection(url)
   }
 
-  contacts foreach { _ ! Identify(None) }
+  contacts foreach { contact =>
+    LOG.info(s"sending identity to $contact")
+    contact ! Identify(None)
+  }
 
   LOG.info("Master Proxy is started...")
 

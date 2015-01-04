@@ -15,22 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.jarstore
 
-package org.apache.gearpump.cluster
-
-import akka.actor.Actor
-import org.apache.gearpump.jarstore.{JarFileContainer}
-import org.apache.gearpump.util.Configs
-
-
-case class AppJar(name: String, container: JarFileContainer)
+import java.io.File
 
 /**
- * Subtype this for user defined application
+ * The JarStore is a distributed store
+ * User can use this jar store to submit application jars
  */
-trait Application {
-  val appMaster : String
-  val conf: Configs
+trait JarFileContainer extends Serializable {
+
+  def copyFromLocal(localFile : File) : Unit
+
+  def copyToLocalFile(localPath : File) : Unit
 }
 
-trait ApplicationMaster extends Actor

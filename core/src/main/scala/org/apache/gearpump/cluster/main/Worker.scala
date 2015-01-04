@@ -29,7 +29,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.JavaConverters._
 
 object Worker extends App with ArgumentsParser {
-  val config = Configs.loadWorkerConfig()
+  val config = Configs.load.worker
   val LOG : Logger = {
     LogUtil.loadConfiguration(config, ProcessType.WORKER)
     //delay creation of LOG instance to avoid creating an empty log file as we reset the log file name here
