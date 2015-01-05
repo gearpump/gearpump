@@ -23,12 +23,24 @@ import java.io.File
 import org.apache.gearpump.transport.HostPort
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.sys.process.Process
 
 object Util {
+  val LOG = LogUtil.getLogger(getClass)
+
   def getCurrentClassPath : Array[String] = {
     val classpath = System.getProperty("java.class.path");
     val classpathList = classpath.split(File.pathSeparator);
     classpathList
+  }
+
+  def startProcess(options: Array[String], classPath: Array[String], mainClass: String,
+                   arguments: Array[String]): Process = {
+    val java = System.getProperty("java.home") + "/bin/java"
+    val command = List(java) ++ options ++ List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
+    LOG.info(s"Starting executor process $command...")
+    val process = Process(command).run(new ProcessLogRedirector())
+    process
   }
 
   /**

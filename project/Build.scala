@@ -199,7 +199,7 @@ object Build extends sbt.Build {
     id = "gearpump-examples-sol",
     base = file("examples/sol"),
     settings = commonSettings
-  ) dependsOn (streaming % "provided")
+  ) dependsOn (streaming % "test->test;compile->compile")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",

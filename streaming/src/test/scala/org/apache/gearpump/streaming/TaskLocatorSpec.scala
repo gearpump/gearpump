@@ -15,30 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.examples.sol
+package org.apache.gearpump.streaming
 
-import akka.actor.{Props, Actor, ActorSystem}
-import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.TestUtil
 import org.scalatest.{Matchers, WordSpec}
 
-import org.apache.gearpump.util.Constants._
+class TaskLocatorSpec extends WordSpec with Matchers {
 
-class SOLSpec extends WordSpec with Matchers  {
-
-  "SOL" should {
-    "be started without exception" in {
-      val systemConfig = TestUtil.DEFAULT_CONFIG
-      val system = ActorSystem(MASTER, systemConfig)
-      val masterReceiver = TestProbe()(system)
-
-      val master = system.actorOf(Props(classOf[MockMaster], masterReceiver), MASTER)
-    }
-  }
-}
-
-class MockMaster(receiver: TestProbe) extends Actor {
-  def receive: Receive = {
-    case msg => receiver.ref forward msg
-  }
 }

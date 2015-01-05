@@ -15,30 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.examples.sol
+package org.apache.gearpump.cluster
 
-import akka.actor.{Props, Actor, ActorSystem}
-import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.TestUtil
-import org.scalatest.{Matchers, WordSpec}
+import akka.actor.{Props, ActorSystem}
+import akka.testkit.{TestProbe, ImplicitSender, TestKit}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import org.apache.gearpump.util.Constants._
+class AppManagerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
+  with WordSpecLike with Matchers with BeforeAndAfterAll  {
 
-class SOLSpec extends WordSpec with Matchers  {
+  def this() = this(ActorSystem("AppManagerSpec"))
 
-  "SOL" should {
-    "be started without exception" in {
-      val systemConfig = TestUtil.DEFAULT_CONFIG
-      val system = ActorSystem(MASTER, systemConfig)
-      val masterReceiver = TestProbe()(system)
+  val mockMaster = TestProbe()
 
-      val master = system.actorOf(Props(classOf[MockMaster], masterReceiver), MASTER)
+  override def afterAll {
+    TestKit.shutdownActorSystem(system)
+  }
+
+  "AppManager" should {
+    "do" in {
+      val workerSystem = ActorSystem("Master", TestUtil.DEFAULT_CONFIG)
+      val appManager = workerSystem.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
+      Thread.sleep(3000)
     }
   }
-}
 
-class MockMaster(receiver: TestProbe) extends Actor {
-  def receive: Receive = {
-    case msg => receiver.ref forward msg
-  }
 }
