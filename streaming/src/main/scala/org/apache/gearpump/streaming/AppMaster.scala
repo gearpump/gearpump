@@ -32,7 +32,7 @@ import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.scheduler._
-import org.apache.gearpump.cluster.{AppMasterContext, ExecutorContext, _}
+import org.apache.gearpump.cluster.{AppMasterContext, _}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RestartTasks, StartClock}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.storage.{AppDataStore, InMemoryAppStoreOnMaster}

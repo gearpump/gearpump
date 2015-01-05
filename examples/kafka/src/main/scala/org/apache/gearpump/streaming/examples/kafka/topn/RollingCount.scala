@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.examples.kafka.topn
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{NewStartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 
 
 class RollingCount(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
@@ -34,7 +34,7 @@ class RollingCount(taskContext : TaskContext, conf: UserConfig) extends TaskActo
 
   private val counter: SlidingWindowCounter[String] = new SlidingWindowCounter[String](windowLengthMS / emitFrequencyMS)
 
-  def onStart(context: NewStartTime): Unit = {}
+  def onStart(time: StartTime): Unit = {}
 
   def onNext(msg: Message): Unit = {
     val timestamp = msg.timestamp

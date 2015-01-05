@@ -21,7 +21,7 @@ import java.io.File
 import java.net.{InetSocketAddress, ServerSocket, URLClassLoader}
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Address, Actor, ActorSystem, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.{ConfigFactory, ConfigParseOptions, ConfigValueFactory}
 import org.apache.commons.io.FileUtils
@@ -40,18 +40,33 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.util.{Success, Try}
 
-class MainSpec extends FlatSpec with Matchers {
+class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
+  var system : ActorSystem = null
+  var systemAddress : Address = null
+  //actor system host and port
+  var host : String = null
+  var port : Int = 0
 
-  val PROCESS_BOOT_TIME = Duration(10, TimeUnit.SECONDS) //2000 ms
+  override def beforeEach() = {
+    val systemConfig = TestUtil.DEFAULT_CONFIG
+    //We name it as master node must be started by system MASTER
+    ActorSystem(MASTER, systemConfig)
+    systemAddress = ActorUtil.getSystemAddress(system)
+
+    host = systemAddress.host.get
+    port = systemAddress.port.get
+  }
+
+  override def afterEach() = {
+    system.shutdown()
+  }
+
+  val PROCESS_BOOT_TIME = Duration(10, TimeUnit.SECONDS)
 
   "Worker" should "register worker address to master when started." in {
 
-    val systemConfig = TestUtil.DEFAULT_CONFIG
-    val system = ActorSystem(MASTER, systemConfig)
-    val masterReceiver = TestProbe()(system)
+    val masterReceiver = createMockMaster()
 
-    val master = system.actorOf(Props(classOf[MainSpec.MockMaster], masterReceiver), MASTER)
-    val systemAddress = ActorUtil.getSystemAddress(system)
     val tempTestConf = convertTestConf(systemAddress.host.get, systemAddress.port.get)
 
     val worker = Util.startProcess(Array(s"-Dconfig.file=${tempTestConf.toString}"),
@@ -63,12 +78,9 @@ class MainSpec extends FlatSpec with Matchers {
 
     tempTestConf.delete()
     worker.destroy()
-    system.shutdown()
   }
 
   "Master" should "accept worker RegisterNewWorker when started" in {
-    val systemConfig = TestUtil.DEFAULT_CONFIG
-    val system = ActorSystem(WORKER, systemConfig)
     val worker = TestProbe()(system)
 
     val port = Util.findFreePort.get
@@ -88,21 +100,11 @@ class MainSpec extends FlatSpec with Matchers {
 
     tempTestConf.delete()
     masterProcess.destroy()
-    system.shutdown()
   }
 
   "Info" should "be started without exception" in {
 
-    val systemConfig = TestUtil.DEFAULT_CONFIG
-    val system = ActorSystem(MASTER, systemConfig)
-    val masterReceiver = TestProbe()(system)
-
-    val master = system.actorOf(Props(classOf[MainSpec.MockMaster], masterReceiver), MASTER)
-
-    val systemAddress = ActorUtil.getSystemAddress(system)
-
-    val host = systemAddress.host.get
-    val port = systemAddress.port.get
+    val masterReceiver = createMockMaster()
 
     val info = Util.startProcess(Array.empty[String],
       getContextClassPath,
@@ -113,21 +115,11 @@ class MainSpec extends FlatSpec with Matchers {
     masterReceiver.reply(AppMastersData(List(AppMasterData(0, AppMasterInfo(null)))))
 
     info.destroy()
-    system.shutdown()
   }
 
     "Kill" should "be started without exception" in {
 
-      val systemConfig = TestUtil.DEFAULT_CONFIG
-      val system = ActorSystem(MASTER, systemConfig)
-      val masterReceiver = TestProbe()(system)
-
-      val master = system.actorOf(Props(classOf[MainSpec.MockMaster], masterReceiver), MASTER)
-
-      val systemAddress = ActorUtil.getSystemAddress(system)
-
-      val host = systemAddress.host.get
-      val port = systemAddress.port.get
+      val masterReceiver = createMockMaster()
 
       val kill = Util.startProcess(Array.empty[String],
         getContextClassPath,
@@ -138,21 +130,11 @@ class MainSpec extends FlatSpec with Matchers {
       masterReceiver.reply(ShutdownApplicationResult(Success(0)))
 
       kill.destroy()
-      system.shutdown()
     }
 
   "Replay" should "be started without exception" in {
 
-    val systemConfig = TestUtil.DEFAULT_CONFIG
-    val system = ActorSystem(MASTER, systemConfig)
-    val masterReceiver = TestProbe()(system)
-
-    val master = system.actorOf(Props(classOf[MainSpec.MockMaster], masterReceiver), MASTER)
-
-    val systemAddress = ActorUtil.getSystemAddress(system)
-
-    val host = systemAddress.host.get
-    val port = systemAddress.port.get
+    val masterReceiver = createMockMaster()
 
     val replay = Util.startProcess(Array.empty[String],
       getContextClassPath,
@@ -163,7 +145,6 @@ class MainSpec extends FlatSpec with Matchers {
     masterReceiver.reply(ReplayApplicationResult(Success(0)))
 
     replay.destroy()
-    system.shutdown()
   }
 
   "Local" should "be started without exception" in {
@@ -204,30 +185,29 @@ class MainSpec extends FlatSpec with Matchers {
     assert(Try(Gear.main(Array("unknownCommand", "-noexist"))).isFailure, "unknown command, throw")
   }
 
-    "Shell" should "be started without exception" in {
+  "Shell" should "be started without exception" in {
 
-      val systemConfig = TestUtil.DEFAULT_CONFIG
-      val system = ActorSystem(MASTER, systemConfig)
+    val masterReceiver = createMockMaster()
 
-      val systemAddress = ActorUtil.getSystemAddress(system)
-      val (host, port) = (systemAddress.host.get, systemAddress.port.get)
-      val masterReceiver = TestProbe()(system)
-
-      val master = system.actorOf(Props(classOf[MainSpec.MockMaster], masterReceiver), MASTER)
-
-      val shell = Util.startProcess(Array.empty[String],
-        getContextClassPath,
-        getMainClassName(org.apache.gearpump.cluster.main.Shell),
-        Array("-master", s"$host:$port"))
+    val shell = Util.startProcess(Array.empty[String],
+      getContextClassPath,
+      getMainClassName(org.apache.gearpump.cluster.main.Shell),
+      Array("-master", s"$host:$port"))
 
 
-      val scalaHome = Option(System.getenv("SCALA_HOME")).map {_ =>
-        // Only test this when SCALA_HOME env is set
-        masterReceiver.expectMsg(Duration(15, TimeUnit.SECONDS), AppMastersDataRequest)
-      }
-
-      shell.destroy()
+    val scalaHome = Option(System.getenv("SCALA_HOME")).map {_ =>
+      // Only test this when SCALA_HOME env is set
+      masterReceiver.expectMsg(Duration(15, TimeUnit.SECONDS), AppMastersDataRequest)
     }
+
+    shell.destroy()
+  }
+
+  private def createMockMaster() : TestProbe = {
+    val masterReceiver = TestProbe()(system)
+    val master = system.actorOf(Props(classOf[MainSpec.MockMaster], masterReceiver), MASTER)
+    masterReceiver
+  }
 
   private def convertTestConf(host : String, port : Int) : File = {
     val test = ConfigFactory.parseResourcesAnySyntax("test.conf",

@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.examples.kafka
 import akka.actor.actorRef2Scala
 import com.twitter.bijection.Injection
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{NewStartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource, TimeStampFilter}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig.ConfigToKafka
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
@@ -54,8 +54,8 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig) extends T
   private val source: TimeReplayableSource = KafkaSource(taskContext.appId, taskContext, conf, msgDecoder)
   private var startTime: TimeStamp = 0L
 
-  override def onStart(taskContext: NewStartTime): Unit = {
-    startTime = taskContext.startTime
+  override def onStart(newStartTime: StartTime): Unit = {
+    startTime = newStartTime.startTime
     LOG.info(s"start time $startTime")
     source.setStartTime(startTime)
     self ! Message("start", System.currentTimeMillis())

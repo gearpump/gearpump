@@ -20,8 +20,10 @@ package org.apache.gearpump.streaming
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import org.apache.gearpump.cluster.{ExecutorContextInterface, ApplicationExecutor, ExecutorContext, UserConfig}
+import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.{ExecutorContextInterface, ApplicationExecutor, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
@@ -33,7 +35,11 @@ import scala.concurrent.duration._
 
 case object TaskLocationReady
 
-class Executor(executorContext: ExecutorContextInterface, userConf : UserConfig)  extends ApplicationExecutor {
+
+case class ExecutorContext(executorId : Int, workerId: Int, appId : Int,
+                           appMaster : ActorRef, startClock : TimeStamp, resource : Resource) extends ExecutorContextInterface
+
+class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends ApplicationExecutor {
 
   import context.dispatcher
   import executorContext._
@@ -80,9 +86,6 @@ class Executor(executorContext: ExecutorContextInterface, userConf : UserConfig)
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
       currentStartClock = clock
       context.children.foreach(_ ! r)
-    case GetStartClock =>
-      LOG.info(s"Executor received GetStartClock, return: $currentStartClock")
-      sender ! StartClock(currentStartClock)
   }
 
   def terminationWatch : Receive = {

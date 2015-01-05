@@ -54,12 +54,9 @@ trait ExecutorContextInterface {
   val workerId : Int
   val appId : Int
   val appMaster : ActorRef
-  val startClock : TimeStamp
   val resource : Resource
 }
 
-case class ExecutorContext(executorId : Int, workerId: Int, appId : Int,
-                           appMaster : ActorRef, startClock : TimeStamp, resource : Resource) extends ExecutorContextInterface
 
 /**
  * This belongs to the app submission interface, no method should
