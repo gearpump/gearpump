@@ -50,7 +50,7 @@ class Executor(config : Configs)  extends Actor {
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
 
-  context.parent ! RegisterExecutor(self, executorId, resource, workerId)
+  appMaster ! RegisterExecutor(self, executorId, resource, workerId)
   context.watch(appMaster)
 
   val express = Express(context.system)
