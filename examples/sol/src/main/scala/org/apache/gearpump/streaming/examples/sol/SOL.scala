@@ -59,7 +59,11 @@ object SOL extends App with ArgumentsParser {
   val config = parse(args)
   val context = ClientContext(config.getString("master"))
   val appId = context.submit(application(config))
+<<<<<<< HEAD
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
   context.close()
+=======
+  context.cleanup()
+>>>>>>> 56c1841... add more UT
 }

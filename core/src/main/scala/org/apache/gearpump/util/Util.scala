@@ -27,7 +27,10 @@ import org.apache.gearpump.transport.HostPort
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.sys.process.Process
+<<<<<<< HEAD
 import scala.util.Try
+=======
+>>>>>>> 56c1841... add more UT
 
 object Util {
   val LOG = LogUtil.getLogger(getClass)
@@ -38,8 +41,13 @@ object Util {
     classpathList
   }
 
+<<<<<<< HEAD
   def startProcess(options : Array[String], classPath : Array[String], mainClass : String,
                    arguments : Array[String]) : Process = {
+=======
+  def startProcess(options: Array[String], classPath: Array[String], mainClass: String,
+                   arguments: Array[String]): Process = {
+>>>>>>> 56c1841... add more UT
     val java = System.getProperty("java.home") + "/bin/java"
     val command = List(java) ++ options ++ List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
     LOG.info(s"Starting executor process $command...")
