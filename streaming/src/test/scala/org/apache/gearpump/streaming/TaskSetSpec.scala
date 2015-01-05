@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.streaming
 
-package org.apache.gearpump.cluster
+import org.scalatest.{Matchers, WordSpec}
 
-//TODO
-class AppManagerSpec {
+class TaskSetSpec extends WordSpec with Matchers {
 
 }

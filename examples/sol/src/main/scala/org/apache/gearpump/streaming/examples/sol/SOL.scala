@@ -59,7 +59,5 @@ object SOL extends App with ArgumentsParser {
   val config = parse(args)
   val context = ClientContext(config.getString("master"))
   val appId = context.submit(application(config))
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  context.shutdown(appId)
   context.close()
 }
