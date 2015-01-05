@@ -15,21 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming
+package org.apache.gearpump.streaming.storage
 
 import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
+import org.apache.gearpump.streaming.StreamingTestUtil
 import org.apache.gearpump.util.Constants
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class RemoteAppDataStoreSpec extends WordSpec with Matchers with BeforeAndAfterAll{
+class InMemoryAppStoreOnMasterSpec extends WordSpec with Matchers with BeforeAndAfterAll{
   implicit val timeout = Constants.FUTURE_TIMEOUT
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  "RemoteAppDataStore" should {
+  "InMemoryAppStoreOnMaster" should {
     "save and return the data properly" in {
       val appId = 0
       val miniCluster = TestUtil.startMiniCluster

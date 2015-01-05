@@ -43,6 +43,8 @@ object DAG {
     new DAG(tasks, outputGraph)
   }
 
+  def empty() = apply(Graph.empty)
+
   private def getTaskId(tasks : Map[Int, TaskDescription], node : TaskDescription) = {
     tasks.find { task =>
       val (_, taskDescription) = task
