@@ -53,14 +53,4 @@ object TestUtil {
 
     def shutDown() = system.shutdown()
   }
-
-  def findFreePort: Try[Int] = {
-    Try {
-      val socket = new ServerSocket(0);
-      socket.setReuseAddress(true);
-      val port = socket.getLocalPort();
-      socket.close;
-      port
-    }
-  }
 }

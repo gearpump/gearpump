@@ -27,7 +27,6 @@ import org.apache.gearpump.transport.HostPort
 object AppMasterToExecutor {
   case class LaunchTask(taskId: TaskId, config : TaskContext, taskClass: Class[_ <: Actor])
   case class RestartTasks(timeStamp : TimeStamp)
-  case object GetStartClock
   case class StartClock(clock : TimeStamp)
   case object RestartClockService
   class RestartException extends Exception

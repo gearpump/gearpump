@@ -64,7 +64,7 @@ abstract class TaskActor(val taskContext : TaskContext, userConf : UserConfig) e
 
   final def receive : Receive = null
 
-  def onStart(context : NewStartTime) : Unit
+  def onStart(startTime : StartTime) : Unit
 
   def onNext(msg : Message) : Unit
 
@@ -197,7 +197,7 @@ abstract class TaskActor(val taskContext : TaskContext, userConf : UserConfig) e
 
   def waitForStartClock : Receive = {
     case StartClock(clock) =>
-      onStart(new NewStartTime(clock))
+      onStart(new StartTime(clock))
       context.become(handleMessages)
       sendFirstAckRequests()
   }

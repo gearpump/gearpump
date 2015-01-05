@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{NewStartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
 
 import scala.concurrent.duration.FiniteDuration
@@ -39,7 +39,7 @@ class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig) e
   private var lastTime = System.currentTimeMillis()
   private var scheduler: Cancellable = null
 
-  override def onStart(taskContext : NewStartTime): Unit = {
+  override def onStart(startTime : StartTime): Unit = {
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput())

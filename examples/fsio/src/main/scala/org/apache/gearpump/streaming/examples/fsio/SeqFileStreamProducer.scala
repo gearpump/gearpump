@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.examples.fsio
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProducer._
-import org.apache.gearpump.streaming.task.{NewStartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 import org.apache.gearpump.util.HadoopConfig
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
@@ -35,7 +35,7 @@ class SeqFileStreamProducer(taskContext : TaskContext, config: UserConfig) exten
   val fs = FileSystem.get(hadoopConf)
   val inputPath = new Path(config.getString(INPUT_PATH).get)
 
-  override def onStart(taskContext : NewStartTime) = {
+  override def onStart(startTime : StartTime) = {
     reader = new SequenceFile.Reader(hadoopConf, Reader.file(inputPath))
     self ! Start
     LOG.info("sequence file spout initiated")

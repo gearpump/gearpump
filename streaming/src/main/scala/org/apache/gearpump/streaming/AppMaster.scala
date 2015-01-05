@@ -32,7 +32,7 @@ import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.scheduler._
-import org.apache.gearpump.cluster.{AppMasterContext, ExecutorContext, _}
+import org.apache.gearpump.cluster.{AppMasterContext, _}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RestartTasks, StartClock}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.storage.{AppDataStore, InMemoryAppStoreOnMaster}
@@ -137,7 +137,7 @@ class AppMaster(apppContext : AppMasterContextInterface, app : Application)  ext
         val (worker, resource) = workerAndResources
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
 
-        val executorContext = ExecutorContext(currentExecutorId, actorToWorkerId.get(worker).get, appId, self, startClock, resource)
+        val executorContext = ExecutorContext(currentExecutorId, actorToWorkerId.get(worker).get, appId, self, resource)
 
         val name = ActorUtil.actorNameForExecutor(appId, currentExecutorId)
 

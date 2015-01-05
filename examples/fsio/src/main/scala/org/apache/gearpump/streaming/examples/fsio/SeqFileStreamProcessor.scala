@@ -23,7 +23,7 @@ import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProcessor._
-import org.apache.gearpump.streaming.task.{NewStartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 import org.apache.gearpump.util.HadoopConfig
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
@@ -47,7 +47,7 @@ class SeqFileStreamProcessor(taskContext_ : TaskContext, config: UserConfig) ext
   private var snapShotKVCount : Long = 0
   private var snapShotTime : Long = 0
 
-  override def onStart(taskContext : NewStartTime) = {
+  override def onStart(startTime : StartTime) = {
 
     val fs = FileSystem.get(hadoopConf)
     fs.deleteOnExit(outputPath)

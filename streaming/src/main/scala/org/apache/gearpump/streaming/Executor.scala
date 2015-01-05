@@ -20,8 +20,10 @@ package org.apache.gearpump.streaming
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import org.apache.gearpump.cluster.{ExecutorContextInterface, ApplicationExecutor, ExecutorContext, UserConfig}
+import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.{ExecutorContextInterface, ApplicationExecutor, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
@@ -47,7 +49,6 @@ class Executor(executorContext: ExecutorContextInterface, userConf : UserConfig)
   context.watch(appMaster)
 
   val express = Express(context.system)
-  private var currentStartClock = startClock
 
   def receive : Receive = appMasterMsgHandler orElse terminationWatch
 
@@ -78,11 +79,7 @@ class Executor(executorContext: ExecutorContextInterface, userConf : UserConfig)
     case r @ RestartTasks(clock) =>
       LOG.info(s"Executor received restart tasks at time: $clock")
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
-      currentStartClock = clock
       context.children.foreach(_ ! r)
-    case GetStartClock =>
-      LOG.info(s"Executor received GetStartClock, return: $currentStartClock")
-      sender ! StartClock(currentStartClock)
   }
 
   def terminationWatch : Receive = {
