@@ -146,7 +146,7 @@ object Build extends sbt.Build {
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
-  ).dependsOn(core, streaming, rest, external_kafka).aggregate(core, streaming, fsio, examples_kafka,
+  ).dependsOn(core, streaming, rest, external_kafka, distributedshell).aggregate(core, streaming, fsio, examples_kafka,
       sol, wordcount, rest, external_kafka, examples, distributedshell)
 
   lazy val core = Project(
@@ -236,5 +236,5 @@ object Build extends sbt.Build {
     id = "gearpump-experiments-distributedshell",
     base = file("experiments/distributedshell"),
     settings = commonSettings ++ packSettings
-  )  dependsOn(core % "test->test;compile->compile")
+  ) dependsOn(core % "test->test;compile->compile")
 }
