@@ -18,8 +18,11 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.{TimeStamp, Message}
+import org.apache.gearpump.{Message, TimeStamp}
 
+/**
+ * TimeStampFilter filters message comparing its TimeStamp with the predicate.
+ */
 trait TimeStampFilter {
   def filter(msg: Message, predicate: TimeStamp): Option[Message]
 }

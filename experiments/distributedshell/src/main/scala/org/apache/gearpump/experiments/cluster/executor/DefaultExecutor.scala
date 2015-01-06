@@ -18,6 +18,7 @@
 package org.apache.gearpump.experiments.cluster.executor
 
 import akka.actor.{Actor, Terminated, Props}
+import org.apache.gearpump.cluster.{ApplicationExecutor, UserConfig, ExecutorContextInterface}
 import org.apache.gearpump.experiments.cluster.AppMasterToExecutor.{MsgToTask, LaunchTask}
 import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.{ResponsesFromTasks, RegisterExecutor}
 import org.apache.gearpump.util.{ReferenceEqual, LogUtil, Constants, Configs}
@@ -27,19 +28,18 @@ import akka.pattern.{ask, pipe}
 import scala.concurrent._
 
 case class TaskDescription(taskClass: String, parallelism : Int) extends ReferenceEqual
-case class TaskLaunchData(taskClass: String, config: Configs)
+case class TaskLaunchData(taskClass: String, config: UserConfig)
 
-class DefaultExecutor(config : Configs) extends Actor {
+class DefaultExecutor(executorContext: ExecutorContextInterface, userConf : UserConfig) extends ApplicationExecutor {
   import context.dispatcher
-  implicit val timeout = Constants.FUTURE_TIMEOUT
-  protected val executorId = config.executorId
-  protected val appMaster = config.appMaster
-  protected val resource = config.resource
-  protected val appId = config.appId
-  private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId,
-    app = config.appId)
+  import executorContext._
 
-  protected val workerId = config.workerId
+  implicit val timeout = Constants.FUTURE_TIMEOUT
+  private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId,
+    app = appId)
+
+  LOG.info(s"Executor ${executorId} has been started, start to register itself...")
+
   context.parent ! RegisterExecutor(self, executorId, resource, workerId)
   context.watch(appMaster)
 

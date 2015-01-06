@@ -20,14 +20,12 @@ package org.apache.gearpump.services
 
 
 import org.apache.gearpump.cluster.AppMasterInfo
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.apache.gearpump.util.LogUtil
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.Logger
 import org.specs2.mutable.Specification
-import org.specs2.specification.{BeforeExample, AfterExample}
+import org.specs2.specification.{AfterExample, BeforeExample}
 import spray.testkit.Specs2RouteTest
-
-import scala.util.{Failure, Success}
 
 import scala.util.{Failure, Success}
 
@@ -52,7 +50,7 @@ class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMa
   "AppMasterService" should {
 //    "return a JSON structure for GET request when detail = true" in {
 //      Get("/appmaster/0?detail=true") ~> routes ~> check {
-//        responseAs[AppMasterDataDetail] === AppMasterDataDetail(0, AppDescription("test", classOf[AppMaster].getCanonicalName, Configs.empty, Graph.empty))
+//        responseAs[AppMasterDataDetail] === AppMasterDataDetail(0, AppDescription("test", classOf[AppMaster].getName, Configs.empty, Graph.empty))
 //      }
 //    }
     "return a JSON structure for GET request when detail = false" in {

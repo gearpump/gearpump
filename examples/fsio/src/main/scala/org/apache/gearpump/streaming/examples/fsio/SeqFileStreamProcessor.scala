@@ -21,32 +21,34 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProcessor._
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
-import org.apache.gearpump.util.{HadoopConfig, Configs}
-import org.apache.hadoop.conf.Configuration
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.util.HadoopConfig
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SeqFileStreamProcessor(config: HadoopConfig) extends TaskActor(config){
+class SeqFileStreamProcessor(taskContext_ : TaskContext, config: UserConfig) extends TaskActor(taskContext_, config){
 
-  val outputPath = new Path(config.getString(OUTPUT_PATH) + System.getProperty("file.separator") + this.taskId)
+  import taskContext._
+
+  val outputPath = new Path(config.getString(OUTPUT_PATH).get + System.getProperty("file.separator") + taskId)
   var writer: SequenceFile.Writer = null
   val textClass = new Text().getClass
   val key = new Text()
   val value = new Text()
+  val hadoopConf = HadoopConfig(config).hadoopConf
 
   private var msgCount : Long = 0
   private var scheduler : Cancellable = null
   private var snapShotKVCount : Long = 0
   private var snapShotTime : Long = 0
 
-  override def onStart(taskContext : TaskContext) = {
-    val hadoopConf = config.hadoopConf
+  override def onStart(startTime : StartTime) = {
+
     val fs = FileSystem.get(hadoopConf)
     fs.deleteOnExit(outputPath)
     writer = SequenceFile.createWriter(hadoopConf, Writer.file(outputPath), Writer.keyClass(textClass), Writer.valueClass(textClass))

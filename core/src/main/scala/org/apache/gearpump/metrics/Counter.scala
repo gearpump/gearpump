@@ -23,7 +23,7 @@ import com.codahale.metrics.{Counter => CodaHaleCounter}
 /**
  * sampleRate: take a data point for every sampleRate...
  */
-class Counter(counter : CodaHaleCounter, sampleRate : Int = 1) {
+class Counter(val name : String, counter : CodaHaleCounter, sampleRate : Int = 1) {
   private var sampleCount = 0L
   private var toBeIncremented = 0L
 

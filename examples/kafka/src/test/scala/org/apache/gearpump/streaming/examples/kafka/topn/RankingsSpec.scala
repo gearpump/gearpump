@@ -18,9 +18,9 @@
 
 package org.apache.gearpump.streaming.examples.kafka.topn
 
+import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import org.scalacheck.Gen
 
 class RankingsSpec extends PropSpec with PropertyChecks with Matchers {
 

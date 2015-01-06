@@ -29,7 +29,7 @@ object Constants {
   val SINGLETON_MANAGER = "singleton"
 
   val SHARE = "share"
-  val GEARPUMP = "gearpump"
+  val GEARPUMP_CONFIGS = "gearpump"
   val BASE = "base"
   val MASTER = "master"
 
@@ -40,6 +40,7 @@ object Constants {
   val WORKER_RESOURCE = "worker.akka.cluster.resource"
 
   val APP_MASTER_REGISTER_DATA = "appmasterregisterdata"
+  val APPMASTER_CONFIG = "applicationMasterConfig"
 
   val GEARPUMP_SCHEDULING_SCHEDULER = "gearpump.scheduling.scheduler-class"
   val GEARPUMP_SCHEDULING_REQUEST = "gearpump.scheduling.requests"
@@ -48,10 +49,12 @@ object Constants {
 
   val GEARPUMP_TASK_DISPATCHER = "gearpump.task-dispatcher"
   val GEARPUMP_CLUSTER_MASTERS = "gearpump.cluster.masters"
-  val GEARPUMP_APPMASTER_ARGS = "gearpump.streaming.appmaster.vmargs"
-  val GEARPUMP_APPMASTER_EXTRA_CLASSPATH = "gearpump.streaming.appmaster.extraClasspath"
-  val GEARPUMP_EXECUTOR_ARGS = "gearpump.streaming.executor.vmargs"
-  val GEARPUMP_EXECUTOR_EXTRA_CLASSPATH = "gearpump.streaming.executor.extraClasspath"
+
+  val GEARPUMP_APPMASTER_ARGS = "gearpump.appmaster.vmargs"
+  val GEARPUMP_APPMASTER_EXTRA_CLASSPATH = "gearpump.appmaster.extraClasspath"
+
+  val GEARPUMP_EXECUTOR_ARGS = "gearpump.executor.vmargs"
+  val GEARPUMP_EXECUTOR_EXTRA_CLASSPATH = "gearpump.executor.extraClasspath"
 
   val GEARPUMP_LOG_DAEMON_DIR = "gearpump.log.daemon.dir"
   val GEARPUMP_LOG_APPLICATION_DIR = "gearpump.log.application.dir"
@@ -64,6 +67,8 @@ object Constants {
 
   val TASK_ID = "taskId"
   val TASK_DAG = "taskDag"
+
+  val TASK_CONFIG = "taskConfig"
 
   val START_TIME = "startTime"
 
@@ -80,11 +85,15 @@ object Constants {
   val NETTY_FLUSH_CHECK_INTERVAL = "gearpump.netty.fulsh-check-interval"
 
   val NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname"
-  val GEAR_USERNAME = "gear.username"
-  val GEAR_APPLICATION_ID = "gear.applicationId"
-  val GEAR_EXECUTOR_ID = "gear.executorId"
+  val GEAR_USERNAME = "gearpump.username"
+  val GEAR_APPLICATION_ID = "gearpump.applicationId"
+  val GEAR_EXECUTOR_ID = "gearpump.executorId"
   // Application jar property
-  val GEAR_APP_JAR = "gear.app.jar"
+  val GEAR_APP_JAR = "gearpump.app.jar"
 
   val GEAR_APP_JAR_STORE_ROOT_PATH = "gearpump.jarstore.rootpath"
+
+  // Use java property -Dconfig.file=xxx.conf to set customized configuration
+  // Otherwise application.conf in classpath will be loaded
+  val CUSTOM_CONFIG_FILE = "config.file"
 }

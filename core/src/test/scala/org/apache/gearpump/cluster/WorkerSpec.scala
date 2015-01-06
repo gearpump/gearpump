@@ -17,15 +17,15 @@
  */
 package org.apache.gearpump.cluster
 
-import akka.actor.{PoisonPill, ActorSystem, Props}
+import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.AppMasterToWorker.{ShutdownExecutor, LaunchExecutor}
+import org.apache.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
-import org.apache.gearpump.cluster.WorkerToMaster.{RegisterWorker, RegisterNewWorker, ResourceUpdate}
+import org.apache.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, ResourceUpdate}
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Constants, Util}
+import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
@@ -84,7 +84,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
 
       val executorName = ActorUtil.actorNameForExecutor(appId, executorId)
       val reportBack = "dummy"   //This is an actor path which the ActorSystemBooter will report back to, not needed in this test.
-      val executionContext = ExecutorContext(Util.getCurrentClassPath, workerSystem.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(executorName, reportBack), None, username = "user")
+      val executionContext = ExecutorJVMConfig(Array.empty[String], workerSystem.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(executorName, reportBack), None, username = "user")
 
       //Test LaunchExecutor
       worker.tell(LaunchExecutor(appId, executorId, Resource(101), executionContext), mockMaster.ref)

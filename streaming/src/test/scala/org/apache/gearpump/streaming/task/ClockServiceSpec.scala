@@ -31,8 +31,8 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
   def this() = this(ActorSystem("ClockServiceSpec"))
 
-  val task1 = TaskDescription(classOf[TaskActor].getCanonicalName, 2)
-  val task2 = TaskDescription(classOf[TaskActor].getCanonicalName, 2)
+  val task1 = TaskDescription(classOf[TaskActor].getName, 2)
+  val task2 = TaskDescription(classOf[TaskActor].getName, 2)
   val dag = DAG(Graph(task1 ~ new HashPartitioner() ~> task2))
 
   override def afterAll {

@@ -18,13 +18,14 @@
 
 package org.apache.gearpump.streaming.examples.sol
 
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.{Partitioner, ShufflePartitioner}
-import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, AppMaster, TaskDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{LogUtil, Configs, Graph}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.{Graph, LogUtil}
+import org.slf4j.Logger
 
 object SOL extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -42,16 +43,16 @@ object SOL extends App with ArgumentsParser {
     val boltNum = config.getInt("streamProcessor")
     val bytesPerMessage = config.getInt("bytesPerMessage")
     val stages = config.getInt("stages")
-    val appConfig = Configs(Configs.load.application).withValue(SOLStreamProducer.BYTES_PER_MESSAGE, bytesPerMessage)
+    val appConfig = UserConfig.empty.withValue(SOLStreamProducer.BYTES_PER_MESSAGE, bytesPerMessage)
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SOLStreamProducer].getCanonicalName, spoutNum)
-    val streamProcessor = TaskDescription(classOf[SOLStreamProcessor].getCanonicalName, boltNum)
+    val streamProducer = TaskDescription(classOf[SOLStreamProducer].getName, spoutNum)
+    val streamProcessor = TaskDescription(classOf[SOLStreamProcessor].getName, boltNum)
     var computation : Any = streamProducer ~ partitioner ~> streamProcessor
     computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
       c ~ partitioner ~> streamProcessor.copy()
     }
     val dag = Graph[TaskDescription, Partitioner](computation)
-    val app = AppDescription("sol", classOf[AppMaster].getCanonicalName, appConfig, dag)
+    val app = AppDescription("sol", classOf[AppMaster].getName, appConfig, dag)
     app
   }
 
@@ -60,5 +61,5 @@ object SOL extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }

@@ -18,15 +18,16 @@
 
 package org.apache.gearpump.streaming.examples.kafka.topn
 
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{LogUtil, Configs, Graph}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.{LogUtil, Graph}
+import org.slf4j.Logger
 
 object RollingTopWords extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -43,16 +44,16 @@ object RollingTopWords extends App with ArgumentsParser {
       Config.EMIT_FREQUENCY_MS -> 1000,
       Config.WINDOW_LENGTH_MS -> 5000,
       Config.TOPN -> 5)
-    val appConfig = Configs(windowConfig ++ KafkaConfig())
+    val appConfig = UserConfig(windowConfig ++ KafkaConfig())
     val kafkaStreamProducerNum = config.getInt("kafka_stream_producer")
     val rcNum = config.getInt("rolling_count")
     val irNum = config.getInt("intermediate_ranker")
     val partitioner = new HashPartitioner()
-    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getCanonicalName, kafkaStreamProducerNum)
-    val rollingCount = TaskDescription(classOf[RollingCount].getCanonicalName, rcNum)
-    val intermediateRanker = TaskDescription(classOf[Ranker].getCanonicalName, irNum)
-    val totalRanker = TaskDescription(classOf[Ranker].getCanonicalName, 1)
-    val app = AppDescription("RollingTopWords", classOf[AppMaster].getCanonicalName, appConfig,
+    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getName, kafkaStreamProducerNum)
+    val rollingCount = TaskDescription(classOf[RollingCount].getName, rcNum)
+    val intermediateRanker = TaskDescription(classOf[Ranker].getName, irNum)
+    val totalRanker = TaskDescription(classOf[Ranker].getName, 1)
+    val app = AppDescription("RollingTopWords", classOf[AppMaster].getName, appConfig,
       Graph(kafkaStreamProducer ~ partitioner ~> rollingCount ~ partitioner
         ~> intermediateRanker ~ partitioner ~> totalRanker)
     )
@@ -64,7 +65,7 @@ object RollingTopWords extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }
 
 object Config {

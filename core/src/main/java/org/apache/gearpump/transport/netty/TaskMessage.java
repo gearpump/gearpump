@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.transport.netty;
 
-import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class TaskMessage {
 
@@ -52,5 +52,14 @@ public class TaskMessage {
 
   public byte[] message() {
     return _message;
+  }
+
+  @Override
+  public boolean equals(Object obj)  {
+    TaskMessage other = (TaskMessage)obj;
+    return this.sessionId() == other.sessionId()
+        && this._sourceTask == other.sourceTask()
+        && this.targetTask() == other.targetTask()
+        && Arrays.equals(this.message(), other.message());
   }
 }

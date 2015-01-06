@@ -17,10 +17,10 @@
  */
 package org.apache.gearpump.distributedshell
 
-import org.apache.gearpump.cluster.{BaseAppDescription, Application}
+import org.apache.gearpump.cluster.{UserConfig, ClusterConfig, BaseAppDescription, Application}
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ParseResult, CLIOption, ArgumentsParser}
-import org.apache.gearpump.util.{Configs, LogUtil}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 object DistributedShell extends App with ArgumentsParser {
@@ -31,8 +31,8 @@ object DistributedShell extends App with ArgumentsParser {
   )
 
   def application(config: ParseResult) : Application = {
-    val appConfig = Configs.load.application
-    val app = BaseAppDescription("DistributedShell", classOf[AppMaster].getCanonicalName, Configs(appConfig))
+    val appConfig = ClusterConfig.load.application
+    val app = BaseAppDescription("DistributedShell", classOf[AppMaster].getCanonicalName, UserConfig(appConfig))
     app
   }
 
@@ -40,6 +40,6 @@ object DistributedShell extends App with ArgumentsParser {
   val config = parse(args)
   val context = ClientContext(config.getString("master"))
   val appId = context.submit(application(config))
-  context.cleanup()
+  context.close()
   LOG.info(s"Distributed Shell Application started with appId $appId !")
 }

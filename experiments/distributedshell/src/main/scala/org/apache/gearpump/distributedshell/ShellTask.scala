@@ -18,11 +18,14 @@
 package org.apache.gearpump.distributedshell
 
 import akka.actor.Actor
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.experiments.cluster.task.TaskContextInterface
+import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.Configs
 import org.slf4j.{LoggerFactory, Logger}
 import sys.process._
 
-class ShellTask(config: Configs) extends Actor {
+class ShellTask(taskContext : TaskContextInterface, userConf : UserConfig) extends Actor {
   private val LOG: Logger = LoggerFactory.getLogger(getClass)
 
   LOG.info(s"ShellTask started!")

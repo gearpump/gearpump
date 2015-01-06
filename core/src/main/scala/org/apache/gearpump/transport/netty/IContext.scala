@@ -23,7 +23,10 @@ import org.apache.gearpump.transport.{ActorLookupById, HostPort}
 
 trait IContext {
 
-  def bind(name: String, lookupActor : ActorLookupById) : Int
+  /**
+   * TODO: remove deserializeFlag from interface
+   */
+  def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean) : Int
 
   /**
    * connect to a remote host
@@ -31,5 +34,8 @@ trait IContext {
    */
   def connect(hostPort: HostPort): ActorRef
 
-  def term
+  /**
+   * Close resource for this context
+   */
+  def close
 }

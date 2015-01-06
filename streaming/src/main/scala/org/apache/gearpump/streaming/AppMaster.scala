@@ -18,12 +18,11 @@
 
 package org.apache.gearpump.streaming
 
-import java.io.{ByteArrayOutputStream, File, FileInputStream}
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import akka.pattern.{ask, pipe}
+import akka.pattern.ask
 import akka.remote.RemoteScope
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
@@ -31,50 +30,41 @@ import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.scheduler._
-import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTask, RestartTasks}
-import org.apache.gearpump.streaming.ConfigsHelper._
+import org.apache.gearpump.cluster.{AppMasterContext, _}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RestartTasks, StartClock}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.streaming.storage.{InMemoryAppStoreOnMaster, AppDataStore}
+import org.apache.gearpump.streaming.storage.{AppDataStore, InMemoryAppStoreOnMaster}
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util._
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.concurrent._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-class AppMaster (config : Configs) extends ApplicationMaster {
+class AppMaster(apppContext : AppMasterContextInterface, app : Application)  extends ApplicationMaster {
 
   import org.apache.gearpump.streaming.AppMaster._
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
-  val masterExecutorId = config.executorId
+  import apppContext._
+
+  val systemConfig = context.system.settings.config
+  val userConfig = app.conf
+
   var currentExecutorId = masterExecutorId + 1
-  val resource = config.resource
 
   import context.dispatcher
 
-  private val appId = config.appId
-
-  private val username = config.username
-
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
-  private val appDescription = config.appDescription.asInstanceOf[AppDescription]
-  private val appJar = config.appjar
-
-  private val masterProxy = config.masterProxy
   private var master : ActorRef = null
 
-  private val registerData = config.appMasterRegisterData
-
-  private val name = appDescription.name
-  private val taskSet = new TaskSet(config, DAG(appDescription.dag))
+  private val name = app.name
+  private val taskSet = new TaskSet(appId, DAG(app.asInstanceOf[AppDescription].dag))
 
   private var clockService : ActorRef = null
   private val START_CLOCK = "startClock"
@@ -93,11 +83,11 @@ class AppMaster (config : Configs) extends ApplicationMaster {
   override def receive : Receive = null
 
   override def preStart(): Unit = {
-    LOG.info(s"AppMaster[$appId] is launched by $username $appDescription")
+    LOG.info(s"AppMaster[$appId] is launched by $username $app")
     updateScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(snapshotStartClock())
 
-    val dag = DAG(appDescription.dag)
+    val dag = DAG(app.asInstanceOf[AppDescription].dag)
 
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
 
@@ -145,8 +135,21 @@ class AppMaster (config : Configs) extends ApplicationMaster {
       groupedResource.map((workerAndResources) => {
         val (worker, resource) = workerAndResources
         LOG.info(s"Launching Executor ...appId: $appId, executorId: $currentExecutorId, slots: ${resource.slots} on worker $worker")
-        val executorConfig = appDescription.conf.withAppId(appId).withUserName(username).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withStartTime(startClock).withWorkerId(actorToWorkerId.get(worker).get)
-        context.actorOf(Props(classOf[ExecutorLauncher], worker, appId, currentExecutorId, resource, executorConfig, appJar), s"launcher${currentExecutorId}")
+
+        val executorContext = ExecutorContext(currentExecutorId, actorToWorkerId.get(worker).get, appId, self, resource)
+
+        val name = ActorUtil.actorNameForExecutor(appId, currentExecutorId)
+
+        val launcherName = s"launcher${currentExecutorId}"
+        val launcherPath = ActorUtil.getFullPath(context.system, self.path.child(launcherName))
+
+        val jvmSetting = Util.resolveJvmSetting(userConfig, systemConfig).executor
+        val launchJVM = ExecutorJVMConfig(jvmSetting.classPath, jvmSetting.vmargs,
+            classOf[ActorSystemBooter].getName, Array(name, launcherPath), appJar, username)
+
+        val launch = LaunchExecutor(appId, currentExecutorId, resource, launchJVM)
+
+        context.actorOf(Props(classOf[ExecutorLauncher], worker, launch, executorContext, userConfig), launcherName)
         currentExecutorId += 1
       })
     case AllocateResourceTimeOut =>
@@ -170,9 +173,9 @@ class AppMaster (config : Configs) extends ApplicationMaster {
       val appId = appMasterDataDetailRequest.appId
       LOG.info(s"Received AppMasterDataDetailRequest $appId")
       appId match {
-        case this.appId =>
+        case appId =>
           LOG.info(s"Sending back AppMasterDataDetailRequest $appId")
-          sender ! AppMasterDataDetail(appId = appId, appDescription = appDescription)
+          sender ! AppMasterDataDetail(appId = appId, appDescription = app)
       }
     case ReplayFromTimestampWindowTrailingEdge =>
       if(!restarting){
@@ -257,13 +260,11 @@ class AppMaster (config : Configs) extends ApplicationMaster {
         if (remainResources.greaterThan(Resource.empty) && taskSet.hasNotLaunchedTask) {
           val TaskLaunchData(taskId, taskDescription, dag) = taskSet.scheduleTaskOnWorker(workerId)
           //Launch task
-
           LOG.info("Sending Launch Task to executor: " + executor.toString())
 
-          val executorByPath = context.actorSelection("../app_0_executor_0")
+          val taskContext = TaskContext(taskId, executorId, appId, self, dag)
 
-          val config = appDescription.conf.withAppId(appId).withUserName(username).withExecutorId(executorId).withAppMaster(self).withDag(dag)
-          executor ! LaunchTask(taskId, config, ActorUtil.loadClass(taskDescription.taskClass))
+          executor ! LaunchTask(taskId, taskContext, ActorUtil.loadClass(taskDescription.taskClass))
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
           launchTask(remainResources subtract usedResource)
@@ -336,18 +337,13 @@ object AppMaster {
   object LaunchActorSystemTimeOut
   case object AllocateResourceTimeOut
 
-  class ExecutorLauncher (worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs, jar: Option[AppJar]) extends Actor {
+  class ExecutorLauncher (worker : ActorRef, launch : LaunchExecutor, executorConfig : ExecutorContext, userConf : UserConfig) extends Actor {
 
-    val username = executorConfig.username
+    import executorConfig._
 
     private val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId)
 
-    val name = ActorUtil.actorNameForExecutor(appId, executorId)
-    val selfPath = ActorUtil.getFullPath(context)
-    val extraClasspath = context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
-    val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
-    val launch = ExecutorContext(classPath, executorConfig.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
-    worker ! LaunchExecutor(appId, executorId, resource, launch)
+    worker ! launch
 
     implicit val executionContext = context.dispatcher
     val timeout = context.system.scheduler.scheduleOnce(Duration(15, TimeUnit.SECONDS), self, LaunchActorSystemTimeOut)
@@ -358,9 +354,10 @@ object AppMaster {
       case RegisterActorSystem(systemPath) =>
         timeout.cancel()
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
-        val executorProps = Props(classOf[Executor], executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
+
+        val executorProps = Props(classOf[Executor], executorConfig, userConf).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
         sender ! BindLifeCycle(worker)
-        context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender())
+        context.parent ! LaunchExecutorActor(executorProps, executorId, sender())
         context.stop(self)
       case LaunchActorSystemTimeOut =>
         LOG.error("The Executor ActorSystem has not been started in time, cannot start Executor" +

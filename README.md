@@ -103,13 +103,13 @@ This is what a [GearPump WordCount](https://github.com/intel-hadoop/gearpump/tre
 
     def application(config: ParseResult) : AppDescription = {
       val partitioner = new HashPartitioner()
-      val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
-      val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
+      val split = TaskDescription(classOf[Split].getName, splitNum)
+      val sum = TaskDescription(classOf[Sum].getName, sumNum)
       
       // Here we define the dag
       val dag = Graph(split ~ partitioner ~> sum)
       
-      val app = AppDescription("wordCount", classOf[AppMaster].getCanonicalName, appConfig, dag)
+      val app = AppDescription("wordCount", classOf[AppMaster].getName, appConfig, dag)
       app
     }
     

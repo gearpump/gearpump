@@ -17,12 +17,6 @@
  */
 package org.apache.gearpump.streaming.storage
 
-import akka.actor.ActorRef
-import akka.pattern.ask
-import org.apache.gearpump.cluster.AppMasterToMaster.{GetAppData, SaveAppData}
-import org.apache.gearpump.cluster.MasterToAppMaster.GetAppDataResult
-import org.apache.gearpump.util.Constants
-
 import scala.concurrent._
 
 trait AppDataStore {

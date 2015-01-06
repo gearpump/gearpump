@@ -18,11 +18,12 @@
 package org.apache.gearpump.experiments.cluster
 
 import akka.actor.{ActorRef, Actor}
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.util.Configs
 
 object AppMasterToExecutor {
-  case class LaunchTask(config: Configs, taskClass: Class[_ <: Actor])
+  case class LaunchTask(config: UserConfig, taskClass: Class[_ <: Actor])
   case class MsgToTask(msg: Any)
 }
 

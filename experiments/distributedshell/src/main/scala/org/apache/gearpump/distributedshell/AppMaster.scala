@@ -17,6 +17,7 @@
  */
 package org.apache.gearpump.distributedshell
 
+import org.apache.gearpump.cluster.{UserConfig, Application, AppMasterContextInterface}
 import org.apache.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers}
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
@@ -24,7 +25,7 @@ import org.apache.gearpump.experiments.cluster.AppMasterToExecutor.MsgToTask
 import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.ResponsesFromTasks
 import org.apache.gearpump.experiments.cluster.appmaster.AbstractAppMaster
 import org.apache.gearpump.experiments.cluster.executor.{TaskLaunchData, DefaultExecutor}
-import org.apache.gearpump.util.{Constants, Configs}
+import org.apache.gearpump.util.Constants
 import org.slf4j.{LoggerFactory, Logger}
 
 import akka.pattern.{ask, pipe}
@@ -47,8 +48,9 @@ class ResponseBuilder {
   override def toString() = result.toString()
 }
 
-class AppMaster(config: Configs) extends AbstractAppMaster(config) {
+class AppMaster(appContext : AppMasterContextInterface, app : Application) extends AbstractAppMaster(appContext, app) {
   import context.dispatcher
+  import appContext._
   private val LOG: Logger = LoggerFactory.getLogger(getClass)
   private var workerList: List[Int] = null
   implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -73,6 +75,6 @@ class AppMaster(config: Configs) extends AbstractAppMaster(config) {
   }
 
   override def scheduleTaskOnWorker(workerId: Int): TaskLaunchData = {
-    TaskLaunchData(classOf[ShellTask].getCanonicalName, Configs.empty)
+    TaskLaunchData(classOf[ShellTask].getCanonicalName, UserConfig.empty)
   }
 }

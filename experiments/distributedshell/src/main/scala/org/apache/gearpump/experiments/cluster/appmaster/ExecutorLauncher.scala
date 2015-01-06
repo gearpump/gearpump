@@ -17,14 +17,12 @@
  */
 package org.apache.gearpump.experiments.cluster.appmaster
 
-import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
-import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{AppJar, ExecutorContext}
+import org.apache.gearpump.cluster.{UserConfig, ExecutorContext}
 import org.apache.gearpump.experiments.cluster.executor.DefaultExecutor
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util._
@@ -36,17 +34,13 @@ object LaunchActorSystemTimeOut
 case object AllocateResourceTimeOut
 case class LaunchExecutorActor(executorConfig : Props, executorId : Int, daemon: ActorRef)
 
-class ExecutorLauncher (executorClass: Class[_ <: DefaultExecutor],worker : ActorRef, appId : Int, executorId : Int, resource : Resource, executorConfig : Configs, jar: Option[AppJar]) extends Actor {
+class ExecutorLauncher (executorClass: Class[_ <: DefaultExecutor], worker : ActorRef, launch : LaunchExecutor, executorConfig : ExecutorContext, userConf : UserConfig) extends Actor {
+
+  import executorConfig._
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId)
 
-  val username = executorConfig.username
-  val selfPath = ActorUtil.getFullPath(context)
-  val name = ActorUtil.actorNameForExecutor(appId, executorId)
-  val extraClasspath = context.system.settings.config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
-  val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
-  val launch = ExecutorContext(classPath, executorConfig.getString(Constants.GEARPUMP_EXECUTOR_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
-  worker ! LaunchExecutor(appId, executorId, resource, launch)
+  worker ! launch
 
   implicit val executionContext = context.dispatcher
   val timeout = context.system.scheduler.scheduleOnce(Duration(15, TimeUnit.SECONDS), self, LaunchActorSystemTimeOut)
@@ -57,7 +51,7 @@ class ExecutorLauncher (executorClass: Class[_ <: DefaultExecutor],worker : Acto
     case RegisterActorSystem(systemPath) =>
       timeout.cancel()
       LOG.info(s"Received RegisterActorSystem $systemPath for app master")
-      val executorProps = Props(executorClass, executorConfig).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
+      val executorProps = Props(executorClass, executorConfig, userConf).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
       sender ! BindLifeCycle(worker)
       context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender())
       context.stop(self)

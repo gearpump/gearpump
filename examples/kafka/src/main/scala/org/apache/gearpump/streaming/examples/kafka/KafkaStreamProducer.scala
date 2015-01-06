@@ -20,19 +20,20 @@ package org.apache.gearpump.streaming.examples.kafka
 
 import akka.actor.actorRef2Scala
 import com.twitter.bijection.Injection
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.StartTime
+import org.apache.gearpump.streaming.kafka.KafkaSource
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
 import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, TimeReplayableSource, MessageDecoder}
 import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig.ConfigToKafka
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource
-import org.apache.gearpump.util.Configs
-
 import scala.util.{Failure, Success}
 
 /**
  * connect gearpump with kafka
  */
-class KafkaStreamProducer(conf: Configs) extends TaskActor(conf) {
+class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
+  extends TaskActor(taskContext, conf) {
 
   private val config = conf.config
   private val batchSize = config.getConsumerEmitBatchSize
@@ -51,11 +52,12 @@ class KafkaStreamProducer(conf: Configs) extends TaskActor(conf) {
     }
   }
 
-  private val source: TimeReplayableSource = KafkaSource(conf, msgDecoder)
+  private val source: TimeReplayableSource = KafkaSource(taskContext.appId, taskContext,
+    conf, msgDecoder)
   private var startTime: TimeStamp = 0L
 
-  override def onStart(taskContext: TaskContext): Unit = {
-    startTime = taskContext.startTime
+  override def onStart(newStartTime: StartTime): Unit = {
+    startTime = newStartTime.startTime
     LOG.info(s"start time $startTime")
     source.setStartTime(startTime)
     self ! Message("start", System.currentTimeMillis())

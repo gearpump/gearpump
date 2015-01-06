@@ -18,25 +18,24 @@
 package org.apache.gearpump.streaming.examples.fsio
 
 import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProducer._
-import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
-import org.apache.gearpump.util.{HadoopConfig, Configs}
-import org.apache.hadoop.conf.Configuration
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.util.HadoopConfig
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
-import org.slf4j.{Logger, LoggerFactory}
 
-class SeqFileStreamProducer(config: HadoopConfig) extends TaskActor(config ){
+class SeqFileStreamProducer(taskContext : TaskContext, config: UserConfig) extends TaskActor(taskContext, config){
 
   val value = new Text()
   val key = new Text()
   var reader: SequenceFile.Reader = null
-  val hadoopConf = config.hadoopConf
+  val hadoopConf = HadoopConfig(config).hadoopConf
   val fs = FileSystem.get(hadoopConf)
-  val inputPath = new Path(config.getString(INPUT_PATH))
+  val inputPath = new Path(config.getString(INPUT_PATH).get)
 
-  override def onStart(taskContext : TaskContext) = {
+  override def onStart(startTime : StartTime) = {
     reader = new SequenceFile.Reader(hadoopConf, Reader.file(inputPath))
     self ! Start
     LOG.info("sequence file spout initiated")

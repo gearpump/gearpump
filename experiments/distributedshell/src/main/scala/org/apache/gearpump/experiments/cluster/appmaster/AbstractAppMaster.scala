@@ -17,38 +17,32 @@
  */
 package org.apache.gearpump.experiments.cluster.appmaster
 
-import java.io.{File, FileInputStream}
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import org.apache.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
+import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated}
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{AppJar, ApplicationMaster}
+import org.apache.gearpump.cluster._
 import org.apache.gearpump.experiments.cluster.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.experiments.cluster.executor.{TaskLaunchData, DefaultExecutor}
 import org.apache.gearpump.util.ActorSystemBooter.BindLifeCycle
-import org.apache.gearpump.util.{ActorUtil, Configs, LogUtil}
+import org.apache.gearpump.util.{ActorSystemBooter, Util, ActorUtil, LogUtil}
 import org.slf4j.Logger
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-abstract class AbstractAppMaster(config: Configs) extends ApplicationMaster {
+abstract class AbstractAppMaster(appContext : AppMasterContextInterface, app : Application) extends ApplicationMaster {
   import context.dispatcher
+  import appContext._
 
-  protected val appJar = config.appjar
-  protected val appId = config.appId
+  protected val userConfig = app.conf
+  protected val systemConfig = context.system.settings.config
   protected var master: ActorRef = null
-  protected val username = config.username
-  protected val resource = config.resource
-  protected val masterProxy = config.masterProxy
-  protected val masterExecutorId = config.executorId
-  protected val appDescription = config.appDescription
   protected var currentExecutorId = masterExecutorId + 1
-  protected val registerData = config.appMasterRegisterData
   protected val executorClass: Class[_ <: DefaultExecutor]
   protected val defaultMsgHandler = masterMsgHandler orElse workerMsgHandler orElse selfMsgHandler
 
@@ -87,8 +81,18 @@ abstract class AbstractAppMaster(config: Configs) extends ApplicationMaster {
 
       groupedResource.map((workerAndResources) => {
         val (worker, resource) = workerAndResources
-        val executorConfig = appDescription.conf.withAppId(appId).withUserName(username).withAppMaster(self).withExecutorId(currentExecutorId).withResource(resource).withWorkerId(actorToWorkerId.get(worker).get)
-        context.actorOf(Props(classOf[ExecutorLauncher], executorClass, worker, appId, currentExecutorId, resource, executorConfig, appJar), s"launcher${currentExecutorId}")
+        val executorContext = ExecutorContext(currentExecutorId, actorToWorkerId.get(worker).get, appId, self, resource)
+        val name = ActorUtil.actorNameForExecutor(appId, currentExecutorId)
+        val launcherName = s"launcher${currentExecutorId}"
+        val launcherPath = ActorUtil.getFullPath(context.system, self.path.child(launcherName))
+
+        val jvmSetting = Util.resolveJvmSetting(userConfig, systemConfig).executor
+        val launchJVM = ExecutorJVMConfig(jvmSetting.classPath, jvmSetting.vmargs,
+          classOf[ActorSystemBooter].getName, Array(name, launcherPath), appJar, username)
+
+        val launch = LaunchExecutor(appId, currentExecutorId, resource, launchJVM)
+
+        context.actorOf(Props(classOf[ExecutorLauncher], executorClass, worker, launch, executorContext, userConfig), launcherName)
         currentExecutorId += 1
       })
   }

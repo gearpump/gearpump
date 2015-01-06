@@ -30,13 +30,13 @@ import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ReplayApplicationResult, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter._
 import org.apache.gearpump.util._
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
@@ -70,7 +70,7 @@ class ApplicationState(val appId : Int, val attemptId : Int, val app : Applicati
   }
 }
 
-private[cluster] class AppManager() extends Actor with Stash with TimeOutScheduler{
+private[cluster] class AppManager extends Actor with Stash with TimeOutScheduler{
 
   import context.dispatcher
   import org.apache.gearpump.cluster.AppManager._
@@ -337,7 +337,6 @@ private[cluster] class AppManager() extends Actor with Stash with TimeOutSchedul
 
 case class AppMasterInfo(worker : ActorRef) extends AppMasterRegisterData
 
-
 private[cluster] object AppManager {
   private val masterExecutorId = -1
 
@@ -360,22 +359,24 @@ private[cluster] object AppManager {
       case ResourceAllocated(allocations) =>
         LOG.info(s"Resource allocated for appMaster $app Id")
         val allocation = allocations(0)
-        val appMasterConfig = app.conf.withAppId(appId).withAppDescription(app).withAppMasterRegisterData(AppMasterInfo(allocation.worker)).withExecutorId(masterExecutorId).withResource(allocation.resource).withUserName(username)
-        .withAppjar(jar)
+
+        val jvmSetting = Util.resolveJvmSetting(app.conf, systemConfig)
+
+        val stubForMasterProxy = null
+        val appConf = AppMasterContext(appId, username, masterExecutorId, allocation.resource, jar, stubForMasterProxy, AppMasterInfo(allocation.worker))
 
         LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
         val name = ActorUtil.actorNameForExecutor(appId, masterExecutorId)
-        val selfPath = ActorUtil.getFullPath(context)
-        val maybeExtraClasspath = app.conf.config.get(Constants.GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
-        val extraClasspath = maybeExtraClasspath.getOrElse("").asInstanceOf[String]
-        val classPath = Array.concat(Util.getCurrentClassPath,  extraClasspath.split(File.pathSeparator))
-        val executionContext = ExecutorContext(classPath, appMasterConfig.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
+        val selfPath = ActorUtil.getFullPath(context.system, self.path)
+
+        val executionContext = ExecutorJVMConfig(jvmSetting.appMater.classPath ,jvmSetting.appMater.vmargs,
+          classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
 
         allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
-        context.become(waitForActorSystemToStart(allocation.worker, appMasterConfig))
+        context.become(waitForActorSystemToStart(allocation.worker, appConf))
     }
 
-    def waitForActorSystemToStart(worker : ActorRef, masterConfig : Configs) : Receive = {
+    def waitForActorSystemToStart(worker : ActorRef, masterConfig : AppMasterContext) : Receive = {
       case ExecutorLaunchRejected(reason, resource, ex) =>
         LOG.error(s"Executor Launch failed reason：$reason", ex)
         LOG.info(s"reallocate resource $resource to start appmaster")
@@ -389,22 +390,23 @@ private[cluster] object AppManager {
           HostPort(hostAndPort(0), hostAndPort(1).toInt)
         }
         LOG.info(s"Create master proxy on target actor system $systemPath")
-        sender ! CreateActor(classOf[MasterProxy].getCanonicalName, "masterproxy", masterAddress)
+        sender ! CreateActor(classOf[MasterProxy].getName, "masterproxy", masterAddress)
         context.become(waitForMasterProxyToStart(worker, masterConfig))
     }
 
-    def waitForMasterProxyToStart(worker: ActorRef, masterConfig : Configs) : Receive = {
+    def waitForMasterProxyToStart(worker: ActorRef, masterConfig : AppMasterContext) : Receive = {
       case ActorCreated(masterProxy, "masterproxy") =>
+        val conf = masterConfig.copy(masterProxy = masterProxy)
         LOG.info(s"Master proxy is created, create appmaster...")
-        sender ! CreateActor(app.appMaster, "appmaster", masterConfig.withMasterProxy(masterProxy))
+        sender ! CreateActor(app.appMaster, "appmaster", conf, app)
         import context.dispatcher
         val appMasterTimeout = context.system.scheduler.scheduleOnce(
           FiniteDuration(waitForAppMasterTimeout, TimeUnit.SECONDS), self,
           ActorCreationFailed(app.appMaster, new Exception(s"Timeout creating AppMaster. Took longer than $waitForAppMasterTimeout")))
-        context.become(waitForAppMasterToStart(worker, Option(appMasterTimeout), masterConfig))
+        context.become(waitForAppMasterToStart(worker, Option(appMasterTimeout)))
     }
 
-    def waitForAppMasterToStart(worker: ActorRef, cancellable: Option[Cancellable], masterConfig : Configs) : Receive = {
+    def waitForAppMasterToStart(worker: ActorRef, cancellable: Option[Cancellable]) : Receive = {
       case ActorCreated(appMaster, "appmaster") =>
         LOG.info(s"AppMaster is created")
         cancellable match {

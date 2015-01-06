@@ -20,8 +20,8 @@ package org.apache.gearpump.streaming.task
 
 import akka.actor.{ActorRef, ExtendedActorSystem}
 import org.apache.gearpump.serializer.FastKryoSerializer
-import org.apache.gearpump.transport.{HostPort, Express}
 import org.apache.gearpump.transport.netty.TaskMessage
+import org.apache.gearpump.transport.{Express, HostPort}
 
 import scala.collection.mutable
 
@@ -32,7 +32,7 @@ trait ExpressTransport {
   final val system = context.system.asInstanceOf[ExtendedActorSystem]
   final val serializer = new FastKryoSerializer(system)
   final def local = express.localHost
-  lazy val sourceId = TaskId.toLong(this.taskId)
+  lazy val sourceId = TaskId.toLong(taskContext.taskId)
 
   val sendLater = new SendLater(express, serializer, self)
 

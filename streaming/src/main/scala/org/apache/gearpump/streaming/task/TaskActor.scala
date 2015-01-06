@@ -21,29 +21,26 @@ package org.apache.gearpump.streaming.task
 import java.util
 
 import akka.actor._
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor._
-import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.TaskLocationReady
-import org.apache.gearpump.util.{TimeOutScheduler, LogUtil, Util, Configs}
+import org.apache.gearpump.util.{LogUtil, TimeOutScheduler, Util}
 import org.apache.gearpump.{Message, TimeStamp}
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
-abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport with TimeOutScheduler{
+abstract class TaskActor(val taskContext : TaskContext, userConf : UserConfig) extends Actor with ExpressTransport  with TimeOutScheduler{
+
   import org.apache.gearpump.streaming.task.TaskActor._
+  import taskContext._
 
-  private val appId = conf.appId
-  protected val taskId : TaskId =  conf.taskId
+  val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
-  val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = conf.executorId, task = taskId)
-
-  private val metricName = s"app$appId.task${taskId.groupId}_${taskId.index}"
+  private val metricName = s"app${appId}.task${taskId.groupId}_${taskId.index}"
   private val latencies = Metrics(context.system).histogram(s"$metricName.latency")
   private val throughput = Metrics(context.system).meter(s"$metricName.throughput")
-
-  private val appMaster : ActorRef = conf.appMaster
 
   private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
   private var partitioner : MergedPartitioner = null
@@ -60,14 +57,14 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
   // securityChecker will be responsible of dropping messages from
   // unknown sources
   private val securityChecker  = new SecurityChecker(taskId, self)
-  protected val sessionId = Util.randInt()
+  protected val sessionId = Util.randInt
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
 
   final def receive : Receive = null
 
-  def onStart(context : TaskContext) : Unit
+  def onStart(startTime : StartTime) : Unit
 
   def onNext(msg : Message) : Unit
 
@@ -103,29 +100,29 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
 
   final override def preStart() : Unit = {
 
-    sendMsgWithTimeOutCallBack(appMaster, RegisterTask(taskId, conf.executorId, local), 10, registerTaskTimeOut())
+    sendMsgWithTimeOutCallBack(appMaster, RegisterTask(taskId, executorId, local), 10, registerTaskTimeOut())
 
-    val graph = conf.dag.graph
+    val graph = dag.graph
     LOG.info(s"TaskInit... taskId: $taskId")
-    val outDegree = conf.dag.graph.outDegreeOf(taskId.groupId)
+    val outDegree = dag.graph.outDegreeOf(taskId.groupId)
 
     if (outDegree > 0) {
 
       val edges = graph.outgoingEdgesOf(taskId.groupId)
 
-      LOG.info(s"task: $taskId out degree is $outDegree, edge length: ${edges.length}")
+      LOG.info(s"task: ${taskId} out degree is $outDegree, edge length: ${edges.length}")
 
       this.partitioner = edges.foldLeft(MergedPartitioner.empty) { (mergedPartitioner, nodeEdgeNode) =>
         val (_, partitioner, taskgroupId) = nodeEdgeNode
-        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallelism
+        val taskParallism = dag.tasks.get(taskgroupId).get.parallelism
         mergedPartitioner.add(partitioner, taskParallism)
       }
 
-      LOG.info(s"task: $taskId partitioner: $partitioner")
+      LOG.info(s"task: ${taskId} partitioner: $partitioner")
 
       outputTaskIds = edges.flatMap {nodeEdgeNode =>
         val (_, _, taskgroupId) = nodeEdgeNode
-        val taskParallism = conf.dag.tasks.get(taskgroupId).get.parallelism
+        val taskParallism = dag.tasks.get(taskgroupId).get.parallelism
 
         LOG.info(s"get output taskIds, groupId: $taskgroupId, parallism: $taskParallism")
 
@@ -147,19 +144,19 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
   }
 
   private def registerTaskTimeOut(): Unit = {
-    LOG.error(s"Task $taskId failed to register to AppMaster of application $appId")
+    LOG.error(s"Task ${taskId} failed to register to AppMaster of application ${appId}")
     throw new RestartException
   }
 
   private def tryToSyncToClockService() : Unit = {
     if (unackedClockSyncTimestamp == 0) {
-      appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
+      appMaster ! UpdateClock(taskId, clockTracker.minClockAtCurrentTask)
       needSyncToClockService = false
       unackedClockSyncTimestamp = System.currentTimeMillis()
     } else {
       val current = System.currentTimeMillis()
       if (current - unackedClockSyncTimestamp > CLOCK_SYNC_TIMEOUT_INTERVAL) {
-        appMaster ! UpdateClock(this.taskId, clockTracker.minClockAtCurrentTask)
+        appMaster ! UpdateClock(taskId, clockTracker.minClockAtCurrentTask)
         needSyncToClockService = false
         unackedClockSyncTimestamp  = System.currentTimeMillis()
       } else {
@@ -176,7 +173,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
         msg match {
           case SendAck(ack, targetTask) =>
             transport(ack, targetTask)
-            LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + this.taskId + ", received message: " + ack.actualReceivedNum)
+            LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + taskId + ", received message: " + ack.actualReceivedNum)
           case m : Message =>
             val updated = clockTracker.onProcess(m)
             if (updated) {
@@ -200,7 +197,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
 
   def waitForStartClock : Receive = {
     case StartClock(clock) =>
-      onStart(new TaskContext(clock))
+      onStart(new StartTime(clock))
       context.become(handleMessages)
       sendFirstAckRequests()
   }
@@ -218,7 +215,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
       }
     case ack: Ack =>
       if(flowControl.messageLossDetected(ack)){
-        LOG.error(s"Failed! Some messages sent from actor ${this.taskId} to $taskId are lost, try to replay...")
+        LOG.error(s"Failed! Some messages sent from actor ${taskId} to ${taskId} are lost, try to replay...")
         throw new MsgLostException
       }
       flowControl.receiveAck(ack)
@@ -252,7 +249,7 @@ abstract class TaskActor(conf : Configs) extends Actor with ExpressTransport wit
         tryToSyncToClockService()
       }
     case RestartTasks(timestamp) =>
-      LOG.info(s"Restarting myself $taskId from timestamp $timestamp...")
+      LOG.info(s"Restarting myself ${taskId} from timestamp $timestamp...")
       express.unregisterLocalActor(TaskId.toLong(taskId))
       throw new RestartException
     case TaskLocationReady =>

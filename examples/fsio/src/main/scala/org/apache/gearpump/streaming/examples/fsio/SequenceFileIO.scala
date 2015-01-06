@@ -18,16 +18,15 @@
 package org.apache.gearpump.streaming.examples.fsio
 
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.ShufflePartitioner
-import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, AppMaster, TaskDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{HadoopConfig, LogUtil, Configs, Graph}
+import org.apache.gearpump.util.{Graph, HadoopConfig, LogUtil}
 import org.apache.hadoop.conf.Configuration
-import org.slf4j.{Logger, LoggerFactory}
-
-import scala.collection.JavaConversions._
+import org.slf4j.Logger
 
 object SequenceFileIO extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -46,13 +45,13 @@ object SequenceFileIO extends App with ArgumentsParser {
     val boltNum = config.getInt("sink")
     val input = config.getString("input")
     val output = config.getString("output")
-    val appConfig = Configs(ConfigFactory.load("fsio.conf")).withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output)
+    val appConfig = UserConfig(ConfigFactory.load("fsio.conf")).withValue(SeqFileStreamProducer.INPUT_PATH, input).withValue(SeqFileStreamProcessor.OUTPUT_PATH, output)
     val hadoopConfig = HadoopConfig(appConfig).withHadoopConf(new Configuration())
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getCanonicalName, spoutNum)
-    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getCanonicalName, boltNum)
+    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getName, spoutNum)
+    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getName, boltNum)
     LOG.info(s"SequenceFileIO appConfig size = ${appConfig.config.size}")
-    val app = AppDescription("SequenceFileIO", classOf[AppMaster].getCanonicalName, hadoopConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
+    val app = AppDescription("SequenceFileIO", classOf[AppMaster].getName, hadoopConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app
   }
 
@@ -61,5 +60,5 @@ object SequenceFileIO extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }

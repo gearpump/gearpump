@@ -20,6 +20,11 @@ package org.apache.gearpump.partitioner
 
 import org.apache.gearpump.Message
 
+/**
+ * Only make sense when the message has implemented the hashCode()
+ * Otherwise, it will use Object.hashCode(), which will not return
+ * same hash code after serialization and deserialization.
+ */
 class HashPartitioner extends Partitioner {
   override def getPartition(msg : Message, partitionNum : Int) : Int = {
     (msg.msg.hashCode & Integer.MAX_VALUE) % partitionNum

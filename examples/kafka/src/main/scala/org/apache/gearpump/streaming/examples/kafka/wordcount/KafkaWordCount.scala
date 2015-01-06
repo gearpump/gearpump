@@ -18,16 +18,16 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.examples.kafka.topn.RollingTopWords._
 import org.apache.gearpump.streaming.examples.kafka.{KafkaStreamProcessor, KafkaStreamProducer}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{LogUtil, Configs, Graph}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.{Graph, LogUtil}
+import org.slf4j.Logger
 
 object KafkaWordCount extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -45,14 +45,14 @@ object KafkaWordCount extends App with ArgumentsParser {
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
     val kafkaStreamProcessorNum = config.getInt("kafka_stream_processor")
-    val appConfig = Configs(KafkaConfig())
+    val appConfig = UserConfig(KafkaConfig())
     val partitioner = new HashPartitioner()
-    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getCanonicalName, kafkaStreamProducerNum)
-    val split = TaskDescription(classOf[Split].getCanonicalName, splitNum)
-    val sum = TaskDescription(classOf[Sum].getCanonicalName, sumNum)
-    val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor].getCanonicalName, kafkaStreamProcessorNum)
+    val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getName, kafkaStreamProducerNum)
+    val split = TaskDescription(classOf[Split].getName, splitNum)
+    val sum = TaskDescription(classOf[Sum].getName, sumNum)
+    val kafkaStreamProcessor = TaskDescription(classOf[KafkaStreamProcessor].getName, kafkaStreamProcessorNum)
     val computation = kafkaStreamProducer ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaStreamProcessor
-    val app = AppDescription("KafkaWordCount", classOf[AppMaster].getCanonicalName, appConfig, Graph(computation))
+    val app = AppDescription("KafkaWordCount", classOf[AppMaster].getName, appConfig, Graph(computation))
     app
   }
 
@@ -61,5 +61,5 @@ object KafkaWordCount extends App with ArgumentsParser {
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
-  context.cleanup()
+  context.close()
 }

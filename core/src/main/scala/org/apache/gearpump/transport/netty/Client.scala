@@ -27,7 +27,7 @@ import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.FiniteDuration

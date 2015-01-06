@@ -19,10 +19,10 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail, AppMastersData}
-import org.apache.gearpump.cluster.{AppMasterInfo, Application}
+import org.apache.gearpump.cluster.{AppMasterInfo, Application, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
-import org.apache.gearpump.util.{Configs, Graph}
+import org.apache.gearpump.util.Graph
 import spray.json._
 
 object AppMasterProtocol extends DefaultJsonProtocol  {
@@ -41,19 +41,19 @@ object AppMasterProtocol extends DefaultJsonProtocol  {
     }
   }
   implicit def convertAppMasterData: RootJsonFormat[AppMasterData] = jsonFormat(AppMasterData.apply, "appId", "appData")
-  implicit object ConfigsFormat extends RootJsonFormat[Configs] {
-    def write(obj: Configs): JsValue = {
+  implicit object ConfigsFormat extends RootJsonFormat[UserConfig] {
+    def write(obj: UserConfig): JsValue = {
       JsObject("config" -> mapFormat[String, String].write(obj.config.map(pair => {
         val (key, value) = pair
         key -> value.toString
       })))
     }
-    def read(obj: JsValue): Configs = {
+    def read(obj: JsValue): UserConfig = {
       obj match {
         case value: JsObject =>
-          Configs.apply(value.fields("config").asJsObject.convertTo[Map[String,String]])
+          UserConfig.apply(value.fields("config").asJsObject.convertTo[Map[String,String]])
         case _ =>
-          Configs.apply(Map[String,String]())
+          UserConfig.apply(Map[String,String]())
       }
     }
   }
@@ -61,7 +61,7 @@ object AppMasterProtocol extends DefaultJsonProtocol  {
   implicit object PartitionerFormat extends RootJsonFormat[Partitioner] {
     def write(obj: Partitioner): JsValue = {
       JsString(
-        obj.getClass.getCanonicalName
+        obj.getClass.getName
       )
     }
     def read(obj: JsValue): Partitioner = {

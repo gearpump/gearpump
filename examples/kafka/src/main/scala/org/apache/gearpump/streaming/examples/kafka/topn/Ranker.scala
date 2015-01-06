@@ -18,12 +18,11 @@
 
 package org.apache.gearpump.streaming.examples.kafka.topn
 
-import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import org.apache.gearpump.Message
-import org.apache.gearpump.util.Configs
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 
-class Ranker(conf: Configs) extends TaskActor(conf) {
+class Ranker(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
   import org.apache.gearpump.streaming.examples.kafka.topn.Config._
 
   private val config = conf.config
@@ -33,7 +32,7 @@ class Ranker(conf: Configs) extends TaskActor(conf) {
   private var lastEmitTime = 0L
   protected val rankings: Rankings[String] = new Rankings[String]
 
-  def onStart(context: TaskContext): Unit = {}
+  def onStart(time: StartTime): Unit = {}
 
   def onNext(msg: Message): Unit = {
     updateRankingsWithMessage(msg)

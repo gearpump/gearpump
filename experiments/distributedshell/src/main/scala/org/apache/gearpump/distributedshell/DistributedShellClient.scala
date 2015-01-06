@@ -45,6 +45,6 @@ object DistributedShellClient extends App with ArgumentsParser  {
   val appMaster = context.resolveAppID(appid)
   (appMaster ? MsgToTask(ShellCommand(command, arguments))).map { reslut =>
     LOG.info(s"Result: $reslut")
-    context.cleanup()
+    context.close()
   }
 }
