@@ -37,9 +37,8 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 abstract class AbstractAppMaster(config: Configs) extends ApplicationMaster {
-  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
-
   import context.dispatcher
+
   protected val appJar = config.appjar
   protected val appId = config.appId
   protected var master: ActorRef = null
@@ -51,8 +50,9 @@ abstract class AbstractAppMaster(config: Configs) extends ApplicationMaster {
   protected var currentExecutorId = masterExecutorId + 1
   protected val registerData = config.appMasterRegisterData
   protected val executorClass: Class[_ <: DefaultExecutor]
-
   protected val defaultMsgHandler = masterMsgHandler orElse workerMsgHandler orElse selfMsgHandler
+
+  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
   def onStart(): Unit
 

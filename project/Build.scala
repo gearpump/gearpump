@@ -140,7 +140,7 @@ object Build extends sbt.Build {
                            "master" -> Seq("-DlogFilename=master"),
                            "worker" -> Seq("-DlogFilename=worker")
                         ),
-        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, examples.id, distributedshell.id),
+        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, examples.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         packExpandedClasspath := false,
@@ -229,12 +229,12 @@ object Build extends sbt.Build {
           "org.webjars" % "swagger-ui" % swaggerUiVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
         )
-      ) 
+      )
   ) dependsOn(streaming % "test->test;compile->compile")
 
   lazy val distributedshell = Project(
     id = "gearpump-experiments-distributedshell",
     base = file("experiments/distributedshell"),
-    settings = commonSettings ++ packSettings
+    settings = commonSettings
   ) dependsOn(core % "test->test;compile->compile")
 }
