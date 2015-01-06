@@ -19,11 +19,12 @@ package org.apache.gearpump.util
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.util.Constants._
 import org.apache.hadoop.conf.Configuration
 
-class HadoopConfig(config: Map[String, _]) extends Configs(config) {
-  import org.apache.gearpump.util.Configs._
+class HadoopConfig(config: Map[String, _]) extends UserConfig(config) {
+  import org.apache.gearpump.cluster.UserConfig._
 
   override def withValue(key: String, value: Any) = {
     HadoopConfig(config + (key->value))
@@ -37,7 +38,7 @@ object HadoopConfig {
 
   def apply(config: Map[String, _]) = new HadoopConfig(config)
 
-  def apply(config: Configs) = new HadoopConfig(config.config)
+  def apply(config: UserConfig) = new HadoopConfig(config.config)
 
   private def serializeHadoopConf(conf: Configuration) : Array[Byte] = {
     val out = new ByteArrayOutputStream()

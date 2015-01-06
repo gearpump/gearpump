@@ -19,10 +19,10 @@
 package org.apache.gearpump.streaming.examples.wordcount
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 
-class Split(conf : Configs) extends TaskActor(conf) {
+class Split(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
 
   private val txt =
     """
@@ -44,7 +44,7 @@ class Split(conf : Configs) extends TaskActor(conf) {
     """.stripMargin
 
 
-  override def onStart(taskContext : TaskContext) : Unit = {
+  override def onStart(startTime : StartTime) : Unit = {
     self ! Message("start")
   }
 

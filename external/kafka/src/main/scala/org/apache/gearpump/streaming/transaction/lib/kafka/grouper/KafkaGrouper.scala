@@ -19,10 +19,11 @@
 package org.apache.gearpump.streaming.transaction.lib.kafka.grouper
 
 import kafka.common.TopicAndPartition
-import org.apache.gearpump.util.Configs
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.TaskContext
 
 trait KafkaGrouperFactory {
-  def getKafkaGrouper(conf: Configs): KafkaGrouper
+  def getKafkaGrouper(conf: TaskContext): KafkaGrouper
 }
 
 trait KafkaGrouper {

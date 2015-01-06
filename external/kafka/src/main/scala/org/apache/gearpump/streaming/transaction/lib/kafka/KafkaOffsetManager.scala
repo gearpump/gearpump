@@ -21,17 +21,18 @@ package org.apache.gearpump.streaming.transaction.lib.kafka
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump._
-import org.apache.gearpump.streaming.transaction.api.Storage.{Underflow, StorageEmpty, Overflow}
-import org.apache.gearpump.streaming.transaction.api.{Storage, OffsetManager}
-import org.apache.gearpump.util.{LogUtil, Configs}
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.transaction.api.Storage.{Overflow, StorageEmpty, Underflow}
+import org.apache.gearpump.streaming.transaction.api.{OffsetManager, Storage}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 import scala.util.{Failure, Success, Try}
 
 object KafkaOffsetManager {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaOffsetManager])
-  def apply(conf: Configs, topicAndPartition: TopicAndPartition): KafkaOffsetManager = {
-    new KafkaOffsetManager(KafkaStorage(conf, topicAndPartition))
+  def apply(appId : Int, conf: UserConfig, topicAndPartition: TopicAndPartition): KafkaOffsetManager = {
+    new KafkaOffsetManager(KafkaStorage(appId, conf, topicAndPartition))
   }
 }
 

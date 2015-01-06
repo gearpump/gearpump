@@ -92,7 +92,7 @@ object MasterToAppMaster {
 }
 
 object AppMasterToWorker {
-  case class LaunchExecutor(appId: Int, executorId: Int, resource: Resource, executorContext: ExecutorContext)
+  case class LaunchExecutor(appId: Int, executorId: Int, resource: Resource, executorContext: ExecutorJVMConfig)
   case class ShutdownExecutor(appId : Int, executorId : Int, reason : String)
 }
 

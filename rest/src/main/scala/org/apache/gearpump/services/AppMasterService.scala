@@ -31,6 +31,8 @@ import scala.util.{Failure, Success, Try}
 
 @Api(value = "/appmaster", description = "AppMaster Info.")
 class AppMasterServiceActor(val master:ActorRef) extends Actor with AppMasterService   {
+
+
   def actorRefFactory = context
   def receive = runRoute(readRoute)
 }
@@ -39,6 +41,7 @@ class AppMasterServiceActor(val master:ActorRef) extends Actor with AppMasterSer
 trait AppMasterService extends HttpService {
   import org.apache.gearpump.services.AppMasterProtocol._
   import spray.httpx.SprayJsonSupport._
+
   implicit val ec: ExecutionContext = actorRefFactory.dispatcher
   implicit val timeout = Constants.FUTURE_TIMEOUT
   val master:ActorRef

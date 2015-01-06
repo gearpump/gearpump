@@ -20,17 +20,17 @@ package org.apache.gearpump.streaming
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.streaming.AppMaster.TaskLaunchData
 import org.apache.gearpump.streaming.task.TaskId
-import org.apache.gearpump.util.{LogUtil, Configs}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.LogUtil
+import org.slf4j.Logger
 
 import scala.collection.mutable
 
-class TaskSet(config : Configs, dag : DAG) {
-  private val LOG: Logger = LogUtil.getLogger(getClass, app = config.appId)
+class TaskSet(appId : Int,  dag : DAG) {
+  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
   private var taskMap = Map.empty[TaskId, TaskLaunchData]
   private var taskQueues = Map.empty[Locality, mutable.Queue[TaskLaunchData]]
-  private val taskLocator = new TaskLocator(config)
+  private val taskLocator = new TaskLocator
   var totalTaskCount = 0
 
   init(dag)

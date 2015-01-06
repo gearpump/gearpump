@@ -8,7 +8,6 @@ import org.apache.log4j.PropertyConfigurator
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.Try
-import scala.util.Try
 
 object LogUtil {
   object ProcessType extends Enumeration {

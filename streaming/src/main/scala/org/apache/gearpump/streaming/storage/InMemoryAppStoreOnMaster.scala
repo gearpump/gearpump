@@ -22,6 +22,7 @@ import akka.pattern.ask
 import org.apache.gearpump.cluster.AppMasterToMaster.{GetAppData, SaveAppData}
 import org.apache.gearpump.cluster.MasterToAppMaster.GetAppDataResult
 import org.apache.gearpump.util.Constants
+
 import scala.concurrent.Future
 
 /**

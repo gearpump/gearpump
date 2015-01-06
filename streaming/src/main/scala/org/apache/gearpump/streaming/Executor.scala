@@ -20,33 +20,28 @@ package org.apache.gearpump.streaming
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
+import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.{ExecutorContextInterface, ApplicationExecutor, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
-import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
-import org.apache.gearpump.transport.{HostPort, Express}
-import org.apache.gearpump.util.{LogUtil, Constants, Configs}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.transport.{Express, HostPort}
+import org.apache.gearpump.util.{Constants, LogUtil}
+import org.slf4j.Logger
 
 import scala.concurrent.duration._
 
 case object TaskLocationReady
 
-class Executor(config : Configs)  extends Actor {
-  import context.dispatcher
+class Executor(executorContext: ExecutorContextInterface, userConf : UserConfig)  extends ApplicationExecutor {
 
-  val executorId = config.executorId
+  import context.dispatcher
+  import executorContext._
 
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId,
-  app = config.appId)
-
-  val appMaster = config.appMaster
-  val resource = config.resource
-  val appId = config.appId
-  val workerId = config.workerId
-  var startClock : TimeStamp = config.startTime
+    app = appId)
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
 
@@ -68,9 +63,9 @@ class Executor(config : Configs)  extends Actor {
 
   def appMasterMsgHandler : Receive = {
     case LaunchTask(taskId, config, taskClass) => {
-      LOG.info(s"Launching Task $taskId for app: $appId, $taskClass")
+      LOG.info(s"Launching Task $taskId for app: ${appId}, $taskClass")
       val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
-      val task = context.actorOf(Props(taskClass, config.withTaskId(taskId)).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
+      val task = context.actorOf(Props(taskClass, config, userConf).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }
     case TaskLocations(locations) =>
       val result = locations.flatMap { kv =>
@@ -84,11 +79,7 @@ class Executor(config : Configs)  extends Actor {
     case r @ RestartTasks(clock) =>
       LOG.info(s"Executor received restart tasks at time: $clock")
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
-      this.startClock = clock
       context.children.foreach(_ ! r)
-    case GetStartClock =>
-      LOG.info(s"Executor received GetStartClock, return: $startClock")
-      sender ! StartClock(startClock)
   }
 
   def terminationWatch : Receive = {

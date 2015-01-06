@@ -19,8 +19,8 @@
 package org.apache.gearpump.streaming.examples.kafka.topn
 
 import org.scalacheck.Gen
-import org.scalatest.{PropSpec, Matchers}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
 
 class SlidingWindowCounterSpec extends PropSpec with PropertyChecks with Matchers {
 

@@ -23,77 +23,24 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import com.codahale.metrics.{MetricFilter, MetricRegistry, ScheduledReporter}
+import com.codahale.metrics.{MetricFilter, MetricRegistry}
 import org.apache.gearpump.util.LogUtil
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
-class Metrics(val system: ExtendedActorSystem) extends Extension {
-import org.apache.gearpump.metrics.Metrics._
+class Metrics(sampleRate: Int) extends Extension {
 
-  private var sampleRate = 1
-  lazy val metrics = {
-
-    val metricsEnabled = system.settings.config.getBoolean("gearpump.metrics.enabled")
-
-    LOG.info(s"Metrics is enabled...,  $metricsEnabled")
-
-
-
-    var reporter : ScheduledReporter = null
-    if (metricsEnabled) {
-
-      val metrics = new MetricRegistry()
-
-      val graphiteHost = system.settings.config.getString("gearpump.metrics.graphite.host")
-      val graphitePort = system.settings.config.getInt("gearpump.metrics.graphite.port")
-
-      sampleRate = system.settings.config.getInt("gearpump.metrics.sample.rate")
-
-      val graphite = new Graphite(new InetSocketAddress(graphiteHost, graphitePort));
-
-      val reporter = GraphiteReporter.forRegistry(metrics)
-        .prefixedWith( s"host${system.provider.getDefaultAddress.host.get}".replace(".", "_"))
-        .convertRatesTo(TimeUnit.SECONDS)
-        .convertDurationsTo(TimeUnit.MILLISECONDS)
-        .filter(MetricFilter.ALL)
-        .build(graphite)
-
-      LOG.info(s"Metrics is enabled..., reporting to $graphiteHost, $graphitePort")
-
-      reporter.start(5, TimeUnit.SECONDS)
-
-      system.registerOnTermination(new Runnable {
-        override def run = reporter.stop()
-      })
-
-      metrics
-    } else {
-      null
-    }
-  }
+  val registry = new MetricRegistry()
 
   def meter(name : String) = {
-    if (null == metrics) {
-      new Meter(null)
-    } else {
-      new Meter(metrics.meter(name), sampleRate)
-    }
+    new Meter(name, registry.meter(name), sampleRate)
   }
 
   def histogram(name : String) = {
-    if (null == metrics) {
-      new Histogram(null)
-    } else {
-      new Histogram(metrics.histogram(name), sampleRate)
-    }
+    new Histogram(name, registry.histogram(name), sampleRate)
   }
 
   def counter(name : String) = {
-    if (null == metrics) {
-      new Counter(null)
-    } else {
-      new Counter(metrics.counter(name), sampleRate)
-    }
+    new Counter(name, registry.counter(name), sampleRate)
   }
 }
 
@@ -104,5 +51,41 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
 
   override def lookup = Metrics
 
-  override def createExtension(system: ExtendedActorSystem): Metrics = new Metrics(system)
+  override def createExtension(system: ExtendedActorSystem): Metrics = Metrics(system)
+
+  def apply(system: ExtendedActorSystem): Metrics = {
+
+    val metricsEnabled = system.settings.config.getBoolean("gearpump.metrics.enabled")
+    LOG.info(s"Metrics is enabled...,  $metricsEnabled")
+    val sampleRate = system.settings.config.getInt("gearpump.metrics.sample.rate")
+    val meters = new Metrics(sampleRate)
+
+    if (metricsEnabled) {
+      def startReporter = {
+        val graphiteHost = system.settings.config.getString("gearpump.metrics.graphite.host")
+        val graphitePort = system.settings.config.getInt("gearpump.metrics.graphite.port")
+
+        val graphite = new Graphite(new InetSocketAddress(graphiteHost, graphitePort))
+
+        val reporter = GraphiteReporter.forRegistry(meters.registry)
+          .prefixedWith(s"host${system.provider.getDefaultAddress.host.get}".replace(".", "_"))
+          .convertRatesTo(TimeUnit.SECONDS)
+          .convertDurationsTo(TimeUnit.MILLISECONDS)
+          .filter(MetricFilter.ALL)
+          .build(graphite)
+
+        LOG.info(s"Metrics is enabled..., reporting to $graphiteHost, $graphitePort")
+
+        reporter.start(5, TimeUnit.SECONDS)
+
+        system.registerOnTermination(new Runnable {
+          override def run = reporter.stop()
+        })
+      }
+
+      startReporter
+    }
+
+    meters
+  }
 }

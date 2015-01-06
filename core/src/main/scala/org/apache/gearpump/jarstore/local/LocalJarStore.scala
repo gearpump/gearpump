@@ -27,6 +27,7 @@ import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
 import org.apache.gearpump.jarstore.JarFileContainer
 import org.apache.gearpump.util.{Constants, FileServer, LogUtil}
 import org.slf4j.Logger
+
 import scala.concurrent.Future
 
 class LocalJarStore(rootDirPath : String) extends Actor with Stash {

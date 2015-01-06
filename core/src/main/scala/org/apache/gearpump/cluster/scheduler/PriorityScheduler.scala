@@ -21,9 +21,8 @@ package org.apache.gearpump.cluster.scheduler
 import akka.actor.ActorRef
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
-import org.apache.gearpump.cluster.scheduler.Scheduler.PendingRequest
 import org.apache.gearpump.cluster.scheduler.Relaxation._
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.cluster.scheduler.Scheduler.PendingRequest
 
 import scala.collection.mutable
 

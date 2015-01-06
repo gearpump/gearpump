@@ -19,11 +19,11 @@ package org.apache.gearpump.streaming
 
 import akka.actor.Actor
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.util.{ActorUtil, Configs}
+import org.apache.gearpump.util.ActorUtil
 
 import scala.collection.mutable
 
-class TaskLocator(config : Configs) {
+class TaskLocator {
   private var userScheduledTask = Map.empty[Class[_ <: Actor], mutable.Queue[Locality]]
 
   initTasks()

@@ -19,17 +19,17 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
-import org.apache.gearpump.cluster.MasterProxy
+import org.apache.gearpump.cluster.{ClusterConfig, MasterProxy}
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.LogUtil.ProcessType
-import org.apache.gearpump.util.{LogUtil, Configs}
 import org.apache.gearpump.util.Constants._
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.LogUtil.ProcessType
+import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
 
 object Worker extends App with ArgumentsParser {
-  val config = Configs.load.worker
+  val config = ClusterConfig.load.worker
   val LOG : Logger = {
     LogUtil.loadConfiguration(config, ProcessType.WORKER)
     //delay creation of LOG instance to avoid creating an empty log file as we reset the log file name here
@@ -52,6 +52,8 @@ object Worker extends App with ArgumentsParser {
       val hostAndPort = address.split(":")
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
     }
+
+    LOG.info(s"Trying to connect to masters $masterAddress....")
     val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER)
 
     system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], masterProxy),

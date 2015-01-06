@@ -18,8 +18,7 @@
 package org.apache.gearpump.util
 
 import akka.actor._
-import akka.testkit.{TestActorRef, TestProbe, ImplicitSender, TestKit}
-import org.apache.gearpump.util.{LogUtil, TimeOutScheduler}
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import org.slf4j.Logger
 

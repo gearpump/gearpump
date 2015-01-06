@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import com.typesafe.config.Config
-import org.apache.gearpump.cluster.ApplicationMaster
+import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.util.LogUtil.ProcessType
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
 
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
@@ -47,16 +47,16 @@ class ActorSystemBooter(config : Config) {
 
 object ActorSystemBooter  {
 
-  def create(config : Config) : ActorSystemBooter = new ActorSystemBooter(config)
+  def apply(config : Config) : ActorSystemBooter = new ActorSystemBooter(config)
 
   def main (args: Array[String]) {
     val name = args(0)
     val reportBack = args(1)
-    val config = Configs.load.application
+    val config = ClusterConfig.load.application
 
     LogUtil.loadConfiguration(config, ProcessType.APPLICATION)
 
-    create(config).boot(name, reportBack).awaitTermination
+    apply(config).boot(name, reportBack).awaitTermination
   }
 
   case class BindLifeCycle(actor : ActorRef)
@@ -75,7 +75,7 @@ object ActorSystemBooter  {
     LOG.info(s"RegisterActorSystem to ${reportBack}, current user: $username")
     
     val reportBackActor = context.actorSelection(reportBack)
-    reportBackActor ! RegisterActorSystem(ActorUtil.getSystemPath(context.system))
+    reportBackActor ! RegisterActorSystem(ActorUtil.getSystemAddress(context.system).toString)
 
     implicit val executionContext = context.dispatcher
     val timeout = context.system.scheduler.scheduleOnce(Duration(25, TimeUnit.SECONDS), self, RegisterActorSystemTimeOut)
@@ -90,13 +90,14 @@ object ActorSystemBooter  {
         LOG.info(s"ActorSystem $name Binding life cycle with actor: $actor")
         context.watch(actor)
       // Send PoisonPill to the daemon to kill the actorsystem
-      case CreateActor(clazz, name, args) =>
+      case create @ CreateActor(clazz, name, args @ _*) =>
         timeout.cancel()
         LOG.info(s"creating actor $name with class name '$clazz'")
         val classZ = Try(Class.forName(clazz))
         classZ match {
           case Success(clazzType) =>
-            val props = Props(clazzType, args)
+            val props = Props(clazzType, args : _*)
+
             val actor = context.actorOf(props, name)
             sender ! ActorCreated(actor, name)
           case Failure(e) =>

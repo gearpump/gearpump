@@ -23,20 +23,13 @@ import com.codahale.metrics.{Histogram => CodaHaleHistogram}
 /**
  * sampleRate: take a data point for every sampleRate...
  */
-class Histogram(hisgram : CodaHaleHistogram, sampleRate : Int = 1) {
+class Histogram(val name : String, hisgram : CodaHaleHistogram, sampleRate : Int = 1) {
   private var sampleCount = 0L
 
-  def update(value: Int) {
-    if (null != hisgram && sampleCount % sampleRate == 0) {
-      hisgram.update(value.asInstanceOf[Long])
-    }
-    sampleCount += 1
-  }
-
   def update(value: Long) {
+    sampleCount += 1
     if (null != hisgram && sampleCount % sampleRate == 0) {
       hisgram.update(value)
     }
-    sampleCount += 1
   }
 }

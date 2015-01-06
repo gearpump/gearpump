@@ -18,10 +18,11 @@
 
 package org.apache.gearpump.streaming
 
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.util.{Configs, Graph, ReferenceEqual}
+import org.apache.gearpump.util.{Graph, ReferenceEqual}
 
 case class TaskDescription(taskClass: String, parallelism : Int) extends ReferenceEqual
 
-case class AppDescription(name : String, appMaster : String, conf: Configs, dag: Graph[TaskDescription, Partitioner])
+case class AppDescription(name : String, appMaster : String, conf: UserConfig, dag: Graph[TaskDescription, Partitioner])
   extends org.apache.gearpump.cluster.Application

@@ -22,20 +22,21 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
-import org.apache.gearpump.util.Configs
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SOLStreamProcessor(conf : Configs) extends TaskActor(conf : Configs) {
+class SOLStreamProcessor(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
+
+  val taskConf = taskContext
 
   private var msgCount : Long = 0
   private var scheduler : Cancellable = null
   private var snapShotWordCount : Long = 0
   private var snapShotTime : Long = 0
 
-  override def onStart(taskContext : TaskContext) : Unit = {
+  override def onStart(startTime : StartTime) : Unit = {
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount())
@@ -53,7 +54,7 @@ class SOLStreamProcessor(conf : Configs) extends TaskActor(conf : Configs) {
 
   def reportWordCount() : Unit = {
     val current : Long = System.currentTimeMillis()
-    LOG.info(s"Task $taskId Throughput: ${(msgCount - snapShotWordCount, (current - snapShotTime) / 1000)} (words, second)")
+    LOG.info(s"Task ${taskConf.taskId} Throughput: ${(msgCount - snapShotWordCount, (current - snapShotTime) / 1000)} (words, second)")
     snapShotWordCount = msgCount
     snapShotTime = current
   }

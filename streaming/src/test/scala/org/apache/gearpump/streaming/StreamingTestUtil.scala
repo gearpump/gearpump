@@ -19,23 +19,21 @@ package org.apache.gearpump.streaming
 
 import akka.actor.Props
 import akka.testkit.TestActorRef
-import org.apache.gearpump.cluster.AppMasterInfo
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.util.{Configs, Graph}
+import org.apache.gearpump.cluster.{AppMasterContext, AppMasterInfo, UserConfig}
+import org.apache.gearpump.util.Graph
 
 object StreamingTestUtil {
   private var executorId = 0
   val testUserName = "testuser"
 
   def startAppMaster(miniCluster: MiniCluster, appId: Int,
-                     app: AppDescription = AppDescription("test", classOf[AppMaster].getCanonicalName, Configs.empty, Graph.empty)): TestActorRef[AppMaster] = {
-    val config = Configs.empty.withAppDescription(app).withExecutorId(executorId).withAppId(appId).
-      withMasterProxy(miniCluster.mockMaster).withResource(Resource.empty)
-      .withAppMasterRegisterData(AppMasterInfo(miniCluster.worker))
-      .withUserName(testUserName)
-      .withAppjar(None)
-    val props = Props(classOf[AppMaster], config)
+                     app: AppDescription = AppDescription("test", classOf[AppMaster].getName, UserConfig.empty, Graph.empty)): TestActorRef[AppMaster] = {
+
+    val masterConf = AppMasterContext(appId, testUserName, executorId, Resource.empty,  None,miniCluster.mockMaster,AppMasterInfo(miniCluster.worker))
+
+    val props = Props(classOf[AppMaster], masterConf, app)
     executorId += 1
     miniCluster.launchActor(props).asInstanceOf[TestActorRef[AppMaster]]
   }

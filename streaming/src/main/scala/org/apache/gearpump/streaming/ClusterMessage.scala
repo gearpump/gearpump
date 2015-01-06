@@ -19,16 +19,14 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.Configs
 
 object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, config : Configs, taskClass: Class[_ <: Actor])
+  case class LaunchTask(taskId: TaskId, config : TaskContext, taskClass: Class[_ <: Actor])
   case class RestartTasks(timeStamp : TimeStamp)
-  case object GetStartClock
   case class StartClock(clock : TimeStamp)
   case object RestartClockService
   class RestartException extends Exception

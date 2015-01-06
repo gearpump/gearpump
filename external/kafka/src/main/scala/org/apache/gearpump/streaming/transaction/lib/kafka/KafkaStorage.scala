@@ -19,24 +19,23 @@
 package org.apache.gearpump.streaming.transaction.lib.kafka
 
 import com.twitter.bijection.Injection
-import kafka.admin.AdminUtils
-import kafka.common.{TopicAndPartition, TopicExistsException}
-import org.I0Itec.zkclient.ZkClient
+import kafka.common.TopicAndPartition
 import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.transaction.api.Storage
-import org.apache.gearpump.streaming.transaction.api.Storage.{Overflow, Underflow, StorageEmpty}
+import org.apache.gearpump.streaming.transaction.api.Storage.{Overflow, StorageEmpty, Underflow}
 import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
-import org.apache.gearpump.util.{Configs, LogUtil}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 object KafkaStorage {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaStorage])
 
-  def apply(conf: Configs, topicAndPartition: TopicAndPartition): KafkaStorage =  {
+  def apply(appId: Int, conf: UserConfig, topicAndPartition: TopicAndPartition): KafkaStorage =  {
     val config = conf.config
-    val id = conf.appId
+    val id = appId
     val topic = s"app${id}_${topicAndPartition.topic}_${topicAndPartition.partition}"
     val partition = 0
     val replicas = config.getStorageReplicas
@@ -60,7 +59,6 @@ class KafkaStorage(topic: String,
                    topicExists: Boolean,
                    producer: KafkaProducer[Array[Byte], Array[Byte]],
                    getMessageIterator: () => MessageIterator) extends Storage {
-  import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaStorage._
 
   val iterator = getMessageIterator()
   // already sorted by TimeStamp

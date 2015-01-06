@@ -18,16 +18,19 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import akka.actor.Cancellable
-import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
-import org.apache.gearpump.util.Configs
-import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeUnit
 
-class KafkaStreamProcessor(conf: Configs) extends TaskActor(conf) {
-  private val config = conf.config
+import akka.actor.Cancellable
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
+
+import scala.concurrent.duration.FiniteDuration
+
+class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig) extends TaskActor(taskContext, inputConfig) {
+
+  private val config = inputConfig.config
   private val topic = config.getProducerTopic
   private val kafkaProducer = config.getProducer[String, String]()
 
@@ -36,7 +39,7 @@ class KafkaStreamProcessor(conf: Configs) extends TaskActor(conf) {
   private var lastTime = System.currentTimeMillis()
   private var scheduler: Cancellable = null
 
-  override def onStart(taskContext : TaskContext): Unit = {
+  override def onStart(startTime : StartTime): Unit = {
     import context.dispatcher
     scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput())
@@ -57,7 +60,7 @@ class KafkaStreamProcessor(conf: Configs) extends TaskActor(conf) {
 
   private def reportThroughput() : Unit = {
     val current = System.currentTimeMillis()
-    LOG.info(s"Task $taskId; Throughput: ${(count - lastCount, (current - lastTime) / 1000)} (messages, second)")
+    LOG.info(s"Task ${taskContext.taskId}; Throughput: ${(count - lastCount, (current - lastTime) / 1000)} (messages, second)")
     lastCount = count
     lastTime = current
   }

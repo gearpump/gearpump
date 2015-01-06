@@ -26,17 +26,17 @@ import akka.cluster.{Cluster, Member, MemberStatus}
 import akka.contrib.datareplication.DataReplication
 import akka.contrib.pattern.{ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
-import org.apache.gearpump.cluster.{Master => MasterClass}
+import org.apache.gearpump.cluster.{ClusterConfig, Master => MasterClass}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
-import org.apache.gearpump.util.{LogUtil, Configs, Constants}
-import org.slf4j.{Logger, LoggerFactory}
+import org.apache.gearpump.util.{Constants, LogUtil}
+import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
 object Master extends App with ArgumentsParser {
-  var masterConfig = Configs.load.master
+  var masterConfig = ClusterConfig.load.master
   private val LOG: Logger = {
     LogUtil.loadConfiguration(masterConfig, ProcessType.MASTER)
     LogUtil.getLogger(getClass)
@@ -162,7 +162,7 @@ class MasterWatcher(role: String, masterProxy : ActorRef) extends Actor  with Ac
         context.become(waitForShutdown)
         self ! MasterWatcher.Shutdown
       } else {
-        context.actorOf(Props(classOf[MasterClass]), "master")
+        context.actorOf(Props(classOf[MasterClass]), MASTER)
         context.become(waitForClusterEvent)
       }
     }
