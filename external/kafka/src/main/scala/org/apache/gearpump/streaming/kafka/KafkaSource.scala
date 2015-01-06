@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.lib.kafka
+package org.apache.gearpump.streaming.kafka
 
 import kafka.common.TopicAndPartition
 import kafka.utils.ZkUtils
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.TaskContext
-import org.apache.gearpump.streaming.transaction.api.Storage.StorageEmpty
+import org.apache.gearpump.streaming.kafka.lib.{KafkaOffsetManager, KafkaConsumer}
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
+import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
 import org.apache.gearpump.streaming.transaction.api._
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.lib.kafka.grouper.KafkaGrouper
 import org.apache.gearpump.util.LogUtil
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
@@ -46,15 +46,14 @@ object KafkaSource {
     val consumer: KafkaConsumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
     val offsetManagers: Map[TopicAndPartition, KafkaOffsetManager] =
       topicAndPartitions.map(tp => tp -> KafkaOffsetManager(appId, conf, tp)).toMap
-    new KafkaSource(grouper, consumer, messageDecoder, offsetManagers)
+    new KafkaSource(consumer, messageDecoder, offsetManagers)
   }
 }
 
-class KafkaSource(grouper: KafkaGrouper,
-                  consumer: KafkaConsumer,
+class KafkaSource(consumer: KafkaConsumer,
                   messageDecoder: MessageDecoder,
                   offsetManagers: Map[TopicAndPartition, KafkaOffsetManager]) extends TimeReplayableSource {
-  import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaSource._
+  import org.apache.gearpump.streaming.kafka.KafkaSource._
 
   private var startTime: TimeStamp = 0L
 
@@ -63,30 +62,29 @@ class KafkaSource(grouper: KafkaGrouper,
     offsetManagers.foreach { case (tp, offsetManager) =>
       offsetManager.resolveOffset(this.startTime) match {
         case Success(offset) =>
-          LOG.info(s"set start offset to $offset for $tp")
-          consumer.setStartEndOffsets(tp, offset, None)
+          LOG.debug(s"set start offset to $offset for $tp")
+          consumer.setStartOffset(tp, offset)
         case Failure(StorageEmpty) =>
-          LOG.info(s"no previous TimeStamp stored")
+          LOG.debug(s"no previous TimeStamp stored")
         case Failure(e) => throw e
       }
     }
     consumer.start()
   }
 
-  override def pull(num: Int): List[Message] = {
+  override def pull(number: Int): List[Message] = {
     @annotation.tailrec
-    def pullHelper(i: Int, msgList: List[Message]): List[Message] = {
-      if (i >= num) {
+    def pullHelper(count: Int, msgList: List[Message]): List[Message] = {
+      if (count >= number) {
         msgList
       } else {
-        val srcMsg: Option[Message] = consumer.pollNextMessage.flatMap { kafkaMsg =>
+        val optMsg: Option[Message] = consumer.pollNextMessage.flatMap { kafkaMsg =>
           val msg = messageDecoder.fromBytes(kafkaMsg.msg)
           offsetManagers(kafkaMsg.topicAndPartition).filter(msg -> kafkaMsg.offset)
         }
-        if (srcMsg.isDefined) {
-          pullHelper(i + 1, msgList :+ srcMsg.get)
-        } else {
-          pullHelper(i, msgList)
+        optMsg match {
+          case Some(msg) => pullHelper(count + 1, msgList :+ msg)
+          case None      => pullHelper(count + 1, msgList)
         }
       }
     }

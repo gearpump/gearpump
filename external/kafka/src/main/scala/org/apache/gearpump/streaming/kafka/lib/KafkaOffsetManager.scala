@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.lib.kafka
+package org.apache.gearpump.streaming.kafka.lib
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.transaction.api.Storage.{Overflow, StorageEmpty, Underflow}
-import org.apache.gearpump.streaming.transaction.api.{OffsetManager, Storage}
+import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
+import org.apache.gearpump.streaming.transaction.api.{OffsetManager, OffsetStorage}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -36,8 +36,8 @@ object KafkaOffsetManager {
   }
 }
 
-class KafkaOffsetManager(storage: Storage) extends OffsetManager {
-  import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaOffsetManager._
+class KafkaOffsetManager(storage: OffsetStorage) extends OffsetManager {
+  import org.apache.gearpump.streaming.kafka.lib.KafkaOffsetManager._
 
   var maxTime: TimeStamp  = 0L
 
@@ -50,15 +50,13 @@ class KafkaOffsetManager(storage: Storage) extends OffsetManager {
 
   override def resolveOffset(time: TimeStamp): Try[Long] = {
     storage.lookUp(time) match {
-      case Success(data) => Injection.invert[Long, Array[Byte]](data)
-      case Failure(Overflow(max)) => {
+      case Success(offset) => Injection.invert[Long, Array[Byte]](offset)
+      case Failure(Overflow(max)) =>
         LOG.warn(s"start time larger than the max stored TimeStamp; set to max offset")
         Injection.invert[Long, Array[Byte]](max)
-      }
-      case Failure(Underflow(min)) => {
+      case Failure(Underflow(min)) =>
         LOG.warn(s"start time less than the min stored TimeStamp; set to min offset")
         Injection.invert[Long, Array[Byte]](min)
-      }
       case Failure(StorageEmpty) => Failure(StorageEmpty)
       case Failure(e) => throw e
     }

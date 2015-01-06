@@ -23,12 +23,13 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
-import org.apache.gearpump.streaming.transaction.lib.kafka.KafkaConfig._
-
+import org.apache.gearpump.streaming.task.StartTime
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
+import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import scala.concurrent.duration.FiniteDuration
 
-class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig) extends TaskActor(taskContext, inputConfig) {
+class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
+  extends TaskActor(taskContext, inputConfig) {
 
   private val config = inputConfig.config
   private val topic = config.getProducerTopic
