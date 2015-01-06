@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.streaming
 
-import java.io.File
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
@@ -263,11 +262,9 @@ class AppMaster(apppContext : AppMasterContextInterface, app : Application)  ext
           //Launch task
           LOG.info("Sending Launch Task to executor: " + executor.toString())
 
-          val executorByPath = context.actorSelection("../app_0_executor_0")
+          val taskContext = TaskContext(taskId, executorId, appId, self, dag)
 
-          val taskConf = TaskContext(taskId, executorId, appId, self, dag)
-
-          executor ! LaunchTask(taskId, taskConf, ActorUtil.loadClass(taskDescription.taskClass))
+          executor ! LaunchTask(taskId, taskContext, ActorUtil.loadClass(taskDescription.taskClass))
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
           launchTask(remainResources subtract usedResource)

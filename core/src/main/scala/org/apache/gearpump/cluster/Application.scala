@@ -74,6 +74,9 @@ trait AppMasterContextInterface {
   val registerData : AppMasterRegisterData
 }
 
+
+case class BaseAppDescription(name : String, appMaster : String, conf: UserConfig) extends Application
+
 case class AppMasterContext(appId : Int, username : String, masterExecutorId : Int,
                             resource : Resource,  appJar : Option[AppJar],
                             masterProxy : ActorRef,  registerData : AppMasterRegisterData)

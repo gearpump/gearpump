@@ -20,7 +20,7 @@ package org.apache.gearpump.cluster.client
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
@@ -80,6 +80,11 @@ class ClientContext(masters: Iterable[HostPort]) {
   def shutdown(appId : Int) : Unit = {
     val client = new MasterClient(master)
     client.shutdownApplication(appId)
+  }
+
+  def resolveAppID(appId: Int) : ActorRef = {
+    val client = new MasterClient(master)
+    client.resolveAppId(appId)
   }
 
   def close() : Unit = {
