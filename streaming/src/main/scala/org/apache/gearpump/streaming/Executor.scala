@@ -62,10 +62,10 @@ class Executor(executorContext: ExecutorContextInterface, userConf : UserConfig)
     }
 
   def appMasterMsgHandler : Receive = {
-    case LaunchTask(taskId, config, taskClass) => {
+    case LaunchTask(taskId, taskContext, taskClass) => {
       LOG.info(s"Launching Task $taskId for app: ${appId}, $taskClass")
       val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
-      val task = context.actorOf(Props(taskClass, config, userConf).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
+      val task = context.actorOf(Props(taskClass, taskContext, userConf).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }
     case TaskLocations(locations) =>
       val result = locations.flatMap { kv =>

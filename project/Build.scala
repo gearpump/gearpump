@@ -149,9 +149,8 @@ object Build extends sbt.Build {
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
-
-  ).dependsOn(core, streaming, rest, external_kafka).aggregate(core, streaming, fsio, examples_kafka,
-      sol, wordcount, rest, external_kafka, examples)
+  ).dependsOn(core, streaming, rest, external_kafka, distributedshell).aggregate(core, streaming, fsio, examples_kafka,
+      sol, wordcount, rest, external_kafka, examples, distributedshell)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -254,6 +253,12 @@ object Build extends sbt.Build {
           "org.webjars" % "swagger-ui" % swaggerUiVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
         )
-      ) 
+      )
   ) dependsOn(streaming % "test->test;compile->compile")
+
+  lazy val distributedshell = Project(
+    id = "gearpump-experiments-distributedshell",
+    base = file("experiments/distributedshell"),
+    settings = commonSettings
+  ) dependsOn(core % "test->test;compile->compile")
 }

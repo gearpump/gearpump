@@ -43,6 +43,10 @@ import org.apache.gearpump.cluster.UserConfig._
   def getAnyRef(key: String) : Option[AnyRef]  = {
     config.getAnyRef(key)
   }
+
+  def withConfig(other: UserConfig) = {
+    UserConfig(this.config ++ other.config)
+  }
 }
 
 object UserConfig {
