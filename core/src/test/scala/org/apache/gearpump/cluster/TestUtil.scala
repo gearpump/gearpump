@@ -17,13 +17,9 @@
  */
 package org.apache.gearpump.cluster
 
-import java.net.ServerSocket
-
 import akka.actor._
 import akka.testkit.TestActorRef
 import com.typesafe.config.ConfigValueFactory
-
-import scala.util.Try
 
 object TestUtil {
   val rawConfig = ClusterConfig.load("test.conf")

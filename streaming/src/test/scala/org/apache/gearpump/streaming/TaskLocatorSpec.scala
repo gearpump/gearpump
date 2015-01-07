@@ -17,8 +17,41 @@
  */
 package org.apache.gearpump.streaming
 
+import akka.actor.Actor
 import org.scalatest.{Matchers, WordSpec}
 
-class TaskLocatorSpec extends WordSpec with Matchers {
+import scala.collection.mutable.ArrayBuffer
 
+class TaskLocatorSpec extends WordSpec with Matchers {
+  val resource = getClass.getClassLoader.getResource("tasklocation.conf").getPath
+  System.setProperty("config.file", resource)
+  val taskDescription1 = TaskDescription("org.apache.gearpump.streaming.TestTask1", 4)
+  val taskDescription2 = TaskDescription("org.apache.gearpump.streaming.TestTask2", 2)
+
+  "TaskLocator" should {
+    "locate task properly according user's configuration" in {
+      val taskLocator = new TaskLocator()
+      assert(taskLocator.locateTask(taskDescription2) == WorkerLocality(1))
+      assert(taskLocator.locateTask(taskDescription2) == WorkerLocality(1))
+      assert(taskLocator.locateTask(taskDescription2) == NonLocality)
+      val localities = ArrayBuffer[WorkerLocality]()
+      for (i <- 0 until 4) {
+        localities.append(taskLocator.locateTask(taskDescription1).asInstanceOf[WorkerLocality])
+      }
+      localities.sortBy(_.workerId)
+      assert(localities(0) == WorkerLocality(2))
+      assert(localities(1) == WorkerLocality(2))
+      assert(localities(2) == WorkerLocality(1))
+      assert(localities(3) == WorkerLocality(1))
+      assert(taskLocator.locateTask(taskDescription1) == NonLocality)
+    }
+  }
+}
+
+class TestTask1 extends Actor {
+  override def receive: Actor.Receive = null
+}
+
+class TestTask2 extends Actor {
+  override def receive: Receive = null
 }

@@ -42,7 +42,9 @@ class TaskSet(appId : Int,  dag : DAG) {
       LOG.debug(s"locality : $locality, task queue size : ${tasks.size}")
       locality match {
         case locality: WorkerLocality =>
-          resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size), locality.workerId, relaxation = Relaxation.SPECIFICWORKER)
+          if(tasks.size > 0) {
+            resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size), locality.workerId, relaxation = Relaxation.SPECIFICWORKER)
+          }
         case _ =>
           if(tasks.size > 0){
             if(fromOneWorker){
