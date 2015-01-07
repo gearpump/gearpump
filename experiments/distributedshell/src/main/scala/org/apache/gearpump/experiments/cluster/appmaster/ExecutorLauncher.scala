@@ -26,7 +26,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{UserConfig, AppJar, ExecutorContext}
 import org.apache.gearpump.experiments.cluster.executor.DefaultExecutor
-import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
+import org.apache.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -52,9 +52,10 @@ class ExecutorLauncher (executorClass: Class[_ <: DefaultExecutor], worker : Act
   def waitForActorSystemToStart : Receive = {
     case RegisterActorSystem(systemPath) =>
       timeout.cancel()
+      sender ! ActorSystemRegistered(worker)
       LOG.info(s"Received RegisterActorSystem $systemPath for app master")
       val executorProps = Props(executorClass, executorConfig, userConf).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
-      sender ! BindLifeCycle(worker)
+
       context.parent ! LaunchExecutorActor(executorProps, executorConfig.executorId, sender())
       context.stop(self)
     case LaunchActorSystemTimeOut =>

@@ -42,9 +42,14 @@ object Local extends App with ArgumentsParser {
           "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
           "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(2)))
 
-  val config = parse(args)
 
-  def start() = {
+
+  def start() : Unit = {
+    val config = parse(args)
+    if (null == config) {
+      return
+    }
+
     local(config.getString("ip"),  config.getInt("port"), config.getInt("workernum"), config.getBoolean("sameprocess"))
   }
 

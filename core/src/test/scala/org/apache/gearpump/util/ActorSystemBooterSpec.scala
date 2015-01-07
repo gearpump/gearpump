@@ -21,7 +21,7 @@ package org.apache.gearpump.util
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, BindLifeCycle, CreateActor, RegisterActorSystem}
+import org.apache.gearpump.util.ActorSystemBooter._
 import org.apache.gearpump.util.ActorSystemBooterSpec._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
@@ -34,12 +34,12 @@ class ActorSystemBooterSpec extends FlatSpec with Matchers with MockitoSugar {
     boot.shutdown
   }
 
-  "ActorSystemBooter" should "terminate itself when binded actor dies" in {
+  "ActorSystemBooter" should "terminate itself when parent actor dies" in {
     val boot = bootSystem()
     boot.prob.expectMsgType[RegisterActorSystem]
 
     val dummy = boot.host.actorOf(Props(classOf[Dummy]), "dummy")
-
+    boot.prob.reply(ActorSystemRegistered(boot.prob.ref))
     boot.prob.reply(BindLifeCycle(dummy))
     boot.host.stop(dummy)
     val terminated = retry(5)(boot.bootedSystem.isTerminated)
@@ -50,11 +50,11 @@ class ActorSystemBooterSpec extends FlatSpec with Matchers with MockitoSugar {
   "ActorSystemBooter" should "create new actor" in {
     val boot = bootSystem()
     boot.prob.expectMsgType[RegisterActorSystem]
-
-    boot.prob.reply(CreateActor(classOf[AcceptThreeArguments].getName, "three", 1, 2, 3))
+    boot.prob.reply(ActorSystemRegistered(boot.prob.ref))
+    boot.prob.reply(CreateActor(Props(classOf[AcceptThreeArguments], 1, 2, 3), "three"))
     boot.prob.expectMsgType[ActorCreated]
 
-    boot.prob.reply(CreateActor(classOf[AcceptZeroArguments].getName, "zero"))
+    boot.prob.reply(CreateActor(Props(classOf[AcceptZeroArguments]), "zero"))
     boot.prob.expectMsgType[ActorCreated]
 
     boot.shutdown

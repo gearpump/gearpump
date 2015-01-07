@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.util
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{TimeoutException, TimeUnit}
 
 import akka.actor._
 import com.typesafe.config.Config
@@ -60,11 +60,18 @@ object ActorSystemBooter  {
   }
 
   case class BindLifeCycle(actor : ActorRef)
-  case class CreateActor(clazz : String, name : String, args : scala.Any*)
+  case class CreateActor(prop : Props, name : String)
   case class ActorCreated(actor : ActorRef, name : String)
-  case class ActorCreationFailed(name : String, reason: Throwable)
+  case class CreateActorFailed(name : String, reason: Throwable)
 
   case class RegisterActorSystem(systemPath : String)
+
+  /**
+   * This actor system will watch for parent,
+   * If parent dies, this will also die
+   */
+  case class ActorSystemRegistered(bindLifeWith: ActorRef)
+  case class RegisterActorSystemFailed(reason: Throwable)
 
   object RegisterActorSystemTimeOut
 
@@ -78,30 +85,35 @@ object ActorSystemBooter  {
     reportBackActor ! RegisterActorSystem(ActorUtil.getSystemAddress(context.system).toString)
 
     implicit val executionContext = context.dispatcher
-    val timeout = context.system.scheduler.scheduleOnce(Duration(25, TimeUnit.SECONDS), self, RegisterActorSystemTimeOut)
+    val timeout = context.system.scheduler.scheduleOnce(Duration(25, TimeUnit.SECONDS), self, RegisterActorSystemFailed(new TimeoutException))
 
-    def receive : Receive =  {
-      case RegisterActorSystemTimeOut =>
-        LOG.error("RegisterActorSystemTimeOut..., killing myself... ")
-        context.stop(self)
-      //Bind life cycle with sender, if sender dies, the daemon dies, then the system dies
-      case BindLifeCycle(actor) =>
+    context.become(waitForRegisterResult)
+
+    def receive : Receive = null
+
+    def waitForRegisterResult : Receive = {
+      case ActorSystemRegistered(parent) =>
         timeout.cancel()
+        context.watch(parent)
+        context.become(waitCommand)
+      case RegisterActorSystemFailed(ex) =>
+        LOG.error("RegisterActorSystemFailed", ex)
+        timeout.cancel()
+        context.stop(self)
+    }
+
+    def waitCommand : Receive = {
+      case BindLifeCycle(actor) =>
         LOG.info(s"ActorSystem $name Binding life cycle with actor: $actor")
         context.watch(actor)
-      // Send PoisonPill to the daemon to kill the actorsystem
-      case create @ CreateActor(clazz, name, args @ _*) =>
-        timeout.cancel()
-        LOG.info(s"creating actor $name with class name '$clazz'")
-        val classZ = Try(Class.forName(clazz))
-        classZ match {
-          case Success(clazzType) =>
-            val props = Props(clazzType, args : _*)
-
-            val actor = context.actorOf(props, name)
+      case create @ CreateActor(props : Props, name : String) =>
+        LOG.info(s"creating actor $name")
+        val actor = Try(context.actorOf(props, name))
+        actor match {
+          case Success(actor) =>
             sender ! ActorCreated(actor, name)
           case Failure(e) =>
-            sender ! ActorCreationFailed(clazz, e)
+            sender ! CreateActorFailed(props.clazz.getName, e)
         }
       case PoisonPill =>
         context.stop(self)

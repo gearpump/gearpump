@@ -19,7 +19,7 @@
 package org.apache.gearpump.cluster
 
 import java.io.File
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{TimeoutException, TimeUnit}
 
 import akka.actor._
 import akka.cluster.Cluster
@@ -32,16 +32,18 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.cluster.appmaster.AppMasterDaemon
+import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Resource, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter._
+import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.util.{Failure, Success}
+import scala.concurrent.duration.{Duration}
+import scala.util.{Try, Failure, Success}
 /**
  * AppManager is dedicated part of Master to manager applicaitons
  */
@@ -49,7 +51,7 @@ import scala.util.{Failure, Success}
 /**
  * This state will be persisted across the masters.
  */
-class ApplicationState(val appId : Int, val attemptId : Int, val app : Application, val jar: Option[AppJar], state : Any) extends Serializable {
+case class ApplicationState(val appId : Int, val attemptId : Int, val app : Application, val jar: Option[AppJar], val username : String, state : Any) extends Serializable {
 
   override def equals(other: Any): Boolean = {
     other match {
@@ -77,29 +79,24 @@ private[cluster] class AppManager extends Actor with Stash with TimeOutScheduler
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  implicit val timeout = Constants.FUTURE_TIMEOUT
-
-  private var master: ActorRef = null
-  private var executorCount: Int = 0
-  private var appId: Int = 0
-
   private val systemconfig = context.system.settings.config
-
-  def receive: Receive = null
-
-  //from appid to appMaster data
-  private var appMasterRegistry = Map.empty[Int, (ActorRef, AppMasterInfo)]
-  private var clientRegistry = Map.empty[Int, ActorRef]
-
+  implicit val timeout = FUTURE_TIMEOUT
   private val STATE = "masterstate"
   private val TIMEOUT = Duration(5, TimeUnit.SECONDS)
   private val replicator = DataReplication(context.system).replicator
   implicit val cluster = Cluster(context.system)
 
+  private var executorCount: Int = 0
+  private var appId: Int = 0
+
+  //from appid to appMaster data
+  private var appMasterRegistry = Map.empty[Int, (ActorRef, AppMasterInfo)]
+  private var clientRegistry = Map.empty[Int, ActorRef]
+
   //TODO: We can use this state for appmaster HA to recover a new App master
   private var state: Set[ApplicationState] = Set.empty[ApplicationState]
 
-  val masterClusterSize = Math.max(1, systemconfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).size())
+  val masterClusterSize = Math.max(1, systemconfig.getStringList(GEARPUMP_CLUSTER_MASTERS).size())
 
   //optimize write path, we can tolerate one master down for recovery.
   val writeQuorum = Math.min(2, masterClusterSize / 2 + 1)
@@ -114,6 +111,8 @@ private[cluster] class AppManager extends Actor with Stash with TimeOutScheduler
   override def postStop(): Unit = {
     replicator ! Unsubscribe(STATE, self)
   }
+
+  def receive: Receive = null
 
   LOG.info("Recovering application state....")
   context.become(waitForMasterState)
@@ -141,8 +140,10 @@ private[cluster] class AppManager extends Actor with Stash with TimeOutScheduler
   }
 
   def receiveHandler = {
-    System.out.println("Application Manager started. Ready for application submission...")
-    LOG.info("Application Manager started. Ready for application submission...")
+    val msg = "Application Manager started. Ready for application submission..."
+    System.out.println(msg)
+    LOG.info(msg)
+
     masterHAMsgHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse workerMessage orElse appDataStoreService orElse terminationWatch
   }
 
@@ -153,24 +154,25 @@ private[cluster] class AppManager extends Actor with Stash with TimeOutScheduler
   }
 
   def clientMsgHandler: Receive = {
-    case submitApp@SubmitApplication(app, jar, username) =>
+    case SubmitApplication(app, jar, username) =>
       LOG.info(s"AppManager Submiting Application $appId...")
-      val appWatcher = context.actorOf(Props(classOf[AppMasterStarter], appId, app, jar, username), appId.toString)
+      val appLauncher = context.actorOf(Props(new AppMasterLauncher(appId, app, jar, username, context.parent)), appId.toString)
 
       LOG.info(s"Persist master state writeQuorum: $writeQuorum, timeout: $TIMEOUT...")
-      val appState = new ApplicationState(appId, 0, app, jar, null)
+      val appState = new ApplicationState(appId, 0, app, jar, username, null)
       replicator ! Update(STATE, GSet(), WriteTo(writeQuorum), TIMEOUT)(_ + appState)
       clientRegistry += appId -> sender
       appId += 1
+
     case ShutdownApplication(appId) =>
       LOG.info(s"App Manager Shutting down application $appId")
       val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
       Option(info) match {
         case Some(info) =>
           val worker = info.worker
-          LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $masterExecutorId")
+          LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $executorId")
           cleanApplicationData(appId)
-          val shutdown = ShutdownExecutor(appId, masterExecutorId, s"AppMaster $appId shutdown requested by master...")
+          val shutdown = ShutdownExecutor(appId, executorId, s"AppMaster $appId shutdown requested by master...")
           sendMsgWithTimeOutCallBack(worker, shutdown, 30, shutDownExecutorTimeOut())
           sender ! ShutdownApplicationResult(Success(appId))
         case None =>
@@ -178,6 +180,7 @@ private[cluster] class AppManager extends Actor with Stash with TimeOutScheduler
           LOG.error(errorMsg)
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
+
     case ReplayFromTimestampWindowTrailingEdge(appId) =>
       LOG.info(s"App Manager Replaying application $appId")
       val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
@@ -191,6 +194,7 @@ private[cluster] class AppManager extends Actor with Stash with TimeOutScheduler
           LOG.error(errorMsg)
           sender ! ReplayApplicationResult(Failure(new Exception(errorMsg)))
       }
+
     case ResolveAppId(appId) =>
       LOG.info(s"App Manager Resolving appId $appId to ActorRef")
       val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
@@ -319,10 +323,10 @@ private[cluster] class AppManager extends Actor with Stash with TimeOutScheduler
   }
 
   def selfMsgHandler: Receive = {
-    case RecoverApplication(applicationStatus) =>
-      val appId = applicationStatus.appId
+    case RecoverApplication(state) =>
+      val appId = state.appId
       LOG.info(s"AppManager Recovering Application $appId...")
-      context.actorOf(Props(classOf[AppMasterStarter], appId, applicationStatus.app, applicationStatus.jar), appId.toString)
+      context.actorOf(Props(new AppMasterLauncher(appId, state.app, state.jar, state.username, context.parent)), appId.toString)
   }
 
   case class RecoverApplication(applicationStatus : ApplicationState)
@@ -338,94 +342,74 @@ private[cluster] class AppManager extends Actor with Stash with TimeOutScheduler
 case class AppMasterInfo(worker : ActorRef) extends AppMasterRegisterData
 
 private[cluster] object AppManager {
-  private val masterExecutorId = -1
 
-  /**
-   * Start and watch Single AppMaster's lifecycle
-   */
-  class AppMasterStarter(appId : Int, app : Application, jar: Option[AppJar], username : String) extends Actor {
+  val executorId : Int = APPMASTER_DEFAULT_EXECUTOR_ID
+
+  class AppMasterLauncher(appId : Int, app : Application, jar: Option[AppJar], username : String, master : ActorRef) extends Actor {
     private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
+    val scheduler = context.system.scheduler
     val systemConfig = context.system.settings.config
-    val waitForAppMasterTimeout = 15
+    val TIMEOUT = Duration(15, TimeUnit.SECONDS)
+    val appMaster = app.appMaster
+    val userConfig = app.conf
 
-    val master = context.actorSelection("../../")
-    master ! RequestResource(appId, ResourceRequest(Resource(1)))
     LOG.info(s"AppManager asking Master for resource for app $appId...")
+    master ! RequestResource(appId, ResourceRequest(Resource(1)))
 
     def receive : Receive = waitForResourceAllocation
 
     def waitForResourceAllocation : Receive = {
       case ResourceAllocated(allocations) =>
-        LOG.info(s"Resource allocated for appMaster $app Id")
-        val allocation = allocations(0)
+        LOG.info(s"Resource allocated for appMaster $appId")
+        val ResourceAllocation(resource, worker, workerId) = allocations(0)
+        val appMasterContext = AppMasterContext(appId, username, executorId, resource, jar, null, AppMasterInfo(worker))
 
-        val jvmSetting = Util.resolveJvmSetting(app.conf, systemConfig)
-
-        val stubForMasterProxy = null
-        val appConf = AppMasterContext(appId, username, masterExecutorId, allocation.resource, jar, stubForMasterProxy, AppMasterInfo(allocation.worker))
-
-        LOG.info(s"Try to launch a executor for app Master on ${allocation.worker} for app $appId")
-        val name = ActorUtil.actorNameForExecutor(appId, masterExecutorId)
+        LOG.info(s"Try to launch a executor for app Master on ${worker} for app $appId")
+        val name = ActorUtil.actorNameForExecutor(appId, executorId)
         val selfPath = ActorUtil.getFullPath(context.system, self.path)
 
-        val executionContext = ExecutorJVMConfig(jvmSetting.appMater.classPath ,jvmSetting.appMater.vmargs,
+        val jvmSetting = Util.resolveJvmSetting(app.conf, systemConfig).appMater
+        val executorJVM = ExecutorJVMConfig(jvmSetting.classPath ,jvmSetting.vmargs,
           classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
 
-        allocation.worker ! LaunchExecutor(appId, masterExecutorId, allocation.resource, executionContext)
-        context.become(waitForActorSystemToStart(allocation.worker, appConf))
+        worker ! LaunchExecutor(appId, executorId, resource, executorJVM)
+        context.become(waitForActorSystemToStart(worker, appMasterContext, app.conf))
     }
 
-    def waitForActorSystemToStart(worker : ActorRef, masterConfig : AppMasterContext) : Receive = {
+    def waitForActorSystemToStart(worker : ActorRef, appContext : AppMasterContext, user : UserConfig) : Receive = {
       case ExecutorLaunchRejected(reason, resource, ex) =>
         LOG.error(s"Executor Launch failed reason：$reason", ex)
         LOG.info(s"reallocate resource $resource to start appmaster")
         master ! RequestResource(appId, ResourceRequest(resource))
+        context.become(waitForResourceAllocation)
       case RegisterActorSystem(systemPath) =>
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
-        //bind lifecycle with worker
-        sender ! BindLifeCycle(worker)
-        val masterAddress = systemConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala.map { address =>
-          val hostAndPort = address.split(":")
-          HostPort(hostAndPort(0), hostAndPort(1).toInt)
-        }
-        LOG.info(s"Create master proxy on target actor system $systemPath")
-        sender ! CreateActor(classOf[MasterProxy].getName, "masterproxy", masterAddress)
-        context.become(waitForMasterProxyToStart(worker, masterConfig))
-    }
+        sender ! ActorSystemRegistered(worker)
 
-    def waitForMasterProxyToStart(worker: ActorRef, masterConfig : AppMasterContext) : Receive = {
-      case ActorCreated(masterProxy, "masterproxy") =>
-        val conf = masterConfig.copy(masterProxy = masterProxy)
-        LOG.info(s"Master proxy is created, create appmaster...")
-        sender ! CreateActor(app.appMaster, "appmaster", conf, app)
+        val masterAddress = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS).asScala.map(HostPort(_))
+        sender ! CreateActor(Props(classOf[AppMasterDaemon], masterAddress, app, appContext), s"appdaemon$appId")
+
         import context.dispatcher
-        val appMasterTimeout = context.system.scheduler.scheduleOnce(
-          FiniteDuration(waitForAppMasterTimeout, TimeUnit.SECONDS), self,
-          ActorCreationFailed(app.appMaster, new Exception(s"Timeout creating AppMaster. Took longer than $waitForAppMasterTimeout")))
-        context.become(waitForAppMasterToStart(worker, Option(appMasterTimeout)))
+        val appMasterTimeout = scheduler.scheduleOnce(TIMEOUT, self,
+          CreateActorFailed(app.appMaster, new TimeoutException))
+        context.become(waitForAppMasterToStart(worker))
     }
 
-    def waitForAppMasterToStart(worker: ActorRef, cancellable: Option[Cancellable]) : Receive = {
-      case ActorCreated(appMaster, "appmaster") =>
-        LOG.info(s"AppMaster is created")
-        cancellable match {
-          case Some(c) =>
-            c.cancel
-          case None =>
-        }
-        //my job has completed. kill myself
-        self ! PoisonPill
-      case ActorCreationFailed(name, reason) =>
-        worker ! ShutdownExecutor(appId, masterExecutorId, reason.getMessage)
+    def waitForAppMasterToStart(worker : ActorRef) : Receive = {
+      case ActorCreated(appMaster, _) =>
+        LOG.info(s"AppMaster is created, stopping myself...")
+        context.stop(self)
+      case CreateActorFailed(name, reason) =>
+        worker ! ShutdownExecutor(appId, executorId, reason.getMessage)
         context.parent ! InvalidAppMaster(appId, app.appMaster, reason)
-        cancellable match {
-          case Some(c) =>
-            c.cancel
-          case None =>
-        }
-        //my job has completed. kill myself
-        self ! PoisonPill
+        context.stop(self)
+    }
+  }
+
+  object AppMasterLauncher {
+    def props(appId : Int, app : Application, jar: Option[AppJar], username : String, master : ActorRef) = {
+      Props(new AppMasterLauncher(appId, app, jar, username, master))
     }
   }
 }

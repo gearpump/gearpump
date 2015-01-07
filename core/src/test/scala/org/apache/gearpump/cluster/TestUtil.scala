@@ -49,4 +49,12 @@ object TestUtil {
 
     def shutDown() = system.shutdown()
   }
+
+  class DummyAppMaster(context: AppMasterContextInterface, app: Application) extends ApplicationMaster {
+    context.masterProxy ! (context, app)
+
+    def receive : Receive = null
+  }
+
+  case class DummyApplication(name: String = "dummy", conf: UserConfig = UserConfig(Map("key"->"value")), appMaster: String = classOf[DummyAppMaster].getName) extends  Application
 }

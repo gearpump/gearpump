@@ -75,7 +75,9 @@ object Constants {
   val HADOOP_CONF = "hadoopConf"
 
   //the time out for Future
-  val FUTURE_TIMEOUT = akka.util.Timeout(5, TimeUnit.SECONDS)
+  val FUTURE_TIMEOUT = akka.util.Timeout(15, TimeUnit.SECONDS)
+
+  val APPMASTER_DEFAULT_EXECUTOR_ID = -1
 
   val NETTY_BUFFER_SIZE = "gearpump.netty.buffer-size"
   val NETTY_MAX_RETRIES = "gearpump.netty.max-retries"
