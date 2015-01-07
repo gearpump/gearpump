@@ -191,25 +191,46 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn(streaming % "provided", external_kafka  % "provided")
+  ) dependsOn(core % "test->test", streaming % "provided", external_kafka  % "provided")
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
     base = file("examples/fsio"),
-    settings = commonSettings
-  ) dependsOn (streaming % "provided")
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        )
+      )
+  ) dependsOn (core % "test->test", streaming % "provided")
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",
     base = file("examples/sol"),
-    settings = commonSettings
-  ) dependsOn (streaming % "provided")
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        )
+      )
+  ) dependsOn (core % "test->test", streaming % "provided")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
     base = file("examples/wordcount"),
-    settings = commonSettings
-  ) dependsOn (streaming % "provided")
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        )
+      )
+  ) dependsOn (core % "test->test", streaming % "provided")
 
   lazy val examples = Project(
     id = "gearpump-examples",
