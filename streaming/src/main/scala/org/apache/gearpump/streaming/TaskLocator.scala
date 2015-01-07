@@ -19,6 +19,7 @@ package org.apache.gearpump.streaming
 
 import akka.actor.Actor
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.util.ActorUtil
 
 import scala.collection.mutable
@@ -29,7 +30,7 @@ class TaskLocator {
   initTasks()
 
   def initTasks() : Unit = {
-    val taskLocations : Array[(TaskDescription, Locality)] = ConfigsHelper.loadUserAllocation(ConfigFactory.empty())
+    val taskLocations : Array[(TaskDescription, Locality)] = ConfigsHelper.loadUserAllocation(ClusterConfig.load.application)
     for(taskLocation <- taskLocations){
       val (taskDescription, locality) = taskLocation
       val localityQueue = userScheduledTask.getOrElse(ActorUtil.loadClass(taskDescription.taskClass), mutable.Queue.empty[Locality])

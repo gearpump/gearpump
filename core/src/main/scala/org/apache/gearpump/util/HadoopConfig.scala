@@ -29,8 +29,9 @@ class HadoopConfig(config: Map[String, _]) extends UserConfig(config) {
   override def withValue(key: String, value: Any) = {
     HadoopConfig(config + (key->value))
   }
+
   def withHadoopConf(conf : Configuration) = withValue(HADOOP_CONF, HadoopConfig.serializeHadoopConf(conf))
-  def hadoopConf : Configuration = HadoopConfig.deserializeHadoopConf(config.getAnyRef(HADOOP_CONF).asInstanceOf[Array[Byte]])
+  def hadoopConf : Configuration = HadoopConfig.deserializeHadoopConf(config.getAnyRef(HADOOP_CONF).get.asInstanceOf[Array[Byte]])
 }
 
 object HadoopConfig {
