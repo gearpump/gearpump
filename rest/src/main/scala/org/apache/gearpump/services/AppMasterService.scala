@@ -21,9 +21,10 @@ package org.apache.gearpump.services
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
 import com.wordnik.swagger.annotations._
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail, AppMasterDataDetailRequest, AppMasterDataRequest}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataRequest}
 import org.apache.gearpump.util.Constants
 import spray.http.StatusCodes
+import spray.routing
 import spray.routing.HttpService
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -57,21 +58,14 @@ trait AppMasterService extends HttpService {
     new ApiResponse(code = 404, message = "AppMaster not found"),
     new ApiResponse(code = 400, message = "Invalid ID supplied")
   ))
-  def readRoute = get { 
+  def readRoute: routing.Route = get {
      path("appmaster"/IntNumber) { appId => {
        parameter("detail" ? "false") { detail =>
          val detailValue = Try(detail.toBoolean).getOrElse(false)
-         detailValue match {
-           case true =>
-             onComplete((master ? AppMasterDataDetailRequest(appId)).asInstanceOf[Future[AppMasterDataDetail]]) {
-               case Success(value: AppMasterDataDetail) => complete(value)
-               case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-             }
-           case false =>
-             onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
-               case Success(value: AppMasterData) => complete(value)
-               case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-             }
+         onComplete((master ? AppMasterDataRequest(appId, detailValue))
+           .asInstanceOf[Future[AppMasterData]]) {
+           case Success(value: AppMasterData) => complete(value)
+           case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
          }
        }
      }

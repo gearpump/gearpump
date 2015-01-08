@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.ActorRef
+import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 
 import scala.util.Try
@@ -63,8 +64,14 @@ object AppMasterToMaster {
   case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resource: Resource, registerData : AppMasterRegisterData)
   case class InvalidAppMaster(appId: Int, appMaster: String, reason: Throwable)
   case class RequestResource(appId: Int, request: ResourceRequest)
+
   case class SaveAppData(appId: Int, key: String, value: Any)
+  case object AppDataSaved
+  case object SaveAppDataFailed
+
   case class GetAppData(appId: Int, key: String)
+  case class GetAppDataResult(key: String, value: Any)
+
   case object GetAllWorkers
 }
 
@@ -81,16 +88,14 @@ object MasterToAppMaster {
   }
   case class AppMasterRegistered(appId: Int, master : ActorRef)
   case object ShutdownAppMaster
-  case class AppMasterData(appId: Int, appData: AppMasterInfo)
-  case class AppMasterDataRequest(appId: Int)
+  case class AppMasterData(appId: Int, appData: AppMasterRuntimeInfo)
+  case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
   case class AppMastersData(appMasters: List[AppMasterData])
   case object AppMastersDataRequest
-  case class AppMasterDataDetailRequest(appId: Int)
-  case class AppMasterDataDetail(appId: Int, appDescription: Application)
+
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
-  case class GetAppDataResult(key: String, value: Any)
+
   case class WorkerList(workers: List[Int])
-  case object AppDataReceived
 }
 
 object AppMasterToWorker {

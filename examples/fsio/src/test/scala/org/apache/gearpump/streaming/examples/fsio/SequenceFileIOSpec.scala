@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.examples.fsio
 
 import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, SubmitApplication}
-import org.apache.gearpump.cluster.MasterHarness
+import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.util.Util
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
@@ -35,6 +35,8 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
   after {
     shutdownActorSystem()
   }
+
+  override def config = TestUtil.DEFAULT_CONFIG
 
   property("SequenceFileIO should succeed to submit application with required arguments") {
     val requiredArgs = Array(

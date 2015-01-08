@@ -170,14 +170,6 @@ class AppMaster(appContext : AppMasterContextInterface, app : Application)  exte
   }
 
   def appManagerMsgHandler: Receive = {
-    case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
-      val appId = appMasterDataDetailRequest.appId
-      LOG.info(s"Received AppMasterDataDetailRequest $appId")
-      appId match {
-        case appId =>
-          LOG.info(s"Sending back AppMasterDataDetailRequest $appId")
-          sender ! AppMasterDataDetail(appId = appId, appDescription = app)
-      }
     case ReplayFromTimestampWindowTrailingEdge =>
       if(!restarting){
         (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map { clock =>

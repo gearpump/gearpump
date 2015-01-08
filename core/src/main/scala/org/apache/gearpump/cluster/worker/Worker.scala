@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.cluster.worker
 
 import java.io.File
 import java.net.URL
@@ -28,7 +28,6 @@ import akka.pattern.pipe
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.MasterToWorker._
-import org.apache.gearpump.cluster.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.scheduler.Resource
@@ -43,6 +42,8 @@ import scala.util.{Failure, Success, Try}
  * masterProxy is used to resolve the master
  */
 private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOutScheduler{
+  import Worker._
+
   private val systemConfig : Config = context.system.settings.config
   private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()

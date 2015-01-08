@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.examples.wordcount
 
 import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, SubmitApplication}
-import org.apache.gearpump.cluster.MasterHarness
+import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.util.Util
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
@@ -36,6 +36,8 @@ class WordCountSpec extends PropSpec with PropertyChecks with Matchers with Befo
   after {
     shutdownActorSystem()
   }
+
+  override def config = TestUtil.DEFAULT_CONFIG
 
   property("WordCount should succeed to submit application with required arguments") {
     val requiredArgs = Array("-master", s"$getHost:$getPort")

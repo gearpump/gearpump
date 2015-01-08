@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.cluster.master
 
 import java.util.concurrent.TimeUnit
 

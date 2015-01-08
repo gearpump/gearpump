@@ -27,13 +27,13 @@ import org.jboss.netty.channel.{Channel, ChannelFactory, ChannelPipelineFactory}
 
 object NettyUtil {
 
-  def newNettyServer(name: String, pipelineFactory: ChannelPipelineFactory, buffer_size: Int): (Int, Channel) = {
+  def newNettyServer(name: String, pipelineFactory: ChannelPipelineFactory, buffer_size: Int, inputPort: Int = 0): (Int, Channel) = {
     val bossFactory: ThreadFactory = new NettyRenameThreadFactory(name + "-boss")
     val workerFactory: ThreadFactory = new NettyRenameThreadFactory(name + "-worker")
     val factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(bossFactory), Executors.newCachedThreadPool(workerFactory), 1)
 
     val bootstrap = createServerBootStrap(factory, pipelineFactory, buffer_size)
-    val channel: Channel = bootstrap.bind(new InetSocketAddress(0))
+    val channel: Channel = bootstrap.bind(new InetSocketAddress(inputPort))
     val port = channel.getLocalAddress().asInstanceOf[InetSocketAddress].getPort();
     (port, channel)
   }

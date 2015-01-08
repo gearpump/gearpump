@@ -53,8 +53,8 @@ class FlowControlSpec extends WordSpec with Matchers {
     "adjust the watermark when Ack received" in {
       assert(flowControl.isOutputWatermarkExceed(null))
       assert(flowControl.isOutputWatermarkExceed(Array.empty[Long]))
-      assert(flowControl.isOutputWatermarkExceed(Array(0, 0)))
-      assert(!flowControl.isOutputWatermarkExceed(Array(FlowControl.INITIAL_WINDOW_SIZE + 1, FlowControl.INITIAL_WINDOW_SIZE + 1)))
+      assert(flowControl.isOutputWatermarkExceed(Array(0L, 0L)))
+      assert(!flowControl.isOutputWatermarkExceed(Array((FlowControl.INITIAL_WINDOW_SIZE + 1).toLong, FlowControl.INITIAL_WINDOW_SIZE + 1)))
       assert(!flowControl.allMessagesAcked)
       flowControl.receiveAck(Ack(taskId, Seq(0, FlowControl.INITIAL_WINDOW_SIZE), FlowControl.INITIAL_WINDOW_SIZE, sessionId))
       flowControl.receiveAck(Ack(taskId, Seq(1, FlowControl.INITIAL_WINDOW_SIZE), FlowControl.INITIAL_WINDOW_SIZE, sessionId))

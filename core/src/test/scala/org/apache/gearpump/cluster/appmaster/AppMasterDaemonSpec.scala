@@ -37,6 +37,8 @@ class AppMasterDaemonSpec extends FlatSpec with Matchers with BeforeAndAfterEach
     shutdownActorSystem()
   }
 
+  override def config = TestUtil.DEFAULT_CONFIG
+
   "AppMasterDaemon" should "create and watch appmaster correctly " in {
 
     val masterReceiver = createMockMaster()

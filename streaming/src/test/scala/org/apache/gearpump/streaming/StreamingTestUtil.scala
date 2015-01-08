@@ -20,8 +20,9 @@ package org.apache.gearpump.streaming
 import akka.actor.Props
 import akka.testkit.TestActorRef
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
+import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{AppMasterContext, AppMasterInfo, UserConfig}
+import org.apache.gearpump.cluster.{AppMasterContext, UserConfig}
 import org.apache.gearpump.util.Graph
 
 object StreamingTestUtil {
@@ -31,7 +32,7 @@ object StreamingTestUtil {
   def startAppMaster(miniCluster: MiniCluster, appId: Int,
                      app: AppDescription = AppDescription("test", classOf[AppMaster].getName, UserConfig.empty, Graph.empty)): TestActorRef[AppMaster] = {
 
-    val masterConf = AppMasterContext(appId, testUserName, executorId, Resource.empty,  None,miniCluster.mockMaster,AppMasterInfo(miniCluster.worker))
+    val masterConf = AppMasterContext(appId, testUserName, executorId, Resource.empty,  None,miniCluster.mockMaster,AppMasterRuntimeInfo(miniCluster.worker))
 
     val props = Props(classOf[AppMaster], masterConf, app)
     executorId += 1

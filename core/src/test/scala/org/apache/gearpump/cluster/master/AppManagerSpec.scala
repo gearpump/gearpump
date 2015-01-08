@@ -1,0 +1,149 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.gearpump.cluster.master
+
+import akka.actor.Actor.Receive
+import akka.actor.{Actor, ActorRef, Props}
+import akka.testkit.TestProbe
+import org.apache.gearpump.cluster.AppMasterToMaster._
+import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, ResolveAppId, SubmitApplication}
+import org.apache.gearpump.cluster.MasterToAppMaster._
+import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, ReplayApplicationResult, ResolveAppIdResult}
+import org.apache.gearpump.cluster.TestUtil.DummyApplication
+import org.apache.gearpump.cluster.master.InMemoryKVService.{PutKVSuccess, GetKVSuccess, GetKV, PutKV}
+import org.apache.gearpump.cluster.master.MasterHAService._
+import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.{AppJar, Application, MasterHarness, TestUtil}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+
+import scala.util.Success
+
+class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+  var kvService: TestProbe = null
+  var haService: TestProbe = null
+  var appLauncher: TestProbe = null
+  var appManager : ActorRef = null
+
+  override def config = TestUtil.MASTER_CONFIG
+
+  override def beforeEach() = {
+    startActorSystem()
+    kvService = TestProbe()(getActorSystem)
+    haService = TestProbe()(getActorSystem)
+    appLauncher = TestProbe()(getActorSystem)
+
+    appManager = getActorSystem.actorOf(Props(new AppManager(haService.ref, kvService.ref, new DummyAppMasterLauncherFactory(appLauncher))))
+    haService.expectMsg(GetMasterState)
+    haService.reply(MasterState(0, (Set.empty[ApplicationState])))
+  }
+
+  override def afterEach() = {
+    shutdownActorSystem()
+  }
+
+  "AppManager" should "handle appmaster message correctly" in {
+    val appMaster = TestProbe()(getActorSystem)
+    val worker = TestProbe()(getActorSystem)
+
+    val register = RegisterAppMaster(appMaster.ref, 0, 0, Resource(1), AppMasterRuntimeInfo(worker.ref))
+    appMaster.send(appManager, register)
+    appMaster.expectMsgType[AppMasterRegistered]
+  }
+
+  "DataStoreService" should "support Put and Get" in {
+    val appMaster = TestProbe()(getActorSystem)
+    appMaster.send(appManager, SaveAppData(0, "key", 1))
+    kvService.expectMsgType[PutKV]
+    kvService.reply(PutKVSuccess)
+    appMaster.expectMsg(AppDataSaved)
+
+    appMaster.send(appManager, GetAppData(0, "key"))
+    kvService.expectMsgType[GetKV]
+    kvService.reply(GetKVSuccess("key", 1))
+    appMaster.expectMsg(GetAppDataResult("key", 1))
+  }
+
+  "AppManager" should "support application submission and shutdown" in {
+    testClientSubmission(withRecover = false)
+  }
+
+  "AppManager" should "support application submission and recover if appmaster dies" in {
+    Console.out.println("=================testing recover==============")
+    testClientSubmission(withRecover = true)
+  }
+
+  def testClientSubmission(withRecover: Boolean) : Unit = {
+    val app = new DummyApplication
+    val submit = SubmitApplication(app, None, "username")
+    val client = TestProbe()(getActorSystem)
+    val appMaster = TestProbe()(getActorSystem)
+    val worker = TestProbe()(getActorSystem)
+    val appId = 1
+
+    client.send(appManager, submit)
+    haService.expectMsgType[UpdateMasterState]
+    appLauncher.expectMsg(LauncherStarted(appId))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, appId, -1, Resource(1), AppMasterRuntimeInfo(worker.ref)))
+    appMaster.expectMsgType[AppMasterRegistered]
+
+    client.send(appManager, ResolveAppId(appId))
+    client.expectMsg(ResolveAppIdResult(Success(appMaster.ref)))
+
+    client.send(appManager, AppMastersDataRequest)
+    client.expectMsgType[AppMastersData]
+
+    client.send(appManager, AppMasterDataRequest(appId, false))
+    client.expectMsgType[AppMasterData]
+
+    client.send(appManager, ReplayFromTimestampWindowTrailingEdge(appId))
+    appMaster.expectMsg(ReplayFromTimestampWindowTrailingEdge)
+    client.expectMsg(ReplayApplicationResult(Success(appId)))
+
+    if (!withRecover) {
+      client.send(appManager, ShutdownApplication(appId))
+      client.expectMsg(ShutdownApplicationResult(Success(appId)))
+    } else {
+      //do recover
+      getActorSystem.stop(appMaster.ref)
+      haService.expectMsg(GetMasterState)
+      val appState =  ApplicationState(appId, 1,  app , None, "username", null)
+      haService.reply(MasterState(appId, (Set(appState))))
+      appLauncher.expectMsg(LauncherStarted(appId))
+    }
+  }
+
+
+}
+
+class DummyAppMasterLauncherFactory(test: TestProbe) extends AppMasterLauncherFactory {
+
+  override def props(appId: Int, executorId: Int, app: Application, jar: Option[AppJar], username: String, master: ActorRef, client: Option[ActorRef]): Props = {
+    Props(new DummyAppMasterLauncher(test, appId))
+  }
+}
+
+class DummyAppMasterLauncher(test: TestProbe, appId: Int) extends Actor {
+
+  test.ref ! LauncherStarted(appId)
+  override def receive: Receive = {
+    case any : Any => test.ref forward any
+  }
+}
+
+case class LauncherStarted(appId : Int)

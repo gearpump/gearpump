@@ -26,7 +26,8 @@ import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersD
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult}
 import org.apache.gearpump.cluster.MasterToWorker.WorkerRegistered
 import org.apache.gearpump.cluster.WorkerToMaster.RegisterNewWorker
-import org.apache.gearpump.cluster.{MasterHarness, AppMasterInfo, MasterProxy, TestUtil}
+import org.apache.gearpump.cluster.master.{MasterProxy, AppMasterRuntimeInfo}
+import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Util
 import org.scalatest._
@@ -36,6 +37,7 @@ import scala.util.{Success, Try}
 
 class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
+  override def config = TestUtil.MASTER_CONFIG
 
   override def beforeEach() = {
     startActorSystem()
@@ -94,7 +96,7 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
       Array("-master", s"$getHost:$getPort"))
 
     masterReceiver.expectMsg(PROCESS_BOOT_TIME, AppMastersDataRequest)
-    masterReceiver.reply(AppMastersData(List(AppMasterData(0, AppMasterInfo(null)))))
+    masterReceiver.reply(AppMastersData(List(AppMasterData(0, AppMasterRuntimeInfo(null)))))
 
     info.destroy()
   }
