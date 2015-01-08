@@ -1,4 +1,4 @@
-## GearPump [![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master) [![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)
+## GearPump [![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master) [![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master) [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/intel-hadoop/gearpump/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
  
 GearPump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
@@ -147,4 +147,4 @@ Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/L
 The netty transport code work is based on [Apache Storm](http://storm.apache.org). Thanks Apache Storm contributors.
 
 
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/intel-hadoop/gearpump/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
