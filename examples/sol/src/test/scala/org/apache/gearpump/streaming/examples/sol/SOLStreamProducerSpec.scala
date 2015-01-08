@@ -15,27 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.distributedshell
+package org.apache.gearpump.streaming.examples.sol
 
-import akka.actor.{Props, ActorSystem}
-import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.experiments.cluster.task.TaskContext
+import akka.actor.ActorSystem
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.{UserConfig, TestUtil}
+import org.apache.gearpump.streaming.StreamingTestUtil
 import org.scalatest.{WordSpec, Matchers}
-import sys.process._
 
-class ShellTaskSpec extends WordSpec with Matchers {
+class SOLStreamProducerSpec extends WordSpec with Matchers {
 
-  "The ShellTask" should {
-    "execute the shell command and return the result" in {
-      val system = ActorSystem("ShellTask", TestUtil.DEFAULT_CONFIG)
-      val mockMaster = TestProbe()(system)
-      val taskContext = TaskContext(0, 0, mockMaster.ref)
-      val shellTask = system.actorOf(Props(classOf[ShellTask], taskContext, UserConfig.empty))
-      shellTask.tell(ShellCommand("ls", "/"), mockMaster.ref)
-      val actualResult = "ls /" !!
-
-      mockMaster.expectMsg(actualResult)
+  "SOLStreamProducer" should {
+    "producer message continuously" in {
+      val system1 = ActorSystem("SOLStreamProducer", TestUtil.DEFAULT_CONFIG)
+      val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
+      val conf = UserConfig.empty.withValue(SOLStreamProducer.BYTES_PER_MESSAGE, 100)
+      val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SOLStreamProducer].getName, conf, system1, system2)
+      echo.expectMsgAllClassOf(classOf[Message])
+      system1.shutdown()
+      system2.shutdown()
     }
   }
 }
