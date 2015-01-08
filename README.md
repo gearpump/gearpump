@@ -145,3 +145,7 @@ Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/L
 ## Acknowledgement
 
 The netty transport code work is based on [Apache Storm](http://storm.apache.org). Thanks Apache Storm contributors.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/intel-hadoop/gearpump/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
