@@ -191,7 +191,7 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn(core % "test->test", streaming % "provided", external_kafka  % "provided")
+  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "provided")
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
@@ -217,7 +217,7 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn (core % "test->test", streaming % "provided")
+  ) dependsOn (streaming % "test->test", streaming % "provided")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
@@ -230,7 +230,7 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn (core % "test->test", streaming % "provided")
+  ) dependsOn (streaming % "test->test", streaming % "provided")
 
   lazy val examples = Project(
     id = "gearpump-examples",
