@@ -18,7 +18,69 @@
 
 package org.apache.gearpump.cluster
 
-//TODO
-class AppManagerSpec {
+import java.util.concurrent.TimeUnit
 
+import akka.actor.{Terminated, Actor, ActorRef, Props}
+import akka.testkit.TestProbe
+import org.apache.gearpump.cluster.AppManager.AppMasterLauncher
+import org.apache.gearpump.cluster.AppManagerSpec.{WatcheeTerminated, Watcher}
+import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
+import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
+import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
+import org.apache.gearpump.cluster.TestUtil.DummyApplication
+import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Resource}
+import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, CreateActor, ActorSystemRegistered, RegisterActorSystem}
+import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+
+import scala.concurrent.duration.Duration
+
+class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+
+
+  override def beforeEach() = {
+    startActorSystem()
+  }
+
+  override def afterEach() = {
+    shutdownActorSystem()
+  }
+
+  "AppMasterLauncher" should "launch appmaster correctly" in {
+    val master = createMockMaster()
+    val worker = master
+    val watcher = master
+    val appmaster = master.ref
+
+    val system = getActorSystem
+    val launcher = system.actorOf(AppMasterLauncher.props(0,
+      new DummyApplication, None, "username", master.ref))
+    master.expectMsgType[RequestResource]
+
+    system.actorOf(Props(new Watcher(launcher, watcher)))
+
+    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), master.ref, 0)))
+    master.reply(resource)
+
+    worker.expectMsgType[LaunchExecutor]
+    worker.reply(RegisterActorSystem("systempath"))
+    worker.expectMsgType[ActorSystemRegistered]
+
+    worker.expectMsgType[CreateActor]
+    worker.reply(ActorCreated(appmaster, "appmaster"))
+
+    watcher.expectMsg(WatcheeTerminated)
+  }
+}
+
+object AppManagerSpec {
+
+  case object WatcheeTerminated
+
+  class Watcher(target : ActorRef, testProb : TestProbe) extends Actor {
+    context.watch(target)
+    def receive : Receive = {
+      case t : Terminated =>
+        testProb.ref forward WatcheeTerminated
+    }
+  }
 }

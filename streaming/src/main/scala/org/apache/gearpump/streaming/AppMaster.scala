@@ -38,7 +38,7 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.storage.{AppDataStore, InMemoryAppStoreOnMaster}
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
+import org.apache.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -355,9 +355,9 @@ object AppMaster {
       case RegisterActorSystem(systemPath) =>
         timeout.cancel()
         LOG.info(s"Received RegisterActorSystem $systemPath for app master")
+        sender ! ActorSystemRegistered(worker)
 
         val executorProps = Props(classOf[Executor], executorConfig, userConf).withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(systemPath))))
-        sender ! BindLifeCycle(worker)
         context.parent ! LaunchExecutorActor(executorProps, executorId, sender())
         context.stop(self)
       case LaunchActorSystemTimeOut =>
