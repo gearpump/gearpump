@@ -40,7 +40,7 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   
   ## Please use scala 2.11
   ## The target package path: target/gearpump-$VERSION.tar.gz
-  sbt clean assembly pack-archive ## Or use: sbt clean assembly packArchive
+  sbt clean assembly packArchive ## Or use: sbt clean assembly pack-archive
   ```
   
   Distribute the package to all nodes, and extract it, modify `conf/gear.conf` on all nodes and set `gearpump.cluster.masters` to the list of nodes you plan to start master on (e.g. if you want to start master on node1, set like example below).
@@ -148,4 +148,3 @@ The netty transport code work is based on [Apache Storm](http://storm.apache.org
 
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/intel-hadoop/gearpump/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
