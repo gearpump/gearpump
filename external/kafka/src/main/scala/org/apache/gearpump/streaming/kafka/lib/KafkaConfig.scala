@@ -59,7 +59,8 @@ object KafkaConfig {
   // grouper config
   val GROUPER_FACTORY_CLASS = "kafka.grouper.factory.class"
 
-  def apply(): Map[String, _] = new KafkaConfig().toMap
+  def apply(): Map[String, _] = apply("kafka.conf")
+  def apply(path: String): Map[String, _] = new KafkaConfig(path).toMap
 
   implicit class ConfigToKafka(config: Map[String, _]) {
 
@@ -193,11 +194,11 @@ object KafkaConfig {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 }
 
-class KafkaConfig {
+class KafkaConfig(path: String) {
   import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
 
   LOG.info("Loading Kafka configurations...")
-  val config = ConfigFactory.load("kafka.conf")
+  val config = ConfigFactory.load(path)
 
   def toMap: Map[String, _] = {
     config.entrySet.map(entry => (entry.getKey, entry.getValue.unwrapped)).toMap

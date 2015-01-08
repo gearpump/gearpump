@@ -23,7 +23,9 @@ import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
-import java.util.{List => JList, LinkedList => JLinkedList}
+import java.util.{LinkedList => JLinkedList}
+
+import scala.util.Try
 
 class KafkaConfigSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
   import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
@@ -65,5 +67,26 @@ class KafkaConfigSpec extends PropSpec with PropertyChecks with Matchers with Mo
       config.getStringList(newKey, Some(defJList)) should equal (defaultValue)
       a [RuntimeException] should be thrownBy config.getStringList(newKey)
     }
+  }
+
+  property("kafka conf should be set correctly") {
+    val config = KafkaConfig()
+    assert(Try(config.getZookeeperConnect).isSuccess)
+    assert(Try(config.getConsumerTopics).isSuccess)
+    assert(Try(config.getSocketTimeoutMS).isSuccess)
+    assert(Try(config.getSocketReceiveBufferBytes).isSuccess)
+    assert(Try(config.getFetchMessageMaxBytes).isSuccess)
+    assert(Try(config.getClientId).isSuccess)
+    assert(Try(config.getConsumerEmitBatchSize).isSuccess)
+    assert(Try(config.getFetchSleepMS).isSuccess)
+    assert(Try(config.getFetchThreshold).isSuccess)
+    assert(Try(config.getProducerTopic).isSuccess)
+    assert(Try(config.getProducerEmitBatchSize).isSuccess)
+    assert(Try(config.getProducerType).isSuccess)
+    assert(Try(config.getSerializerClass).isSuccess)
+    assert(Try(config.getRequestRequiredAcks).isSuccess)
+    assert(Try(config.getMetadataBrokerList).isSuccess)
+    assert(Try(config.getGrouperFactory).isSuccess)
+    assert(Try(config.getStorageReplicas).isSuccess)
   }
 }
