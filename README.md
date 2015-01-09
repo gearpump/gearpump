@@ -21,7 +21,13 @@ For steps to reproduce the performance test, please check [Performance benchmark
 There is a 20 pages technical paper on typesafe blog, with technical highlights https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka
 
 
-## Getting Started: WordCount
+## Getting Started
+
+The latest release binary can be found at: https://github.com/intel-hadoop/gearpump/releases
+
+You can skip step 1 and step 2 if you are using pre-build binaries.
+
+The latest released version is 0.2-rc1
 
 1. Clone the GearPump repository
 
@@ -30,7 +36,7 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   cd gearpump
   ```
 
-2. Build package and make configuration
+2. Build package
 
   Build a package
 
@@ -40,6 +46,8 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   ## The target package path: target/gearpump-$VERSION.tar.gz
   sbt clean assembly packArchive ## Or use: sbt clean assembly pack-archive
   ```
+
+3. Configure
   
   Distribute the package to all nodes. Modify `conf/gear.conf` on all nodes. You MUST configure ```akka.remote.netty.tcp.hostname``` to make it point to your hostname(or ip), and `gearpump.cluster.masters` to represent a list of master nodes.
 
@@ -77,7 +85,7 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   }
   ```
 
-3. Start Master nodes
+4. Start Master nodes
  
   Start the master daemon on all nodes you have configured in `gearpump.cluster.masters`. If you have configured `gearpump.cluster.masters` to:
   
@@ -103,7 +111,7 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
 
   We support [Master HA](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples#master-ha) and allow master to start on multiple nodes. 
 
-4. Start worker
+5. Start worker
 
   Start multiple workers on one or more nodes. 
  
@@ -111,7 +119,7 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   bin/worker
   ```
 
-5. Submit application jar and run
+6. Submit application jar and run
 
   You can submit your application to cluster by providing an application jar. For example, for built-in examples, the jar is located at `examples/gearpump-examples-assembly-$VERSION.jar`
 
