@@ -30,9 +30,7 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   cd gearpump
   ```
 
-2. Start master
-
-  We support [Master HA](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples#master-ha) and allow master to start on multiple nodes. 
+2. Build package and make configuration
 
   Build a package
 
@@ -78,8 +76,10 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
     }
   }
   ```
+
+3. Start Master nodes
  
-  After this, start the master daemon on all nodes you have configured in `gearpump.cluster.masters`. If you have configured `gearpump.cluster.masters` to:
+  Start the master daemon on all nodes you have configured in `gearpump.cluster.masters`. If you have configured `gearpump.cluster.masters` to:
   
   ```
   gearpump{
@@ -101,37 +101,25 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   bin/master -ip node1 -port 3000
   ```
 
-3. Start worker
+  We support [Master HA](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples#master-ha) and allow master to start on multiple nodes. 
+
+4. Start worker
 
   Start multiple workers on one or more nodes. 
-  
-  Modify `conf/gear.conf` and make sure `gearpump.cluster.masters` points to the list of masters you started.  (e.g. node1).
-
-  ```
-  gearpump {
-   ...
-    cluster {
-      masters = ["node1:3000"]
-    }
-  }
-  ```
-
+ 
   ```bash
   bin/worker
   ```
 
-4. Distribute application jar and run
+5. Submit application jar and run
 
-  Distribute your application jar to one node of the cluster. For the built-in example jar, it is already located at `examples/gearpump-examples-assembly-$VERSION.jar`
+  You can submit your application to cluster by providing an application jar. For example, for built-in examples, the jar is located at `examples/gearpump-examples-assembly-$VERSION.jar`
 
   ```bash
   ## To run WordCount example
   bin/gear app -jar examples/gearpump-examples-assembly-$VERSION.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master node1:3000
   ```
-  
-  User can change the configuration by providing a "application.conf" in classpath. "application.conf" follows HCON format.
-
-Check the wiki pages for more on [build](https://github.com/intel-hadoop/gearpump/wiki/Build) and [running examples in local modes](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples).
+  Check the wiki pages for more on [build](https://github.com/intel-hadoop/gearpump/wiki/Build) and [running examples in local modes](https://github.com/intel-hadoop/gearpump/wiki/Run-Examples).
 
 ## How to write a GearPump Application
 
