@@ -26,7 +26,7 @@ trait IContext {
   /**
    * TODO: remove deserializeFlag from interface
    */
-  def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean) : Int
+  def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean, port: Int) : Int
 
   /**
    * connect to a remote host

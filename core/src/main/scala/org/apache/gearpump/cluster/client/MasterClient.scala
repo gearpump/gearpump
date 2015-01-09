@@ -16,13 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.cluster.client
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.{AppJar, Application}
 import org.apache.gearpump.util.Constants
 
 import scala.concurrent.duration.Duration

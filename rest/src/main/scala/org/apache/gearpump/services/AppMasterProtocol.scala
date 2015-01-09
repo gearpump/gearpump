@@ -18,25 +18,26 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail, AppMastersData}
-import org.apache.gearpump.cluster.{AppMasterInfo, Application, UserConfig}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
+import org.apache.gearpump.cluster.{Application, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph
 import spray.json._
 
 object AppMasterProtocol extends DefaultJsonProtocol  {
-  implicit object AppMasterInfoFormat extends RootJsonFormat[AppMasterInfo] {
-    def write(obj: AppMasterInfo): JsValue = {
+  implicit object AppMasterInfoFormat extends RootJsonFormat[AppMasterRuntimeInfo] {
+    def write(obj: AppMasterRuntimeInfo): JsValue = {
       JsObject(
       "worker" -> JsString(obj.worker.path.address.toString)
       )
     }
-    def read(obj: JsValue): AppMasterInfo = {
+    def read(obj: JsValue): AppMasterRuntimeInfo = {
       obj.asJsObject.fields.map(field => {
         val (name, value) = field
         val workerAddress = value.asInstanceOf[JsString]
-        AppMasterInfo(null)
+        AppMasterRuntimeInfo(null)
       }).toList(0)
     }
   }
@@ -106,6 +107,6 @@ object AppMasterProtocol extends DefaultJsonProtocol  {
         }
     }
   }
-  implicit def convertAppMasterDataDetail: RootJsonFormat[AppMasterDataDetail] = jsonFormat2(AppMasterDataDetail.apply)
+
   implicit def convertAppMastersData: RootJsonFormat[AppMastersData] = jsonFormat1(AppMastersData.apply)
 }

@@ -63,11 +63,11 @@ import org.apache.gearpump.transport.netty.Context._
   }
 
 
-  def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true): Int = {
+  def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true, inputPort: Int = 0): Int = {
     //TODO: whether we should expose it as application config?
     val taskDispatcher = system.settings.config.getString("gearpump.task-dispatcher")
     val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor, deserializeFlag).withDispatcher(taskDispatcher), name)
-    val (port, channel) = NettyUtil.newNettyServer(name, new ServerPipelineFactory(server), 5242880)
+    val (port, channel) = NettyUtil.newNettyServer(name, new ServerPipelineFactory(server), 5242880, inputPort)
     val factory = channel.getFactory
     closeHandler.add{ () =>
         system.stop(server)

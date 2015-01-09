@@ -16,24 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.util
+package org.apache.gearpump.cluster.master
 
-import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.Util._
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{FlatSpec, Matchers}
+import org.apache.gearpump.cluster.{AppJar, Application}
 
-class UtilSpec extends FlatSpec with Matchers with MockitoSugar {
-  it should "work" in {
+/**
+  * This state will be persisted across the masters.
+  */
+case class ApplicationState(val appId : Int, val attemptId : Int, val app : Application, val jar: Option[AppJar], val username : String, state : Any) extends Serializable {
 
-    assert(findFreePort.isSuccess)
+   override def equals(other: Any): Boolean = {
+     other match {
+       case that: ApplicationState =>
+         if (appId == that.appId && attemptId == that.attemptId) {
+           true
+         } else {
+           false
+         }
+       case _ =>
+         false
+     }
+   }
 
-    assert(randInt != randInt)
-
-    val hosts = parseHostList("host1:1,host2:2")
-    assert(hosts(1) == HostPort("host2", 2))
-
-    assert(Util.getCurrentClassPath.length > 0)
-  }
-
-}
+   override def hashCode: Int = {
+     import akka.routing.MurmurHash._
+     extendHash(appId, attemptId, startMagicA, startMagicB)
+   }
+ }

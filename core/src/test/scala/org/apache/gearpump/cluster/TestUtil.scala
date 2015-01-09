@@ -20,6 +20,8 @@ package org.apache.gearpump.cluster
 import akka.actor._
 import akka.testkit.TestActorRef
 import com.typesafe.config.ConfigValueFactory
+import org.apache.gearpump.cluster.master.Master
+import org.apache.gearpump.cluster.worker.Worker
 
 object TestUtil {
   val rawConfig = ClusterConfig.load("test.conf")
@@ -40,7 +42,7 @@ object TestUtil {
     }
 
     val worker: ActorRef = {
-      system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], mockMaster), "worker")
+      system.actorOf(Props(classOf[Worker], mockMaster), "worker")
     }
 
     def launchActor(props: Props): TestActorRef[Actor] = {

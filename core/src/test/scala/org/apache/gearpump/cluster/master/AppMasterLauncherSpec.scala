@@ -16,26 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.cluster.master
 
-import java.util.concurrent.TimeUnit
-
-import akka.actor.{Terminated, Actor, ActorRef, Props}
+import akka.actor._
 import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.AppManager.AppMasterLauncher
-import org.apache.gearpump.cluster.AppManagerSpec.{WatcheeTerminated, Watcher}
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
+import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
+import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import org.apache.gearpump.cluster.TestUtil.DummyApplication
-import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Resource}
-import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, CreateActor, ActorSystemRegistered, RegisterActorSystem}
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import org.apache.gearpump.cluster.master.AppMasterLauncherSpec.{WatcheeTerminated, Watcher}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation}
+import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, ActorSystemRegistered, CreateActor, RegisterActorSystem}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-import scala.concurrent.duration.Duration
+class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
-class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
-
+  override def config = TestUtil.DEFAULT_CONFIG
 
   override def beforeEach() = {
     startActorSystem()
@@ -51,9 +49,11 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     val watcher = master
     val appmaster = master.ref
 
+    val client = TestProbe()(getActorSystem)
+
     val system = getActorSystem
-    val launcher = system.actorOf(AppMasterLauncher.props(0,
-      new DummyApplication, None, "username", master.ref))
+    val launcher = system.actorOf(AppMasterLauncher.props(0,-1,
+      new DummyApplication, None, "username", master.ref, Some(client.ref)))
     master.expectMsgType[RequestResource]
 
     system.actorOf(Props(new Watcher(launcher, watcher)))
@@ -68,11 +68,12 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     worker.expectMsgType[CreateActor]
     worker.reply(ActorCreated(appmaster, "appmaster"))
 
+    client.expectMsgType[SubmitApplicationResult]
     watcher.expectMsg(WatcheeTerminated)
   }
 }
 
-object AppManagerSpec {
+object AppMasterLauncherSpec {
 
   case object WatcheeTerminated
 

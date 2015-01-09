@@ -22,9 +22,9 @@ import java.io.File
 import java.net.{InetSocketAddress, ServerSocket, URLClassLoader}
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Address, Props, Actor, ActorSystem}
+import akka.actor.{Actor, ActorSystem, Address, Props}
 import akka.testkit.TestProbe
-import com.typesafe.config.{ConfigFactory, ConfigParseOptions, ConfigValueFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigValueFactory}
 import org.apache.commons.io.FileUtils
 import org.apache.gearpump.cluster.MasterHarness.MockMaster
 import org.apache.gearpump.util.Constants._
@@ -46,8 +46,10 @@ trait MasterHarness {
   def getHost: String = host
   def getPort: Int = port
 
+  def config : Config
+
   def startActorSystem(): Unit = {
-    val systemConfig = TestUtil.DEFAULT_CONFIG
+    val systemConfig = config
     system = ActorSystem(MASTER, systemConfig)
     systemAddress = ActorUtil.getSystemAddress(system)
     host = systemAddress.host.get

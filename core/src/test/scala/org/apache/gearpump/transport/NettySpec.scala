@@ -18,14 +18,19 @@
 
 package org.apache.gearpump.transport
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.transport.netty.{Context, TaskMessage}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
+import org.apache.gearpump.util.Util
 
-class TransportSpec  extends FlatSpec with Matchers with MockitoSugar {
+import scala.concurrent.duration.Duration
+
+class NettySpec  extends FlatSpec with Matchers with MockitoSugar {
 
   "Netty Transport" should "send and receive message correctly " in {
     val conf = TestUtil.DEFAULT_CONFIG
@@ -33,10 +38,15 @@ class TransportSpec  extends FlatSpec with Matchers with MockitoSugar {
     val context = new Context(system, conf)
     val serverActor = TestProbe()(system)
 
-    val serverPort = context.bind("server", new ActorLookupById {
-      override def lookupLocalActor(id: Long): Option[ActorRef] = Some(serverActor.ref)
-    }, false)
-    val client = context.connect(HostPort("127.0.0.1", serverPort))
+    val port = Util.findFreePort
+
+    import system.dispatcher
+    system.scheduler.scheduleOnce(Duration(1, TimeUnit.SECONDS)) {
+      context.bind("server", new ActorLookupById {
+        override def lookupLocalActor(id: Long): Option[ActorRef] = Some(serverActor.ref)
+      }, false, port.get)
+    }
+    val client = context.connect(HostPort("127.0.0.1", port.get))
 
     val data = new Array[Byte](1000)
     (new java.util.Random()).nextBytes(data)

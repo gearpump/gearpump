@@ -21,10 +21,13 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.cluster.master.{Master => MasterActor}
+import org.apache.gearpump.cluster.worker.{Worker => WorkerActor}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
 import org.apache.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
+import org.apache.gearpump.cluster
 
 import scala.collection.JavaConverters._
 
@@ -65,12 +68,12 @@ object Local extends App with ArgumentsParser {
       withValue("gearpump.cluster.masters",  ConfigValueFactory.fromAnyRef(List(s"$ip:$port").asJava))
     )
 
-    val master = system.actorOf(Props[org.apache.gearpump.cluster.Master], MASTER)
+    val master = system.actorOf(Props[MasterActor], MASTER)
     val masterPath = ActorUtil.getSystemAddress(system).toString + s"/user/$MASTER"
     LOG.info(s"master is started at $masterPath...")
 
     0.until(workerCount).foreach { id =>
-      system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], master), classOf[org.apache.gearpump.cluster.Worker].getSimpleName + id)
+      system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)
     }
   }
 

@@ -25,6 +25,7 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.jarstore.JarFileContainer
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._

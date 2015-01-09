@@ -19,7 +19,8 @@
 package org.apache.gearpump.cluster.appmaster
 
 import akka.actor.{Props, Actor}
-import org.apache.gearpump.cluster.{MasterProxy, AppMasterContext, Application}
+import org.apache.gearpump.cluster.master.MasterProxy
+import org.apache.gearpump.cluster.{AppMasterContext, Application}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter.{CreateActorFailed, ActorCreated}
 

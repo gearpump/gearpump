@@ -25,6 +25,7 @@ import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerR
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, ResourceUpdate}
 import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.worker.Worker
 import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 

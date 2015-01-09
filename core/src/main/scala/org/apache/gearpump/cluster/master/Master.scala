@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.cluster.master
 
 import akka.actor._
 import akka.remote.DisassociatedEvent
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster._
-import org.apache.gearpump.cluster.Master.WorkerTerminated
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
+import org.apache.gearpump.cluster.master.Master.WorkerTerminated
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.apache.gearpump.jarstore.JarStore
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
@@ -99,9 +99,6 @@ private[cluster] class Master extends Actor with Stash {
     case appMasterDataRequest: AppMasterDataRequest =>
       LOG.info("Master received AppMasterDataRequest")
       appManager forward appMasterDataRequest
-    case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
-      LOG.info("Master received AppMasterDataDetailRequest")
-      appManager forward appMasterDataDetailRequest
     case save : SaveAppData =>
       appManager forward save
     case get : GetAppData =>
@@ -150,7 +147,10 @@ private[cluster] class Master extends Actor with Stash {
     val path = ActorUtil.getFullPath(context.system, self.path)
     LOG.info(s"master path is $path")
     val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULING_SCHEDULER))
-    appManager = context.actorOf(Props[AppManager], classOf[AppManager].getSimpleName)
+
+    val masterHA = context.actorOf(Props(new MasterHAService()), "masterHA")
+    val kvService = context.actorOf(Props(new InMemoryKVService()), "kvService")
+    appManager = context.actorOf(Props(new AppManager(masterHA, kvService, AppMasterLauncher)), classOf[AppManager].getSimpleName)
     scheduler = context.actorOf(Props(schedulerClass))
     context.system.eventStream.subscribe(self, classOf[DisassociatedEvent])
   }
@@ -158,5 +158,4 @@ private[cluster] class Master extends Actor with Stash {
 
 object Master{
   case class WorkerTerminated(workerId : Int)
-
 }

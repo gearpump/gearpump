@@ -17,23 +17,27 @@
  */
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.AppMasterInfo
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMasterData}
+import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.util.LogUtil
+import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, FlatSpec, BeforeAndAfterEach}
 import org.slf4j.Logger
-import org.specs2.mutable.Specification
-import org.specs2.specification.{AfterExample, BeforeExample}
-import spray.testkit.Specs2RouteTest
+import spray.routing.RequestContext
+import spray.testkit.{ScalatestRouteTest}
 
 import scala.util.{Failure, Success}
 
 
-class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppMastersService with AfterExample with BeforeExample  {
+
+class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers with BeforeAndAfterEach  with ShouldMatchers {
   import org.apache.gearpump.services.AppMasterProtocol._
   import spray.httpx.SprayJsonSupport._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
-  val restUtil = RestTestUtil.startRestServices
+  var restUtil = RestTestUtil.startRestServices
+
   val master = restUtil match {
     case Success(v) =>
       v.miniCluster.mockMaster
@@ -42,18 +46,16 @@ class AppMastersServiceSpec extends Specification with Specs2RouteTest with AppM
       null
   }
 
-  def before = {
+  override def beforeEach : Unit = {
   }
 
-  "AppMastersService" should {
-    "return a json structure of appMastersData for GET request" in {
-      Get("/appmasters") ~> routes ~> check {
-        responseAs[AppMastersData] === AppMastersData(List(AppMasterData(0,AppMasterInfo(null))))
-      }
+  "AppMastersService" should "return a json structure of appMastersData for GET request" in {
+    (Get("/appmasters") ~> routes).asInstanceOf[RouteResult] ~> check {
+      responseAs[AppMastersData] == AppMastersData(List(AppMasterData(0,AppMasterRuntimeInfo(null))))
     }
   }
 
-  def after: Unit = {
+  override def afterEach: Unit = {
     restUtil match {
       case Success(v) =>
         LOG.info("shutting down the cluster....")

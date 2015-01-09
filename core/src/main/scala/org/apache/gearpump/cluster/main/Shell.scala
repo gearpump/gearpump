@@ -39,12 +39,9 @@ object Shell extends App with ArgumentsParser {
 
     val java = System.getProperty("java.home") + "/bin/java"
     val scalaHome = System.getenv("SCALA_HOME")
-    if (null == scalaHome || "" == scalaHome) {
-      Console.out.println("Please set SCALA_HOME env")
-      throw new Exception("SCALA_HOME is not set")
+    if (null != scalaHome) {
+      System.setProperty("scala.home", scalaHome)
     }
-
-    System.setProperty("scala.home", scalaHome)
     System.setProperty("scala.usejavacp", "true")
 
     System.setProperty("masterActorPath", masters)

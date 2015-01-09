@@ -18,18 +18,18 @@
 
 package org.apache.gearpump.services
 
-
-import org.apache.gearpump.cluster.AppMasterInfo
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
+import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.util.LogUtil
+import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{Matchers, FlatSpec, BeforeAndAfterEach}
 import org.slf4j.Logger
-import org.specs2.mutable.Specification
-import org.specs2.specification.{AfterExample, BeforeExample}
-import spray.testkit.Specs2RouteTest
+import spray.routing.RequestContext
+import spray.testkit.{ScalatestRouteTest}
 
 import scala.util.{Failure, Success}
 
-class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMasterService with AfterExample with BeforeExample {
+class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterEach  with ShouldMatchers {
   import org.apache.gearpump.services.AppMasterProtocol._
   import spray.httpx.SprayJsonSupport._
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -44,23 +44,17 @@ class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMa
       null
   }
 
-  def before = {
+  override def beforeEach : Unit = {
   }
 
-  "AppMasterService" should {
-//    "return a JSON structure for GET request when detail = true" in {
-//      Get("/appmaster/0?detail=true") ~> routes ~> check {
-//        responseAs[AppMasterDataDetail] === AppMasterDataDetail(0, AppDescription("test", classOf[AppMaster].getName, Configs.empty, Graph.empty))
-//      }
-//    }
-    "return a JSON structure for GET request when detail = false" in {
-      Get("/appmaster/0?detail=false") ~> routes ~> check {
-        responseAs[AppMasterData] === AppMasterData(0, AppMasterInfo(null))
-      }
+  "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
+    val tranform = implicitly[TildeArrow[RequestContext , Unit]]
+    (Get("/appmaster/0?detail=false") ~> routes).asInstanceOf[RouteResult] ~> check{
+      responseAs[AppMasterData] == AppMasterData(0, AppMasterRuntimeInfo(null))
     }
   }
 
-  def after: Unit = {
+  override def afterEach: Unit = {
     restUtil match {
       case Success(v) =>
         LOG.info("shutting down the cluster....")
@@ -69,5 +63,4 @@ class AppMasterServiceSpec extends Specification with Specs2RouteTest with AppMa
         LOG.error("Could not start rest services", v)
     }
   }
-
 }

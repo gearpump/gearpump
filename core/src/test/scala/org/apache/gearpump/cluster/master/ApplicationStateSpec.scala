@@ -16,10 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.cluster.master
 
-//TODO
-class MasterProxySpec {
+import org.apache.gearpump.cluster.{AppJar, Application}
+import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
 
-  // master proxy will retry to find the master
+class ApplicationStateSpec  extends FlatSpec with Matchers with BeforeAndAfterEach  {
+
+  "ApplicationState" should "check equal with respect to only appId and attemptId" in {
+    val stateA = ApplicationState(0, 0, null, null, null, "A")
+    val stateB = ApplicationState(0, 0, null, null, null, "B")
+    val stateC = ApplicationState(0, 1, null, null, null, "A")
+
+    assert(stateA == stateB)
+    assert(stateA.hashCode == stateB.hashCode)
+    assert(stateA != stateC)
+  }
 }

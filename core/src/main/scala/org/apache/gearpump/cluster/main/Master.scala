@@ -26,7 +26,8 @@ import akka.cluster.{Cluster, Member, MemberStatus}
 import akka.contrib.datareplication.DataReplication
 import akka.contrib.pattern.{ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
-import org.apache.gearpump.cluster.{ClusterConfig, Master => MasterClass}
+import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.cluster.master.{Master => MasterActor}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
 import org.apache.gearpump.util.{Constants, LogUtil}
@@ -162,7 +163,7 @@ class MasterWatcher(role: String, masterProxy : ActorRef) extends Actor  with Ac
         context.become(waitForShutdown)
         self ! MasterWatcher.Shutdown
       } else {
-        context.actorOf(Props(classOf[MasterClass]), MASTER)
+        context.actorOf(Props(classOf[MasterActor]), MASTER)
         context.become(waitForClusterEvent)
       }
     }

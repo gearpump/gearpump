@@ -19,7 +19,8 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
-import org.apache.gearpump.cluster.{ClusterConfig, MasterProxy, UserConfig}
+import org.apache.gearpump.cluster.master.MasterProxy
+import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
 import org.apache.gearpump.services.RestServices
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.Util

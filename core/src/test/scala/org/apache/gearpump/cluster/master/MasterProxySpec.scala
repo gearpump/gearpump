@@ -16,8 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.cluster.master
 
-class MasterSpec {
+//TODO
+class MasterProxySpec {
 
+  // master proxy will retry to find the master
 }

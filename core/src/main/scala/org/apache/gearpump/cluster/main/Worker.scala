@@ -19,7 +19,9 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
-import org.apache.gearpump.cluster.{ClusterConfig, MasterProxy}
+import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.cluster.master.MasterProxy
+import org.apache.gearpump.cluster.worker.{Worker=>WorkerActor}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil
@@ -56,8 +58,8 @@ object Worker extends App with ArgumentsParser {
     LOG.info(s"Trying to connect to masters $masterAddress....")
     val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER)
 
-    system.actorOf(Props(classOf[org.apache.gearpump.cluster.Worker], masterProxy),
-      classOf[org.apache.gearpump.cluster.Worker].getSimpleName + id)
+    system.actorOf(Props(classOf[WorkerActor], masterProxy),
+      classOf[WorkerActor].getSimpleName + id)
 
     system.awaitTermination()
   }
