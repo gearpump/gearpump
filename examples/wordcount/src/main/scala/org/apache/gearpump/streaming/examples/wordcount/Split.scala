@@ -24,7 +24,22 @@ import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 
 class Split(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
 
-  private val txt =
+  override def onStart(startTime : StartTime) : Unit = {
+    self ! Message("start")
+  }
+
+  override def onNext(msg : Message) : Unit = {
+    Split.TEXT_TO_SPLIT.lines.foreach { line =>
+      line.split(" ").foreach { msg =>
+        output(new Message(msg, System.currentTimeMillis()))
+      }
+    }
+    self ! Message("continue", System.currentTimeMillis())
+  }
+}
+
+object Split {
+  val TEXT_TO_SPLIT =
     """
       |   Licensed to the Apache Software Foundation (ASF) under one
       |   or more contributor license agreements.  See the NOTICE file
@@ -42,18 +57,4 @@ class Split(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskC
       |   See the License for the specific language governing permissions and
       |   limitations under the License.
     """.stripMargin
-
-
-  override def onStart(startTime : StartTime) : Unit = {
-    self ! Message("start")
-  }
-
-  override def onNext(msg : Message) : Unit = {
-    txt.lines.foreach { line =>
-      line.split(" ").foreach { msg =>
-        output(new Message(msg, System.currentTimeMillis()))
-      }
-    }
-    self ! Message("continue", System.currentTimeMillis())
-  }
 }

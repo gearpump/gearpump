@@ -17,14 +17,12 @@
  */
 package org.apache.gearpump.experiments.cluster.appmaster
 
-import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
-import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{UserConfig, AppJar, ExecutorContext}
+import org.apache.gearpump.cluster.{UserConfig, ExecutorContext}
 import org.apache.gearpump.experiments.cluster.executor.DefaultExecutor
 import org.apache.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util._

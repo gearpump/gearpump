@@ -15,10 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.experiments.cluster.appmaster
+package org.apache.gearpump.streaming.examples.wordcount
 
+import akka.actor.ActorSystem
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.{UserConfig, TestUtil}
+import org.apache.gearpump.streaming.StreamingTestUtil
 import org.scalatest.{Matchers, WordSpec}
 
-class AbstractAppMasterSpec extends WordSpec with Matchers {
+class SplitSpec extends WordSpec with Matchers {
 
+  "Split" should {
+    "split the text and deliver to next task" in {
+      val system1 = ActorSystem("Split", TestUtil.DEFAULT_CONFIG)
+      val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
+      val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Split].getName, UserConfig.empty, system1, system2)
+      Split.TEXT_TO_SPLIT.lines.foreach { line =>
+        line.split(" ").foreach { msg =>
+          echo.expectMsg(Message(msg))
+        }
+      }
+      system1.shutdown()
+      system2.shutdown()
+    }
+  }
 }

@@ -30,7 +30,8 @@ import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
 
-object Worker extends App with ArgumentsParser {
+object
+Worker extends App with ArgumentsParser {
   val config = ClusterConfig.load.worker
   val LOG : Logger = {
     LogUtil.loadConfiguration(config, ProcessType.WORKER)
