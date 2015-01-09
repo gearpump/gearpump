@@ -15,8 +15,6 @@ Highlights:
 
 Change list:
 -------------------
-https://github.com/intel-hadoop/gearpump/issues/197
-
  - #274 AppMaster cannot connect to worker if there are multiple interface on one machine 
  - #272 Too many dead log mesages in the log
  - #266 Kafka grouper conf is incorrect 
