@@ -43,21 +43,60 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
   sbt clean assembly packArchive ## Or use: sbt clean assembly pack-archive
   ```
   
-  Distribute the package to all nodes, and extract it, modify `conf/gear.conf` on all nodes and set `gearpump.cluster.masters` to the list of nodes you plan to start master on (e.g. if you want to start master on node1, set like example below).
+  Distribute the package to all nodes. Modify `conf/gear.conf` on all nodes. You MUST configure ```akka.remote.netty.tcp.hostname``` to make it point to your hostname(or ip), and `gearpump.cluster.masters` to represent a list of master nodes.
 
   ```
+  ### Put Akka configuration here
+  base {
+
+    ##############################
+    ### Required to change!!
+    ### You need to set the ip address or hostname of this machine
+    ###
+    akka.remote.netty.tcp.hostname = "127.0.0.1"
+  }
+
+  #########################################
+  ### This is the default configuration for gearpump
+  ### To use the application, you at least need to change gearpump.cluster to point to right master
+  #########################################
   gearpump {
-   ...
+
+    ##############################
+    ### Required to change!!
+    ### You need to set the master cluster address here
+    ###
+    ###
+    ### For example, you may start three master
+    ### on node1: bin/master -ip node1 -port 3000
+    ### on node2: bin/master -ip node2 -port 3000
+    ### on node3: bin/master -ip node3 -port 3000
+    ###
+    ### Then you need to set the cluster.masters = ["node1:3000","node2:3000","node3:3000"]
     cluster {
-      masters = ["node1:3000"]
+      masters = ["127.0.0.1:3000"]
     }
   }
   ```
-
-  Only start master on the nodes you have configured in the gear.conf file.
+ 
+  After this, start the master daemon on all nodes you have configured in `gearpump.cluster.masters`. If you have configured `gearpump.cluster.masters` to:
+  
+  ```
+  gearpump{
+     cluster {
+      masters = ["node1:3000", "node2:3000"]
+    }
+  }
+  ```
+  
+  Then start master daemon on ```node1``` and ```node2```.
 
   ```bash
   ## on node1
+  cd gearpump-$VERSION
+  bin/master -ip node1 -port 3000
+  
+  ## on node2
   cd gearpump-$VERSION
   bin/master -ip node1 -port 3000
   ```
