@@ -108,15 +108,17 @@ class AppMasterLauncher(appId : Int, executorId: Int, app : Application, jar: Op
       import context.dispatcher
       val appMasterTimeout = scheduler.scheduleOnce(TIMEOUT, self,
         CreateActorFailed(app.appMaster, new TimeoutException))
-      context.become(waitForAppMasterToStart(worker))
+      context.become(waitForAppMasterToStart(worker, appMasterTimeout))
   }
 
-  def waitForAppMasterToStart(worker : ActorRef) : Receive = {
+  def waitForAppMasterToStart(worker : ActorRef, cancel: Cancellable) : Receive = {
     case ActorCreated(appMaster, _) =>
+      cancel.cancel()
       LOG.info(s"AppMaster is created, stopping myself...")
       replyToClient(SubmitApplicationResult(Success(appId)))
       context.stop(self)
     case CreateActorFailed(name, reason) =>
+      cancel.cancel()
       worker ! ShutdownExecutor(appId, executorId, reason.getMessage)
       replyToClient(SubmitApplicationResult(Failure(reason)))
       context.stop(self)
