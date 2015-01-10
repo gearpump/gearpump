@@ -1,4 +1,4 @@
-## GearPump [![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master) [![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master) [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/intel-hadoop/gearpump/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+## GearPump [![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master) [![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)
 
 [![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](https://github.com/intel-hadoop/gearpump/releases/download/0.2-rc1/binary-gearpump-0.2-rc1.tar.gz)
  
