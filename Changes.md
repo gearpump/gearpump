@@ -1,11 +1,11 @@
-gearpump-0.2-rc1
+gearpump-0.2
 =========================
 
 Highlights:
 -----------------
  - Published a tech paper about the design on https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka
  - UT coverage rate to 70%
- - Add support for general replay-able data source. 
+ - Add support for general replay-able data source to support at least once delivery. 
  - More robust streaming. Be resilient to message loss, message duplication, and zombie processes. 
  - Refactor Kafka data source for at least once delivery.
  - Support general applications besides streaming, add an experimental distrubtedshell application under experiments/.
