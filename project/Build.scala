@@ -5,6 +5,7 @@ import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin._
 import xerial.sbt.Pack._
 import xerial.sbt.Sonatype._
+import com.typesafe.sbt.SbtPgp.autoImport._
 
 import scala.collection.immutable.Map.WithDefault
 
@@ -59,6 +60,7 @@ object Build extends sbt.Build {
       scalaVersion := scalaVersionNumber,
       version := gearPumpVersion,
       organization := "com.github.intel-hadoop",
+      useGpg := true,
       scalacOptions ++= Seq("-Yclosure-elim","-Yinline"),
       pomExtra := {
       <url>https://github.com/intel-hadoop/gearpump</url>
