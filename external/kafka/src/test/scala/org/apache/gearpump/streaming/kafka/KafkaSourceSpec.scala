@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.kafka
 
+import java.util.concurrent.LinkedBlockingQueue
+
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.Message
@@ -67,29 +69,44 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
     }
   }
 
-  val numberGen = Gen.choose[Int](1, 1000)
-  val kafkaMsgGen = for {
-    topic <- Gen.alphaStr
-    partition <- Gen.choose[Int](0, 1000)
-    offset <- Gen.choose[Long](0L, 1000L)
-    key = None
-    msg <- Gen.alphaStr.map(Injection[String, Array[Byte]])
-  } yield KafkaMessage(TopicAndPartition(topic, partition), offset, key, msg)
   property("KafkaSource pull should return number of messages in best effort") {
-    forAll(numberGen, kafkaMsgGen) {
-      (number: Int, kafkaMsg: KafkaMessage) =>
-        val topicAndPartition = mock[TopicAndPartition]
-        val message = mock[Message]
+    val numberGen = Gen.choose[Int](0, 1000)
+    val kafkaMsgGen = for {
+      topic <- Gen.alphaStr
+      partition <- Gen.choose[Int](0, 1000)
+      offset <- Gen.choose[Long](0L, 1000L)
+      key = None
+      msg <- Gen.alphaStr.map(Injection[String, Array[Byte]])
+    } yield KafkaMessage(TopicAndPartition(topic, partition), offset, key, msg)
+    val kafkaMsgListGen = Gen.listOf[KafkaMessage](kafkaMsgGen)
+    forAll(numberGen, kafkaMsgListGen) {
+      (number: Int, kafkaMsgList: List[KafkaMessage]) =>
         val offsetManager = mock[KafkaOffsetManager]
         val messageDecoder = mock[MessageDecoder]
         val consumer = mock[KafkaConsumer]
-        when(consumer.pollNextMessage).thenReturn(None)
-        when(messageDecoder.fromBytes(kafkaMsg.msg)).thenReturn(message)
-        when(offsetManager.filter(message -> kafkaMsg.offset)).thenReturn(Some(message))
+        val message = mock[Message]
         val source = new KafkaSource(consumer, messageDecoder,
-          Map(topicAndPartition -> offsetManager))
-        source.pull(number).size shouldBe 0
-        verify(consumer, times(number)).pollNextMessage
+          kafkaMsgList.map(_.topicAndPartition -> offsetManager).toMap)
+        if (number == 0) {
+          verify(consumer, never()).pollNextMessage
+          source.pull(number).size shouldBe 0
+        } else {
+          kafkaMsgList match {
+            case Nil =>
+              if (number == 1) {
+                when(consumer.pollNextMessage).thenReturn(None)
+              } else {
+                val nones = List.fill(number)(None)
+                when(consumer.pollNextMessage).thenReturn(nones.head, nones.tail: _*)
+              }
+            case list =>
+              val queue = list.map(Option(_)) ++ List.fill(number - list.size)(None)
+              when(consumer.pollNextMessage).thenReturn(queue.head, queue.tail: _*)
+              when(offsetManager.filter(anyObject[(Message, Long)])).thenReturn(Some(message))
+          }
+          source.pull(number).size shouldBe Math.min(number, kafkaMsgList.size)
+          verify(consumer, times(number)).pollNextMessage
+        }
     }
   }
 
