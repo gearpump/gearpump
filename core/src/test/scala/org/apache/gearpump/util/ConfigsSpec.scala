@@ -20,6 +20,7 @@ package org.apache.gearpump.util
 
 import java.io.File
 
+import akka.actor.ActorSystem
 import org.apache.commons.io.FileUtils
 import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
 import org.scalatest.mock.MockitoSugar
@@ -67,27 +68,23 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
     file.delete()
   }
 
-  "User Config" should "accept TypeSafe Config as construction arguments" in {
-    val conf =  """
-    gearpump {
-      gear = "gearpump"
-      int = 3
-      intstr = "3"
-    }
-    """
+  "User Config" should "work" in {
 
-    val user = UserConfig(UserConfig(ConfigFactory.parseString(conf)))
-    assert(user.getAnyRef("gearpump").isEmpty)
-    assert(user.getAnyRef("gearpump.gear").isDefined)
-    assert(user.getString("gearpump.gear").get == "gearpump")
-    assert(user.getInt("gearpump.int").get == 3)
-    assert(user.getInt("gearpump.intstr").get == 3)
+    implicit val system = ActorSystem("forSerialization")
 
-    //test empty
-    val empty = UserConfig.empty
-    assert(empty.getAnyRef("gearpump").isEmpty)
-    assert(empty.getString("gearpump").isEmpty)
-    assert(empty.getInt("gearpump").isEmpty)
 
+    val map = Map[String,String]("key1"->"1", "key2"->"value2")
+
+    val user = UserConfig(map)
+
+    assert(user.getInt("key1").get == 1)
+    assert(user.getString("key1").get == "1")
+
+    val data = new ConfigsSpec.Data(3)
+    assert(data == user.withValue("data", data).getValue[ConfigsSpec.Data]("data").get)
   }
+}
+
+object ConfigsSpec{
+  case class Data(value: Int)
 }

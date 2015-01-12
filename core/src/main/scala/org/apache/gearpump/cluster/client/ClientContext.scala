@@ -33,7 +33,7 @@ import org.apache.gearpump.util.{LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ExecutionContextExecutor, Await, Future}
 
 //TODO: add interface to query master here
 class ClientContext(masters: Iterable[HostPort]) {
@@ -42,7 +42,7 @@ class ClientContext(masters: Iterable[HostPort]) {
 
   private val config = ClusterConfig.load.application
 
-  private val system = ActorSystem(s"client${Util.randInt}" , config)
+  implicit val system = ActorSystem(s"client${Util.randInt}" , config)
   import system.dispatcher
 
   private val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)

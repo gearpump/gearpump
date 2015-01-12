@@ -25,10 +25,9 @@ import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
 class Ranker(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
   import org.apache.gearpump.streaming.examples.kafka.topn.Config._
 
-  private val config = conf.config
-  private val windowLengthMS = getWindowLengthMS(config)
-  private val emitFrequencyMS = getEmitFrequencyMS(config)
-  private val topn = getTopN(config)
+  private val windowLengthMS = getWindowLengthMS(conf)
+  private val emitFrequencyMS = getEmitFrequencyMS(conf)
+  private val topn = getTopN(conf)
   private var lastEmitTime = 0L
   protected val rankings: Rankings[String] = new Rankings[String]
 

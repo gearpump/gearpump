@@ -49,8 +49,8 @@ class TaskActorSpec(_system: ActorSystem) extends TestKit(_system) with Implicit
   val executorId1 = 1
   val executorId2 = 2
 
-  val taskContext1 = TaskContext(taskId1, executorId1, appId, mockMaster.ref, dag)
-  val taskContext2 = TaskContext(taskId2, executorId2, appId, mockMaster.ref, dag)
+  val taskContext1 = TaskContext(taskId1, executorId1, appId, mockMaster.ref,1, dag)
+  val taskContext2 = TaskContext(taskId2, executorId2, appId, mockMaster.ref,1,  dag)
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)

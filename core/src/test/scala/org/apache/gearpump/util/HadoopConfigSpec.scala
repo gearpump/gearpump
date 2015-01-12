@@ -26,15 +26,14 @@ class HadoopConfigSpec extends WordSpec with Matchers {
   "HadoopConfig" should {
     "serialize and deserialze hadoop configuration properly" in {
       val hadoopConf = new Configuration()
-      val config = HadoopConfig(Map.empty[String, Any])
-      assert(config.config.equals(HadoopConfig(UserConfig.empty).config))
-      assert(config.config.equals(HadoopConfig.empty.config))
       val key = "test_key"
       val value = "test_value"
       hadoopConf.set(key, value)
 
-      val conf = config.withHadoopConf(hadoopConf)
-      assert(conf.hadoopConf.get(key).equals(value))
+      val user = UserConfig.empty
+
+      import org.apache.gearpump.util.HadoopConfig._
+      assert(user.withHadoopConf(hadoopConf).hadoopConf.get(key) == value)
     }
   }
 }

@@ -24,7 +24,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProcessor._
 import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
-import org.apache.gearpump.util.HadoopConfig
+import org.apache.gearpump.util.HadoopConfig._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
@@ -40,7 +40,7 @@ class SeqFileStreamProcessor(taskContext_ : TaskContext, config: UserConfig) ext
   val textClass = new Text().getClass
   val key = new Text()
   val value = new Text()
-  val hadoopConf = HadoopConfig(config).hadoopConf
+  val hadoopConf = config.hadoopConf
 
   private var msgCount : Long = 0
   private var scheduler : Cancellable = null

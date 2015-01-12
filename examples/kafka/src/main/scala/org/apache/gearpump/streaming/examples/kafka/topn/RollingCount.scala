@@ -27,9 +27,8 @@ class RollingCount(taskContext : TaskContext, conf: UserConfig) extends TaskActo
 
   import org.apache.gearpump.streaming.examples.kafka.topn.Config._
 
-  private val config = conf.config
-  private val windowLengthMS = getWindowLengthMS(config)
-  private val emitFrequencyMS = getEmitFrequencyMS(config)
+  private val windowLengthMS = getWindowLengthMS(conf)
+  private val emitFrequencyMS = getEmitFrequencyMS(conf)
   private var lastEmitTime = 0L
 
   private val counter: SlidingWindowCounter[String] = new SlidingWindowCounter[String](windowLengthMS / emitFrequencyMS)
