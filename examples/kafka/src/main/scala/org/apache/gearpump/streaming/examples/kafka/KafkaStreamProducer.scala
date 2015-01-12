@@ -33,7 +33,9 @@ import scala.util.{Failure, Success}
 class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
   extends TaskActor(taskContext, conf) {
 
-  private val kafkaConfig = KafkaConfig(conf)
+  implicit val actorSystem = context.system
+
+  private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val batchSize = kafkaConfig.getConsumerEmitBatchSize
   private val msgDecoder: MessageDecoder = new MessageDecoder {
     override def fromBytes(bytes: Array[Byte]): Message = {

@@ -31,8 +31,7 @@ object DistributedShell extends App with ArgumentsParser {
   )
 
   def application(config: ParseResult) : Application = {
-    val appConfig = ClusterConfig.load.application
-    val app = BaseAppDescription("DistributedShell", classOf[AppMaster].getCanonicalName, UserConfig(appConfig))
+    val app = BaseAppDescription("DistributedShell", classOf[AppMaster].getCanonicalName, UserConfig.empty)
     app
   }
 

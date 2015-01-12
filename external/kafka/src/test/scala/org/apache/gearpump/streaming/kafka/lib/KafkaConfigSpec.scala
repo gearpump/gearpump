@@ -30,7 +30,7 @@ import scala.util.Try
 class KafkaConfigSpec extends PropSpec with Matchers with MockitoSugar {
 
   property("kafka conf should be set correctly") {
-    val config = KafkaConfig(UserConfig(ConfigFactory.load("kafka.conf")))
+    val config = KafkaConfig(ConfigFactory.parseResources("kafka.conf"))
 
     assert(Try(config.getZookeeperConnect).isSuccess)
     assert(Try(config.getConsumerTopics).isSuccess)

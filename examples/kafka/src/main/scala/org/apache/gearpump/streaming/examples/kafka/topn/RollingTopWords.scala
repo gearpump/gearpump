@@ -18,12 +18,14 @@
 
 package org.apache.gearpump.streaming.examples.kafka.topn
 
+import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{LogUtil, Graph}
@@ -41,10 +43,13 @@ object RollingTopWords extends App with ArgumentsParser {
 
   def application(config: ParseResult) : AppDescription = {
     val windowConfig = UserConfig(Map(
-      Config.EMIT_FREQUENCY_MS -> 1000,
-      Config.WINDOW_LENGTH_MS -> 5000,
-      Config.TOPN -> 5))
-    val appConfig = UserConfig(ConfigFactory.load("kafka.conf")).withConfig(windowConfig)
+      Config.EMIT_FREQUENCY_MS ->  1000.toString,
+      Config.WINDOW_LENGTH_MS -> 5000.toString,
+      Config.TOPN -> 5.toString))
+
+    val kafkaConfig = KafkaConfig(ConfigFactory.parseResources("kafka.conf"))
+    val appConfig = windowConfig.withValue(KafkaConfig.NAME, kafkaConfig)
+
     val kafkaStreamProducerNum = config.getInt("kafka_stream_producer")
     val rcNum = config.getInt("rolling_count")
     val irNum = config.getInt("intermediate_ranker")
@@ -62,6 +67,9 @@ object RollingTopWords extends App with ArgumentsParser {
 
   val config = parse(args)
   val context = ClientContext(config.getString("master"))
+
+  implicit val system = context.system
+
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)
@@ -73,7 +81,9 @@ object Config {
   val WINDOW_LENGTH_MS = "window.length.ms"
   val TOPN = "topn"
 
-  def getEmitFrequencyMS(config: Map[String, _]) = config.get(EMIT_FREQUENCY_MS).get.asInstanceOf[Int]
-  def getWindowLengthMS(config: Map[String, _]) = config.get(WINDOW_LENGTH_MS).get.asInstanceOf[Int]
-  def getTopN(config: Map[String, _]) = config.get(TOPN).get.asInstanceOf[Int]
+  def getEmitFrequencyMS(config: UserConfig) = config.getInt(EMIT_FREQUENCY_MS).get
+
+  def getWindowLengthMS(config: UserConfig) = config.getInt(WINDOW_LENGTH_MS).get
+
+  def getTopN(config: UserConfig) = config.getInt(TOPN).get
 }

@@ -25,6 +25,7 @@ import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph
 import spray.json._
+import org.apache.gearpump.util.Util
 
 object AppMasterProtocol extends DefaultJsonProtocol  {
   implicit object AppMasterInfoFormat extends RootJsonFormat[AppMasterRuntimeInfo] {
@@ -44,17 +45,16 @@ object AppMasterProtocol extends DefaultJsonProtocol  {
   implicit def convertAppMasterData: RootJsonFormat[AppMasterData] = jsonFormat(AppMasterData.apply, "appId", "appData")
   implicit object ConfigsFormat extends RootJsonFormat[UserConfig] {
     def write(obj: UserConfig): JsValue = {
-      JsObject("config" -> mapFormat[String, String].write(obj.config.map(pair => {
-        val (key, value) = pair
-        key -> value.toString
-      })))
+      JsObject("config" -> JsString(Util.toBase64String(obj)))
     }
     def read(obj: JsValue): UserConfig = {
       obj match {
         case value: JsObject =>
-          UserConfig.apply(value.fields("config").asJsObject.convertTo[Map[String,String]])
+          val encoded = value.fields("config").asInstanceOf[JsString].value
+          Util.fromBase64String[UserConfig](encoded).get
+
         case _ =>
-          UserConfig.apply(Map[String,String]())
+          UserConfig.empty
       }
     }
   }

@@ -18,70 +18,75 @@
 
 package org.apache.gearpump.cluster
 
-import com.typesafe.config.Config
-import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.util.Constants._
+import akka.actor.{ExtendedActorSystem, ActorSystem}
+import akka.serialization.{JavaSerializer}
+import com.google.common.io.BaseEncoding
 
 /**
  * Immutable configuration
  */
-class UserConfig(val config: Map[String, _])  extends Serializable{
+final class UserConfig(private val _config: Map[String, String])  extends Serializable{
 import org.apache.gearpump.cluster.UserConfig._
 
-  def withValue(key: String, value: Any) = {
-    UserConfig(config + (key->value))
+  def withInt(key: String, value: Int) : UserConfig = {
+    new UserConfig(_config + (key -> value.toString))
+  }
+
+  def withString(key: String, value: String): UserConfig = {
+    new UserConfig(_config + (key -> value))
   }
 
   def getInt(key : String) : Option[Int] = {
-    config.getInt(key)
+    _config.get(key).map(_.toInt)
   }
 
   def getString(key : String) : Option[String] = {
-    config.getString(key)
+    _config.get(key)
   }
 
-  def getAnyRef(key: String) : Option[AnyRef]  = {
-    config.getAnyRef(key)
+  def getBytes(key: String) : Option[Array[Byte]] = {
+    _config.get(key).map(BaseEncoding.base64().decode(_))
+  }
+
+  def withBytes(key: String, value: Array[Byte]): UserConfig = {
+    this.withString(key, BaseEncoding.base64().encode(value))
+  }
+
+  /**
+   *
+   * Need to set a serializer,
+   *
+   * implicit serializer: akka.serialization.Serializer = new JavaSerializer(actorSystem)
+   */
+  def getValue[T](key: String)(implicit system: ActorSystem): Option[T]  = {
+    val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
+    _config.get(key).map(BaseEncoding.base64().decode(_))
+      .map(serializer.fromBinary(_).asInstanceOf[T])
+  }
+
+  /**
+   *
+   * Need to set a serializer,
+   *
+   * implicit serializer: akka.serialization.Serializer = new JavaSerializer(actorSystem)
+   */
+  def withValue[T<: AnyRef with java.io.Serializable](key: String, value: T)(implicit system: ActorSystem): UserConfig = {
+
+    val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
+    val bytes = serializer.toBinary(value)
+    val encoded = BaseEncoding.base64().encode(bytes)
+    this.withString(key, encoded)
   }
 
   def withConfig(other: UserConfig) = {
-    UserConfig(this.config ++ other.config)
+    new UserConfig(_config ++ other._config)
   }
 }
 
-object UserConfig {
+object UserConfig{
 
-  def empty = new UserConfig(Map.empty[String, Any])
+  def empty = new UserConfig(Map.empty[String, String])
 
-  def apply(config : Map[String, _]) = new UserConfig(config)
+  def apply(config : Map[String, String]) = new UserConfig(config)
 
-  def apply(config : Config) = new UserConfig(config.toMap)
-
-  def apply(config : UserConfig) = new UserConfig(config.config)
-
-  implicit class ConfigHelper(config: Config) {
-    def toMap: Map[String, _] = {
-      import scala.collection.JavaConversions._
-      config.entrySet.map(entry => (entry.getKey, entry.getValue.unwrapped)).toMap
-    }
-  }
-
-  implicit class MapHelper(config: Map[String, _]) {
-    def getInt(key : String) : Option[Int] = {
-      config.get(key).map { v =>
-        v match {
-          case integer : Int => integer
-          case str : String => str.toInt
-        }
-      }
-    }
-
-    def getString(key : String) : Option[String] = {
-      config.get(key).asInstanceOf[Option[String]]
-    }
-
-    def getAnyRef(key: String) : Option[AnyRef] = {
-      config.get(key).asInstanceOf[Option[AnyRef]]
-    }
-  }
 }

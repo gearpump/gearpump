@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, AppMasterRegistered}
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
-import org.apache.gearpump.cluster.{MasterHarness, UserConfig, TestUtil, AppMasterContext}
+import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.{Relaxation, ResourceAllocation, ResourceRequest, Resource}
 import org.apache.gearpump.partitioner.HashPartitioner
@@ -53,7 +53,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   var mockMaster: TestProbe = null
   var mockWorker: TestProbe = null
   var appDescription: AppDescription = null
-  var appMasterContext: AppMasterContext = null
+  var appMasterContext: AppMasterContextInterface = null
   var appMasterRuntimeInfo: AppMasterRuntimeInfo = null
 
   override def beforeEach() = {
@@ -63,6 +63,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     mockWorker = TestProbe()(getActorSystem)
     mockMaster.ignoreMsg(ignoreSaveAppData)
     appMasterRuntimeInfo = AppMasterRuntimeInfo(mockWorker.ref)
+
+    implicit val system = getActorSystem
     conf = UserConfig.empty.withValue(AppMasterSpec.MASTER, mockMaster.ref)
     appMasterContext = AppMasterContext(appId, "test", masterExecutorId, resource, None, mockProxy.ref, appMasterRuntimeInfo)
     appDescription = AppDescription("test", "AppMaster", conf, Graph(taskDescription1 ~ new HashPartitioner() ~> taskDescription2))
@@ -128,14 +130,18 @@ object AppMasterSpec {
 }
 
 class TaskActorA(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
-  val master = userConf.getAnyRef(AppMasterSpec.MASTER).get.asInstanceOf[ActorRef]
+  implicit val actorSystem = context.system
+
+  val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = master ! AppMasterSpec.TaskStarted
 
   override def onNext(msg: Message): Unit = {}
 }
 
 class TaskActorB(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
-  val master = userConf.getAnyRef(AppMasterSpec.MASTER).get.asInstanceOf[ActorRef]
+  implicit val actorSystem = context.system
+
+  val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = master ! AppMasterSpec.TaskStarted
 
   override def onNext(msg: Message): Unit = {}

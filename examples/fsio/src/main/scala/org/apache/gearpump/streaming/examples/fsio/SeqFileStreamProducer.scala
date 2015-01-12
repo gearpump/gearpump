@@ -21,7 +21,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProducer._
 import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
-import org.apache.gearpump.util.HadoopConfig
+import org.apache.gearpump.util.HadoopConfig._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
@@ -31,7 +31,7 @@ class SeqFileStreamProducer(taskContext : TaskContext, config: UserConfig) exten
   val value = new Text()
   val key = new Text()
   var reader: SequenceFile.Reader = null
-  val hadoopConf = HadoopConfig(config).hadoopConf
+  val hadoopConf = config.hadoopConf
   val fs = FileSystem.get(hadoopConf)
   val inputPath = new Path(config.getString(INPUT_PATH).get)
 

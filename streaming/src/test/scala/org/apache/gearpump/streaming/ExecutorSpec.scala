@@ -17,11 +17,16 @@
  */
 package org.apache.gearpump.streaming
 
+
 import _root_.akka.actor.{Actor, PoisonPill, Props, ActorSystem}
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import org.apache.gearpump.cluster.{MasterHarness, ExecutorContext, UserConfig, TestUtil}
+import org.apache.gearpump.cluster.{MasterHarness, ExecutorContextInterface, UserConfig, TestUtil}
+
+import akka.actor.{Actor, PoisonPill, Props, ActorSystem}
+import akka.testkit.{TestProbe, ImplicitSender, TestKit}
+import org.apache.gearpump.cluster.{ExecutorContext, UserConfig, TestUtil}
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
@@ -43,7 +48,7 @@ class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with M
   var watcher: TestProbe = null
   var mockMaster: TestProbe = null
   var executor: TestActorRef[Executor] = null
-  var executorContext: ExecutorContext = null
+  var executorContext: ExecutorContextInterface = null
   var taskContext: TaskContext = null
 
   override def beforeEach() = {
@@ -51,7 +56,7 @@ class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with M
     mockMaster = TestProbe()(getActorSystem)
     watcher = TestProbe()(getActorSystem)
     executorContext = ExecutorContext(executorId, workerId, appId, mockMaster.ref, resource)
-    taskContext = TaskContext(TaskId(0, 0), executorId, appId, mockMaster.ref, DAG.empty())
+    taskContext = TaskContext(TaskId(0, 0), executorId, appId, mockMaster.ref, 1, DAG.empty())
     executor = TestActorRef(Props(classOf[Executor], executorContext, UserConfig.empty))(getActorSystem)
     mockMaster.expectMsg(RegisterExecutor(executor, executorId, resource, workerId))
   }

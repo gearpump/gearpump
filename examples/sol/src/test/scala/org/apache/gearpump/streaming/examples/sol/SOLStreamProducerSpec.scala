@@ -29,7 +29,7 @@ class SOLStreamProducerSpec extends WordSpec with Matchers {
     "producer message continuously" in {
       val system1 = ActorSystem("SOLStreamProducer", TestUtil.DEFAULT_CONFIG)
       val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-      val conf = UserConfig.empty.withValue(SOLStreamProducer.BYTES_PER_MESSAGE, 100)
+      val conf = UserConfig.empty.withInt(SOLStreamProducer.BYTES_PER_MESSAGE, 100)
       val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SOLStreamProducer].getName, conf, system1, system2)
       echo.expectMsgAllClassOf(classOf[Message])
       system1.shutdown()
