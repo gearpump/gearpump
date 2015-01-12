@@ -24,7 +24,7 @@ object Build extends sbt.Build {
   val commonsLoggingVersion = "1.1.3"
   val commonsIOVersion = "2.4"
   val findbugsVersion = "2.0.1"
-  val gearPumpVersion = "0.2"
+  val gearPumpVersion = "0.3-SNAPSHOT"
   val guavaVersion = "15.0"
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
