@@ -25,6 +25,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerL
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, ResourceRequest, Resource}
+import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.ResponsesFromTasks
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util.ActorUtil
 import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
@@ -63,6 +64,21 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
       mockWorker1.reply(RegisterActorSystem(ActorUtil.getSystemAddress(system).toString))
       val appMasterActor = appMaster.underlying.actor.asInstanceOf[AppMaster]
       assert(appMasterActor.scheduleTaskOnWorker(0).taskClass.equals(classOf[ShellTask].getCanonicalName))
+    }
+  }
+
+  "ResponseBuilder" should {
+    "aggregate ResponsesFromTasks" in {
+      val executorId1 = 1
+      val executorId2 = 2
+      val responseBuilder = new ResponseBuilder
+      val response1 = ResponsesFromTasks(executorId1, List("task1", "task2"))
+      val response2 = ResponsesFromTasks(executorId2, List("task3", "task4"))
+      val result = responseBuilder.aggregate(response1).aggregate(response2).toString()
+      println(result)
+      val expected = s"Execute results from executor $executorId1 : \ntask1task2\n" +
+        s"Execute results from executor $executorId2 : \ntask3task4\n"
+      assert(result == expected)
     }
   }
 

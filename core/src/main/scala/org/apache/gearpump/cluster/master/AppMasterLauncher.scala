@@ -18,47 +18,26 @@
 
 package org.apache.gearpump.cluster.master
 
-import java.util.concurrent.{TimeoutException, TimeUnit}
+import java.util.concurrent.{TimeUnit, TimeoutException}
 
-import akka.actor.{Props, Actor, ActorRef}
-import org.apache.gearpump.cluster.AppMasterToMaster.{InvalidAppMaster, RequestResource}
-import org.apache.gearpump.cluster.AppMasterToWorker.{ShutdownExecutor, LaunchExecutor}
+import akka.actor.{Actor, ActorRef, Props, _}
+import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
+import org.apache.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
+import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
-import org.apache.gearpump.cluster.appmaster.AppMasterDaemon
-import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Resource, ResourceRequest}
-import org.apache.gearpump.cluster._
-import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.ActorSystemBooter._
-import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{ActorSystemBooter, Util, ActorUtil, LogUtil}
-import org.slf4j.Logger
-
-import akka.actor._
-import akka.cluster.Cluster
-import akka.pattern.ask
-import org.apache.gearpump.cluster.AppMasterToMaster._
-import org.apache.gearpump.cluster.AppMasterToWorker._
-import org.apache.gearpump.cluster.ClientToMaster._
-import InMemoryKVService._
-import MasterHAService._
-import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
-import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.AppMasterDaemon
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter._
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util._
+import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
-import scala.concurrent.duration.Duration
 
 class AppMasterLauncher(appId : Int, executorId: Int, app : Application, jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef]) extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)

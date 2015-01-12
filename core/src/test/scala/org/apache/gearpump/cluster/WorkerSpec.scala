@@ -22,7 +22,7 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
-import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
+import org.apache.gearpump.cluster.WorkerToAppMaster.{ShutdownExecutorSucceed, ShutdownExecutorFailed, ExecutorLaunchRejected}
 import org.apache.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, ResourceUpdate}
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.worker.Worker
@@ -97,6 +97,10 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
       //Test terminationWatch
       worker ! ShutdownExecutor(appId, executorId, "Test shut down executor")
       mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(100)))
+      expectMsg(ShutdownExecutorSucceed(1, 1))
+
+      worker ! ShutdownExecutor(appId, executorId + 1, "Test shut down executor")
+      expectMsg(ShutdownExecutorFailed(s"Can not find executor ${executorId + 1} for app $appId"))
 
       mockMaster.ref ! PoisonPill
       masterProxy.expectMsg(RegisterWorker(workerId))
