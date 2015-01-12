@@ -96,7 +96,7 @@ Configure `./target/conf/kafka.conf` as below.
 Finally, let's run the KafkaWordCount example.
 
    ```bash
-   ./target/pack/bin/gear app -jar ./examples/kafka/target/pack/lib/gearpump-examples-kafka-$VERSION.jar org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount -master 127.0.0.1:3000
+   ./target/pack/bin/gear app -jar ./examples/target/$SCALA_VERSION_MAJOR/gearpump-examples-assembly-$VERSION.jar org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount -master 127.0.0.1:3000
    ```
 
 One more step is to verify that we've succeeded in producing data to Kafka.
