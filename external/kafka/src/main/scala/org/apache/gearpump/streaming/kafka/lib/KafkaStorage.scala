@@ -54,7 +54,7 @@ object KafkaStorage {
     new KafkaStorage(topic, producer, load(topicExists, messageIterator))
   }
 
-  private def load(topicExists: Boolean, iterator: KafkaMessageIterator): List[(TimeStamp, Array[Byte])] = {
+  private[lib] def load(topicExists: Boolean, iterator: KafkaMessageIterator): List[(TimeStamp, Array[Byte])] = {
     @annotation.tailrec
     def fetch(offsets: List[(TimeStamp, Array[Byte])]): List[(TimeStamp, Array[Byte])] = {
       if (iterator.hasNext) {

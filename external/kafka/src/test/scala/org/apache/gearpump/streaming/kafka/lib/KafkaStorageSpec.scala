@@ -19,6 +19,7 @@
 package org.apache.gearpump.streaming.kafka.lib
 
 import com.twitter.bijection.Injection
+import kafka.common.TopicAndPartition
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.mockito.Mockito._
@@ -92,6 +93,43 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
       val offsetBytes = Injection[Long, Array[Byte]](offset)
       storage.append(time, offsetBytes)
       verify(producer).send(topic, timeBytes, 0, offsetBytes)
+    }
+  }
+
+  property("KafkaStorage should load data from Kafka") {
+    val topicAndPartitionGen = for {
+      topic <- Gen.alphaStr
+      partition <- Gen.choose[Int](0, 100)
+    } yield TopicAndPartition(topic, partition)
+
+    val kafkaMsgGen = for {
+      timestamp <- Gen.choose[Long](1L, 1000L)
+      offset    <- Gen.choose[Long](0L, 1000L)
+    } yield (timestamp, Injection[Long, Array[Byte]](offset))
+    val msgListGen = Gen.listOf[(Long, Array[Byte])](kafkaMsgGen)
+
+    val topicExistsGen = Gen.oneOf(true, false)
+
+    forAll(topicExistsGen, topicAndPartitionGen, msgListGen) {
+      (topicExists: Boolean, topicAndPartition: TopicAndPartition, msgList: List[(Long, Array[Byte])]) =>
+        val mockIterator = mock[KafkaMessageIterator]
+        if (topicExists) {
+          msgList match {
+            case Nil =>
+              when(mockIterator.hasNext).thenReturn(false)
+            case list =>
+              val hasNexts = List.fill(list.tail.size)(true) :+ false
+              val kafkaMsgList = list.zipWithIndex.map { case ((timestamp, bytes), index) =>
+                KafkaMessage(topicAndPartition, index.toLong, Some(Injection[Long, Array[Byte]](timestamp)), bytes)
+              }
+              when(mockIterator.hasNext).thenReturn(true, hasNexts: _*)
+              when(mockIterator.next()).thenReturn(kafkaMsgList.head, kafkaMsgList.tail: _*)
+          }
+          KafkaStorage.load(topicExists, mockIterator) shouldBe msgList
+          verify(mockIterator).close()
+        } else {
+          KafkaStorage.load(topicExists, mockIterator) shouldBe List.empty[(TimeStamp, Array[Byte])]
+        }
     }
   }
 }
