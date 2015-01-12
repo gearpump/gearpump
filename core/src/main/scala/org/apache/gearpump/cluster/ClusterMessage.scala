@@ -61,7 +61,7 @@ object MasterToClient {
 trait AppMasterRegisterData
 
 object AppMasterToMaster {
-  case class RegisterAppMaster(appMaster: ActorRef, appId: Int, executorId: Int, resource: Resource, registerData : AppMasterRegisterData)
+  case class RegisterAppMaster(appMaster: ActorRef, registerData : AppMasterRegisterData)
   case class InvalidAppMaster(appId: Int, appMaster: String, reason: Throwable)
   case class RequestResource(appId: Int, request: ResourceRequest)
 
@@ -88,7 +88,7 @@ object MasterToAppMaster {
   }
   case class AppMasterRegistered(appId: Int, master : ActorRef)
   case object ShutdownAppMaster
-  case class AppMasterData(appId: Int, appData: AppMasterRuntimeInfo)
+  case class AppMasterData(appId: Int, workerPath: String)
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
   case class AppMastersData(appMasters: List[AppMasterData])
   case object AppMastersDataRequest

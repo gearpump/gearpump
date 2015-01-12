@@ -50,7 +50,8 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     val tranform = implicitly[TildeArrow[RequestContext , Unit]]
     (Get("/appmaster/0?detail=false") ~> routes).asInstanceOf[RouteResult] ~> check{
-      responseAs[AppMasterData] == AppMasterData(0, AppMasterRuntimeInfo(null))
+      //check the response type
+      responseAs[AppMasterData]
     }
   }
 

@@ -143,7 +143,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       val appMastersData = collection.mutable.ListBuffer[AppMasterData]()
       appMasterRegistry.foreach(pair => {
         val (id, (appMaster:ActorRef, info:AppMasterRuntimeInfo)) = pair
-        appMastersData += AppMasterData(id,info)
+        appMastersData += AppMasterData(id,info.worker.path.toString)
       }
       )
       sender ! AppMastersData(appMastersData.toList)
@@ -153,9 +153,9 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       Option(info) match {
         case a@Some(data) =>
           val worker = a.get.worker
-          sender ! AppMasterData(appId = appId, appData = data)
+          sender ! AppMasterData(appId = appId, workerPath = worker.path.toString)
         case None =>
-          sender ! AppMasterData(appId = appId, appData = null)
+          sender ! AppMasterData(appId = appId, workerPath = null)
       }
   }
 
@@ -171,13 +171,13 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   }
 
   def appMasterMessage: Receive = {
-    case RegisterAppMaster(appMaster, appId, executorId, slots, registerData: AppMasterRuntimeInfo) =>
+    case RegisterAppMaster(appMaster, register: AppMasterRuntimeInfo) =>
       val appMasterPath = appMaster.path.address.toString
-      val workerPath = registerData.worker.path.address.toString
-      LOG.info(s"Register AppMaster for app: $appId appMaster=$appMasterPath worker=$workerPath")
+      val workerPath = register.worker.path.address.toString
+      LOG.info(s"Register AppMaster for app: ${register.appId} appMaster=$appMasterPath worker=$workerPath")
       context.watch(appMaster)
-      appMasterRegistry += appId -> (appMaster, registerData)
-      sender ! AppMasterRegistered(appId, context.parent)
+      appMasterRegistry += register.appId -> (appMaster, register)
+      sender ! AppMasterRegistered(register.appId, context.parent)
   }
 
   def appDataStoreService: Receive = {
@@ -248,4 +248,4 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   }
 }
 
-case class AppMasterRuntimeInfo(worker : ActorRef) extends AppMasterRegisterData
+case class AppMasterRuntimeInfo(worker : ActorRef, appId: Int = 0, resource: Resource = Resource.empty) extends AppMasterRegisterData

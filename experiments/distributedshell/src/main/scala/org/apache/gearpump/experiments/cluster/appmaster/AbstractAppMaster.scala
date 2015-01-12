@@ -36,14 +36,14 @@ import org.slf4j.Logger
 import scala.collection.mutable
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-abstract class AbstractAppMaster(appContext : AppMasterContextInterface, app : Application) extends ApplicationMaster {
+abstract class AbstractAppMaster(appContext : AppMasterContext, app : Application) extends ApplicationMaster {
   import context.dispatcher
   import appContext._
 
   protected val userConfig = app.conf
   protected val systemConfig = context.system.settings.config
   protected var master: ActorRef = null
-  protected var currentExecutorId = masterExecutorId + 1
+  protected var currentExecutorId = 0
   protected val executorClass: Class[_ <: DefaultExecutor]
   protected val defaultMsgHandler = masterMsgHandler orElse workerMsgHandler orElse selfMsgHandler
 
@@ -58,7 +58,7 @@ abstract class AbstractAppMaster(appContext : AppMasterContextInterface, app : A
   }
 
   def registerToMaster(): Unit = {
-    context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
+    context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, registerData))))
   }
 
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {

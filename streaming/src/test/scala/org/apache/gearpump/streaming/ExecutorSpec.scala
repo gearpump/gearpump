@@ -22,7 +22,7 @@ import _root_.akka.actor.{Actor, PoisonPill, Props, ActorSystem}
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import org.apache.gearpump.cluster.{MasterHarness, ExecutorContextInterface, UserConfig, TestUtil}
+import org.apache.gearpump.cluster.{MasterHarness, UserConfig, TestUtil}
 
 import akka.actor.{Actor, PoisonPill, Props, ActorSystem}
 import akka.testkit.{TestProbe, ImplicitSender, TestKit}
@@ -48,7 +48,7 @@ class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with M
   var watcher: TestProbe = null
   var mockMaster: TestProbe = null
   var executor: TestActorRef[Executor] = null
-  var executorContext: ExecutorContextInterface = null
+  var executorContext: ExecutorContext = null
   var taskContext: TaskContext = null
 
   override def beforeEach() = {
