@@ -107,6 +107,10 @@ object StreamingTestUtil {
 class EchoTask(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
   import EchoTask._
   var testProbe: ActorRef = null
+<<<<<<< HEAD
+=======
+  implicit val actorSystem: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
+>>>>>>> fix #301, fix UserConfig ClassNotFoundException by storing everything in
 
   override def onStart(startTime: StartTime): Unit = {
 

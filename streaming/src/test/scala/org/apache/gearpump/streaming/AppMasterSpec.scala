@@ -130,6 +130,7 @@ object AppMasterSpec {
 }
 
 class TaskActorA(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
+
   val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = master ! AppMasterSpec.TaskStarted
 
@@ -137,6 +138,7 @@ class TaskActorA(taskContext : TaskContext, userConf : UserConfig) extends TaskA
 }
 
 class TaskActorB(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
+
   val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = master ! AppMasterSpec.TaskStarted
 

@@ -53,6 +53,7 @@ import org.apache.gearpump.cluster.UserConfig._
   }
 
   /**
+<<<<<<< HEAD
    * This will de-serialize value to object instance
    *
    * To do de-serialization, this requires an implicit ActorSystem, as
@@ -60,6 +61,12 @@ import org.apache.gearpump.cluster.UserConfig._
    * requires an implicit ActorSystem.
    *
    * @see [[http://doc.akka.io/docs/akka/snapshot/scala/serialization.html#A_Word_About_Java_Serialization]]
+=======
+   *
+   * Need to set a serializer,
+   *
+   * implicit serializer: akka.serialization.Serializer = new JavaSerializer(actorSystem)
+>>>>>>> fix #301, fix UserConfig ClassNotFoundException by storing everything in
    */
   def getValue[T](key: String)(implicit system: ActorSystem): Option[T]  = {
     val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
@@ -68,6 +75,7 @@ import org.apache.gearpump.cluster.UserConfig._
   }
 
   /**
+<<<<<<< HEAD
    * This will serialize the object and store it as string.
    *
    * To do serialization, this requires an implicit ActorSystem, as
@@ -75,6 +83,12 @@ import org.apache.gearpump.cluster.UserConfig._
    * requires an implicit ActorSystem.
    *
    * @see [[http://doc.akka.io/docs/akka/snapshot/scala/serialization.html#A_Word_About_Java_Serialization]]
+=======
+   *
+   * Need to set a serializer,
+   *
+   * implicit serializer: akka.serialization.Serializer = new JavaSerializer(actorSystem)
+>>>>>>> fix #301, fix UserConfig ClassNotFoundException by storing everything in
    */
   def withValue[T<: AnyRef with java.io.Serializable](key: String, value: T)(implicit system: ActorSystem): UserConfig = {
 
