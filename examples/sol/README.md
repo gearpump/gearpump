@@ -15,5 +15,5 @@ The original code comes from: https://github.com/yahoo/storm-perf-test
 
 <B>Example:</B>
 ```
-bin/gear app -jar gearpump-examples-sol-$VERSION.jar org.apache.gearpump.streaming.examples.sol.SOL -master node1:3000
+bin/gear app -jar examples/gearpump-examples-assembly-$VERSION.jar org.apache.gearpump.streaming.examples.sol.SOL -master node1:3000
 ```
