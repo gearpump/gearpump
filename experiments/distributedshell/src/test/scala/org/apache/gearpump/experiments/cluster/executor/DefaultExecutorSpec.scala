@@ -17,6 +17,48 @@
  */
 package org.apache.gearpump.experiments.cluster.executor
 
-class DefaultExecutorSpec {
+import akka.actor.{PoisonPill, Actor, Props, ActorSystem}
+import akka.testkit.TestProbe
+import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.{UserConfig, ExecutorContext, TestUtil}
+import org.apache.gearpump.experiments.cluster.AppMasterToExecutor.{MsgToTask, LaunchTask}
+import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.{ResponsesFromTasks, RegisterExecutor}
+import org.apache.gearpump.experiments.cluster.task.{TaskContext, TaskContextInterface}
+import org.scalatest.{Matchers, WordSpec}
 
+class DefaultExecutorSpec extends WordSpec with Matchers {
+
+  "DefaultExecutor" should {
+    "launch task and deliver message properly" in {
+      val executorId = 1
+      val workerId = 2
+      val appId = 0
+      val resource = Resource(2)
+      val system = ActorSystem("DefaultExecutor", TestUtil.DEFAULT_CONFIG)
+      val mockMaster = TestProbe()(system)
+      val executorContext = ExecutorContext(executorId, workerId, appId, mockMaster.ref, resource)
+      val executor = system.actorOf(Props(classOf[DefaultExecutor], executorContext, UserConfig.empty))
+      mockMaster.expectMsg(RegisterExecutor(executor, executorId, resource, workerId))
+      executor ! LaunchTask(TaskContext(executorId, appId, mockMaster.ref), classOf[MockActor], UserConfig.empty)
+      executor ! LaunchTask(TaskContext(executorId, appId, mockMaster.ref), classOf[MockActor], UserConfig.empty)
+
+      executor.tell(MsgToTask(GetName), mockMaster.ref)
+      mockMaster.expectMsg(ResponsesFromTasks(executorId, List("MOCKACTOR", "MOCKACTOR")))
+
+      val watcher = TestProbe()(system)
+      watcher watch executor
+      mockMaster.ref ! PoisonPill
+      watcher.expectTerminated(executor)
+      system.shutdown()
+    }
+  }
+}
+
+case object GetName
+
+class MockActor(taskContext : TaskContextInterface, userConf : UserConfig) extends Actor {
+  override def receive: Receive = {
+    case GetName =>
+      sender ! "MOCKACTOR"
+  }
 }

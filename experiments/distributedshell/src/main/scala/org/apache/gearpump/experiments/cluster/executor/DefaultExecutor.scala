@@ -40,7 +40,7 @@ class DefaultExecutor(executorContext: ExecutorContextInterface, userConf : User
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
 
-  context.parent ! RegisterExecutor(self, executorId, resource, workerId)
+  appMaster ! RegisterExecutor(self, executorId, resource, workerId)
   context.watch(appMaster)
 
   override def receive: Receive = appMasterMsgHandler orElse terminationWatch

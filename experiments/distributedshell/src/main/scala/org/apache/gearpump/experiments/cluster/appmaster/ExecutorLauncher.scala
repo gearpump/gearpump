@@ -22,8 +22,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
-import org.apache.gearpump.cluster.{UserConfig, ExecutorContext}
-import org.apache.gearpump.experiments.cluster.executor.DefaultExecutor
+import org.apache.gearpump.cluster.{ApplicationExecutor, UserConfig, ExecutorContext}
 import org.apache.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util._
 import org.slf4j.Logger
@@ -34,7 +33,7 @@ object LaunchActorSystemTimeOut
 case object AllocateResourceTimeOut
 case class LaunchExecutorActor(executorConfig : Props, executorId : Int, daemon: ActorRef)
 
-class ExecutorLauncher (executorClass: Class[_ <: DefaultExecutor], worker : ActorRef, launch : LaunchExecutor, executorConfig : ExecutorContext, userConf : UserConfig) extends Actor {
+class ExecutorLauncher (executorClass: Class[_ <: ApplicationExecutor], worker : ActorRef, launch : LaunchExecutor, executorConfig : ExecutorContext, userConf : UserConfig) extends Actor {
 
   import executorConfig._
 

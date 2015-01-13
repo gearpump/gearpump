@@ -36,6 +36,7 @@ class ShellTaskSpec extends WordSpec with Matchers {
       val actualResult = "ls /" !!
 
       mockMaster.expectMsg(actualResult)
+      system.shutdown()
     }
   }
 }

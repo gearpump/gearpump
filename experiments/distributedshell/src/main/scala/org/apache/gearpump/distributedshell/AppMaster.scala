@@ -42,6 +42,7 @@ class ResponseBuilder {
       case msg: String =>
         result.append(msg)
     }
+    result.append("\n")
     this
   }
 

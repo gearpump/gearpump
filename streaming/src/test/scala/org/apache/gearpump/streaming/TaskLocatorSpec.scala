@@ -27,6 +27,7 @@ class TaskLocatorSpec extends WordSpec with Matchers {
   System.setProperty("config.file", resource)
   val taskDescription1 = TaskDescription("org.apache.gearpump.streaming.TestTask1", 4)
   val taskDescription2 = TaskDescription("org.apache.gearpump.streaming.TestTask2", 2)
+  val taskDescription3 = TaskDescription("org.apache.gearpump.streaming.TestTask3", 2)
 
   "TaskLocator" should {
     "locate task properly according user's configuration" in {
@@ -44,6 +45,7 @@ class TaskLocatorSpec extends WordSpec with Matchers {
       assert(localities(2) == WorkerLocality(1))
       assert(localities(3) == WorkerLocality(1))
       assert(taskLocator.locateTask(taskDescription1) == NonLocality)
+      assert(taskLocator.locateTask(taskDescription3) == NonLocality)
     }
   }
 }
@@ -53,5 +55,9 @@ class TestTask1 extends Actor {
 }
 
 class TestTask2 extends Actor {
+  override def receive: Receive = null
+}
+
+class TestTask3 extends Actor {
   override def receive: Receive = null
 }
