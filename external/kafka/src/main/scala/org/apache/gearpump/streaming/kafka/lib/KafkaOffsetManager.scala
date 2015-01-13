@@ -31,12 +31,15 @@ import scala.util.{Failure, Success, Try}
 
 object KafkaOffsetManager {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaOffsetManager])
-  def apply(appId : Int, conf: UserConfig, topicAndPartition: TopicAndPartition): KafkaOffsetManager = {
-    new KafkaOffsetManager(KafkaStorage(appId, conf, topicAndPartition))
+  def apply(appId: Int, config: KafkaConfig, topicAndPartition: TopicAndPartition): KafkaOffsetManager = {
+    val storageTopic = s"app${appId}_${topicAndPartition.topic}_${topicAndPartition.partition}"
+    val replicas = config.getStorageReplicas
+    val topicExists = KafkaUtil.createTopic(config, storageTopic, replicas)
+    new KafkaOffsetManager(KafkaStorage(config, storageTopic, topicExists, topicAndPartition))
   }
 }
 
-class KafkaOffsetManager(storage: OffsetStorage) extends OffsetManager {
+private[kafka] class KafkaOffsetManager(storage: OffsetStorage) extends OffsetManager {
   import org.apache.gearpump.streaming.kafka.lib.KafkaOffsetManager._
 
   var maxTime: TimeStamp  = 0L

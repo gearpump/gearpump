@@ -16,27 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.kafka
 
 import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+import org.apache.gearpump.streaming.kafka.lib.{KafkaUtil, KafkaConfig}
 
 import scala.collection.mutable.ArrayBuffer
 
-object KafkaProducer {
-  def apply[K, V](config: ProducerConfig, batchSize: Int): KafkaProducer[K, V] = {
-    val producer = new Producer[K, V](config)
-    new KafkaProducer[K, V](producer, batchSize)
-  }
-}
+class KafkaSink private[kafka](producer: Producer[Array[Byte], Array[Byte]], batchSize: Int) {
 
-class KafkaProducer[K, V](producer: Producer[K, V], batchSize: Int) {
+  private var buffer = ArrayBuffer[KeyedMessage[Array[Byte], Array[Byte]]]()
 
-  private var buffer = ArrayBuffer[KeyedMessage[K, V]]()
+  def this(producerConfig: ProducerConfig, batchSize: Int) =
+    this(new Producer[Array[Byte], Array[Byte]](producerConfig), batchSize)
 
-  def send(topic: String, key: K, msg: V): Unit = send(topic, key, key, msg)
+  def this(config: KafkaConfig) = this(KafkaUtil.buildProducerConfig(config), config.getProducerEmitBatchSize)
 
-  def send(topic: String, key: K, partKey: Any, msg: V): Unit = {
-    buffer += new KeyedMessage[K, V](topic, key, partKey, msg)
+  def write(topic: String, key: Array[Byte], msg: Array[Byte]): Unit = write(topic, key, key, msg)
+
+  def write(topic: String, key: Array[Byte], partKey: Any, msg: Array[Byte]): Unit = {
+    buffer += new KeyedMessage(topic, key, partKey, msg)
     if (buffer.size >= batchSize) {
       flush()
     }

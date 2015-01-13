@@ -20,9 +20,8 @@ package org.apache.gearpump.streaming.kafka.lib
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
+import kafka.producer.{KeyedMessage, Producer}
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.apache.gearpump.util.LogUtil
@@ -33,56 +32,24 @@ import scala.util.{Try, Failure, Success}
 object KafkaStorage {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaStorage])
 
-  def apply(appId: Int, conf: UserConfig, topicAndPartition: TopicAndPartition): KafkaStorage =  {
-    val config = conf.config
-    val id = appId
-    val topic = s"app${id}_${topicAndPartition.topic}_${topicAndPartition.partition}"
-    val partition = 0
-    val replicas = config.getStorageReplicas
-    val producer = config.getProducer[Array[Byte], Array[Byte]]()
-    val clientId = config.getClientId
-    val socketTimeout = config.getSocketTimeoutMS
-    val receiveBufferSize = config.getSocketReceiveBufferBytes
-    val fetchSize = config.getFetchMessageMaxBytes
-    val zkClient = config.getZkClient()
-    val topicExists = KafkaUtil.createTopic(zkClient, topic, replicas)
-
-    val broker = KafkaUtil.getBroker(zkClient, topic, partition)
-    val messageIterator = KafkaMessageIterator(broker.host, broker.port,
-        topic, partition, socketTimeout, receiveBufferSize, fetchSize, clientId)
-
-    new KafkaStorage(topic, producer, load(topicExists, messageIterator))
+  def apply(config: KafkaConfig, topic: String, topicExists: Boolean, topicAndPartition: TopicAndPartition) = {
+    val getConsumer = () => KafkaConsumer(topic, 0, config)
+    val producer = new Producer[Array[Byte], Array[Byte]](KafkaUtil.buildProducerConfig(config))
+    new KafkaStorage(topic, topicExists, producer, getConsumer())
   }
+}
 
-  private[lib] def load(topicExists: Boolean, iterator: KafkaMessageIterator): List[(TimeStamp, Array[Byte])] = {
-    @annotation.tailrec
-    def fetch(offsets: List[(TimeStamp, Array[Byte])]): List[(TimeStamp, Array[Byte])] = {
-      if (iterator.hasNext) {
-        val kafkaMsg = iterator.next
-        val offset = kafkaMsg.key.map { k =>
-          Injection.invert[TimeStamp, Array[Byte]](k) match {
-            case Success(time) => (time, kafkaMsg.msg)
-            case Failure(e) => throw e
-          }
-        } orElse (throw new RuntimeException("offset key should not be null"))
-        fetch(offsets :+ offset.get)
-      } else {
-        iterator.close()
-        offsets
-      }
-    }
-    if (topicExists) {
-      fetch(List.empty[(TimeStamp, Array[Byte])])
+private[kafka] class KafkaStorage(topic: String,
+                                  topicExists: Boolean,
+                                  producer: Producer[Array[Byte], Array[Byte]],
+                                  getConsumer: => KafkaConsumer) extends OffsetStorage {
+  private val dataByTime: List[(TimeStamp, Array[Byte])] = {
+    if (topicExists){
+      load(getConsumer)
     } else {
       List.empty[(TimeStamp, Array[Byte])]
     }
   }
-}
-
-class KafkaStorage(topic: String,
-                   producer: KafkaProducer[Array[Byte], Array[Byte]],
-                   // should already be sorted by TimeStamp
-                   dataByTime: List[(TimeStamp, Array[Byte])]) extends OffsetStorage {
 
   /**
    * find data of max TimeStamp <= @param time
@@ -108,8 +75,29 @@ class KafkaStorage(topic: String,
   }
 
   override def append(time: TimeStamp, offset: Array[Byte]): Unit = {
-    producer.send(topic, Injection[Long, Array[Byte]](time), 0,
-      offset)
+    val message = new KeyedMessage[Array[Byte], Array[Byte]](
+      topic, Injection[Long, Array[Byte]](time), 0, offset)
+    producer.send(message)
+  }
+
+  private[kafka] def load(consumer: KafkaConsumer): List[(TimeStamp, Array[Byte])] = {
+    @annotation.tailrec
+    def fetch(offsets: List[(TimeStamp, Array[Byte])]): List[(TimeStamp, Array[Byte])] = {
+      if (consumer.hasNext) {
+        val kafkaMsg = consumer.next
+        val offset = kafkaMsg.key.map { k =>
+          Injection.invert[TimeStamp, Array[Byte]](k) match {
+            case Success(time) => (time, kafkaMsg.msg)
+            case Failure(e) => throw e
+          }
+        } orElse (throw new RuntimeException("offset key should not be null"))
+        fetch(offsets :+ offset.get)
+      } else {
+        consumer.close()
+        offsets
+      }
+    }
+    fetch(List.empty[(TimeStamp, Array[Byte])])
   }
 
 }

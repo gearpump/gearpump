@@ -18,19 +18,14 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
-import java.util.concurrent.LinkedBlockingQueue
-
+import kafka.api.{FetchRequestBuilder, OffsetRequest}
+import kafka.common.ErrorMapping._
 import kafka.common.TopicAndPartition
-import org.I0Itec.zkclient.ZkClient
-import org.apache.gearpump.util.LogUtil
-import org.slf4j.Logger
-
-
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte])
+import kafka.consumer.SimpleConsumer
+import kafka.message.MessageAndOffset
+import kafka.utils.Utils
 
 object KafkaConsumer {
-
   // TODO: use kafka.cluster.Broker once it is not package private in 0.8.2
   object Broker {
     def toString(brokers: List[Broker]) = brokers.mkString(",")
@@ -40,58 +35,67 @@ object KafkaConsumer {
     override def toString = s"$host:$port"
   }
 
-  def apply(topicAndPartitions: Array[TopicAndPartition],
-            clientId: String,
-            socketTimeout: Int,
-            socketBufferSize: Int,
-            fetchSize: Int,
-            zkClient: ZkClient,
-            fetchThreshold: Int,
-            fetchSleepMS: Int): KafkaConsumer = {
-    val leaders = topicAndPartitions.map {
-      tp => {
-        tp -> KafkaUtil.getBroker(zkClient, tp.topic, tp.partition)
-      }
-    }.toMap
-    val iterators: Map[TopicAndPartition, KafkaMessageIterator] = leaders.map {
-      case (tp, broker) =>
-        tp -> KafkaMessageIterator(broker.host, broker.port, tp.topic, tp.partition,
-          socketTimeout, socketBufferSize, fetchSize, clientId)
-    }
-    val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
-    val fetchThread = new FetchThread(topicAndPartitions, iterators,
-      incomingQueue, fetchThreshold, fetchSleepMS)
-    new KafkaConsumer(fetchThread, incomingQueue)
-  }
+  def apply(topic: String, partition: Int, config: KafkaConfig): KafkaConsumer = {
+    val broker = KafkaUtil.getBroker(config, topic, partition)
+    val soTimeout = config.getSocketTimeoutMS
+    val soBufferSize = config.getSocketReceiveBufferBytes
+    val fetchSize = config.getFetchMessageMaxBytes
+    val clientId = config.getClientId
+    val consumer = new SimpleConsumer(broker.host, broker.port, soTimeout, soBufferSize, clientId)
+    val getIterator = (offset: Long) => {
+      val request = new FetchRequestBuilder()
+        .clientId(clientId)
+        .addFetch(topic, partition, offset, fetchSize)
+        .build()
 
-  private val LOG: Logger = LogUtil.getLogger(getClass)
+      val response = consumer.fetch(request)
+      response.errorCode(topic, partition) match {
+        case NoError => response.messageSet(topic, partition).iterator
+        case error => throw exceptionFor(error)
+      }
+    }
+    new KafkaConsumer(consumer, topic, partition, getIterator)
+  }
 }
 
+private[kafka] class KafkaConsumer(consumer: SimpleConsumer,
+                                   topic: String,
+                                   partition: Int,
+                                   getIterator: (Long) => Iterator[MessageAndOffset]) {
+  private val earliestOffset = consumer
+    .earliestOrLatestOffset(TopicAndPartition(topic, partition), OffsetRequest.EarliestTime, -1)
+  private var nextOffset: Long = earliestOffset
+  private var iterator: Iterator[MessageAndOffset] = getIterator(nextOffset)
 
-class KafkaConsumer(fetchThread: FetchThread,
-                    incomingQueue: LinkedBlockingQueue[KafkaMessage])  {
-
-
-  def start(): Unit = {
-    fetchThread.start()
+  def setStartOffset(startOffset: Long): Unit = {
+    nextOffset = startOffset
+    iterator = getIterator(nextOffset)
   }
 
-  def setStartOffset(topicAndPartition: TopicAndPartition, startOffset: Long): Unit = {
-    fetchThread.setStartOffset(topicAndPartition, startOffset)
+  def next(): KafkaMessage = {
+    val mo = iterator.next()
+    val message = mo.message
+
+    nextOffset = mo.nextOffset
+
+    val offset = mo.offset
+    val payload = Utils.readBytes(message.payload)
+    new KafkaMessage(topic, partition, offset, Option(message.key).map(Utils.readBytes), payload)
   }
 
-  /**
-   * retrieve and remove head message of the incomingQueue,
-   * and return None if the queue is empty
-   */
-  def pollNextMessage: Option[KafkaMessage] = {
-    Option(incomingQueue.poll())
+  def hasNext: Boolean = {
+    @annotation.tailrec
+    def hasNextHelper(iter: Iterator[MessageAndOffset], newIterator: Boolean): Boolean = {
+      if (iter.hasNext) true
+      else if (newIterator) false
+      else hasNextHelper(getIterator(nextOffset), newIterator = true)
+    }
+    hasNextHelper(iterator, newIterator = false)
   }
 
   def close(): Unit = {
-    fetchThread.interrupt()
-    fetchThread.join()
+    consumer.close()
   }
+
+
 }
-
-

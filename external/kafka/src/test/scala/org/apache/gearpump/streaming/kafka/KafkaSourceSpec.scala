@@ -23,7 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.kafka.lib.{KafkaOffsetManager, KafkaMessage, KafkaConsumer}
+import org.apache.gearpump.streaming.kafka.lib.{FetchThread, KafkaOffsetManager, KafkaMessage, KafkaConsumer}
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
 import org.apache.gearpump.streaming.transaction.api.MessageDecoder
 import org.mockito.Matchers._
@@ -44,13 +44,20 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
     forAll(startTimeGen) { (startTime: Long) =>
       val offsetManager = mock[KafkaOffsetManager]
       val topicAndPartition = mock[TopicAndPartition]
-      when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(StorageEmpty))
-      val consumer = mock[KafkaConsumer]
+      val fetchThread = mock[FetchThread]
       val messageDecoder = mock[MessageDecoder]
-      val source = new KafkaSource(consumer, messageDecoder, Map(topicAndPartition -> offsetManager))
+      val source = new KafkaSource(fetchThread, messageDecoder, Map(topicAndPartition -> offsetManager))
+
+      when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(StorageEmpty))
+
       source.setStartTime(startTime)
-      verify(consumer, never()).setStartOffset(anyObject[TopicAndPartition](), anyLong())
-      verify(consumer).start()
+      verify(fetchThread, never()).setStartOffset(anyObject[TopicAndPartition](), anyLong())
+      verify(fetchThread).start()
+
+      doThrow(new RuntimeException).when(offsetManager).resolveOffset(startTime)
+      intercept[RuntimeException] {
+        source.setStartTime(startTime)
+      }
     }
   }
 
@@ -59,13 +66,20 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
       (startTime: Long, offset: Long) =>
         val offsetManager = mock[KafkaOffsetManager]
         val topicAndPartition = mock[TopicAndPartition]
-        when(offsetManager.resolveOffset(startTime)).thenReturn(Success(offset))
-        val consumer = mock[KafkaConsumer]
+        val fetchThread = mock[FetchThread]
         val messageDecoder = mock[MessageDecoder]
-        val source = new KafkaSource(consumer, messageDecoder, Map(topicAndPartition -> offsetManager))
+        val source = new KafkaSource(fetchThread, messageDecoder, Map(topicAndPartition -> offsetManager))
+
+        when(offsetManager.resolveOffset(startTime)).thenReturn(Success(offset))
+
         source.setStartTime(startTime)
-        verify(consumer).setStartOffset(topicAndPartition, offset)
-        verify(consumer).start()
+        verify(fetchThread).setStartOffset(topicAndPartition, offset)
+        verify(fetchThread).start()
+
+        doThrow(new RuntimeException).when(offsetManager).resolveOffset(startTime)
+        intercept[RuntimeException] {
+          source.setStartTime(startTime)
+        }
     }
   }
 
@@ -83,29 +97,29 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
       (number: Int, kafkaMsgList: List[KafkaMessage]) =>
         val offsetManager = mock[KafkaOffsetManager]
         val messageDecoder = mock[MessageDecoder]
-        val consumer = mock[KafkaConsumer]
+        val fetchThread = mock[FetchThread]
         val message = mock[Message]
-        val source = new KafkaSource(consumer, messageDecoder,
+        val source = new KafkaSource(fetchThread, messageDecoder,
           kafkaMsgList.map(_.topicAndPartition -> offsetManager).toMap)
         if (number == 0) {
-          verify(consumer, never()).pollNextMessage
+          verify(fetchThread, never()).poll
           source.pull(number).size shouldBe 0
         } else {
           kafkaMsgList match {
             case Nil =>
               if (number == 1) {
-                when(consumer.pollNextMessage).thenReturn(None)
+                when(fetchThread.poll).thenReturn(None)
               } else {
                 val nones = List.fill(number)(None)
-                when(consumer.pollNextMessage).thenReturn(nones.head, nones.tail: _*)
+                when(fetchThread.poll).thenReturn(nones.head, nones.tail: _*)
               }
             case list =>
               val queue = list.map(Option(_)) ++ List.fill(number - list.size)(None)
-              when(consumer.pollNextMessage).thenReturn(queue.head, queue.tail: _*)
+              when(fetchThread.poll).thenReturn(queue.head, queue.tail: _*)
               when(offsetManager.filter(anyObject[(Message, Long)])).thenReturn(Some(message))
           }
           source.pull(number).size shouldBe Math.min(number, kafkaMsgList.size)
-          verify(consumer, times(number)).pollNextMessage
+          verify(fetchThread, times(number)).poll
         }
     }
   }

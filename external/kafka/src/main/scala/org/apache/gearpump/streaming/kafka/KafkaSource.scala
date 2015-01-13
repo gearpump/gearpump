@@ -19,11 +19,9 @@
 package org.apache.gearpump.streaming.kafka
 
 import kafka.common.TopicAndPartition
-import kafka.utils.ZkUtils
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
 import org.apache.gearpump.streaming.task.TaskContext
-import org.apache.gearpump.streaming.kafka.lib.{KafkaOffsetManager, KafkaConsumer}
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
+import org.apache.gearpump.streaming.kafka.lib._
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
 import org.apache.gearpump.streaming.transaction.api._
 import org.apache.gearpump.util.LogUtil
@@ -35,27 +33,26 @@ import scala.util.{Failure, Success}
 
 object KafkaSource {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaSource])
-
-  def apply(appId : Int, taskContext : TaskContext, conf: UserConfig, messageDecoder: MessageDecoder): KafkaSource = {
-    val config = conf.config
-    val grouper = config.getGrouperFactory.getKafkaGrouper(taskContext)
-    val topicAndPartitions = grouper.group(
-      ZkUtils.getPartitionsForTopics(config.getZkClient(), config.getConsumerTopics)
-      .flatMap { case (topic, partitions) =>
-        partitions.map(TopicAndPartition(topic, _)) }.toArray)
-    val consumer: KafkaConsumer = config.getConsumer(topicAndPartitions = topicAndPartitions)
-    val offsetManagers: Map[TopicAndPartition, KafkaOffsetManager] =
-      topicAndPartitions.map(tp => tp -> KafkaOffsetManager(appId, conf, tp)).toMap
-    new KafkaSource(consumer, messageDecoder, offsetManagers)
-  }
 }
 
-class KafkaSource(consumer: KafkaConsumer,
-                  messageDecoder: MessageDecoder,
-                  offsetManagers: Map[TopicAndPartition, KafkaOffsetManager]) extends TimeReplayableSource {
+class KafkaSource private[kafka](fetchThread: FetchThread,
+                                 messageDecoder: MessageDecoder,
+                                 offsetManagers: Map[TopicAndPartition, KafkaOffsetManager]) extends TimeReplayableSource {
   import org.apache.gearpump.streaming.kafka.KafkaSource._
 
+  private[kafka] def this(appId: Int, config: KafkaConfig, topicAndPartitions: Array[TopicAndPartition], messageDecoder: MessageDecoder) =
+    this(FetchThread(topicAndPartitions, config), messageDecoder,
+      topicAndPartitions.map(tp => tp -> KafkaOffsetManager(appId, config, tp)).toMap)
+
+  private[kafka] def this(appId: Int, config: KafkaConfig, grouper: KafkaGrouper, messageDecoder: MessageDecoder) =
+    this(appId, config, KafkaUtil.getTopicAndPartitions(config, grouper, config.getConsumerTopics), messageDecoder)
+
+  def this(appId : Int, taskContext : TaskContext, config: KafkaConfig, messageDecoder: MessageDecoder) =
+    this(appId: Int, config, config.getGrouperFactory.getKafkaGrouper(taskContext), messageDecoder)
+
   private var startTime: TimeStamp = 0L
+
+  LOG.info(s"assigned ${offsetManagers.keySet}")
 
   override def setStartTime(startTime: TimeStamp): Unit = {
     this.startTime = startTime
@@ -63,13 +60,13 @@ class KafkaSource(consumer: KafkaConsumer,
       offsetManager.resolveOffset(this.startTime) match {
         case Success(offset) =>
           LOG.debug(s"set start offset to $offset for $tp")
-          consumer.setStartOffset(tp, offset)
+          fetchThread.setStartOffset(tp, offset)
         case Failure(StorageEmpty) =>
           LOG.debug(s"no previous TimeStamp stored")
         case Failure(e) => throw e
       }
     }
-    consumer.start()
+    fetchThread.start()
   }
 
   override def pull(number: Int): List[Message] = {
@@ -78,7 +75,7 @@ class KafkaSource(consumer: KafkaConsumer,
       if (count >= number) {
         msgList
       } else {
-        val optMsg: Option[Message] = consumer.pollNextMessage.flatMap { kafkaMsg =>
+        val optMsg: Option[Message] = fetchThread.poll.flatMap { kafkaMsg =>
           val msg = messageDecoder.fromBytes(kafkaMsg.msg)
           offsetManagers(kafkaMsg.topicAndPartition).filter(msg -> kafkaMsg.offset)
         }

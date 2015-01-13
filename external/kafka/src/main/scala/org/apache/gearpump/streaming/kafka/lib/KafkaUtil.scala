@@ -18,35 +18,76 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
+import java.util.Properties
+
 import kafka.admin.AdminUtils
-import kafka.common.TopicExistsException
-import kafka.utils.ZkUtils
+import kafka.common.{TopicAndPartition, TopicExistsException}
+import kafka.producer.ProducerConfig
+import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.streaming.kafka.lib.KafkaConsumer.Broker
+import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
+import org.apache.gearpump.util.LogUtil
+import org.slf4j.Logger
 
 object KafkaUtil {
-  def getBroker(zkClient: ZkClient, topic: String, partition: Int): Broker = {
+  private val LOG: Logger = LogUtil.getLogger(getClass)
+
+  def getBroker(config: KafkaConfig, topic: String, partition: Int): Broker = {
+    val zkClient = buildZkClient(config)
     val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
       .getOrElse(throw new RuntimeException(s"leader not available for TopicAndPartition($topic, $partition)"))
     val broker = ZkUtils.getBrokerInfo(zkClient, leader)
       .getOrElse(throw new RuntimeException(s"broker info not found for leader $leader"))
+    zkClient.close()
     Broker(broker.host, broker.port)
+  }
+
+  def getTopicAndPartitions(config: KafkaConfig, grouper: KafkaGrouper, consumerTopics: List[String]): Array[TopicAndPartition] = {
+    val zkClient = buildZkClient(config)
+    val tps = grouper.group(
+      ZkUtils.getPartitionsForTopics(zkClient, consumerTopics)
+        .flatMap { case (topic, partitions) =>
+        partitions.map(TopicAndPartition(topic, _)) }.toArray)
+    zkClient.close()
+    tps
   }
 
   /**
    *  create a new kafka topic
    *  return true if topic already exists, and false otherwise
    */
-  def createTopic(zkClient: ZkClient, topic: String, replicas: Int): Boolean = {
+  def createTopic(config: KafkaConfig, topic: String, replicas: Int): Boolean = {
+    val zkClient = buildZkClient(config)
     try {
       AdminUtils.createTopic(zkClient, topic, 1, replicas)
+      LOG.info(s"created topic $topic")
       false
     } catch {
       case tee: TopicExistsException =>
+        LOG.info(s"topic $topic already exists")
         true
       case e: Exception => throw e
+    } finally {
+      zkClient.close()
     }
   }
 
+  def buildProducerConfig(config: KafkaConfig): ProducerConfig = {
+    val brokerList = config.getMetadataBrokerList
+    val producerType = config.getProducerType
+    val requiredAcks = config.getRequestRequiredAcks
+    val props = new Properties()
+    props.put("metadata.broker.list", brokerList)
+    props.put("producer.type", producerType)
+    props.put("request.required.acks", requiredAcks)
+    new ProducerConfig(props)
+  }
 
+  def buildZkClient(config: KafkaConfig): ZkClient = {
+    val zookeeperConnect = config.getZookeeperConnect
+    val sessionTimeout = config.getSocketTimeoutMS
+    val connectionTimeout = config.getSocketTimeoutMS
+    new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
+  }
 }

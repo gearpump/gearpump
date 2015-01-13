@@ -21,19 +21,24 @@ package org.apache.gearpump.streaming.examples.kafka
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
+import com.twitter.bijection.Injection
+import kafka.producer.Producer
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.kafka.KafkaSink
+import org.apache.gearpump.streaming.kafka.lib.{KafkaUtil, KafkaConfig}
 import org.apache.gearpump.streaming.task.StartTime
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
 import org.apache.gearpump.streaming.task.{TaskContext, TaskActor}
 import scala.concurrent.duration.FiniteDuration
 
 class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
   extends TaskActor(taskContext, inputConfig) {
 
-  private val config = inputConfig.config
-  private val topic = config.getProducerTopic
-  private val kafkaProducer = config.getProducer[String, String]()
+  private val kafkaConfig = new KafkaConfig(inputConfig)
+  private val topic = kafkaConfig.getProducerTopic
+  private val batchSize = kafkaConfig.getProducerEmitBatchSize
+  private val producerConfig = KafkaUtil.buildProducerConfig(kafkaConfig)
+  private val kafkaSink = new KafkaSink(producerConfig, batchSize)
 
   private var count = 0L
   private var lastCount = 0L
@@ -50,12 +55,12 @@ class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
     val kvMessage = msg.msg.asInstanceOf[(String, String)]
     val key = kvMessage._1
     val value = kvMessage._2
-    kafkaProducer.send(topic, key, value)
+    kafkaSink.write(topic, Injection[String, Array[Byte]](key), Injection[String, Array[Byte]](value))
     count += 1
  }
 
   override def onStop(): Unit = {
-    kafkaProducer.close()
+    kafkaSink.close()
     scheduler.cancel()
   }
 

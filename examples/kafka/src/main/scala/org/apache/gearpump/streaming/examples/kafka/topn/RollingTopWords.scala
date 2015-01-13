@@ -18,12 +18,12 @@
 
 package org.apache.gearpump.streaming.examples.kafka.topn
 
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{LogUtil, Graph}
@@ -40,11 +40,11 @@ object RollingTopWords extends App with ArgumentsParser {
     "runseconds" -> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
 
   def application(config: ParseResult) : AppDescription = {
-    val windowConfig = Map(
+    val windowConfig = UserConfig(Map(
       Config.EMIT_FREQUENCY_MS -> 1000,
       Config.WINDOW_LENGTH_MS -> 5000,
-      Config.TOPN -> 5)
-    val appConfig = UserConfig(windowConfig ++ KafkaConfig())
+      Config.TOPN -> 5))
+    val appConfig = UserConfig(ConfigFactory.load("kafka.conf")).withConfig(windowConfig)
     val kafkaStreamProducerNum = config.getInt("kafka_stream_producer")
     val rcNum = config.getInt("rolling_count")
     val irNum = config.getInt("intermediate_ranker")

@@ -57,11 +57,16 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
   val minTimeStampGen = Gen.choose[Long](0L, 500L)
   val maxTimeStampGen = Gen.choose[Long](500L, 1000L)
   property("KafkaOffsetManager resolveOffset should report StorageEmpty failure when storage is empty") {
-    forAll { (time: Long) =>
+    forAll(timeStampGen) { (time: Long) =>
       val offsetStorage = mock[OffsetStorage]
       val offsetManager = new KafkaOffsetManager(offsetStorage)
       when(offsetStorage.lookUp(time)).thenReturn(Failure(StorageEmpty))
       offsetManager.resolveOffset(time) shouldBe Failure(StorageEmpty)
+
+      doThrow(new RuntimeException).when(offsetStorage).lookUp(time)
+      intercept[RuntimeException] {
+        offsetManager.resolveOffset(time)
+      }
     }
   }
 
@@ -80,6 +85,11 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
         } else {
           when(offsetStorage.lookUp(time)).thenReturn(Success(Injection[Long, Array[Byte]](offset)))
           offsetManager.resolveOffset(time) shouldBe Success(offset)
+        }
+
+        doThrow(new RuntimeException).when(offsetStorage).lookUp(time)
+        intercept[RuntimeException] {
+          offsetManager.resolveOffset(time)
         }
     }
   }
