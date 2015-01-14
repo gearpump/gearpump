@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.cluster.master
 
-import akka.actor.Actor.Receive
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.AppMasterToMaster._
@@ -32,7 +31,7 @@ import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{AppJar, Application, MasterHarness, TestUtil}
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   var kvService: TestProbe = null
@@ -86,6 +85,21 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
   "AppManager" should "support application submission and recover if appmaster dies" in {
     Console.out.println("=================testing recover==============")
     testClientSubmission(withRecover = true)
+  }
+
+  "AppManager" should "handle client message correctly" in {
+    val mockClient = TestProbe()(getActorSystem)
+    mockClient.send(appManager, ShutdownApplication(1))
+    assert(mockClient.receiveN(1).head.asInstanceOf[ShutdownApplicationResult].appId.isFailure)
+
+    mockClient.send(appManager, ReplayFromTimestampWindowTrailingEdge(1))
+    assert(mockClient.receiveN(1).head.asInstanceOf[ReplayApplicationResult].appId.isFailure)
+
+    mockClient.send(appManager, ResolveAppId(1))
+    assert(mockClient.receiveN(1).head.asInstanceOf[ResolveAppIdResult].appMaster.isFailure)
+
+    mockClient.send(appManager, AppMasterDataRequest(1))
+    mockClient.expectMsg(AppMasterData(1, null))
   }
 
   def testClientSubmission(withRecover: Boolean) : Unit = {

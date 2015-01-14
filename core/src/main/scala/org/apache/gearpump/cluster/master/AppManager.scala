@@ -110,7 +110,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
           sendMsgWithTimeOutCallBack(worker, shutdown, 30, shutDownExecutorTimeOut())
           sender ! ShutdownApplicationResult(Success(appId))
         case None =>
-          val errorMsg = s"Find to find regisration information for appId: $appId"
+          val errorMsg = s"Failed to find regisration information for appId: $appId"
           LOG.error(errorMsg)
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }

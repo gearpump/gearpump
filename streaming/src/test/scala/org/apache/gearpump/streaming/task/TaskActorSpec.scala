@@ -19,10 +19,11 @@ package org.apache.gearpump.streaming.task
 
 import akka.actor.{Actor, ActorRef, Props, ActorSystem}
 import akka.testkit.{EventFilter, TestProbe, ImplicitSender, TestKit}
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{UserConfig, TestUtil}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.AppMasterToExecutor.{RestartException, RestartTasks, StartClock}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{MsgLostException, RestartException, RestartTasks, StartClock}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.{StreamingTestUtil, DAG, TaskDescription}
 import org.apache.gearpump.transport.Express
@@ -32,6 +33,8 @@ import org.apache.gearpump.util.Graph._
 
 class TaskActorSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
+  val conf = ConfigFactory.parseString(""" akka.loggers = ["akka.testkit.TestEventListener"] """).
+    withFallback(TestUtil.DEFAULT_CONFIG)
 
   def this() = this(ActorSystem("TaskActorSpec"))
 
@@ -55,7 +58,7 @@ class TaskActorSpec(_system: ActorSystem) extends TestKit(_system) with Implicit
 
   "TaskActor" should {
     "register itself to AppMaster when started" in {
-      val system1 = ActorSystem("TestActor", TestUtil.DEFAULT_CONFIG)
+      val system1 = ActorSystem("TestActor", conf)
       system1.actorOf(Props(classOf[TestActor], taskContext1, UserConfig.empty))
       val express1 = Express(system1)
       val testActorHost = express1.localHost
@@ -65,11 +68,15 @@ class TaskActorSpec(_system: ActorSystem) extends TestKit(_system) with Implicit
     }
 
     "transport message to target correctly" in {
-      val system1 = ActorSystem("TestActor", TestUtil.DEFAULT_CONFIG)
-      val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
+      val system1 = ActorSystem("TestActor", conf)
+      val system2 = ActorSystem("Reporter", conf)
       val (testActor, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[TestActor].getName, UserConfig.empty, system1, system2)
       testActor.tell(Message("test"), testActor)
       echo.expectMsg(Message("test"))
+      implicit val system = system1
+      EventFilter[RestartException](occurrences = 1) intercept {
+        testActor ! RestartTasks(0)
+      }
       system1.shutdown()
       system2.shutdown()
     }

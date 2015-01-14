@@ -23,6 +23,8 @@ import org.apache.gearpump.cluster.{UserConfig, TestUtil}
 import org.apache.gearpump.streaming.StreamingTestUtil
 import org.scalatest.{Matchers, WordSpec}
 
+import scala.concurrent.duration._
+
 class SplitSpec extends WordSpec with Matchers {
 
   "Split" should {
@@ -32,7 +34,7 @@ class SplitSpec extends WordSpec with Matchers {
       val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Split].getName, UserConfig.empty, system1, system2)
       Split.TEXT_TO_SPLIT.lines.foreach { line =>
         line.split(" ").foreach { msg =>
-          echo.expectMsg(Message(msg))
+          echo.expectMsg(10 seconds, Message(msg))
         }
       }
       system1.shutdown()

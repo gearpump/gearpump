@@ -17,50 +17,51 @@
  */
 package org.apache.gearpump.streaming
 
-import akka.actor.{Actor, PoisonPill, Props, ActorSystem}
-import akka.testkit.{TestProbe, ImplicitSender, TestKit}
-import org.apache.gearpump.cluster.{ExecutorContext, UserConfig, TestUtil}
+import _root_.akka.actor.{Actor, PoisonPill, Props, ActorSystem}
+import akka.testkit._
+import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
+import org.apache.gearpump.cluster.{MasterHarness, ExecutorContext, UserConfig, TestUtil}
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.task.{TaskContext, TaskLocations, TaskId}
 import org.apache.gearpump.transport.HostPort
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest._
 
 import scala.concurrent.duration._
 
-class ExecutorSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-  with WordSpecLike with Matchers with BeforeAndAfterAll {
+class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+  override def config = ConfigFactory.parseString(""" akka.loggers = ["akka.testkit.TestEventListener"] """).
+    withFallback(TestUtil.DEFAULT_CONFIG)
 
-  def this() = this(ActorSystem("ExecutorSpec"))
-
-  val mockMaster = TestProbe()
-  val watcher = TestProbe()
   val appId = 0
+  val workerId = 1
   val executorId = 1
-  val workerId = 2
-  val resource = Resource(3)
   val startClock = 1024
+  val resource = Resource(3)
+  var watcher: TestProbe = null
+  var mockMaster: TestProbe = null
+  var executor: TestActorRef[Executor] = null
+  var executorContext: ExecutorContext = null
+  var taskContext: TaskContext = null
 
-  val executorContext = ExecutorContext(executorId, workerId, appId, mockMaster.ref, resource)
+  override def beforeEach() = {
+    startActorSystem()
+    mockMaster = TestProbe()(getActorSystem)
+    watcher = TestProbe()(getActorSystem)
+    executorContext = ExecutorContext(executorId, workerId, appId, mockMaster.ref, resource)
+    taskContext = TaskContext(TaskId(0, 0), executorId, appId, mockMaster.ref, DAG.empty())
+    executor = TestActorRef(Props(classOf[Executor], executorContext, UserConfig.empty))(getActorSystem)
+    mockMaster.expectMsg(RegisterExecutor(executor, executorId, resource, workerId))
+  }
 
-  override def afterAll {
-    TestKit.shutdownActorSystem(system)
+  override def afterEach() = {
+    shutdownActorSystem()
   }
 
   "The new started executor" should {
-    "register itself to AppMaster when started" in {
-      val system = ActorSystem("ExecutorSystem", TestUtil.DEFAULT_CONFIG)
-      val executor = system.actorOf(Props(classOf[Executor], executorContext, UserConfig.empty))
-      mockMaster.expectMsg(RegisterExecutor(executor, executorId, resource, workerId))
-      system.shutdown()
-    }
-
     "launch task properly" in {
-      val system = ActorSystem("ExecutorSystem", TestUtil.DEFAULT_CONFIG)
-      val executor = system.actorOf(Props(classOf[Executor], executorContext, UserConfig.empty))
-      mockMaster.expectMsg(RegisterExecutor(executor, executorId, resource, workerId))
-      val taskContext = TaskContext(TaskId(0, 0), executorId, appId, mockMaster.ref, DAG.empty())
       executor.tell(LaunchTask(TaskId(0, 0), taskContext, classOf[MockTask]), watcher.ref)
       mockMaster.expectMsg(MockTaskStarted)
       val locations = TaskLocations(Map.empty[HostPort, Set[TaskId]])
@@ -68,17 +69,29 @@ class ExecutorSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitS
       mockMaster.expectMsg(TaskLocationReady)
       executor.tell(RestartTasks(200), watcher.ref)
       mockMaster.expectMsg(RestartTasks(200))
-      system.shutdown()
     }
 
     "kill it self if the AppMaster is down" in {
-      val system = ActorSystem("ExecutorSystem", TestUtil.DEFAULT_CONFIG)
-      val executor = system.actorOf(Props(classOf[Executor], executorContext, UserConfig.empty))
       watcher watch executor
-      mockMaster.expectMsg(RegisterExecutor(executor, executorId, resource, workerId))
       mockMaster.ref ! PoisonPill
       watcher.expectTerminated(executor, 5 seconds)
-      system.shutdown()
+    }
+
+    "handle exception thrown from child properly" in {
+      implicit val system = getActorSystem
+      executor.tell(LaunchTask(TaskId(0, 0), taskContext, classOf[MockTask]), watcher.ref)
+      mockMaster.expectMsg(MockTaskStarted)
+      EventFilter[MsgLostException](occurrences = 1) intercept {
+        executor.children.head ! MsgLost
+      }
+      mockMaster.expectMsg(ReplayFromTimestampWindowTrailingEdge)
+      mockMaster.expectMsg(MockTaskStarted)
+      EventFilter[RestartException](occurrences = 1) intercept {
+        executor.children.head ! new RestartException
+      }
+      mockMaster.expectMsg(MockTaskStarted)
+      executor.children.head ! PoisonPill
+      mockMaster.expectNoMsg()
     }
   }
 }
@@ -96,6 +109,8 @@ class MockTask(taskContext : TaskContext, userConf : UserConfig) extends Actor {
   override def receive: Receive = {
     case MsgLost =>
       throw new MsgLostException
+    case exception: Exception =>
+      throw exception
     case msg =>
       appMaster forward msg
   }

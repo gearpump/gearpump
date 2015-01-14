@@ -63,11 +63,11 @@ object StreamingTestUtil {
    * @param system1   system will launch the task to test
    * @param system2   system will launch the Echo Actor
    *
-   * @return (taskActor: ActorRef, echoTask: TestProbe)
-   *         taskActor: the actual ActorRef of the task to test
+   * @return (taskActor: TestActorRef, echoTask: TestProbe)
+   *         taskActor: the TestActorRef of the task to test
    *         echoTask: the TestProbe will receive the message sent from the task
    */
-  def createEchoForTaskActor(taskClass: String, taskConf: UserConfig, system1: ActorSystem, system2: ActorSystem): (ActorRef, TestProbe) = {
+  def createEchoForTaskActor(taskClass: String, taskConf: UserConfig, system1: ActorSystem, system2: ActorSystem): (TestActorRef[TaskActor], TestProbe) = {
     import system1.dispatcher
     val taskToTest = TaskDescription(taskClass, 1)
     val echoTask = TaskDescription(classOf[EchoTask].getName, 1)
@@ -76,7 +76,7 @@ object StreamingTestUtil {
     val taskId1 = TaskId(0, 0)
     val taskId2 = TaskId(1, 0)
     val appMaster = system1.actorOf(Props(classOf[MockAppMaster]))
-    val testActor = system1.actorOf(Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster, dag), taskConf))
+    val testActor = TestActorRef[TaskActor](Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster, dag), taskConf))(system1)
     val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, appMaster, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
     val express1 = Express(system1)
     val express2 = Express(system2)

@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.examples.kafka.wordcount
+package org.apache.gearpump.streaming.examples.sol
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.Message
@@ -27,18 +27,16 @@ import org.scalatest.{BeforeAndAfter, PropSpec, Matchers}
 
 import scala.concurrent.duration._
 
-class SplitSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter{
+class SOLStreamProcessorSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter{
   val stringGenerator = Gen.alphaStr
-  val system1 = ActorSystem("Split", TestUtil.DEFAULT_CONFIG)
+  val system1 = ActorSystem("SOLStreamProcessor", TestUtil.DEFAULT_CONFIG)
   val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-  val (split, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Split].getName, UserConfig.empty, system1, system2)
+  val (processor, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SOLStreamProcessor].getName, UserConfig.empty, system1, system2)
 
-  property("Split should split the text and deliver to next task"){
+  property("SOLStreamProcessor should deliver message directly"){
     forAll(stringGenerator) { txt =>
-      split.tell(Message(txt), split)
-      txt.split("\\s+").foreach { msg =>
-        echo.expectMsg(10 seconds, Message(msg))
-      }
+      processor.tell(Message(txt), processor)
+      echo.expectMsg(10 seconds, Message(txt))
     }
   }
 
@@ -46,4 +44,5 @@ class SplitSpec extends PropSpec with PropertyChecks with Matchers with BeforeAn
     system1.shutdown()
     system2.shutdown()
   }
+
 }

@@ -26,11 +26,9 @@ import scala.collection.mutable
 
 class Sum (taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
 
-  private val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
+  private[wordcount] val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
 
-  override def onStart(startTime : StartTime) : Unit = {
-
-  }
+  override def onStart(startTime : StartTime) : Unit = {}
 
   override def onNext(msg : Message) : Unit = {
     if (null == msg) {
@@ -43,6 +41,5 @@ class Sum (taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskCo
     output(new Message(s"${msg.timestamp}" -> s"$word:$count", System.currentTimeMillis()))
   }
 
-  override def onStop() : Unit = {
-  }
+  override def onStop() : Unit = {}
 }

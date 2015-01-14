@@ -29,11 +29,9 @@ import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
 class Sum (taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
-  import org.apache.gearpump.streaming.ConfigsHelper._
+  private[wordcount] val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
 
-  private val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
-
-  private var wordCount : Long = 0
+  private[wordcount] var wordCount : Long = 0
   private var snapShotTime : Long = System.currentTimeMillis()
   private var snapShotWordCount : Long = 0
 

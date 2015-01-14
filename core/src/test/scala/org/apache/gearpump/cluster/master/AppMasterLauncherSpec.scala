@@ -21,22 +21,43 @@ package org.apache.gearpump.cluster.master
 import akka.actor._
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
-import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
+import org.apache.gearpump.cluster.AppMasterToWorker.{ShutdownExecutor, LaunchExecutor}
 import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
+import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import org.apache.gearpump.cluster.TestUtil.DummyApplication
-import org.apache.gearpump.cluster.master.AppMasterLauncherSpec.{WatcheeTerminated, Watcher}
-import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation}
-import org.apache.gearpump.util.ActorSystemBooter.{ActorCreated, ActorSystemRegistered, CreateActor, RegisterActorSystem}
+import org.apache.gearpump.cluster.scheduler.{ResourceRequest, Resource, ResourceAllocation}
+import org.apache.gearpump.util.ActorSystemBooter._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+
+import scala.util.Success
 
 class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
   override def config = TestUtil.DEFAULT_CONFIG
 
+  val appId = 1
+  val executorId = 2
+  var master: TestProbe = null
+  var client: TestProbe = null
+  var worker: TestProbe = null
+  var watcher: TestProbe = null
+  var appMasterLauncher: ActorRef = null
+
   override def beforeEach() = {
     startActorSystem()
+    master = createMockMaster()
+    client = TestProbe()(getActorSystem)
+    worker = TestProbe()(getActorSystem)
+    watcher = TestProbe()(getActorSystem)
+    appMasterLauncher = getActorSystem.actorOf(AppMasterLauncher.props(appId, executorId,
+      new DummyApplication, None, "username", master.ref, Some(client.ref)))
+    watcher watch appMasterLauncher
+    master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1))))
+    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, 0)))
+    master.reply(resource)
+    worker.expectMsgType[LaunchExecutor]
   }
 
   override def afterEach() = {
@@ -44,44 +65,31 @@ class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEa
   }
 
   "AppMasterLauncher" should "launch appmaster correctly" in {
-    val master = createMockMaster()
-    val worker = master
-    val watcher = master
-    val appmaster = master.ref
-
-    val client = TestProbe()(getActorSystem)
-
-    val system = getActorSystem
-    val launcher = system.actorOf(AppMasterLauncher.props(0,-1,
-      new DummyApplication, None, "username", master.ref, Some(client.ref)))
-    master.expectMsgType[RequestResource]
-
-    system.actorOf(Props(new Watcher(launcher, watcher)))
-
-    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), master.ref, 0)))
-    master.reply(resource)
-
-    worker.expectMsgType[LaunchExecutor]
     worker.reply(RegisterActorSystem("systempath"))
     worker.expectMsgType[ActorSystemRegistered]
 
     worker.expectMsgType[CreateActor]
-    worker.reply(ActorCreated(appmaster, "appmaster"))
+    worker.reply(ActorCreated(master.ref, "appmaster"))
 
-    client.expectMsgType[SubmitApplicationResult]
-    watcher.expectMsg(WatcheeTerminated)
+    client.expectMsg(SubmitApplicationResult(Success(appId)))
+    watcher.expectTerminated(appMasterLauncher)
   }
-}
 
-object AppMasterLauncherSpec {
+  "AppMasterLauncher" should "reallocate resource if executor launch rejected" in {
+    worker.reply(ExecutorLaunchRejected("", Resource(1)))
+    master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1))))
 
-  case object WatcheeTerminated
+    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, 0)))
+    master.reply(resource)
+    worker.expectMsgType[LaunchExecutor]
 
-  class Watcher(target : ActorRef, testProb : TestProbe) extends Actor {
-    context.watch(target)
-    def receive : Receive = {
-      case t : Terminated =>
-        testProb.ref forward WatcheeTerminated
-    }
+    worker.reply(RegisterActorSystem("systempath"))
+    worker.expectMsgType[ActorSystemRegistered]
+
+    worker.expectMsgType[CreateActor]
+    worker.reply(CreateActorFailed("", new Exception))
+    worker.expectMsgType[ShutdownExecutor]
+    assert(client.receiveN(1).head.asInstanceOf[SubmitApplicationResult].appId.isFailure)
+    watcher.expectTerminated(appMasterLauncher)
   }
 }
