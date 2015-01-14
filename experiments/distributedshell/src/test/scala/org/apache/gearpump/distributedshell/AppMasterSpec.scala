@@ -41,15 +41,15 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
   val workerList = List(1, 2, 3)
   val resource = Resource(1)
   val appJar = None
-  val appDescription = BaseAppDescription("app0", "AppMaster", UserConfig.empty)
+  val appDescription = Application("app0", "AppMaster", UserConfig.empty)
 
   "DistributedShell AppMaster" should {
     "launch one ShellTask on each worker" in {
-      val appMasterInfo = AppMasterRuntimeInfo(mockWorker1.ref)
-      val appMasterContext = AppMasterContext(appId, userName, masterExecutorId, resource, appJar, masterProxy, appMasterInfo)
+      val appMasterInfo = AppMasterRuntimeInfo(mockWorker1.ref, appId, resource)
+      val appMasterContext = AppMasterContext(appId, userName, resource, appJar, masterProxy, appMasterInfo)
       val appMaster = TestActorRef(Props(classOf[AppMaster], appMasterContext, appDescription))
       //When AppMaster started, it will register itself to Master
-      mockMaster.expectMsg(RegisterAppMaster(appMaster, appId, masterExecutorId, resource, appMasterInfo))
+      mockMaster.expectMsg(RegisterAppMaster(appMaster, appMasterInfo))
       appMaster.tell(AppMasterRegistered(appId, mockMaster.ref), masterProxy)
       //The DistributedShell AppMaster will ask for worker list
       mockMaster.expectMsg(GetAllWorkers)

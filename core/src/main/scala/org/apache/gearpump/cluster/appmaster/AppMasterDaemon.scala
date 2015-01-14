@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
 
 class AppMasterDaemon(masters: Iterable[HostPort], app : Application, appContextInput : AppMasterContext) extends Actor {
   val masterProxy = context.actorOf(Props(classOf[MasterProxy], masters), "masterproxy")
-  val appContext = appContextInput.copy(masterProxy = masterProxy)
+  val appContext = appContextInput.copy(master = masterProxy)
 
   context.actorOf(Props(Class.forName(app.appMaster), appContext, app), "appmaster")
 

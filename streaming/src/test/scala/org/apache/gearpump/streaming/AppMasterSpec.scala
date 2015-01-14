@@ -52,8 +52,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   var mockProxy: TestProbe = null
   var mockMaster: TestProbe = null
   var mockWorker: TestProbe = null
-  var appDescription: AppDescription = null
-  var appMasterContext: AppMasterContextInterface = null
+  var appDescription: Application = null
+  var appMasterContext: AppMasterContext = null
   var appMasterRuntimeInfo: AppMasterRuntimeInfo = null
 
   override def beforeEach() = {
@@ -62,15 +62,15 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     mockMaster = TestProbe()(getActorSystem)
     mockWorker = TestProbe()(getActorSystem)
     mockMaster.ignoreMsg(ignoreSaveAppData)
-    appMasterRuntimeInfo = AppMasterRuntimeInfo(mockWorker.ref)
+    appMasterRuntimeInfo = AppMasterRuntimeInfo(mockWorker.ref, appId, Resource(1))
 
     implicit val system = getActorSystem
     conf = UserConfig.empty.withValue(AppMasterSpec.MASTER, mockMaster.ref)
-    appMasterContext = AppMasterContext(appId, "test", masterExecutorId, resource, None, mockProxy.ref, appMasterRuntimeInfo)
-    appDescription = AppDescription("test", "AppMaster", conf, Graph(taskDescription1 ~ new HashPartitioner() ~> taskDescription2))
+    appMasterContext = AppMasterContext(appId, "test", resource, None, mockProxy.ref, appMasterRuntimeInfo)
+    appDescription = TestUtil.dummyApp
     appMaster = TestActorRef[AppMaster](Props(classOf[AppMaster], appMasterContext, appDescription))(getActorSystem)
 
-    mockProxy.expectMsg(RegisterAppMaster(appMaster, appId, masterExecutorId, resource, appMasterRuntimeInfo))
+    mockProxy.expectMsg(RegisterAppMaster(appMaster, appMasterRuntimeInfo))
     mockProxy.reply(AppMasterRegistered(appId, mockMaster.ref))
     mockMaster.expectMsg(GetAppData(appId, "startClock"))
     mockMaster.reply(GetAppDataResult("startClock", 0L))
@@ -115,7 +115,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     "find a new master when lost connection with master" in {
       println(config.getList("akka.loggers"))
       mockMaster.ref ! PoisonPill
-      mockProxy.expectMsg(RegisterAppMaster(appMaster, appId, masterExecutorId, resource, appMasterRuntimeInfo))
+      mockProxy.expectMsg(RegisterAppMaster(appMaster, appMasterRuntimeInfo))
     }
   }
 

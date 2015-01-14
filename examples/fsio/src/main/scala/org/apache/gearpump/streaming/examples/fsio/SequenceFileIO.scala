@@ -52,12 +52,14 @@ object SequenceFileIO extends App with ArgumentsParser {
     val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getName, spoutNum)
     val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getName, boltNum)
 
-    val app = AppDescription("SequenceFileIO", classOf[AppMaster].getName, hadoopConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
+    val app = AppDescription("SequenceFileIO", hadoopConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app
   }
 
   val config = parse(args)
   val context = ClientContext(config.getString("master"))
+  implicit val system = context.system
+
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)

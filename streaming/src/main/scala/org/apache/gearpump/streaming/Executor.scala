@@ -23,7 +23,7 @@ import akka.actor._
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{ExecutorContextInterface, ApplicationExecutor, UserConfig}
+import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
@@ -35,7 +35,7 @@ import scala.concurrent.duration._
 
 case object TaskLocationReady
 
-class Executor(executorContext: ExecutorContextInterface, userConf : UserConfig)  extends ApplicationExecutor {
+class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends Actor {
 
   import context.dispatcher
   import executorContext._

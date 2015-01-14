@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.distributedshell
 
-import org.apache.gearpump.cluster.{UserConfig, Application, AppMasterContextInterface}
+import org.apache.gearpump.cluster.{AppMasterContext, UserConfig, Application}
 import org.apache.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers}
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
@@ -49,7 +49,7 @@ class ResponseBuilder {
   override def toString() = result.toString()
 }
 
-class AppMaster(appContext : AppMasterContextInterface, app : Application) extends AbstractAppMaster(appContext, app) {
+class AppMaster(appContext : AppMasterContext, app : Application) extends AbstractAppMaster(appContext, app) {
   import context.dispatcher
   import appContext._
   private val LOG: Logger = LoggerFactory.getLogger(getClass)

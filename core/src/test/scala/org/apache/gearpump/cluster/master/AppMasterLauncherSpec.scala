@@ -26,7 +26,6 @@ import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
-import org.apache.gearpump.cluster.TestUtil.DummyApplication
 import org.apache.gearpump.cluster.scheduler.{ResourceRequest, Resource, ResourceAllocation}
 import org.apache.gearpump.util.ActorSystemBooter._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
@@ -52,7 +51,7 @@ class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     worker = TestProbe()(getActorSystem)
     watcher = TestProbe()(getActorSystem)
     appMasterLauncher = getActorSystem.actorOf(AppMasterLauncher.props(appId, executorId,
-      new DummyApplication, None, "username", master.ref, Some(client.ref)))
+      TestUtil.dummyApp, None, "username", master.ref, Some(client.ref)))
     watcher watch appMasterLauncher
     master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1))))
     val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, 0)))
