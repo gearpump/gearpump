@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
@@ -45,7 +46,7 @@ object KafkaWordCount extends App with ArgumentsParser {
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
     val kafkaStreamProcessorNum = config.getInt("kafka_stream_processor")
-    val appConfig = UserConfig(KafkaConfig())
+    val appConfig = UserConfig(ConfigFactory.load("kafka.conf"))
     val partitioner = new HashPartitioner()
     val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getName, kafkaStreamProducerNum)
     val split = TaskDescription(classOf[Split].getName, splitNum)

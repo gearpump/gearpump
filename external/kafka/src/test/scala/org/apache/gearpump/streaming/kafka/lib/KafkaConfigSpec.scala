@@ -18,59 +18,20 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
-import org.scalacheck.Gen
+import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.cluster.UserConfig
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
-import java.util.{LinkedList => JLinkedList}
 
 import scala.util.Try
 
-class KafkaConfigSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
-  import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
-
-  property("KafkaConfig getInt with optionally default value") {
-    forAll { (key: String, value: Int, defaultValue: Int) =>
-      val config = new ConfigToKafka(Map(key -> value))
-      config.getInt(key) shouldBe value
-      config.getInt(key, Some(defaultValue)) shouldBe value
-      val newKey = key + ":"
-      config.getInt(newKey, Some(defaultValue)) shouldBe defaultValue
-      a [RuntimeException] should be thrownBy config.getInt(newKey)
-    }
-  }
-
-  property("KafkaConfig getString with optionally default value") {
-    forAll { (key: String, value: String, defaultValue: String) =>
-      val config = new ConfigToKafka(Map(key -> value))
-      config.getString(key) shouldBe value
-      config.getString(key, Some(defaultValue)) shouldBe value
-      val newKey = key + ":"
-      config.getString(newKey, Some(defaultValue)) shouldBe defaultValue
-      a [RuntimeException] should be thrownBy config.getString(newKey)
-    }
-  }
-
-  val keyGen = Gen.alphaStr
-  val listGen = Gen.listOf(Gen.alphaStr)
-  property("KafkaConfig getStringList with optionally default value") {
-    forAll(keyGen, listGen, listGen) { (key: String, value: List[String], defaultValue: List[String]) =>
-      val jlist = new JLinkedList[String]()
-      value.foreach(jlist.add)
-      val defJList = new JLinkedList[String]()
-      defaultValue.foreach(defJList.add)
-      val config = new ConfigToKafka(Map(key -> jlist))
-      config.getStringList(key) should equal (value)
-      config.getStringList(key, Some(defJList)) should equal (value)
-      val newKey = key + ":"
-      config.getStringList(newKey, Some(defJList)) should equal (defaultValue)
-      a [RuntimeException] should be thrownBy config.getStringList(newKey)
-    }
-  }
+class KafkaConfigSpec extends PropSpec with Matchers with MockitoSugar {
 
   property("kafka conf should be set correctly") {
-    val config = KafkaConfig()
+    val config = KafkaConfig(UserConfig(ConfigFactory.load("kafka.conf")))
+
     assert(Try(config.getZookeeperConnect).isSuccess)
     assert(Try(config.getConsumerTopics).isSuccess)
     assert(Try(config.getSocketTimeoutMS).isSuccess)
@@ -83,7 +44,6 @@ class KafkaConfigSpec extends PropSpec with PropertyChecks with Matchers with Mo
     assert(Try(config.getProducerTopic).isSuccess)
     assert(Try(config.getProducerEmitBatchSize).isSuccess)
     assert(Try(config.getProducerType).isSuccess)
-    assert(Try(config.getSerializerClass).isSuccess)
     assert(Try(config.getRequestRequiredAcks).isSuccess)
     assert(Try(config.getMetadataBrokerList).isSuccess)
     assert(Try(config.getGrouperFactory).isSuccess)

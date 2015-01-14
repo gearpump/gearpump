@@ -27,18 +27,31 @@ import org.slf4j.Logger
 
 object FetchThread {
   private val LOG: Logger = LogUtil.getLogger(classOf[FetchThread])
+
+  def apply(topicAndPartitions: Array[TopicAndPartition], config: KafkaConfig): FetchThread = {
+    val consumers: Map[TopicAndPartition, KafkaConsumer] = topicAndPartitions.map {
+      tp =>
+        tp -> KafkaConsumer(tp.topic, tp.partition, config)
+    }.toMap
+    val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
+    val fetchThreshold = config.getFetchThreshold
+    val fetchSleepMS = config.getFetchSleepMS
+    new FetchThread(consumers, incomingQueue, fetchThreshold, fetchSleepMS)
+  }
 }
 
-class FetchThread(topicAndPartitions: Array[TopicAndPartition],
-                  iterators: Map[TopicAndPartition, KafkaMessageIterator],
-                  incomingQueue: LinkedBlockingQueue[KafkaMessage],
-                  fetchThreshold: Int,
-                  fetchSleepMS: Int) extends Thread {
+private[kafka] class FetchThread(consumers: Map[TopicAndPartition, KafkaConsumer],
+                                 incomingQueue: LinkedBlockingQueue[KafkaMessage],
+                                 fetchThreshold: Int,
+                                 fetchSleepMS: Int) extends Thread {
   import org.apache.gearpump.streaming.kafka.lib.FetchThread._
 
-
   def setStartOffset(tp: TopicAndPartition, startOffset: Long): Unit = {
-    iterators(tp).setStartOffset(startOffset)
+    consumers(tp).setStartOffset(startOffset)
+  }
+
+  def poll: Option[KafkaMessage] = {
+    Option(incomingQueue.poll())
   }
 
   override def run(): Unit = {
@@ -53,27 +66,27 @@ class FetchThread(topicAndPartitions: Array[TopicAndPartition],
       case e: InterruptedException => LOG.info("fetch thread got interrupted exception")
       case e: ClosedByInterruptException => LOG.info("fetch thread closed by interrupt exception")
     } finally {
-      iterators.values.foreach(_.close())
+      consumers.values.foreach(_.close())
     }
   }
 
   /**
    * fetch message from each TopicAndPartition in a round-robin way
    */
-  private[kafka] def fetchMessage: Boolean = {
-    topicAndPartitions.foldLeft(false) { (hasNext, tp) => {
-        if (incomingQueue.size < fetchThreshold) {
-          val iter = iterators(tp)
-          if (iter.hasNext) {
-            incomingQueue.put(iter.next())
-            true
-          } else {
-            hasNext
-          }
-        } else {
+  def fetchMessage: Boolean = {
+    consumers.foldLeft(false) { (hasNext, tpAndConsumer) => {
+      val (_, consumer) = tpAndConsumer
+      if (incomingQueue.size < fetchThreshold) {
+        if (consumer.hasNext) {
+          incomingQueue.put(consumer.next())
           true
+        } else {
+          hasNext
         }
+      } else {
+        true
       }
+    }
     }
   }
 }

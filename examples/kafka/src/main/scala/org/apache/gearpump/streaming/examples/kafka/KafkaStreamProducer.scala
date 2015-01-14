@@ -21,6 +21,7 @@ package org.apache.gearpump.streaming.examples.kafka
 import akka.actor.actorRef2Scala
 import com.twitter.bijection.Injection
 import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.task.StartTime
 import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
@@ -29,14 +30,11 @@ import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
 import scala.util.{Failure, Success}
 
-/**
- * connect gearpump with kafka
- */
 class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
   extends TaskActor(taskContext, conf) {
 
-  private val config = conf.config
-  private val batchSize = config.getConsumerEmitBatchSize
+  private val kafkaConfig = KafkaConfig(conf)
+  private val batchSize = kafkaConfig.getConsumerEmitBatchSize
   private val msgDecoder: MessageDecoder = new MessageDecoder {
     override def fromBytes(bytes: Array[Byte]): Message = {
       Injection.invert[String, Array[Byte]](bytes) match {
@@ -52,8 +50,8 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
     }
   }
 
-  private val source: TimeReplayableSource = KafkaSource(taskContext.appId, taskContext,
-    conf, msgDecoder)
+  private val source: TimeReplayableSource = new KafkaSource(taskContext.appId, taskContext,
+    kafkaConfig, msgDecoder)
   private var startTime: TimeStamp = 0L
 
   override def onStart(newStartTime: StartTime): Unit = {

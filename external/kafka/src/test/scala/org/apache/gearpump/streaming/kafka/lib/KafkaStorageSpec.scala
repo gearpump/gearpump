@@ -18,17 +18,20 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
+import java.nio.ByteBuffer
+
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
-import org.apache.gearpump.TimeStamp
+import kafka.producer.{KeyedMessage, Producer}
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
+import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
   val minTimeGen = Gen.choose[Long](1L, 500L)
@@ -36,8 +39,9 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
 
   property("KafkaStorage lookup time should report StorageEmpty if storage is empty") {
     forAll { (time: Long, topic: String) =>
-      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
-      val storage = new KafkaStorage(topic, producer, List.empty[(TimeStamp, Array[Byte])])
+      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+      val getConsumer = () => mock[KafkaConsumer]
+      val storage = new KafkaStorage(topic, topicExists = false, producer, getConsumer())
       storage.lookUp(time) shouldBe Failure(StorageEmpty)
     }
   }
@@ -49,13 +53,21 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
         time -> offset
       }
       val timeAndOffsetsMap = timeAndOffsets.toMap
-      val dataByTime = timeAndOffsets.map {
+      val data = timeAndOffsets.map {
         case (time, offset) =>
-          time -> Injection[Long, Array[Byte]](offset)
+          new KafkaMessage(topic, 0, offset.toLong, Some(Injection[Long, Array[Byte]](time)),
+            Injection[Long, Array[Byte]](offset))
       }.toList
 
-      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
-      val storage = new KafkaStorage(topic, producer, dataByTime)
+      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+      val consumer = mock[KafkaConsumer]
+      val getConsumer = () => consumer
+
+      val hasNexts = List.fill(data.tail.size)(true) :+ false
+      when(consumer.hasNext).thenReturn(true, hasNexts:_*)
+      when(consumer.next).thenReturn(data.head, data.tail:_*)
+
+      val storage = new KafkaStorage(topic, topicExists = true, producer, getConsumer())
       forAll(Gen.choose[Long](minTime, maxTime)) {
         time =>
           storage.lookUp(time) match {
@@ -85,23 +97,21 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
   }
 
   property("KafkaStorage append should send data to Kafka") {
-    forAll { (time: Long, offset: Long, topic: String) =>
-      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
-      val storage = new KafkaStorage(topic,
-        producer, List.empty[(TimeStamp, Array[Byte])])
-      val timeBytes = Injection[Long, Array[Byte]](time)
+    forAll { (time: Long, offset: Long, topic: String, topicExists: Boolean) =>
+      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+      val getConsumer = () => mock[KafkaConsumer]
+      val storage = new KafkaStorage(topic, topicExists, producer, getConsumer())
       val offsetBytes = Injection[Long, Array[Byte]](offset)
       storage.append(time, offsetBytes)
-      verify(producer).send(topic, timeBytes, 0, offsetBytes)
+      verify(producer).send(anyObject[KeyedMessage[Array[Byte], Array[Byte]]]())
     }
   }
 
+  val topicAndPartitionGen = for {
+    topic <- Gen.alphaStr
+    partition <- Gen.choose[Int](0, 100)
+  } yield TopicAndPartition(topic, partition)
   property("KafkaStorage should load data from Kafka") {
-    val topicAndPartitionGen = for {
-      topic <- Gen.alphaStr
-      partition <- Gen.choose[Int](0, 100)
-    } yield TopicAndPartition(topic, partition)
-
     val kafkaMsgGen = for {
       timestamp <- Gen.choose[Long](1L, 1000L)
       offset    <- Gen.choose[Long](0L, 1000L)
@@ -110,26 +120,52 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
 
     val topicExistsGen = Gen.oneOf(true, false)
 
-    forAll(topicExistsGen, topicAndPartitionGen, msgListGen) {
-      (topicExists: Boolean, topicAndPartition: TopicAndPartition, msgList: List[(Long, Array[Byte])]) =>
-        val mockIterator = mock[KafkaMessageIterator]
-        if (topicExists) {
+    forAll(topicAndPartitionGen, msgListGen) {
+      (topicAndPartition: TopicAndPartition, msgList: List[(Long, Array[Byte])]) =>
+        val producer=  mock[Producer[Array[Byte], Array[Byte]]]
+        val consumer = mock[KafkaConsumer]
+        val getConsumer = () => consumer
+        val kafkaStorage = new KafkaStorage(topicAndPartition.topic, topicExists = true, producer, getConsumer())
           msgList match {
             case Nil =>
-              when(mockIterator.hasNext).thenReturn(false)
+              when(consumer.hasNext).thenReturn(false)
             case list =>
               val hasNexts = List.fill(list.tail.size)(true) :+ false
               val kafkaMsgList = list.zipWithIndex.map { case ((timestamp, bytes), index) =>
                 KafkaMessage(topicAndPartition, index.toLong, Some(Injection[Long, Array[Byte]](timestamp)), bytes)
               }
-              when(mockIterator.hasNext).thenReturn(true, hasNexts: _*)
-              when(mockIterator.next()).thenReturn(kafkaMsgList.head, kafkaMsgList.tail: _*)
+              when(consumer.hasNext).thenReturn(true, hasNexts: _*)
+              when(consumer.next).thenReturn(kafkaMsgList.head, kafkaMsgList.tail: _*)
           }
-          KafkaStorage.load(topicExists, mockIterator) shouldBe msgList
-          verify(mockIterator).close()
-        } else {
-          KafkaStorage.load(topicExists, mockIterator) shouldBe List.empty[(TimeStamp, Array[Byte])]
-        }
+          kafkaStorage.load(consumer) shouldBe msgList
+    }
+  }
+
+  property("KafkaStorage should get consumer when topic doesn't exist") {
+    forAll(Gen.alphaStr) { (topic: String) =>
+      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+      val getConsumer = mock[() => KafkaConsumer]
+      val kafkaStorage = new KafkaStorage(topic, topicExists = false, producer, getConsumer())
+      verify(getConsumer, never()).apply()
+    }
+  }
+
+  property("KafkaStorage should fail to load invalid KafkaMessage") {
+    val invalidKafkaMsgGen = for {
+      tp <- topicAndPartitionGen
+      offset <- Gen.choose[Long](1L, 1000L)
+      timestamp <- Gen.oneOf(Some(Injection[ByteBuffer, Array[Byte]](ByteBuffer.allocate(0))), None)
+      msg <- Gen.alphaStr.map(Injection[String, Array[Byte]])
+    } yield KafkaMessage(tp, offset, timestamp, msg)
+    forAll(invalidKafkaMsgGen) { (invalidKafkaMsg: KafkaMessage) =>
+      val consumer = mock[KafkaConsumer]
+      val getConsumer = () => consumer
+      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+      val kafkaStorage = new KafkaStorage(invalidKafkaMsg.topicAndPartition.topic, topicExists = true,
+        producer, getConsumer())
+      when(consumer.hasNext).thenReturn(true, false)
+      when(consumer.next).thenReturn(invalidKafkaMsg, invalidKafkaMsg)
+      Try(kafkaStorage.load(consumer)).isFailure shouldBe true
     }
   }
 }
