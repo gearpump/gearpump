@@ -34,7 +34,8 @@ object KafkaOffsetManager {
   def apply(appId: Int, config: KafkaConfig, topicAndPartition: TopicAndPartition): KafkaOffsetManager = {
     val storageTopic = s"app${appId}_${topicAndPartition.topic}_${topicAndPartition.partition}"
     val replicas = config.getStorageReplicas
-    val topicExists = KafkaUtil.createTopic(config, storageTopic, replicas)
+    val zkClient = KafkaUtil.connectZookeeper(config)
+    val topicExists = KafkaUtil.createTopic(zkClient, storageTopic, partitions = 1, replicas)
     new KafkaOffsetManager(KafkaStorage(config, storageTopic, topicExists, topicAndPartition))
   }
 }

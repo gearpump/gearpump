@@ -19,10 +19,8 @@
 package org.apache.gearpump.streaming.kafka.lib
 
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.UserConfig
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.prop.PropertyChecks
 
 
 import scala.util.Try
@@ -48,5 +46,7 @@ class KafkaConfigSpec extends PropSpec with Matchers with MockitoSugar {
     assert(Try(config.getMetadataBrokerList).isSuccess)
     assert(Try(config.getGrouperFactory).isSuccess)
     assert(Try(config.getStorageReplicas).isSuccess)
+    assert(Try(config.getMessageDecoder).isSuccess)
+    assert(Try(config.getTimeStampFilter).isSuccess)
   }
 }

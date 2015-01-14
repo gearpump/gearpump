@@ -36,7 +36,8 @@ object KafkaConsumer {
   }
 
   def apply(topic: String, partition: Int, config: KafkaConfig): KafkaConsumer = {
-    val broker = KafkaUtil.getBroker(config, topic, partition)
+    val zkClient = KafkaUtil.connectZookeeper(config)
+    val broker = KafkaUtil.getBroker(zkClient, topic, partition)
     val soTimeout = config.getSocketTimeoutMS
     val soBufferSize = config.getSocketReceiveBufferBytes
     val fetchSize = config.getFetchMessageMaxBytes
@@ -44,11 +45,10 @@ object KafkaConsumer {
     val consumer = new SimpleConsumer(broker.host, broker.port, soTimeout, soBufferSize, clientId)
     val getIterator = (offset: Long) => {
       val request = new FetchRequestBuilder()
-        .clientId(clientId)
         .addFetch(topic, partition, offset, fetchSize)
         .build()
 
-      val response = consumer.fetch(request)
+    val response = consumer.fetch(request)
       response.errorCode(topic, partition) match {
         case NoError => response.messageSet(topic, partition).iterator
         case error => throw exceptionFor(error)
@@ -88,7 +88,10 @@ private[kafka] class KafkaConsumer(consumer: SimpleConsumer,
     def hasNextHelper(iter: Iterator[MessageAndOffset], newIterator: Boolean): Boolean = {
       if (iter.hasNext) true
       else if (newIterator) false
-      else hasNextHelper(getIterator(nextOffset), newIterator = true)
+      else {
+        iterator = getIterator(nextOffset)
+        hasNextHelper(iterator, newIterator = true)
+      }
     }
     hasNextHelper(iterator, newIterator = false)
   }

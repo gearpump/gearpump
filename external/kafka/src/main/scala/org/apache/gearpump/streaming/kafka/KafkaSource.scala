@@ -45,7 +45,8 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
       topicAndPartitions.map(tp => tp -> KafkaOffsetManager(appId, config, tp)).toMap)
 
   private[kafka] def this(appId: Int, config: KafkaConfig, grouper: KafkaGrouper, messageDecoder: MessageDecoder) =
-    this(appId, config, KafkaUtil.getTopicAndPartitions(config, grouper, config.getConsumerTopics), messageDecoder)
+    this(appId, config, KafkaUtil.getTopicAndPartitions(KafkaUtil.connectZookeeper(config),
+      grouper, config.getConsumerTopics), messageDecoder)
 
   def this(appId : Int, taskContext : TaskContext, config: KafkaConfig, messageDecoder: MessageDecoder) =
     this(appId: Int, config, config.getGrouperFactory.getKafkaGrouper(taskContext), messageDecoder)

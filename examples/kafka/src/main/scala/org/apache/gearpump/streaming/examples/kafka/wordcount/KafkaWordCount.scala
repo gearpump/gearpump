@@ -49,7 +49,8 @@ object KafkaWordCount extends App with ArgumentsParser {
     val kafkaStreamProcessorNum = config.getInt("kafka_stream_processor")
 
     val kafkaConfig = KafkaConfig(ConfigFactory.parseResources("kafka.conf"))
-    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig)
+    val appConfig = UserConfig.empty
+      .withValue(KafkaConfig.NAME, kafkaConfig)
     val partitioner = new HashPartitioner()
     val kafkaStreamProducer = TaskDescription(classOf[KafkaStreamProducer].getName, kafkaStreamProducerNum)
     val split = TaskDescription(classOf[Split].getName, splitNum)

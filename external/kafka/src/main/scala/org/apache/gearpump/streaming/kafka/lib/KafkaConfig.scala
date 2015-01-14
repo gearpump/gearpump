@@ -20,9 +20,9 @@ package org.apache.gearpump.streaming.kafka.lib
 
 import java.util.{List => JList}
 
-import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.gearpump.cluster.UserConfig
+import com.typesafe.config.Config
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouperFactory
+import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, MessageDecoder}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -57,6 +57,10 @@ object KafkaConfig {
   // grouper config
   val GROUPER_FACTORY_CLASS = "kafka.grouper.factory.class"
 
+  // task config
+  val MESSAGE_DECODER_CLASS = "kafka.task.message.decoder.class"
+  val TIMESTAMP_FILTER_CLASS = "kafka.task.timestamp.filter.class"
+
   def apply(config: Config): KafkaConfig = new KafkaConfig(config)
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -78,9 +82,6 @@ class KafkaConfig(config: Config) extends Serializable  {
     get[Int](key, Try(config.getInt(key)).toOption, defaultValue)
   }
 
-  private def getStringList(key: String, defaultValue: Option[JList[String]] = None): List[String] = {
-    config.getAnyRef(key).asInstanceOf[JList[String]].asScala.toList
-  }
 
   private def getInstance[C](key: String, defaultValue: Option[String] = None): C = {
     Class.forName(getString(key, defaultValue)).newInstance().asInstanceOf[C]
@@ -91,7 +92,7 @@ class KafkaConfig(config: Config) extends Serializable  {
   }
 
   def getConsumerTopics: List[String] = {
-    getStringList(CONSUMER_TOPICS)
+    getString(CONSUMER_TOPICS).split(",").toList
   }
 
   def getSocketTimeoutMS: Int = {
@@ -148,6 +149,14 @@ class KafkaConfig(config: Config) extends Serializable  {
 
   def getStorageReplicas: Int = {
     getInt(STORAGE_REPLICAS)
+  }
+
+  def getMessageDecoder: MessageDecoder = {
+    getInstance[MessageDecoder](MESSAGE_DECODER_CLASS)
+  }
+
+  def getTimeStampFilter: TimeStampFilter = {
+    getInstance[TimeStampFilter](TIMESTAMP_FILTER_CLASS)
   }
 
 }

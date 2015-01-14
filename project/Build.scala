@@ -176,7 +176,8 @@ object Build extends sbt.Build {
           "com.twitter" %% "bijection-core" % bijectionVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+          "org.mockito" % "mockito-core" % mockitoVersion % "test",
+          ("org.apache.kafka" %% "kafka" % kafkaVersion classifier("test")) % "test"
         ),
         unmanagedClasspath in Test += baseDirectory.value.getParentFile.getParentFile / "conf"
       )
@@ -193,7 +194,7 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "provided")
+  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided")
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
