@@ -64,6 +64,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
       mockWorker1.reply(RegisterActorSystem(ActorUtil.getSystemAddress(system).toString))
       val appMasterActor = appMaster.underlying.actor.asInstanceOf[AppMaster]
       assert(appMasterActor.scheduleTaskOnWorker(0).taskClass.equals(classOf[ShellTask].getCanonicalName))
+      mockMaster.expectNoMsg()
     }
   }
 

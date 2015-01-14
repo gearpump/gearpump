@@ -15,31 +15,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.examples.kafka.wordcount
+package org.apache.gearpump.streaming.examples.wordcount
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{UserConfig, TestUtil}
 import org.apache.gearpump.streaming.StreamingTestUtil
 import org.scalacheck.Gen
+import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfter, PropSpec, Matchers}
 
-import scala.concurrent.duration._
-
-class SplitSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter{
+class SumSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
   val stringGenerator = Gen.alphaStr
-  val system1 = ActorSystem("Split", TestUtil.DEFAULT_CONFIG)
+  val system1 = ActorSystem("SumSpec", TestUtil.DEFAULT_CONFIG)
   val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-  val (split, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Split].getName, UserConfig.empty, system1, system2)
+  val (sum, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Sum].getName, UserConfig.empty, system1, system2)
+  val sumActor = sum.underlying.actor.asInstanceOf[Sum]
+  var wordcount = 0
 
-  property("Split should split the text and deliver to next task"){
+  property("Sum should calculate the frequency of the word correctly"){
     forAll(stringGenerator) { txt =>
-      split.tell(Message(txt), split)
-      txt.split("\\s+").foreach { msg =>
-        echo.expectMsg(10 seconds, Message(msg))
-      }
+      wordcount += 1
+      sum.tell(Message(txt), sum)
     }
+    val all = sumActor.map.foldLeft(0L) { (total, kv) =>
+      val (_, num) = kv
+      total + num
+    }
+    assert(sumActor.wordCount == all && sumActor.wordCount == wordcount)
   }
 
   after {
