@@ -33,6 +33,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.scheduler._
 import org.apache.gearpump.cluster.{AppMasterContext, _}
+import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, RestartTasks, StartClock}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.storage.{AppDataStore, InMemoryAppStoreOnMaster}
@@ -46,7 +47,7 @@ import scala.collection.mutable
 import scala.concurrent._
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-class AppMaster(appContext : AppMasterContextInterface, app : Application)  extends ApplicationMaster {
+class AppMaster(appContext : AppMasterContext, app : Application)  extends ApplicationMaster {
 
   import org.apache.gearpump.streaming.AppMaster._
   implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -56,16 +57,18 @@ class AppMaster(appContext : AppMasterContextInterface, app : Application)  exte
   val systemConfig = context.system.settings.config
   val userConfig = app.conf
 
-  var currentExecutorId = masterExecutorId + 1
+  var currentExecutorId = 0
 
   import context.dispatcher
+  implicit val actorSystem = context.system
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
   private var master : ActorRef = null
 
   private val name = app.name
-  private val taskSet = new TaskSet(appId, DAG(app.asInstanceOf[AppDescription].dag))
+  private val dag = app.conf.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get
+  private val taskSet = new TaskSet(appId, DAG(dag))
 
   private var clockService : ActorRef = null
   private val START_CLOCK = "startClock"
@@ -88,14 +91,12 @@ class AppMaster(appContext : AppMasterContextInterface, app : Application)  exte
     updateScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(snapshotStartClock())
 
-    val dag = DAG(app.asInstanceOf[AppDescription].dag)
-
     LOG.info("AppMaster is launched xxxxxxxxxxxxxxxxx")
 
     LOG.info("Initializing Clock service ....")
     clockService = context.actorOf(Props(classOf[ClockService], dag), "clockservice")
 
-    context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
+    context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(master ! RegisterAppMaster(self, registerData))))
   }
 
   def waitForMasterToConfirmRegistration(killSelf : Cancellable) : Receive = {
@@ -276,7 +277,7 @@ class AppMaster(appContext : AppMasterContextInterface, app : Application)  exte
     if (null != master && actor.compareTo(master) == 0) {
       // master is down, let's try to contact new master
       LOG.info("parent master cannot be contacted, find a new master ...")
-      context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(masterProxy ! RegisterAppMaster(self, appId, masterExecutorId, resource, registerData))))
+      context.become(waitForMasterToConfirmRegistration(repeatActionUtil(30)(master ! RegisterAppMaster(self, registerData))))
     } else if (ActorUtil.isChildActorPath(self, actor)) {
       //executor is down
       //TODO: handle this failure

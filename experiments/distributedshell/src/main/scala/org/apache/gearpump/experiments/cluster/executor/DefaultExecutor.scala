@@ -18,7 +18,7 @@
 package org.apache.gearpump.experiments.cluster.executor
 
 import akka.actor.{Actor, Terminated, Props}
-import org.apache.gearpump.cluster.{ApplicationExecutor, UserConfig, ExecutorContextInterface}
+import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.experiments.cluster.AppMasterToExecutor.{MsgToTask, LaunchTask}
 import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.{ResponsesFromTasks, RegisterExecutor}
 import org.apache.gearpump.util.{ReferenceEqual, LogUtil, Constants}
@@ -30,7 +30,7 @@ import scala.concurrent._
 case class TaskDescription(taskClass: String, parallelism : Int) extends ReferenceEqual
 case class TaskLaunchData(taskClass: String, config: UserConfig)
 
-class DefaultExecutor(executorContext: ExecutorContextInterface, userConf : UserConfig) extends ApplicationExecutor {
+class DefaultExecutor(executorContext: ExecutorContext, userConf : UserConfig) extends Actor {
   import context.dispatcher
   import executorContext._
 

@@ -24,11 +24,11 @@ import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, ResolveAppId, SubmitApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, ReplayApplicationResult, ResolveAppIdResult}
-import org.apache.gearpump.cluster.TestUtil.DummyApplication
+import org.apache.gearpump.cluster.TestUtil.{DummyAppMaster}
 import org.apache.gearpump.cluster.master.InMemoryKVService.{PutKVSuccess, GetKVSuccess, GetKV, PutKV}
 import org.apache.gearpump.cluster.master.MasterHAService._
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{AppJar, Application, MasterHarness, TestUtil}
+import org.apache.gearpump.cluster._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
 import scala.util.{Failure, Success}
@@ -60,7 +60,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     val appMaster = TestProbe()(getActorSystem)
     val worker = TestProbe()(getActorSystem)
 
-    val register = RegisterAppMaster(appMaster.ref, 0, 0, Resource(1), AppMasterRuntimeInfo(worker.ref))
+    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, 0, Resource(1)))
     appMaster.send(appManager, register)
     appMaster.expectMsgType[AppMasterRegistered]
   }
@@ -103,7 +103,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
   }
 
   def testClientSubmission(withRecover: Boolean) : Unit = {
-    val app = new DummyApplication
+    val app = TestUtil.dummyApp
     val submit = SubmitApplication(app, None, "username")
     val client = TestProbe()(getActorSystem)
     val appMaster = TestProbe()(getActorSystem)
@@ -113,7 +113,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     client.send(appManager, submit)
     haService.expectMsgType[UpdateMasterState]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, appId, -1, Resource(1), AppMasterRuntimeInfo(worker.ref)))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, appId, Resource(1))))
     appMaster.expectMsgType[AppMasterRegistered]
 
     client.send(appManager, ResolveAppId(appId))

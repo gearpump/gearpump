@@ -19,8 +19,6 @@
 package org.apache.gearpump.cluster.appmaster
 
 import akka.actor.Props
-import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.TestUtil.DummyApplication
 import org.apache.gearpump.cluster._
 
 import org.apache.gearpump.cluster.scheduler.Resource
@@ -45,11 +43,11 @@ class AppMasterDaemonSpec extends FlatSpec with Matchers with BeforeAndAfterEach
     val masterList = List(HostPort(getHost, getPort))
     val system = getActorSystem
 
-    val app = new DummyApplication
-    val context = AppMasterContext(0, "user", -1, Resource(1), None, null, null)
+    val app = TestUtil.dummyApp
+    val context = AppMasterContext(0, "user", Resource(1), None, null, null)
 
     system.actorOf(Props(classOf[AppMasterDaemon], masterList, app, context))
-    masterReceiver.expectMsgType[Tuple2[AppMasterContext, DummyApplication]]
+    masterReceiver.expectMsgType[Tuple2[AppMasterContext, Application]]
   }
 }
 

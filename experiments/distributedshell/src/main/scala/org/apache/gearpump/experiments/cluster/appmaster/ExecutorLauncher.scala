@@ -27,13 +27,13 @@ import org.apache.gearpump.util._
 import org.slf4j.Logger
 
 import scala.concurrent.duration.Duration
-import org.apache.gearpump.cluster.{ApplicationExecutor, UserConfig, ExecutorContext}
+import org.apache.gearpump.cluster.{UserConfig, ExecutorContext}
 
 object LaunchActorSystemTimeOut
 case object AllocateResourceTimeOut
 case class LaunchExecutorActor(executorConfig : Props, executorId : Int, daemon: ActorRef)
 
-class ExecutorLauncher (executorClass: Class[_ <: ApplicationExecutor], worker : ActorRef, launch : LaunchExecutor, executorConfig : ExecutorContext, userConf : UserConfig) extends Actor {
+class ExecutorLauncher (executorClass: Class[_ <: Actor], worker : ActorRef, launch : LaunchExecutor, executorConfig : ExecutorContext, userConf : UserConfig) extends Actor {
 
   import executorConfig._
 

@@ -20,6 +20,7 @@ package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{Application, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
@@ -84,24 +85,17 @@ object AppMasterProtocol extends DefaultJsonProtocol  {
       graph
     }
   }
-  implicit def convertAppDescription: RootJsonFormat[AppDescription] = jsonFormat4(AppDescription.apply)
+  implicit def convertAppDescription: RootJsonFormat[Application] = jsonFormat3(Application.apply)
   implicit object ApplicationFormat extends RootJsonFormat[Application] {
-    def write(obj: Application) = obj match {
-      case appDescription: AppDescription =>
-        appDescription.toJson
-      case _ =>
-        JsObject(
-          "appMaster" -> JsNull,
-          "conf" -> JsNull
-        )
-    }
+    def write(obj: Application) = obj.toJson
+
     def read(obj: JsValue): Application = obj match {
       case JsNull =>
         null
       case _ =>
         obj.asJsObject.fields("dag") match {
           case JsObject(dag) =>
-            obj.convertTo[AppDescription]
+            obj.convertTo[Application]
           case _ =>
             null
         }

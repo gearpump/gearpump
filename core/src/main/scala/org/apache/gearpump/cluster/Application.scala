@@ -23,70 +23,63 @@ import org.apache.gearpump._
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.jarstore.JarFileContainer
 
-case class AppJar(name: String, container: JarFileContainer)
-
 /**
- * Subtype this for user defined application
+ * This contains all information to run an application
+ *
+ * @param name: The name of this application
+ * @param conf: user configuration.
+ * @param appMaster: The class name of AppMaster Actor
+ *    The AppMaster must have a constructor this(appContext : AppMasterContext, app : Application)
  */
-trait Application {
-  val name : String
-  val appMaster : String
-  val conf: UserConfig
-}
+
+final case class Application(name : String, appMaster : String, conf: UserConfig)
 
 /**
- * Used for verification
+ * Used for verification. All AppMaster must extend this interface
  */
 abstract class ApplicationMaster extends Actor
 
 /**
- * Used for verification
+ * This contains context information when starting an AppMaster
+ *
+ * @param appId: application instance id assigned, it is unique in the cluster
+ * @param username: The username who submitted this application
+ * @param resource: Resouce allocated to start this AppMaster daemon. AppMaster are allowed to
+ *                request more resource from Master.
+ * @param appJar: application Jar. If the jar is already in classpath, then it can be None.
+ * @param master: The proxy to master actor, it will bridge the messages between appmaster and master
+ * @param registerData: The AppMaster are required to register this data back to Master by [[org.apache.gearpump.cluster.AppMasterToMaster.RegisterAppMaster]]
+ *
  */
-abstract class ApplicationExecutor extends Actor
+final case class AppMasterContext(appId : Int, username : String,
+                                  resource : Resource,  appJar : Option[AppJar],
+                                  master : ActorRef,  registerData : AppMasterRegisterData)
+
+/**
+ * Jar file container in the cluster
+ *
+ * @param name: A meaningful name to represent this jar
+ * @param container: Where the jar file is stored.
+ */
+final case class AppJar(name: String, container: JarFileContainer)
 
 
 /**
- * This interface should keep stable, so that we can remain
- * compatible with old versions
+ * TODO: ExecutorContext doesn't belong here.
+ * Need to move to other places
  */
-trait ExecutorContextInterface {
-  val executorId : Int
-  val workerId : Int
-  val appId : Int
-  val appMaster : ActorRef
-  val resource : Resource
-}
-
 case class ExecutorContext(executorId : Int, workerId: Int, appId : Int,
-                           appMaster : ActorRef, resource : Resource) extends ExecutorContextInterface
+                           appMaster : ActorRef, resource : Resource)
+
 
 /**
- * This belongs to the app submission interface, no method should
- * be removed to remain compatible with old version.
+ * TODO: ExecutorJVMConfig doesn't belong here.
+ * Need to move to other places
  */
-trait AppMasterContextInterface {
-  val appId : Int
-  val username : String
-  val masterExecutorId : Int
-  val resource : Resource
-  val appJar : Option[AppJar]
-  val masterProxy : ActorRef
-  val registerData : AppMasterRegisterData
-}
-
-case class AppMasterContext(appId : Int, username : String, masterExecutorId : Int,
-                            resource : Resource,  appJar : Option[AppJar],
-                            masterProxy : ActorRef,  registerData : AppMasterRegisterData)
-  extends AppMasterContextInterface
-
-case class BaseAppDescription(name : String, appMaster : String, conf: UserConfig) extends Application
-
 /**
  * classPath: When a worker create a executor, the parent worker's classpath will
  * be automatically inherited, the application jar will also be added to runtime
  * classpath automatically. Sometimes, you still want to add some extraclasspath,
  * you can do this by specify classPath option.
- *
- *
  */
 case class ExecutorJVMConfig(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String], jar: Option[AppJar], username : String)
