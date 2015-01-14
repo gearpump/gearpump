@@ -61,26 +61,22 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
   }
 
   property("KafkaStreamProcessor should write data to kafka") {
-    val servers = getServers
     val topic = TestKafkaUtils.tempTopic()
     val brokerList = getBrokerList
     val brokerStr = brokerList.mkString(",")
-    val zkClient = getZkClient
     val messageNum = 1000
     val batchSize = 100
 
-    TestKafkaUtils.createTopic(
-      zkClient, topic, numPartitions = 1, replicationFactor = 1, servers)
+    createTopicUntilLeaderIsElected(topic, partitions = 1, replicas = 1)
 
     val kafkaConfig = getKafkaConfig(topic, producerEmitBatchSize = batchSize, brokerStr, zkConnect)
     val (kafkaStreamProcessor, _) = StreamingTestUtil.createEchoForTaskActor(
       classOf[KafkaStreamProcessor].getName, kafkaConfig, system1, system2)
 
-    val (messages, sizeInBytes) = 0.until(messageNum).foldLeft(List.empty[String], 0) { (msgsAndSize, i) =>
-      val (msgs, size) = msgsAndSize
+    val messages = 0.until(messageNum).foldLeft(List.empty[String]) { (msgs, i) =>
       val msg = s"message-$i"
       kafkaStreamProcessor.tell(Message(i.toString -> msg), kafkaStreamProcessor)
-      (msgs :+ msg, size + Injection[String, Array[Byte]](msg).size)
+      msgs :+ msg
     }
     system1.stop(kafkaStreamProcessor)
 

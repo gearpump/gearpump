@@ -16,28 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.util
+package org.apache.gearpump.streaming.kafka.lib
 
-import kafka.utils.{ZKStringSerializer, Utils, TestZKUtils}
-import kafka.zk.EmbeddedZookeeper
-import org.I0Itec.zkclient.ZkClient
+import java.nio.ByteBuffer
 
-trait ZookeeperHarness {
-  val zkConnect: String = TestZKUtils.zookeeperConnect
-  val zkConnectionTimeout = 60000
-  val zkSessionTimeout = 60000
-  private var zookeeper: EmbeddedZookeeper = null
+import com.twitter.bijection.Injection
+import org.scalacheck.Gen
+import org.scalatest.{PropSpec, Matchers}
+import org.scalatest.prop.PropertyChecks
 
-  def getZookeeper: EmbeddedZookeeper = zookeeper
-  def newZkClient: ZkClient = {
-    new ZkClient(zkConnect, zkSessionTimeout, zkConnectionTimeout, ZKStringSerializer)
+class KafkaDecoderSpec extends PropSpec with PropertyChecks with Matchers {
+  property("KafkaDecoder should get Message from bytes") {
+    val decoder = new KafkaDecoder()
+    forAll(Gen.alphaStr) { (s: String) =>
+      val bytes = Injection[String, Array[Byte]](s)
+      decoder.fromBytes(bytes).msg shouldBe s
+    }
   }
 
-  def setUp() {
-    zookeeper = new EmbeddedZookeeper(zkConnect)
+  property("KafkaDecoder should throw exception on invalid bytes") {
+    val decoder = new KafkaDecoder()
+    val invalidBytes: Array[Byte] = null
+    intercept[RuntimeException] {
+      decoder.fromBytes(invalidBytes)
+    }
   }
 
-  def tearDown() {
-    Utils.swallow(zookeeper.shutdown())
-  }
 }

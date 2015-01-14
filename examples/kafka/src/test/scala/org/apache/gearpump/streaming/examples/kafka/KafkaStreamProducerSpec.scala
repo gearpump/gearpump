@@ -39,7 +39,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfterEach with KafkaServerHarness {
-  val numServers = 2
+  val numServers = 1
   override val configs: List[KafkaServerConfig] =
     for(props <- TestKafkaUtils.createBrokerConfigs(numServers, enableControlledShutdown = false))
     yield new KafkaServerConfig(props) {
@@ -66,12 +66,9 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
   property("KafkaStreamProducer should pull messages from kafka") {
     val messageNum = 1000
     val batchSize = 100
-    val servers = getServers
     val topic = TestKafkaUtils.tempTopic()
     val brokerList = getBrokerList.mkString(",")
-    val zkClient = getZkClient
-    val partitionsToBrokers = TestKafkaUtils.createTopic(
-      zkClient, topic, numPartitions = 1, replicationFactor = 1, servers)
+    val partitionsToBrokers = createTopicUntilLeaderIsElected(topic, partitions = 1, replicas = 1)
     val messages = partitionsToBrokers.foldLeft(List.empty[String]) { (msgs, partitionAndBroker) =>
       msgs ++ sendMessagesToPartition(configs, topic, partitionAndBroker._1, messageNum)
     }.map(Message(_, Message.noTimeStamp))
