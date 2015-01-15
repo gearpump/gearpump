@@ -30,6 +30,7 @@ import org.apache.gearpump.cluster.{AppMasterContext, UserConfig}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
+import org.apache.gearpump.streaming.TaskLocationReady
 import org.apache.gearpump.streaming.task.{TaskId, StartTime, TaskActor, TaskContext}
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.util.Graph
@@ -100,6 +101,7 @@ object StreamingTestUtil {
     }
     val future = Future.sequence(List(future1, future2))
     Await.result(future, Duration(10, TimeUnit.SECONDS))
+    testActor ! TaskLocationReady
     (testActor, taskReporter)
   }
 }
