@@ -21,7 +21,9 @@ package org.apache.gearpump.util
 import java.io.File
 import java.net.ServerSocket
 
+import com.google.common.io.BaseEncoding
 import com.typesafe.config.Config
+import org.apache.commons.lang.SerializationUtils
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.transport.HostPort
 
@@ -98,5 +100,17 @@ object Util {
     executorClass ++= sys.getString(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH).split(File.pathSeparator).asInstanceOf[Array[String]]
 
     AppJvmSettings(JvmSetting(appMasterVMArgs, appMasterClass ), JvmSetting(executorVMArgs, executorClass))
+  }
+
+  def toBase64String(value: java.io.Serializable): String = {
+    val bytes = SerializationUtils.serialize(value)
+    BaseEncoding.base64().encode(bytes)
+  }
+
+  def fromBase64String[T](base64: String): Option[T] = {
+    Try {
+      val decoded = BaseEncoding.base64().decode(base64)
+      SerializationUtils.deserialize(decoded).asInstanceOf[T]
+    }.toOption
   }
 }

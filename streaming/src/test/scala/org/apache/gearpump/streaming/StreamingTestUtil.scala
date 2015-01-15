@@ -19,7 +19,8 @@ package org.apache.gearpump.streaming
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, ActorSystem, ActorRef, Props}
+import akka.actor._
+import akka.serialization.JavaSerializer
 import akka.testkit.{TestProbe, TestActorRef}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
@@ -76,8 +77,12 @@ object StreamingTestUtil {
     val taskId1 = TaskId(0, 0)
     val taskId2 = TaskId(1, 0)
     val appMaster = system1.actorOf(Props(classOf[MockAppMaster]))
-    val testActor = TestActorRef[TaskActor](Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster, dag), taskConf))(system1)
-    val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, appMaster, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
+
+    implicit val systemForSerializer = system1.asInstanceOf[ExtendedActorSystem]
+
+    val testActor = TestActorRef[TaskActor](Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster, 1, dag), taskConf))(system1)
+    val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, appMaster, 1, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
+
     val express1 = Express(system1)
     val express2 = Express(system2)
     val testActorHost = express1.localHost
@@ -102,8 +107,10 @@ object StreamingTestUtil {
 class EchoTask(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
   import EchoTask._
   var testProbe: ActorRef = null
+
   override def onStart(startTime: StartTime): Unit = {
-    testProbe = userConf.getAnyRef(TEST_PROBE).get.asInstanceOf[ActorRef]
+
+    testProbe = userConf.getValue[ActorRef](TEST_PROBE).get
   }
 
   override def onNext(msg: Message): Unit = {

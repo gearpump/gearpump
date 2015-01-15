@@ -23,23 +23,11 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.util.Constants._
 import org.apache.hadoop.conf.Configuration
 
-class HadoopConfig(config: Map[String, _]) extends UserConfig(config) {
+class HadoopConfig(config: UserConfig)  {
   import org.apache.gearpump.cluster.UserConfig._
 
-  override def withValue(key: String, value: Any) = {
-    HadoopConfig(config + (key->value))
-  }
-
-  def withHadoopConf(conf : Configuration) = withValue(HADOOP_CONF, HadoopConfig.serializeHadoopConf(conf))
-  def hadoopConf : Configuration = HadoopConfig.deserializeHadoopConf(config.getAnyRef(HADOOP_CONF).get.asInstanceOf[Array[Byte]])
-}
-
-object HadoopConfig {
-  def empty = new HadoopConfig(Map.empty[String, Any])
-
-  def apply(config: Map[String, _]) = new HadoopConfig(config)
-
-  def apply(config: UserConfig) = new HadoopConfig(config.config)
+  def withHadoopConf(conf : Configuration) : UserConfig = config.withBytes(HADOOP_CONF, serializeHadoopConf(conf))
+  def hadoopConf : Configuration = deserializeHadoopConf(config.getBytes(HADOOP_CONF).get)
 
   private def serializeHadoopConf(conf: Configuration) : Array[Byte] = {
     val out = new ByteArrayOutputStream()
@@ -56,5 +44,14 @@ object HadoopConfig {
     result.readFields(dataIn)
     dataIn.close()
     result
+  }
+}
+
+object HadoopConfig {
+  def empty = new HadoopConfig(UserConfig.empty)
+  def apply(config: UserConfig) = new HadoopConfig(config)
+
+  implicit def userConfigToHadoopConfig(userConf: UserConfig): HadoopConfig = {
+    HadoopConfig(userConf)
   }
 }

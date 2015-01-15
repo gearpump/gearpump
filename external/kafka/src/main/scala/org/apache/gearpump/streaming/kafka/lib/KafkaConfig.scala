@@ -27,8 +27,12 @@ import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 object KafkaConfig {
+
+  val NAME = "kafkaConfig"
+
   // consumer config
   val ZOOKEEPER_CONNECT = "kafka.consumer.zookeeper.connect"
   val CONSUMER_TOPICS = "kafka.consumer.topics"
@@ -53,13 +57,12 @@ object KafkaConfig {
   // grouper config
   val GROUPER_FACTORY_CLASS = "kafka.grouper.factory.class"
 
-  def apply(config: Map[String, _]): KafkaConfig = KafkaConfig(UserConfig(config))
-  def apply(config: UserConfig): KafkaConfig = new KafkaConfig(config)
+  def apply(config: Config): KafkaConfig = new KafkaConfig(config)
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 }
 
-class KafkaConfig(config: UserConfig)  {
+class KafkaConfig(config: Config) extends Serializable  {
   import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
 
   private def get[T](key: String, optValue: Option[T], defaultValue: Option[T] = None): T = {
@@ -67,22 +70,21 @@ class KafkaConfig(config: UserConfig)  {
     value.get
   }
 
-  def getString(key: String, defaultValue: Option[String] = None): String = {
-    get[String](key, config.getString(key), defaultValue)
+  private def getString(key: String, defaultValue: Option[String] = None): String = {
+    get[String](key, Try(config.getString(key)).toOption, defaultValue)
   }
 
-  def getInt(key: String, defaultValue: Option[Int] = None): Int = {
-    get[Int](key, config.getInt(key), defaultValue)
+  private def getInt(key: String, defaultValue: Option[Int] = None): Int = {
+    get[Int](key, Try(config.getInt(key)).toOption, defaultValue)
   }
 
-  def getStringList(key: String, defaultValue: Option[JList[String]] = None): List[String] = {
-    get[JList[String]](key, config.getAnyRef(key).asInstanceOf[Option[JList[String]]], defaultValue).asScala.toList
+  private def getStringList(key: String, defaultValue: Option[JList[String]] = None): List[String] = {
+    config.getAnyRef(key).asInstanceOf[JList[String]].asScala.toList
   }
 
-  def getInstance[C](key: String, defaultValue: Option[String] = None): C = {
+  private def getInstance[C](key: String, defaultValue: Option[String] = None): C = {
     Class.forName(getString(key, defaultValue)).newInstance().asInstanceOf[C]
   }
-
 
   def getZookeeperConnect: String = {
     getString(ZOOKEEPER_CONNECT)

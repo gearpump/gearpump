@@ -22,12 +22,12 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.remote.RemoteScope
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
-import org.apache.gearpump.cluster.{ApplicationExecutor, UserConfig, ExecutorContext}
 import org.apache.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
 import scala.concurrent.duration.Duration
+import org.apache.gearpump.cluster.{ApplicationExecutor, UserConfig, ExecutorContext}
 
 object LaunchActorSystemTimeOut
 case object AllocateResourceTimeOut

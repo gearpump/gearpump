@@ -34,7 +34,7 @@ import scala.concurrent.duration.FiniteDuration
 class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
   extends TaskActor(taskContext, inputConfig) {
 
-  private val kafkaConfig = new KafkaConfig(inputConfig)
+  private val kafkaConfig = inputConfig.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val topic = kafkaConfig.getProducerTopic
   private val batchSize = kafkaConfig.getProducerEmitBatchSize
   private val producerConfig = KafkaUtil.buildProducerConfig(kafkaConfig)

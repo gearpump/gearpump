@@ -29,7 +29,7 @@ trait ExpressTransport {
   this: TaskActor =>
 
   final val express = Express(context.system)
-  final val system = context.system.asInstanceOf[ExtendedActorSystem]
+  implicit val system = context.system.asInstanceOf[ExtendedActorSystem]
   final val serializer = new FastKryoSerializer(system)
   final def local = express.localHost
   lazy val sourceId = TaskId.toLong(taskContext.taskId)

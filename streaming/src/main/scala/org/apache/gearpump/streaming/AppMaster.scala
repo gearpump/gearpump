@@ -255,7 +255,7 @@ class AppMaster(appContext : AppMasterContextInterface, app : Application)  exte
           //Launch task
           LOG.info("Sending Launch Task to executor: " + executor.toString())
 
-          val taskContext = TaskContext(taskId, executorId, appId, self, dag)
+          val taskContext = TaskContext(taskId, executorId, appId, self, taskDescription.parallelism, dag)
 
           executor ! LaunchTask(taskId, taskContext, ActorUtil.loadClass(taskDescription.taskClass))
           //Todo: subtract the actual resource used by task
