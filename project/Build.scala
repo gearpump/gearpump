@@ -206,7 +206,7 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn (core % "test->test", streaming % "provided")
+  ) dependsOn (streaming % "test->test", streaming % "provided")
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",

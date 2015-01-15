@@ -62,9 +62,11 @@ class SeqFileStreamProcessor(taskContext_ : TaskContext, config: UserConfig) ext
 
   override def onNext(msg: Message): Unit = {
     val kv = msg.msg.asInstanceOf[String].split("\\+\\+")
-    key.set(kv(0))
-    value.set(kv(1))
-    writer.append(key, value)
+    if(kv.length >= 2) {
+      key.set(kv(0))
+      value.set(kv(1))
+      writer.append(key, value)
+    }
     msgCount += 1
   }
 
