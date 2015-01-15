@@ -52,12 +52,14 @@ object SOL extends App with ArgumentsParser {
       c ~ partitioner ~> streamProcessor.copy()
     }
     val dag = Graph[TaskDescription, Partitioner](computation)
-    val app = AppDescription("sol", classOf[AppMaster].getName, appConfig, dag)
+    val app = AppDescription("sol", appConfig, dag)
     app
   }
 
   val config = parse(args)
   val context = ClientContext(config.getString("master"))
+  implicit val system = context.system
+
   val appId = context.submit(application(config))
   Thread.sleep(config.getInt("runseconds") * 1000)
   context.shutdown(appId)

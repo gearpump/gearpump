@@ -44,7 +44,7 @@ object Info extends App with ArgumentsParser {
     appMasters.foreach { appData =>
       Console.println("== Application Information ==")
       Console.println("====================================")
-      Console.println(s"application: ${appData.appId}, worker: ${appData.appData.worker}")
+      Console.println(s"application: ${appData.appId}, worker: ${appData.workerPath}")
     }
     client.close()
   }

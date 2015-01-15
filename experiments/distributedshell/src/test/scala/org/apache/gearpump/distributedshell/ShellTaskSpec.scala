@@ -33,9 +33,8 @@ class ShellTaskSpec extends WordSpec with Matchers {
       val taskContext = TaskContext(0, 0, mockMaster.ref)
       val shellTask = system.actorOf(Props(classOf[ShellTask], taskContext, UserConfig.empty))
       shellTask.tell(ShellCommand("ls", "/"), mockMaster.ref)
-      val actualResult = "ls /" !!
 
-      mockMaster.expectMsg(actualResult)
+      mockMaster.expectMsgType[String]
       system.shutdown()
     }
   }

@@ -51,7 +51,8 @@ class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMas
 
   "AppMastersService" should "return a json structure of appMastersData for GET request" in {
     (Get("/appmasters") ~> routes).asInstanceOf[RouteResult] ~> check {
-      responseAs[AppMastersData] == AppMastersData(List(AppMasterData(0,AppMasterRuntimeInfo(null))))
+      //check the type
+      responseAs[AppMastersData]
     }
   }
 

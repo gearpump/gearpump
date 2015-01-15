@@ -20,7 +20,7 @@ package org.apache.gearpump.experiments.cluster.executor
 import akka.actor.{PoisonPill, Actor, Props, ActorSystem}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{ExecutorContext, UserConfig, ExecutorContextInterface, TestUtil}
+import org.apache.gearpump.cluster.{ExecutorContext, UserConfig, TestUtil}
 import org.apache.gearpump.experiments.cluster.AppMasterToExecutor.{MsgToTask, LaunchTask}
 import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.{ResponsesFromTasks, RegisterExecutor}
 import org.apache.gearpump.experiments.cluster.task.{TaskContext, TaskContextInterface}

@@ -34,7 +34,7 @@ object TestUtil {
   class MiniCluster {
     private val mockMasterIP = "127.0.0.1"
 
-    private implicit val system = ActorSystem("system", MASTER_CONFIG.
+    implicit val system = ActorSystem("system", MASTER_CONFIG.
       withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(mockMasterIP)))
 
     val mockMaster: ActorRef = {
@@ -52,11 +52,11 @@ object TestUtil {
     def shutDown() = system.shutdown()
   }
 
-  class DummyAppMaster(context: AppMasterContextInterface, app: Application) extends ApplicationMaster {
+  class DummyAppMaster(context: AppMasterContext, app: Application) extends ApplicationMaster {
     context.masterProxy ! (context, app)
 
     def receive : Receive = null
   }
 
-  case class DummyApplication(name: String = "dummy", conf: UserConfig = UserConfig(Map("key"->"value")), appMaster: String = classOf[DummyAppMaster].getName) extends  Application
+  val dummyApp : Application = Application("dummy", classOf[DummyAppMaster].getName, UserConfig.empty)
 }

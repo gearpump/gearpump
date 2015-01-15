@@ -18,11 +18,25 @@
 
 package org.apache.gearpump.streaming
 
-import org.apache.gearpump.cluster.UserConfig
+import akka.actor.ActorSystem
+import org.apache.gearpump.cluster.{Application, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.util.{Graph, ReferenceEqual}
 
 case class TaskDescription(taskClass: String, parallelism : Int) extends ReferenceEqual
 
-case class AppDescription(name : String, appMaster : String, conf: UserConfig, dag: Graph[TaskDescription, Partitioner])
-  extends org.apache.gearpump.cluster.Application
+case class AppDescription(name : String, conf: UserConfig, dag: Graph[TaskDescription, Partitioner])
+
+object AppDescription{
+
+  /**
+   * You need to provide a implicit val system: ActorSystem to do the conversion
+   */
+  implicit def AppDescriptionToApplication(app: AppDescription)(implicit system: ActorSystem): Application = {
+    import app._
+    Application(name,  classOf[AppMaster].getName, conf.withValue(DAG, dag))
+  }
+
+  val DAG = "DAG"
+}
+

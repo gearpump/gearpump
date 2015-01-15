@@ -21,6 +21,7 @@ import akka.actor.Actor
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.cluster.task.TaskContextInterface
 import org.slf4j.{LoggerFactory, Logger}
+import scala.util.{Try, Success, Failure}
 import sys.process._
 
 class ShellTask(taskContext : TaskContextInterface, userConf : UserConfig) extends Actor {
@@ -30,7 +31,12 @@ class ShellTask(taskContext : TaskContextInterface, userConf : UserConfig) exten
 
   override def receive: Receive = {
     case ShellCommand(command, args) =>
-      val result = s"$command $args" !!
+      val process = Try(s"$command $args" !!)
+
+      val result = process match {
+        case Success(msg) => msg
+        case Failure(ex) => ex.getMessage
+      }
 
       LOG.info(s"Task execute shell command '$command $args', result is $result")
       sender ! result

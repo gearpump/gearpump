@@ -36,6 +36,7 @@ import org.scalatest._
 
 import org.apache.gearpump.util.Graph._
 import scala.concurrent.duration._
+import scala.util.Try
 
 class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config = TestUtil.DEFAULT_CONFIG
@@ -43,34 +44,39 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   var appMaster: TestActorRef[AppMaster] = null
 
   val appId = 0
-  val masterExecutorId = 0
   val workerId = 1
   val resource = Resource(1)
   val taskDescription1 = TaskDescription(classOf[TaskActorA].getName, 2)
   val taskDescription2 = TaskDescription(classOf[TaskActorB].getName, 2)
   var conf: UserConfig = null
   var mockProxy: TestProbe = null
+
+  var mockTask: TestProbe = null
+
   var mockMaster: TestProbe = null
   var mockWorker: TestProbe = null
-  var appDescription: AppDescription = null
-  var appMasterContext: AppMasterContextInterface = null
+  var appDescription: Application = null
+  var appMasterContext: AppMasterContext = null
   var appMasterRuntimeInfo: AppMasterRuntimeInfo = null
 
   override def beforeEach() = {
     startActorSystem()
     mockProxy = TestProbe()(getActorSystem)
+
+    mockTask = TestProbe()(getActorSystem)
+
     mockMaster = TestProbe()(getActorSystem)
     mockWorker = TestProbe()(getActorSystem)
     mockMaster.ignoreMsg(ignoreSaveAppData)
-    appMasterRuntimeInfo = AppMasterRuntimeInfo(mockWorker.ref)
+    appMasterRuntimeInfo = AppMasterRuntimeInfo(mockWorker.ref, appId, Resource(1))
 
     implicit val system = getActorSystem
     conf = UserConfig.empty.withValue(AppMasterSpec.MASTER, mockMaster.ref)
-    appMasterContext = AppMasterContext(appId, "test", masterExecutorId, resource, None, mockProxy.ref, appMasterRuntimeInfo)
-    appDescription = AppDescription("test", "AppMaster", conf, Graph(taskDescription1 ~ new HashPartitioner() ~> taskDescription2))
+    appMasterContext = AppMasterContext(appId, "test", resource, None, mockProxy.ref, appMasterRuntimeInfo)
+    appDescription = AppDescription("test", conf, Graph(taskDescription1 ~ new HashPartitioner() ~> taskDescription2))
     appMaster = TestActorRef[AppMaster](Props(classOf[AppMaster], appMasterContext, appDescription))(getActorSystem)
 
-    mockProxy.expectMsg(RegisterAppMaster(appMaster, appId, masterExecutorId, resource, appMasterRuntimeInfo))
+    mockProxy.expectMsg(RegisterAppMaster(appMaster, appMasterRuntimeInfo))
     mockProxy.reply(AppMasterRegistered(appId, mockMaster.ref))
     mockMaster.expectMsg(GetAppData(appId, "startClock"))
     mockMaster.reply(GetAppDataResult("startClock", 0L))
@@ -98,14 +104,15 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       appMaster ! ExecutorLaunchRejected("", resource)
       mockMaster.expectMsg(RequestResource(appId, ResourceRequest(resource)))
 
-      appMaster.tell(UpdateClock(TaskId(0, 0), 1024), mockProxy.ref)
-      mockProxy.expectMsg(ClockUpdated(1024))
-      appMaster.tell(GetLatestMinClock, mockProxy.ref)
-      mockProxy.expectMsg(LatestMinClock(1024))
+      appMaster.tell(UpdateClock(TaskId(0, 0), 1024), mockTask.ref)
+      mockTask.expectMsg(ClockUpdated(1024))
+      appMaster.tell(GetLatestMinClock, mockTask.ref)
+      mockTask.expectMsg(LatestMinClock(1024))
 
-      val executorId = masterExecutorId + 1
       appMaster.children.foreach { child =>
-        if(child.path.name.equals(executorId.toString)) {
+        val name = child.path.name
+        if (Try(name.toInt).isSuccess) {
+          // This is a executor child
           child ! PoisonPill
         }
       }
@@ -115,7 +122,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     "find a new master when lost connection with master" in {
       println(config.getList("akka.loggers"))
       mockMaster.ref ! PoisonPill
-      mockProxy.expectMsg(RegisterAppMaster(appMaster, appId, masterExecutorId, resource, appMasterRuntimeInfo))
+      mockProxy.expectMsg(RegisterAppMaster(appMaster, appMasterRuntimeInfo))
     }
   }
 
@@ -130,6 +137,7 @@ object AppMasterSpec {
 }
 
 class TaskActorA(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
+
   val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = master ! AppMasterSpec.TaskStarted
 
@@ -137,6 +145,7 @@ class TaskActorA(taskContext : TaskContext, userConf : UserConfig) extends TaskA
 }
 
 class TaskActorB(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
+
   val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = master ! AppMasterSpec.TaskStarted
 
