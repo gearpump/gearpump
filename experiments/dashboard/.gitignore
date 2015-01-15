@@ -1,0 +1,6 @@
+/nbproject/
+/node_modules/
+/build/
+/app/components/
+/.tmp/
+/dist/docs/
