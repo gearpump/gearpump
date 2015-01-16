@@ -58,6 +58,7 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
       kvPairs.append((key, value))
       processor.tell(Message(key + "++" + value), processor)
     }
+    processor.underlying.actor.asInstanceOf[SeqFileStreamProcessor].onStop()
     system1.shutdown()
     system2.shutdown()
   }
@@ -66,8 +67,7 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
     val reader = new SequenceFile.Reader(hadoopConf, Reader.file(sequenceFilePath))
     kvPairs.foreach { kv =>
       val (key, value) = kv
-      if(value.length > 0) {
-        reader.next(_key, _value)
+      if(value.length > 0 && reader.next(_key, _value)) {
         assert(_key.toString == key && _value.toString == value)
       }
     }
