@@ -20,17 +20,15 @@ package org.apache.gearpump.streaming
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import akka.serialization.JavaSerializer
 import akka.testkit.{TestProbe, TestActorRef}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{Application, AppMasterContext, UserConfig}
+import org.apache.gearpump.cluster.{AppMasterContext, UserConfig}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
-import org.apache.gearpump.streaming.TaskLocationReady
 import org.apache.gearpump.streaming.task.{TaskId, StartTime, TaskActor, TaskContext}
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.util.Graph

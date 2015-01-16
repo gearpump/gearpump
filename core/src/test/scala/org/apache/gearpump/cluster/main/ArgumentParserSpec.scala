@@ -51,5 +51,13 @@ class ArgumentParserSpec extends FlatSpec with Matchers {
     assert(result.getInt("opt1") == 1)
 
     assert(result.remainArgs.length == 3)
+
+    intercept[Exception] {
+      parser.parse(Array("-opt2"))
+    }
+
+    intercept[Exception] {
+      parser.parse(Array("-opt2", "2", "-opt1"))
+    }
   }
 }

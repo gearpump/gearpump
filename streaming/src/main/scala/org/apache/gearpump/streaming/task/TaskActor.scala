@@ -57,7 +57,7 @@ abstract class TaskActor(val taskContext : TaskContext, userConf : UserConfig) e
   // securityChecker will be responsible of dropping messages from
   // unknown sources
   private val securityChecker  = new SecurityChecker(taskId, self)
-  protected val sessionId = Util.randInt
+  private[task] val sessionId = Util.randInt
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
