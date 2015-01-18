@@ -21,12 +21,13 @@ package org.apache.gearpump.cluster.worker
 import java.io.File
 import java.net.URL
 import java.util
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor._
 import akka.pattern.pipe
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToWorker._
+import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
@@ -35,7 +36,7 @@ import org.apache.gearpump.util._
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
-import scala.concurrent.{Future, future}
+import scala.concurrent.{ExecutionContext, Future, future}
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -123,8 +124,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   import context.dispatcher
   override def preStart() : Unit = {
     LOG.info(s"Worker[$id] Sending master RegisterNewWorker")
-    val resourceConfig = systemConfig.getAnyRef(Constants.WORKER_RESOURCE).asInstanceOf[util.HashMap[String, Int]]
-    this.resource = Resource(resourceConfig.get("slots"))
+    val slots = systemConfig.getInt(Constants.GEARPUMP_WORKER_SLOTS)
+    this.resource = Resource(slots)
     masterProxy ! RegisterNewWorker
     context.become(waitForMasterConfirm(repeatActionUtil(30)(Unit)))
   }
@@ -157,7 +158,8 @@ private[cluster] object Worker {
   case class ExecutorResult(result : Try[Int])
 
   class ExecutorWatcher(launch: LaunchExecutor) extends Actor {
-    import context.dispatcher
+
+    implicit val executionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
     private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
 
@@ -179,27 +181,37 @@ private[cluster] object Worker {
         }
       } else {
         val appJar = ctx.jar
-        var tempFile : File = null
-        val (jvmArguments, classPath) = appJar match {
-          case Some(jar) =>
-            tempFile = File.createTempFile(jar.name, ".jar")
-            jar.container.copyToLocalFile(tempFile)
-            var file = new URL("file:"+tempFile)
-            (ctx.jvmArguments :+ "-Dapp.jar="+file.getFile, Util.getCurrentClassPath ++ ctx.classPath :+ file.getFile)
-          case None =>
-            (ctx.jvmArguments, Util.getCurrentClassPath ++ ctx.classPath)
+
+        val jarPath = appJar.map {appJar =>
+          val tempFile = File.createTempFile(appJar.name, ".jar")
+          appJar.container.copyToLocalFile(tempFile)
+          var file = new URL("file:"+tempFile)
+          file.getFile
         }
 
-        val logArgs = List(s"-D${Constants.GEAR_APPLICATION_ID}=${launch.appId}", s"-D${Constants.GEAR_EXECUTOR_ID}=${launch.executorId}")
+        val configFile = Option(ctx.executorAkkaConfig).map{conf =>
+          val configFile = File.createTempFile("gearpump", ".conf")
+          ClusterConfig.saveConfig(conf, configFile)
+          var file = new URL("file:" + configFile)
+          file.getFile
+        }
+
+        val classPathPrefix = Util.getCurrentClassPath ++ ctx.classPath
+        val classPath = jarPath.map(classPathPrefix :+ _).getOrElse(classPathPrefix)
+
+        val logArgs = List(s"-D${Constants.GEARPUMP_APPLICATION_ID}=${launch.appId}", s"-D${Constants.GEARPUMP_EXECUTOR_ID}=${launch.executorId}")
+        val configArgs = configFile.map(confFilePath =>
+          List(s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=$confFilePath")
+          ).getOrElse(List.empty[String])
 
         // pass hostname as a JVM parameter, so that child actorsystem can read it
         // in priority
         var host = Try(context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)).map(
           host => List(s"-D${Constants.NETTY_TCP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
 
-        val username = List(s"-D${Constants.GEAR_USERNAME}=${ctx.username}")
+        val username = List(s"-D${Constants.GEARPUMP_USERNAME}=${ctx.username}")
 
-        val options = jvmArguments ++ host ++ username ++ logArgs
+        val options = ctx.jvmArguments ++ host ++ username ++ logArgs ++ configArgs
         val process = Util.startProcess(options, classPath, ctx.mainClass, ctx.arguments)
 
         new ExecutorHandler {
@@ -219,10 +231,8 @@ private[cluster] object Worker {
           }
 
           def deleteTempFile : Unit = {
-            if(tempFile != null) {
-              tempFile.delete()
-              tempFile = null
-            }
+            jarPath.map(new File(_)).map(_.delete())
+            configFile.map(new File(_)).map(_.delete())
           }
         }
       }

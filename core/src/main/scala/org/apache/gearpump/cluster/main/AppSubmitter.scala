@@ -27,7 +27,7 @@ object AppSubmitter extends App with ArgumentsParser {
     val jar = config.getString("jar")
 
     // Set jar path to be submitted to cluster
-    System.setProperty(Constants.GEAR_APP_JAR, jar)
+    System.setProperty(Constants.GEARPUMP_APP_JAR, jar)
 
     val jarFile = new java.io.File(jar)
 

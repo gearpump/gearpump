@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor._
 import akka.pattern.ask
 import akka.remote.RemoteScope
+import com.typesafe.config.{ConfigFactory, Config}
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
@@ -55,7 +56,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   import appContext._
 
   val systemConfig = context.system.settings.config
-  val userConfig = app.conf
+  val userConfig = app.userConfig
 
   var currentExecutorId = 0
 
@@ -67,7 +68,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   private var master : ActorRef = null
 
   private val name = app.name
-  private val dag = DAG(app.conf.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
+  private val dag = DAG(app.userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
   private val taskSet = new TaskSet(appId, dag)
 
   private var clockService : ActorRef = null
@@ -83,6 +84,9 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   private var allocationTimeOut: Cancellable = null
   //When the AppMaster trying to replay, the replay command should not be handled again.
   private var restarting = true
+
+  val executorClusterConfigSource = app.userConfig.getValue[ClusterConfigSource](AppDescription.EXECUTOR_CLUSTER_CONFIG)
+  val executorAkkaConfig: Config = executorClusterConfigSource.map(_.getConfig).getOrElse(ConfigFactory.empty)
 
   override def receive : Receive = null
 
@@ -116,8 +120,8 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
         LOG.info("Sending request resource to master...")
         val resourceRequests = taskSet.fetchResourceRequests()
         resourceRequests.foreach(master ! RequestResource(appId, _))
-        context.become(messageHandler)
       }
+      context.become(messageHandler)
   }
 
   def messageHandler: Receive = masterMsgHandler orElse selfMsgHandler orElse appManagerMsgHandler orElse workerMsgHandler orElse executorMsgHandler orElse terminationWatch
@@ -145,9 +149,10 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
         val launcherName = s"launcher${currentExecutorId}"
         val launcherPath = ActorUtil.getFullPath(context.system, self.path.child(launcherName))
 
-        val jvmSetting = Util.resolveJvmSetting(userConfig, systemConfig).executor
+        val jvmSetting = Util.resolveJvmSetting(executorAkkaConfig.withFallback(systemConfig)).executor
         val launchJVM = ExecutorJVMConfig(jvmSetting.classPath, jvmSetting.vmargs,
-            classOf[ActorSystemBooter].getName, Array(name, launcherPath), appJar, username)
+            classOf[ActorSystemBooter].getName, Array(name, launcherPath),
+          appJar, username, executorAkkaConfig)
 
         val launch = LaunchExecutor(appId, currentExecutorId, resource, launchJVM)
 

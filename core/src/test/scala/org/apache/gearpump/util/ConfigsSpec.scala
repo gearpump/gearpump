@@ -26,6 +26,7 @@ import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.util.Constants._
 
 class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
   "Typesafe Cluster Configs" should "follow the override rules" in {
@@ -54,7 +55,7 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
     val file = File.createTempFile("test", ".conf")
     FileUtils.writeStringToFile(file, conf)
 
-    System.setProperty("config.file", file.toString)
+    System.setProperty(GEARPUMP_CUSTOM_CONFIG_FILE, file.toString)
     val raw = ClusterConfig.load
 
     assert(raw.master.getString("conf") == "master", "master > base")

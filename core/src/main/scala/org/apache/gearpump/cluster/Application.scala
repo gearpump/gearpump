@@ -22,20 +22,23 @@ import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.jarstore.JarFileContainer
+import com.typesafe.config.Config
 
 /**
  * This contains all information to run an application
  *
  * @param name: The name of this application
- * @param conf: user configuration.
  * @param appMaster: The class name of AppMaster Actor
- *    The AppMaster must have a constructor this(appContext : AppMasterContext, app : Application)
+ * @param userConfig: user configuration.
+ * @param clusterConfig: The user provided cluster config, it will override gear.conf when starting
+ *  new applications. In most cases, you wouldnot need to change it. If you do need to change it,
+ *  use ClusterConfigSource(filePath) to construct the object, while filePath points to the .conf file.
  */
 
-final class Application(val name : String, val appMaster : String, val conf: UserConfig) extends Serializable
+final class Application(val name : String, val appMaster : String, val userConfig: UserConfig, val clusterConfig: ClusterConfigSource = null) extends Serializable
 
 object Application {
-  def apply(name : String, appMaster : String, conf: UserConfig) : Application = new Application(name, appMaster, conf)
+  def apply(name : String, appMaster : String, conf: UserConfig, appMasterClusterConfig: ClusterConfigSource = null) : Application = new Application(name, appMaster, conf, appMasterClusterConfig)
 }
 
 /**
@@ -81,9 +84,17 @@ case class ExecutorContext(executorId : Int, workerId: Int, appId : Int,
  * Need to move to other places
  */
 /**
- * classPath: When a worker create a executor, the parent worker's classpath will
+ * @param classPath: When a worker create a executor, the parent worker's classpath will
  * be automatically inherited, the application jar will also be added to runtime
  * classpath automatically. Sometimes, you still want to add some extraclasspath,
  * you can do this by specify classPath option.
+ * @param jvmArguments java arguments like -Dxx=yy
+ * @param mainClass Executor main class name like org.apache.gearpump.xx.AppMaster
+ * @param arguments Executor command line arguments
+ * @param jar application jar
+ * @param executorAkkaConfig Akka config used to initialize the actor system of this executor. It will
+ * use [[org.apache.gearpump.util.Constants.GEARPUMP_CUSTOM_CONFIG_FILE]] to pass the config to executor
+ * process
+ *
  */
-case class ExecutorJVMConfig(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String], jar: Option[AppJar], username : String)
+case class ExecutorJVMConfig(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String], jar: Option[AppJar], username : String, executorAkkaConfig: Config = null)

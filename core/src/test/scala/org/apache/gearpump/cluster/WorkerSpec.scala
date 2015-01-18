@@ -64,7 +64,7 @@ class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with Mas
 
   "Worker" should {
     "init its resource from the gearpump config" in {
-      val workerSystem = ActorSystem("WorkerSystem", ConfigFactory.parseString(s"${Constants.WORKER_RESOURCE} = {slots = $workerSlots} "))
+      val workerSystem = ActorSystem("WorkerSystem", ConfigFactory.parseString(s"${Constants.GEARPUMP_WORKER_SLOTS} = $workerSlots"))
       val worker = workerSystem.actorOf(Props(classOf[Worker], mockMaster.ref))
       mockMaster watch worker
       mockMaster.expectMsg(RegisterNewWorker)

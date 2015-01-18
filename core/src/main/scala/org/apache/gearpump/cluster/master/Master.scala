@@ -51,7 +51,7 @@ private[cluster] class Master extends Actor with Stash {
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context.system, self.path) + "...")
 
-  val jarStore = context.actorOf(JarStore.props(systemConfig.getString(Constants.GEAR_APP_JAR_STORE_ROOT_PATH)))
+  val jarStore = context.actorOf(JarStore.props(systemConfig.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH)))
 
   override def receive : Receive = workerMsgHandler orElse
     appMasterMsgHandler orElse

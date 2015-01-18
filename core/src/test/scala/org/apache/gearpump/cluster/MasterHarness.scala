@@ -62,7 +62,7 @@ trait MasterHarness {
 
   def startMasterProcess(host: String, port: Int): Process ={
     val tempTestConf = convertTestConf(host, port)
-    Util.startProcess(Array(s"-Dconfig.file=${tempTestConf.toString}"),
+    Util.startProcess(Array(s"-D$GEARPUMP_CUSTOM_CONFIG_FILE=${tempTestConf.toString}"),
       getContextClassPath,
       getMainClassName(org.apache.gearpump.cluster.main.Master),
       Array("-ip", host, "-port", port.toString))

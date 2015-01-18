@@ -96,11 +96,11 @@ object StreamingTestUtil {
       val (host, taskIdList) = kv
       taskIdList.map(taskId => (TaskId.toLong(taskId), host))
     }
-    val future1 = express1.startClients(locations.keySet).map { _ =>
-      express1.remoteAddressMap.send(result)
+    val future1 = express1.startClients(locations.keySet).flatMap { _ =>
+      express1.remoteAddressMap.alter(result)
     }
-    val future2 = express2.startClients(locations.keySet).map { _ =>
-      express2.remoteAddressMap.send(result)
+    val future2 = express2.startClients(locations.keySet).flatMap { _ =>
+      express2.remoteAddressMap.alter(result)
     }
     val future = Future.sequence(List(future1, future2))
     Await.result(future, Duration(10, TimeUnit.SECONDS))

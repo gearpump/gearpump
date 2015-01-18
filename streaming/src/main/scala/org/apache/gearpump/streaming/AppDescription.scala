@@ -19,13 +19,13 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.ActorSystem
-import org.apache.gearpump.cluster.{Application, UserConfig}
+import org.apache.gearpump.cluster.{ClusterConfigSource, Application, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.util.{Graph, ReferenceEqual}
 
 case class TaskDescription(taskClass: String, parallelism : Int) extends ReferenceEqual
 
-case class AppDescription(name : String, conf: UserConfig, dag: Graph[TaskDescription, Partitioner])
+case class AppDescription(name : String, userConfig: UserConfig, dag: Graph[TaskDescription, Partitioner], clusterConfig: ClusterConfigSource = null)
 
 object AppDescription{
 
@@ -34,9 +34,10 @@ object AppDescription{
    */
   implicit def AppDescriptionToApplication(app: AppDescription)(implicit system: ActorSystem): Application = {
     import app._
-    Application(name,  classOf[AppMaster].getName, conf.withValue(DAG, dag))
+    Application(name,  classOf[AppMaster].getName, userConfig.withValue(DAG, dag).withValue(EXECUTOR_CLUSTER_CONFIG, app.clusterConfig), app.clusterConfig)
   }
 
   val DAG = "DAG"
+  val EXECUTOR_CLUSTER_CONFIG = "executorClusterConfig"
 }
 

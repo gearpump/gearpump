@@ -38,16 +38,19 @@ import org.slf4j.Logger
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.Config
 
 class AppMasterLauncher(appId : Int, executorId: Int, app : Application, jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef]) extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
+  import app._
+
   val scheduler = context.system.scheduler
   val systemConfig = context.system.settings.config
   val TIMEOUT = Duration(15, TimeUnit.SECONDS)
-  val appMaster = app.appMaster
-  val userConfig = app.conf
 
+  val appMasterAkkaConfig: Config = Option(clusterConfig).map(_.getConfig).getOrElse(ConfigFactory.empty())
   LOG.info(s"AppManager asking Master for resource for app $appId...")
   master ! RequestResource(appId, ResourceRequest(Resource(1)))
 
@@ -63,12 +66,12 @@ class AppMasterLauncher(appId : Int, executorId: Int, app : Application, jar: Op
       val name = ActorUtil.actorNameForExecutor(appId, executorId)
       val selfPath = ActorUtil.getFullPath(context.system, self.path)
 
-      val jvmSetting = Util.resolveJvmSetting(app.conf, systemConfig).appMater
+      val jvmSetting = Util.resolveJvmSetting(appMasterAkkaConfig.withFallback(systemConfig)).appMater
       val executorJVM = ExecutorJVMConfig(jvmSetting.classPath ,jvmSetting.vmargs,
-        classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username)
+        classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username, appMasterAkkaConfig)
 
       worker ! LaunchExecutor(appId, executorId, resource, executorJVM)
-      context.become(waitForActorSystemToStart(worker, appMasterContext, app.conf))
+      context.become(waitForActorSystemToStart(worker, appMasterContext, app.userConfig))
   }
 
   def waitForActorSystemToStart(worker : ActorRef, appContext : AppMasterContext, user : UserConfig) : Receive = {

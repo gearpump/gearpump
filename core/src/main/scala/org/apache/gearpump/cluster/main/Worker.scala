@@ -56,7 +56,7 @@ Worker extends App with ArgumentsParser {
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
     }
 
-    LOG.info(s"Trying to connect to masters $masterAddress....")
+    LOG.info(s"Trying to connect to masters " + masterAddress.mkString(",") + "...")
     val masterProxy = system.actorOf(Props(classOf[MasterProxy], masterAddress), MASTER)
 
     system.actorOf(Props(classOf[WorkerActor], masterProxy),
