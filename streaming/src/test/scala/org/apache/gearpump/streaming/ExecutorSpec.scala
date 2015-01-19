@@ -18,14 +18,13 @@
 package org.apache.gearpump.streaming
 
 
-import _root_.akka.actor.{Actor, PoisonPill, Props, ActorSystem}
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import org.apache.gearpump.cluster.{MasterHarness, UserConfig, TestUtil}
+import org.apache.gearpump.cluster.MasterHarness
 
-import akka.actor.{Actor, PoisonPill, Props, ActorSystem}
-import akka.testkit.{TestProbe, ImplicitSender, TestKit}
+import akka.actor.{Actor, PoisonPill, Props}
+import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig, TestUtil}
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.AppMasterToExecutor._

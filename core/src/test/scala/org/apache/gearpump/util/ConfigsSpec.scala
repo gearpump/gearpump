@@ -82,6 +82,7 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
 
     val data = new ConfigsSpec.Data(3)
     assert(data == user.withValue("data", data).getValue[ConfigsSpec.Data]("data").get)
+    system.shutdown()
   }
 }
 

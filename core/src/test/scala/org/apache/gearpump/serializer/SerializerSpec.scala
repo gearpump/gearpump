@@ -60,6 +60,7 @@ class SerializerSpec extends FlatSpec with Matchers with MockitoSugar {
     val anotherA = serializer.deserialize(bytes)
 
     assert(anotherA.isInstanceOf[ClassA])
+    system.shutdown()
   }
 }
 
