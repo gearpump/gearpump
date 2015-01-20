@@ -58,6 +58,7 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
       kvPairs.append((key, value))
       processor.tell(Message(key + "++" + value), processor)
     }
+    processor.underlying.actor.asInstanceOf[SeqFileStreamProcessor].onStop()
     system1.shutdown()
     system2.shutdown()
   }
