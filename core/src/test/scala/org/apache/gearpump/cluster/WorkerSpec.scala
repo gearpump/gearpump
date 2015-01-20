@@ -17,8 +17,8 @@
  */
 package org.apache.gearpump.cluster
 
-import akka.actor.{ActorSystem, PoisonPill, Props}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import _root_.akka.actor.{ActorSystem, PoisonPill, Props}
+import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
@@ -27,34 +27,38 @@ import org.apache.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.worker.Worker
 import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest._
 
 import scala.concurrent.duration._
 
-class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-  with WordSpecLike with Matchers with BeforeAndAfterAll {
-
-  def this() = this(ActorSystem("WorkerSpec"))
+class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+  override def config = TestUtil.DEFAULT_CONFIG
 
   val appId = 1
   val workerId = 1
   val executorId = 1
-  val masterProxy = TestProbe()
-  val mockMaster = TestProbe()
+  var masterProxy: TestProbe = null
+  var mockMaster: TestProbe = null
+  var client: TestProbe = null
   val workerSlots = 50
 
-  override def afterAll {
-    TestKit.shutdownActorSystem(system)
+  override def beforeEach() = {
+    startActorSystem()
+    mockMaster = TestProbe()(getActorSystem)
+    masterProxy = TestProbe()(getActorSystem)
+    client = TestProbe()(getActorSystem)
+  }
+
+  override def afterEach() = {
+    shutdownActorSystem()
   }
 
   "The new started worker" should {
     "kill itself if no response from Master after registering" in {
-      val workerSystem = ActorSystem("WorkerSystem", TestUtil.DEFAULT_CONFIG)
-      val worker = workerSystem.actorOf(Props(classOf[Worker], mockMaster.ref))
+      val worker = getActorSystem.actorOf(Props(classOf[Worker], mockMaster.ref))
       mockMaster watch worker
       mockMaster.expectMsg(RegisterNewWorker)
       mockMaster.expectTerminated(worker, 31 seconds)
-      workerSystem.shutdown()
     }
   }
 
@@ -76,8 +80,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
 
   "Worker" should {
     "update its remaining resource when launching and shutting down executors" in {
-      val workerSystem = ActorSystem("WorkerSystem", TestUtil.DEFAULT_CONFIG)
-      val worker = workerSystem.actorOf(Props(classOf[Worker], masterProxy.ref))
+      val worker = getActorSystem.actorOf(Props(classOf[Worker], masterProxy.ref))
       masterProxy.expectMsg(RegisterNewWorker)
 
       worker.tell(WorkerRegistered(workerId), mockMaster.ref)
@@ -85,7 +88,7 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
 
       val executorName = ActorUtil.actorNameForExecutor(appId, executorId)
       val reportBack = "dummy"   //This is an actor path which the ActorSystemBooter will report back to, not needed in this test.
-      val executionContext = ExecutorJVMConfig(Array.empty[String], workerSystem.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(executorName, reportBack), None, username = "user")
+      val executionContext = ExecutorJVMConfig(Array.empty[String], getActorSystem.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "), classOf[ActorSystemBooter].getName, Array(executorName, reportBack), None, username = "user")
 
       //Test LaunchExecutor
       worker.tell(LaunchExecutor(appId, executorId, Resource(101), executionContext), mockMaster.ref)
@@ -95,16 +98,15 @@ class WorkerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSen
       mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(95)))
 
       //Test terminationWatch
-      worker ! ShutdownExecutor(appId, executorId, "Test shut down executor")
+      worker.tell(ShutdownExecutor(appId, executorId, "Test shut down executor"), client.ref)
       mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(100)))
-      expectMsg(ShutdownExecutorSucceed(1, 1))
+      client.expectMsg(ShutdownExecutorSucceed(1, 1))
 
-      worker ! ShutdownExecutor(appId, executorId + 1, "Test shut down executor")
-      expectMsg(ShutdownExecutorFailed(s"Can not find executor ${executorId + 1} for app $appId"))
+      worker.tell(ShutdownExecutor(appId, executorId + 1, "Test shut down executor"), client.ref)
+      client.expectMsg(ShutdownExecutorFailed(s"Can not find executor ${executorId + 1} for app $appId"))
 
       mockMaster.ref ! PoisonPill
       masterProxy.expectMsg(RegisterWorker(workerId))
-      workerSystem.shutdown()
     }
   }
 }

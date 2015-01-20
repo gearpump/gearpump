@@ -25,24 +25,23 @@ import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
 
+import scala.collection.mutable
+
 class SumSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
   val stringGenerator = Gen.alphaStr
   val system1 = ActorSystem("SumSpec", TestUtil.DEFAULT_CONFIG)
   val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
   val (sum, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Sum].getName, UserConfig.empty, system1, system2)
-  val sumActor = sum.underlying.actor.asInstanceOf[Sum]
-  var wordcount = 0
+  val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
 
   property("Sum should calculate the frequency of the word correctly"){
     forAll(stringGenerator) { txt =>
-      wordcount += 1
+      val current = map.getOrElse(txt, 0L)
+      val count = current + 1
+      map.put(txt, count)
       sum.tell(Message(txt), sum)
+      assert(echo.receiveN(1).head.asInstanceOf[Message].msg.asInstanceOf[(_, String)]._2 == s"$txt:$count")
     }
-    val all = sumActor.map.foldLeft(0L) { (total, kv) =>
-      val (_, num) = kv
-      total + num
-    }
-    assert(all == wordcount)
   }
 
   after {

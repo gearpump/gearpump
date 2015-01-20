@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import akka.dispatch.Dispatcher
 import akka.testkit.{TestProbe, TestActorRef}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
@@ -66,7 +67,7 @@ object StreamingTestUtil {
    *         taskActor: the TestActorRef of the task to test
    *         echoTask: the TestProbe will receive the message sent from the task
    */
-  def createEchoForTaskActor(taskClass: String, taskConf: UserConfig, system1: ActorSystem, system2: ActorSystem): (TestActorRef[TaskActor], TestProbe) = {
+  def createEchoForTaskActor(taskClass: String, taskConf: UserConfig, system1: ActorSystem, system2: ActorSystem, singleThreadDispatcher: Boolean = false): (TestActorRef[TaskActor], TestProbe) = {
     import system1.dispatcher
     val taskToTest = TaskDescription(taskClass, 1)
     val echoTask = TaskDescription(classOf[EchoTask].getName, 1)
@@ -78,7 +79,12 @@ object StreamingTestUtil {
 
     implicit val systemForSerializer = system1.asInstanceOf[ExtendedActorSystem]
 
-    val testActor = TestActorRef[TaskActor](Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster, 1, dag), taskConf))(system1)
+    var testActorProps = Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster, 1, dag), taskConf)
+    if (!singleThreadDispatcher) {
+      val taskDispatcher = system1.settings.config.getString("gearpump.task-dispatcher")
+      testActorProps = testActorProps.withDispatcher(taskDispatcher)
+    }
+    val testActor = TestActorRef[TaskActor](testActorProps)(system1)
     val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, appMaster, 1, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
 
     val express1 = Express(system1)
