@@ -26,6 +26,7 @@ import org.scalatest.{Matchers, WordSpec}
 import org.apache.gearpump.util.Graph._
 
 import scala.collection.mutable.ArrayBuffer
+import org.apache.gearpump.util.Constants._
 
 class TaskSetSpec extends WordSpec with Matchers {
   val task1 = TaskDescription(classOf[TestTask1].getName, 4)
@@ -33,7 +34,7 @@ class TaskSetSpec extends WordSpec with Matchers {
   val partitioner = new HashPartitioner()
   val dag = DAG(Graph(task1 ~ partitioner ~> task2))
   val resource = getClass.getClassLoader.getResource("tasklocation.conf").getPath
-  System.setProperty("config.file", resource)
+  System.setProperty(GEARPUMP_CUSTOM_CONFIG_FILE, resource)
 
   "TaskSet" should {
     "schedule tasks on different workers properly according user's configuration" in {

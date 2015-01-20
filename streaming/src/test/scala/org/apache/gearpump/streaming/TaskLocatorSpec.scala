@@ -21,10 +21,11 @@ import akka.actor.Actor
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.mutable.ArrayBuffer
+import org.apache.gearpump.util.Constants._
 
 class TaskLocatorSpec extends WordSpec with Matchers {
   val resource = getClass.getClassLoader.getResource("tasklocation.conf").getPath
-  System.setProperty("config.file", resource)
+  System.setProperty(GEARPUMP_CUSTOM_CONFIG_FILE, resource)
   val taskDescription1 = TaskDescription("org.apache.gearpump.streaming.TestTask1", 4)
   val taskDescription2 = TaskDescription("org.apache.gearpump.streaming.TestTask2", 2)
   val taskDescription3 = TaskDescription("org.apache.gearpump.streaming.TestTask3", 2)

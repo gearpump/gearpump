@@ -34,6 +34,7 @@ import org.scalatest._
 
 import scala.concurrent.duration.Duration
 import scala.util.{Success, Try}
+import org.apache.gearpump.util.Constants._
 
 class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
@@ -53,7 +54,7 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
 
     val tempTestConf = convertTestConf(getHost, getPort)
 
-    val worker = Util.startProcess(Array(s"-Dconfig.file=${tempTestConf.toString}"),
+    val worker = Util.startProcess(Array(s"-D$GEARPUMP_CUSTOM_CONFIG_FILE=${tempTestConf.toString}"),
       getContextClassPath,
       getMainClassName(org.apache.gearpump.cluster.main.Worker),
       Array.empty[String])
@@ -70,7 +71,7 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
     val port = Util.findFreePort.get
     val tempTestConf = convertTestConf("127.0.0.1", port)
 
-    val masterProcess = Util.startProcess(Array(s"-Dconfig.file=${tempTestConf.toString}"),
+    val masterProcess = Util.startProcess(Array(s"-D$GEARPUMP_CUSTOM_CONFIG_FILE=${tempTestConf.toString}"),
       getContextClassPath,
       getMainClassName(org.apache.gearpump.cluster.main.Master),
       Array("-ip", "127.0.0.1", "-port", port.toString))

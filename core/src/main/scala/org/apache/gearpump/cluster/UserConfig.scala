@@ -33,7 +33,11 @@ import org.apache.gearpump.cluster.UserConfig._
   }
 
   def withString(key: String, value: String): UserConfig = {
-    new UserConfig(_config + (key -> value))
+    if (null == value) {
+      this
+    } else {
+      new UserConfig(_config + (key -> value))
+    }
   }
 
   def getInt(key : String) : Option[Int] = {
@@ -49,7 +53,11 @@ import org.apache.gearpump.cluster.UserConfig._
   }
 
   def withBytes(key: String, value: Array[Byte]): UserConfig = {
-    this.withString(key, BaseEncoding.base64().encode(value))
+    if (null == value) {
+      this
+    } else {
+      this.withString(key, BaseEncoding.base64().encode(value))
+    }
   }
 
   /**
@@ -78,14 +86,22 @@ import org.apache.gearpump.cluster.UserConfig._
    */
   def withValue[T<: AnyRef with java.io.Serializable](key: String, value: T)(implicit system: ActorSystem): UserConfig = {
 
-    val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
-    val bytes = serializer.toBinary(value)
-    val encoded = BaseEncoding.base64().encode(bytes)
-    this.withString(key, encoded)
+    if (null == value) {
+      this
+    } else {
+      val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
+      val bytes = serializer.toBinary(value)
+      val encoded = BaseEncoding.base64().encode(bytes)
+      this.withString(key, encoded)
+    }
   }
 
   def withConfig(other: UserConfig) = {
-    new UserConfig(_config ++ other._config)
+    if (null == other) {
+      this
+    } else {
+      new UserConfig(_config ++ other._config)
+    }
   }
 }
 

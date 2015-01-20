@@ -22,8 +22,30 @@ import java.io.File
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions}
 import org.apache.commons.io.FileUtils
+import org.apache.gearpump.cluster.ClusterConfigSource
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil
+
+/**
+ * Please use ClusterConfig.load to construct this object
+ */
+class ClusterConfig private(systemProperties : Config, gearpump : Config,
+                masterConfig : Config, workerConfig: Config, base: Config, remain: Config) {
+  def master : Config = {
+    systemProperties.withFallback(gearpump)
+      .withFallback(masterConfig).withFallback(base).withFallback(remain)
+  }
+
+  def worker : Config = {
+    systemProperties.withFallback(gearpump)
+      .withFallback(workerConfig).withFallback(base).withFallback(remain)
+  }
+
+  def application : Config = {
+    systemProperties.withFallback(gearpump)
+      .withFallback(base).withFallback(remain)
+  }
+}
 
 object ClusterConfig {
 
@@ -33,15 +55,14 @@ object ClusterConfig {
    *
    * File Override rule:
    *
-   * System Property > Custom configuration(by using -Dconfig.file)
-   * > gear.conf > reference.conf in (resource folder) > akka reference.conf
+   * System Property > Custom configuration(by using -Dgearpump.config.file)
+   * > gear.conf > gearpump binary reference.conf under resource folder > akka reference.conf
    *
    * Section Override rule:
    *
-   * For master daemon: GEARPUMP_CONFIGS > MASTER > BASE > REMAIN
-   * (REMAIN: is defined as config excluding section GEARPUMP_CONFIGS, MASTER, BASE)
-   * For worker daemon: GEARPUMP_CONFIGS > WORKER > BASE > REMAIN
-   * For App(neither Master nor Worker): GEARPUMP_CONFIGS > BASE > REMAIN
+   * For master daemon: MASTER("master" section) > BASE("base" section)
+   * For worker daemon: WORKER > BASE
+   * For App(neither Master nor Worker): BASE
    *
    * We will first use "File override rule" to get a full config, then use
    * "Section Override rule" to determine configuration for master, worker, executor,
@@ -50,64 +71,61 @@ object ClusterConfig {
    */
 
   /**
-   * try to load system property config.file, or use application.conf
+   * try to load system property gearpump.config.file, or use application.conf
    */
-  def load : RawConfig = {
-    val file = Option(System.getProperty("config.file"))
+  def load : ClusterConfig = {
+    val file = Option(System.getProperty(GEARPUMP_CUSTOM_CONFIG_FILE))
     file match {
       case Some(path) =>
         LOG.info("loading config file " + path + "..........")
-        load(path, false)
+        load(path)
       case None =>
         LOG.info("loading config file application.conf...")
         load("application.conf")
     }
   }
 
-  def load(customConfigFieName : String, isResource : Boolean = true) : RawConfig = {
-    val user = if (isResource) {
-      ConfigFactory.parseResourcesAnySyntax(customConfigFieName,
-        ConfigParseOptions.defaults.setAllowMissing(true))
-    } else {
-      ConfigFactory.parseFileAnySyntax(new File(customConfigFieName),
-        ConfigParseOptions.defaults.setAllowMissing(true))
-    }
+  def load(source: ClusterConfigSource) : ClusterConfig = {
+    val user = source.getConfig
 
     val cluster = ConfigFactory.parseResourcesAnySyntax("gear.conf",
       ConfigParseOptions.defaults.setAllowMissing(true))
 
-    val all = ConfigFactory.load(user.withFallback(cluster))
+    val config = user.withFallback(cluster)
 
-    val gearpump = all.withOnlyPath(GEARPUMP_CONFIGS)
+    //throw if config is not valid
+    validateConfig(config)
+
+    val all = ConfigFactory.load(config)
+
+    val gearpump = all.withOnlyPath(GEARPUMP)
     val master = all.getConfig(MASTER)
     val base = all.getConfig(BASE)
     val worker = all.getConfig(WORKER)
 
-    val remain = all.withoutPath(GEARPUMP_CONFIGS).withoutPath(MASTER).withoutPath(BASE).withOnlyPath(WORKER)
+    val remain = all.withoutPath(GEARPUMP).withoutPath(MASTER).withoutPath(BASE).withOnlyPath(WORKER)
 
-    new RawConfig(ConfigFactory.systemProperties(), gearpump, master, worker, base, remain)
+    new ClusterConfig(ConfigFactory.systemProperties(), gearpump, master, worker, base, remain)
   }
 
-  def save(targetPath : String, conf : Config, file : File) : Unit = {
-    val serialized = conf.atPath(targetPath).root().render()
+  /**
+   * throw ConfigValidationException if fails
+   */
+  private def validateConfig(config: Config): Unit = {
+    val validSections = List(GEARPUMP, MASTER, WORKER, BASE)
+
+    import scala.collection.JavaConverters._
+    config.root.entrySet().asScala.map(_.getKey).map {key =>
+      if (!validSections.contains(key)) {
+        throw new ConfigValidationException(s"Found invalid config section: $key, we only allow ${validSections}")
+      }
+    }
+  }
+
+  def saveConfig(conf : Config, file : File) : Unit = {
+    val serialized = conf.root().render()
     FileUtils.write(file, serialized)
   }
 
-  class RawConfig(systemProperties : Config, gearpump : Config,
-                  masterConfig : Config, workerConfig: Config, base: Config, remain: Config) {
-    def master : Config = {
-      systemProperties.withFallback(gearpump)
-        .withFallback(masterConfig).withFallback(base).withFallback(remain)
-    }
-
-    def worker : Config = {
-      systemProperties.withFallback(gearpump)
-        .withFallback(workerConfig).withFallback(base).withFallback(remain)
-    }
-
-    def application : Config = {
-      systemProperties.withFallback(gearpump)
-        .withFallback(base).withFallback(remain)
-    }
-  }
+  class ConfigValidationException(msg: String) extends Exception(msg: String)
 }

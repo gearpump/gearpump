@@ -55,7 +55,7 @@ class ClientContext(masters: Iterable[HostPort]) {
    * the target runtime classpath, and will not send it.
    */
   def submit(app : Application) : Int = {
-    submit(app, System.getProperty(GEAR_APP_JAR))
+    submit(app, System.getProperty(GEARPUMP_APP_JAR))
   }
 
   def submit(app : Application, jarPath: String) : Int = {

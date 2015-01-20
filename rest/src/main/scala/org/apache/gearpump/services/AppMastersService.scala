@@ -53,7 +53,8 @@ trait AppMastersService extends HttpService {
   def readRoute = get {
     path("appmasters") {
       onComplete((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]]) {
-        case Success(value:AppMastersData) => complete(value)
+        case Success(value:AppMastersData) =>
+          complete(value)
         case Failure(ex)    => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
       }
     }

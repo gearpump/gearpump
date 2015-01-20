@@ -28,7 +28,7 @@ import spray.routing.RequestContext
 import spray.testkit.{ScalatestRouteTest}
 
 import scala.util.{Failure, Success}
-
+import scala.concurrent.duration._
 
 
 class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers with BeforeAndAfterEach  with ShouldMatchers {
@@ -50,6 +50,7 @@ class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMas
   }
 
   "AppMastersService" should "return a json structure of appMastersData for GET request" in {
+    implicit val customTimeout = RouteTestTimeout(15.seconds)
     (Get("/appmasters") ~> routes).asInstanceOf[RouteResult] ~> check {
       //check the type
       responseAs[AppMastersData]

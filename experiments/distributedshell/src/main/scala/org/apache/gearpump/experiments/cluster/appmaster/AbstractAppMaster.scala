@@ -40,7 +40,7 @@ abstract class AbstractAppMaster(appContext : AppMasterContext, app : Applicatio
   import context.dispatcher
   import appContext._
 
-  protected val userConfig = app.conf
+  protected val userConfig = app.userConfig
   protected val systemConfig = context.system.settings.config
   protected var master: ActorRef = null
   protected var currentExecutorId = 0
@@ -87,7 +87,7 @@ abstract class AbstractAppMaster(appContext : AppMasterContext, app : Applicatio
         val launcherName = s"launcher${currentExecutorId}"
         val launcherPath = ActorUtil.getFullPath(context.system, self.path.child(launcherName))
 
-        val jvmSetting = Util.resolveJvmSetting(userConfig, systemConfig).executor
+        val jvmSetting = Util.resolveJvmSetting(systemConfig).executor
         val launchJVM = ExecutorJVMConfig(jvmSetting.classPath, jvmSetting.vmargs,
           classOf[ActorSystemBooter].getName, Array(name, launcherPath), appJar, username)
 

@@ -78,28 +78,18 @@ object Util {
 
   case class AppJvmSettings(appMater : JvmSetting, executor : JvmSetting)
 
-  def resolveJvmSetting(user : UserConfig, sys : Config) : AppJvmSettings = {
+  def resolveJvmSetting(conf : Config) : AppJvmSettings = {
 
     import Constants._
 
-    val appMasterVMArgs = user.getString(GEARPUMP_APPMASTER_ARGS)
-      .getOrElse(sys.getString(GEARPUMP_APPMASTER_ARGS)).split(" ")
-    val executorVMArgs = user.getString(GEARPUMP_EXECUTOR_ARGS)
-      .getOrElse(sys.getString(GEARPUMP_EXECUTOR_ARGS)).split(" ")
+    val appMasterVMArgs = conf.getString(GEARPUMP_APPMASTER_ARGS).split(" ")
+    val executorVMArgs = conf.getString(GEARPUMP_EXECUTOR_ARGS).split(" ")
 
-    var appMasterClass = user.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH).map {
-        _.split(File.pathSeparator)
-      }.getOrElse(Array.empty[String])
+    val appMasterClassPath = conf.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH).split(File.pathSeparator).asInstanceOf[Array[String]]
 
-    appMasterClass ++= sys.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH).split(File.pathSeparator).asInstanceOf[Array[String]]
+    val executorClassPath = conf.getString(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH).split(File.pathSeparator).asInstanceOf[Array[String]]
 
-    var executorClass = user.getString(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH).map {
-      _.split(File.pathSeparator)
-    }.getOrElse(Array.empty[String])
-
-    executorClass ++= sys.getString(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH).split(File.pathSeparator).asInstanceOf[Array[String]]
-
-    AppJvmSettings(JvmSetting(appMasterVMArgs, appMasterClass ), JvmSetting(executorVMArgs, executorClass))
+    AppJvmSettings(JvmSetting(appMasterVMArgs, appMasterClassPath ), JvmSetting(executorVMArgs, executorClassPath))
   }
 
   def toBase64String(value: java.io.Serializable): String = {

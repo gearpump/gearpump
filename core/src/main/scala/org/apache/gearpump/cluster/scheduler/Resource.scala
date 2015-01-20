@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 package org.apache.gearpump.cluster.scheduler
+import akka.actor.ActorRef
 
 case class Resource(slots : Int)
 
@@ -29,10 +30,8 @@ object Relaxation extends Enumeration{
   val ANY, ONEWORKER, SPECIFICWORKER = Value
 }
 
-import akka.actor.ActorRef
-import org.apache.gearpump.cluster.scheduler.Priority._
-import org.apache.gearpump.cluster.scheduler.Relaxation._
-
+import Relaxation._
+import Priority._
 case class ResourceRequest(resource: Resource,  workerId: Int = 0, priority: Priority = NORMAL, relaxation: Relaxation = ANY)
 
 case class ResourceAllocation(resource : Resource, worker : ActorRef, workerId : Int)
