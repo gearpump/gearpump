@@ -35,20 +35,8 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
 
   private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val batchSize = kafkaConfig.getConsumerEmitBatchSize
-  private val msgDecoder: MessageDecoder = new MessageDecoder {
-    override def fromBytes(bytes: Array[Byte]): Message = {
-      Injection.invert[String, Array[Byte]](bytes) match {
-        case Success(s) => Message(s, System.currentTimeMillis())
-        case Failure(e) => throw e
-      }
-    }
-  }
-
-  private val filter: TimeStampFilter = new TimeStampFilter {
-    override def filter(msg: Message, predicate: TimeStamp): Option[Message] = {
-      Option(msg).find(_.timestamp >= predicate)
-    }
-  }
+  private val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
+  private val filter: TimeStampFilter = kafkaConfig.getTimeStampFilter
 
   private val source: TimeReplayableSource = new KafkaSource(taskContext.appId, taskContext,
     kafkaConfig, msgDecoder)
@@ -62,7 +50,7 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
   }
 
   override def onNext(msg: Message): Unit = {
-    source.pull(batchSize).foreach(msg => filter.filter(msg, startTime).map(output))
+    source.pull(batchSize).foreach{msg => filter.filter(msg, startTime).map(output)}
     self ! Message("continue", System.currentTimeMillis())
   }
 }
