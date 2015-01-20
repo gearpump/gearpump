@@ -29,6 +29,6 @@ class Split(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskC
 
   override def onNext(msg : Message) : Unit = {
     msg.msg.asInstanceOf[String].split("\\s+").foreach(
-      word => output(new Message(word, System.currentTimeMillis())))
+      word => output(new Message(word, msg.timestamp)))
   }
 }

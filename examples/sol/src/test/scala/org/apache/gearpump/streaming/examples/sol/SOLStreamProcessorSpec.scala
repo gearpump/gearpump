@@ -31,7 +31,7 @@ class SOLStreamProcessorSpec extends PropSpec with PropertyChecks with Matchers 
   val stringGenerator = Gen.alphaStr
   val system1 = ActorSystem("SOLStreamProcessor", TestUtil.DEFAULT_CONFIG)
   val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-  val (processor, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SOLStreamProcessor].getName, UserConfig.empty, system1, system2)
+  val (processor, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SOLStreamProcessor].getName, UserConfig.empty, system1, system2, usePinedDispatcherForTaskActor = true)
 
   property("SOLStreamProcessor should deliver message directly"){
     forAll(stringGenerator) { txt =>

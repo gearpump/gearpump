@@ -58,7 +58,7 @@ class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with Mas
       val worker = getActorSystem.actorOf(Props(classOf[Worker], mockMaster.ref))
       mockMaster watch worker
       mockMaster.expectMsg(RegisterNewWorker)
-      mockMaster.expectTerminated(worker, 31 seconds)
+      mockMaster.expectTerminated(worker, 60 seconds)
     }
   }
 

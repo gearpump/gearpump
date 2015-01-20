@@ -78,7 +78,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
 
     val kafkaConfig = getKafkaConfig(topic, consumerEmitBatchSize = batchSize, brokerList, zkConnect)
     val (_, echo) = StreamingTestUtil.createEchoForTaskActor(
-      classOf[KafkaStreamProducer].getName, kafkaConfig, system1, system2)
+      classOf[KafkaStreamProducer].getName, kafkaConfig, system1, system2, usePinedDispatcherForTaskActor = true)
 
     messages.foreach { msg =>
       echo expectMsg(10 seconds, msg)

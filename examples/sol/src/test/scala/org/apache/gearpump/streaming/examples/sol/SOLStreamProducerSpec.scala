@@ -30,7 +30,7 @@ class SOLStreamProducerSpec extends WordSpec with Matchers {
       val system1 = ActorSystem("SOLStreamProducer", TestUtil.DEFAULT_CONFIG)
       val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
       val conf = UserConfig.empty.withInt(SOLStreamProducer.BYTES_PER_MESSAGE, 100)
-      val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SOLStreamProducer].getName, conf, system1, system2)
+      val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SOLStreamProducer].getName, conf, system1, system2, usePinedDispatcherForTaskActor = true)
       echo.expectMsgAllClassOf(classOf[Message])
       system1.shutdown()
       system2.shutdown()
