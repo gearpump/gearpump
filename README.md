@@ -1,6 +1,6 @@
 ## GearPump [![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master) [![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master)
 
-[![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](https://github.com/intel-hadoop/gearpump/releases/download/0.2-rc1/binary-gearpump-0.2.1.tar.gz)
+[![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](https://s3.amazonaws.com/github-cloud/releases/22139167/01f35e18-a0c7-11e4-95c8-aa9f97708c98.gz?response-content-disposition=attachment%3B%20filename%3Dbinary-gearpump-0.2.1.tar.gz&response-content-type=application/octet-stream&AWSAccessKeyId=AKIAISTNZFOVBIJMK3TQ&Expires=1421745349&Signature=VRsQ4C2zYQxJ7YpYJddVHU9ecXM%3D)
  
 GearPump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
