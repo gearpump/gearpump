@@ -142,7 +142,7 @@ object Build extends sbt.Build {
                            "master" -> Seq("-DlogFilename=master"),
                            "worker" -> Seq("-DlogFilename=worker")
                         ),
-        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, examples.id),
+        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
 
@@ -152,7 +152,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
       )
   ).dependsOn(core, streaming, rest, external_kafka, distributedshell).aggregate(core, streaming, fsio, examples_kafka,
-      sol, wordcount, rest, external_kafka, examples, distributedshell)
+      sol, wordcount, complexdag, rest, external_kafka, examples, distributedshell)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -235,11 +235,24 @@ object Build extends sbt.Build {
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
 
+  lazy val complexdag = Project(
+    id = "gearpump-examples-complexdag",
+    base = file("examples/complexdag"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        )
+      )
+  ) dependsOn (streaming % "test->test", streaming % "provided")
+
   lazy val examples = Project(
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ myAssemblySettings
-  ) dependsOn (wordcount, sol, fsio, examples_kafka)
+  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka)
   
   lazy val rest = Project(
     id = "gearpump-rest",
