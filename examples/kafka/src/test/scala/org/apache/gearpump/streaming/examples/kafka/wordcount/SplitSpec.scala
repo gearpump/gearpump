@@ -28,13 +28,13 @@ import org.scalatest.{BeforeAndAfter, PropSpec, Matchers}
 import scala.concurrent.duration._
 
 class SplitSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter{
-  val stringGenerator = Gen.alphaStr
+
   val system1 = ActorSystem("Split", TestUtil.DEFAULT_CONFIG)
   val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
   val (split, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Split].getName, UserConfig.empty, system1, system2)
 
   property("Split should split the text and deliver to next task"){
-    forAll(stringGenerator) { txt =>
+    for(txt <- List("this is a test message")) {
       split.tell(Message(txt), split)
       txt.split("\\s+").foreach { msg =>
         echo.expectMsg(10 seconds, Message(msg))

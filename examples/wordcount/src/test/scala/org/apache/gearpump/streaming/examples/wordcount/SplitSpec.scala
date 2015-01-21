@@ -31,7 +31,7 @@ class SplitSpec extends WordSpec with Matchers {
     "split the text and deliver to next task" in {
       val system1 = ActorSystem("Split", TestUtil.DEFAULT_CONFIG)
       val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-      val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Split].getName, UserConfig.empty, system1, system2)
+      val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Split].getName, UserConfig.empty, system1, system2, usePinedDispatcherForTaskActor = true)
       Split.TEXT_TO_SPLIT.lines.foreach { line =>
         line.split(" ").foreach { msg =>
           echo.expectMsg(10 seconds, Message(msg))

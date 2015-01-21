@@ -64,7 +64,7 @@ class SeqFileStreamProducerSpec extends PropSpec with PropertyChecks with Matche
     implicit val system1 = ActorSystem("SeqFileStreamProducer", TestUtil.DEFAULT_CONFIG)
     val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
     val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProducer.INPUT_PATH, inputFile)).withHadoopConf(new Configuration())
-    val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SeqFileStreamProducer].getName, conf, system1, system2)
+    val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SeqFileStreamProducer].getName, conf, system1, system2, usePinedDispatcherForTaskActor = true)
     kvPairs.foreach { kv =>
       val (key, value) = kv
       echo.expectMsg(10 seconds, Message(key + "++" + value))

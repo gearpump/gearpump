@@ -29,7 +29,7 @@ The latest release binary can be found at: https://github.com/intel-hadoop/gearp
 
 You can skip step 1 and step 2 if you are using pre-build binaries.
 
-The latest released version is 0.2.1
+The latest released version is 0.2.2
 
 1. Clone the GearPump repository
 

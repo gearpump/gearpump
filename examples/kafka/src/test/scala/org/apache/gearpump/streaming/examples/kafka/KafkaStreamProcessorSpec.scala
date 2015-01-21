@@ -82,9 +82,7 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
       kafkaStreamProcessor.tell(Message(i.toString -> msg), kafkaStreamProcessor)
       (msgs :+ msg, size + Injection[String, Array[Byte]](msg).size)
     }
-
-    // wait for KafkaSink producing data to kafka
-    Thread.sleep(5000)
+    system1.stop(kafkaStreamProcessor)
 
     brokerList.foreach { broker =>
       val hostPort = broker.split(":")

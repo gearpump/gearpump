@@ -67,7 +67,7 @@ object StreamingTestUtil {
    *         taskActor: the TestActorRef of the task to test
    *         echoTask: the TestProbe will receive the message sent from the task
    */
-  def createEchoForTaskActor(taskClass: String, taskConf: UserConfig, system1: ActorSystem, system2: ActorSystem, singleThreadDispatcher: Boolean = false): (TestActorRef[TaskActor], TestProbe) = {
+  def createEchoForTaskActor(taskClass: String, taskConf: UserConfig, system1: ActorSystem, system2: ActorSystem, usePinedDispatcherForTaskActor: Boolean = false): (TestActorRef[TaskActor], TestProbe) = {
     import system1.dispatcher
     val taskToTest = TaskDescription(taskClass, 1)
     val echoTask = TaskDescription(classOf[EchoTask].getName, 1)
@@ -80,9 +80,8 @@ object StreamingTestUtil {
     implicit val systemForSerializer = system1.asInstanceOf[ExtendedActorSystem]
 
     var testActorProps = Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster, 1, dag), taskConf)
-    if (!singleThreadDispatcher) {
-      val taskDispatcher = system1.settings.config.getString("gearpump.task-dispatcher")
-      testActorProps = testActorProps.withDispatcher(taskDispatcher)
+    if (usePinedDispatcherForTaskActor) {
+      testActorProps = testActorProps.withDispatcher("akka.actor.pined-dispatcher")
     }
     val testActor = TestActorRef[TaskActor](testActorProps)(system1)
     val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, appMaster, 1, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
