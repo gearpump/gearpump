@@ -67,4 +67,14 @@ object Constants {
   // Use java property -Dgearpump.config.file=xxx.conf to set customized configuration
   // Otherwise application.conf in classpath will be loaded
   val GEARPUMP_CUSTOM_CONFIG_FILE = "gearpump.config.file"
+
+
+  //Metrics related
+  val GEARPUMP_METRIC_ENABLED = "gearpump.metrics.enabled"
+  val GEARPUMP_METRIC_SAMPLE_RATE = "gearpump.metrics.sample-rate"
+  val GEARPUMP_METRIC_REPORT_INTERVAL = "gearpump.metrics.report-interval-ms"
+  val GEARPUMP_METRIC_GRAPHITE_HOST = "gearpump.metrics.graphite.host"
+  val GEARPUMP_METRIC_GRAPHITE_PORT = "gearpump.metrics.graphite.port"
+  val GEARPUMP_METRIC_REPORTER = "gearpump.metrics.reporter"
+
 }
