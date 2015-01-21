@@ -1,3 +1,11 @@
+gearpump-0.2.2
+====================
+Change List:
+-----------------
+ - #327 fix 0.2.1 build error
+ - #308 add another dag example project
+ - #330 Allow user to output the metrics to log file besides graphite
+
 gearpump-0.2.1
 ====================
 
