@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import com.codahale.metrics.{MetricFilter, MetricRegistry}
+import com.codahale.metrics.{Slf4jReporter, ConsoleReporter, MetricFilter, MetricRegistry}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -46,6 +46,7 @@ class Metrics(sampleRate: Int) extends Extension {
 
 object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
   val LOG: Logger = LogUtil.getLogger(getClass)
+  import org.apache.gearpump.util.Constants._
 
   override def get(system: ActorSystem): Metrics = super.get(system)
 
@@ -55,15 +56,18 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
 
   def apply(system: ExtendedActorSystem): Metrics = {
 
-    val metricsEnabled = system.settings.config.getBoolean("gearpump.metrics.enabled")
+    val metricsEnabled = system.settings.config.getBoolean(GEARPUMP_METRIC_ENABLED)
     LOG.info(s"Metrics is enabled...,  $metricsEnabled")
-    val sampleRate = system.settings.config.getInt("gearpump.metrics.sample.rate")
+    val sampleRate = system.settings.config.getInt(GEARPUMP_METRIC_SAMPLE_RATE)
     val meters = new Metrics(sampleRate)
 
     if (metricsEnabled) {
-      def startReporter = {
-        val graphiteHost = system.settings.config.getString("gearpump.metrics.graphite.host")
-        val graphitePort = system.settings.config.getInt("gearpump.metrics.graphite.port")
+
+      val reportInterval = system.settings.config.getInt(GEARPUMP_METRIC_REPORT_INTERVAL)
+
+      def startGraphiteReporter = {
+        val graphiteHost = system.settings.config.getString(GEARPUMP_METRIC_GRAPHITE_HOST)
+        val graphitePort = system.settings.config.getInt(GEARPUMP_METRIC_GRAPHITE_PORT)
 
         val graphite = new Graphite(new InetSocketAddress(graphiteHost, graphitePort))
 
@@ -74,16 +78,41 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
           .filter(MetricFilter.ALL)
           .build(graphite)
 
-        LOG.info(s"Metrics is enabled..., reporting to $graphiteHost, $graphitePort")
+        LOG.info(s"reporting to $graphiteHost, $graphitePort")
 
-        reporter.start(5, TimeUnit.SECONDS)
+        reporter.start(reportInterval, TimeUnit.MILLISECONDS)
 
         system.registerOnTermination(new Runnable {
           override def run = reporter.stop()
         })
       }
 
-      startReporter
+      def startSlf4jReporter = {
+
+        val reporter = Slf4jReporter.forRegistry(meters.registry)
+          .convertRatesTo(TimeUnit.SECONDS)
+          .convertDurationsTo(TimeUnit.MILLISECONDS)
+          .filter(MetricFilter.ALL)
+          .outputTo(LOG)
+          .build()
+
+        reporter.start(reportInterval, TimeUnit.MILLISECONDS)
+
+        system.registerOnTermination(new Runnable {
+          override def run = reporter.stop()
+        })
+      }
+
+      val reporter = system.settings.config.getString(GEARPUMP_METRIC_REPORTER)
+
+      LOG.info(s"Metrics reporter is enabled, using $reporter reporter")
+
+      reporter match {
+        case "graphite" => startGraphiteReporter
+        case "logfile" => startSlf4jReporter
+        case other =>
+          LOG.error(s"Metrics reporter will be disabled, as we cannot recognize reporter: $other")
+      }
     }
 
     meters
