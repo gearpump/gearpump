@@ -34,19 +34,32 @@ object KafkaUtil {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   def getBroker(zkClient: ZkClient, topic: String, partition: Int): Broker = {
-    val leader =  ZkUtils.getLeaderForPartition(zkClient, topic, partition)
-      .getOrElse(throw new RuntimeException(s"leader not available for TopicAndPartition($topic, $partition)"))
-    val broker = ZkUtils.getBrokerInfo(zkClient, leader)
-      .getOrElse(throw new RuntimeException(s"broker info not found for leader $leader"))
-    Broker(broker.host, broker.port)
+    try {
+      val leader = ZkUtils.getLeaderForPartition(zkClient, topic, partition)
+        .getOrElse(throw new RuntimeException(s"leader not available for TopicAndPartition($topic, $partition)"))
+      val broker = ZkUtils.getBrokerInfo(zkClient, leader)
+        .getOrElse(throw new RuntimeException(s"broker info not found for leader $leader"))
+      Broker(broker.host, broker.port)
+    } catch {
+      case e: Exception => throw e
+    } finally {
+      zkClient.close()
+    }
   }
 
   def getTopicAndPartitions(zkClient: ZkClient, grouper: KafkaGrouper, consumerTopics: List[String]): Array[TopicAndPartition] = {
-    val tps = grouper.group(
-      ZkUtils.getPartitionsForTopics(zkClient, consumerTopics)
-        .flatMap { case (topic, partitions) =>
-        partitions.map(TopicAndPartition(topic, _)) }.toArray)
-    tps
+    try {
+      val tps = grouper.group(
+        ZkUtils.getPartitionsForTopics(zkClient, consumerTopics)
+          .flatMap { case (topic, partitions) =>
+          partitions.map(TopicAndPartition(topic, _))
+        }.toArray)
+      tps
+    } catch {
+      case e: Exception => throw e
+    } finally {
+      zkClient.close()
+    }
   }
 
   /**
@@ -66,6 +79,8 @@ object KafkaUtil {
         LOG.info(s"topic $topic already exists")
         true
       case e: Exception => throw e
+    } finally {
+      zkClient.close()
     }
   }
 

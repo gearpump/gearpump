@@ -27,6 +27,7 @@ import kafka.serializer.StringEncoder
 import kafka.server.{KafkaConfig => KafkaServerConfig, KafkaServer}
 import kafka.utils.TestUtils._
 import kafka.utils.{FixedValuePartitioner, IntEncoder, Utils, TestUtils}
+import org.I0Itec.zkclient.ZkClient
 
 trait KafkaServerHarness extends ZookeeperHarness {
   val configs: List[KafkaServerConfig]
@@ -74,5 +75,16 @@ trait KafkaServerHarness extends ZookeeperHarness {
     producer.send(ms.map(m => new KeyedMessage[Int, String](topic, partition, m)):_*)
     producer.close()
     ms.toList
+  }
+
+  def createTopicUntilLeaderIsElected(topic: String, partitions: Int, replicas: Int) = {
+    val zkClient = newZkClient
+    try {
+      TestUtils.createTopic(zkClient, topic, partitions, replicas, servers)
+    } catch {
+      case e: Exception => throw e
+    } finally {
+      zkClient.close()
+    }
   }
 }
