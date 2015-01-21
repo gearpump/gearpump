@@ -6,6 +6,7 @@ Change List:
  - #308 add another dag example project
  - #330 Allow user to output the metrics to log file besides graphite
 
+
 gearpump-0.2.1
 ====================
 
