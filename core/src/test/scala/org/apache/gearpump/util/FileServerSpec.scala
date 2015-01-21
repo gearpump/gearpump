@@ -32,17 +32,19 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.Success
 
-class FileServerSpec (_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-with WordSpecLike with Matchers with BeforeAndAfterAll {
-
-  def this() = this(ActorSystem("FileServerSpec", TestUtil.DEFAULT_CONFIG))
-
+class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   implicit val timeout = akka.util.Timeout(10, TimeUnit.SECONDS)
   val host = "localhost"
 
+  var system: ActorSystem = null
+
   override def afterAll {
-    TestKit.shutdownActorSystem(system)
+    if (null != system) system.shutdown()
+  }
+
+  override def beforeAll {
+    system = ActorSystem("FileServerSpec", TestUtil.DEFAULT_CONFIG)
   }
 
   "The file server" should {
@@ -67,6 +69,8 @@ with WordSpecLike with Matchers with BeforeAndAfterAll {
         assert(fetchedBytes.get sameElements bytes, s"fetch data is coruppted, $url, $rootDir")
       }
       rootDir.delete()
+
+      system.stop(server)
     }
   }
 

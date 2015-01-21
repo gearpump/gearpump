@@ -14,6 +14,12 @@ object Build extends sbt.Build {
   class DefaultValueMap[+B](value : B) extends WithDefault[String, B](null, (key) => value) {
     override def get(key: String) = Some(value)
   }
+
+  /**
+   * Work around to rename target/gearpump-version.tar.gz to target/gearpump.tar.gz so that travis
+   * deploy can recognize the path
+   */
+  val travis_deploy = taskKey[Unit]("use this after sbt assembly packArchive, it will rename the package so that travis deploy can find the package.")
   
   val akkaVersion = "2.3.6"
   val kryoVersion = "0.3.2"
@@ -24,7 +30,7 @@ object Build extends sbt.Build {
   val commonsLoggingVersion = "1.1.3"
   val commonsIOVersion = "2.4"
   val findbugsVersion = "2.0.1"
-  val gearPumpVersion = "0.2.3"
+  val gearPumpVersion = "0.2.3-SNAPSHOT"
   val guavaVersion = "15.0"
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
@@ -60,8 +66,28 @@ object Build extends sbt.Build {
       scalaVersion := scalaVersionNumber,
       version := gearPumpVersion,
       organization := "com.github.intel-hadoop",
+      parallelExecution in Test := false,
+      parallelExecution in ThisBuild := false,
       useGpg := true,
       scalacOptions ++= Seq("-Yclosure-elim","-Yinline"),
+      publishMavenStyle := true,
+
+      credentials += Credentials(
+                   "Sonatype Nexus Repository Manager", 
+                   "oss.sonatype.org", 
+                   System.getenv().get("SONATYPE_USERNAME"), 
+                   System.getenv().get("SONATYPE_PASSWORD")),
+      
+      pomIncludeRepository := { _ => false },
+
+      publishTo := {
+        val nexus = "https://oss.sonatype.org/"
+        if (isSnapshot.value)
+          Some("snapshots" at nexus + "content/repositories/snapshots")
+        else
+          Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+      },
+      
       pomExtra := {
       <url>https://github.com/intel-hadoop/gearpump</url>
       <licenses>
@@ -123,6 +149,7 @@ object Build extends sbt.Build {
   )
 
   val myAssemblySettings = assemblySettings ++ Seq(
+    test in assembly := {},
     assemblyOption in assembly ~= { _.copy(includeScala = false) }
   )
 
@@ -145,7 +172,14 @@ object Build extends sbt.Build {
         packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
-
+        parallelExecution in ThisBuild := false,
+        travis_deploy := {
+          val packagePath = s"target/gearpump-${gearPumpVersion}.tar.gz"
+          val target = s"target/binary.gearpump.tar.gz"
+          println(s"[Travis-Deploy] Move file $packagePath to $target")
+          new File(packagePath).renameTo(new File(target))
+        },
+        
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
@@ -278,4 +312,5 @@ object Build extends sbt.Build {
     base = file("experiments/distributedshell"),
     settings = commonSettings
   ) dependsOn(core % "test->test;compile->compile")
+  
 }
