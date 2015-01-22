@@ -19,8 +19,8 @@ git:
 
 env:
   global:
-  - secure: dJf3177mgt0zAy7tnruPH1/B8tAgSOd4BWGGRj7ZbetwiQul0QCKpHOfJGsDdG3u17ypjj8lpFnAoPAkEKyivlLDRacVF3ty5vjgPWF0t1H0gBIQXQ4IbOxxB0hZECVCTUipe7YFi5QCj7Wt9NpjGGbsTSMC/GzhCKPYk4M6m6Q=
-  - secure: HckspPZWxwbasFWeBeWqPrt21WPE+9V21yNC+0uuqUTc5Db+wzfr1IMZhFZa3nao1oePuFEdH+52JkhRm5l+iMhqyfis9nwFH2Vttuw0qmiDWW/IHhX9P18lttsDVNd7uWZ00fetUzabaRuUMLMP1V0hC1HuJgHtsyPxbZBfNBc=
+  - secure: HLEt1PMZ8gIv1jmM7t+El8EP2I04ojPPMsjMYOfE9HxvpZ9d+xqF5M6vh43o96nq0dPLDMggZLR2WZ8DA1SSidE3+4dVGMl621kKX9wBFzenliiO8NmYpT7MisTjjSS1HLgQhCGXf77WVZVpziit1PXFR3+hSzekE8t+ZWtBvjQ=
+  - secure: VyJnDR7aPtqzWmy6GX17KYI5YYGvve7kCzfng8s5/m0scIC9RhlSBv6rya7r8BFPq0OXWzZhamm44MOF+Z5Ct30vg7IpHOX6H+KwECfMoj3vV6un+OAsk+hfy5uDxGMFqMHa71W8s0URcv3p+xntjzDSGAydQsH98PMEvQ8KqG8=
   
 after_success: 
  - codecov
