@@ -101,6 +101,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
       KafkaConfig.SOCKET_TIMEOUT_MS -> "1000000",
       KafkaConfig.STORAGE_REPLICAS -> "1",
       KafkaConfig.ZOOKEEPER_CONNECT -> zookeeperConnect,
+      KafkaConfig.FETCH_METADATA_TIMEOUT_MS -> "3000",
       KafkaConfig.TIMESTAMP_FILTER_CLASS -> classOf[KafkaStreamProducerSpec.DummyFilter].getName,
       KafkaConfig.MESSAGE_DECODER_CLASS -> classOf[KafkaStreamProducerSpec.NoTimeStampDecoder].getName
     ).asJava)))

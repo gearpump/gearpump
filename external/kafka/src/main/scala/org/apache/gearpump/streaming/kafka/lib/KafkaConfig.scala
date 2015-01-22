@@ -50,6 +50,7 @@ object KafkaConfig {
   val PRODUCER_TYPE = "kafka.producer.producer.type"
   val REQUEST_REQUIRED_ACKS = "kafka.producer.request.required.acks"
   val PRODUCER_EMIT_BATCH_SIZE = "kafka.producer.emit.batch.size"
+  val FETCH_METADATA_TIMEOUT_MS = "kafka.producer.fetch.metadata.timeout.ms"
 
   // storage config
   val STORAGE_REPLICAS = "kafka.storage.replicas"
@@ -137,6 +138,10 @@ class KafkaConfig(config: Config) extends Serializable  {
 
   def getRequestRequiredAcks: String = {
     getString(REQUEST_REQUIRED_ACKS)
+  }
+
+  def getFetchMetadataTimeoutMS: Int = {
+    getInt(FETCH_METADATA_TIMEOUT_MS)
   }
 
   def getMetadataBrokerList: String = {
