@@ -158,7 +158,7 @@ This is what a [GearPump WordCount](https://github.com/intel-hadoop/gearpump/tre
 
 For detailed description on writing a GearPump application, please check [Write GearPump Applications](https://github.com/intel-hadoop/gearpump/wiki#how-to-write-a-gearpump-application) on the wiki.
 
-# Maven depencencies
+# Maven dependencies
 
 Please check [here](https://github.com/intel-hadoop/gearpump/wiki#maven-dependencies)
 
