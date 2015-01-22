@@ -158,6 +158,91 @@ This is what a [GearPump WordCount](https://github.com/intel-hadoop/gearpump/tre
 
 For detailed description on writing a GearPump application, please check [Write GearPump Applications](https://github.com/intel-hadoop/gearpump/wiki/Write-GearPump-Applications) on the wiki.
 
+# Maven depencencies
+
+## Snapshot package
+
+Latest version: 0.2.3-SNAPSHOT
+
+```xml
+<repositories>
+<repository>
+  <id>sonatype-nexus-releases</id>
+  <name>Sonatype Nexus Snapshots</name>
+  <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+</repository>
+</repositories>
+
+<dependencies>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-core_2.11</artifactId>
+<version>0.2.3-SNAPSHOT</version>
+</dependency>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-streaming_2.11</artifactId>
+<version>0.2.3-SNAPSHOT</version>
+</dependency>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-rest_2.11</artifactId>
+<version>0.2.3-SNAPSHOT</version>
+</dependency>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-external-kafka_2.11</artifactId>
+<version>0.2.3-SNAPSHOT</version>
+</dependency>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-experiments-distributedshell_2.11</artifactId>
+<version>0.2.3-SNAPSHOT</version>
+</dependency>
+</dependencies>
+```
+
+## Release package
+
+Latest version: 0.2.2
+
+```xml
+<repositories>
+<repository>
+<id>releases-oss.sonatype.org</id>
+<name>Sonatype Releases Repository</name>
+<url>http://oss.sonatype.org/content/repositories/releases/</url>
+</repository>
+</repositories>
+<dependencies>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-core_2.11</artifactId>
+<version>0.2.2</version>
+</dependency>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-streaming_2.11</artifactId>
+<version>0.2.2</version>
+</dependency>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-rest_2.11</artifactId>
+<version>0.2.2</version>
+</dependency>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-external-kafka_2.11</artifactId>
+<version>0.2.2</version>
+</dependency>
+<dependency>
+<groupId>com.github.intel-hadoop</groupId>
+<artifactId>gearpump-experiments-distributedshell_2.11</artifactId>
+<version>0.2.2</version>
+</dependency>
+</dependencies>
+```
+
 ## Further information
 
 For more documentation and implementation details, please visit [GearPump Wiki](https://github.com/intel-hadoop/gearpump/wiki).
