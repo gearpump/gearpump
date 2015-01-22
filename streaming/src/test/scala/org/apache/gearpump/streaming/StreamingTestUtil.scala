@@ -75,7 +75,7 @@ object StreamingTestUtil {
     val taskReporter = TestProbe()(system2)
     val taskId1 = TaskId(0, 0)
     val taskId2 = TaskId(1, 0)
-    val appMaster = system1.actorOf(Props(classOf[MockAppMaster]))
+    val appMaster = system1.actorOf(Props(new MockAppMaster(List(taskId1, taskId2))))
 
     implicit val systemForSerializer = system1.asInstanceOf[ExtendedActorSystem]
 
@@ -103,7 +103,7 @@ object StreamingTestUtil {
     }
     val future = Future.sequence(List(future1, future2))
     Await.result(future, Duration(10, TimeUnit.SECONDS))
-    testActor ! TaskLocationReady
+    appMaster ! TaskLocationReady 
     (testActor, taskReporter)
   }
 }
@@ -126,9 +126,16 @@ object EchoTask {
   val TEST_PROBE = "test_probe"
 }
 
-class MockAppMaster extends Actor {
+class MockAppMaster(inputTaskIds: List[TaskId]) extends Actor {
+  var taskIds = Map.empty[TaskId, ActorRef]
+
   override def receive: Receive = {
-    case msg: RegisterTask =>
+    case RegisterTask(task, _, _) =>
       sender ! StartClock(0)
+      taskIds = taskIds + (task -> sender)
+    case TaskLocationReady =>
+      if (taskIds.length == inputTaskIds.length) {
+        taskIds.values.foreach(_ ! TaskLocationReady)
+      }
   }
 }
