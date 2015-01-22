@@ -43,6 +43,7 @@ class KafkaConfigSpec extends PropSpec with Matchers with MockitoSugar {
     assert(Try(config.getProducerEmitBatchSize).isSuccess)
     assert(Try(config.getProducerType).isSuccess)
     assert(Try(config.getRequestRequiredAcks).isSuccess)
+    assert(Try(config.getFetchMetadataTimeoutMS).isSuccess)
     assert(Try(config.getMetadataBrokerList).isSuccess)
     assert(Try(config.getGrouperFactory).isSuccess)
     assert(Try(config.getStorageReplicas).isSuccess)

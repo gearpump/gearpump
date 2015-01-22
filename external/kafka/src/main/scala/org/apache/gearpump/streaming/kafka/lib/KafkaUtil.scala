@@ -21,6 +21,7 @@ package org.apache.gearpump.streaming.kafka.lib
 import java.util.Properties
 
 import kafka.admin.AdminUtils
+import kafka.client.ClientUtils
 import kafka.common.{TopicAndPartition, TopicExistsException}
 import kafka.producer.ProducerConfig
 import kafka.utils.{ZKStringSerializer, ZkUtils}
@@ -65,23 +66,26 @@ object KafkaUtil {
   /**
    *  create a new kafka topic
    *  return true if topic already exists, and false otherwise
-   *
-   *  Note: Do not call getBroker immediately after create topic as leader election and
-   *  metadata propagation takes time
    */
   def createTopic(zkClient: ZkClient, topic: String, partitions: Int, replicas: Int): Boolean = {
     try {
-      AdminUtils.createTopic(zkClient, topic, partitions, replicas)
-      LOG.info(s"created topic $topic")
-      false
-    } catch {
-      case tee: TopicExistsException =>
-        LOG.info(s"topic $topic already exists")
+      if (AdminUtils.topicExists(zkClient, topic)) {
+        LOG.info(s"topic $topic exists")
         true
+      } else {
+        AdminUtils.createTopic(zkClient, topic, partitions, replicas)
+        LOG.info(s"created topic $topic")
+        false
+      }
+    } catch {
       case e: Exception => throw e
     } finally {
       zkClient.close()
     }
+  }
+
+  def validateTopic(topic: String, brokerList: String, clientId: String, timeoutMs: Int) = {
+    ClientUtils.fetchTopicMetadata(Set(topic), ClientUtils.parseBrokerList(brokerList), clientId, timeoutMs)
   }
 
   def buildProducerConfig(config: KafkaConfig): ProducerConfig = {
