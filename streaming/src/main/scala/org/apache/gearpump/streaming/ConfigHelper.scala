@@ -6,7 +6,7 @@ import com.typesafe.config.Config
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
 import org.apache.gearpump.util.Constants
-import org.apache.gearpump.util.Constants._
+import scala.language.implicitConversions
 
 class ConfigsHelper(config : UserConfig) {
 

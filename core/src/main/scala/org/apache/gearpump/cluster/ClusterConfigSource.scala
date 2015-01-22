@@ -20,6 +20,7 @@ package org.apache.gearpump.cluster
 
 import java.io.File
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions}
+import scala.language.implicitConversions
 
 /**
  * Data Source of ClusterConfig

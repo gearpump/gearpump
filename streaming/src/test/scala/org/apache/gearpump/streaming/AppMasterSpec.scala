@@ -37,6 +37,7 @@ import org.scalatest._
 import org.apache.gearpump.util.Graph._
 import scala.concurrent.duration._
 import scala.util.Try
+import scala.language.postfixOps
 
 class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config = TestUtil.DEFAULT_CONFIG

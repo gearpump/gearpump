@@ -22,6 +22,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.cluster.task.TaskContextInterface
 import org.slf4j.{LoggerFactory, Logger}
 import scala.util.{Try, Success, Failure}
+import scala.language.postfixOps
 import sys.process._
 
 class ShellTask(taskContext : TaskContextInterface, userConf : UserConfig) extends Actor {

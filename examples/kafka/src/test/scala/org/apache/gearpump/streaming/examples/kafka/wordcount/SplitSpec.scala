@@ -26,6 +26,7 @@ import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, PropSpec, Matchers}
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class SplitSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter{
 

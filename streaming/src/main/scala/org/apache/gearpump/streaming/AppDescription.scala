@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming
 
+import scala.language.implicitConversions
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.{ClusterConfigSource, Application, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner

@@ -28,6 +28,7 @@ import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.worker.Worker
 import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
 import org.scalatest._
+import scala.language.postfixOps
 
 import scala.concurrent.duration._
 

@@ -37,6 +37,7 @@ import org.scalatest.{Matchers, BeforeAndAfterEach, PropSpec}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
+import scala.language.postfixOps
 
 class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfterEach with KafkaServerHarness {
   val numServers = 1

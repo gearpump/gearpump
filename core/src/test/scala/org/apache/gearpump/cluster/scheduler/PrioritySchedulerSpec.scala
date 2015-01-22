@@ -27,6 +27,7 @@ import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll{

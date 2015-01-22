@@ -21,7 +21,6 @@ package org.apache.gearpump.services
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMasterData}
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.util.LogUtil
-import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.{Matchers, FlatSpec, BeforeAndAfterEach}
 import org.slf4j.Logger
 import spray.routing.RequestContext
@@ -31,7 +30,7 @@ import scala.util.{Failure, Success}
 import scala.concurrent.duration._
 
 
-class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers with BeforeAndAfterEach  with ShouldMatchers {
+class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers with BeforeAndAfterEach {
   import org.apache.gearpump.services.AppMasterProtocol._
   import spray.httpx.SprayJsonSupport._
   private val LOG: Logger = LogUtil.getLogger(getClass)
