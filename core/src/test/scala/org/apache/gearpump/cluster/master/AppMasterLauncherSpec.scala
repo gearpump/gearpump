@@ -75,7 +75,7 @@ class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEa
   }
 
   "AppMasterLauncher" should "reallocate resource if executor launch rejected" in {
-    worker.reply(ExecutorLaunchRejected("", Resource(1)))
+    worker.reply(ExecutorLaunchRejected(""))
     master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1))))
 
     val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, 0)))

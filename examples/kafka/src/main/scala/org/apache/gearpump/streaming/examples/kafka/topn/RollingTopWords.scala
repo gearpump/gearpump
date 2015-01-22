@@ -26,7 +26,7 @@ import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.{AppMaster, AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{LogUtil, Graph}
 import org.slf4j.Logger

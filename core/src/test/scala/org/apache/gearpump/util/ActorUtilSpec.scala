@@ -16,26 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming
+package org.apache.gearpump.util
 
-import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
 import org.apache.gearpump.transport.HostPort
-import scala.language.existentials
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{Matchers, FlatSpec}
 
-object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, taskContext: TaskContext, taskClass: Class[_ <: Actor])
+class ActorUtilSpec  extends FlatSpec {
+ "masterActorPath" should "construct the ActorPath from HostPort" in {
+   import Constants.MASTER
 
-  case class StartClock(clock : TimeStamp)
-  case object RestartClockService
-  class RestartException extends Exception
-  class MsgLostException extends Exception
+   val host = "127.0.0.1"
+   val port = 3000
+   val master = HostPort("127.0.0.1", 3000)
+   val masterPath = ActorUtil.getMasterActorPath(master)
+   assert(masterPath.address.port == Some(port))
+   assert(masterPath.address.system == MASTER)
+   assert(masterPath.address.host == Some(host))
+   assert(masterPath.address.protocol == "akka.tcp")
+   assert(masterPath.toStringWithoutAddress == s"/user/$MASTER")
+ }
 }
 
-object ExecutorToAppMaster {
-  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, workerId : Int)
-
-  case class RegisterTask(taskId: TaskId, executorId : Int, task: HostPort)
-}

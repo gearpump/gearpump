@@ -23,7 +23,7 @@ import akka.actor._
 import akka.dispatch.Dispatcher
 import akka.testkit.{TestProbe, TestActorRef}
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.AppMasterToMaster.SaveAppData
+import org.apache.gearpump.cluster.AppMasterToMaster.{RegisterAppMaster, SaveAppData}
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.Resource
@@ -31,6 +31,7 @@ import org.apache.gearpump.cluster.{AppMasterContext, UserConfig}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
+import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.util.Graph
@@ -49,7 +50,10 @@ object StreamingTestUtil {
     val masterConf = AppMasterContext(appId, testUserName, Resource(1),  None,miniCluster.mockMaster,AppMasterRuntimeInfo(miniCluster.worker, appId, Resource(1)))
 
     val props = Props(new AppMaster(masterConf, AppDescription("test", UserConfig.empty, Graph.empty)))
-    miniCluster.launchActor(props).asInstanceOf[TestActorRef[AppMaster]]
+    val registerAppMaster = RegisterAppMaster(miniCluster.mockMaster, masterConf.registerData)
+    val appMaster = miniCluster.launchActor(props).asInstanceOf[TestActorRef[AppMaster]]
+    miniCluster.mockMaster.tell(registerAppMaster, appMaster)
+    appMaster
   }
 
   /**

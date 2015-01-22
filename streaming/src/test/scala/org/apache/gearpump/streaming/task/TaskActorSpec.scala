@@ -23,8 +23,9 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{ExecutorContext, MasterHarness, UserConfig, TestUtil}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.AppMasterToExecutor.{MsgLostException, RestartException, RestartTasks, StartClock}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{MsgLostException, RestartException, StartClock}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
+import org.apache.gearpump.streaming.task.TaskActor.RestartTask
 import org.apache.gearpump.streaming.{Executor, StreamingTestUtil, DAG, TaskDescription}
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.util.Graph
@@ -88,7 +89,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       echo.expectMsg(Message("test"))
       implicit val system = system1
       EventFilter[RestartException](occurrences = 1) intercept {
-        testActor ! RestartTasks(0)
+        testActor ! RestartTask
       }
       system1.shutdown()
       system2.shutdown()

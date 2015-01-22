@@ -82,14 +82,22 @@ object Util {
 
     import Constants._
 
-    val appMasterVMArgs = conf.getString(GEARPUMP_APPMASTER_ARGS).split(" ")
-    val executorVMArgs = conf.getString(GEARPUMP_EXECUTOR_ARGS).split(" ")
+    val appMasterVMArgs = Try(conf.getString(GEARPUMP_APPMASTER_ARGS).split(" ")).toOption
+    val executorVMArgs = Try(conf.getString(GEARPUMP_EXECUTOR_ARGS).split(" ")).toOption
 
-    val appMasterClassPath = conf.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH).split(File.pathSeparator).asInstanceOf[Array[String]]
+    val appMasterClassPath = Try(
+      conf.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
+        .split(File.pathSeparator).asInstanceOf[Array[String]]).toOption
 
-    val executorClassPath = conf.getString(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH).split(File.pathSeparator).asInstanceOf[Array[String]]
+    val executorClassPath = Try(
+      conf.getString(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
+        .split(File.pathSeparator).asInstanceOf[Array[String]]).toOption
 
-    AppJvmSettings(JvmSetting(appMasterVMArgs, appMasterClassPath ), JvmSetting(executorVMArgs, executorClassPath))
+    AppJvmSettings(
+      JvmSetting(appMasterVMArgs.getOrElse(Array.empty[String]),
+        appMasterClassPath.getOrElse(Array.empty[String]) ),
+      JvmSetting(executorVMArgs
+        .getOrElse(Array.empty[String]), executorClassPath.getOrElse(Array.empty[String])))
   }
 
   def toBase64String(value: java.io.Serializable): String = {

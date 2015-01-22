@@ -248,8 +248,8 @@ abstract class TaskActor(val taskContext : TaskContext, userConf : UserConfig) e
       if (needSyncToClockService) {
         tryToSyncToClockService()
       }
-    case RestartTasks(timestamp) =>
-      LOG.info(s"Restarting myself ${taskId} from timestamp $timestamp...")
+    case RestartTask =>
+      LOG.info(s"Restarting myself ${taskId} ")
       express.unregisterLocalActor(TaskId.toLong(taskId))
       throw new RestartException
     case TaskLocationReady =>
@@ -260,6 +260,8 @@ abstract class TaskActor(val taskContext : TaskContext, userConf : UserConfig) e
 }
 
 object TaskActor {
+
+  case object RestartTask
 
   val INITIAL_WINDOW_SIZE = 1024 * 16
   val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000 //3 seconds

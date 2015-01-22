@@ -17,6 +17,7 @@
  */
 package org.apache.gearpump.distributedshell
 
+import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.StartExecutorSystems
 import org.apache.gearpump.cluster.{AppMasterContext, UserConfig, Application}
 import org.apache.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers}
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
@@ -69,9 +70,11 @@ class AppMaster(appContext : AppMasterContext, app : Application) extends Abstra
     context.become(msgHandler orElse defaultMsgHandler)
     (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].map { list =>
       workerList = list.workers
-      workerList.foreach {
-        workerId => master ! RequestResource(appId, ResourceRequest(Resource(1), workerId, relaxation = Relaxation.SPECIFICWORKER))
-      }
+      val resources = workerList.map {
+        workerId => ResourceRequest(Resource(1), workerId, relaxation = Relaxation.SPECIFICWORKER)
+      }.toArray
+
+      master ! StartExecutorSystems(resources, null)
     }
   }
 

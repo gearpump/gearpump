@@ -93,7 +93,7 @@ class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with Mas
 
       //Test LaunchExecutor
       worker.tell(LaunchExecutor(appId, executorId, Resource(101), executionContext), mockMaster.ref)
-      mockMaster.expectMsg(ExecutorLaunchRejected("There is no free resource on this machine", Resource(101)))
+      mockMaster.expectMsg(ExecutorLaunchRejected("There is no free resource on this machine"))
 
       worker.tell(LaunchExecutor(appId, executorId, Resource(5), executionContext), mockMaster.ref)
       mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(95)))

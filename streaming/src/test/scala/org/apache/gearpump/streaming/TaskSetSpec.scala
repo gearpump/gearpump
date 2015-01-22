@@ -19,6 +19,7 @@ package org.apache.gearpump.streaming
 
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.appmaster.{TestTask2, TestTask1}
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
 import org.scalatest.{Matchers, WordSpec}

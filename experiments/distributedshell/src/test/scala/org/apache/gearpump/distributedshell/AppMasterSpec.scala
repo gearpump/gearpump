@@ -23,12 +23,14 @@ import org.apache.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWor
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerList, AppMasterRegistered}
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, ResourceRequest, Resource}
 import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.ResponsesFromTasks
 import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
 import org.apache.gearpump.util.ActorUtil
 import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import scala.concurrent.duration._
 
 class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
   implicit val system = ActorSystem("AppMasterSpec", TestUtil.DEFAULT_CONFIG)
@@ -41,16 +43,16 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
   val workerList = List(1, 2, 3)
   val resource = Resource(1)
   val appJar = None
-  val appDescription = Application("app0", "AppMaster", UserConfig.empty)
+  val appDescription = Application("app0", classOf[AppMaster].getName, UserConfig.empty)
 
   "DistributedShell AppMaster" should {
     "launch one ShellTask on each worker" in {
       val appMasterInfo = AppMasterRuntimeInfo(mockWorker1.ref, appId, resource)
       val appMasterContext = AppMasterContext(appId, userName, resource, appJar, masterProxy, appMasterInfo)
-      val appMaster = TestActorRef(Props(classOf[AppMaster], appMasterContext, appDescription))
-      //When AppMaster started, it will register itself to Master
-      mockMaster.expectMsg(RegisterAppMaster(appMaster, appMasterInfo))
-      appMaster.tell(AppMasterRegistered(appId, mockMaster.ref), masterProxy)
+      TestActorRef[AppMaster](
+        AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription, appMasterContext))
+      mockMaster.expectMsgType[RegisterAppMaster]
+      mockMaster.reply(AppMasterRegistered(appId))
       //The DistributedShell AppMaster will ask for worker list
       mockMaster.expectMsg(GetAllWorkers)
       mockMaster.reply(WorkerList(workerList))
@@ -58,13 +60,9 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
       workerList.foreach { workerId =>
         mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), workerId, relaxation = Relaxation.SPECIFICWORKER)))
       }
-      val resouceAllocated = ResourceAllocated(Array(ResourceAllocation(resource, mockWorker1.ref, 1)))
-      appMaster.tell(resouceAllocated, masterProxy)
+      mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(resource, mockWorker1.ref, 1))))
       mockWorker1.expectMsgClass(classOf[LaunchExecutor])
       mockWorker1.reply(RegisterActorSystem(ActorUtil.getSystemAddress(system).toString))
-      val appMasterActor = appMaster.underlying.actor.asInstanceOf[AppMaster]
-      assert(appMasterActor.scheduleTaskOnWorker(0).taskClass.equals(classOf[ShellTask].getCanonicalName))
-      mockMaster.expectNoMsg()
     }
   }
 

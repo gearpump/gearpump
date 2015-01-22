@@ -15,24 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.task
+package org.apache.gearpump.streaming.appmaster
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.appmaster.ClockServiceSpec.Store
+import org.apache.gearpump.streaming.storage.AppDataStore
+import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{DAG, TaskDescription}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
+import scala.concurrent.{Future, Promise}
 
 class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll{
 
   def this() = this(ActorSystem("ClockServiceSpec"))
 
-  val task1 = TaskDescription(classOf[TaskActor].getName, 2)
-  val task2 = TaskDescription(classOf[TaskActor].getName, 2)
+  val task1 = TaskDescription(classOf[TaskActor].getName, 1)
+  val task2 = TaskDescription(classOf[TaskActor].getName, 1)
   val dag = DAG(Graph(task1 ~ new HashPartitioner() ~> task2))
 
   override def afterAll {
@@ -41,24 +45,41 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
   "The ClockService" should {
     "maintain a global view of message timestamp in the application" in {
-      val clockService = system.actorOf(Props(classOf[ClockService], dag))
+      val store = new Store()
+
+      val startClock  = 100L
+      store.put(ClockService.START_CLOCK, startClock)
+      val clockService = system.actorOf(Props(new ClockService(dag, store)))
       clockService ! GetLatestMinClock
-      expectMsg(LatestMinClock(Long.MaxValue))
+      expectMsg(LatestMinClock(startClock))
 
-      clockService ! UpdateClock(TaskId(0, 0), 1)
-      expectMsg(ClockUpdated(1))
+      //task(0,0): clock(101); task(1,0): clock(100)
+      clockService ! UpdateClock(TaskId(0, 0), 101)
+      //min is 100
+      expectMsg(ClockUpdated(100))
 
-      clockService ! UpdateClock(TaskId(0, 1), 2)
-      expectMsg(ClockUpdated(1))
+      //task(0,0): clock(101); task(1,0): clock(101)
+      clockService ! UpdateClock(TaskId(1, 0), 101)
 
-      clockService ! UpdateClock(TaskId(1, 0), 3)
-      expectMsg(ClockUpdated(1))
+      //min is 101
+      expectMsg(ClockUpdated(101))
+    }
+  }
+}
 
-      clockService ! UpdateClock(TaskId(1, 1), 4)
-      expectMsg(ClockUpdated(1))
+object ClockServiceSpec {
 
-      clockService ! UpdateClock(TaskId(0, 0), 5)
-      expectMsg(ClockUpdated(2))
+  class Store extends AppDataStore{
+
+    private var map = Map.empty[String, Any]
+
+    def put(key: String, value: Any): Future[Any] = {
+      map = map + (key -> value)
+      Promise.successful(value).future
+    }
+
+    def get(key: String) : Future[Any] = {
+      Promise.successful(map.get(key).getOrElse(null)).future
     }
   }
 }

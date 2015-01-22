@@ -22,7 +22,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.{AppDescription, AppMaster, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger

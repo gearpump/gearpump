@@ -27,7 +27,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.appmaster.AppMasterDaemon
+import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter._
@@ -71,11 +71,11 @@ class AppMasterLauncher(appId : Int, executorId: Int, app : Application, jar: Op
         classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username, appMasterAkkaConfig)
 
       worker ! LaunchExecutor(appId, executorId, resource, executorJVM)
-      context.become(waitForActorSystemToStart(worker, appMasterContext, app.userConfig))
+      context.become(waitForActorSystemToStart(worker, appMasterContext, app.userConfig, resource))
   }
 
-  def waitForActorSystemToStart(worker : ActorRef, appContext : AppMasterContext, user : UserConfig) : Receive = {
-    case ExecutorLaunchRejected(reason, resource, ex) =>
+  def waitForActorSystemToStart(worker : ActorRef, appContext : AppMasterContext, user : UserConfig, resource: Resource) : Receive = {
+    case ExecutorLaunchRejected(reason, ex) =>
       LOG.error(s"Executor Launch failed reason：$reason", ex)
       LOG.info(s"reallocate resource $resource to start appmaster")
       master ! RequestResource(appId, ResourceRequest(resource))
@@ -84,8 +84,9 @@ class AppMasterLauncher(appId : Int, executorId: Int, app : Application, jar: Op
       LOG.info(s"Received RegisterActorSystem $systemPath for app master")
       sender ! ActorSystemRegistered(worker)
 
-      val masterAddress = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS).asScala.map(HostPort(_))
-      sender ! CreateActor(Props(classOf[AppMasterDaemon], masterAddress, app, appContext), s"appdaemon$appId")
+      val masterAddress = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS)
+        .asScala.map(HostPort(_)).map(ActorUtil.getMasterActorPath(_))
+      sender ! CreateActor(AppMasterRuntimeEnvironment.props(masterAddress, app, appContext), s"appdaemon$appId")
 
       import context.dispatcher
       val appMasterTimeout = scheduler.scheduleOnce(TIMEOUT, self,

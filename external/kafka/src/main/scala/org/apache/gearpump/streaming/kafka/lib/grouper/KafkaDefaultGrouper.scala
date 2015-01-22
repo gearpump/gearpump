@@ -20,7 +20,6 @@ package org.apache.gearpump.streaming.kafka.lib.grouper
 
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.ConfigsHelper._
 import org.apache.gearpump.streaming.task.TaskContext
 
 class KafkaDefaultGrouperFactory extends KafkaGrouperFactory {

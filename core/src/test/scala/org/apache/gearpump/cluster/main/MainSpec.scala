@@ -78,7 +78,7 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
 
     //wait for master process to be started
 
-    val masterProxy = getActorSystem.actorOf(Props(classOf[MasterProxy], List(HostPort("127.0.0.1", port))), "proxy")
+    val masterProxy = getActorSystem.actorOf(MasterProxy.props(List(HostPort("127.0.0.1", port))), "proxy")
 
     worker.send(masterProxy, RegisterNewWorker)
     worker.expectMsgType[WorkerRegistered](PROCESS_BOOT_TIME)

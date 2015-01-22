@@ -17,10 +17,13 @@
  */
 package org.apache.gearpump.streaming
 
+import java.util
+
 import akka.actor.Actor
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.util.ActorUtil
+import org.apache.gearpump.streaming.TaskLocator.{Locality, NonLocality, WorkerLocality}
+import org.apache.gearpump.util.{ActorUtil, Constants}
 
 import scala.collection.mutable
 
@@ -30,7 +33,7 @@ class TaskLocator {
   initTasks()
 
   def initTasks() : Unit = {
-    val taskLocations : Array[(TaskDescription, Locality)] = ConfigsHelper.loadUserAllocation(ClusterConfig.load.application)
+    val taskLocations : Array[(TaskDescription, Locality)] = loadUserAllocation(ClusterConfig.load.application)
     for(taskLocation <- taskLocations){
       val (taskDescription, locality) = taskLocation
       val localityQueue = userScheduledTask.getOrElse(ActorUtil.loadClass(taskDescription.taskClass), mutable.Queue.empty[Locality])
@@ -48,11 +51,47 @@ class TaskLocator {
     }
     NonLocality
   }
+
+  /*
+The task resource requests format:
+gearpump {
+  scheduling {
+    requests {
+      worker1 {
+        "task1" = 2   //parallelism
+        "task2" = 4
+      }
+      worker2 {
+        "task1" = 2
+      }
+    }
+  }
+}
+ */
+  def loadUserAllocation(config: Config) : Array[(TaskDescription, Locality)] ={
+    import scala.collection.JavaConverters._
+    var result = new Array[(TaskDescription, Locality)](0)
+    if(!config.hasPath(Constants.GEARPUMP_SCHEDULING_REQUEST))
+      return result
+    val requests = config.getObject(Constants.GEARPUMP_SCHEDULING_REQUEST)
+    for(workerId <- requests.keySet().asScala.toSet[String]){
+      val taskDescriptions = requests.get(workerId).unwrapped().asInstanceOf[util.HashMap[String, Int]].asScala
+      for(taskDescription <- taskDescriptions){
+        val (taskClass, parallism) = taskDescription
+        result = result :+ (TaskDescription(taskClass, parallism), WorkerLocality(workerId.toInt))
+      }
+    }
+    result
+  }
 }
 
-trait Locality
+object TaskLocator {
 
-case class WorkerLocality(workerId : Int) extends Locality
+  trait Locality
 
-object NonLocality extends Locality
+  case class WorkerLocality(workerId: Int) extends Locality
+
+  object NonLocality extends Locality
+
+}
 
