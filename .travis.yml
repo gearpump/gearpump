@@ -26,15 +26,15 @@ after_success:
  - codecov
    ## publish to snapshot repo
  - 'if [[ $TRAVIS_BRANCH == "master" && $TRAVIS_PULL_REQUEST == "false" && $TRAVIS_TAG == "" ]];then
-   sbt publish;
+   sbt clean publish;
    fi'
    ## publish to release repo
  - 'if [[ $TRAVIS_TAG != "" && $TRAVIS_PULL_REQUEST == "false" ]];then
-   sbt publish;
+   sbt clean publish;
    fi'
  
 before_deploy:
- - sbt assembly packArchive travis_deploy
+ - sbt clean assembly packArchive travis_deploy
  
 deploy:
   provider: releases
