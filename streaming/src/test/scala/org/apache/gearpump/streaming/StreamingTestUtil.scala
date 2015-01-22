@@ -23,6 +23,7 @@ import akka.actor._
 import akka.dispatch.Dispatcher
 import akka.testkit.{TestProbe, TestActorRef}
 import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.AppMasterToMaster.SaveAppData
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.Resource
@@ -30,7 +31,7 @@ import org.apache.gearpump.cluster.{AppMasterContext, UserConfig}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
-import org.apache.gearpump.streaming.task.{TaskId, StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
@@ -75,16 +76,25 @@ object StreamingTestUtil {
     val taskReporter = TestProbe()(system2)
     val taskId1 = TaskId(0, 0)
     val taskId2 = TaskId(1, 0)
-    val appMaster = system1.actorOf(Props(classOf[MockAppMaster]))
+    val appMaster = TestProbe()(system1)
+    def ignoreUpdateClock: PartialFunction[Any, Boolean] = {
+      case msg: UpdateClock => true
+    }
+    appMaster.ignoreMsg(ignoreUpdateClock)
 
     implicit val systemForSerializer = system1.asInstanceOf[ExtendedActorSystem]
 
-    var testActorProps = Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster, 1, dag), taskConf)
+    var testActorProps = Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster.ref, 1, dag), taskConf)
     if (usePinedDispatcherForTaskActor) {
       testActorProps = testActorProps.withDispatcher("akka.actor.pined-dispatcher")
     }
     val testActor = TestActorRef[TaskActor](testActorProps)(system1)
-    val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, appMaster, 1, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
+    appMaster.expectMsgClass(classOf[RegisterTask])
+    appMaster.reply(StartClock(0))
+
+    val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, appMaster.ref, 1, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
+    appMaster.expectMsgClass(classOf[RegisterTask])
+    appMaster.reply(StartClock(0))
 
     val express1 = Express(system1)
     val express2 = Express(system2)
@@ -124,11 +134,4 @@ class EchoTask(taskContext : TaskContext, userConf : UserConfig) extends TaskAct
 
 object EchoTask {
   val TEST_PROBE = "test_probe"
-}
-
-class MockAppMaster extends Actor {
-  override def receive: Receive = {
-    case msg: RegisterTask =>
-      sender ! StartClock(0)
-  }
 }
