@@ -21,16 +21,17 @@ env:
   global:
   - secure: HLEt1PMZ8gIv1jmM7t+El8EP2I04ojPPMsjMYOfE9HxvpZ9d+xqF5M6vh43o96nq0dPLDMggZLR2WZ8DA1SSidE3+4dVGMl621kKX9wBFzenliiO8NmYpT7MisTjjSS1HLgQhCGXf77WVZVpziit1PXFR3+hSzekE8t+ZWtBvjQ=
   - secure: VyJnDR7aPtqzWmy6GX17KYI5YYGvve7kCzfng8s5/m0scIC9RhlSBv6rya7r8BFPq0OXWzZhamm44MOF+Z5Ct30vg7IpHOX6H+KwECfMoj3vV6un+OAsk+hfy5uDxGMFqMHa71W8s0URcv3p+xntjzDSGAydQsH98PMEvQ8KqG8=
+  - secure: hD/jcQkh1TTa+DxSoU7fXuJ6LT59GHPo9jFQjAIzW1WR+C8MSoFAJ26Kr3PlsuvGTt/lY827sXKATa9K/A1MP3v71AujWPs/kxusAMC66XJtV3hauT7hn2XlHKnr9FW3GTgJrkzLdPvMrvgYTk2WVKnk6SlxfUVokWPPICUatb0=
   
 after_success: 
  - codecov
    ## publish to snapshot repo
  - 'if [[ $TRAVIS_BRANCH == "master" && $TRAVIS_PULL_REQUEST == "false" && $TRAVIS_TAG == "" ]];then
-   sbt clean publish;
+   sbt clean publish-signed sonatypeRelease;
    fi'
    ## publish to release repo
  - 'if [[ $TRAVIS_TAG != "" && $TRAVIS_PULL_REQUEST == "false" ]];then
-   sbt clean publish;
+   sbt clean publish-signed sonatypeRelease;
    fi'
  
 before_deploy:

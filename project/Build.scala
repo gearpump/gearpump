@@ -6,6 +6,7 @@ import sbtassembly.Plugin._
 import xerial.sbt.Pack._
 import xerial.sbt.Sonatype._
 import com.typesafe.sbt.SbtPgp.autoImport._
+import sbtrelease._
 
 import scala.collection.immutable.Map.WithDefault
 
@@ -69,6 +70,7 @@ object Build extends sbt.Build {
       parallelExecution in Test := false,
       parallelExecution in ThisBuild := false,
       useGpg := true,
+      usePgpKeyHex("FEEA9B39"),
       scalacOptions ++= Seq("-Yclosure-elim","-Yinline"),
       publishMavenStyle := true,
 
