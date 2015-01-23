@@ -18,12 +18,11 @@
 
 package org.apache.gearpump.streaming.kafka
 
-import java.util.concurrent.LinkedBlockingQueue
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.kafka.lib.{FetchThread, KafkaOffsetManager, KafkaMessage, KafkaConsumer}
+import org.apache.gearpump.streaming.kafka.lib.{FetchThread, KafkaOffsetManager, KafkaMessage}
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
 import org.apache.gearpump.streaming.transaction.api.MessageDecoder
 import org.mockito.Matchers._
@@ -54,7 +53,7 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
       verify(fetchThread, never()).setStartOffset(anyObject[TopicAndPartition](), anyLong())
       verify(fetchThread).start()
 
-      doThrow(new RuntimeException).when(offsetManager).resolveOffset(startTime)
+      when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(new RuntimeException))
       intercept[RuntimeException] {
         source.setStartTime(startTime)
       }
@@ -76,7 +75,7 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
         verify(fetchThread).setStartOffset(topicAndPartition, offset)
         verify(fetchThread).start()
 
-        doThrow(new RuntimeException).when(offsetManager).resolveOffset(startTime)
+        when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(new RuntimeException))
         intercept[RuntimeException] {
           source.setStartTime(startTime)
         }

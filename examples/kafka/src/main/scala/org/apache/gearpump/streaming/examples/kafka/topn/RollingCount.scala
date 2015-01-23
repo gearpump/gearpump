@@ -29,7 +29,7 @@ class RollingCount(taskContext : TaskContext, conf: UserConfig) extends TaskActo
 
   private val windowLengthMS = getWindowLengthMS(conf)
   private val emitFrequencyMS = getEmitFrequencyMS(conf)
-  private var lastEmitTime = 0L
+  private var lastEmitTime = 1L
 
   private val counter: SlidingWindowCounter[String] = new SlidingWindowCounter[String](windowLengthMS / emitFrequencyMS)
 
@@ -39,12 +39,11 @@ class RollingCount(taskContext : TaskContext, conf: UserConfig) extends TaskActo
     val timestamp = msg.timestamp
     if (timestamp - lastEmitTime >= emitFrequencyMS) {
       counter.getCountsThenAdvanceWindow.foreach {
-        count =>
-          output(Message(count, timestamp))
+        case (obj, count) =>
+          output(Message((obj, count), timestamp))
       }
       lastEmitTime = timestamp
-    } else {
-      counter.incrementCount(msg.msg.asInstanceOf[String])
     }
+    counter.incrementCount(msg.msg.asInstanceOf[String])
   }
 }
