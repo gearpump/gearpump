@@ -71,6 +71,7 @@ object Build extends sbt.Build {
       parallelExecution in ThisBuild := false,
       useGpg := true,
       usePgpKeyHex("FEEA9B39"),
+      pgpSecretRing := file("/home/travis/build/intel-hadoop/gearpump/secring.asc"),
       scalacOptions ++= Seq("-Yclosure-elim","-Yinline"),
       publishMavenStyle := true,
 
