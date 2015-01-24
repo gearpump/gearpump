@@ -2,7 +2,7 @@ language:
 - java
 - scala
 before_install:
-- if [[ $TRAVIS_PULL_REQUEST == "false" ]]; then openssl aes-256-cbc -K $encrypted_6014e4216d04_key -iv $encrypted_6014e4216d04_iv -in secring.asc.enc -out secring.asc -d;fi
+- if [[ $TRAVIS_PULL_REQUEST == "false" ]]; then openssl aes-256-cbc -K $encrypted_6014e4216d04_key -iv $encrypted_6014e4216d04_iv -in secring.asc.enc -out /home/travis/build/intel-hadoop/gearpump/secring.asc -d;ls -l /home/travis/build/intel-hadoop/gearpump/secring.asc;fi
 - sudo pip install codecov
 script: sbt clean coverage test
 jdk:
