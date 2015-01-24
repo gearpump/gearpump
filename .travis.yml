@@ -2,7 +2,9 @@ language:
   - java
   - scala
 
-before_install: sudo pip install codecov
+before_install: 
+  - sudo pip install codecov
+  - openssl aes-256-cbc -K $encrypted_6014e4216d04_key -iv $encrypted_6014e4216d04_iv -in secring.asc.enc -out secring.asc -d
 
 script: sbt clean coverage test
 jdk:
