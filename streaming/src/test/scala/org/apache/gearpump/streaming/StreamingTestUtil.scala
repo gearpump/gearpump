@@ -37,7 +37,7 @@ import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 
 import scala.concurrent.{Future, Await}
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 object StreamingTestUtil {
   private var executorId = 0
@@ -93,7 +93,7 @@ object StreamingTestUtil {
     appMaster.reply(StartClock(0))
 
     val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, appMaster.ref, 1, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
-    appMaster.expectMsgClass(classOf[RegisterTask])
+    appMaster.expectMsgClass(5 seconds, classOf[RegisterTask])
     appMaster.reply(StartClock(0))
 
     val express1 = Express(system1)
