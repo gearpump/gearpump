@@ -1,48 +1,39 @@
 language:
-  - java
-  - scala
-
-before_install: sudo pip install codecov
-
+- java
+- scala
+before_install:
+- if [[ $TRAVIS_PULL_REQUEST == "false" ]]; then openssl aes-256-cbc -K $encrypted_6014e4216d04_key -iv $encrypted_6014e4216d04_iv -in secring.asc.enc -out /home/travis/build/intel-hadoop/gearpump/secring.asc -d;ls -l /home/travis/build/intel-hadoop/gearpump/secring.asc;fi
+- sudo pip install codecov
 script: sbt clean coverage test
 jdk:
-  - oraclejdk7
+- oraclejdk7
 scala:
-  - 2.11.4
-
+- 2.11.4
 cache:
   directories:
-    - $HOME/.m2
-    - $HOME/.ivy2
+  - $HOME/.m2
+  - $HOME/.ivy2
 git:
   depth: 1
-
 env:
   global:
   - secure: HLEt1PMZ8gIv1jmM7t+El8EP2I04ojPPMsjMYOfE9HxvpZ9d+xqF5M6vh43o96nq0dPLDMggZLR2WZ8DA1SSidE3+4dVGMl621kKX9wBFzenliiO8NmYpT7MisTjjSS1HLgQhCGXf77WVZVpziit1PXFR3+hSzekE8t+ZWtBvjQ=
   - secure: VyJnDR7aPtqzWmy6GX17KYI5YYGvve7kCzfng8s5/m0scIC9RhlSBv6rya7r8BFPq0OXWzZhamm44MOF+Z5Ct30vg7IpHOX6H+KwECfMoj3vV6un+OAsk+hfy5uDxGMFqMHa71W8s0URcv3p+xntjzDSGAydQsH98PMEvQ8KqG8=
   - secure: hD/jcQkh1TTa+DxSoU7fXuJ6LT59GHPo9jFQjAIzW1WR+C8MSoFAJ26Kr3PlsuvGTt/lY827sXKATa9K/A1MP3v71AujWPs/kxusAMC66XJtV3hauT7hn2XlHKnr9FW3GTgJrkzLdPvMrvgYTk2WVKnk6SlxfUVokWPPICUatb0=
-  
-after_success: 
- - codecov
-   ## publish to snapshot repo
- - 'if [[ $TRAVIS_BRANCH == "master" && $TRAVIS_PULL_REQUEST == "false" && $TRAVIS_TAG == "" ]];then
-   sbt clean publish-signed sonatypeRelease;
-   fi'
-   ## publish to release repo
- - 'if [[ $TRAVIS_TAG != "" && $TRAVIS_PULL_REQUEST == "false" ]];then
-   sbt clean publish-signed sonatypeRelease;
-   fi'
- 
+after_success:
+- codecov
+- if [[ $TRAVIS_BRANCH == "master" && $TRAVIS_PULL_REQUEST == "false" && $TRAVIS_TAG
+  == "" ]];then sbt clean publish-signed sonatypeRelease; fi
+- if [[ $TRAVIS_TAG != "" && $TRAVIS_PULL_REQUEST == "false" ]];then sbt clean publish-signed
+  sonatypeRelease; fi
 before_deploy:
- - sbt clean assembly packArchive travis_deploy
- 
+- sbt clean assembly packArchive travis_deploy
 deploy:
   provider: releases
   skip_cleanup: true
   api_key:
     secure: NYY003Bum6aL5h5Au8nCEY51lnDcsCErvmfzpIh0CWNY4UKnADSXkJPdureAf3OR7eMFmQxMi1rL2MQtOjlCWgaPO4TmEJrXB3vMZTTyj1COst5WIQV8S/BbgDzKFEP9zuRNbMXdRJqf0rEhIrKPagXkOTDaGNijmjCCh5y62M4=
-  file: 'target/binary.gearpump.tar.gz'
+  file: target/binary.gearpump.tar.gz
   on:
     repo: intel-hadoop/gearpump
     tags: true
