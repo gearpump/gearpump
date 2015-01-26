@@ -189,7 +189,7 @@ private[cluster] object Worker {
           file.getFile
         }
 
-        val configFile = Option(ctx.executorAkkaConfig).map{conf =>
+        val configFile = Option(ctx.executorAkkaConfig).filterNot(_.isEmpty).map{conf =>
           val configFile = File.createTempFile("gearpump", ".conf")
           ClusterConfig.saveConfig(conf, configFile)
           var file = new URL("file:" + configFile)
