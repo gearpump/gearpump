@@ -14,7 +14,7 @@ Step2: Release
 1. Create a tag by ```git tag RELEASE_VERSION```
 2. ```git remote add upstream https://github.com/intel-hadoop/gearpump.git```
 3. git push upstream RELEASE_VERSION
-4. Change the release notes under 
+4. Change the release notes under https://github.com/intel-hadoop/gearpump/releases
 
 Step3: Post-Release:
 ==================
