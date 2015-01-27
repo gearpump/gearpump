@@ -31,7 +31,7 @@ object Build extends sbt.Build {
   val commonsLoggingVersion = "1.1.3"
   val commonsIOVersion = "2.4"
   val findbugsVersion = "2.0.1"
-  val gearPumpVersion = "0.2.3-SNAPSHOT"
+  val gearPumpVersion = "0.2.3"
   val guavaVersion = "15.0"
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
@@ -69,12 +69,13 @@ object Build extends sbt.Build {
       organization := "com.github.intel-hadoop",
       parallelExecution in Test := false,
       parallelExecution in ThisBuild := false,
-      useGpg := true,
-      usePgpKeyHex("FEEA9B39"),
-      pgpSecretRing := file("/home/travis/build/intel-hadoop/gearpump/secring.asc"),
+      useGpg := false,
+      pgpSecretRing := file("./secring.asc"),
+      pgpPublicRing := file("./pubring.asc"),
       scalacOptions ++= Seq("-Yclosure-elim","-Yinline"),
       publishMavenStyle := true,
 
+      pgpPassphrase := Option(System.getenv().get("PASSPHRASE")).map(_.toArray),
       credentials += Credentials(
                    "Sonatype Nexus Repository Manager", 
                    "oss.sonatype.org", 
