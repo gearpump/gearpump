@@ -29,7 +29,7 @@ import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
-import scala.concurrent.future
+import scala.concurrent.Future
 
 class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, deserializeFlag : Boolean) extends Actor {
   private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = name)
@@ -50,7 +50,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
     case AddChannel(channel) => allChannels.add(channel)
     case CloseChannel(channel) =>
       import context.dispatcher
-      future {
+      Future {
         channel.close.awaitUninterruptibly
         allChannels.remove(channel)
       }
@@ -82,6 +82,23 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
 }
 
 object Server {
+
+  // Create a 1-1 mapping fake ActorRef for task
+  // The path is fake, don't use the ActorRef directly.
+  // As we must use actorFor() which is deprecated,
+  // according to the advice https://issues.scala-lang.org/browse/SI-7934,
+  // use a helper object to bypass this deprecation warning.
+  @deprecated("", "")
+  private def fakeActorRefForTask(context: ActorContext, taskId: Long, sessonId : Int): ActorRef = {
+    context.system.actorFor(s"/tasks/doNotUseFakeActorRef/${sessonId}${taskId}")
+  }
+  object FakeActorRefForTaskHelper {
+    @deprecated("", "")
+    class  Helper {
+      def fakeActorRefForTaskForwarder(context: ActorContext, taskId: Long, sessonId : Int) = fakeActorRefForTask(context, taskId, sessonId)
+    }
+    object Helper extends Helper
+  }
 
   class ServerPipelineFactory(server: ActorRef) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
@@ -118,17 +135,12 @@ object Server {
 
     def translateToActorRef(taskId: Long, sessionId : Int): ActorRef = {
       if(!taskIdtoActorRef.contains(taskId)){
-        val actorRef = fakeActorRefForTask(taskId, sessionId)
+        val actorRef = FakeActorRefForTaskHelper.Helper.fakeActorRefForTaskForwarder(context, taskId, sessionId)
         taskIdtoActorRef += taskId -> actorRef
       }
       taskIdtoActorRef.get(taskId).get
     }
 
-    // Create a 1-1 mapping fake ActorRef for task
-    // The path is fake, don't use the ActorRef directly
-    private def fakeActorRefForTask(taskId: Long, sessonId : Int): ActorRef = {
-      context.system.actorFor(s"/tasks/doNotUseFakeActorRef/${sessonId}${taskId}")
-    }
   }
 
   case class AddChannel(channel: Channel)

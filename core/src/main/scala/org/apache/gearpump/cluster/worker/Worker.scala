@@ -168,7 +168,7 @@ private[cluster] object Worker {
       if (System.getProperty("LOCAL") != null) {
         new ExecutorHandler {
           override def destroy = Unit // we cannot forcefully terminate a future by scala limit
-          override def exitValue : Future[Try[Int]] = future {
+          override def exitValue : Future[Try[Int]] = Future {
               try {
                 val clazz = Class.forName(ctx.mainClass)
                 val main = clazz.getMethod("main", classOf[Array[String]])
@@ -221,7 +221,7 @@ private[cluster] object Worker {
             deleteTempFile
           }
 
-          override def exitValue: Future[Try[Int]] = future {
+          override def exitValue: Future[Try[Int]] = Future {
             val exit = process.exitValue()
             if (exit == 0) {
               Success(0)

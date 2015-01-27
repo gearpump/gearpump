@@ -24,6 +24,7 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class InMemoryAppStoreOnMasterSpec extends WordSpec with Matchers with BeforeAndAfterAll{
   implicit val timeout = Constants.FUTURE_TIMEOUT

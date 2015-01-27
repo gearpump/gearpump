@@ -26,6 +26,7 @@ import org.apache.gearpump.experiments.cluster.executor.DefaultExecutor
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class ExecutorLauncherSpec extends WordSpec with Matchers {
 

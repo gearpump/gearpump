@@ -21,6 +21,7 @@ import akka.actor.{ActorRef, Actor}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.experiments.cluster.task.TaskContextInterface
+import scala.language.existentials
 
 object AppMasterToExecutor {
   case class LaunchTask(taskContext: TaskContextInterface, taskClass: Class[_ <: Actor], userConfig: UserConfig)

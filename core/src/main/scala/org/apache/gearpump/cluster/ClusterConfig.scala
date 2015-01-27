@@ -22,7 +22,6 @@ import java.io.File
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions}
 import org.apache.commons.io.FileUtils
-import org.apache.gearpump.cluster.ClusterConfigSource
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil
 

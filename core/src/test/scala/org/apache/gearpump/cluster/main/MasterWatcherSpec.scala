@@ -24,6 +24,7 @@ import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class MasterWatcherSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config: Config = TestUtil.MASTER_CONFIG

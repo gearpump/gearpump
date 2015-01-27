@@ -34,6 +34,7 @@ import org.apache.gearpump.transport.HostPort
 import org.scalatest._
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config = ConfigFactory.parseString(""" akka.loggers = ["akka.testkit.TestEventListener"] """).

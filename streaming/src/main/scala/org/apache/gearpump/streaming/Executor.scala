@@ -30,7 +30,7 @@ import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
 import org.apache.gearpump.transport.{Express, HostPort}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
-
+import scala.language.postfixOps
 import scala.concurrent.duration._
 
 case object TaskLocationReady

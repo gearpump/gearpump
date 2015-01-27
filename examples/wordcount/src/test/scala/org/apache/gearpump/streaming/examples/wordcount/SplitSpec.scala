@@ -24,6 +24,7 @@ import org.apache.gearpump.streaming.StreamingTestUtil
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class SplitSpec extends WordSpec with Matchers {
 

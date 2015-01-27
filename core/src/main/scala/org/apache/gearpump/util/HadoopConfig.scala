@@ -22,6 +22,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, Da
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.util.Constants._
 import org.apache.hadoop.conf.Configuration
+import scala.language.implicitConversions
 
 class HadoopConfig(config: UserConfig)  {
   import org.apache.gearpump.cluster.UserConfig._
