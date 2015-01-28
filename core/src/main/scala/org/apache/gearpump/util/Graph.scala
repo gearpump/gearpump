@@ -34,33 +34,33 @@ import scala.language.implicitConversions
 class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) extends Serializable{
   import org.apache.gearpump.util.Graph._
 
-  def addVertex(vertex : N) : Unit = {
+  def addVertex(vertex : N): Unit = {
     graph.addVertex(vertex)
   }
 
-  def vertex : Iterable[N] = {
+  def vertices: Iterable[N] = {
     graph.vertexSet()
   }
 
-  def outDegreeOf(node : N) = {
+  def outDegreeOf(node : N): Int = {
     graph.outDegreeOf(node)
   }
 
-  def outgoingEdgesOf(node : N)  = {
+  def outgoingEdgesOf(node : N): Array[(N, E, N)]  = {
     toEdgeArray(graph.outgoingEdgesOf(node))
   }
 
-  def addEdge(node1 : N, edge: E, node2: N) = {
+  def addEdge(node1 : N, edge: E, node2: N): Unit = {
     addVertex(node1)
     addVertex(node2)
     graph.addEdge(node1, node2, Edge(edge))
   }
 
-  def edgesOf(node : N) = {
+  def edgesOf(node : N): Array[(N, E, N)] = {
     toEdgeArray(graph.edgesOf(node))
   }
 
-  private def toEdgeArray(edges: Iterable[Edge[E]])  : Array[(N, E,  N)] = {
+  private def toEdgeArray(edges: Iterable[Edge[E]]): Array[(N, E, N)] = {
     edges.map { edge =>
       val node1 = graph.getEdgeSource(edge)
       val node2 = graph.getEdgeTarget(edge)
@@ -68,7 +68,7 @@ class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) e
     }.toArray
   }
 
-  def edges = {
+  def edges: Array[(N, E, N)] = {
     toEdgeArray(graph.edgeSet())
   }
 
