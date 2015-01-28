@@ -42,7 +42,9 @@ object KafkaUtil {
         .getOrElse(throw new RuntimeException(s"broker info not found for leader $leader"))
       Broker(broker.host, broker.port)
     } catch {
-      case e: Exception => throw e
+      case e: Exception =>
+        LOG.error(e.getMessage)
+        throw e
     } finally {
       zkClient.close()
     }
@@ -57,7 +59,9 @@ object KafkaUtil {
         }.toArray)
       tps
     } catch {
-      case e: Exception => throw e
+      case e: Exception =>
+        LOG.error(e.getMessage)
+        throw e
     } finally {
       zkClient.close()
     }
@@ -78,7 +82,9 @@ object KafkaUtil {
         false
       }
     } catch {
-      case e: Exception => throw e
+      case e: Exception =>
+        LOG.error(e.getMessage)
+        throw e
     } finally {
       zkClient.close()
     }

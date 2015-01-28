@@ -28,6 +28,7 @@ import org.apache.gearpump.util.LogUtil
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
+import scala.collection.mutable
 import scala.util.{Failure, Success}
 
 
@@ -71,21 +72,15 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
   }
 
   override def pull(number: Int): List[Message] = {
-    @annotation.tailrec
-    def pullHelper(count: Int, msgList: List[Message]): List[Message] = {
-      if (count >= number) {
-        msgList
-      } else {
-        val optMsg: Option[Message] = fetchThread.poll.flatMap { kafkaMsg =>
-          val msg = messageDecoder.fromBytes(kafkaMsg.msg)
-          offsetManagers(kafkaMsg.topicAndPartition).filter(msg -> kafkaMsg.offset)
-        }
-        optMsg match {
-          case Some(msg) => pullHelper(count + 1, msgList :+ msg)
-          case None      => pullHelper(count + 1, msgList)
-        }
-      }
+    var count = 0
+    val messagesBuilder = new mutable.ArrayBuilder.ofRef[Message]
+    while (count < number) {
+      fetchThread.poll.flatMap { kafkaMsg =>
+        val msg = messageDecoder.fromBytes(kafkaMsg.msg)
+        offsetManagers(kafkaMsg.topicAndPartition).filter(msg -> kafkaMsg.offset)
+      } map (messagesBuilder += _)
+      count += 1
     }
-    pullHelper(0, List.empty[Message])
+    messagesBuilder.result().toList
   }
 }
