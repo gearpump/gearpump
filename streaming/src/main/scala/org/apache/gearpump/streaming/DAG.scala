@@ -63,8 +63,9 @@ case class DAG(tasks : Map[Int, TaskDescription], graph : Graph[Int, Partitioner
       val (node1, partitioner, node2) = edge
       newGraph.addEdge(node1, partitioner, node2)
     }
-    val newMap = newGraph.vertex.foldLeft(Map.empty[Int, TaskDescription]){ (map, vertex) =>
+    val newMap = graph.vertex.foldLeft(Map.empty[Int, TaskDescription]){ (map, vertex) =>
       val task = tasks.get(vertex).get
+      newGraph.addVertex(vertex)
 
       //clean out other in-degree and out-degree tasks' data except the task parallelism
       map + (vertex -> task.copy(null, task.parallelism))
