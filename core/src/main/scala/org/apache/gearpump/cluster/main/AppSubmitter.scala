@@ -37,6 +37,9 @@ object AppSubmitter extends App with ArgumentsParser {
         val main = config.remainArgs(0)
         val classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:" + jarFile.getAbsolutePath)),
           Thread.currentThread().getContextClassLoader())
+
+        //set the context classloader as ActorSystem will use context classloader in precedence.
+        Thread.currentThread().setContextClassLoader(classLoader)
         val clazz = classLoader.loadClass(main)
         val mainMethod = clazz.getMethod("main", classOf[Array[String]])
         mainMethod.invoke(null, config.remainArgs.drop(1))
