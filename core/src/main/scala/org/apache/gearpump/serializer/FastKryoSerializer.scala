@@ -18,15 +18,16 @@
 
 package org.apache.gearpump.serializer
 
-import akka.actor.ExtendedActorSystem
-import com.romix.akka.serialization.kryo.KryoSerializer
+import akka.actor.{ExtendedActorSystem}
+import com.esotericsoftware.kryo.Kryo
+import com.romix.akka.serialization.kryo.{KryoSerializer}
+import scala.util.{Try}
 
 class FastKryoSerializer(system: ExtendedActorSystem) {
+  val config = system.settings.config
 
-  // Init kryo serialization, reading custom kryo serializer
-  GearpumpSerialization.init(system.settings.config)
-
-  private val serializer = new KryoSerializer(system).serializerPool.fetch()
+  private val serializer = new KryoSerializer(system).serializer
+  new GearpumpSerialization(config).customize(serializer.kryo)
 
   def serialize(message: AnyRef) : Array[Byte] = {
     serializer.toBinary(message)

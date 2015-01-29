@@ -29,9 +29,8 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 class MessageSerializerSpec extends WordSpec with Matchers {
   val kryo = new Kryo
   val config = ClusterConfig.load.application
-  GearpumpSerialization.init(config)
-  val serialization = new GearpumpSerialization
-  serialization.customize(kryo, config)
+  val serialization = new GearpumpSerialization(config)
+  serialization.customize(kryo)
   val buffer = new Array[Byte](1024)
   val outPut = new Output(buffer)
   val input = new Input(buffer)

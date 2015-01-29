@@ -23,16 +23,11 @@ import com.typesafe.config.Config
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
-class GearpumpSerialization {
-  val config = GearpumpSerialization.getConfig()
+class GearpumpSerialization(config: Config) {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   def customize(kryo: Kryo): Unit  = {
-    customize(kryo, GearpumpSerialization.getConfig())
-  }
-
-  def customize(kryo: Kryo, config : Config): Unit  = {
 
     val serializationMap = configToMap(config, Constants.GEARPUMP_SERIALIZERS)
 
@@ -56,20 +51,5 @@ class GearpumpSerialization {
   private final def configToMap(config : Config, path: String) = {
     import scala.collection.JavaConverters._
     config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ k -> v.toString }
-  }
-}
-
-object GearpumpSerialization {
-
-  private var config : Config = null
-
-  def init(config : Config) = {
-    if (this.config == null) {
-      this.config = config
-    }
-  }
-
-  def getConfig() = {
-    config
   }
 }
