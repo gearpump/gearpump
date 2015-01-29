@@ -54,16 +54,15 @@ object DAG {
 }
 
 case class DAG(tasks : Map[Int, TaskDescription], graph : Graph[Int, Partitioner]) extends Serializable {
-  /**
-   *
-   */
-  def subGraph(task : Int) = {
-    var newGraph = Graph.empty[Int, Partitioner]
+
+  def subGraph(task : Int): DAG = {
+    val newGraph = Graph.empty[Int, Partitioner]
+    newGraph.addVertex(task)
     graph.edgesOf(task).foreach { edge =>
       val (node1, partitioner, node2) = edge
       newGraph.addEdge(node1, partitioner, node2)
     }
-    val newMap = newGraph.vertex.foldLeft(Map.empty[Int, TaskDescription]){ (map, vertex) =>
+    val newMap = newGraph.vertices.foldLeft(Map.empty[Int, TaskDescription]){ (map, vertex) =>
       val task = tasks.get(vertex).get
 
       //clean out other in-degree and out-degree tasks' data except the task parallelism
