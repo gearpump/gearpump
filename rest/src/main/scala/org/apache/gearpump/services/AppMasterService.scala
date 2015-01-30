@@ -18,54 +18,49 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{ActorSystem, ActorRef}
 import akka.pattern.ask
-import com.wordnik.swagger.annotations._
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataRequest}
-import org.apache.gearpump.util.Constants
+import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription, DAG}
+import org.apache.gearpump.util.{Graph, Constants}
 import spray.http.StatusCodes
-import spray.routing
 import spray.routing.HttpService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-@Api(value = "/appmaster", description = "AppMaster Info.")
-class AppMasterServiceActor(val master:ActorRef) extends Actor with AppMasterService   {
-
-
-  def actorRefFactory = context
-  def receive = runRoute(readRoute)
-}
-
-@Api(value = "/appmaster", description = "AppMaster Info.")
-trait AppMasterService extends HttpService {
-  import org.apache.gearpump.services.AppMasterProtocol._
-  import spray.httpx.SprayJsonSupport._
-
-  implicit val ec: ExecutionContext = actorRefFactory.dispatcher
-  implicit val timeout = Constants.FUTURE_TIMEOUT
+trait AppMasterService extends HttpService  {
+  import upickle._
   val master:ActorRef
+  implicit val system: ActorSystem
 
-  val routes = readRoute 
-
-  @ApiOperation(value = "Get AppMaster Info", notes = "Returns AppMaster Info ", httpMethod = "GET", response = classOf[AppMasterData])
-  @ApiImplicitParams(Array(
-      new ApiImplicitParam(name = "appId", required = true, dataType = "integer", paramType = "path", value = "ID of AppMaster"),
-      new ApiImplicitParam(name = "detail", required = false, dataType = "boolean", paramType = "query", value = "true/false")
-  ))
-  @ApiResponses(Array(
-    new ApiResponse(code = 404, message = "AppMaster not found"),
-    new ApiResponse(code = 400, message = "Invalid ID supplied")
-  ))
-  def readRoute: routing.Route = get {
-     path("appmaster"/IntNumber) { appId => {
+  def appMasterRoute = get {
+    implicit val ec: ExecutionContext = actorRefFactory.dispatcher
+    implicit val timeout = Constants.FUTURE_TIMEOUT
+    path("appmaster"/IntNumber) { appId => {
        parameter("detail" ? "false") { detail =>
          val detailValue = Try(detail.toBoolean).getOrElse(false)
-         onComplete((master ? AppMasterDataRequest(appId, detailValue))
-           .asInstanceOf[Future[AppMasterData]]) {
-           case Success(value: AppMasterData) => complete(value)
-           case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+         detailValue match {
+           case true =>
+             onComplete((master ? AppMasterDataDetailRequest(appId)).asInstanceOf[Future[AppMasterDataDetail]]) {
+               case Success(value: AppMasterDataDetail) =>
+                 val appDescription: AppDescription = value.application
+                 Option(appDescription) match {
+                   case Some(app) =>
+                     complete(write(app))
+                   case None =>
+                     complete(StatusCodes.InternalServerError, "UserConfig is null")
+                 }
+               case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+             }
+           case false =>
+             onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
+               case Success(value: AppMasterData) => complete(write(value))
+               case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+             }
          }
        }
      }

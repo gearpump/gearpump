@@ -71,6 +71,7 @@ object AppMasterToMaster {
 
   case class GetAppData(appId: Int, key: String)
   case class GetAppDataResult(key: String, value: Any)
+  case class AppMasterDataDetail(appId: Int, application: Application)
 
   case object GetAllWorkers
 }
@@ -92,6 +93,7 @@ object MasterToAppMaster {
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
   case class AppMastersData(appMasters: List[AppMasterData])
   case object AppMastersDataRequest
+  case class AppMasterDataDetailRequest(appId: Int)
 
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
 

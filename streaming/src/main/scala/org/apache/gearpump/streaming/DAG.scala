@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming
 
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.util.Graph
+import upickle._
 
 import scala.collection.JavaConversions._
 
@@ -51,6 +52,7 @@ object DAG {
       taskDescription.equals(node)
     }.get._1
   }
+
 }
 
 case class DAG(tasks : Map[Int, TaskDescription], graph : Graph[Int, Partitioner]) extends Serializable {

@@ -20,59 +20,32 @@ package org.apache.gearpump.services
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
-import com.gettyimages.spray.swagger._
-import com.wordnik.swagger.model.ApiInfo
+import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription, DAG}
+import org.apache.gearpump.util.Graph
 import spray.can._
-import spray.json._
-import spray.routing.HttpService
 
 import scala.concurrent.ExecutionContext
-import scala.reflect.runtime.universe._
 
-class RestServices(masters: ActorRef) extends Actor with HttpService with DefaultJsonProtocol {
+trait RestServices extends AppMastersService with AppMasterService {
+  val route = appMastersRoute ~ appMasterRoute
+}
+
+class RestServicesActor(masters: ActorRef) extends Actor with RestServices {
+  val master = masters
   def actorRefFactory = context
-  implicit val executionContext:ExecutionContext = context.dispatcher
+  implicit val system: ActorSystem = context.system
+  implicit val executionContext: ExecutionContext = context.dispatcher
 
-  val appMastersService = new AppMastersService {
-    val master = masters
-    def actorRefFactory = context
-  }
-
-  val appMasterService = new AppMasterService {
-    val master = masters
-    def actorRefFactory = context
-  }
-
-  override def preStart(): Unit = {
-    context.actorOf(Props(classOf[AppMastersServiceActor], masters), "appMastersService")
-    context.actorOf(Props(classOf[AppMasterServiceActor], masters), "appMasterService")
-  }
-
-  def receive = runRoute(appMastersService.routes ~ appMasterService.routes ~ swaggerService.routes ~
-      get {
-        pathPrefix("") { 
-          pathEndOrSingleSlash {
-            getFromResource("index.html")
-          }
-        } ~
-        getFromResourceDirectory("META-INF/resources/webjars/swagger-ui/2.0.21")
-  })
-
-  val swaggerService = new SwaggerHttpService {
-    override def apiTypes = Seq(typeOf[AppMasterService])
-    override def apiVersion = "2.0"
-    override def baseUrl = "/"
-    override def docsPath = "api-docs"
-    override def actorRefFactory = context
-    override def apiInfo = Some(new ApiInfo(title="Spray-Swagger", description="A service using spray and spray-swagger.", termsOfServiceUrl="", contact="", "Apache V2", "http://www.apache.org/licenses/LICENSE-2.0"))
-
-  }
+  def receive = runRoute(route)
 }
 
 object RestServices {
   def start(master:ActorRef)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
-    val services = system.actorOf(Props(classOf[RestServices], master), "rest-services")
+    val services = system.actorOf(Props(classOf[RestServicesActor], master), "rest-services")
     val config = system.settings.config
     val port = config.getInt("gearpump.rest-services.port")
     val host = config.getString("gearpump.rest-services.host")

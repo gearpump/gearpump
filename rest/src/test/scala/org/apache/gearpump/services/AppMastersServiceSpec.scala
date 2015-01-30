@@ -18,21 +18,18 @@
 package org.apache.gearpump.services
 
 
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMasterData}
-import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.util.LogUtil
-import org.scalatest.{Matchers, FlatSpec, BeforeAndAfterEach}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import org.slf4j.Logger
-import spray.routing.RequestContext
-import spray.testkit.{ScalatestRouteTest}
+import spray.testkit.ScalatestRouteTest
 
-import scala.util.{Failure, Success}
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 
 class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers with BeforeAndAfterEach {
-  import org.apache.gearpump.services.AppMasterProtocol._
-  import spray.httpx.SprayJsonSupport._
+  import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
   var restUtil = RestTestUtil.startRestServices
@@ -50,9 +47,9 @@ class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMas
 
   "AppMastersService" should "return a json structure of appMastersData for GET request" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get("/appmasters") ~> routes).asInstanceOf[RouteResult] ~> check {
+    (Get("/appmasters") ~> appMastersRoute).asInstanceOf[RouteResult] ~> check {
       //check the type
-      responseAs[AppMastersData]
+      read[AppMastersData](response.entity.asString)
     }
   }
 

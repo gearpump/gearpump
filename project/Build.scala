@@ -40,13 +40,12 @@ object Build extends sbt.Build {
   val kafkaVersion = "0.8.2-beta"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
+  val uPickleVersion = "0.2.5"
   
   val scalaVersionMajor = "scala-2.11"
   val scalaVersionNumber = "2.11.4"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
-  val spraySwaggerVersion = "0.5.0"
-  val swaggerUiVersion = "2.0.24"
   val scalaTestVersion = "2.2.0"
   val scalaCheckVersion = "1.11.3"
   val mockitoVersion = "1.10.8"
@@ -60,6 +59,7 @@ object Build extends sbt.Build {
           "maven1-repo" at "http://repo1.maven.org/maven2",
           "maven2-repo" at "http://mvnrepository.com",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
+          "bintray/non" at "http://dl.bintray.com/non/maven",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
     ) ++
@@ -201,7 +201,12 @@ object Build extends sbt.Build {
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
-    settings = commonSettings
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "com.lihaoyi" %% "upickle" % "0.2.5"
+        )
+     )
   )  dependsOn(core % "test->test;compile->compile")
 
   lazy val external_kafka = Project(
@@ -302,10 +307,8 @@ object Build extends sbt.Build {
           "io.spray" %%  "spray-httpx"     % sprayVersion,
           "io.spray" %%  "spray-client"    % sprayVersion,
           "io.spray" %%  "spray-json"    % sprayJsonVersion,
-          "com.gettyimages" %% "spray-swagger" % spraySwaggerVersion excludeAll( ExclusionRule(organization = "org.json4s"), ExclusionRule(organization = "io.spray") ),
           "org.json4s" %% "json4s-jackson" % json4sVersion,
           "org.json4s" %% "json4s-native"   % json4sVersion,
-          "org.webjars" % "swagger-ui" % swaggerUiVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
         )
       )
