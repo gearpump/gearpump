@@ -179,7 +179,8 @@ Issues should be reported to [GearPump GitHub issue tracker](https://github.com/
 * [Weihua Jiang](https://github.com/whjiang)
 * [Suneel Marthi](https://github.com/smarthi)
 
-Contacts:
+## Contacts:
+
 Please use the google user list if possible. For things that are not OK to be shared in maillist, please contact
 seanzhong@apache.org
 
