@@ -170,14 +170,15 @@ We'll have QnA and discussions at [GearPump User List](https://groups.google.com
 
 Issues should be reported to [GearPump GitHub issue tracker](https://github.com/intel-hadoop/gearpump/issues) and contributions are welcomed via [pull requests](https://github.com/intel-hadoop/gearpump/pulls)
 
-## Contributors (alphabetically)
+## Contributors (time order)
 
-* [Weihua Jiang](https://github.com/whjiang)
-* [Kam Kasravi](https://github.com/kkasravi)
-* [Suneel Marthi](https://github.com/smarthi)
-* [Huafeng Wang](https://github.com/huafengw)
-* [Manu Zhang](https://github.com/manuzhang)
 * [Sean Zhong](https://github.com/clockfly)
+* [Kam Kasravi](https://github.com/kkasravi)
+* [Manu Zhang](https://github.com/manuzhang)
+* [Huafeng Wang](https://github.com/huafengw)
+* [Weihua Jiang](https://github.com/whjiang)
+* [Suneel Marthi](https://github.com/smarthi)
+
 
 ## License
 
