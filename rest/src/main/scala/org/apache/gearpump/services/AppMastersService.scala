@@ -19,42 +19,28 @@
 package org.apache.gearpump.services
 
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.ActorRef
 import akka.pattern.ask
-import com.wordnik.swagger.annotations._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest}
 import org.apache.gearpump.util.Constants
 import spray.http.StatusCodes
+import spray.json.DefaultJsonProtocol
 import spray.routing.HttpService
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-@Api(value = "/appmasters", description = "AppMasters Info.")
-class AppMastersServiceActor(val master:ActorRef) extends Actor with AppMastersService   {
-  def actorRefFactory = context
-  def receive = runRoute(readRoute)
-
-}
-@Api(value = "/appmasters", description = "AppMasters Info.")
 trait AppMastersService extends HttpService {
-  import org.apache.gearpump.services.AppMasterProtocol._
-  import spray.httpx.SprayJsonSupport._
-  implicit val ec: ExecutionContext = actorRefFactory.dispatcher
-  implicit val timeout = Constants.FUTURE_TIMEOUT
+  import upickle._
   val master:ActorRef
 
-  val routes = readRoute
-
-  @ApiOperation(value = "Get AppMasters Info", notes = "Returns AppMasters Info ", httpMethod = "GET", response = classOf[AppMastersData])
-  @ApiResponses(Array(
-    new ApiResponse(code = 404, message = "AppMasters not found")
-  ))
-  def readRoute = get {
+  def appMastersRoute = get {
+    implicit val ec: ExecutionContext = actorRefFactory.dispatcher
+    implicit val timeout = Constants.FUTURE_TIMEOUT
     path("appmasters") {
       onComplete((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]]) {
         case Success(value:AppMastersData) =>
-          complete(value)
+          complete(write(value))
         case Failure(ex)    => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
       }
     }

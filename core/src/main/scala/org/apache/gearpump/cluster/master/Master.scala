@@ -123,6 +123,10 @@ private[cluster] class Master extends Actor with Stash {
     case app : ResolveAppId =>
       LOG.info(s"Receive from client, resolving appId ${app.appId} to ActorRef")
       appManager.forward(app)
+    case app : AppMasterDataDetailRequest =>
+      LOG.info(s"Receive from client, forwarding to AppManager")
+      appManager.forward(app)
+
   }
 
   def disassociated : Receive = {

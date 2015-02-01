@@ -191,6 +191,9 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
         }
         this.restarting = true
       }
+    case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
+      LOG.info(s"***AppMaster got AppMasterDataDetailRequest for $appId ***")
+      sender ! AppMasterDataDetail(appId, app)
   }
 
   def executorMsgHandler: Receive = {

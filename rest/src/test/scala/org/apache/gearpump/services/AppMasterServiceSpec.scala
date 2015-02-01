@@ -19,8 +19,11 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription, DAG}
+import org.apache.gearpump.util.{Graph, LogUtil}
 import org.scalatest.{Matchers, FlatSpec, BeforeAndAfterEach}
 import org.slf4j.Logger
 import spray.routing.RequestContext
@@ -30,8 +33,7 @@ import scala.util.{Failure, Success}
 import scala.concurrent.duration._
 
 class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterEach {
-  import org.apache.gearpump.services.AppMasterProtocol._
-  import spray.httpx.SprayJsonSupport._
+  import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
   var restUtil = RestTestUtil.startRestServices
@@ -48,12 +50,9 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
   }
 
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
-
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    val tranform = implicitly[TildeArrow[RequestContext , Unit]]
-    (Get("/appmaster/0?detail=false") ~> routes).asInstanceOf[RouteResult] ~> check{
-      //check the response type
-      responseAs[AppMasterData]
+    (Get("/appmaster/0?detail=false") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
+      read[AppMasterData](response.entity.asString)
     }
   }
 
