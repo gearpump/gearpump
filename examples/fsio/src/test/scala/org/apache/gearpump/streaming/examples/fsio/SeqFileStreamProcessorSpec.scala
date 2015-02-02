@@ -18,6 +18,7 @@
 package org.apache.gearpump.streaming.examples.fsio
 
 import akka.actor.ActorSystem
+import akka.testkit.TestProbe
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{UserConfig, TestUtil}
 import org.apache.gearpump.streaming.StreamingTestUtil
@@ -51,14 +52,17 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
   before {
     implicit val system1 = ActorSystem("SeqFileStreamProcessor", TestUtil.DEFAULT_CONFIG)
     val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
+    val watcher = TestProbe()(system1)
     val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProcessor.OUTPUT_PATH, outputDirectory)).withHadoopConf(new Configuration())
     val (processor, _) = StreamingTestUtil.createEchoForTaskActor(classOf[SeqFileStreamProcessor].getName, conf, system1, system2)
+    watcher watch processor
     forAll(kvGenerator) { kv =>
       val (key, value) = kv
       kvPairs.append((key, value))
       processor.tell(Message(key + "++" + value), processor)
     }
     system1.stop(processor)
+    watcher.expectTerminated(processor)
     system1.shutdown()
     system2.shutdown()
   }
