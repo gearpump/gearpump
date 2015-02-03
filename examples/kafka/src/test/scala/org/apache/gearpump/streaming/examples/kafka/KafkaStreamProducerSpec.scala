@@ -70,16 +70,20 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
     val topic = TestKafkaUtils.tempTopic()
     val brokerList = getBrokerList.mkString(",")
     val partitionsToBrokers = createTopicUntilLeaderIsElected(topic, partitions = 1, replicas = 1)
-    val messages = partitionsToBrokers.foldLeft(List.empty[String]) { (msgs, partitionAndBroker) =>
-      msgs ++ sendMessagesToPartition(configs, topic, partitionAndBroker._1, messageNum)
-    }.map(Message(_, Message.noTimeStamp))
 
     val kafkaConfig = getKafkaConfig(topic, consumerEmitBatchSize = batchSize, brokerList, zkConnect)
     val (_, echo) = StreamingTestUtil.createEchoForTaskActor(
       classOf[KafkaStreamProducer].getName, kafkaConfig, system1, system2, usePinedDispatcherForTaskActor = true)
 
-    messages.foreach { msg =>
-      echo expectMsg(10 seconds, msg)
+    val round = 3
+    for (i <- 1 to round) {
+      val messages = partitionsToBrokers.foldLeft(List.empty[String]) { (msgs, partitionAndBroker) =>
+        msgs ++ sendMessagesToPartition(configs, topic, partitionAndBroker._1, messageNum)
+      }.map(Message(_, Message.noTimeStamp))
+
+      messages.foreach { msg =>
+        echo expectMsg(10 seconds, msg)
+      }
     }
   }
 
