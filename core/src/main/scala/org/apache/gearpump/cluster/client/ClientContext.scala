@@ -45,7 +45,7 @@ class ClientContext(masters: Iterable[HostPort]) {
   implicit val system = ActorSystem(s"client${Util.randInt}" , config)
   import system.dispatcher
 
-  private val master = system.actorOf(Props(classOf[MasterProxy], masters), MASTER)
+  private val master = system.actorOf(MasterProxy.props(masters), MASTER)
 
   LOG.info(s"Creating master proxy ${master} for master list: $masters")
 

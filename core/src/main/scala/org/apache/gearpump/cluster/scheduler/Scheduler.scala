@@ -42,7 +42,7 @@ abstract class Scheduler extends Actor{
     case ResourceUpdate(worker, workerId, resource) =>
       LOG.info(s"Resource update id: $workerId, slots: ${resource.slots}....")
       if(resources.contains(workerId)) {
-        val resourceReturned = resource.greaterThan(resources.get(workerId).get._2)
+        val resourceReturned = resource > resources.get(workerId).get._2
         resources.update(workerId, (worker, resource))
         if(resourceReturned){
           allocateResource()

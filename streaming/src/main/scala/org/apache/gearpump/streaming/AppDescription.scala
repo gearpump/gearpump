@@ -21,9 +21,9 @@ package org.apache.gearpump.streaming
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.{Application, ClusterConfigSource, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.DAG
+import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.util.{Graph, ReferenceEqual}
-import upickle.Js
+import upickle.{Writer, Js}
 
 import scala.language.implicitConversions
 
@@ -53,7 +53,7 @@ object AppDescription {
   }
 
   // for now we only serialize name and dag. We may also need a reader once we allow DAG mods.
-  implicit val writer = upickle.Writer[AppDescription] {
+  implicit val writer: Writer[AppDescription] = upickle.Writer[AppDescription] {
     case appDescription => Js.Obj(
       ("name", Js.Str(appDescription.name)),
       ("dag", Js.Obj(

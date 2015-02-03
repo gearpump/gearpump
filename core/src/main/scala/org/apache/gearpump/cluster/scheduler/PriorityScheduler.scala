@@ -47,34 +47,35 @@ class PriorityScheduler extends Scheduler{
     var allocated = Resource.empty
     val totalResource = resourcesSnapShot.foldLeft(Resource.empty){ (totalResource, workerWithResource) =>
       val (_, (_, resource)) = workerWithResource
-      totalResource.add(resource)
+      totalResource + resource
     }
 
-    while(resourceRequests.nonEmpty && allocated.lessThan(totalResource)) {
+    while(resourceRequests.nonEmpty && (allocated < totalResource)) {
       val PendingRequest(appId, appMaster, request, timeStamp) = resourceRequests.dequeue()
       request.relaxation match {
         case ANY =>
           val newAllocated = allocateFairly(resourcesSnapShot, PendingRequest(appId, appMaster, request, timeStamp))
-          allocated = allocated.add(newAllocated)
+          allocated = allocated + newAllocated
         case ONEWORKER =>
           val availableResource = resourcesSnapShot.find{params =>
             val (_, (_, resource)) = params
-            resource.greaterThan(request.resource)}
+            resource > request.resource
+          }
           if(availableResource.nonEmpty){
             val (workerId, (worker, resource)) = availableResource.get
-            allocated = allocated.add(request.resource)
+            allocated = allocated + request.resource
             appMaster ! ResourceAllocated(Array(ResourceAllocation(request.resource, worker, workerId)))
-            resourcesSnapShot.update(workerId, (worker, resource.subtract(request.resource)))
+            resourcesSnapShot.update(workerId, (worker, resource - request.resource))
           } else {
             scheduleLater = scheduleLater :+ PendingRequest(appId, appMaster, request, timeStamp)
           }
         case SPECIFICWORKER =>
           if (resourcesSnapShot.contains(request.workerId)) {
             val (worker, availableResource) = resourcesSnapShot.get(request.workerId).get
-            if (availableResource.greaterThan(request.resource)) {
+            if (availableResource > request.resource) {
               appMaster ! ResourceAllocated(Array(ResourceAllocation(request.resource, worker, request.workerId)))
-              allocated = allocated.add(request.resource)
-              resourcesSnapShot.update(request.workerId, (worker, availableResource.subtract(request.resource)))
+              allocated = allocated  + request.resource
+              resourcesSnapShot.update(request.workerId, (worker, availableResource - request.resource))
             }
           } else {
             scheduleLater = scheduleLater :+ PendingRequest(appId, appMaster, request, timeStamp)
@@ -106,12 +107,14 @@ class PriorityScheduler extends Scheduler{
     val singleAllocation = flattenResource.take(newAllocated.slots)
       .groupBy((actor) => actor).mapValues(_.length).toArray.map((params) => {
       val ((workerId, worker), slots) = params
-      resources.update(workerId, (worker, resources.get(workerId).get._2.subtract(Resource(slots))))
+      resources.update(workerId, (worker, resources.get(workerId).get._2 - Resource(slots)))
       ResourceAllocation(Resource(slots), worker, workerId)
     })
     pendindRequest.appMaster ! ResourceAllocated(singleAllocation)
-    if (pendindRequest.request.resource.greaterThan(newAllocated)) {
-      resourceRequests.enqueue(PendingRequest(appId, appMaster, ResourceRequest(request.resource.subtract(newAllocated), request.workerId, request.priority), timeStamp))
+    if (pendindRequest.request.resource > newAllocated) {
+      resourceRequests.enqueue(
+        PendingRequest(appId, appMaster,
+          ResourceRequest(request.resource - newAllocated, request.workerId, request.priority), timeStamp))
     }
     newAllocated
   }

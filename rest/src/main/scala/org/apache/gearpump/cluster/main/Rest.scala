@@ -36,7 +36,7 @@ object Rest extends App with ArgumentsParser {
     Console.out.println("Master URL: " + masterList)
 
     implicit val system = ActorSystem(s"rest" , ClusterConfig.load.application)
-    val master = system.actorOf(Props(classOf[MasterProxy], Util.parseHostList(masterList)), MASTER)
+    val master = system.actorOf(MasterProxy.props(Util.parseHostList(masterList)), MASTER)
 
     RestServices.start(master)
   }

@@ -15,20 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming
+package org.apache.gearpump.streaming.appmaster
 
 import akka.actor.Actor
+import org.apache.gearpump.streaming.TaskLocator.{NonLocality, WorkerLocality}
+import org.apache.gearpump.streaming.{TaskDescription, TaskLocator}
+import org.apache.gearpump.util.Constants._
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.mutable.ArrayBuffer
-import org.apache.gearpump.util.Constants._
 
 class TaskLocatorSpec extends WordSpec with Matchers {
   val resource = getClass.getClassLoader.getResource("tasklocation.conf").getPath
   System.setProperty(GEARPUMP_CUSTOM_CONFIG_FILE, resource)
-  val taskDescription1 = TaskDescription("org.apache.gearpump.streaming.TestTask1", 4)
-  val taskDescription2 = TaskDescription("org.apache.gearpump.streaming.TestTask2", 2)
-  val taskDescription3 = TaskDescription("org.apache.gearpump.streaming.TestTask3", 2)
+  val taskDescription1 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask1", 4)
+  val taskDescription2 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask2", 2)
+  val taskDescription3 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask3", 2)
 
   "TaskLocator" should {
     "locate task properly according user's configuration" in {

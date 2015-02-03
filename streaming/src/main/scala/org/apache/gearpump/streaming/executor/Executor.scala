@@ -25,7 +25,9 @@ import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTr
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
+import org.apache.gearpump.streaming.Executor.RestartExecutor
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
+import org.apache.gearpump.streaming.task.TaskActor.RestartTask
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
 import org.apache.gearpump.transport.{Express, HostPort}
 import org.apache.gearpump.util.{Constants, LogUtil}
@@ -76,10 +78,10 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
         express.remoteAddressMap.send(result)
         express.remoteAddressMap.future().map(result => context.children.foreach(_ ! TaskLocationReady))
       }
-    case r @ RestartTasks(clock) =>
-      LOG.info(s"Executor received restart tasks at time: $clock")
+    case RestartExecutor =>
+      LOG.info(s"Executor received restart tasks")
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
-      context.children.foreach(_ ! r)
+      context.children.foreach(_ ! RestartTask)
   }
 
   def terminationWatch : Receive = {
@@ -92,4 +94,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
       }
     }
   }
+}
+
+object Executor {
+  case object RestartExecutor
 }

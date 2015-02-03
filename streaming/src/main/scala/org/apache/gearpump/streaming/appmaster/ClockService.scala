@@ -16,54 +16,91 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.task
+package org.apache.gearpump.streaming.appmaster
 
 import java.util
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, Cancellable}
+import akka.actor.{Actor, Cancellable, Stash}
 import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
+import org.apache.gearpump.streaming.appmaster.ClockService._
+import org.apache.gearpump.streaming.storage.AppDataStore
+import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{DAG, TaskGroup}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
 
 /**
  * The clockService will maintain a global view of message timestamp in the application
  */
-class ClockService(dag : DAG) extends Actor {
-import org.apache.gearpump.streaming.task.ClockService._
+class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
+  private val LOG: Logger = LogUtil.getLogger(getClass)
+
+  import context.dispatcher
 
   private val taskGroupClocks = new util.TreeSet[TaskGroupClock]()
   private val taskGroupLookup = new util.HashMap[TaskGroup, TaskGroupClock]()
-  private var scheduler : Cancellable = null
 
-  private val LOG: Logger = LogUtil.getLogger(getClass)
+  private var reportScheduler : Cancellable = null
+  private var snapshotScheduler : Cancellable = null
 
-  override def receive = clockService
+  override def receive = null
 
   override def preStart() : Unit = {
-    dag.tasks.foreach { taskIdWithDescription =>
-      val (taskGroupId, description) = taskIdWithDescription
-      val taskClocks = new Array[TimeStamp](description.parallelism).map(_ => Long.MaxValue)
-      val taskGroupClock = new TaskGroupClock(taskGroupId, Long.MaxValue, taskClocks)
-      taskGroupClocks.add(taskGroupClock)
-      taskGroupLookup.put(taskGroupId, taskGroupClock)
+    LOG.info("Initializing Clock service, get snapshotted StartClock ....")
+
+    store.get(START_CLOCK).asInstanceOf[Future[TimeStamp]].map { clock =>
+      val startClock = Option(clock).getOrElse(0L)
+      self ! StartClock(startClock)
+      LOG.info(s"Start Clock Retrived, starting ClockService, startClock: $startClock")
     }
 
-    import context.dispatcher
-    scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(5, TimeUnit.SECONDS))(reportGlobalMinClock())
+    context.become(waitForStartClock)
   }
 
   override def postStop() : Unit = {
-    scheduler.cancel()
+    Option(reportScheduler).map(_.cancel)
+    Option(snapshotScheduler).map(_.cancel)
   }
 
-  def clockService : Receive = {
+  private def initializeDagWithStartClock(startClock: TimeStamp) = {
+    dag.tasks.foreach {
+      taskIdWithDescription =>
+        val (taskGroupId, description) = taskIdWithDescription
+        val taskClocks = new Array[TimeStamp](description.parallelism).map(_ => startClock)
+        val taskGroupClock = new TaskGroupClock(taskGroupId, startClock, taskClocks)
+        taskGroupClocks.add(taskGroupClock)
+        taskGroupLookup.put(taskGroupId, taskGroupClock)
+    }
+  }
+
+  def waitForStartClock: Receive = {
+    case StartClock(startClock) =>
+
+      initializeDagWithStartClock(startClock)
+
+      import context.dispatcher
+
+      //period report current clock
+      reportScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+        new FiniteDuration(5, TimeUnit.SECONDS))(reportGlobalMinClock())
+
+      //period snpashot latest min startclock to external storage
+      snapshotScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+        new FiniteDuration(5, TimeUnit.SECONDS))(snapshotStartClock())
+
+      unstashAll()
+      context.become(clockService)
+    case _ =>
+      stash()
+  }
+
+  def clockService: Receive = {
     case UpdateClock(task, clock) =>
       val TaskId(taskGroupId, taskIndex) = task
 
@@ -77,20 +114,22 @@ import org.apache.gearpump.streaming.task.ClockService._
       sender ! LatestMinClock(minClock)
   }
 
-  private def minClock : TimeStamp = {
-    Try {
-      val taskGroup = taskGroupClocks.first()
-      taskGroup.minClock
-    }.getOrElse(0)
+  private def minClock: TimeStamp = {
+    val taskGroup = taskGroupClocks.first()
+    taskGroup.minClock
   }
 
   def reportGlobalMinClock() : Unit = {
     val minTimeStamp = new Date(minClock)
     LOG.info(s"Application minClock tracking: $minTimeStamp")
   }
+  private def snapshotStartClock() : Unit = {
+    store.put(START_CLOCK, minClock)
+  }
 }
 
 object ClockService {
+  val START_CLOCK = "startClock"
 
   class TaskGroupClock(val taskGroup : TaskGroup, var minClock : TimeStamp = Long.MaxValue,
                        var taskClocks : Array[TimeStamp] = null) extends Comparable[TaskGroupClock] {

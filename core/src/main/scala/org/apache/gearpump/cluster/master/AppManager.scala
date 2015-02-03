@@ -189,7 +189,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       LOG.info(s"Register AppMaster for app: ${register.appId} appMaster=$appMasterPath worker=$workerPath")
       context.watch(appMaster)
       appMasterRegistry += register.appId -> (appMaster, register)
-      sender ! AppMasterRegistered(register.appId, context.parent)
+      sender ! AppMasterRegistered(register.appId)
   }
 
   def appDataStoreService: Receive = {

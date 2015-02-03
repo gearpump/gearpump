@@ -18,21 +18,22 @@
 
 package org.apache.gearpump.cluster.appmaster
 
-import akka.actor.{Props, Actor}
-import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.cluster.{AppMasterContext, Application}
-import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.ActorSystemBooter.{CreateActorFailed, ActorCreated}
+import akka.actor.{ActorRef, Address, PoisonPill}
+import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.util.ActorSystemBooter.BindLifeCycle
 
-import scala.util.{Failure, Success, Try}
+case class WorkerInfo(workerId: Int, ref: ActorRef)
 
-class AppMasterDaemon(masters: Iterable[HostPort], app : Application, appContextInput : AppMasterContext) extends Actor {
-  val masterProxy = context.actorOf(Props(classOf[MasterProxy], masters), "masterproxy")
-  val appContext = appContextInput.copy(masterProxy = masterProxy)
+/**
+ * This contains JVM configurations to start an executor system
+ */
+case class ExecutorSystem(executorSystemId: Int, address: Address, daemon:
+ActorRef, resource: Resource, worker: WorkerInfo) {
+  def bindLifeCycleWith(actor: ActorRef): Unit = {
+    daemon ! BindLifeCycle(actor)
+  }
 
-  context.actorOf(Props(Class.forName(app.appMaster), appContext, app), "appmaster")
-
-  def receive : Receive = {
-    case _ =>
+  def shutdown: Unit = {
+    daemon ! PoisonPill
   }
 }

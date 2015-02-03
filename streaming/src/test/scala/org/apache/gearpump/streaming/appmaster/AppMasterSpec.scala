@@ -15,34 +15,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming
+package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.{PoisonPill, ActorRef, Props}
-import akka.testkit.{EventFilter, TestProbe, TestActorRef}
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.testkit.{TestActorRef, TestProbe}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
-import org.apache.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, AppMasterRegistered}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated}
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
-import org.apache.gearpump.cluster.scheduler.{Relaxation, ResourceAllocation, ResourceRequest, Resource}
+import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
+import org.apache.gearpump.cluster.master.{AppMasterRuntimeInfo, MasterProxy}
+import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.task._
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
+import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{ActorUtil, Graph}
 import org.scalatest._
 
-import org.apache.gearpump.util.Graph._
 import scala.concurrent.duration._
-import scala.util.Try
 import scala.language.postfixOps
 
 class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config = TestUtil.DEFAULT_CONFIG
 
-  var appMaster: TestActorRef[AppMaster] = null
+  var appMaster: ActorRef = null
 
   val appId = 0
   val workerId = 1
@@ -50,11 +51,12 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   val taskDescription1 = TaskDescription(classOf[TaskActorA].getName, 2)
   val taskDescription2 = TaskDescription(classOf[TaskActorB].getName, 2)
   var conf: UserConfig = null
-  var mockProxy: TestProbe = null
 
   var mockTask: TestProbe = null
 
   var mockMaster: TestProbe = null
+  var mockMasterProxy: ActorRef = null
+
   var mockWorker: TestProbe = null
   var appDescription: Application = null
   var appMasterContext: AppMasterContext = null
@@ -62,7 +64,6 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
   override def beforeEach() = {
     startActorSystem()
-    mockProxy = TestProbe()(getActorSystem)
 
     mockTask = TestProbe()(getActorSystem)
 
@@ -73,12 +74,19 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
     implicit val system = getActorSystem
     conf = UserConfig.empty.withValue(AppMasterSpec.MASTER, mockMaster.ref)
-    appMasterContext = AppMasterContext(appId, "test", resource, None, mockProxy.ref, appMasterRuntimeInfo)
+    appMasterContext = AppMasterContext(appId, "test", resource, None, mockMaster.ref, appMasterRuntimeInfo)
     appDescription = AppDescription("test", conf, Graph(taskDescription1 ~ new HashPartitioner() ~> taskDescription2))
-    appMaster = TestActorRef[AppMaster](Props(classOf[AppMaster], appMasterContext, appDescription))(getActorSystem)
 
-    mockProxy.expectMsg(RegisterAppMaster(appMaster, appMasterRuntimeInfo))
-    mockProxy.reply(AppMasterRegistered(appId, mockMaster.ref))
+    mockMasterProxy = getActorSystem.actorOf(
+      Props(new MasterProxy(List(mockMaster.ref.path))), AppMasterSpec.MOCK_MASTER_PROXY)
+    TestActorRef[AppMaster](
+      AppMasterRuntimeEnvironment.props(List(mockMasterProxy.path), appDescription, appMasterContext))(getActorSystem)
+
+    val registerAppMaster = mockMaster.receiveOne(5 seconds)
+    assert(registerAppMaster.isInstanceOf[RegisterAppMaster])
+    appMaster = registerAppMaster.asInstanceOf[RegisterAppMaster].appMaster
+
+    mockMaster.reply(AppMasterRegistered(appId))
     mockMaster.expectMsg(GetAppData(appId, "startClock"))
     mockMaster.reply(GetAppDataResult("startClock", 0L))
     mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(4))))
@@ -92,39 +100,63 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   "AppMaster" should {
     "kill it self when allocate resource time out" in {
       mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(Resource(2), mockWorker.ref, workerId))))
-      mockMaster.expectMsg(31 seconds, ShutdownApplication(appId))
+      mockMaster.expectMsg(60 seconds, ShutdownApplication(appId))
+    }
+
+    "reschedule the resource when the worker reject to start executor" in {
+      val resource = Resource(4)
+      mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(resource, mockWorker.ref, workerId))))
+      mockWorker.expectMsgClass(classOf[LaunchExecutor])
+      mockWorker.reply(ExecutorLaunchRejected(""))
+      mockMaster.expectMsg(RequestResource(appId, ResourceRequest(resource)))
+    }
+
+    "find a new master when lost connection with master" in {
+      println(config.getList("akka.loggers"))
+
+      val watcher = TestProbe()(getActorSystem)
+      watcher.watch(mockMasterProxy)
+      getActorSystem.stop(mockMasterProxy)
+      watcher.expectTerminated(mockMasterProxy)
+
+      mockMasterProxy = getActorSystem.actorOf(Props(new MasterProxy(List(mockMaster.ref.path))), AppMasterSpec.MOCK_MASTER_PROXY)
+      mockMaster.expectMsgType[RegisterAppMaster]
     }
 
     "launch executor and task properly" in {
       mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(Resource(4), mockWorker.ref, workerId))))
       mockWorker.expectMsgClass(classOf[LaunchExecutor])
-      mockWorker.reply(RegisterActorSystem(ActorUtil.getSystemAddress(getActorSystem).toString))
+
+      val workerSystem = ActorSystem("worker", TestUtil.DEFAULT_CONFIG)
+      mockWorker.reply(RegisterActorSystem(ActorUtil.getSystemAddress(workerSystem).toString))
       for (i <- 1 to 4) {
         mockMaster.expectMsg(10 seconds, AppMasterSpec.TaskStarted)
       }
-      appMaster ! ExecutorLaunchRejected("", resource)
-      mockMaster.expectMsg(RequestResource(appId, ResourceRequest(resource)))
 
-      appMaster.tell(UpdateClock(TaskId(0, 0), 1024), mockTask.ref)
-      mockTask.expectMsg(ClockUpdated(1024))
+      //clock status: task(0,0) -> 1, task(0,1)->0, task(1, 0)->0, task(1,1)->0
+      appMaster.tell(UpdateClock(TaskId(0, 0), 1), mockTask.ref)
+      mockTask.expectMsg(ClockUpdated(0))
+
+      //clock status: task(0,0) -> 1, task(0,1)->1, task(1, 0)->0, task(1,1)->0
+      appMaster.tell(UpdateClock(TaskId(0, 1), 1), mockTask.ref)
+      mockTask.expectMsg(ClockUpdated(0))
+
+      //clock status: task(0,0) -> 1, task(0,1)->1, task(1, 1)->0, task(1,1)->0
+      appMaster.tell(UpdateClock(TaskId(1, 0), 1), mockTask.ref)
+      mockTask.expectMsg(ClockUpdated(0))
+
+      //clock status: task(0,0) -> 1, task(0,1)->1, task(1, 1)->0, task(1,1)->1
+      appMaster.tell(UpdateClock(TaskId(1, 1), 1), mockTask.ref)
+      mockTask.expectMsg(ClockUpdated(1))
+
       appMaster.tell(GetLatestMinClock, mockTask.ref)
-      mockTask.expectMsg(LatestMinClock(1024))
+      mockTask.expectMsg(LatestMinClock(1))
 
-      appMaster.children.foreach { child =>
-        val name = child.path.name
-        if (Try(name.toInt).isSuccess) {
-          // This is a executor child
-          child ! PoisonPill
-        }
-      }
+      //shutdown worker and all executor on this work, expect appmaster to ask for new resources
+      workerSystem.shutdown()
       mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(4), relaxation = Relaxation.ONEWORKER)))
     }
 
-    "find a new master when lost connection with master" in {
-      println(config.getList("akka.loggers"))
-      mockMaster.ref ! PoisonPill
-      mockProxy.expectMsg(RegisterAppMaster(appMaster, appMasterRuntimeInfo))
-    }
   }
 
   def ignoreSaveAppData: PartialFunction[Any, Boolean] = {
@@ -135,12 +167,16 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 object AppMasterSpec {
   val MASTER = "master"
   case object TaskStarted
+
+  val MOCK_MASTER_PROXY = "mockMasterProxy"
 }
 
 class TaskActorA(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
 
   val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
-  override def onStart(startTime: StartTime): Unit = master ! AppMasterSpec.TaskStarted
+  override def onStart(startTime: StartTime): Unit = {
+    master ! AppMasterSpec.TaskStarted
+  }
 
   override def onNext(msg: Message): Unit = {}
 }
@@ -148,7 +184,9 @@ class TaskActorA(taskContext : TaskContext, userConf : UserConfig) extends TaskA
 class TaskActorB(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
 
   val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
-  override def onStart(startTime: StartTime): Unit = master ! AppMasterSpec.TaskStarted
+  override def onStart(startTime: StartTime): Unit = {
+    master ! AppMasterSpec.TaskStarted
+  }
 
   override def onNext(msg: Message): Unit = {}
 }

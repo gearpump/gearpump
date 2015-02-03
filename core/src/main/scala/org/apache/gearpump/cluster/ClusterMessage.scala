@@ -87,7 +87,7 @@ object MasterToAppMaster {
       }
     }
   }
-  case class AppMasterRegistered(appId: Int, master : ActorRef)
+  case class AppMasterRegistered(appId: Int)
   case object ShutdownAppMaster
   case class AppMasterData(appId: Int, workerPath: String)
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
@@ -101,12 +101,12 @@ object MasterToAppMaster {
 }
 
 object AppMasterToWorker {
-  case class LaunchExecutor(appId: Int, executorId: Int, resource: Resource, executorContext: ExecutorJVMConfig)
+  case class LaunchExecutor(appId: Int, executorId: Int, resource: Resource, executorJvmConfig: ExecutorJVMConfig)
   case class ShutdownExecutor(appId : Int, executorId : Int, reason : String)
 }
 
 object WorkerToAppMaster {
-  case class ExecutorLaunchRejected(reason: String = null, resource : Resource, ex: Throwable = null)
+  case class ExecutorLaunchRejected(reason: String = null, ex: Throwable = null)
   case class ShutdownExecutorSucceed(appId: Int, executorId: Int)
   case class ShutdownExecutorFailed(reason: String = null, ex: Throwable = null)
 }

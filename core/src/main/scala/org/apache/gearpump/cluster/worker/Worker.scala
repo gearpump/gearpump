@@ -82,14 +82,14 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       }
     case launch : LaunchExecutor =>
       LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
-      if (resource.lessThan(launch.resource)) {
-        sender ! ExecutorLaunchRejected("There is no free resource on this machine", launch.resource)
+      if (resource < launch.resource) {
+        sender ! ExecutorLaunchRejected("There is no free resource on this machine")
       } else {
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
         val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch), actorName)
 
-        resource = resource.subtract(launch.resource)
+        resource = resource - launch.resource
         allocatedResource = allocatedResource + (executor -> launch.resource)
         sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         context.watch(executor)
@@ -113,7 +113,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
         val allocated = allocatedResource.get(actor)
         if (allocated.isDefined) {
-          resource = resource.add(allocated.get)
+          resource = resource + (allocated.get)
           allocatedResource = allocatedResource - actor
           sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         }
@@ -164,7 +164,7 @@ private[cluster] object Worker {
     private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
 
     private val executorHandler = {
-      val ctx = launch.executorContext
+      val ctx = launch.executorJvmConfig
       if (System.getProperty("LOCAL") != null) {
         new ExecutorHandler {
           override def destroy = Unit // we cannot forcefully terminate a future by scala limit

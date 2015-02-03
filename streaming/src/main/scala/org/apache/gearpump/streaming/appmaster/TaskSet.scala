@@ -18,7 +18,8 @@
 package org.apache.gearpump.streaming
 
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
-import org.apache.gearpump.streaming.AppMaster.TaskLaunchData
+import org.apache.gearpump.streaming.TaskLocator.{Locality, NonLocality, WorkerLocality}
+import org.apache.gearpump.streaming.TaskSet.TaskLaunchData
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
@@ -118,4 +119,8 @@ class TaskSet(appId : Int,  dag : DAG) {
   def size = taskQueues.values.foldLeft(0){ (unLaunchedTaskNum, taskQueue) =>
     unLaunchedTaskNum + taskQueue.size
   }
+}
+
+object TaskSet {
+  case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
 }

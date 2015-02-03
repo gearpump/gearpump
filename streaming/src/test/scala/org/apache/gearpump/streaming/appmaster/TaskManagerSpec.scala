@@ -16,26 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming
+package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
-import org.apache.gearpump.transport.HostPort
-import scala.language.existentials
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 
-object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, taskContext: TaskContext, taskClass: Class[_ <: Actor])
+class TaskManagerSpec   extends WordSpec with Matchers with BeforeAndAfterEach {
 
-  case class StartClock(clock : TimeStamp)
-  case object RestartClockService
-  class RestartException extends Exception
-  class MsgLostException extends Exception
-}
-
-object ExecutorToAppMaster {
-  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, workerId : Int)
-
-  case class RegisterTask(taskId: TaskId, executorId : Int, task: HostPort)
 }

@@ -20,6 +20,7 @@ package org.apache.gearpump.util
 
 import akka.actor.Actor.Receive
 import akka.actor._
+import org.apache.gearpump.transport.HostPort
 import org.slf4j.Logger
 
 object ActorUtil {
@@ -33,10 +34,10 @@ object ActorUtil {
     path.toStringWithAddress(getSystemAddress(system))
   }
 
-   def defaultMsgHandler(actor : ActorRef) : Receive = {
-     case msg : Any =>
-       LOG.error(s"Cannot find a matching message, ${msg.getClass.toString}, forwarded from $actor")
-   }
+  def defaultMsgHandler(actor : ActorRef) : Receive = {
+    case msg : Any =>
+    LOG.error(s"Cannot find a matching message, ${msg.getClass.toString}, forwarded from $actor")
+  }
 
   def printActorSystemTree(system : ActorSystem) : Unit = {
     val extendedSystem = system.asInstanceOf[ExtendedActorSystem]
@@ -61,4 +62,15 @@ object ActorUtil {
   }
 
   def actorNameForExecutor(appId : Int, executorId : Int) = "app" + appId + "-executor" + executorId
+
+  /**
+   * TODO:
+   * Currently we explicitly require the master contacts to be started with this path pattern
+   * s"akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER"
+   *
+   */
+  def getMasterActorPath(master: HostPort): ActorPath = {
+    import Constants.MASTER
+    ActorPath.fromString(s"akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER")
+  }
  }
