@@ -56,9 +56,9 @@ private[kafka] class FetchThread(consumers: Map[TopicAndPartition, KafkaConsumer
 
   override def run(): Unit = {
     try {
-      while (!Thread.currentThread.isInterrupted
-        && fetchMessage) {
-        if (incomingQueue.size >= fetchThreshold) {
+      while (!Thread.currentThread.isInterrupted) {
+        val hasMoreMessages = fetchMessage
+        if (!hasMoreMessages || incomingQueue.size >= fetchThreshold) {
           Thread.sleep(fetchSleepMS)
         }
       }
@@ -74,7 +74,7 @@ private[kafka] class FetchThread(consumers: Map[TopicAndPartition, KafkaConsumer
    * fetch message from each TopicAndPartition in a round-robin way
    */
   def fetchMessage: Boolean = {
-    consumers.foldLeft(false) { (hasNext, tpAndConsumer) => {
+    consumers.foldLeft(false) { (hasNext, tpAndConsumer) =>
       val (_, consumer) = tpAndConsumer
       if (incomingQueue.size < fetchThreshold) {
         if (consumer.hasNext) {
@@ -86,7 +86,6 @@ private[kafka] class FetchThread(consumers: Map[TopicAndPartition, KafkaConsumer
       } else {
         true
       }
-    }
     }
   }
 }
