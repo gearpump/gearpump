@@ -1,87 +1,116 @@
-<!DOCTYPE html>
-<html>
+<html  xmlns="http://www.w3.org/1999/xhtml"
+       xml:lang="en-US"
+       lang="en-US">
 <head>
-  <title>Swagger UI</title>
-  <link href='https://fonts.googleapis.com/css?family=Droid+Sans:400,700' rel='stylesheet' type='text/css'/>
-  <link href='css/reset.css' media='screen' rel='stylesheet' type='text/css'/>
-  <link href='css/screen.css' media='screen' rel='stylesheet' type='text/css'/>
-  <link href='css/reset.css' media='print' rel='stylesheet' type='text/css'/>
-  <link href='css/screen.css' media='print' rel='stylesheet' type='text/css'/>
-  <script type="text/javascript" src="lib/shred.bundle.js"></script>
-  <script src='lib/jquery-1.8.0.min.js' type='text/javascript'></script>
-  <script src='lib/jquery.slideto.min.js' type='text/javascript'></script>
-  <script src='lib/jquery.wiggle.min.js' type='text/javascript'></script>
-  <script src='lib/jquery.ba-bbq.min.js' type='text/javascript'></script>
-  <script src='lib/handlebars-1.0.0.js' type='text/javascript'></script>
-  <script src='lib/underscore-min.js' type='text/javascript'></script>
-  <script src='lib/backbone-min.js' type='text/javascript'></script>
-  <script src='lib/swagger.js' type='text/javascript'></script>
-  <script src='swagger-ui.js' type='text/javascript'></script>
-  <script src='lib/highlight.7.3.pack.js' type='text/javascript'></script>
-
-  <!-- enabling this will enable oauth2 implicit scope support -->
-  <script src='lib/swagger-oauth.js' type='text/javascript'></script>
-
-  <script type="text/javascript">
-    $(function () {
-      window.swaggerUi = new SwaggerUi({
-      url: "/api-docs",
-      dom_id: "swagger-ui-container",
-      supportedSubmitMethods: ['get', 'post', 'put', 'delete'],
-      onComplete: function(swaggerApi, swaggerUi){
-        log("Loaded SwaggerUI");
-
-        if(typeof initOAuth == "function") {
-          /*
-          initOAuth({
-            clientId: "your-client-id",
-            realm: "your-realms",
-            appName: "your-app-name"
-          });
-          */
-        }
-        $('pre code').each(function(i, e) {
-          hljs.highlightBlock(e)
-        });
-      },
-      onFailure: function(data) {
-        log("Unable to Load SwaggerUI");
-      },
-      docExpansion: "none"
-    });
-
-    $('#input_apiKey').change(function() {
-      var key = $('#input_apiKey')[0].value;
-      log("key: " + key);
-      if(key && key.trim() != "") {
-        log("added key " + key);
-        window.authorizations.add("key", new ApiKeyAuthorization("api_key", key, "query"));
-      }
-    })
-    window.swaggerUi.load();
-  });
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.10/angular.js">
   </script>
+  <script src="http://d3js.org/d3.v3.js" charset="utf-8">
+  </script>
+  <style>
+path.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}
+circle {
+  fill: #ccc;
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+text {
+  fill: #000;
+  font: 10px sans-serif;
+  pointer-events: none;
+}
+  </style>
 </head>
+<body ng-app="myApp" ng-controller="DAGCtrl">
+    <dag data="data"></dag>
+    <script charset="utf-8">
+angular.module('myApp', []).controller('DAGCtrl', function($scope) { 
+  $scope.data = {}
+  //sample JSON
+  var json = {"name":"dag","dag":{"vertices":["org.apache.gearpump.streaming.examples.complexdag.Node_2","org.apache.gearpump.streaming.examples.complexdag.Sink_3","org.apache.gearpump.streaming.examples.complexdag.Node_3","org.apache.gearpump.streaming.examples.complexdag.Node_4","org.apache.gearpump.streaming.examples.complexdag.Sink_0","org.apache.gearpump.streaming.examples.complexdag.Node_0","org.apache.gearpump.streaming.examples.complexdag.Sink_4","org.apache.gearpump.streaming.examples.complexdag.Sink_1","org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.streaming.examples.complexdag.Sink_2","org.apache.gearpump.streaming.examples.complexdag.Source_1"],"edges":[["org.apache.gearpump.streaming.examples.complexdag.Node_2","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_2"],["org.apache.gearpump.streaming.examples.complexdag.Node_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_1"],["org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_4"],["org.apache.gearpump.streaming.examples.complexdag.Node_3","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_3"],["org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_0"],["org.apache.gearpump.streaming.examples.complexdag.Source_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_0"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_1"],["org.apache.gearpump.streaming.examples.complexdag.Node_4","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_4"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_2"]]}}
+  $scope.data.nodes = [];
+  var indexed = {};
+  function lastPart(name) {
+    var parts = name.split(/\./);
+    return parts[parts.length-1];
+  }
+  json.dag.vertices.forEach(function(vertex,i) {
+    var name = lastPart(vertex);
+    $scope.data.nodes.push({name:name});
+    indexed[name] = i;
+  });
+  $scope.data.links = [];
+  json.dag.edges.forEach(function(edge,i) {
+    var source = lastPart(edge[0]);
+    var target = lastPart(edge[2]);
+    var value = lastPart(edge[1]);
+    $scope.data.links.push({source:indexed[source],target:indexed[target],value:value});
+  });
+}).directive('dag', function() { 
+  function link(scope, el, attr){ 
+    var color = d3.scale.category10(); 
+    var width = 700; 
+    var height = 700; 
+    var svg = d3.select(el[0]).append('svg').attr("width", width).attr("height", height);
+    var force = d3.layout.force()
+      .gravity(.05)
+      .linkDistance(60)
+      .charge(-300)
+      .size([width, height])
+      .nodes(scope.data.nodes)
+      .links(scope.data.links)
+      .on("tick", tick)
+      .start();
 
-<body class="swagger-section">
-<div id='header'>
-  <div class="swagger-ui-wrap">
-    <a id="logo" href="http://swagger.wordnik.com">swagger</a>
-    <form id='api_selector'>
-      <div class='input icon-btn'>
-        <img id="show-pet-store-icon" src="images/pet_store_api.png" title="Show Swagger Petstore Example Apis">
-      </div>
-      <div class='input icon-btn'>
-        <img id="show-wordnik-dev-icon" src="images/wordnik_api.png" title="Show Wordnik Developer Apis">
-      </div>
-      <div class='input'><input placeholder="http://example.com/api" id="input_baseUrl" name="baseUrl" type="text"/></div>
-      <div class='input'><input placeholder="api_key" id="input_apiKey" name="apiKey" type="text"/></div>
-      <div class='input'><a id="explore" href="#">Explore</a></div>
-    </form>
-  </div>
-</div>
+    svg.append("svg:defs").selectAll("marker")
+      .data(["end"])   
+      .enter().append("svg:marker")
+      .attr("id", String)
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 15)
+      .attr("refY", -1.5)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("svg:path")
+      .attr("d", "M0,-5L10,0L0,5");
 
-<div id="message-bar" class="swagger-ui-wrap">&nbsp;</div>
-<div id="swagger-ui-container" class="swagger-ui-wrap"></div>
+    var path = svg.append("svg:g").selectAll("path")
+      .data(force.links())
+      .enter().append("svg:path")
+      .attr("class", "link")
+      .attr("marker-end", "url(#end)");
+
+    var node = svg.selectAll(".node")
+      .data(force.nodes())
+      .enter().append("g")
+      .attr("class", "node")
+      .call(force.drag);
+
+    node.append("circle").attr("r", 5);
+    node.append("text").attr("x", 12).attr("dy", ".35em").text(function(d) { return d.name; });
+
+    function tick() {
+        path.attr("d", function(d) {
+            var dx = d.target.x - d.source.x,
+                dy = d.target.y - d.source.y,
+                dr = Math.sqrt(dx * dx + dy * dy);
+            return "M" + 
+                d.source.x + "," + 
+                d.source.y + "A" + 
+                dr + "," + dr + " 0 0,1 " + 
+                d.target.x + "," + 
+                d.target.y;
+        });
+    
+        node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+    }
+  } 
+  return { link: link, restrict: 'E', scope: { data: '=' } }; 
+});
+    </script>
 </body>
 </html>
