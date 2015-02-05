@@ -20,32 +20,37 @@ package org.apache.gearpump.services
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription, DAG}
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.Constants
 import spray.can._
+import spray.routing.{ExceptionHandler, RejectionHandler, RoutingSettings}
+import spray.util.LoggingContext
 
 import scala.concurrent.ExecutionContext
 
 trait RestServices extends AppMastersService with AppMasterService {
-  val route = appMastersRoute ~ appMasterRoute
+  implicit def executionContext = actorRefFactory.dispatcher
+
+  lazy val route = appMastersRoute ~ appMasterRoute ~
+    get {
+      pathEndOrSingleSlash {
+        getFromResource("index.html")
+      }
+    }
 }
 
-class RestServicesActor(masters: ActorRef) extends Actor with RestServices {
-  val master = masters
+class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
   def actorRefFactory = context
-  implicit val system: ActorSystem = context.system
-  implicit val executionContext: ExecutionContext = context.dispatcher
+  implicit val system: ActorSystem = sys
+  implicit val eh = RoutingSettings.default(context)
 
+  val master = masters
   def receive = runRoute(route)
 }
 
 object RestServices {
   def start(master:ActorRef)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
-    val services = system.actorOf(Props(classOf[RestServicesActor], master), "rest-services")
+    val services = system.actorOf(Props(classOf[RestServicesActor], master, system), "rest-services")
     val config = system.settings.config
     val port = config.getInt("gearpump.rest-services.port")
     val host = config.getString("gearpump.rest-services.host")

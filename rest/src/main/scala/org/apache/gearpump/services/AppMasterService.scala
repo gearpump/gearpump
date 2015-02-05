@@ -18,14 +18,12 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.{ActorSystem, ActorRef}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription, DAG}
-import org.apache.gearpump.util.{Graph, Constants}
+import org.apache.gearpump.streaming.AppDescription
+import org.apache.gearpump.util.Constants
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
