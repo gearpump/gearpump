@@ -21,10 +21,10 @@ import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.ClientToMaster.ResolveAppId
 import org.apache.gearpump.cluster.MasterToClient.ResolveAppIdResult
 import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
-import org.apache.gearpump.experiments.cluster.AppMasterToExecutor.MsgToTask
+import org.apache.gearpump.distributedshell.ShellExecutor.ShellCommand
+import org.apache.gearpump.experiments.cluster.AppMasterToExecutor.MsgToExecutor
 import org.apache.gearpump.util.Util
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
 
 import scala.util.{Try, Success}
 
@@ -53,7 +53,7 @@ class DistributedShellClientSpec extends PropSpec with Matchers with BeforeAndAf
     masterReceiver.expectMsg(PROCESS_BOOT_TIME, ResolveAppId(0))
     val mockAppMaster = TestProbe()(getActorSystem)
     masterReceiver.reply(ResolveAppIdResult(Success(mockAppMaster.ref)))
-    mockAppMaster.expectMsg(PROCESS_BOOT_TIME, MsgToTask(ShellCommand(command, arguments)))
+    mockAppMaster.expectMsg(PROCESS_BOOT_TIME, MsgToExecutor(ShellCommand(command, arguments)))
     mockAppMaster.reply("result")
     process.destroy()
   }

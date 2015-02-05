@@ -15,31 +15,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.gearpump.distributedshell
 
 import akka.actor.Actor
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.cluster.task.TaskContextInterface
-import org.slf4j.{LoggerFactory, Logger}
-import scala.util.{Try, Success, Failure}
-import scala.language.postfixOps
+import org.apache.gearpump.cluster.{UserConfig, ExecutorContext}
+import org.apache.gearpump.distributedshell.ShellExecutor.ShellCommand
+import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.{ResponsesFromExecutor, RegisterExecutor}
+import org.apache.gearpump.util.LogUtil
+import org.slf4j.Logger
+
+import scala.util.{Failure, Success, Try}
 import sys.process._
 
-class ShellTask(taskContext : TaskContextInterface, userConf : UserConfig) extends Actor {
-  private val LOG: Logger = LoggerFactory.getLogger(getClass)
+class ShellExecutor(executorContext: ExecutorContext, userConf : UserConfig) extends Actor{
+  import executorContext._
+  private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 
-  LOG.info(s"ShellTask started!")
+  appMaster ! RegisterExecutor(self, executorId, resource, workerId)
+  context.watch(appMaster)
+  LOG.info(s"ShellExecutor started!")
 
   override def receive: Receive = {
     case ShellCommand(command, args) =>
       val process = Try(s"$command $args" !!)
-
       val result = process match {
         case Success(msg) => msg
         case Failure(ex) => ex.getMessage
       }
-
-      LOG.info(s"Task execute shell command '$command $args', result is $result")
-      sender ! result
+      sender ! ResponsesFromExecutor(executorId, List(result))
   }
+}
+
+object ShellExecutor{
+  case class ShellCommand(command: String, args: String)
 }

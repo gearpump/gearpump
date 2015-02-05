@@ -15,17 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.experiments.cluster
+package org.apache.gearpump.experiments.cluster.util
 
-import akka.actor.ActorRef
-import org.apache.gearpump.cluster.scheduler.Resource
-import scala.language.existentials
+import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.ResponsesFromExecutor
 
-object AppMasterToExecutor {
-  case class MsgToExecutor(msg: Any)
-}
+class ResponseBuilder {
+  val result: StringBuilder = new StringBuilder
 
-object ExecutorToAppMaster {
-  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, workerId : Int)
-  case class ResponsesFromExecutor(executorId: Int, msgs: List[Any])
+  def aggregate(responses: ResponsesFromExecutor): ResponseBuilder = {
+    result.append(s"Execute results from executor ${responses.executorId} : \n")
+    responses.msgs.foreach {
+      case msg: String =>
+        result.append(msg)
+    }
+    result.append("\n")
+    this
+  }
+
+  override def toString() = result.toString()
 }

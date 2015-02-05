@@ -15,15 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.experiments.cluster.task
+package org.apache.gearpump.distributedshell
 
-import akka.actor.ActorRef
+import akka.actor.{Actor, ActorRef}
+import org.apache.gearpump.cluster.{AppMasterContext, Application}
+import org.apache.gearpump.experiments.cluster.appmaster.AbstractAppMaster
+import org.slf4j.{LoggerFactory, Logger}
 
-trait TaskContextInterface{
-  val executorId : Int
-  val appId : Int
-  val appMaster : ActorRef
+class DistShellAppMaster(appContext : AppMasterContext, app : Application) extends AbstractAppMaster(appContext, app) {
+  private val LOG: Logger = LoggerFactory.getLogger(getClass)
+  override protected def executorClass: Class[_ <: Actor] = classOf[ShellExecutor]
+
+  override def onStart(): Unit = {
+    LOG.info(s"Distributed Shell AppMaster started")
+    launchExecutorOnEachWorker()
+  }
+
+  override def onExecutorStarted(executor: ActorRef, executorId: Int, workerId: Int): Unit = {
+    //do nothing
+  }
 }
-
-case class TaskContext(executorId : Int, appId : Int, appMaster : ActorRef) extends TaskContextInterface
-
