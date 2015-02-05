@@ -17,25 +17,22 @@
  */
 package org.apache.gearpump.distributedshell
 
-import akka.actor.{Props, ActorSystem}
-import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.experiments.cluster.task.TaskContext
-import org.scalatest.{WordSpec, Matchers}
-import sys.process._
+import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import org.apache.gearpump.distributedshell.DistShellAppMaster.{ShellCommandResultAggregator, ShellCommandResult}
 
-class ShellTaskSpec extends WordSpec with Matchers {
 
-  "The ShellTask" should {
-    "execute the shell command and return the result" in {
-      val system = ActorSystem("ShellTask", TestUtil.DEFAULT_CONFIG)
-      val mockMaster = TestProbe()(system)
-      val taskContext = TaskContext(0, 0, mockMaster.ref)
-      val shellTask = system.actorOf(Props(classOf[ShellTask], taskContext, UserConfig.empty))
-      shellTask.tell(ShellCommand("ls", "/"), mockMaster.ref)
-
-      mockMaster.expectMsgType[String]
-      system.shutdown()
+class ShellCommandResultAggregatorSpec extends WordSpec with Matchers with BeforeAndAfter {
+  "ShellCommandResultAggregator" should {
+    "aggregate ShellCommandResult" in {
+      val executorId1 = 1
+      val executorId2 = 2
+      val responseBuilder = new ShellCommandResultAggregator
+      val response1 = ShellCommandResult(executorId1, "task1")
+      val response2 = ShellCommandResult(executorId2, "task2")
+      val result = responseBuilder.aggregate(response1).aggregate(response2).toString()
+      val expected = s"Execute results from executor $executorId1 : \ntask1\n" +
+        s"Execute results from executor $executorId2 : \ntask2\n"
+      assert(result == expected)
     }
   }
 }
