@@ -17,18 +17,15 @@
  */
 package org.apache.gearpump.experiments.cluster
 
-import akka.actor.{ActorRef, Actor}
-import org.apache.gearpump.cluster.UserConfig
+import akka.actor.ActorRef
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.experiments.cluster.task.TaskContextInterface
 import scala.language.existentials
 
 object AppMasterToExecutor {
-  case class LaunchTask(taskContext: TaskContextInterface, taskClass: Class[_ <: Actor], userConfig: UserConfig)
-  case class MsgToTask(msg: Any)
+  case class MsgToExecutor(msg: Any)
 }
 
 object ExecutorToAppMaster {
   case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, workerId : Int)
-  case class ResponsesFromTasks(executorId: Int, msgs: List[Any])
+  case class ResponseFromExecutor(executorId: Int, msg: Any)
 }

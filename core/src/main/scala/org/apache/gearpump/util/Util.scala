@@ -21,10 +21,12 @@ package org.apache.gearpump.util
 import java.io.File
 import java.net.ServerSocket
 
+import akka.actor.ActorSystem
 import com.google.common.io.BaseEncoding
-import com.typesafe.config.Config
+import com.typesafe.config.{ConfigFactory, Config}
 import org.apache.commons.lang.SerializationUtils
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.{AppMasterContext, ClusterConfigSource, UserConfig}
+import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.ExecutorSystemJvmConfig
 import org.apache.gearpump.transport.HostPort
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -110,5 +112,12 @@ object Util {
       val decoded = BaseEncoding.base64().decode(base64)
       SerializationUtils.deserialize(decoded).asInstanceOf[T]
     }.toOption
+  }
+  
+  def getExecutorJvmConfig(clusterConfig: ClusterConfigSource, system: ActorSystem, appMasterContext: AppMasterContext): ExecutorSystemJvmConfig = {
+    val config: Config = Option(clusterConfig).map(_.getConfig).getOrElse(ConfigFactory.empty())
+    val jvmSetting = Util.resolveJvmSetting(config.withFallback(system.settings.config)).executor
+    ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs, 
+      appMasterContext.appJar, appMasterContext.username, config)
   }
 }

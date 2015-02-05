@@ -15,15 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.experiments.cluster.task
+package org.apache.gearpump.experiments.cluster.util
 
-import akka.actor.ActorRef
+import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.ResponseFromExecutor
 
-trait TaskContextInterface{
-  val executorId : Int
-  val appId : Int
-  val appMaster : ActorRef
+class ResponseBuilder {
+  val result: StringBuilder = new StringBuilder
+
+  def aggregate(response: ResponseFromExecutor): ResponseBuilder = {
+    result.append(s"Execute results from executor ${response.executorId} : \n")
+    result.append(response.msg + "\n")
+    this
+  }
+
+  override def toString() = result.toString()
 }
-
-case class TaskContext(executorId : Int, appId : Int, appMaster : ActorRef) extends TaskContextInterface
-
