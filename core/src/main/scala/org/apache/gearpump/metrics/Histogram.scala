@@ -32,4 +32,12 @@ class Histogram(val name : String, hisgram : CodaHaleHistogram, sampleRate : Int
       hisgram.update(value)
     }
   }
+
+  def getMean() : Double = {
+    hisgram.getSnapshot.getMean
+  }
+
+  def getStdDev() : Double = {
+    hisgram.getSnapshot.getStdDev
+  }
 }

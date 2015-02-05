@@ -36,4 +36,8 @@ class Meter(val name : String, meter : CodaHaleMeter, sampleRate : Int = 1) {
       toBeMarked = 0
     }
   }
+
+  def getOneMinuteRate() : Double = {
+    meter.getOneMinuteRate
+  }
 }
