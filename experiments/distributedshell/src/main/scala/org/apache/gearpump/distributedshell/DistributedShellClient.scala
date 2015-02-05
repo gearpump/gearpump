@@ -19,7 +19,7 @@ package org.apache.gearpump.distributedshell
 
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import org.apache.gearpump.experiments.cluster.AppMasterToExecutor.MsgToTask
+import org.apache.gearpump.distributedshell.DistShellAppMaster.ShellCommand
 
 import akka.pattern.ask
 import org.apache.gearpump.util.Constants
@@ -43,7 +43,7 @@ object DistributedShellClient extends App with ArgumentsParser  {
   val command = config.getString("command")
   val arguments = config.getString("args")
   val appMaster = context.resolveAppID(appid)
-  (appMaster ? MsgToTask(ShellCommand(command, arguments))).map { reslut =>
+  (appMaster ? ShellCommand(command, arguments)).map { reslut =>
     LOG.info(s"Result: $reslut")
     context.close()
   }

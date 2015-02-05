@@ -20,8 +20,15 @@ package org.apache.gearpump.util
 
 import akka.actor.Actor.Receive
 import akka.actor._
+import akka.pattern.ask
+import org.apache.gearpump.cluster.AppMasterToMaster.GetAllWorkers
+import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
+import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{StartExecutorSystems, ExecutorSystemJvmConfig}
+import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
 import org.slf4j.Logger
+
+import scala.concurrent.Future
 
 object ActorUtil {
    private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -72,5 +79,17 @@ object ActorUtil {
   def getMasterActorPath(master: HostPort): ActorPath = {
     import Constants.MASTER
     ActorPath.fromString(s"akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER")
+  }
+
+  def launchExecutorOnEachWorker(master: ActorRef, executorJvmConfig: ExecutorSystemJvmConfig,
+    sender: ActorRef)(implicit executor : scala.concurrent.ExecutionContext) = {
+    implicit val timeout = Constants.FUTURE_TIMEOUT
+    (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].map { list =>
+      val resources = list.workers.map {
+        workerId => ResourceRequest(Resource(1), workerId, relaxation = Relaxation.SPECIFICWORKER)
+      }.toArray
+
+      master.tell(StartExecutorSystems(resources, executorJvmConfig), sender)
+    }
   }
  }
