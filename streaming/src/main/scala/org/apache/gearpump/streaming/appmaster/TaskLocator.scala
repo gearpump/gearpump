@@ -27,13 +27,13 @@ import org.apache.gearpump.util.{ActorUtil, Constants}
 
 import scala.collection.mutable
 
-class TaskLocator {
+class TaskLocator(config: Config) {
   private var userScheduledTask = Map.empty[Class[_ <: Actor], mutable.Queue[Locality]]
 
   initTasks()
 
   def initTasks() : Unit = {
-    val taskLocations : Array[(TaskDescription, Locality)] = loadUserAllocation(ClusterConfig.load.application)
+    val taskLocations : Array[(TaskDescription, Locality)] = loadUserAllocation(config)
     for(taskLocation <- taskLocations){
       val (taskDescription, locality) = taskLocation
       val localityQueue = userScheduledTask.getOrElse(ActorUtil.loadClass(taskDescription.taskClass), mutable.Queue.empty[Locality])
