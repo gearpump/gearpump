@@ -18,8 +18,10 @@
 package org.apache.gearpump.streaming.appmaster
 
 import akka.actor.Actor
-import org.apache.gearpump.streaming.TaskLocator.{NonLocality, WorkerLocality}
-import org.apache.gearpump.streaming.{TaskDescription, TaskLocator}
+import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.streaming.appmaster.TaskLocator
+import org.apache.gearpump.streaming.appmaster.TaskLocator.{NonLocality, WorkerLocality}
+import org.apache.gearpump.streaming.{TaskDescription}
 import org.apache.gearpump.util.Constants._
 import org.scalatest.{Matchers, WordSpec}
 
@@ -32,9 +34,11 @@ class TaskLocatorSpec extends WordSpec with Matchers {
   val taskDescription2 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask2", 2)
   val taskDescription3 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask3", 2)
 
+  val config = ClusterConfig.load.application
+
   "TaskLocator" should {
     "locate task properly according user's configuration" in {
-      val taskLocator = new TaskLocator()
+      val taskLocator = new TaskLocator(config)
       assert(taskLocator.locateTask(taskDescription2) == WorkerLocality(1))
       assert(taskLocator.locateTask(taskDescription2) == WorkerLocality(1))
       assert(taskLocator.locateTask(taskDescription2) == NonLocality)

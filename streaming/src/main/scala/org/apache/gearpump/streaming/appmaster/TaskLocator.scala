@@ -15,25 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming
+package org.apache.gearpump.streaming.appmaster
 
 import java.util
 
 import akka.actor.Actor
 import com.typesafe.config.Config
-import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.streaming.TaskLocator.{Locality, NonLocality, WorkerLocality}
+import org.apache.gearpump.streaming.TaskDescription
+import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, Locality, NonLocality}
 import org.apache.gearpump.util.{ActorUtil, Constants}
 
 import scala.collection.mutable
 
-class TaskLocator {
+class TaskLocator(config: Config) {
   private var userScheduledTask = Map.empty[Class[_ <: Actor], mutable.Queue[Locality]]
 
   initTasks()
 
   def initTasks() : Unit = {
-    val taskLocations : Array[(TaskDescription, Locality)] = loadUserAllocation(ClusterConfig.load.application)
+    val taskLocations : Array[(TaskDescription, Locality)] = loadUserAllocation(config)
     for(taskLocation <- taskLocations){
       val (taskDescription, locality) = taskLocation
       val localityQueue = userScheduledTask.getOrElse(ActorUtil.loadClass(taskDescription.taskClass), mutable.Queue.empty[Locality])
