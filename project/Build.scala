@@ -44,6 +44,7 @@ object Build extends sbt.Build {
   val scalaVersionNumber = "2.11.5"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
+  val sprayWebSocketsVersion = "0.1.4"
   val scalaTestVersion = "2.2.0"
   val scalaCheckVersion = "1.11.3"
   val mockitoVersion = "1.10.8"
@@ -140,7 +141,7 @@ object Build extends sbt.Build {
         "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
         "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
         "io.spray" %%  "spray-can"       % sprayVersion,
-        "io.spray" %%  "spray-routing"   % sprayVersion,
+        "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
@@ -164,7 +165,7 @@ object Build extends sbt.Build {
                         "local" -> "org.apache.gearpump.cluster.main.Local",
                         "master" -> "org.apache.gearpump.cluster.main.Master",
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
-                        "rest" -> "org.apache.gearpump.cluster.main.Rest"
+                        "services" -> "org.apache.gearpump.cluster.main.Services"
                        ),
         packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
                            "master" -> Seq("-DlogFilename=master"),
@@ -172,6 +173,7 @@ object Build extends sbt.Build {
                         ),
         packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
+        packResourceDir += (baseDirectory.value / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         parallelExecution in ThisBuild := false,
         travis_deploy := {
@@ -184,10 +186,10 @@ object Build extends sbt.Build {
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
-        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
+        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
       )
-  ).dependsOn(core, streaming, rest, external_kafka, distributedshell).aggregate(core, streaming, fsio, examples_kafka,
-      sol, wordcount, complexdag, rest, external_kafka, examples, distributedshell)
+  ).dependsOn(core, streaming, services, external_kafka, distributedshell)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -294,9 +296,9 @@ object Build extends sbt.Build {
     settings = commonSettings ++ myAssemblySettings
   ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka)
   
-  lazy val rest = Project(
-    id = "gearpump-rest",
-    base = file("rest"),
+  lazy val services = Project(
+    id = "gearpump-services",
+    base = file("services"),
     settings = commonSettings  ++ 
       Seq(
         libraryDependencies ++= Seq(
@@ -304,6 +306,7 @@ object Build extends sbt.Build {
           "io.spray" %%  "spray-httpx"     % sprayVersion,
           "io.spray" %%  "spray-client"    % sprayVersion,
           "io.spray" %%  "spray-json"    % sprayJsonVersion,
+          "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion,
           "org.json4s" %% "json4s-jackson" % json4sVersion,
           "org.json4s" %% "json4s-native"   % json4sVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
