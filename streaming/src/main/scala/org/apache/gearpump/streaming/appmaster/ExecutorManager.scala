@@ -54,6 +54,7 @@ private[appmaster] class ExecutorManager (
   private var taskManager: ActorRef = null
   private var currentExecutorId = 0
   implicit val actorSystem = context.system
+  private val systemConfig = context.system.settings.config
 
   def receive: Receive = waitForTaskManager
 
@@ -103,7 +104,7 @@ private[appmaster] class ExecutorManager (
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
     val executorClusterConfigSource = userConfig.getValue[ClusterConfigSource](AppDescription.EXECUTOR_CLUSTER_CONFIG)
     val executorAkkaConfig = executorClusterConfigSource.map(_.getConfig).getOrElse(ConfigFactory.empty)
-    val jvmSetting = Util.resolveJvmSetting(executorAkkaConfig).executor
+    val jvmSetting = Util.resolveJvmSetting(executorAkkaConfig.withFallback(systemConfig)).executor
     ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs, appJar, username, executorAkkaConfig)
   }
 }
