@@ -56,7 +56,20 @@ object ActorSystemBooter  {
 
     LogUtil.loadConfiguration(config, ProcessType.APPLICATION)
 
-    apply(config).boot(name, reportBack).awaitTermination
+    val system = apply(config).boot(name, reportBack)
+
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      override def run() : Unit = {
+        val LOG: Logger = LogUtil.getLogger(ActorSystemBooter.getClass)
+        LOG.info("Maybe we have received a SIGINT signal from parent process, start to cleanup resources....")
+        system.shutdown()
+
+        //wait until all cleanup is finished
+        system.awaitTermination()
+      }
+    });
+
+    system.awaitTermination()
   }
 
   case class BindLifeCycle(actor : ActorRef)
