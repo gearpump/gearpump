@@ -17,7 +17,6 @@ object Build extends sbt.Build {
   }
 
   /**
-   * Work around to rename target/gearpump-version.tar.gz to target/gearpump.tar.gz so that travis
    * deploy can recognize the path
    */
   val travis_deploy = taskKey[Unit]("use this after sbt assembly packArchive, it will rename the package so that travis deploy can find the package.")
@@ -31,7 +30,6 @@ object Build extends sbt.Build {
   val commonsLoggingVersion = "1.1.3"
   val commonsIOVersion = "2.4"
   val findbugsVersion = "2.0.1"
-  val gearPumpVersion = "0.2.4-SNAPSHOT"
   val guavaVersion = "15.0"
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
@@ -65,7 +63,6 @@ object Build extends sbt.Build {
     ) ++
     Seq(
       scalaVersion := scalaVersionNumber,
-      version := gearPumpVersion,
       organization := "com.github.intel-hadoop",
       parallelExecution in Test := false,
       parallelExecution in ThisBuild := false,
@@ -178,7 +175,7 @@ object Build extends sbt.Build {
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         parallelExecution in ThisBuild := false,
         travis_deploy := {
-          val packagePath = s"target/gearpump-${gearPumpVersion}.tar.gz"
+          val packagePath = s"target/gearpump-${version}.tar.gz"
           val target = s"target/binary.gearpump.tar.gz"
           println(s"[Travis-Deploy] Move file $packagePath to $target")
           new File(packagePath).renameTo(new File(target))
