@@ -82,16 +82,16 @@ object Util {
 
     import Constants._
 
-    val appMasterVMArgs = Try(conf.getString(GEARPUMP_APPMASTER_ARGS).split(" ")).toOption
-    val executorVMArgs = Try(conf.getString(GEARPUMP_EXECUTOR_ARGS).split(" ")).toOption
+    val appMasterVMArgs = Try(conf.getString(GEARPUMP_APPMASTER_ARGS).split("\\s+").filter(_.nonEmpty)).toOption
+    val executorVMArgs = Try(conf.getString(GEARPUMP_EXECUTOR_ARGS).split("\\s+").filter(_.nonEmpty)).toOption
 
     val appMasterClassPath = Try(
       conf.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
-        .split(File.pathSeparator).asInstanceOf[Array[String]]).toOption
+        .split(File.pathSeparator).asInstanceOf[Array[String]].filter(_.nonEmpty)).toOption
 
     val executorClassPath = Try(
       conf.getString(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
-        .split(File.pathSeparator).asInstanceOf[Array[String]]).toOption
+        .split(File.pathSeparator).asInstanceOf[Array[String]].filter(_.nonEmpty)).toOption
 
     AppJvmSettings(
       JvmSetting(appMasterVMArgs.getOrElse(Array.empty[String]),

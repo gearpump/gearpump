@@ -49,7 +49,7 @@ object Shell extends App with ArgumentsParser {
     val file = File.createTempFile("scala_shell", ".scala")
     Console.out.println()
 
-    val shell = Option(getClass.getResourceAsStream("/shell.scala"))
+    val shell = Option(getClass.getResourceAsStream("/shell.scala.resource"))
 
     val content = shell match {
       case Some(stream) => {

@@ -68,6 +68,7 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
         case Failure(e) => throw e
       }
     }
+    fetchThread.setDaemon(true)
     fetchThread.start()
   }
 
@@ -83,4 +84,5 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
     }
     messagesBuilder.result().toList
   }
+
 }
