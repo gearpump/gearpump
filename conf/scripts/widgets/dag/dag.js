@@ -25,19 +25,18 @@
 angular.module('app.widgets.dag', ['adf.provider', 'nvd3'])
 .value('appMasterUrl', location.href)
 .config(function(dashboardProvider){
-    dashboardProvider
-      .widget('dag', {
-        title: 'Dag',
-        description: 'Dag widget',
-        controller: 'dagCtrl',
-        templateUrl: 'scripts/widgets/dag/dag.html',
-        appId: -1,
-        edit: {
-          templateUrl: 'scripts/widgets/dag/edit.html',
-          reload: false
-        }
-      });
-  })
+  dashboardProvider.widget('dag', {
+    title: 'Dag',
+    description: 'Dag widget',
+    controller: 'dagCtrl',
+    templateUrl: 'scripts/widgets/dag/dag.html',
+    appId: -1,
+    edit: {
+      templateUrl: 'scripts/widgets/dag/edit.html',
+      reload: false
+    }
+  });
+})
 .service('dagService', function($q, $http, appMasterUrl){
   return {
     get: function(path){
@@ -82,7 +81,8 @@ angular.module('app.widgets.dag', ['adf.provider', 'nvd3'])
     var value = lastPart(edge[1]);
     $scope.data.links.push({source:indexed[source],target:indexed[target],value:value});
   });
-}).directive('dag', function() {
+})
+.directive('dag', function() {
   function dag(scope, el, attr){ 
     var color = d3.scale.category10(); 
     var width = 700; 

@@ -1,8 +1,6 @@
 /* *
  * The MIT License
  * 
- * Copyright (c) 2014, Sebastian Sdorra
- * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -30,7 +28,7 @@ angular.module('app-01', ['adf', 'LocalStorageModule'])
   var model = null;//localStorageService.get(name);
   if (!model) {
     model = {
-      title: "Applications",
+      title: "Master/Workers",
       structure: "4-8",
       rows: [{
         columns: [{
@@ -40,12 +38,6 @@ angular.module('app-01', ['adf', 'LocalStorageModule'])
         }, {
           styleClass: "col-md-8",
           widgets: [
-            {
-              type: "dag",
-              config: {
-              },
-              title: "DAG"
-            }
           ]
         }]
       }]      

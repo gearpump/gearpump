@@ -74,7 +74,10 @@
         <div collapse="navCollapsed" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             <li ng-class="navClass('app/01')">
-              <a href="#/app/01">Applications</a>
+              <a href="#/app/01">Master/Workers</a>
+            </li>
+            <li ng-class="navClass('app/02')">
+              <a href="#/app/02">Applications</a>
             </li>
           </ul>
         </div><!--/.nav-collapse -->
@@ -127,7 +130,11 @@
     <!-- app -->
     <script type="text/javascript" src="scripts/app.js"></script>
     <script type="text/javascript" src="scripts/app-01.js"></script>
+    <script type="text/javascript" src="scripts/app-02.js"></script>
     <script type="text/javascript" src="scripts/structures.js"></script>
+
+    <!-- applist widget -->
+    <script type="text/javascript" src="scripts/widgets/applist/applist.js"></script>
 
     <!-- dag widget -->
     <script type="text/javascript" src="components/d3/d3.js"></script>
@@ -136,8 +143,6 @@
     <script type="text/javascript" src="scripts/widgets/dag/fisheye.js"></script>
     <script type="text/javascript" src="scripts/widgets/dag/dag.js"></script>
 
-    <!-- version widget -->
-    <script type="text/javascript" src="scripts/widgets/version/version.js"></script>
 
     <!-- endbuild -->
   </body>
