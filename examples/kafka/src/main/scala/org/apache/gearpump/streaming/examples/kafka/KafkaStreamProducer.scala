@@ -53,4 +53,5 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
     source.pull(batchSize).foreach{msg => filter.filter(msg, startTime).map(output)}
     self ! Message("continue", System.currentTimeMillis())
   }
+
 }
