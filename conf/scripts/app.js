@@ -26,9 +26,11 @@
 angular.module('app', [
   'adf', 
   'app.widgets.dag', 
+  'app.widgets.applist', 
   'LocalStorageModule',
   'structures', 
   'app-01', 
+  'app-02', 
   'ngRoute'
 ])
 .config(function($routeProvider, localStorageServiceProvider){
@@ -37,9 +39,9 @@ angular.module('app', [
   $routeProvider.when('/app/01', {
     templateUrl: 'partials/app.html',
     controller: 'app01Ctrl'
-  })
-  .otherwise({
-    redirectTo: '/app/01'
+  }).when('/app/02', {
+    templateUrl: 'partials/app.html',
+    controller: 'app02Ctrl'
   });
 
 })

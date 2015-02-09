@@ -1,8 +1,8 @@
 <form class="form-inline" role="form">
   <div>
-    <label>Links</label>
+    <label>Applications</label>
   </div>
-  <div class="padding-bottom" ng-repeat="link in config.links">
+  <div class="padding-bottom" ng-repeat="app in config.appMasters">
     <div class="form-group">
       <label class="sr-only" for="title-{{$index}}">Title</label>
       <input type="text" id="title-{{$index}}" class="form-control" placeholder="Title" ng-model="link.title" required="">

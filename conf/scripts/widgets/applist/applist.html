@@ -1,0 +1,7 @@
+<div class="applist">
+  <ul>
+    <li ng-repeat="app in list.links | orderBy:'title'">
+      <a target="_blank" ng-href="{{app.href}}">{{app.title}}</a>
+    </li>
+  </ul>
+</div>
