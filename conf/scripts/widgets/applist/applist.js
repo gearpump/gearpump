@@ -37,7 +37,7 @@ angular.module('app.widgets.applist', ['adf.provider'])
     }
   });
 })
-.controller('applistCtrl', function($scope, $http, config, appMastersUrl){
+.controller('applistCtrl', function($rootScope, $scope, $http, config, appMastersUrl){
   function getAppList(response){
     if (!config.appMasters){
       config.appMasters = [];
@@ -49,6 +49,11 @@ angular.module('app.widgets.applist', ['adf.provider'])
     this.appMasters = config.appMasters;
   }
   var _getAppList = getAppList.bind(this);
+  $scope.appSelected = function(appId) {
+    $rootScope.$broadcast('appmaster-selected', {
+        appId: appId.appId
+    });
+  }
   $http.get(appMastersUrl).then(_getAppList, function(err){
     throw err; 
   });

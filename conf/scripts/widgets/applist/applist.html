@@ -1,7 +1,7 @@
 <div class="applist">
   <ul>
     <li ng-repeat="app in list.appMasters | orderBy:'appId'">
-      <a target="_blank" ng-href="{{app.workerPath}}">{{app.appId}}</a>
+      <button class="btn" ng-click="appSelected({appId:app.appId})">Info for AppMaster {{app.appId}}</button>
     </li>
   </ul>
 </div>
