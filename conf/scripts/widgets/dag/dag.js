@@ -37,49 +37,36 @@ angular.module('app.widgets.dag', ['adf.provider', 'nvd3'])
     }
   });
 })
-.service('dagService', function($q, $http, appMasterUrl){
-  return {
-    get: function(path){
-      var deferred = $q.defer();
-      var url = appMasterUrl + path;
-      $http.jsonp(url)
-        .success(function(data){
-          if (data && data.meta){
-            var status = data.meta.status;
-            if ( status < 300 ){
-              deferred.resolve(data.data);
-            } else {
-              deferred.reject(data.data.message);
-            }
-          }
-        })
-        .error(function(){
-          deferred.reject();
-        });
-      return deferred.promise;
-    }
-  };
-})
-.controller('dagCtrl', function($scope){
-  $scope.data = {}
-  var json = {"name":"dag","dag":{"vertices":["org.apache.gearpump.streaming.examples.complexdag.Node_2","org.apache.gearpump.streaming.examples.complexdag.Sink_3","org.apache.gearpump.streaming.examples.complexdag.Node_3","org.apache.gearpump.streaming.examples.complexdag.Node_4","org.apache.gearpump.streaming.examples.complexdag.Sink_0","org.apache.gearpump.streaming.examples.complexdag.Node_0","org.apache.gearpump.streaming.examples.complexdag.Sink_4","org.apache.gearpump.streaming.examples.complexdag.Sink_1","org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.streaming.examples.complexdag.Sink_2","org.apache.gearpump.streaming.examples.complexdag.Source_1"],"edges":[["org.apache.gearpump.streaming.examples.complexdag.Node_2","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_2"],["org.apache.gearpump.streaming.examples.complexdag.Node_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_1"],["org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_4"],["org.apache.gearpump.streaming.examples.complexdag.Node_3","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_3"],["org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_0"],["org.apache.gearpump.streaming.examples.complexdag.Source_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_0"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_1"],["org.apache.gearpump.streaming.examples.complexdag.Node_4","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_4"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_2"]]}}
-  $scope.data.nodes = [];
-  var indexed = {};
-  function lastPart(name) {
-    var parts = name.split(/\./);
-    return parts[parts.length-1];
-  }
-  json.dag.vertices.forEach(function(vertex,i) {
-    var name = lastPart(vertex);
-    $scope.data.nodes.push({name:name});
-    indexed[name] = i;
-  });
-  $scope.data.links = [];
-  json.dag.edges.forEach(function(edge,i) {
-    var source = lastPart(edge[0]);
-    var target = lastPart(edge[2]);
-    var value = lastPart(edge[1]);
-    $scope.data.links.push({source:indexed[source],target:indexed[target],value:value});
+.controller('dagCtrl', function($scope,$http){
+  $scope.$on('appmaster-selected', function(event, appMasterSelected) {
+    var url = location.origin+'/appmaster/'+appMasterSelected.appId+'?detail=true';
+    $http.get(url).then(function(response){
+      $scope.data = {}
+      var json = response.data;//{"name":"dag","dag":{"vertices":["org.apache.gearpump.streaming.examples.complexdag.Node_2","org.apache.gearpump.streaming.examples.complexdag.Sink_3","org.apache.gearpump.streaming.examples.complexdag.Node_3","org.apache.gearpump.streaming.examples.complexdag.Node_4","org.apache.gearpump.streaming.examples.complexdag.Sink_0","org.apache.gearpump.streaming.examples.complexdag.Node_0","org.apache.gearpump.streaming.examples.complexdag.Sink_4","org.apache.gearpump.streaming.examples.complexdag.Sink_1","org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.streaming.examples.complexdag.Sink_2","org.apache.gearpump.streaming.examples.complexdag.Source_1"],"edges":[["org.apache.gearpump.streaming.examples.complexdag.Node_2","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_2"],["org.apache.gearpump.streaming.examples.complexdag.Node_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_1"],["org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_4"],["org.apache.gearpump.streaming.examples.complexdag.Node_3","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_3"],["org.apache.gearpump.streaming.examples.complexdag.Node_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_0"],["org.apache.gearpump.streaming.examples.complexdag.Source_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Node_0"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_1"],["org.apache.gearpump.streaming.examples.complexdag.Node_4","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_3"],["org.apache.gearpump.streaming.examples.complexdag.Source_1","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_4"],["org.apache.gearpump.streaming.examples.complexdag.Source_0","org.apache.gearpump.partitioner.HashPartitioner","org.apache.gearpump.streaming.examples.complexdag.Sink_2"]]}}
+      $scope.data.nodes = [];
+      var indexed = {};
+      function lastPart(name) {
+        var parts = name.split(/\./);
+        return parts[parts.length-1];
+      }
+      json.dag.vertices.forEach(function(vertex,i) {
+        var name = lastPart(vertex);
+        $scope.data.nodes.push({name:name});
+        indexed[name] = i;
+      });
+      $scope.data.links = [];
+      json.dag.edges.forEach(function(edge,i) {
+        var source = lastPart(edge[0]);
+        var target = lastPart(edge[2]);
+        var value = lastPart(edge[1]);
+        $scope.data.links.push({source:indexed[source],target:indexed[target],value:value});
+      });
+      $scope.$broadcast('appmaster-data', {
+        data: $scope.data
+      });
+    }, function(err){
+      throw err; 
+    });
   });
 })
 .directive('dag', function() {
@@ -96,11 +83,8 @@ angular.module('app.widgets.dag', ['adf.provider', 'nvd3'])
       .gravity(.05)
       .linkDistance(200)
       .charge(-400)
-      .size([width, height])
-      .nodes(scope.data.nodes)
-      .links(scope.data.links)
-      .on("tick", tick)
-      .start();
+      .size([width, height]);
+    var link, node;
 
     function pathattr(d) {
       var dx = d.target.x - d.source.x,
@@ -155,23 +139,6 @@ angular.module('app.widgets.dag', ['adf.provider', 'nvd3'])
       .attr('height', height)
       .attr('fill', 'white');
 
-    var link = svg.selectAll(".link")
-      .data(force.links())
-      .enter().append("svg:g");
-
-    link.append("svg:path").attr("marker-end", "url(#end)").attr("d", pathattr).attr("class","path");
-
-    textattr(link.append("svg:text"))
-
-    var node = svg.selectAll(".node")
-      .data(force.nodes())
-      .enter().append("svg:g")
-      .attr("class", "node")
-      .call(force.drag);
-
-    node.append("svg:circle").attr("r", nodeRadius);
-    node.append("svg:text").attr("x", 12).attr("dy", ".25em").attr("dx", "-.25em").text(function(d) { return d.name; });
-
     svg.on("mousemove", function() {
        fisheye.center(d3.mouse(this));
        node.each(function(d) { 
@@ -199,6 +166,31 @@ angular.module('app.widgets.dag', ['adf.provider', 'nvd3'])
        }
        link.select("path").attr("d", pathattr);
        textattr(link.select("text"));
+    });
+
+    scope.$on('appmaster-data', function(event, appMasterData) {
+      if(node && link) return;
+      force.nodes(appMasterData.data.nodes)
+        .links(appMasterData.data.links)
+        .on("tick", tick)
+        .start();
+
+      link = svg.selectAll(".link")
+        .data(force.links())
+        .enter().append("svg:g");
+
+      link.append("svg:path").attr("marker-end", "url(#end)").attr("d", pathattr).attr("class","path");
+
+      textattr(link.append("svg:text"))
+
+      node = svg.selectAll(".node")
+        .data(force.nodes())
+        .enter().append("svg:g")
+        .attr("class", "node")
+        .call(force.drag);
+
+      node.append("svg:circle").attr("r", nodeRadius);
+      node.append("svg:text").attr("x", 12).attr("dy", ".25em").attr("dx", "-.25em").text(function(d){return d.name;});
     });
   } 
   return { link: dag, restrict: 'E', scope: { data: '=' } }; 
