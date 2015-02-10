@@ -95,7 +95,7 @@ angular.module('app.widgets.dag', ['adf.provider', 'nvd3'])
     var force = d3.layout.force()
       .gravity(.05)
       .linkDistance(200)
-      .charge(-600)
+      .charge(-400)
       .size([width, height])
       .nodes(scope.data.nodes)
       .links(scope.data.links)
@@ -104,8 +104,8 @@ angular.module('app.widgets.dag', ['adf.provider', 'nvd3'])
 
     function pathattr(d) {
       var dx = d.target.x - d.source.x,
-          dy = d.target.y - d.source.y;
-      var path = "M0,0" + "L" + dx + "," + dy;
+          dy = d.target.y - d.source.y,
+          path = "M0,0" + "L" + dx + "," + dy;
       return path;
     }
 

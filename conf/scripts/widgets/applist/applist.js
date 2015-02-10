@@ -22,7 +22,7 @@
 'use strict';
 
 angular.module('app.widgets.applist', ['adf.provider'])
-.value('appMastersUrl', location.href+'/appMasters')
+.value('appMastersUrl', location.origin+'/appmasters')
 .config(function(dashboardProvider){
   dashboardProvider.widget('applist', {
     title: 'Applications',
@@ -37,34 +37,21 @@ angular.module('app.widgets.applist', ['adf.provider'])
     }
   });
 })
-.service('applistService', function($q, $http, appMastersUrl){
-  return {
-    get: function(path){
-      var deferred = $q.defer();
-      var url = appMasterUrl + path;
-      $http.jsonp(url)
-        .success(function(data){
-          if (data && data.meta){
-            var status = data.meta.status;
-            if ( status < 300 ){
-              deferred.resolve(data.data);
-            } else {
-              deferred.reject(data.data.message);
-            }
-          }
-        })
-        .error(function(){
-          deferred.reject();
-        });
-      return deferred.promise;
-    }
-  };
-})
-.controller('applistCtrl', function($scope, config){
+.controller('applistCtrl', function($scope, $http, config, appMastersUrl){
+  function getAppList(response){
     if (!config.appMasters){
       config.appMasters = [];
     }
+    var data = (response.data && response.data.appMasters) || [];
+    data.forEach(function(appMaster) {
+      config.appMasters.push(appMaster);
+    });
     this.appMasters = config.appMasters;
+  }
+  var _getAppList = getAppList.bind(this);
+  $http.get(appMastersUrl).then(_getAppList, function(err){
+    throw err; 
+  });
 }).controller('applistEditCtrl', function($scope){
     function getLinks(){
       if (!$scope.config.appMasters){
