@@ -44,8 +44,8 @@ object RestServices {
     implicit val executionContext = system.dispatcher
     val services = system.actorOf(Props(classOf[RestServicesActor], master, system), "rest-services")
     val config = system.settings.config
-    val port = config.getInt("gearpump.rest-services.port")
-    val host = config.getString("gearpump.rest-services.host")
+    val port = config.getInt("gearpump.services.http")
+    val host = config.getString("gearpump.services.host")
     IO(Http) ! Http.Bind(services, interface = host, port = port)
   }
 }
