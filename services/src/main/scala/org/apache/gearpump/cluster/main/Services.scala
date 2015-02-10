@@ -21,11 +21,11 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
-import org.apache.gearpump.services.RestServices
+import org.apache.gearpump.services.{RestServices,WebSocketServices}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.Util
 
-object Rest extends App with ArgumentsParser {
+object Services extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true))
@@ -35,10 +35,11 @@ object Rest extends App with ArgumentsParser {
     val masterList = config.getString("master")
     Console.out.println("Master URL: " + masterList)
 
-    implicit val system = ActorSystem(s"rest" , ClusterConfig.load.application)
+    implicit val system = ActorSystem("services" , ClusterConfig.load.application)
     val master = system.actorOf(MasterProxy.props(Util.parseHostList(masterList)), MASTER)
 
     RestServices.start(master)
+    WebSocketServices.start(master)
   }
   start()
 }
