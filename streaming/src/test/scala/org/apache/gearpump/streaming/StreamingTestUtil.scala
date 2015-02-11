@@ -47,8 +47,7 @@ object StreamingTestUtil {
   def startAppMaster(miniCluster: MiniCluster, appId: Int): TestActorRef[AppMaster] = {
 
     implicit val actorSystem = miniCluster.system
-    val masterConf = AppMasterContext(appId, testUserName, Resource(1), None,miniCluster.mockMaster,
-      AppMasterRuntimeInfo(miniCluster.worker, appId, "appName", Resource(1)))
+    val masterConf = AppMasterContext(appId, testUserName, Resource(1),  None,miniCluster.mockMaster,AppMasterRuntimeInfo(miniCluster.worker, appId, s"$appId" ,Resource(1)))
 
     val props = Props(new AppMaster(masterConf, AppDescription("test", UserConfig.empty, Graph.empty)))
     val registerAppMaster = RegisterAppMaster(miniCluster.mockMaster, masterConf.registerData)
@@ -56,87 +55,4 @@ object StreamingTestUtil {
     miniCluster.mockMaster.tell(registerAppMaster, appMaster)
     appMaster
   }
-
-  /**
-   * This function is a work-around for testing.
-   * The goal of this method to to verify the output message from target actor to test.
-   *
-   * It works by creating a EchoActor as downstream of target actor, and the Echo Actor will relay all
-   * messages to a TestProbe, which will be returned to user when this method returns.
-   *
-   * @param taskClass the task to test
-   * @param taskConf  the configuration passed to the task to test
-   * @param system1   system will launch the task to test
-   * @param system2   system will launch the Echo Actor
-   *
-   * @return (taskActor: TestActorRef, echoTask: TestProbe)
-   *         taskActor: the TestActorRef of the task to test
-   *         echoTask: the TestProbe will receive the message sent from the task
-   */
-  def createEchoForTaskActor(taskClass: String, taskConf: UserConfig, system1: ActorSystem, system2: ActorSystem, usePinedDispatcherForTaskActor: Boolean = false): (TestActorRef[TaskActor], TestProbe) = {
-    import system1.dispatcher
-    val taskToTest = TaskDescription(taskClass, 1)
-    val echoTask = TaskDescription(classOf[EchoTask].getName, 1)
-    val dag = DAG(Graph(taskToTest ~ new HashPartitioner() ~> echoTask))
-    val taskReporter = TestProbe()(system2)
-    val taskId1 = TaskId(0, 0)
-    val taskId2 = TaskId(1, 0)
-    val appMaster = TestProbe()(system1)
-    def ignoreUpdateClock: PartialFunction[Any, Boolean] = {
-      case msg: UpdateClock => true
-    }
-    appMaster.ignoreMsg(ignoreUpdateClock)
-
-    implicit val systemForSerializer = system1.asInstanceOf[ExtendedActorSystem]
-
-    var testActorProps = Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, "appName", appMaster.ref, 1, dag), taskConf)
-    if (usePinedDispatcherForTaskActor) {
-      testActorProps = testActorProps.withDispatcher("akka.actor.pined-dispatcher")
-    }
-    val testActor = TestActorRef[TaskActor](testActorProps)(system1)
-    appMaster.expectMsgClass(classOf[RegisterTask])
-    appMaster.reply(StartClock(0))
-
-    val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, "appName", appMaster.ref, 1, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
-    appMaster.expectMsgClass(5 seconds, classOf[RegisterTask])
-    appMaster.reply(StartClock(0))
-
-    val express1 = Express(system1)
-    val express2 = Express(system2)
-    val testActorHost = express1.localHost
-    val reporterHost = express2.localHost
-    val locations = Map((reporterHost, Set(taskId2)), (testActorHost, Set(taskId1)))
-    val result = locations.flatMap { kv =>
-      val (host, taskIdList) = kv
-      taskIdList.map(taskId => (TaskId.toLong(taskId), host))
-    }
-    val future1 = express1.startClients(locations.keySet).flatMap { _ =>
-      express1.remoteAddressMap.alter(result)
-    }
-    val future2 = express2.startClients(locations.keySet).flatMap { _ =>
-      express2.remoteAddressMap.alter(result)
-    }
-    val future = Future.sequence(List(future1, future2))
-    Await.result(future, Duration(10, TimeUnit.SECONDS))
-    testActor ! TaskLocationReady
-    (testActor, taskReporter)
-  }
-}
-
-class EchoTask(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
-  import EchoTask._
-  var testProbe: ActorRef = null
-
-  override def onStart(startTime: StartTime): Unit = {
-
-    testProbe = userConf.getValue[ActorRef](TEST_PROBE).get
-  }
-
-  override def onNext(msg: Message): Unit = {
-    testProbe forward Message(msg.msg)
-  }
-}
-
-object EchoTask {
-  val TEST_PROBE = "test_probe"
 }

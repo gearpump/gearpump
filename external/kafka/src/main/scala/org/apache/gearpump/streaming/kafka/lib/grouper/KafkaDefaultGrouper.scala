@@ -20,13 +20,11 @@ package org.apache.gearpump.streaming.kafka.lib.grouper
 
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.TaskContext
+import org.apache.gearpump.streaming.task.{TaskId, TaskContext, TaskContextData}
 
 class KafkaDefaultGrouperFactory extends KafkaGrouperFactory {
-  override def getKafkaGrouper(conf: TaskContext): KafkaGrouper = {
-    val taskNum = conf.dag.tasks(conf.taskId.groupId).parallelism
-    val taskIndex = conf.taskId.index
-    new KafkaDefaultGrouper(taskNum, taskIndex)
+  override def getKafkaGrouper(taskId: TaskId, taskParallelism:Int): KafkaGrouper = {
+    new KafkaDefaultGrouper(taskParallelism, taskId.index)
   }
 }
 

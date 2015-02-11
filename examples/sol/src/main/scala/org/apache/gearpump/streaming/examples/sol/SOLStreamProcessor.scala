@@ -23,11 +23,12 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SOLStreamProcessor(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
+class SOLStreamProcessor(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+  import taskContext.output
 
   val taskConf = taskContext
 
@@ -37,8 +38,7 @@ class SOLStreamProcessor(taskContext : TaskContext, conf: UserConfig) extends Ta
   private var snapShotTime : Long = 0
 
   override def onStart(startTime : StartTime) : Unit = {
-    import context.dispatcher
-    scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+    taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount())
     snapShotTime = System.currentTimeMillis()
   }

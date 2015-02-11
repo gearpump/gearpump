@@ -20,9 +20,10 @@ package org.apache.gearpump.streaming.examples.wordcount
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-class Split(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
+class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+  import taskContext.{output, self}
 
   override def onStart(startTime : StartTime) : Unit = {
     self ! Message("start")
@@ -30,7 +31,7 @@ class Split(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskC
 
   override def onNext(msg : Message) : Unit = {
     Split.TEXT_TO_SPLIT.lines.foreach { line =>
-      line.split(" ").foreach { msg =>
+      line.split("[\\s]+").filter(_.nonEmpty).foreach { msg =>
         output(new Message(msg, System.currentTimeMillis()))
       }
     }

@@ -17,33 +17,26 @@
  */
 package org.apache.gearpump.streaming.examples.sol
 
-import akka.actor.ActorSystem
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.task.StartTime
+import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfter, PropSpec, Matchers}
+import org.scalatest.{FlatSpec, Matchers}
 
-import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class SOLStreamProcessorSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter{
-  val stringGenerator = Gen.alphaStr
-  val system1 = ActorSystem("SOLStreamProcessor", TestUtil.DEFAULT_CONFIG)
-  val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-  val (processor, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SOLStreamProcessor].getName, UserConfig.empty, system1, system2, usePinedDispatcherForTaskActor = true)
+class SOLStreamProcessorSpec extends FlatSpec with Matchers {
 
-  property("SOLStreamProcessor should deliver message directly"){
-    forAll(stringGenerator) { txt =>
-      processor.tell(Message(txt), processor)
-      echo.expectMsg(10 seconds, Message(txt))
-    }
+  it should "pass the message downstream" in {
+    val stringGenerator = Gen.alphaStr
+    val context = MockUtil.mockTaskContext
+
+    val sol = new SOLStreamProcessor(context, UserConfig.empty)
+    sol.onStart(StartTime(0))
+    val msg = Message("msg")
+    sol.onNext(msg)
+    verify(context, times(1)).output(msg)
   }
-
-  after {
-    system1.shutdown()
-    system2.shutdown()
-  }
-
 }

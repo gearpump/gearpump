@@ -17,30 +17,25 @@
  */
 package org.apache.gearpump.streaming.examples.complexdag
 
-import akka.actor.ActorSystem
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 class SinkSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
-  val system1 = ActorSystem("SinkSpec", TestUtil.DEFAULT_CONFIG)
-  val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-  val (sink, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Sink].getName, UserConfig.empty, system1, system2)
+
+  val context = MockUtil.mockTaskContext
+
+  val sink = new Sink(context, UserConfig.empty)
 
   property("Sink should send a List[String](classOf[Sink].getCanonicalName, classOf[Sink].getCanonicalName"){
     val list = List(classOf[Sink].getCanonicalName)
     val expected = collection.mutable.MutableList(classOf[Sink].getCanonicalName, classOf[Sink].getCanonicalName)
-    sink.tell(Message(list), sink)
-    val sinkActor = sink.underlying.actor.asInstanceOf[Sink]
-    (0 until sinkActor.list.size).map(i => {
-      assert(sinkActor.list(i).equals(expected(i)))
-    })
-  }
+    sink.onNext(Message(list))
 
-  after {
-    system1.shutdown()
-    system2.shutdown()
+    (0 until sink.list.size).map(i => {
+      assert(sink.list(i).equals(expected(i)))
+    })
   }
 }

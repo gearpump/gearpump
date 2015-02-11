@@ -17,23 +17,26 @@
  */
 package org.apache.gearpump.streaming.examples.sol
 
-import akka.actor.ActorSystem
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
-import org.scalatest.{WordSpec, Matchers}
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.task.StartTime
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.scalatest.{Matchers, WordSpec}
 
 class SOLStreamProducerSpec extends WordSpec with Matchers {
 
   "SOLStreamProducer" should {
     "producer message continuously" in {
-      val system1 = ActorSystem("SOLStreamProducer", TestUtil.DEFAULT_CONFIG)
-      val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
+
       val conf = UserConfig.empty.withInt(SOLStreamProducer.BYTES_PER_MESSAGE, 100)
-      val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SOLStreamProducer].getName, conf, system1, system2, usePinedDispatcherForTaskActor = true)
-      echo.expectMsgAllClassOf(classOf[Message])
-      system1.shutdown()
-      system2.shutdown()
+      val context = MockUtil.mockTaskContext
+
+      val producer = new SOLStreamProducer(context, conf)
+      producer.onStart(StartTime(0))
+      producer.onNext(Message("msg"))
+      verify(context).output(any[Message])
     }
   }
 }

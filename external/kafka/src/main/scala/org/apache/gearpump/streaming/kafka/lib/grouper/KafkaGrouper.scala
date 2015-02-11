@@ -20,10 +20,10 @@ package org.apache.gearpump.streaming.kafka.lib.grouper
 
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.TaskContext
+import org.apache.gearpump.streaming.task.{TaskId, TaskContext, TaskContextData}
 
 trait KafkaGrouperFactory {
-  def getKafkaGrouper(conf: TaskContext): KafkaGrouper
+  def getKafkaGrouper(taskId: TaskId, taskParallelism:Int): KafkaGrouper
 }
 
 trait KafkaGrouper {

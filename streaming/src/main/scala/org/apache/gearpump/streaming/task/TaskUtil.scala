@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,24 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+package org.apache.gearpump.streaming.task
 
-package org.apache.gearpump.streaming.examples.complexdag
+import akka.actor.Actor
 
-import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+object TaskUtil {
 
-class Source(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.{output, self}
-
-  override def onStart(startTime: StartTime): Unit = {
-    self ! Message("start")
-  }
-
-  override def onNext(msg: Message): Unit = {
-    val list = List(getClass.getCanonicalName)
-    output(new Message(list, System.currentTimeMillis))
-    self ! Message("continue", System.currentTimeMillis())
+  /**
+   * Resolve a classname to a Task class.
+   * @param className
+   * @return
+   */
+  def loadClass(className: String): Class[_<:Task] = {
+    Class.forName(className).asSubclass(classOf[Task])
   }
 }
-

@@ -15,26 +15,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.examples.kafka.wordcount
+package org.apache.gearpump.streaming
 
+import akka.actor.{ActorSystem, Actor, ActorRef, ScalaActorRef}
+import akka.testkit.TestActorRef
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.TaskContext
-import org.mockito.Matchers._
-import org.mockito.Mockito._
-import org.scalatest._
-import org.scalatest.mock.MockitoSugar
+import org.mockito.{Mockito, ArgumentMatcher}
+import org.mockito.Mockito
+import org.mockito.Matchers
 
-import scala.language.postfixOps
+object MockUtil {
 
-class SplitSpec extends FlatSpec with Matchers with MockitoSugar {
+  lazy val system: ActorSystem = ActorSystem("mockUtil")
 
-  it should "split should split the text and deliver to next task" in {
-    val taskContext = mock[TaskContext]
-    val split = new Split(taskContext, UserConfig.empty)
+  def mockTaskContext: TaskContext = {
+    val context = Mockito.mock(classOf[TaskContext])
+    Mockito.when(context.self).thenReturn(Mockito.mock(classOf[TestActorRef[Actor]]))
+    Mockito.when(context.system).thenReturn(system)
+    context
+  }
 
-    val msg = "this is a test message"
-    split.onNext(Message(msg))
-    verify(taskContext, times(msg.split(" ").length)).output(anyObject[Message])
+  def argMatch[T](func: T => Boolean) : T = {
+    Matchers.argThat(new ArgumentMatcher[T] {
+      override def matches(param: Any): Boolean = {
+        val mesage = param.asInstanceOf[T]
+        func(mesage)
+      }
+    })
   }
 }

@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.streaming.examples.kafka.topn
 
-import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
@@ -28,7 +27,7 @@ import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{LogUtil, Graph}
+import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
 
 object RollingTopWords extends App with ArgumentsParser {

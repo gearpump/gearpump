@@ -20,11 +20,11 @@ package org.apache.gearpump.streaming.examples.complexdag
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 import scala.collection.mutable
 
-class Sink(taskContext: TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
+class Sink(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
 
   var list = mutable.MutableList[String]()
 

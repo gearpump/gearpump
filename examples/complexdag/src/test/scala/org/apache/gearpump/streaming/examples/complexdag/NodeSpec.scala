@@ -17,31 +17,26 @@
  */
 package org.apache.gearpump.streaming.examples.complexdag
 
-import akka.actor.ActorSystem
-import akka.testkit.{TestProbe, TestActorRef}
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.StreamingTestUtil
-import org.apache.gearpump.streaming.task.TaskActor
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.MockUtil._
+import org.mockito.ArgumentMatcher
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
-import scala.concurrent.duration._
-
 class NodeSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
-  val system1 = ActorSystem("SinkSpec", TestUtil.DEFAULT_CONFIG)
-  val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-  val (node, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Node].getName, UserConfig.empty, system1, system2)
+
+  val context = MockUtil.mockTaskContext
+
+  val node = new Node(context, UserConfig.empty)
 
   property("Node should send a List[String](classOf[Node].getCanonicalName, classOf[Node].getCanonicalName"){
     val list = List(classOf[Node].getCanonicalName)
     val expected = List(classOf[Node].getCanonicalName,classOf[Node].getCanonicalName)
-    node.tell(Message(list), node)
-    echo.expectMsg(10 seconds, Message(expected))
-  }
-
-  after {
-    system1.shutdown()
-    system2.shutdown()
+    node.onNext(Message(list))
+    verify(context).output(argMatch[Message](_.msg == expected))
   }
 }

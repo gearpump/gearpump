@@ -17,36 +17,39 @@
  */
 package org.apache.gearpump.streaming.examples.wordcount
 
-import akka.actor.ActorSystem
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.task.StartTime
 import org.scalacheck.Gen
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 class SumSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
   val stringGenerator = Gen.alphaStr
-  val system1 = ActorSystem("SumSpec", TestUtil.DEFAULT_CONFIG)
-  val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-  val (sum, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Sum].getName, UserConfig.empty, system1, system2)
-  val sumActor = sum.underlying.actor.asInstanceOf[Sum]
+
   var wordcount = 0
 
   property("Sum should calculate the frequency of the word correctly"){
+
+    val taskContext = MockUtil.mockTaskContext
+
+    val conf = UserConfig.empty
+
+    val sum = new Sum(taskContext, conf)
+
+    sum.onStart(StartTime(0))
+
     forAll(stringGenerator) { txt =>
       wordcount += 1
-      sum.tell(Message(txt), sum)
+      sum.onNext(Message(txt))
     }
-    val all = sumActor.map.foldLeft(0L) { (total, kv) =>
+    val all = sum.map.foldLeft(0L) { (total, kv) =>
       val (_, num) = kv
       total + num
     }
-    assert(sumActor.wordCount == all && sumActor.wordCount == wordcount)
-  }
+    assert(sum.wordCount == all && sum.wordCount == wordcount)
 
-  after {
-    system1.shutdown()
-    system2.shutdown()
+    sum.reportWordCount()
   }
 }

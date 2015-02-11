@@ -17,11 +17,11 @@
  */
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.Actor
-import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.streaming.appmaster.TaskLocator
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
+import org.apache.gearpump.streaming.TaskDescription
 import org.apache.gearpump.streaming.appmaster.TaskLocator.{NonLocality, WorkerLocality}
-import org.apache.gearpump.streaming.{TaskDescription}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.util.Constants._
 import org.scalatest.{Matchers, WordSpec}
 
@@ -57,14 +57,20 @@ class TaskLocatorSpec extends WordSpec with Matchers {
   }
 }
 
-class TestTask1 extends Actor {
-  override def receive: Actor.Receive = null
+class TestTask1(taskContext : TaskContext, userConf : UserConfig)
+    extends Task(taskContext, userConf) {
+  override def onStart(startTime: StartTime): Unit = ???
+  override def onNext(msg: Message): Unit = ???
 }
 
-class TestTask2 extends Actor {
-  override def receive: Receive = null
+class TestTask2(taskContext : TaskContext, userConf : UserConfig)
+    extends Task(taskContext, userConf) {
+  override def onStart(startTime: StartTime): Unit = ???
+  override def onNext(msg: Message): Unit = ???
 }
 
-class TestTask3 extends Actor {
-  override def receive: Receive = null
+class TestTask3(taskContext : TaskContext, userConf : UserConfig)
+    extends Task(taskContext, userConf) {
+  override def onStart(startTime: StartTime): Unit = ???
+  override def onNext(msg: Message): Unit = ???
 }
