@@ -24,9 +24,9 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
 class ApplicationStateSpec  extends FlatSpec with Matchers with BeforeAndAfterEach  {
 
   "ApplicationState" should "check equal with respect to only appId and attemptId" in {
-    val stateA = ApplicationState(0, 0, null, null, null, "A")
-    val stateB = ApplicationState(0, 0, null, null, null, "B")
-    val stateC = ApplicationState(0, 1, null, null, null, "A")
+    val stateA = ApplicationState(0, "application0", 0, null, null, null, "A")
+    val stateB = ApplicationState(0, "application0", 0, null, null, null, "B")
+    val stateC = ApplicationState(0, "application1", 1, null, null, null, "A")
 
     assert(stateA == stateB)
     assert(stateA.hashCode == stateB.hashCode)

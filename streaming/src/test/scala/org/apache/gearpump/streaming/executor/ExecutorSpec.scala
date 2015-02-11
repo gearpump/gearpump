@@ -60,7 +60,7 @@ class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with M
     task = TestProbe()
     val userConfig = UserConfig.empty.withValue(ExecutorSpec.TASK_PROBE, task.ref)
     executorContext = ExecutorContext(executorId, workerId, appId, appMaster.ref, resource)
-    taskContext = TaskContext(TaskId(0, 0), executorId, appId, appMaster.ref, 1, DAG.empty())
+    taskContext = TaskContext(TaskId(0, 0), executorId, appId, "appName", appMaster.ref, 1, DAG.empty())
     executor = TestActorRef(Props(classOf[Executor], executorContext, userConfig))(getActorSystem)
     appMaster.expectMsg(RegisterExecutor(executor, executorId, resource, workerId))
   }

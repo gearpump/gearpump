@@ -60,7 +60,7 @@ class AppMasterLauncher(appId : Int, executorId: Int, app : Application, jar: Op
     case ResourceAllocated(allocations) =>
       LOG.info(s"Resource allocated for appMaster $appId")
       val ResourceAllocation(resource, worker, workerId) = allocations(0)
-      val appMasterContext = AppMasterContext(appId, username, resource, jar, null, AppMasterRuntimeInfo(worker, appId, resource))
+      val appMasterContext = AppMasterContext(appId, username, resource, jar, null, AppMasterRuntimeInfo(worker, appId, app.name, resource))
 
       LOG.info(s"Try to launch a executor for app Master on ${worker} for app $appId")
       val name = ActorUtil.actorNameForExecutor(appId, executorId)

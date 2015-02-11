@@ -36,4 +36,10 @@ class UtilSpec extends FlatSpec with Matchers with MockitoSugar {
     assert(Util.getCurrentClassPath.length > 0)
   }
 
+  it should "check application name properly" in {
+    assert(Util.validApplicationName("_application_1"))
+    assert(Util.validApplicationName("application_1_"))
+    assert(!Util.validApplicationName("0_application_1"))
+    assert(!Util.validApplicationName("_applicat&&ion_1"))
+  }
 }
