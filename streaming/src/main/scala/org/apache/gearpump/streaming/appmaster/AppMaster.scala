@@ -42,40 +42,41 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
 
-  private val (clockService, taskManager, executorManager) = {
+  private val (taskManager, executorManager) = {
     val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
-    val clockService : ActorRef = {
-      val store = new InMemoryAppStoreOnMaster(appId, masterProxy)
-      context.actorOf(Props(new ClockService(dag, store)))
-    }
+
     val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext))
-    val taskManager = context.actorOf(Props(new TaskManager(appContext, dag, clockService, executorManager, self)))
-    (clockService, taskManager, executorManager)
+
+    val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
+    val clockService = context.actorOf(Props(new ClockService(dag, store)))
+
+    val taskScheduler: TaskScheduler = new TaskSchedulerImpl(appId, context.system.settings.config)
+    val taskManager = context.actorOf(Props(new TaskManager(appContext.appId, dag,
+      taskScheduler, executorManager, clockService, self)))
+    (taskManager, executorManager)
   }
 
   override def receive : Receive =
-    clockServiceHandler orElse
+    taskMessageHandler orElse
       executorMessageHandler orElse
-      taskMessageHandler orElse
       recover orElse
       appMasterInfoService orElse
       ActorUtil.defaultMsgHandler(self)
 
-  def clockServiceHandler: Receive = {
+  def taskMessageHandler: Receive = {
     case clock: UpdateClock =>
-      clockService forward clock
+      taskManager forward clock
     case GetLatestMinClock =>
-      clockService forward GetLatestMinClock
+      taskManager forward GetLatestMinClock
+    case register: RegisterTask =>
+      taskManager forward register
+    case ReplayFromTimestampWindowTrailingEdge =>
+      taskManager forward ReplayFromTimestampWindowTrailingEdge
   }
 
   def executorMessageHandler: Receive = {
     case register: RegisterExecutor =>
       executorManager forward register
-  }
-
-  def taskMessageHandler: Receive = {
-    case register: RegisterTask =>
-      taskManager forward register
   }
 
   def appMasterInfoService: Receive = {
@@ -89,8 +90,6 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       LOG.error(s"Failed to allocate resource in time")
       masterProxy ! ShutdownApplication(appId)
       context.stop(self)
-    case ReplayFromTimestampWindowTrailingEdge =>
-      taskManager forward ReplayFromTimestampWindowTrailingEdge
   }
 }
 

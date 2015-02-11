@@ -19,12 +19,42 @@
 package org.apache.gearpump.streaming
 
 import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
 import upickle._
 
 import scala.collection.JavaConversions._
 
+case class DAG(tasks : Map[Int, TaskDescription], graph : Graph[Int, Partitioner]) extends Serializable {
+
+  def subGraph(task : Int): DAG = {
+    val newGraph = Graph.empty[Int, Partitioner]
+    newGraph.addVertex(task)
+    graph.edgesOf(task).foreach { edge =>
+      val (node1, partitioner, node2) = edge
+      newGraph.addEdge(node1, partitioner, node2)
+    }
+    val newMap = newGraph.vertices.foldLeft(Map.empty[Int, TaskDescription]){ (map, vertex) =>
+      val task = tasks.get(vertex).get
+
+      //clean out other in-degree and out-degree tasks' data except the task parallelism
+      map + (vertex -> task.copy(null, task.parallelism))
+    }
+    new DAG(newMap, newGraph)
+  }
+
+  def taskCount: Int = {
+    tasks.foldLeft(0) { (count, task) =>
+      count + task._2.parallelism
+    }
+  }
+}
+
 object DAG {
+
+  implicit def graphToDAG(graph: Graph[TaskDescription, Partitioner]): DAG = {
+    apply(graph)
+  }
 
   def apply (graph : Graph[TaskDescription, Partitioner]) : DAG = {
     val topologicalOrderIterator = graph.topologicalOrderIterator
@@ -53,23 +83,4 @@ object DAG {
     }.get._1
   }
 
-}
-
-case class DAG(tasks : Map[Int, TaskDescription], graph : Graph[Int, Partitioner]) extends Serializable {
-
-  def subGraph(task : Int): DAG = {
-    val newGraph = Graph.empty[Int, Partitioner]
-    newGraph.addVertex(task)
-    graph.edgesOf(task).foreach { edge =>
-      val (node1, partitioner, node2) = edge
-      newGraph.addEdge(node1, partitioner, node2)
-    }
-    val newMap = newGraph.vertices.foldLeft(Map.empty[Int, TaskDescription]){ (map, vertex) =>
-      val task = tasks.get(vertex).get
-
-      //clean out other in-degree and out-degree tasks' data except the task parallelism
-      map + (vertex -> task.copy(null, task.parallelism))
-    }
-    new DAG(newMap, newGraph)
-  }
 }
