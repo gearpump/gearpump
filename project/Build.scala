@@ -173,6 +173,7 @@ object Build extends sbt.Build {
                         ),
         packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
+        packResourceDir += (baseDirectory.value / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         parallelExecution in ThisBuild := false,
         travis_deploy := {
@@ -185,7 +186,7 @@ object Build extends sbt.Build {
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
-        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
+        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
       )
   ).dependsOn(core, streaming, services, external_kafka, distributedshell)
    .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell)
