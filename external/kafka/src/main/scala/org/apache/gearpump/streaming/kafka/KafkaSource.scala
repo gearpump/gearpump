@@ -41,16 +41,16 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
                                  offsetManagers: Map[TopicAndPartition, KafkaOffsetManager]) extends TimeReplayableSource {
   import org.apache.gearpump.streaming.kafka.KafkaSource._
 
-  private[kafka] def this(appId: Int, config: KafkaConfig, topicAndPartitions: Array[TopicAndPartition], messageDecoder: MessageDecoder) =
+  private[kafka] def this(appName: String, config: KafkaConfig, topicAndPartitions: Array[TopicAndPartition], messageDecoder: MessageDecoder) =
     this(FetchThread(topicAndPartitions, config), messageDecoder,
-      topicAndPartitions.map(tp => tp -> KafkaOffsetManager(appId, config, tp)).toMap)
+      topicAndPartitions.map(tp => tp -> KafkaOffsetManager(appName, config, tp)).toMap)
 
-  private[kafka] def this(appId: Int, config: KafkaConfig, grouper: KafkaGrouper, messageDecoder: MessageDecoder) =
-    this(appId, config, KafkaUtil.getTopicAndPartitions(KafkaUtil.connectZookeeper(config),
+  private[kafka] def this(appName: String, config: KafkaConfig, grouper: KafkaGrouper, messageDecoder: MessageDecoder) =
+    this(appName, config, KafkaUtil.getTopicAndPartitions(KafkaUtil.connectZookeeper(config),
       grouper, config.getConsumerTopics), messageDecoder)
 
-  def this(appId : Int, taskContext : TaskContext, config: KafkaConfig, messageDecoder: MessageDecoder) =
-    this(appId: Int, config, config.getGrouperFactory.getKafkaGrouper(taskContext), messageDecoder)
+  def this(appName : String, taskContext : TaskContext, config: KafkaConfig, messageDecoder: MessageDecoder) =
+    this(appName: String, config, config.getGrouperFactory.getKafkaGrouper(taskContext), messageDecoder)
 
   private var startTime: TimeStamp = 0L
 

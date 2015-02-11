@@ -132,7 +132,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     val scheduler = mock(classOf[TaskScheduler])
     val taskManager = system.actorOf(
-      Props(new TaskManager(appId, dag, scheduler, executorManager.ref, clockService.ref, appMaster.ref)))
+      Props(new TaskManager(appId, dag, scheduler, executorManager.ref, clockService.ref, appMaster.ref, "appName")))
 
     executorManager.expectMsgType[SetTaskManager]
     executorManager.expectMsgType[StartExecutors]

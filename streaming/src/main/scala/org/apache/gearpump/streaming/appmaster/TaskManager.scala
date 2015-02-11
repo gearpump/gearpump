@@ -42,7 +42,8 @@ private[appmaster] class TaskManager(
     taskScheduler: TaskScheduler,
     executorManager: ActorRef,
     clockService: ActorRef,
-    appMaster: ActorRef)
+    appMaster: ActorRef,
+    appName: String)
   extends Actor with FSM[State, StateData] {
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
@@ -84,7 +85,7 @@ private[appmaster] class TaskManager(
               //Launch task
               LOG.info("Sending Launch Task to executor: " + executor.toString())
 
-              val taskContext = TaskContext(taskId, executorId, appId, appMaster = appMaster, taskDescription.parallelism, dag)
+              val taskContext = TaskContext(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, dag)
               executor ! LaunchTask(taskId, taskContext, ActorUtil.loadClass(taskDescription.taskClass))
               //Todo: subtract the actual resource used by task
               val usedResource = Resource(1)

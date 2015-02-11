@@ -55,8 +55,8 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   override def beforeEach() = {
     startActorSystem()
     mockMaster = TestProbe()(getActorSystem)
-    taskContext1 = TaskContext(taskId1, executorId1, appId, mockMaster.ref, 1, dag)
-    taskContext2 = TaskContext(taskId2, executorId2, appId, mockMaster.ref, 1, dag)
+    taskContext1 = TaskContext(taskId1, executorId1, appId, "appName", mockMaster.ref, 1, dag)
+    taskContext2 = TaskContext(taskId2, executorId2, appId, "appName", mockMaster.ref, 1, dag)
   }
 
   "TaskActor" should {

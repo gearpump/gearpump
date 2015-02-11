@@ -47,7 +47,8 @@ object StreamingTestUtil {
   def startAppMaster(miniCluster: MiniCluster, appId: Int): TestActorRef[AppMaster] = {
 
     implicit val actorSystem = miniCluster.system
-    val masterConf = AppMasterContext(appId, testUserName, Resource(1),  None,miniCluster.mockMaster,AppMasterRuntimeInfo(miniCluster.worker, appId, Resource(1)))
+    val masterConf = AppMasterContext(appId, testUserName, Resource(1), None,miniCluster.mockMaster,
+      AppMasterRuntimeInfo(miniCluster.worker, appId, "appName", Resource(1)))
 
     val props = Props(new AppMaster(masterConf, AppDescription("test", UserConfig.empty, Graph.empty)))
     val registerAppMaster = RegisterAppMaster(miniCluster.mockMaster, masterConf.registerData)
@@ -88,7 +89,7 @@ object StreamingTestUtil {
 
     implicit val systemForSerializer = system1.asInstanceOf[ExtendedActorSystem]
 
-    var testActorProps = Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, appMaster.ref, 1, dag), taskConf)
+    var testActorProps = Props(Class.forName(taskClass), TaskContext(taskId1, 1, 0, "appName", appMaster.ref, 1, dag), taskConf)
     if (usePinedDispatcherForTaskActor) {
       testActorProps = testActorProps.withDispatcher("akka.actor.pined-dispatcher")
     }
@@ -96,7 +97,7 @@ object StreamingTestUtil {
     appMaster.expectMsgClass(classOf[RegisterTask])
     appMaster.reply(StartClock(0))
 
-    val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, appMaster.ref, 1, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
+    val reporter = system2.actorOf(Props(classOf[EchoTask], TaskContext(taskId2, 2, 0, "appName", appMaster.ref, 1, dag), UserConfig.empty.withValue(EchoTask.TEST_PROBE, taskReporter.ref)))
     appMaster.expectMsgClass(5 seconds, classOf[RegisterTask])
     appMaster.reply(StartClock(0))
 

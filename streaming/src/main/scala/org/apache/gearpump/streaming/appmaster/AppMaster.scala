@@ -36,7 +36,6 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   import app.userConfig
   import appContext.{appId, masterProxy, username}
 
-  private var currentExecutorId = 0
   implicit val actorSystem = context.system
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
@@ -52,7 +51,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
 
     val taskScheduler: TaskScheduler = new TaskSchedulerImpl(appId, context.system.settings.config)
     val taskManager = context.actorOf(Props(new TaskManager(appContext.appId, dag,
-      taskScheduler, executorManager, clockService, self)))
+      taskScheduler, executorManager, clockService, self, app.name)))
     (taskManager, executorManager)
   }
 

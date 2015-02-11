@@ -23,7 +23,7 @@ import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, ResolveAppId, SubmitApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, ReplayApplicationResult, ResolveAppIdResult}
+import org.apache.gearpump.cluster.MasterToClient.{SubmitApplicationResult, ShutdownApplicationResult, ReplayApplicationResult, ResolveAppIdResult}
 import org.apache.gearpump.cluster.TestUtil.{DummyAppMaster}
 import org.apache.gearpump.cluster.master.InMemoryKVService.{PutKVSuccess, GetKVSuccess, GetKV, PutKV}
 import org.apache.gearpump.cluster.master.MasterHAService._
@@ -60,7 +60,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     val appMaster = TestProbe()(getActorSystem)
     val worker = TestProbe()(getActorSystem)
 
-    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, 0, Resource(1)))
+    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, 0, "appName", Resource(1)))
     appMaster.send(appManager, register)
     appMaster.expectMsgType[AppMasterRegistered]
   }
@@ -102,6 +102,25 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     mockClient.expectMsg(AppMasterData(1, null))
   }
 
+  "AppManager" should "reject the application submission if the app name already existed" in {
+    val app = TestUtil.dummyApp
+    val submit = SubmitApplication(app, None, "username")
+    val client = TestProbe()(getActorSystem)
+    val appMaster = TestProbe()(getActorSystem)
+    val worker = TestProbe()(getActorSystem)
+    val appId = 1
+
+    client.send(appManager, submit)
+
+    haService.expectMsgType[UpdateMasterState]
+    appLauncher.expectMsg(LauncherStarted(appId))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, appId, "dummy", Resource(1))))
+    appMaster.expectMsgType[AppMasterRegistered]
+
+    client.send(appManager, submit)
+    assert(client.receiveN(1).head.asInstanceOf[SubmitApplicationResult].appId.isFailure)
+  }
+
   def testClientSubmission(withRecover: Boolean) : Unit = {
     val app = TestUtil.dummyApp
     val submit = SubmitApplication(app, None, "username")
@@ -111,9 +130,10 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     val appId = 1
 
     client.send(appManager, submit)
+
     haService.expectMsgType[UpdateMasterState]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, appId, Resource(1))))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, appId, "appName", Resource(1))))
     appMaster.expectMsgType[AppMasterRegistered]
 
     client.send(appManager, ResolveAppId(appId))
@@ -136,7 +156,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
       //do recover
       getActorSystem.stop(appMaster.ref)
       haService.expectMsg(GetMasterState)
-      val appState =  ApplicationState(appId, 1,  app , None, "username", null)
+      val appState =  ApplicationState(appId, "application1", 1, app , None, "username", null)
       haService.reply(MasterState(appId, (Set(appState))))
       appLauncher.expectMsg(LauncherStarted(appId))
     }
