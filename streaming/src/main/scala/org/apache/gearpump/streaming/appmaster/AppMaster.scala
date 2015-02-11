@@ -49,7 +49,8 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       context.actorOf(Props(new ClockService(dag, store)))
     }
     val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext))
-    val taskManager = context.actorOf(Props(new TaskManager(appContext, dag, clockService, executorManager, self)))
+    val taskManager = context.actorOf(Props(
+      new TaskManager(appContext, dag, clockService, executorManager, self, app.name)))
     (clockService, taskManager, executorManager)
   }
 

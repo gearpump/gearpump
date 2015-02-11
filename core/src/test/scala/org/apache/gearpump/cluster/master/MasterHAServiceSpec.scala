@@ -49,8 +49,8 @@ class MasterHAServiceSpec extends FlatSpec with Matchers with BeforeAndAfterEach
 
     val appIdA = 0
     val appIdB = 1
-    val stateA = ApplicationState(appIdA, 0, null, null, null, "A")
-    val stateB = ApplicationState(appIdB, 0, null, null, null, "B")
+    val stateA = ApplicationState(appIdA, "applicationA", 0, null, null, null, "A")
+    val stateB = ApplicationState(appIdB, "applicationB", 0, null, null, null, "B")
 
     client.send(ha, UpdateMasterState(stateA))
     client.expectMsg(UpdateMasterStateSuccess)

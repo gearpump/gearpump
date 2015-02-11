@@ -24,7 +24,6 @@ import java.net.ServerSocket
 import com.google.common.io.BaseEncoding
 import com.typesafe.config.Config
 import org.apache.commons.lang.SerializationUtils
-import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.transport.HostPort
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -33,6 +32,11 @@ import scala.util.Try
 
 object Util {
   val LOG = LogUtil.getLogger(getClass)
+  private val appNamePattern = "^[a-zA-Z_][a-zA-Z0-9_]+$".r.pattern
+
+  def validApplicationName(appName: String): Boolean = {
+    appNamePattern.matcher(appName).matches()
+  }
 
   def getCurrentClassPath : Array[String] = {
     val classpath = System.getProperty("java.class.path");

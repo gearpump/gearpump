@@ -38,7 +38,7 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
   private val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
   private val filter: TimeStampFilter = kafkaConfig.getTimeStampFilter
 
-  private val source: TimeReplayableSource = new KafkaSource(taskContext.appId, taskContext,
+  private val source: TimeReplayableSource = new KafkaSource(taskContext.appName, taskContext,
     kafkaConfig, msgDecoder)
   private var startTime: TimeStamp = 0L
 

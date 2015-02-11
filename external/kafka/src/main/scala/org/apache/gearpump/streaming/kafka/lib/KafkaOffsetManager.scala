@@ -31,8 +31,8 @@ import scala.util.{Failure, Success, Try}
 
 object KafkaOffsetManager {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaOffsetManager])
-  def apply(appId: Int, config: KafkaConfig, topicAndPartition: TopicAndPartition): KafkaOffsetManager = {
-    val storageTopic = s"app${appId}_${topicAndPartition.topic}_${topicAndPartition.partition}"
+  def apply(appName: String, config: KafkaConfig, topicAndPartition: TopicAndPartition): KafkaOffsetManager = {
+    val storageTopic = s"app${appName}_${topicAndPartition.topic}_${topicAndPartition.partition}"
     val replicas = config.getStorageReplicas
     val zkClient = KafkaUtil.connectZookeeper(config)
     val topicExists = KafkaUtil.createTopic(zkClient, storageTopic, partitions = 1, replicas)

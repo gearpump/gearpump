@@ -42,7 +42,8 @@ private[appmaster] class TaskManager(
     dag: DAG,
     clockService: ActorRef,
     executorManager: ActorRef,
-    appMaster: ActorRef)
+    appMaster: ActorRef,
+    appName: String)
   extends Actor {
 
   import appContext.appId
@@ -79,7 +80,7 @@ import org.apache.gearpump.streaming.appmaster.ExecutorManager._
           //Launch task
           LOG.info("Sending Launch Task to executor: " + executor.toString())
 
-          val taskContext = TaskContext(taskId, executorId, appId, appMaster = appMaster, taskDescription.parallelism, dag)
+          val taskContext = TaskContext(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, dag)
           executor ! LaunchTask(taskId, taskContext, ActorUtil.loadClass(taskDescription.taskClass))
           //Todo: subtract the actual resource used by task
           val usedResource = Resource(1)
