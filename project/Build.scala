@@ -44,7 +44,7 @@ object Build extends sbt.Build {
   val scalaVersionNumber = "2.11.5"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
-  val sprayWebSocketsVersion = "0.1.3"
+  val sprayWebSocketsVersion = "0.1.4"
   val scalaTestVersion = "2.2.0"
   val scalaCheckVersion = "1.11.3"
   val mockitoVersion = "1.10.8"
@@ -141,7 +141,7 @@ object Build extends sbt.Build {
         "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
         "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
         "io.spray" %%  "spray-can"       % sprayVersion,
-        "io.spray" %%  "spray-routing"   % sprayVersion,
+        "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
