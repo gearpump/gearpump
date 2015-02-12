@@ -26,7 +26,8 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.cluster.master.Master.WorkerTerminated
+import org.apache.gearpump.cluster.master.InMemoryKVService._
+import org.apache.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated}
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.apache.gearpump.jarstore.JarStore
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
@@ -48,6 +49,8 @@ private[cluster] class Master extends Actor with Stash {
   private var scheduler : ActorRef = null
 
   private var workers = new immutable.HashMap[ActorRef, Int]
+
+  private val birth : Long = System.currentTimeMillis()
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context.system, self.path) + "...")
 
@@ -74,8 +77,8 @@ private[cluster] class Master extends Actor with Stash {
       self forward RegisterWorker(workerId)
     case RegisterWorker(id) =>
       context.watch(sender())
-      sender ! WorkerRegistered(id)
-      scheduler forward WorkerRegistered(id)
+      sender ! WorkerRegistered(id, MasterInfo(self, birth))
+      scheduler forward WorkerRegistered(id, MasterInfo(self, birth))
       workers += (sender() -> id)
       LOG.info(s"Register Worker $id....")
     case resourceUpdate : ResourceUpdate =>
@@ -154,6 +157,7 @@ private[cluster] class Master extends Actor with Stash {
 
     val masterHA = context.actorOf(Props(new MasterHAService()), "masterHA")
     val kvService = context.actorOf(Props(new InMemoryKVService()), "kvService")
+
     appManager = context.actorOf(Props(new AppManager(masterHA, kvService, AppMasterLauncher)), classOf[AppManager].getSimpleName)
     scheduler = context.actorOf(Props(schedulerClass))
     context.system.eventStream.subscribe(self, classOf[DisassociatedEvent])
@@ -162,4 +166,10 @@ private[cluster] class Master extends Actor with Stash {
 
 object Master{
   case class WorkerTerminated(workerId : Int)
+
+  case class MasterInfo(master: ActorRef, startTime : Long = 0L)
+
+  object MasterInfo {
+    def empty = MasterInfo(null)
+  }
 }

@@ -24,6 +24,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownEx
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToAppMaster.{ShutdownExecutorSucceed, ShutdownExecutorFailed, ExecutorLaunchRejected}
 import org.apache.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, ResourceUpdate}
+import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.worker.Worker
 import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
@@ -70,7 +71,7 @@ class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with Mas
       mockMaster watch worker
       mockMaster.expectMsg(RegisterNewWorker)
 
-      worker.tell(WorkerRegistered(workerId), mockMaster.ref)
+      worker.tell(WorkerRegistered(workerId, MasterInfo(mockMaster.ref)), mockMaster.ref)
       mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(workerSlots)))
 
       worker.tell(UpdateResourceFailed("Test resource update failed", new Exception()), mockMaster.ref)
@@ -84,7 +85,7 @@ class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with Mas
       val worker = getActorSystem.actorOf(Props(classOf[Worker], masterProxy.ref))
       masterProxy.expectMsg(RegisterNewWorker)
 
-      worker.tell(WorkerRegistered(workerId), mockMaster.ref)
+      worker.tell(WorkerRegistered(workerId, MasterInfo(mockMaster.ref)), mockMaster.ref)
       mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(100)))
 
       val executorName = ActorUtil.actorNameForExecutor(appId, executorId)
