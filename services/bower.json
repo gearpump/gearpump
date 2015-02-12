@@ -19,7 +19,7 @@
     "jquery-ui": "~1.10.3",
     "angular-ui-sortable": "0.13.0",
     "bootstrap": "~3.2.0",
-    "d3": "~3.5.3"
+    "angular-nvd3": "~0.0.9"
   },
   "devDependencies": {
     "angular-mocks": "1.2.18",
@@ -28,5 +28,8 @@
     "angular-local-storage": "0.0.1",
     "json3": "~3.2.4",
     "es5-shim": "~2.0.8"
+  },
+  "resolutions": {
+    "d3": "~3.4"
   }
 }
