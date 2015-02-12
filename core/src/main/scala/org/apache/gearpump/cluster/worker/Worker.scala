@@ -53,8 +53,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private val configStr = systemConfig.root().render
   private val logFile = System.getProperty("gearpump.log.file")
   private val address = context.system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-  private val host = address.host.get
-  private val port = address.port.get
   private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()
   private var executorsInfo = Map[Int, ExecutorInfo]()
@@ -114,6 +112,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       LOG.info(s"Worker $id update resource succeed")
     case GetWorkerData(workerId) =>
       val aliveFor = System.currentTimeMillis() - createdTime
+      val host = address.host.getOrElse("")
+      val port = address.port.getOrElse(-1)
       sender ! WorkerData(Some(WorkerDescription(id, "active", host, port,
         aliveFor, logFile, configStr, executorsInfo.values.toArray, resource.slots)))
   }
