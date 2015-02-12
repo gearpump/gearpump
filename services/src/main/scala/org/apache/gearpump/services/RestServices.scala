@@ -23,11 +23,11 @@ import akka.io.IO
 import spray.can._
 import spray.routing.RoutingSettings
 
-trait RestServices extends AppMastersService with AppMasterService with StaticService {
+trait RestServices extends AppMastersService
+    with AppMasterService with WorkerService with WorkersService with MasterService with StaticService {
   implicit def executionContext = actorRefFactory.dispatcher
 
-  lazy val route = appMastersRoute ~ appMasterRoute ~ staticRoute
-
+  lazy val route = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ masterRoute ~ staticRoute
 }
 
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
