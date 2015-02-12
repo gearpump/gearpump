@@ -40,8 +40,8 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, future}
 import scala.util.{Failure, Success, Try}
 
-case class WorkerDescription(workerId: Int, state: String, host: String, port: Int,
-                             aliveFor: Long, logFile: String, configFile: String,
+case class WorkerDescription(workerId: Int, state: String, actorPath: String,
+                             aliveFor: Long, logFile: String,
                              executors: Array[ExecutorInfo], totalSlots: Int)
 /**
  * masterProxy is used to resolve the master
@@ -52,9 +52,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private val systemConfig : Config = context.system.settings.config
   private val configStr = systemConfig.root().render
   private val logFile = System.getProperty("gearpump.log.file")
-  private val address = context.system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-  private val host = address.host.get
-  private val port = address.port.get
+  private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()
   private var executorsInfo = Map[Int, ExecutorInfo]()
@@ -114,8 +112,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       LOG.info(s"Worker $id update resource succeed")
     case GetWorkerData(workerId) =>
       val aliveFor = System.currentTimeMillis() - createdTime
-      sender ! WorkerData(Some(WorkerDescription(id, "active", host, port,
-        aliveFor, logFile, configStr, executorsInfo.values.toArray, resource.slots)))
+      sender ! WorkerData(Some(WorkerDescription(id, "active", address,
+        aliveFor, logFile, executorsInfo.values.toArray, resource.slots)))
   }
 
   def terminationWatch(master : ActorRef) : Receive = {
