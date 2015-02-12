@@ -22,7 +22,7 @@
 
 'use strict';
 
-angular.module('app.widgets.dag', ['adf.provider', 'nvd3'])
+angular.module('app.widgets.dag', ['adf.provider'])
 .value('appMasterUrl', location.href)
 .config(function(dashboardProvider){
   dashboardProvider.widget('dag', {
