@@ -21,6 +21,7 @@ package org.apache.gearpump.cluster
 import akka.actor.ActorRef
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
+import org.apache.gearpump.cluster.worker.WorkerDescription
 
 import scala.util.Try
 
@@ -74,6 +75,8 @@ object AppMasterToMaster {
   case class AppMasterDataDetail(appId: Int, application: Application)
 
   case object GetAllWorkers
+  case class GetWorkerData(workerId: Int)
+  case class WorkerData(workerDescription: Option[WorkerDescription])
 }
 
 object MasterToAppMaster {
