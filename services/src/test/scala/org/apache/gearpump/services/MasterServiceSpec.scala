@@ -18,19 +18,17 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
-import org.apache.gearpump.cluster.worker.WorkerDescription
-
+import org.apache.gearpump.cluster.AppMasterToMaster.MasterData
 import org.apache.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest with WorkersService with WorkerService
-with Matchers with BeforeAndAfterEach {
+
+class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers with BeforeAndAfterEach {
 
   import upickle._
 
@@ -51,19 +49,12 @@ with Matchers with BeforeAndAfterEach {
   override def beforeEach: Unit = {
   }
 
-  "WorkerService" should "return a json structure of worker data for GET request" in {
+  it should "return master info when asked" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get("/workers") ~> workersRoute).asInstanceOf[RouteResult] ~> check {
-      //check the type
-      read[WorkerList](response.entity.asString).workers.foreach { workerId =>
-        (Get(s"/workers/$workerId") ~> workerRoute).asInstanceOf[RouteResult] ~> check {
-          //check the type
-          val responseBody = response.entity.asString
-          val workerDescription = read[WorkerDescription](responseBody)
-          workerDescription.workerId shouldBe workerId
-          workerDescription.state shouldBe "active"
-        }
-      }
+    (Get("/master") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
+      // check the type
+      val content = response.entity.asString
+      read[MasterData](content)
     }
   }
 
