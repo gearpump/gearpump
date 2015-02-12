@@ -18,28 +18,40 @@
 package org.apache.gearpump.streaming.examples.wordcount
 
 import akka.actor.ActorSystem
+import akka.testkit.TestProbe
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.task.StartTime
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
 
-import scala.concurrent.duration._
 import scala.language.postfixOps
 
 class SplitSpec extends WordSpec with Matchers {
 
   "Split" should {
     "split the text and deliver to next task" in {
-      val system1 = ActorSystem("Split", TestUtil.DEFAULT_CONFIG)
-      val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-      val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Split].getName, UserConfig.empty, system1, system2, usePinedDispatcherForTaskActor = true)
-      Split.TEXT_TO_SPLIT.lines.foreach { line =>
-        line.split(" ").foreach { msg =>
-          echo.expectMsg(10 seconds, Message(msg))
-        }
-      }
-      system1.shutdown()
-      system2.shutdown()
+
+      val taskContext = MockUtil.mockTaskContext
+
+      implicit val system = ActorSystem("test")
+
+      val mockTaskActor = TestProbe()
+
+      //mock self ActorRef
+      when(taskContext.self).thenReturn(mockTaskActor.ref)
+
+      val conf = UserConfig.empty
+      val split = new Split(taskContext, conf)
+      split.onStart(StartTime(0))
+      mockTaskActor.expectMsgType[Message]
+
+      val expectedWordCount = Split.TEXT_TO_SPLIT.split("""[\s\n]+""").filter(_.nonEmpty).length
+
+      split.onNext(Message("next"))
+      verify(taskContext, times(expectedWordCount)).output(anyObject())
     }
   }
 }

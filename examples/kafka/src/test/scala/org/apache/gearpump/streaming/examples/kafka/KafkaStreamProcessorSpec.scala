@@ -18,46 +18,44 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
-import akka.actor.{Actor, ActorSystem}
+import akka.actor.ActorSystem
 import com.twitter.bijection.Injection
 import com.typesafe.config.ConfigFactory
 import kafka.api.FetchRequestBuilder
 import kafka.consumer.SimpleConsumer
 import kafka.server.{KafkaConfig => KafkaServerConfig}
-import kafka.utils.{TestUtils => TestKafkaUtils, Utils, TestZKUtils}
+import kafka.utils.{TestUtils => TestKafkaUtils, TestZKUtils, Utils}
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.kafka.util.KafkaServerHarness
-import org.scalatest.{BeforeAndAfterEach, Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{BeforeAndAfterEach, Matchers, PropSpec}
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success}
 
 class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterEach with KafkaServerHarness {
   val numServers = 1
-  override val configs: List[KafkaServerConfig] =
-    for(props <- TestKafkaUtils.createBrokerConfigs(numServers, enableControlledShutdown = false))
+  override val configs: List[KafkaServerConfig] = {
+    for (props <- TestKafkaUtils.createBrokerConfigs(numServers, enableControlledShutdown = false))
     yield new KafkaServerConfig(props) {
       override val zkConnect = TestZKUtils.zookeeperConnect
       override val numPartitions = 1
     }
+  }
 
-  var system1: ActorSystem = null
-  var system2: ActorSystem = null
+  implicit var system: ActorSystem = null
 
   override def beforeEach: Unit = {
     super.setUp()
-    system1 = ActorSystem("KafkaStreamProcessor", TestUtil.DEFAULT_CONFIG)
-    system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
+    system = ActorSystem("test")
   }
 
   override def afterEach: Unit = {
     super.tearDown()
-    system1.shutdown()
-    system2.shutdown()
+    system.shutdown()
   }
 
   property("KafkaStreamProcessor should write data to kafka") {
@@ -70,15 +68,17 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
     createTopicUntilLeaderIsElected(topic, partitions = 1, replicas = 1)
 
     val kafkaConfig = getKafkaConfig(topic, producerEmitBatchSize = batchSize, brokerStr, zkConnect)
-    val (kafkaStreamProcessor, _) = StreamingTestUtil.createEchoForTaskActor(
-      classOf[KafkaStreamProcessor].getName, kafkaConfig, system1, system2)
+
+    val context = MockUtil.mockTaskContext
+
+    val kafkaStreamProcessor = new KafkaStreamProcessor(context, kafkaConfig)
 
     val messages = 0.until(messageNum).foldLeft(List.empty[String]) { (msgs, i) =>
       val msg = s"message-$i"
-      kafkaStreamProcessor.tell(Message(i.toString -> msg), kafkaStreamProcessor)
+      kafkaStreamProcessor.onNext(Message(i.toString -> msg))
       msgs :+ msg
     }
-    system1.stop(kafkaStreamProcessor)
+    kafkaStreamProcessor.onStop()
 
     brokerList.foreach { broker =>
       val hostPort = broker.split(":")
@@ -99,8 +99,8 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
   }
 
   private def getKafkaConfig(producerTopic: String, producerEmitBatchSize: Int, brokerList: String, zookeeperConnect: String): UserConfig = {
-    implicit val system = system1
-    UserConfig.empty.withValue[KafkaConfig](KafkaConfig.NAME, KafkaConfig(ConfigFactory.parseMap(Map(
+
+    val kafka = UserConfig.empty.withValue[KafkaConfig](KafkaConfig.NAME, KafkaConfig(ConfigFactory.parseMap(Map(
       KafkaConfig.METADATA_BROKER_LIST -> brokerList,
       KafkaConfig.PRODUCER_EMIT_BATCH_SIZE -> producerEmitBatchSize.toString,
       KafkaConfig.PRODUCER_TOPIC -> producerTopic,
@@ -108,5 +108,6 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
       KafkaConfig.REQUEST_REQUIRED_ACKS -> "1",
       KafkaConfig.ZOOKEEPER_CONNECT -> zookeeperConnect
     ).asJava)))
+    kafka
   }
 }

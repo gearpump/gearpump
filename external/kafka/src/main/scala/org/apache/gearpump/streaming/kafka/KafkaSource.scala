@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.kafka
 
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
-import org.apache.gearpump.streaming.task.TaskContext
+import org.apache.gearpump.streaming.task.{TaskId}
 import org.apache.gearpump.streaming.kafka.lib._
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
 import org.apache.gearpump.streaming.transaction.api._
@@ -49,8 +49,8 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
     this(appName, config, KafkaUtil.getTopicAndPartitions(KafkaUtil.connectZookeeper(config),
       grouper, config.getConsumerTopics), messageDecoder)
 
-  def this(appName : String, taskContext : TaskContext, config: KafkaConfig, messageDecoder: MessageDecoder) =
-    this(appName: String, config, config.getGrouperFactory.getKafkaGrouper(taskContext), messageDecoder)
+  def this(appName : String, taskId: TaskId, taskParallelism:Int, config: KafkaConfig, messageDecoder: MessageDecoder) =
+    this(appName: String, config, config.getGrouperFactory.getKafkaGrouper(taskId, taskParallelism), messageDecoder)
 
   private var startTime: TimeStamp = 0L
 

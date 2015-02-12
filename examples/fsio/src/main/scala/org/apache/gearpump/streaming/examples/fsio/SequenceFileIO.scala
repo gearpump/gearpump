@@ -17,15 +17,14 @@
  */
 package org.apache.gearpump.streaming.examples.fsio
 
-import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{Graph, LogUtil}
 import org.apache.gearpump.util.HadoopConfig._
+import org.apache.gearpump.util.{Graph, LogUtil}
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 

@@ -18,8 +18,16 @@
 
 package org.apache.gearpump.streaming.task
 
-import org.apache.gearpump.streaming.{TaskGroup, TaskIndex}
+import akka.actor.{Cancellable, Props, ActorRef, ActorSystem}
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.{DAG, TaskGroup, TaskIndex}
 import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.LogUtil
+import org.slf4j.Logger
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 
 case class TaskId(groupId : TaskGroup, index : TaskIndex)
 
@@ -30,3 +38,123 @@ object TaskId {
 
 case class TaskLocations(locations : Map[HostPort, Set[TaskId]])
 case object CleanTaskLocations
+
+
+/**
+ * This provides context information for a task.
+ */
+trait TaskContext {
+
+  def taskId: TaskId
+
+  def executorId: Int
+
+  def appId : Int
+
+  def appName: String
+
+  /**
+   * The actorRef of AppMaster
+   * @return
+   */
+  def appMaster : ActorRef
+
+  /**
+   * The task parallelism
+   *
+   * For example, we can create 3 source tasks, and 3 sink tasks,
+   * the task parallelism is 3 for each.
+   *
+   * This can be useful when reading from partitioned data source.
+   * For example, for kafka, there may be 10 partitions, if we have
+   * parallelism of 2 for this task, then each task will be responsible
+   * to read data from 5 partitions.
+   *
+   * @return
+   */
+  def parallelism: Int
+
+
+  /**
+   * The processor graph
+   *
+   * @return
+   */
+  //TODO: we should remote this kind of detail from TaskContext.
+  def dag : DAG
+
+  /**
+   * Please don't use this if possible.
+   * @return
+   */
+  //TODO: We should remove the self from TaskContext
+  def self: ActorRef
+
+  /**
+   * Please don't use this if possible
+   * @return
+   */
+  //TODO: we should remove this in future
+  def system: ActorSystem
+
+  /**
+   * This can be used to output messages to downstream tasks.
+   *
+   * The data shuffling rule can be decided by Partitioner.
+   *
+   * @param msg
+   */
+  def output(msg : Message) : Unit
+
+
+  /**
+   * @see ActorRefProvider.actorOf
+   */
+  def actorOf(props: Props): ActorRef
+
+  /**
+   * @see ActorRefProvider.actorOf
+   */
+  def actorOf(props: Props, name: String): ActorRef
+
+  /**
+   * @see ActorRefProducer.schedule
+   */
+  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable
+}
+
+/**
+ * Streaming Task interface
+ */
+trait TaskInterface {
+
+  /**
+   * @param startTime startTime that can be used to decide from when a source producer task should replay the data source, or from when a processor task should recover its checkpoint data in to in-memory state.
+   */
+  def onStart(startTime : StartTime) : Unit
+
+  /**
+   * @param msg message send by upstream tasks
+   */
+  def onNext(msg : Message) : Unit
+
+  /**
+   * This can be used to cleanup resource when the application finished.
+   */
+  def onStop() : Unit
+}
+
+abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends TaskInterface{
+
+  import taskContext.{appId, executorId, taskId, self}
+
+  val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
+
+  protected implicit val system = taskContext.system
+
+  def onStart(startTime : StartTime) : Unit
+
+  def onNext(msg : Message) : Unit
+
+  def onStop() : Unit = {}
+}

@@ -23,21 +23,23 @@ import com.twitter.bijection.Injection
 import com.typesafe.config.ConfigFactory
 import kafka.server.{KafkaConfig => KafkaServerConfig}
 import kafka.utils.{TestUtils => TestKafkaUtils, TestZKUtils}
-import org.apache.gearpump.{TimeStamp, Message}
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
+import org.apache.gearpump.streaming.{TaskDescription, DAG, MockUtil}
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory
 import org.apache.gearpump.streaming.kafka.util.KafkaServerHarness
-import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, MessageDecoder}
-import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{Matchers, BeforeAndAfterEach, PropSpec}
+import org.apache.gearpump.streaming.task.{TaskId, StartTime}
+import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeStampFilter}
+import org.apache.gearpump.{Message, TimeStamp}
+import org.mockito.ArgumentMatcher
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.scalatest.{BeforeAndAfterEach, Matchers, PropSpec}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 import scala.language.postfixOps
+import scala.util.{Failure, Success}
+import MockUtil.{mockTaskContext, argMatch}
 
 class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfterEach with KafkaServerHarness {
   val numServers = 1
@@ -49,19 +51,16 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
     }
 
   var system1: ActorSystem = null
-  var system2: ActorSystem = null
 
   override def beforeEach: Unit = {
     super.setUp()
     system1 = ActorSystem("KafkaStreamProducer", TestUtil.DEFAULT_CONFIG)
-    system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
 
   }
 
   override def afterEach: Unit = {
     super.tearDown()
     system1.shutdown()
-    system2.shutdown()
   }
 
   property("KafkaStreamProducer should pull messages from kafka") {
@@ -72,18 +71,32 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
     val partitionsToBrokers = createTopicUntilLeaderIsElected(topic, partitions = 1, replicas = 1)
 
     val kafkaConfig = getKafkaConfig(topic, consumerEmitBatchSize = batchSize, brokerList, zkConnect)
-    val (_, echo) = StreamingTestUtil.createEchoForTaskActor(
-      classOf[KafkaStreamProducer].getName, kafkaConfig, system1, system2, usePinedDispatcherForTaskActor = true)
 
+    val context = mockTaskContext
+
+    val dag = DAG(Map(0 -> TaskDescription(classOf[KafkaStreamProducer].getName, 1)), null)
+    val taskId = TaskId(0, 0)
+    when(context.dag).thenReturn(dag)
+    when(context.taskId).thenReturn(taskId)
+
+    val producer = new KafkaStreamProducer(context, kafkaConfig)
+    producer.onStart(StartTime(0))
     val round = 3
     for (i <- 1 to round) {
       val messages = partitionsToBrokers.foldLeft(List.empty[String]) { (msgs, partitionAndBroker) =>
         msgs ++ sendMessagesToPartition(configs, topic, partitionAndBroker._1, messageNum)
       }.map(Message(_, Message.noTimeStamp))
 
-      messages.foreach { msg =>
-        echo expectMsg(10 seconds, msg)
-      }
+      var index = 0
+
+      producer.onNext(Message("next"))
+
+      var expectedMessage = messages
+      verify(context).output(argMatch[Message](msg => {
+        val compareResult = expectedMessage.head == msg
+        expectedMessage = expectedMessage.take(1)
+        compareResult
+      }))
     }
   }
 

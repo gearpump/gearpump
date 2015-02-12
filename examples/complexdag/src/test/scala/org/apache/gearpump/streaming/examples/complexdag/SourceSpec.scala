@@ -20,21 +20,27 @@ package org.apache.gearpump.streaming.examples.complexdag
 import akka.actor.ActorSystem
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.MockUtil._
+import org.mockito.ArgumentMatcher
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
-
-import scala.concurrent.duration._
 
 class SourceSpec extends WordSpec with Matchers {
 
   "Source" should {
     "Source should send a msg of List[String](classOf[Source].getCanonicalName)" in {
       val system1 = ActorSystem("Source", TestUtil.DEFAULT_CONFIG)
+
       val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-      val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Source].getName, UserConfig.empty, system1, system2)
-      echo.expectMsg(10 seconds, Message(List(classOf[Source].getCanonicalName)))
-      system1.shutdown()
-      system2.shutdown()
+
+      val context = MockUtil.mockTaskContext
+
+      val source = new Source(context, UserConfig.empty)
+      source.onNext(Message("start"))
+
+      verify(context).output(argMatch[Message](List(classOf[Source].getCanonicalName) == _.msg))
     }
   }
 }

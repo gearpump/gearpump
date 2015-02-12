@@ -20,13 +20,15 @@ package org.apache.gearpump.streaming.examples.fsio
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProducer._
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.util.HadoopConfig._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
 
-class SeqFileStreamProducer(taskContext : TaskContext, config: UserConfig) extends TaskActor(taskContext, config){
+class SeqFileStreamProducer(taskContext : TaskContext, config: UserConfig) extends Task(taskContext, config){
+
+  import taskContext.{output, self}
 
   val value = new Text()
   val key = new Text()

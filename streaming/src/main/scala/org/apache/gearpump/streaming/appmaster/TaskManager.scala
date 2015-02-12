@@ -20,16 +20,20 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.pattern.ask
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.cluster.AppMasterContext
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import org.apache.gearpump.cluster.scheduler.{Resource}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, StartClock}
-import org.apache.gearpump.streaming.Executor.RestartExecutor
+import org.apache.gearpump.streaming.executor.Executor
+import Executor.RestartExecutor
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
-import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
+import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
+import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{DAG}
+import org.apache.gearpump.streaming.DAG
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil}
 import org.slf4j.Logger
 
@@ -59,11 +63,13 @@ private[appmaster] class TaskManager(
   when (Uninitialized) {
     case Event(DagInit(dag), _) =>
       executorManager ! SetTaskManager(self)
-      LOG.info("Sending request resource to master...")
-
       taskScheduler.setTaskDAG(dag)
       val resourceRequests = taskScheduler.getResourceRequests()
+
+      getMinClock.map { clock =>
+        LOG.info(s"Current min Clock is $clock, sending request resource to master...")
         executorManager ! StartExecutors(resourceRequests)
+      }
       goto (StartApplication) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
   }
 
@@ -85,8 +91,8 @@ private[appmaster] class TaskManager(
               //Launch task
               LOG.info("Sending Launch Task to executor: " + executor.toString())
 
-              val taskContext = TaskContext(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, dag)
-              executor ! LaunchTask(taskId, taskContext, ActorUtil.loadClass(taskDescription.taskClass))
+              val taskContext = TaskContextData(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, dag)
+              executor ! LaunchTask(taskId, taskContext, TaskUtil.loadClass(taskDescription.taskClass))
               //Todo: subtract the actual resource used by task
               val usedResource = Resource(1)
               launchTask(remainResources - usedResource)

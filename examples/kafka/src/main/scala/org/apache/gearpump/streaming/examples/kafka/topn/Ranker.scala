@@ -20,10 +20,11 @@ package org.apache.gearpump.streaming.examples.kafka.topn
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-class Ranker(taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
+class Ranker(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import org.apache.gearpump.streaming.examples.kafka.topn.Config._
+  import taskContext.output
 
   private val windowLengthMS = getWindowLengthMS(conf)
   private val emitFrequencyMS = getEmitFrequencyMS(conf)

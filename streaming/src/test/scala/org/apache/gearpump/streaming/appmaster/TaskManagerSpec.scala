@@ -18,30 +18,28 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.{ActorRef, Actor, Props, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.cluster.scheduler.{ResourceRequest, Resource}
-import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
-import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
-import org.apache.gearpump.streaming.Executor.RestartExecutor
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
+import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTask}
+import org.apache.gearpump.streaming.executor.Executor
+import Executor.RestartExecutor
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.TaskManager.MessageLoss
 import org.apache.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
-import org.apache.gearpump.streaming.task.{TaskLocations, GetLatestMinClock, UpdateClock, TaskId}
+import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{DAG, TaskDescription}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
-import org.mockito.Mockito
-import org.scalatest.{FlatSpec, BeforeAndAfterEach, Matchers, WordSpec}
-import org.scalatest.FunSuite
-import org.scalatest.BeforeAndAfter
-import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
 class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
@@ -104,8 +102,6 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     // existing executors
     executorManager.expectMsg(BroadCast(RestartExecutor))
 
-    import scala.concurrent.duration._
-
     // ask for new executors
     val returned = executorManager.expectMsg(StartExecutors(resourceRequest))
     executorManager.reply(StartExecutorsTimeOut)
@@ -133,6 +129,10 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val scheduler = mock(classOf[TaskScheduler])
     val taskManager = system.actorOf(
       Props(new TaskManager(appId, dag, scheduler, executorManager.ref, clockService.ref, appMaster.ref, "appName")))
+
+    // taskmanager should return the latest clock to task(0,0)
+    clockService.expectMsg(GetLatestMinClock)
+    clockService.reply(LatestMinClock(0))
 
     executorManager.expectMsgType[SetTaskManager]
     executorManager.expectMsgType[StartExecutors]
@@ -183,11 +183,15 @@ object TaskManagerSpec {
     taskManager: ActorRef,
     scheduler: TaskScheduler)
 
-  class Task1 extends Actor {
-    def receive: Receive = null
+  class Task1(taskContext : TaskContext, userConf : UserConfig)
+    extends Task(taskContext, userConf) {
+    override def onStart(startTime: StartTime): Unit = ???
+    override def onNext(msg: Message): Unit = ???
   }
 
-  class Task2 extends Actor {
-    def receive: Receive = null
+  class Task2 (taskContext : TaskContext, userConf : UserConfig)
+    extends Task(taskContext, userConf) {
+    override def onStart(startTime: StartTime): Unit = ???
+    override def onNext(msg: Message): Unit = ???
   }
 }

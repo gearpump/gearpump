@@ -17,35 +17,41 @@
  */
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
-import akka.actor.ActorSystem
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.task.StartTime
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.{FlatSpec, Matchers}
 
 import scala.collection.mutable
 
-class SumSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
-  val stringGenerator = Gen.alphaStr
-  val system1 = ActorSystem("SumSpec", TestUtil.DEFAULT_CONFIG)
-  val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-  val (sum, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Sum].getName, UserConfig.empty, system1, system2)
-  val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
+class SumSpec extends FlatSpec with Matchers {
 
-  property("Sum should calculate the frequency of the word correctly"){
-    forAll(stringGenerator) { txt =>
-      val current = map.getOrElse(txt, 0L)
-      val count = current + 1
-      map.put(txt, count)
-      sum.tell(Message(txt), sum)
-      assert(echo.receiveN(1).head.asInstanceOf[Message].msg.asInstanceOf[(_, String)]._2 == s"$txt:$count")
+  it should "sum should calculate the frequency of the word correctly" in {
+
+    val stringGenerator = Gen.alphaStr
+    val expectedWordCountMap : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
+
+    val taskContext = MockUtil.mockTaskContext
+
+    val sum = new Sum(taskContext, UserConfig.empty)
+    sum.onStart(StartTime(0))
+    val str = "once two two three three three"
+
+    var totalWordCount = 0
+    stringGenerator.map {word =>
+      totalWordCount += 1
+      expectedWordCountMap.put(word, expectedWordCountMap.getOrElse(word, 0L) + 1)
+      sum.onNext(Message(word))
     }
-  }
+    verify(taskContext, times(totalWordCount)).output(anyObject[Message])
 
-  after {
-    system1.shutdown()
-    system2.shutdown()
+    expectedWordCountMap.foreach { wordCount =>
+      val (word, count) = wordCount
+      assert(count == sum.map.get(word).get)
+    }
   }
 }

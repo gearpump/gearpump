@@ -17,13 +17,16 @@
  */
 package org.apache.gearpump.streaming.examples.kafka.topn
 
-import akka.actor.ActorSystem
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.MockUtil._
+import org.mockito.ArgumentMatcher
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 class RankerSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
   val emitFrequencyMS = 1000
@@ -40,11 +43,13 @@ class RankerSpec extends PropSpec with PropertyChecks with Matchers with BeforeA
     withInt(Config.WINDOW_LENGTH_MS, windowLengthMS).
     withInt(Config.TOPN, topn)
 
-  val system1 = ActorSystem("Ranker", TestUtil.DEFAULT_CONFIG)
-  val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
 
   property("Ranker should output the right topN"){
-    val (ranker, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[Ranker].getName, userConf, system1, system2)
+
+    val context = MockUtil.mockTaskContext
+
+    val ranker = new Ranker(context, userConf)
+
     var timeStamp = 1
     val rankings = new Rankings[String]
     //Set minSuccessful to trigger the output action of Ranker
@@ -53,17 +58,15 @@ class RankerSpec extends PropSpec with PropertyChecks with Matchers with BeforeA
     forAll(objCountGen) { kv =>
       val (obj, count) = kv
       rankings.update(obj, count)
-      ranker.tell(Message(kv, timeStamp), ranker)
+      ranker.onNext(Message(kv, timeStamp))
       timeStamp += 1
     }
 
-    rankings.getTopN(topn).foreach { result =>
-      assert(result == echo.receiveN(1).head.asInstanceOf[Message].msg)
-    }
-  }
+    val expected = rankings.getTopN(topn).toMap
 
-  after {
-    system1.shutdown()
-    system2.shutdown()
+    verify(context, times(expected.size)).output(argMatch[Message]{ kv =>
+      val (message, rank) = kv.msg.asInstanceOf[(String, Long)]
+      expected.get(message) == Option(rank)
+    })
   }
 }

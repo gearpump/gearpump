@@ -26,7 +26,8 @@ import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.{AppMasterContext, ClusterConfigSource, ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
-import org.apache.gearpump.streaming.{AppDescription, Executor}
+import org.apache.gearpump.streaming.AppDescription
+import org.apache.gearpump.streaming.executor.Executor
 import org.apache.gearpump.util.{LogUtil, Util}
 
 import scala.util.Try
