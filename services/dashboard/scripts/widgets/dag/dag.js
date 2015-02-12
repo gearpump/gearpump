@@ -1,4 +1,4 @@
-/*
+*
  * The MIT License
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -89,7 +89,8 @@ angular.module('app.widgets.dag', ['adf.provider'])
     function pathattr(d) {
       var dx = d.target.x - d.source.x,
           dy = d.target.y - d.source.y,
-          path = "M0,0" + "L" + dx + "," + dy;
+          dr = Math.sqrt(dx * dx + dy * dy),
+          path = "M0,0" + "A" + dr + "," + dr + "0 0,1" + dx + "," + dy;
       return path;
     }
 
@@ -153,8 +154,9 @@ angular.module('app.widgets.dag', ['adf.provider'])
        });
        function pathattr(d) {
          var dx = d.target.display.x - d.source.display.x,
-             dy = d.target.display.y - d.source.display.y;
-         var path = "M0,0" + "L" + dx + "," + dy;
+             dy = d.target.display.y - d.source.display.y,
+             dr = Math.sqrt(dx * dx + dy * dy),
+             path = "M0,0" + "A" + dr + "," + dr + "0 0,1" + dx + "," + dy;
          return path;
        }
        function textattr(textselector) {
