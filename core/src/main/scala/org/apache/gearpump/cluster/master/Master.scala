@@ -105,6 +105,13 @@ private[cluster] class Master extends Actor with Stash {
       appManager forward get
     case GetAllWorkers =>
       sender ! WorkerList(workers.values.toList)
+    case get@GetWorkerData(workerId) =>
+      workers.find(_._2 == workerId) match {
+        case Some((ref, _)) =>
+          ref forward get
+        case None =>
+          sender ! WorkerData(None)
+      }
     case invalidAppMaster: InvalidAppMaster =>
       appManager forward invalidAppMaster
   }

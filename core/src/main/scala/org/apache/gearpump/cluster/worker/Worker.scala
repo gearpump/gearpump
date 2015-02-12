@@ -20,18 +20,19 @@ package org.apache.gearpump.cluster.worker
 
 import java.io.File
 import java.net.URL
-import java.util
 import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor._
 import akka.pattern.pipe
 import com.typesafe.config.Config
+import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.worker.Worker.ExecutorInfo
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -39,6 +40,9 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, future}
 import scala.util.{Failure, Success, Try}
 
+case class WorkerDescription(workerId: Int, state: String, host: String, port: Int,
+                             aliveFor: Long, logFile: String, configFile: String,
+                             executors: Array[ExecutorInfo], totalSlots: Int)
 /**
  * masterProxy is used to resolve the master
  */
@@ -46,9 +50,16 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   import Worker._
 
   private val systemConfig : Config = context.system.settings.config
+  private val configStr = systemConfig.root().render
+  private val logFile = System.getProperty("gearpump.log.file")
+  private val address = context.system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  private val host = address.host.get
+  private val port = address.port.get
   private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()
+  private var executorsInfo = Map[Int, ExecutorInfo]()
   private var id = -1
+  private val createdTime = System.currentTimeMillis()
   override def receive : Receive = null
   var master : ActorRef = null
   val LOG : Logger = LogUtil.getLogger(getClass, worker = id)
@@ -65,6 +76,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   }
 
   private def updateResourceTimeOut(): Unit = {
+
     LOG.error(s"Worker $id update resource time out")
   }
 
@@ -92,6 +104,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         resource = resource - launch.resource
         allocatedResource = allocatedResource + (executor -> launch.resource)
         sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+        executorsInfo += launch.executorId -> ExecutorInfo(launch.appId, launch.executorId, launch.resource.slots)
         context.watch(executor)
       }
     case UpdateResourceFailed(reason, ex) =>
@@ -99,6 +112,10 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       context.stop(self)
     case UpdateResourceSucceed =>
       LOG.info(s"Worker $id update resource succeed")
+    case GetWorkerData(workerId) =>
+      val aliveFor = System.currentTimeMillis() - createdTime
+      sender ! WorkerData(Some(WorkerDescription(id, "active", host, port,
+        aliveFor, logFile, configStr, executorsInfo.values.toArray, resource.slots)))
   }
 
   def terminationWatch(master : ActorRef) : Receive = {
@@ -156,6 +173,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
+  case class ExecutorInfo(appId: Int, executorId: Int, slots: Int)
+
 
   class ExecutorWatcher(launch: LaunchExecutor) extends Actor {
 
