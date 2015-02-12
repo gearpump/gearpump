@@ -27,15 +27,6 @@ import org.slf4j.Logger
 
 import scala.concurrent._
 
-case class HostPort(host: String, port: Int)
-
-object HostPort {
-  def apply(address : String) : HostPort = {
-     val hostAndPort = address.split(":")
-    new HostPort(hostAndPort(0), hostAndPort(1).toInt)
-  }
-}
-
 trait ActorLookupById {
   def lookupLocalActor(id: Long): Option[ActorRef]
 }

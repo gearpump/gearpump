@@ -26,11 +26,14 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.cluster.master.Master.WorkerTerminated
+import org.apache.gearpump.cluster.master.Master._
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.apache.gearpump.jarstore.JarStore
-import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
+import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util._
 import org.slf4j.Logger
+import scala.collection.JavaConverters._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -49,9 +52,14 @@ private[cluster] class Master extends Actor with Stash {
 
   private var workers = new immutable.HashMap[ActorRef, Int]
 
+  private val birth = System.currentTimeMillis()
+
   LOG.info("master is started at " + ActorUtil.getFullPath(context.system, self.path) + "...")
 
-  val jarStore = context.actorOf(JarStore.props(systemConfig.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH)))
+  val jarStoreRootPath = systemConfig.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH)
+  val jarStore = context.actorOf(JarStore.props(jarStoreRootPath))
+
+  private val hostPort = HostPort(ActorUtil.getSystemAddress(context.system).hostPort)
 
   override def receive : Receive = workerMsgHandler orElse
     appMasterMsgHandler orElse
@@ -112,8 +120,28 @@ private[cluster] class Master extends Actor with Stash {
         case None =>
           sender ! WorkerData(None)
       }
+
+    case GetMasterData =>
+      val aliveFor = System.currentTimeMillis() - birth
+      val logFilePath = System.getProperty("gearpump.log.file")
+      val masterDescription = MasterDescription(hostPort.toTuple, getMasterClusterList.map(_.toTuple), aliveFor, logFilePath, jarStoreRootPath, MasterStatus.Synced)
+      sender ! MasterData(masterDescription)
+
     case invalidAppMaster: InvalidAppMaster =>
       appManager forward invalidAppMaster
+  }
+
+  private def getMasterClusterList: List[HostPort] = {
+    var cluster = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS)
+      .asScala.map(HostPort(_)).toList
+
+    if (cluster.isEmpty) {
+
+      //add myself into the list if it is a single node cluster
+      List(hostPort)
+    } else {
+      cluster
+    }
   }
 
   def clientMsgHandler : Receive = {
@@ -167,6 +195,20 @@ private[cluster] class Master extends Actor with Stash {
   }
 }
 
-object Master{
-  case class WorkerTerminated(workerId : Int)
+object Master {
+
+  case class WorkerTerminated(workerId: Int)
+
+  object MasterStatus {
+    type Type = String
+    val Synced = "synced"
+    val UnSynced = "unsynced"
+  }
+
+  case class MasterDescription(leader: (String, Int), cluster: List[(String, Int)], aliveFor: Long,
+                               logFile: String, jarStore: String,
+                               masterStatus: MasterStatus.Type)
+
+  case class SlotStatus(totalSlots: Int, availableSlots: Int)
+
 }
