@@ -19,10 +19,12 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
+import org.apache.gearpump.cluster.TestUtil
+import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.worker.WorkerDescription
 
 import org.apache.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, FlatSpec}
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
 
@@ -30,7 +32,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest with WorkersService with WorkerService
-with Matchers with BeforeAndAfterEach {
+with Matchers with BeforeAndAfterAll {
 
   import upickle._
 
@@ -38,24 +40,24 @@ with Matchers with BeforeAndAfterEach {
 
   def actorRefFactory = system
 
-  var restUtil = RestTestUtil.startRestServices
+  var miniCluster:MiniCluster = null
+  def master = miniCluster.mockMaster
 
-  val master = restUtil match {
-    case Success(v) =>
-      v.miniCluster.mockMaster
-    case Failure(v) =>
-      LOG.error("Could not start rest services", v)
-      null
+  override def beforeAll: Unit = {
+    miniCluster = TestUtil.startMiniCluster
   }
 
-  override def beforeEach: Unit = {
+  override def afterAll: Unit = {
+    miniCluster.shutDown()
   }
 
   "WorkerService" should "return a json structure of worker data for GET request" in {
     implicit val customTimeout = RouteTestTimeout(25.seconds)
     (Get("/workers") ~> workersRoute).asInstanceOf[RouteResult] ~> check {
       //check the type
-      read[WorkerList](response.entity.asString).workers.foreach { workerId =>
+      val workerListJson = response.entity.asString
+      val workers = read[WorkerList](workerListJson).workers
+      workers.foreach { workerId =>
         (Get(s"/workers/$workerId") ~> workerRoute).asInstanceOf[RouteResult] ~> check {
           //check the type
           val responseBody = response.entity.asString
@@ -65,16 +67,6 @@ with Matchers with BeforeAndAfterEach {
           workerDescription.state shouldBe "active"
         }
       }
-    }
-  }
-
-  override def afterEach: Unit = {
-    restUtil match {
-      case Success(v) =>
-        LOG.info("shutting down the cluster....")
-        v.shutdown
-      case Failure(v) =>
-        LOG.error("Could not start rest services", v)
     }
   }
 }

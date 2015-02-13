@@ -34,7 +34,7 @@ import scala.util.{Failure, Success, Try}
 
 trait AppMasterService extends HttpService  {
   import upickle._
-  val master:ActorRef
+  def master:ActorRef
   implicit val system: ActorSystem
 
   def appMasterRoute = get {

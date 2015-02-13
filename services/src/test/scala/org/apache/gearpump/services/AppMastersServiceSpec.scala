@@ -19,8 +19,10 @@ package org.apache.gearpump.services
 
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
+import org.apache.gearpump.cluster.TestUtil
+import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec, Matchers}
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
 
@@ -28,21 +30,21 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 
-class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers with BeforeAndAfterEach {
+class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers with BeforeAndAfterAll {
   import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
-  var restUtil = RestTestUtil.startRestServices
 
-  val master = restUtil match {
-    case Success(v) =>
-      v.miniCluster.mockMaster
-    case Failure(v) =>
-      LOG.error("Could not start rest services", v)
-      null
+
+  var miniCluster:MiniCluster = null
+  def master = miniCluster.mockMaster
+
+  override def beforeAll: Unit = {
+    miniCluster = TestUtil.startMiniCluster
   }
 
-  override def beforeEach : Unit = {
+  override def afterAll: Unit = {
+    miniCluster.shutDown()
   }
 
   "AppMastersService" should "return a json structure of appMastersData for GET request" in {
@@ -52,15 +54,4 @@ class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMas
       read[AppMastersData](response.entity.asString)
     }
   }
-
-  override def afterEach: Unit = {
-    restUtil match {
-      case Success(v) =>
-        LOG.info("shutting down the cluster....")
-        v.shutdown()
-      case Failure(v) =>
-        LOG.error("Could not start rest services", v)
-    }
-  }
-
 }
