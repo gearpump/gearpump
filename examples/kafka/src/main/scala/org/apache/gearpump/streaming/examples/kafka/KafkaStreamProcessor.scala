@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming.examples.kafka
 
 import java.util.concurrent.TimeUnit
 
+import akka.actor.Cancellable
 import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
@@ -32,8 +33,6 @@ import scala.concurrent.duration.FiniteDuration
 class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
   extends Task(taskContext, inputConfig) {
 
-  import taskContext.schedule
-
   private val kafkaConfig = inputConfig.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val topic = kafkaConfig.getProducerTopic
   private val batchSize = kafkaConfig.getProducerEmitBatchSize
@@ -44,8 +43,10 @@ class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
   private var lastCount = 0L
   private var lastTime = System.currentTimeMillis()
 
+  private var scheduler: Cancellable = null
+
   override def onStart(startTime : StartTime): Unit = {
-      schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+    scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput())
   }
 
@@ -58,7 +59,11 @@ class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
  }
 
   override def onStop(): Unit = {
+    if (scheduler != null) {
+      scheduler.cancel()
+    }
     kafkaSink.close()
+    LOG.info("KafkaStreamProcessor stopped")
   }
 
   private def reportThroughput() : Unit = {

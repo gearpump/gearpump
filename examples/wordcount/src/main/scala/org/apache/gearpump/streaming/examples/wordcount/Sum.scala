@@ -38,7 +38,7 @@ class Sum (taskContext : TaskContext, conf: UserConfig) extends Task(taskContext
   private var scheduler : Cancellable = null
 
   override def onStart(startTime : StartTime) : Unit = {
-    taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+    scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
   }
 
@@ -52,7 +52,9 @@ class Sum (taskContext : TaskContext, conf: UserConfig) extends Task(taskContext
   }
 
   override def onStop() : Unit = {
-    scheduler.cancel()
+    if (scheduler != null) {
+      scheduler.cancel()
+    }
   }
 
   def reportWordCount() : Unit = {
