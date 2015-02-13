@@ -47,7 +47,7 @@ angular.module('app-02', ['adf', 'LocalStorageModule'])
           styleClass: "col-md-8",
           widgets: [
             {
-              type: "dag",
+              type: "visdag",
               config: {
               },
               title: "DAG"
