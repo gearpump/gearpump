@@ -43,20 +43,18 @@ class MasterHAService extends Actor with Stash with ClusterReplication {
       val client = sender
 
       (replicator ? new Get(STATE, ReadFrom(readQuorum), TIMEOUT, None))
-        .asInstanceOf[Future[GetResponse]].map { response =>
-        response match {
-          case GetSuccess(_, replicatedState: LWWMap, _) =>
-            val maxId = replicatedState.get(MaxAppId).asInstanceOf[Option[Int]].getOrElse(0)
-            val state = Set.apply(replicatedState.entries.filter(_._1 != MaxAppId).values.toSeq.asInstanceOf[Seq[ApplicationState]] : _*)
-            client ! MasterState(maxId, state)
-            LOG.info(s"Successfully retrived replicated master state")
-          case x: NotFound =>
-            LOG.info(s"cannot find any master state")
-            client ! MasterState(0, Set.empty[ApplicationState])
-          case x: Any =>
-            LOG.info(s"Failed to get replicated master state...${x.getClass.getName}")
-            client ! GetMasterStateFailed(new Exception(x.getClass.getName))
-        }
+        .asInstanceOf[Future[GetResponse]].map {
+        case GetSuccess(_, replicatedState: LWWMap, _) =>
+          val maxId = replicatedState.get(MaxAppId).asInstanceOf[Option[Int]].getOrElse(0)
+          val state = Set.apply(replicatedState.entries.filter(_._1 != MaxAppId).values.toSeq.asInstanceOf[Seq[ApplicationState]]: _*)
+          client ! MasterState(maxId, state)
+          LOG.info(s"Successfully retrived replicated master state")
+        case x: NotFound =>
+          LOG.info(s"cannot find any master state")
+          client ! MasterState(0, Set.empty[ApplicationState])
+        case x: Any =>
+          LOG.info(s"Failed to get replicated master state...${x.getClass.getName}")
+          client ! GetMasterStateFailed(new Exception(x.getClass.getName))
       }
     case UpdateMasterState(state) =>
       val client = sender

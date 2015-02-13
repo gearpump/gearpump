@@ -58,6 +58,7 @@ object Constants {
 
   val GEARPUMP_USERNAME = "gearpump.username"
   val GEARPUMP_APPLICATION_ID = "gearpump.applicationId"
+  val GEARPUMP_MASTER_STARTTIME = "gearpump.master.starttime"
   val GEARPUMP_EXECUTOR_ID = "gearpump.executorId"
   // Application jar property
   val GEARPUMP_APP_JAR = "gearpump.app.jar"

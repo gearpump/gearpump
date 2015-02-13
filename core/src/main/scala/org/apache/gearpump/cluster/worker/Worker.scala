@@ -31,6 +31,7 @@ import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
+import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.util._
 import org.slf4j.Logger
@@ -49,19 +50,19 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()
   private var id = -1
+  private var masterInfo: MasterInfo = null
   override def receive : Receive = null
-  var master : ActorRef = null
   val LOG : Logger = LogUtil.getLogger(getClass, worker = id)
 
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
-    case WorkerRegistered(id) =>
+    case WorkerRegistered(id, masterInfo) =>
       this.id = id
+      this.masterInfo = masterInfo
       killSelf.cancel()
-      master = sender()
-      context.watch(master)
+      context.watch(masterInfo.master)
       LOG.info(s"Worker $id Registered ....")
-      sendMsgWithTimeOutCallBack(sender, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
-      context.become(appMasterMsgHandler orElse terminationWatch(master) orElse ActorUtil.defaultMsgHandler(self))
+      sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+      context.become(appMasterMsgHandler orElse terminationWatch(masterInfo.master) orElse ActorUtil.defaultMsgHandler(self))
   }
 
   private def updateResourceTimeOut(): Unit = {
@@ -87,11 +88,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       } else {
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
-        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch), actorName)
+        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo), actorName)
 
         resource = resource - launch.resource
         allocatedResource = allocatedResource + (executor -> launch.resource)
-        sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+        sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         context.watch(executor)
       }
     case UpdateResourceFailed(reason, ex) =>
@@ -113,7 +114,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
         val allocated = allocatedResource.get(actor)
         if (allocated.isDefined) {
-          resource = resource + (allocated.get)
+          resource = resource + allocated.get
           allocatedResource = allocatedResource - actor
           sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         }
@@ -157,7 +158,7 @@ private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
 
-  class ExecutorWatcher(launch: LaunchExecutor) extends Actor {
+  class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo) extends Actor {
 
     implicit val executionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
@@ -185,28 +186,31 @@ private[cluster] object Worker {
         val jarPath = appJar.map {appJar =>
           val tempFile = File.createTempFile(appJar.name, ".jar")
           appJar.container.copyToLocalFile(tempFile)
-          var file = new URL("file:"+tempFile)
+          val file = new URL("file:"+tempFile)
           file.getFile
         }
 
         val configFile = Option(ctx.executorAkkaConfig).filterNot(_.isEmpty).map{conf =>
           val configFile = File.createTempFile("gearpump", ".conf")
           ClusterConfig.saveConfig(conf, configFile)
-          var file = new URL("file:" + configFile)
+          val file = new URL("file:" + configFile)
           file.getFile
         }
 
         val classPathPrefix = Util.getCurrentClassPath ++ ctx.classPath
         val classPath = jarPath.map(classPathPrefix :+ _).getOrElse(classPathPrefix)
 
-        val logArgs = List(s"-D${Constants.GEARPUMP_APPLICATION_ID}=${launch.appId}", s"-D${Constants.GEARPUMP_EXECUTOR_ID}=${launch.executorId}")
+        val logArgs = List(
+          s"-D${Constants.GEARPUMP_APPLICATION_ID}=${launch.appId}",
+          s"-D${Constants.GEARPUMP_EXECUTOR_ID}=${launch.executorId}",
+          s"-D${Constants.GEARPUMP_MASTER_STARTTIME}=${getFormatedTime(masterInfo.startTime)}")
         val configArgs = configFile.map(confFilePath =>
           List(s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=$confFilePath")
           ).getOrElse(List.empty[String])
 
         // pass hostname as a JVM parameter, so that child actorsystem can read it
         // in priority
-        var host = Try(context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)).map(
+        val host = Try(context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)).map(
           host => List(s"-D${Constants.NETTY_TCP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
 
         val username = List(s"-D${Constants.GEARPUMP_USERNAME}=${ctx.username}")
@@ -253,6 +257,12 @@ private[cluster] object Worker {
           case Failure(e) => LOG.error("Executor exit with errors", e)
         }
         context.stop(self)
+    }
+
+    private def getFormatedTime(timestamp: Long): String = {
+      val datePattern = "yyyy-MM-dd-hh-mm"
+      val format = new java.text.SimpleDateFormat(datePattern)
+      format.format(timestamp)
     }
   }
 
