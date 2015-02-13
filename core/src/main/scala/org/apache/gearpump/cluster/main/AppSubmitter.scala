@@ -11,7 +11,7 @@ object AppSubmitter extends App with ArgumentsParser {
   override val ignoreUnknownArgument = true
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "namePrefix" -> CLIOption[String]("application name prefix", required = false),
+    "namePrefix" -> CLIOption[String]("application name prefix", required = false, defaultValue = Some("")),
     "jar" -> CLIOption("<application>.jar", required = true))
 
   override val remainArgs = Array(
@@ -30,8 +30,8 @@ object AppSubmitter extends App with ArgumentsParser {
     // Set jar path to be submitted to cluster
     System.setProperty(Constants.GEARPUMP_APP_JAR, jar)
 
-    if (config.exists("namePrefix")) {
-      val namePrefix = config.getString("namePrefix")
+    val namePrefix = config.getString("namePrefix")
+    if (namePrefix.nonEmpty) {
       if (!Util.validApplicationName(namePrefix)) {
         throw new Exception(s"$namePrefix is not a valid prefix for an application name")
       }
