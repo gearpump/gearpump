@@ -82,14 +82,14 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     TestActorRef[AppMaster](
       AppMasterRuntimeEnvironment.props(List(mockMasterProxy.path), appDescription, appMasterContext))(getActorSystem)
 
-    val registerAppMaster = mockMaster.receiveOne(5 seconds)
+    val registerAppMaster = mockMaster.receiveOne(15 seconds)
     assert(registerAppMaster.isInstanceOf[RegisterAppMaster])
     appMaster = registerAppMaster.asInstanceOf[RegisterAppMaster].appMaster
 
     mockMaster.reply(AppMasterRegistered(appId))
-    mockMaster.expectMsg(GetAppData(appId, "startClock"))
+    mockMaster.expectMsg(15 seconds, GetAppData(appId, "startClock"))
     mockMaster.reply(GetAppDataResult("startClock", 0L))
-    mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(4))))
+    mockMaster.expectMsg(15 seconds, RequestResource(appId, ResourceRequest(Resource(4))))
   }
 
   override def afterEach() = {

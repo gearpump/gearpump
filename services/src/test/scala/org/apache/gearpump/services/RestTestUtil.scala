@@ -52,6 +52,7 @@ object RestTestUtil {
       miniCluster.shutDown()
       IO(Http) ? Http.CloseAll
       system.shutdown()
+      system.awaitTermination()
     }
   }
 

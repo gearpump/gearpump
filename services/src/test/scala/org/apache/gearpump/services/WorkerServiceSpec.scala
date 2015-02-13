@@ -52,13 +52,14 @@ with Matchers with BeforeAndAfterEach {
   }
 
   "WorkerService" should "return a json structure of worker data for GET request" in {
-    implicit val customTimeout = RouteTestTimeout(15.seconds)
+    implicit val customTimeout = RouteTestTimeout(25.seconds)
     (Get("/workers") ~> workersRoute).asInstanceOf[RouteResult] ~> check {
       //check the type
       read[WorkerList](response.entity.asString).workers.foreach { workerId =>
         (Get(s"/workers/$workerId") ~> workerRoute).asInstanceOf[RouteResult] ~> check {
           //check the type
           val responseBody = response.entity.asString
+          LOG.info(s"$responseBody")
           val workerDescription = read[WorkerDescription](responseBody)
           workerDescription.workerId shouldBe workerId
           workerDescription.state shouldBe "active"
@@ -71,7 +72,7 @@ with Matchers with BeforeAndAfterEach {
     restUtil match {
       case Success(v) =>
         LOG.info("shutting down the cluster....")
-        v.shutdown()
+        v.shutdown
       case Failure(v) =>
         LOG.error("Could not start rest services", v)
     }
