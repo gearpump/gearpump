@@ -88,6 +88,8 @@ object Build extends sbt.Build {
         else
           Some("releases"  at nexus + "service/local/staging/deploy/maven2")
       },
+
+      publishArtifact in Test := true,
       
       pomExtra := {
       <url>https://github.com/intel-hadoop/gearpump</url>
