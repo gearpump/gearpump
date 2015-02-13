@@ -19,12 +19,13 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.TestUtil.MiniCluster
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription, DAG}
+import org.apache.gearpump.streaming.{StreamingTestUtil, AppDescription, TaskDescription, DAG}
 import org.apache.gearpump.util.{Graph, LogUtil}
-import org.scalatest.{Matchers, FlatSpec, BeforeAndAfterEach}
+import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec, BeforeAndAfterEach}
 import org.slf4j.Logger
 import spray.routing.RequestContext
 import spray.testkit.{ScalatestRouteTest}
@@ -32,37 +33,27 @@ import spray.testkit.{ScalatestRouteTest}
 import scala.util.{Failure, Success}
 import scala.concurrent.duration._
 
-class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterEach {
+class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterAll {
   import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
-  var restUtil = RestTestUtil.startRestServices
 
-  val master = restUtil match {
-    case Success(v) =>
-      v.miniCluster.mockMaster
-    case Failure(v) =>
-      LOG.error("Could not start rest services", v)
-      null
+  var miniCluster:MiniCluster = null
+  def master = miniCluster.mockMaster
+
+  override def beforeAll: Unit = {
+    miniCluster = TestUtil.startMiniCluster
+    StreamingTestUtil.startAppMaster(miniCluster, 0)
   }
 
-  override def beforeEach : Unit = {
+  override def afterAll: Unit = {
+    miniCluster.shutDown()
   }
 
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
     (Get("/appmaster/0?detail=false") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
       read[AppMasterData](response.entity.asString)
-    }
-  }
-
-  override def afterEach: Unit = {
-    restUtil match {
-      case Success(v) =>
-        LOG.info("shutting down the cluster....")
-        v.shutdown()
-      case Failure(v) =>
-        LOG.error("Could not start rest services", v)
     }
   }
 }
