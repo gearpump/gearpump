@@ -25,7 +25,7 @@
 
 angular.module('app', [
   'adf', 
-  'app.widgets.dag', 
+  'app.widgets.visdag',
   'app.widgets.applist', 
   'LocalStorageModule',
   'structures', 
