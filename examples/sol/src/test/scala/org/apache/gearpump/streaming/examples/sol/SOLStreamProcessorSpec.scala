@@ -38,5 +38,6 @@ class SOLStreamProcessorSpec extends FlatSpec with Matchers {
     val msg = Message("msg")
     sol.onNext(msg)
     verify(context, times(1)).output(msg)
+    sol.onStop()
   }
 }

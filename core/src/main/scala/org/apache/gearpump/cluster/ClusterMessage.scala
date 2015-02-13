@@ -19,8 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.ActorRef
-import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
-import org.apache.gearpump.cluster.master.Master.MasterDescription
+import org.apache.gearpump.cluster.master.Master.{MasterInfo, MasterDescription}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerDescription
 
@@ -36,7 +35,7 @@ object WorkerToMaster {
 }
 
 object MasterToWorker {
-  case class WorkerRegistered(workerId : Int)
+  case class WorkerRegistered(workerId : Int, masterInfo: MasterInfo)
   case class UpdateResourceFailed(reason : String = null, ex: Throwable = null)
   case object UpdateResourceSucceed
 }

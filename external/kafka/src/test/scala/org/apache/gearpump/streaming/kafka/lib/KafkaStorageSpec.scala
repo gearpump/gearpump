@@ -168,4 +168,12 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
       Try(kafkaStorage.load(consumer)).isFailure shouldBe true
     }
   }
+
+  property("KafkaStorage close should close kafka producer") {
+    val producer = mock[Producer[Array[Byte], Array[Byte]]]
+    val getConsumer = mock[() => KafkaConsumer]
+    val kafkaStorage = new KafkaStorage("topic", false, producer, getConsumer())
+    kafkaStorage.close()
+    verify(producer).close()
+  }
 }

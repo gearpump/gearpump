@@ -34,7 +34,7 @@ abstract class Scheduler extends Actor{
   protected var resources = new mutable.HashMap[Int, (ActorRef, Resource)]
 
   def handleScheduleMessage : Receive = {
-    case WorkerRegistered(id) =>
+    case WorkerRegistered(id, _) =>
       if(!resources.contains(id)) {
         LOG.info(s"Worker $id added to the scheduler")
         resources.put(id, (sender, Resource.empty))

@@ -66,4 +66,8 @@ private[kafka] class KafkaOffsetManager(storage: OffsetStorage) extends OffsetMa
       case Failure(e) => throw e
     }
   }
+
+  override def close(): Unit = {
+    storage.close()
+  }
 }

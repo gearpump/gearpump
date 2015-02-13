@@ -39,5 +39,7 @@ trait OffsetTimeStampResolver {
 /**
  * manages message's offset on TimeReplayableSource and timestamp
  */
-trait OffsetManager extends MessageFilter with OffsetTimeStampResolver
+trait OffsetManager extends MessageFilter with OffsetTimeStampResolver {
+  def close(): Unit
+}
 

@@ -55,6 +55,8 @@ trait TimeReplayableSource {
    *  message count may be less than num
    */
   def pull(num: Int): List[Message]
+
+  def close(): Unit
 }
 
 

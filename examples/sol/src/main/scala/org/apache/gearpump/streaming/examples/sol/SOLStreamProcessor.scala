@@ -38,7 +38,7 @@ class SOLStreamProcessor(taskContext : TaskContext, conf: UserConfig) extends Ta
   private var snapShotTime : Long = 0
 
   override def onStart(startTime : StartTime) : Unit = {
-    taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+    scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount())
     snapShotTime = System.currentTimeMillis()
   }
@@ -49,7 +49,9 @@ class SOLStreamProcessor(taskContext : TaskContext, conf: UserConfig) extends Ta
   }
 
   override def onStop() : Unit = {
-    scheduler.cancel()
+    if (scheduler != null) {
+      scheduler.cancel()
+    }
   }
 
   def reportWordCount() : Unit = {

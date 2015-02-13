@@ -23,6 +23,7 @@ import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
+import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -58,7 +59,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       scheduler.tell(RequestResource(appId, request1), mockAppMaster.ref)
       scheduler.tell(RequestResource(appId, request2), mockAppMaster.ref)
       scheduler.tell(ApplicationFinished(appId), mockAppMaster.ref)
-      scheduler.tell(WorkerRegistered(workerId1), mockWorker1.ref)
+      scheduler.tell(WorkerRegistered(workerId1, MasterInfo.empty), mockWorker1.ref)
       scheduler.tell(ResourceUpdate(mockWorker1.ref, workerId1, Resource(100)), mockWorker1.ref)
       mockAppMaster.expectNoMsg(5 seconds)
     }
@@ -75,7 +76,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       scheduler.tell(RequestResource(appId, request1), mockAppMaster.ref)
       scheduler.tell(RequestResource(appId, request2), mockAppMaster.ref)
       scheduler.tell(RequestResource(appId, request3), mockAppMaster.ref)
-      scheduler.tell(WorkerRegistered(workerId1), mockWorker1.ref)
+      scheduler.tell(WorkerRegistered(workerId1, MasterInfo.empty), mockWorker1.ref)
       scheduler.tell(ResourceUpdate(mockWorker1.ref, workerId1, Resource(100)), mockWorker1.ref)
 
       mockAppMaster.expectMsg(5 seconds, ResourceAllocated(Array(ResourceAllocation(Resource(30), mockWorker1.ref, workerId1))))
@@ -83,7 +84,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       mockAppMaster.expectMsg(5 seconds, ResourceAllocated(Array(ResourceAllocation(Resource(40), mockWorker1.ref, workerId1))))
       mockAppMaster.expectMsg(5 seconds, ResourceAllocated(Array(ResourceAllocation(Resource(10), mockWorker1.ref, workerId1))))
 
-      scheduler.tell(WorkerRegistered(workerId2), mockWorker2.ref)
+      scheduler.tell(WorkerRegistered(workerId2, MasterInfo.empty), mockWorker2.ref)
       scheduler.tell(ResourceUpdate(mockWorker1.ref, workerId1, Resource.empty), mockWorker1.ref)
       scheduler.tell(ResourceUpdate(mockWorker2.ref, workerId2, Resource(100)), mockWorker2.ref)
       mockAppMaster.expectMsg(5 seconds, ResourceAllocated(Array(ResourceAllocation(Resource(30), mockWorker2.ref, workerId2))))
@@ -97,7 +98,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       val request2 = ResourceRequest(Resource(20), 0, Priority.HIGH, Relaxation.ANY)
       scheduler.tell(RequestResource(appId, request1), mockAppMaster.ref)
       scheduler.tell(RequestResource(appId, request2), mockAppMaster.ref)
-      scheduler.tell(WorkerRegistered(workerId1), mockWorker1.ref)
+      scheduler.tell(WorkerRegistered(workerId1, MasterInfo.empty), mockWorker1.ref)
       scheduler.tell(ResourceUpdate(mockWorker1.ref, workerId1, Resource(100)), mockWorker1.ref)
 
       mockAppMaster.expectMsg(5 seconds, ResourceAllocated(Array(ResourceAllocation(Resource(40), mockWorker1.ref, workerId1))))
@@ -113,11 +114,11 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
 
       scheduler.tell(RequestResource(appId, request1), mockAppMaster.ref)
       scheduler.tell(RequestResource(appId, request2), mockAppMaster.ref)
-      scheduler.tell(WorkerRegistered(workerId1), mockWorker1.ref)
+      scheduler.tell(WorkerRegistered(workerId1, MasterInfo.empty), mockWorker1.ref)
       scheduler.tell(ResourceUpdate(mockWorker1.ref, workerId1, Resource(100)), mockWorker1.ref)
       mockAppMaster.expectMsg(5 seconds, ResourceAllocated(Array(ResourceAllocation(Resource(20), mockWorker1.ref, workerId1))))
 
-      scheduler.tell(WorkerRegistered(workerId2), mockWorker2.ref)
+      scheduler.tell(WorkerRegistered(workerId2, MasterInfo.empty), mockWorker2.ref)
       scheduler.tell(ResourceUpdate(mockWorker2.ref, workerId2, Resource(100)), mockWorker2.ref)
       mockAppMaster.expectMsg(5 seconds, ResourceAllocated(Array(ResourceAllocation(Resource(40), mockWorker2.ref, workerId2))))
 

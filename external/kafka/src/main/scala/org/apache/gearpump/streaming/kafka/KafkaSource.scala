@@ -85,4 +85,8 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
     messagesBuilder.result().toList
   }
 
+  override def close(): Unit = {
+    offsetManagers.foreach(_._2.close())
+  }
+
 }

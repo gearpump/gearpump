@@ -93,4 +93,11 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
         }
     }
   }
+
+  property("KafkaOffsetManager close should close offset storage") {
+    val offsetStorage = mock[OffsetStorage]
+    val offsetManager = new KafkaOffsetManager(offsetStorage)
+    offsetManager.close()
+    verify(offsetStorage).close()
+  }
 }
