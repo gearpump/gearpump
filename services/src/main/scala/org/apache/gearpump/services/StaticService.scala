@@ -24,15 +24,19 @@ import spray.routing.HttpService
 trait StaticService extends HttpService {
 
   val staticRoute =
-    get {
-      pathEndOrSingleSlash {
-        getFromResource("index.html")
-      } ~
+    pathEndOrSingleSlash {
+      getFromResource("index.html")
+    } ~
       path("favicon.ico") {
         complete(StatusCodes.NotFound)
       } ~
       path(Rest) { path =>
         getFromResource("%s" format path)
+      } ~
+    pathPrefix("webjars") {
+      get {
+        getFromResourceDirectory("META-INF/resources/webjars")
       }
     }
+
 }

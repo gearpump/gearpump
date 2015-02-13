@@ -1,16 +1,8 @@
 language:
 - java
 - scala
-- node_js
-node_js:
-- "0.12"
 before_install:
 - sudo pip install codecov
-before_script:
-  - npm install -g bower
-  - cd services 
-  - bower install 
-  - cd ..
 script: sbt clean coverage test
 jdk:
 - oraclejdk7
