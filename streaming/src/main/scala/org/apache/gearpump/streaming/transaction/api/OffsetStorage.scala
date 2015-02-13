@@ -56,4 +56,5 @@ trait OffsetStorage {
    */
   def lookUp(time: TimeStamp): Try[Array[Byte]]
   def append(time: TimeStamp, offset: Array[Byte]): Unit
+  def close(): Unit
 }

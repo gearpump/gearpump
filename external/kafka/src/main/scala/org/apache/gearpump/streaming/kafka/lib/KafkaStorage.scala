@@ -80,6 +80,10 @@ private[kafka] class KafkaStorage(topic: String,
     producer.send(message)
   }
 
+  override def close(): Unit = {
+    producer.close()
+  }
+
   private[kafka] def load(consumer: KafkaConsumer): List[(TimeStamp, Array[Byte])] = {
     @annotation.tailrec
     def fetch(offsets: List[(TimeStamp, Array[Byte])]): List[(TimeStamp, Array[Byte])] = {

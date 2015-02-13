@@ -123,4 +123,15 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
     }
   }
 
+  property("KafkaSource close should close all offset managers") {
+    val offsetManager = mock[KafkaOffsetManager]
+    val messageDecoder = mock[MessageDecoder]
+    val topicAndPartition = mock[TopicAndPartition]
+    val fetchThread = mock[FetchThread]
+    val source = new KafkaSource(fetchThread, messageDecoder,
+      Map(topicAndPartition -> offsetManager))
+    source.close()
+    verify(offsetManager).close()
+  }
+
 }
