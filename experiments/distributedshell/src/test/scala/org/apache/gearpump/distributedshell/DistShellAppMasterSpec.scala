@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.distributedshell
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestProbe}
 import org.apache.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers, RegisterAppMaster}
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
@@ -26,13 +26,11 @@ import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, ResourceRequest, Resource}
-import org.apache.gearpump.experiments.cluster.ExecutorToAppMaster.ResponsesFromTasks
-import org.apache.gearpump.util.ActorSystemBooter.{BindLifeCycle, RegisterActorSystem}
+import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import org.apache.gearpump.util.ActorUtil
 import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
-import scala.concurrent.duration._
 
-class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
+class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
   implicit val system = ActorSystem("AppMasterSpec", TestUtil.DEFAULT_CONFIG)
   val mockMaster = TestProbe()(system)
   val mockWorker1 = TestProbe()(system)
@@ -43,13 +41,13 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
   val workerList = List(1, 2, 3)
   val resource = Resource(1)
   val appJar = None
-  val appDescription = Application("app0", classOf[AppMaster].getName, UserConfig.empty)
+  val appDescription = Application("app0", classOf[DistShellAppMaster].getName, UserConfig.empty)
 
   "DistributedShell AppMaster" should {
     "launch one ShellTask on each worker" in {
-      val appMasterInfo = AppMasterRuntimeInfo(mockWorker1.ref, appId, resource)
+      val appMasterInfo = AppMasterRuntimeInfo(mockWorker1.ref, appId, "appName", resource)
       val appMasterContext = AppMasterContext(appId, userName, resource, appJar, masterProxy, appMasterInfo)
-      TestActorRef[AppMaster](
+      TestActorRef[DistShellAppMaster](
         AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription, appMasterContext))
       mockMaster.expectMsgType[RegisterAppMaster]
       mockMaster.reply(AppMasterRegistered(appId))
@@ -63,21 +61,6 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
       mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(resource, mockWorker1.ref, 1))))
       mockWorker1.expectMsgClass(classOf[LaunchExecutor])
       mockWorker1.reply(RegisterActorSystem(ActorUtil.getSystemAddress(system).toString))
-    }
-  }
-
-  "ResponseBuilder" should {
-    "aggregate ResponsesFromTasks" in {
-      val executorId1 = 1
-      val executorId2 = 2
-      val responseBuilder = new ResponseBuilder
-      val response1 = ResponsesFromTasks(executorId1, List("task1", "task2"))
-      val response2 = ResponsesFromTasks(executorId2, List("task3", "task4"))
-      val result = responseBuilder.aggregate(response1).aggregate(response2).toString()
-      println(result)
-      val expected = s"Execute results from executor $executorId1 : \ntask1task2\n" +
-        s"Execute results from executor $executorId2 : \ntask3task4\n"
-      assert(result == expected)
     }
   }
 

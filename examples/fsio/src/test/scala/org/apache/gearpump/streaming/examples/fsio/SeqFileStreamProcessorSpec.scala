@@ -20,20 +20,20 @@ package org.apache.gearpump.streaming.examples.fsio
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
-import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
+import org.apache.gearpump.streaming.{TaskDescription, DAG, MockUtil}
+import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.apache.gearpump.util.HadoopConfig
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile.Reader
 import org.apache.hadoop.io.{SequenceFile, Text}
+import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 import scala.collection.mutable.ArrayBuffer
-
 class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
   val kvPairs = new ArrayBuffer[(String, String)]
   val outputDirectory = "SeqFileStreamProcessor_Test"
@@ -54,17 +54,20 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
     val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
     val watcher = TestProbe()(system1)
     val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProcessor.OUTPUT_PATH, outputDirectory)).withHadoopConf(new Configuration())
-    val (processor, _) = StreamingTestUtil.createEchoForTaskActor(classOf[SeqFileStreamProcessor].getName, conf, system1, system2)
-    watcher watch processor
+    val context = MockUtil.mockTaskContext
+    val dag = DAG(Map(0 -> TaskDescription(classOf[SeqFileStreamProcessor].getName, 1)), null)
+    val taskId = TaskId(0, 0)
+    when(context.taskId).thenReturn(taskId)
+
+    val processor = new SeqFileStreamProcessor(context, conf)
+    processor.onStart(StartTime(0))
+
     forAll(kvGenerator) { kv =>
       val (key, value) = kv
       kvPairs.append((key, value))
-      processor.tell(Message(key + "++" + value), processor)
+      processor.onNext(Message(key + "++" + value))
     }
-    system1.stop(processor)
-    watcher.expectTerminated(processor)
-    system1.shutdown()
-    system2.shutdown()
+    processor.onStop()
   }
 
   property("SeqFileStreamProcessor should write the key-value pairs to a sequence file") {

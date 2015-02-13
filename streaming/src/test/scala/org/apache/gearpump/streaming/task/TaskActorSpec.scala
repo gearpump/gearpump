@@ -1,20 +1,20 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 package org.apache.gearpump.streaming.task
 
 import akka.actor.{Actor, ActorRef, Props, ActorSystem}
@@ -26,11 +26,13 @@ import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.{MsgLostException, RestartException, StartClock}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
 import org.apache.gearpump.streaming.task.TaskActor.RestartTask
-import org.apache.gearpump.streaming.{Executor, StreamingTestUtil, DAG, TaskDescription}
+import org.apache.gearpump.streaming.task.TaskActorSpec.TestTask
+import org.apache.gearpump.streaming.{StreamingTestUtil, DAG, TaskDescription}
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.util.Graph
-import org.scalatest._
+import org.scalatest.{WordSpec, Matchers, BeforeAndAfterEach}
 import org.apache.gearpump.util.Graph._
+import org.mockito.Mockito.{mock, when, verify, times}
 
 class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config = ConfigFactory.parseString(
@@ -40,8 +42,8 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     withFallback(TestUtil.DEFAULT_CONFIG)
 
   val appId = 0
-  val task1 = TaskDescription(classOf[TestActor].getName, 1)
-  val task2 = TaskDescription(classOf[TestActor].getName, 1)
+  val task1 = TaskDescription(classOf[TestTask].getName, 1)
+  val task2 = TaskDescription(classOf[TestTask].getName, 1)
   val dag = DAG(Graph(task1 ~ new HashPartitioner() ~> task2))
   val taskId1 = TaskId(0, 0)
   val taskId2 = TaskId(1, 0)
@@ -49,19 +51,21 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   val executorId2 = 2
 
   var mockMaster: TestProbe = null
-  var taskContext1: TaskContext = null
-  var taskContext2: TaskContext = null
+  var taskContext1: TaskContextData = null
+  var taskContext2: TaskContextData = null
 
   override def beforeEach() = {
     startActorSystem()
     mockMaster = TestProbe()(getActorSystem)
-    taskContext1 = TaskContext(taskId1, executorId1, appId, mockMaster.ref, 1, dag)
-    taskContext2 = TaskContext(taskId2, executorId2, appId, mockMaster.ref, 1, dag)
+    taskContext1 = TaskContextData(taskId1, executorId1, appId, "appName", mockMaster.ref, 1, dag)
+    taskContext2 = TaskContextData(taskId2, executorId2, appId, "appName", mockMaster.ref, 1, dag)
   }
 
   "TaskActor" should {
     "register itself to AppMaster when started" in {
-      val testActor = TestActorRef[TestActor](Props(classOf[TestActor], taskContext1, UserConfig.empty))(getActorSystem)
+
+      val mockTask = mock(classOf[TaskWrapper])
+      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskContext1, UserConfig.empty, mockTask))(getActorSystem)
       val express1 = Express(getActorSystem)
       val testActorHost = express1.localHost
       mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
@@ -76,23 +80,29 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
     "throw RestartException when register to AppMaster time out" in {
       implicit val system = getActorSystem
+      val mockTask = mock(classOf[TaskWrapper])
       EventFilter[RestartException](occurrences = 1) intercept {
-        TestActorRef[TestActor](Props(classOf[TestActor], taskContext1, UserConfig.empty))(getActorSystem)
+        TestActorRef[TaskActor](Props(classOf[TaskActor], taskContext1, UserConfig.empty, mockTask))(getActorSystem)
       }
     }
 
     "transport message to target correctly" in {
-      val system1 = ActorSystem("TestActor", config)
-      val system2 = ActorSystem("Reporter", config)
-      val (testActor, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[TestActor].getName, UserConfig.empty, system1, system2)
-      testActor.tell(Message("test"), testActor)
-      echo.expectMsg(Message("test"))
-      implicit val system = system1
+      val mockTask = mock(classOf[TaskWrapper])
+      val msg = Message("test")
+
+      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskContext1, UserConfig.empty, mockTask))(getActorSystem)
+
+      testActor.tell(StartClock(0), mockMaster.ref)
+
+      testActor.tell(msg, testActor)
+
+      verify(mockTask, times(1)).onNext(msg);
+
+      implicit val system = getActorSystem
+
       EventFilter[RestartException](occurrences = 1) intercept {
         testActor ! RestartTask
       }
-      system1.shutdown()
-      system2.shutdown()
     }
   }
 
@@ -101,11 +111,6 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   }
 }
 
-class TestActor(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
-  override def onStart(startTime: StartTime): Unit = {
-  }
-
-  override def onNext(msg: Message): Unit = {
-    output(msg)
-  }
+object TaskActorSpec {
+  class TestTask
 }

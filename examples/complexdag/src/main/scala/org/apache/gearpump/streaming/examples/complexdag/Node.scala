@@ -18,14 +18,13 @@
 
 package org.apache.gearpump.streaming.examples.complexdag
 
-import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-import scala.collection.mutable
+class Node (taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+  import taskContext.output
 
-class Node (taskContext : TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
   override def onStart(startTime : StartTime) : Unit = {}
 
   override def onNext(msg : Message) : Unit = {

@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
-import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext

@@ -25,16 +25,17 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor._
+import org.apache.gearpump.streaming.executor.Executor
+import Executor.TaskLocationReady
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.streaming.TaskLocationReady
 import org.apache.gearpump.util.{LogUtil, TimeOutScheduler, Util}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
-abstract class TaskActor(val taskContext : TaskContext, userConf : UserConfig) extends Actor with ExpressTransport  with TimeOutScheduler{
+class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, val task: TaskWrapper) extends Actor with ExpressTransport  with TimeOutScheduler{
 
   import org.apache.gearpump.streaming.task.TaskActor._
-  import taskContext._
+  import taskContextData._
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
@@ -64,11 +65,13 @@ abstract class TaskActor(val taskContext : TaskContext, userConf : UserConfig) e
 
   final def receive : Receive = null
 
-  def onStart(startTime : StartTime) : Unit
+  task.setTaskActor(this)
 
-  def onNext(msg : Message) : Unit
+  def onStart(startTime : StartTime) : Unit = task.onStart(startTime)
 
-  def onStop() : Unit = {}
+  def onNext(msg : Message) : Unit = task.onNext(msg)
+
+  def onStop() : Unit = task.onStop()
 
   def output(msg : Message) : Unit = {
     if (null == outputTaskIds || outputTaskIds.length == 0) {

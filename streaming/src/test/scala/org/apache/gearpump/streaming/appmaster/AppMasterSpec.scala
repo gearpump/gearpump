@@ -48,8 +48,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   val appId = 0
   val workerId = 1
   val resource = Resource(1)
-  val taskDescription1 = TaskDescription(classOf[TaskActorA].getName, 2)
-  val taskDescription2 = TaskDescription(classOf[TaskActorB].getName, 2)
+  val taskDescription1 = TaskDescription(classOf[TaskA].getName, 2)
+  val taskDescription2 = TaskDescription(classOf[TaskB].getName, 2)
   var conf: UserConfig = null
 
   var mockTask: TestProbe = null
@@ -70,7 +70,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     mockMaster = TestProbe()(getActorSystem)
     mockWorker = TestProbe()(getActorSystem)
     mockMaster.ignoreMsg(ignoreSaveAppData)
-    appMasterRuntimeInfo = AppMasterRuntimeInfo(mockWorker.ref, appId, Resource(1))
+    appMasterRuntimeInfo = AppMasterRuntimeInfo(mockWorker.ref, appId, "appName", Resource(1))
 
     implicit val system = getActorSystem
     conf = UserConfig.empty.withValue(AppMasterSpec.MASTER, mockMaster.ref)
@@ -90,7 +90,6 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     mockMaster.expectMsg(GetAppData(appId, "startClock"))
     mockMaster.reply(GetAppDataResult("startClock", 0L))
     mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(4))))
-    Thread.sleep(1000)
   }
 
   override def afterEach() = {
@@ -171,7 +170,7 @@ object AppMasterSpec {
   val MOCK_MASTER_PROXY = "mockMasterProxy"
 }
 
-class TaskActorA(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
+class TaskA(taskContext : TaskContext, userConf : UserConfig) extends Task(taskContext, userConf) {
 
   val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = {
@@ -181,7 +180,7 @@ class TaskActorA(taskContext : TaskContext, userConf : UserConfig) extends TaskA
   override def onNext(msg: Message): Unit = {}
 }
 
-class TaskActorB(taskContext : TaskContext, userConf : UserConfig) extends TaskActor(taskContext, userConf) {
+class TaskB(taskContext : TaskContext, userConf : UserConfig) extends Task(taskContext, userConf) {
 
   val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = {

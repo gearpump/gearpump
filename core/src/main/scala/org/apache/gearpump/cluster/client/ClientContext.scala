@@ -21,7 +21,7 @@ package org.apache.gearpump.cluster.client
 import java.util.concurrent.TimeUnit
 
 import akka.pattern.ask
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
 import org.apache.gearpump.cluster._
@@ -33,7 +33,7 @@ import org.apache.gearpump.util.{LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContextExecutor, Await, Future}
+import scala.concurrent.{Await, Future}
 
 //TODO: add interface to query master here
 class ClientContext(masters: Iterable[HostPort]) {
@@ -60,11 +60,13 @@ class ClientContext(masters: Iterable[HostPort]) {
 
   def submit(app : Application, jarPath: String) : Int = {
     val client = new MasterClient(master)
+    val appName = checkAndAddNamePrefix(app.name, System.getProperty(GEARPUMP_APP_NAME_PREFIX))
+    val updatedApp = Application(appName, app.appMaster, app.userConfig, app.clusterConfig)
     if (jarPath == null) {
-      client.submitApplication(app, None)
+      client.submitApplication(updatedApp, None)
     } else {
       val appJar = loadFile(jarPath)
-      client.submitApplication(app, Option(appJar))
+      client.submitApplication(updatedApp, Option(appJar))
     }
   }
 
@@ -102,6 +104,21 @@ class ClientContext(masters: Iterable[HostPort]) {
     }
 
     Await.result(uploadFile, Duration(15, TimeUnit.SECONDS))
+  }
+
+  private def checkAndAddNamePrefix(appName: String, namePrefix: String) : String = {
+    val fullName = if (namePrefix != null && namePrefix != "") {
+      namePrefix + "_" + appName
+    } else {
+      appName
+    }
+    if (!Util.validApplicationName(fullName)) {
+      close()
+      val error = s"The application name $appName is not a proper name. An app name can " +
+        "be a sequence of letters, numbers or underscore character \"_\""
+      throw new Exception(error)
+    }
+    fullName
   }
 }
 

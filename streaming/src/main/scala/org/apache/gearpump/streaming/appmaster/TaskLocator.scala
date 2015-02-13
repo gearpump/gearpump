@@ -15,36 +15,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming
+package org.apache.gearpump.streaming.appmaster
 
 import java.util
 
 import akka.actor.Actor
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.streaming.TaskLocator.{Locality, NonLocality, WorkerLocality}
+import org.apache.gearpump.streaming.TaskDescription
+import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, NonLocality, Locality}
+import org.apache.gearpump.streaming.task.{Task, TaskUtil}
 import org.apache.gearpump.util.{ActorUtil, Constants}
 
 import scala.collection.mutable
 
-class TaskLocator {
-  private var userScheduledTask = Map.empty[Class[_ <: Actor], mutable.Queue[Locality]]
+class TaskLocator(config: Config) {
+  private var userScheduledTask = Map.empty[Class[_ <: Task], mutable.Queue[Locality]]
 
   initTasks()
 
   def initTasks() : Unit = {
-    val taskLocations : Array[(TaskDescription, Locality)] = loadUserAllocation(ClusterConfig.load.application)
+    val taskLocations : Array[(TaskDescription, Locality)] = loadUserAllocation(config)
     for(taskLocation <- taskLocations){
       val (taskDescription, locality) = taskLocation
-      val localityQueue = userScheduledTask.getOrElse(ActorUtil.loadClass(taskDescription.taskClass), mutable.Queue.empty[Locality])
+      val localityQueue = userScheduledTask.getOrElse(TaskUtil.loadClass(taskDescription.taskClass), mutable.Queue.empty[Locality])
       0.until(taskDescription.parallelism).foreach(_ => localityQueue.enqueue(locality))
-      userScheduledTask += (ActorUtil.loadClass(taskDescription.taskClass) -> localityQueue)
+      userScheduledTask += (TaskUtil.loadClass(taskDescription.taskClass) -> localityQueue)
     }
   }
 
   def locateTask(taskDescription : TaskDescription) : Locality = {
-    if(userScheduledTask.contains(ActorUtil.loadClass(taskDescription.taskClass))){
-      val localityQueue = userScheduledTask.get(ActorUtil.loadClass(taskDescription.taskClass)).get
+    if(userScheduledTask.contains(TaskUtil.loadClass(taskDescription.taskClass))){
+      val localityQueue = userScheduledTask.get(TaskUtil.loadClass(taskDescription.taskClass)).get
       if(localityQueue.size > 0){
         return localityQueue.dequeue()
       }

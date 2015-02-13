@@ -18,141 +18,164 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor._
 import akka.pattern.ask
+import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.AppMasterContext
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, StartClock}
-import org.apache.gearpump.streaming.Executor.RestartExecutor
+import org.apache.gearpump.streaming.executor.Executor
+import Executor.RestartExecutor
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
-import org.apache.gearpump.streaming.TaskSet.TaskLaunchData
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
-import org.apache.gearpump.streaming.appmaster.ExecutorManager.{SetTaskManager, StartExecutors}
+import org.apache.gearpump.streaming.appmaster.ExecutorManager._
+import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
+import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{DAG, TaskSet}
-import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.streaming.DAG
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
+import TaskManager._
 
 private[appmaster] class TaskManager(
-    appContext: AppMasterContext,
+    appId: Int,
     dag: DAG,
-    clockService: ActorRef,
+    taskScheduler: TaskScheduler,
     executorManager: ActorRef,
-    appMaster: ActorRef)
-  extends Actor {
+    clockService: ActorRef,
+    appMaster: ActorRef,
+    appName: String)
+  extends Actor with FSM[State, StateData] {
 
-  import appContext.appId
-private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
+  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
+  val systemConfig = context.system.settings.config
 
   implicit val timeout = Constants.FUTURE_TIMEOUT
   implicit val actorSystem = context.system
-
   import context.dispatcher
-  private var taskLocations = Map.empty[HostPort, Set[TaskId]]
-  private var executorToTaskIds = Map.empty[Int, Set[TaskId]]
-  private var startedTasks = Set.empty[TaskId]
 
-  private val taskSet = new TaskSet(appId, dag)
-  //When the AppMaster trying to replay, the replay command should not be handled again.
-  private var restarting = true
+  startWith(Uninitialized, null)
+  self ! DagInit(dag)
 
-  executorManager ! SetTaskManager(self)
-  LOG.info("Sending request resource to master...")
-  val resourceRequests = taskSet.fetchResourceRequests()
-  executorManager ! StartExecutors(resourceRequests)
+  when (Uninitialized) {
+    case Event(DagInit(dag), _) =>
+      executorManager ! SetTaskManager(self)
+      taskScheduler.setTaskDAG(dag)
+      val resourceRequests = taskScheduler.getResourceRequests()
 
-  def receive = executorMessageHandler orElse taskMessageHandler orElse recoveryHandler
+      getMinClock.map { clock =>
+        LOG.info(s"Current min Clock is $clock, sending request resource to master...")
+        executorManager ! StartExecutors(resourceRequests)
+      }
+      goto (StartApplication) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
+  }
 
-  //wait for executors, and then start task
-import org.apache.gearpump.streaming.appmaster.ExecutorManager._
-  def executorMessageHandler: Receive = {
-    case ExecutorStarted(executor, executorId, resource, workerId) =>
+  when(StartApplication)(startTasksAndHandleExecutorLoss)
+
+  when(Recovery)(startTasksAndHandleExecutorLoss)
+
+  private def startTasksAndHandleExecutorLoss: StateFunction = {
+    case Event(ExecutorStarted(executor, executorId, resource, workerId), state@ TaskRegistrationState(register)) =>
       LOG.info("Executor has been started, start to launch tasks")
 
       def launchTask(remainResources: Resource): Unit = {
-        if ((remainResources > Resource.empty) && taskSet.hasNotLaunchedTask) {
-          val TaskLaunchData(taskId, taskDescription, dag) = taskSet.scheduleTaskOnWorker(workerId)
-          //Launch task
-          LOG.info("Sending Launch Task to executor: " + executor.toString())
+        if ((remainResources > Resource.empty)) {
 
-          val taskContext = TaskContext(taskId, executorId, appId, appMaster = appMaster, taskDescription.parallelism, dag)
-          executor ! LaunchTask(taskId, taskContext, ActorUtil.loadClass(taskDescription.taskClass))
-          //Todo: subtract the actual resource used by task
-          val usedResource = Resource(1)
-          launchTask(remainResources - usedResource)
+          val taskLaunchData = taskScheduler.resourceAllocated(workerId, executorId)
+
+          taskLaunchData match {
+            case Some(TaskLaunchData(taskId, taskDescription, dag)) =>
+              //Launch task
+              LOG.info("Sending Launch Task to executor: " + executor.toString())
+
+              val taskContext = TaskContextData(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, dag)
+              executor ! LaunchTask(taskId, taskContext, TaskUtil.loadClass(taskDescription.taskClass))
+              //Todo: subtract the actual resource used by task
+              val usedResource = Resource(1)
+              launchTask(remainResources - usedResource)
+            case None =>
+              LOG.info("All tasks have been launched")
+          }
         }
       }
       launchTask(resource)
+      stay using state
 
-    case ExecutorStopped(executorId) =>
-      val tasks = executorToTaskIds.get(executorId)
-      tasks match {
-        case Some(tasks) =>
-          taskSet.taskFailed(tasks)
-          appMaster ! ReplayFromTimestampWindowTrailingEdge
-        case None =>
-          LOG.error(s"executor $executorId is stopped, but there is no tasks started on it yet")
-      }
+    case Event(ExecutorStopped(executorId), state@ TaskRegistrationState( register)) =>
+      val newResourceRequests = taskScheduler.executorFailed(executorId)
+      executorManager ! StartExecutors(newResourceRequests)
+      stay using state
 
-    case StartExecutorsTimeOut =>
+    case Event(StartExecutorsTimeOut, state: TaskRegistrationState) =>
       appMaster ! AllocateResourceTimeOut
-  }
+      stay using state
 
-  def taskMessageHandler: Receive = {
-    case RegisterTask(taskId, executorId, host) =>
-      LOG.info(s"Task $taskId has been Launched for app $appId")
-
-      var taskIds = taskLocations.getOrElse(host, Set.empty[TaskId])
-      taskIds += taskId
-      taskLocations += host -> taskIds
-
-      var taskSetForExecutorId = executorToTaskIds.getOrElse(executorId, Set.empty[TaskId])
-      taskSetForExecutorId += taskId
-      executorToTaskIds += executorId -> taskSetForExecutorId
-
-      startedTasks += taskId
-
-      LOG.info(s" started task size: ${startedTasks.size}, taskQueue size: ${taskSet.totalTaskCount}")
-      if (startedTasks.size == taskSet.totalTaskCount) {
-        this.restarting = false
-
-        LOG.info(s"Sending Task locations to executors")
-        executorManager ! BroadCast(TaskLocations(taskLocations))
-      }
-
+    case Event(RegisterTask(taskId, executorId, host), state@ TaskRegistrationState(register)) =>
       val client = sender
-      (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map{ clock =>
-        client ! StartClock(clock.clock)
+      getMinClock.map(client ! StartClock(_))
+
+      register.registerTask(taskId, host)
+      if (register.isAllTasksRegistered) {
+        LOG.info(s"Sending Task locations to executors")
+        executorManager ! BroadCast(register.getTaskLocations)
+        goto (ApplicationReady)
+      } else {
+        stay using state
       }
   }
 
-  def recoveryHandler: Receive = {
-    case ReplayFromTimestampWindowTrailingEdge =>
-      if(!restarting){
-        (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map { clock =>
-          val startClock = clock.clock
-          taskLocations = taskLocations.empty
-          startedTasks = startedTasks.empty
+  when(ApplicationReady) {
+    case Event(clock: UpdateClock, _) =>
+      clockService forward clock
+      stay
 
-          if(taskSet.hasNotLaunchedTask){
-            val resourceRequests = taskSet.fetchResourceRequests(true)
-            executorManager ! StartExecutors(resourceRequests)
-          }
-          executorManager ! BroadCast(RestartExecutor)
-        }
-        this.restarting = true
-      }
+    case Event(GetLatestMinClock, _)=>
+      clockService forward GetLatestMinClock
+      stay
+
+    case Event(executorStopped @ ExecutorStopped(executorId), _) =>
+      //restart all tasks
+      executorManager ! BroadCast(RestartExecutor)
+      self ! executorStopped
+      goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
+    case Event(MessageLoss, _) =>
+      //restart all tasks
+      executorManager ! BroadCast(RestartExecutor)
+      goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
+
+    case Event(reply: ReplayFromTimestampWindowTrailingEdge, _) =>
+      self ! MessageLoss
+      stay
   }
 
-  private def enoughResourcesAllocated(allocations: Array[ResourceAllocation]): Boolean = {
-    val totalAllocated = allocations.foldLeft(Resource.empty){ (totalResource, resourceAllocation) =>
-      totalResource + resourceAllocation.resource
-    }
-    LOG.info(s"AppMaster $appId received resource $totalAllocated, ${taskSet.size} tasks remain to be launched")
-    totalAllocated.slots == taskSet.size
+  import org.apache.gearpump.TimeStamp
+  private def getMinClock: Future[TimeStamp] = {
+    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
   }
+}
+
+private [appmaster] object TaskManager {
+
+
+  /**
+   * State machine states
+   */
+  sealed trait State
+  case object Uninitialized extends State
+  case object StartApplication extends State
+  case object Recovery extends State
+  case object ApplicationReady extends State
+
+  /**
+   * State machine state data
+   */
+  sealed trait StateData
+  case class TaskRegistrationState(taskRegistration: TaskRegistration) extends StateData
+
+
+  case class DagInit(dag: DAG)
+  case object MessageLoss
 }

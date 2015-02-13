@@ -23,7 +23,7 @@ import akka.actor.Cancellable
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProcessor._
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.util.HadoopConfig._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
@@ -31,9 +31,9 @@ import org.apache.hadoop.io.{SequenceFile, Text}
 
 import scala.concurrent.duration.FiniteDuration
 
-class SeqFileStreamProcessor(taskContext_ : TaskContext, config: UserConfig) extends TaskActor(taskContext_, config){
+class SeqFileStreamProcessor(taskContext : TaskContext, config: UserConfig) extends Task(taskContext, config){
 
-  import taskContext._
+  import taskContext.{taskId, schedule}
 
   val outputPath = new Path(config.getString(OUTPUT_PATH).get + System.getProperty("file.separator") + taskId)
   var writer: SequenceFile.Writer = null
@@ -43,7 +43,6 @@ class SeqFileStreamProcessor(taskContext_ : TaskContext, config: UserConfig) ext
   val hadoopConf = config.hadoopConf
 
   private var msgCount : Long = 0
-  private var scheduler : Cancellable = null
   private var snapShotKVCount : Long = 0
   private var snapShotTime : Long = 0
 
@@ -53,8 +52,7 @@ class SeqFileStreamProcessor(taskContext_ : TaskContext, config: UserConfig) ext
     fs.deleteOnExit(outputPath)
     writer = SequenceFile.createWriter(hadoopConf, Writer.file(outputPath), Writer.keyClass(textClass), Writer.valueClass(textClass))
 
-    import context.dispatcher
-    scheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+    schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportStatus())
     snapShotTime = System.currentTimeMillis()
     LOG.info("sequence file bolt initiated")
@@ -72,7 +70,6 @@ class SeqFileStreamProcessor(taskContext_ : TaskContext, config: UserConfig) ext
 
   override def onStop(): Unit ={
     writer.close()
-    scheduler.cancel()
     LOG.info("sequence file bolt stopped")
   }
 

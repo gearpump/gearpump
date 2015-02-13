@@ -17,21 +17,24 @@
  */
 package org.apache.gearpump.streaming.examples.fsio
 
-import akka.actor.ActorSystem
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, TestUtil}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.MockUtil._
+import org.apache.gearpump.streaming.task.StartTime
 import org.apache.gearpump.util.HadoopConfig
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.io.{Text, SequenceFile}
 import org.apache.hadoop.io.SequenceFile.Writer
+import org.apache.hadoop.io.{SequenceFile, Text}
+import org.mockito.ArgumentMatcher
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.duration._
 
 class SeqFileStreamProducerSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter{
   val kvPairs = new ArrayBuffer[(String, String)]
@@ -61,16 +64,17 @@ class SeqFileStreamProducerSpec extends PropSpec with PropertyChecks with Matche
   }
 
   property("SeqFileStreamProducer should read the key-value pairs from a sequence file and deliver them") {
-    implicit val system1 = ActorSystem("SeqFileStreamProducer", TestUtil.DEFAULT_CONFIG)
-    val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
+
     val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProducer.INPUT_PATH, inputFile)).withHadoopConf(new Configuration())
-    val (_, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[SeqFileStreamProducer].getName, conf, system1, system2, usePinedDispatcherForTaskActor = true)
-    kvPairs.foreach { kv =>
-      val (key, value) = kv
-      echo.expectMsg(10 seconds, Message(key + "++" + value))
-    }
-    system1.shutdown()
-    system2.shutdown()
+
+    val context = MockUtil.mockTaskContext
+
+    val producer = new SeqFileStreamProducer(context, conf)
+    producer.onStart(StartTime(0))
+    producer.onNext(Message("start"))
+
+    val expected = kvPairs.map(kv => kv._1 + "++" + kv._2).toSet
+    verify(context).output(argMatch[Message](msg => expected.contains(msg.msg.asInstanceOf[String])))
   }
 
   after {

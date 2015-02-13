@@ -19,26 +19,26 @@
 package org.apache.gearpump.streaming.examples.kafka
 
 import akka.actor.actorRef2Scala
-import com.twitter.bijection.Injection
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.StartTime
 import org.apache.gearpump.streaming.kafka.KafkaSource
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig._
-import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, TimeReplayableSource, MessageDecoder}
-import org.apache.gearpump.{TimeStamp, Message}
-import org.apache.gearpump.streaming.task.{TaskActor, TaskContext}
-import scala.util.{Failure, Success}
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource, TimeStampFilter}
+import org.apache.gearpump.{Message, TimeStamp}
 
 class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
-  extends TaskActor(taskContext, conf) {
+  extends Task(taskContext, conf) {
+
+  import taskContext.{output, self, taskId, dag}
 
   private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val batchSize = kafkaConfig.getConsumerEmitBatchSize
   private val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
   private val filter: TimeStampFilter = kafkaConfig.getTimeStampFilter
 
-  private val source: TimeReplayableSource = new KafkaSource(taskContext.appId, taskContext,
+  val taskParallelism = dag.tasks(taskId.groupId).parallelism
+
+  private val source: TimeReplayableSource = new KafkaSource(taskContext.appName, taskId, taskParallelism,
     kafkaConfig, msgDecoder)
   private var startTime: TimeStamp = 0L
 
@@ -53,5 +53,4 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
     source.pull(batchSize).foreach{msg => filter.filter(msg, startTime).map(output)}
     self ! Message("continue", System.currentTimeMillis())
   }
-
 }

@@ -2,7 +2,7 @@ package org.apache.gearpump.cluster.main
 
 import java.net.{URL, URLClassLoader}
 
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 object AppSubmitter extends App with ArgumentsParser {
@@ -11,6 +11,7 @@ object AppSubmitter extends App with ArgumentsParser {
   override val ignoreUnknownArgument = true
 
   override val options: Array[(String, CLIOption[Any])] = Array(
+    "namePrefix" -> CLIOption[String]("application name prefix", required = false),
     "jar" -> CLIOption("<application>.jar", required = true))
 
   override val remainArgs = Array(
@@ -28,6 +29,14 @@ object AppSubmitter extends App with ArgumentsParser {
 
     // Set jar path to be submitted to cluster
     System.setProperty(Constants.GEARPUMP_APP_JAR, jar)
+
+    if (config.exists("namePrefix")) {
+      val namePrefix = config.getString("namePrefix")
+      if (!Util.validApplicationName(namePrefix)) {
+        throw new Exception(s"$namePrefix is not a valid prefix for an application name")
+      }
+      System.setProperty(Constants.GEARPUMP_APP_NAME_PREFIX, namePrefix)
+    }
 
     val jarFile = new java.io.File(jar)
 

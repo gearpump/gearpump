@@ -18,15 +18,18 @@
 
 package org.apache.gearpump.streaming.examples.kafka.topn
 
-import akka.actor.ActorSystem
-import org.apache.gearpump.{TimeStamp, Message}
-import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.streaming.MockUtil._
+import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.MockUtil
+import org.mockito.ArgumentMatcher
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{FlatSpec, Matchers}
 
-class RollingCountSpec extends PropSpec with PropertyChecks with Matchers {
+class RollingCountSpec extends FlatSpec with Matchers with MockitoSugar {
   val emitFrequencyMS = 1000
   val windowLengthMS = 10000
 
@@ -41,29 +44,26 @@ class RollingCountSpec extends PropSpec with PropertyChecks with Matchers {
     withInt(Config.EMIT_FREQUENCY_MS, emitFrequencyMS).
     withInt(Config.WINDOW_LENGTH_MS, windowLengthMS)
 
-  property("RollingCount should output the object counts rolling with time"){
+  it should "output the object counts rolling with time" in {
 
-    forAll(objCountMapGen) { (objCountMap: Map[String, Long]) =>
-      val system1 = ActorSystem("RollingCount", TestUtil.DEFAULT_CONFIG)
-      val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
-      val (rollingCount, echo) = StreamingTestUtil.createEchoForTaskActor(classOf[RollingCount].getName, userConf, system1, system2)
+    objCountMapGen.map { objCountMap =>
+      val context = MockUtil.mockTaskContext
+
+      val rollingCount = new RollingCount(context, UserConfig.empty)
 
       for (time <- 1 to emitFrequencyMS) {
         objCountMap.foreach { case (obj, count) =>
           if (count >= time) {
-            rollingCount.tell(Message(obj, time), rollingCount)
+            rollingCount.onNext(Message(obj, time))
           }
         }
       }
-      rollingCount.tell(Message("fire", emitFrequencyMS + 1), rollingCount)
+      rollingCount.onNext(Message("fire", emitFrequencyMS + 1))
 
-      val received = echo.receiveN(objCountMap.size).asInstanceOf[Vector[Message]]
-        .map(_.msg.asInstanceOf[(String, Long)]).toMap
-
-      objCountMap shouldBe received
-
-      system1.shutdown()
-      system2.shutdown()
+      verify(context,  times(objCountMap.size)).output(argMatch[Message]{ kv =>
+        val (word, count) = kv.msg.asInstanceOf[(String, Long)]
+        objCountMap.get(word) == Option(count)
+      })
     }
   }
 }

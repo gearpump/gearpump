@@ -20,9 +20,10 @@ package org.apache.gearpump.streaming.examples.complexdag
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskActor, TaskContext}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-class Source(taskContext: TaskContext, conf: UserConfig) extends TaskActor(taskContext, conf) {
+class Source(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+  import taskContext.{output, self}
 
   override def onStart(startTime: StartTime): Unit = {
     self ! Message("start")

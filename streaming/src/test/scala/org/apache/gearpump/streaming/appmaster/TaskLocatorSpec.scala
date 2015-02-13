@@ -17,9 +17,11 @@
  */
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.Actor
-import org.apache.gearpump.streaming.TaskLocator.{NonLocality, WorkerLocality}
-import org.apache.gearpump.streaming.{TaskDescription, TaskLocator}
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
+import org.apache.gearpump.streaming.TaskDescription
+import org.apache.gearpump.streaming.appmaster.TaskLocator.{NonLocality, WorkerLocality}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.util.Constants._
 import org.scalatest.{Matchers, WordSpec}
 
@@ -32,9 +34,11 @@ class TaskLocatorSpec extends WordSpec with Matchers {
   val taskDescription2 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask2", 2)
   val taskDescription3 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask3", 2)
 
+  val config = ClusterConfig.load.application
+
   "TaskLocator" should {
     "locate task properly according user's configuration" in {
-      val taskLocator = new TaskLocator()
+      val taskLocator = new TaskLocator(config)
       assert(taskLocator.locateTask(taskDescription2) == WorkerLocality(1))
       assert(taskLocator.locateTask(taskDescription2) == WorkerLocality(1))
       assert(taskLocator.locateTask(taskDescription2) == NonLocality)
@@ -53,14 +57,20 @@ class TaskLocatorSpec extends WordSpec with Matchers {
   }
 }
 
-class TestTask1 extends Actor {
-  override def receive: Actor.Receive = null
+class TestTask1(taskContext : TaskContext, userConf : UserConfig)
+    extends Task(taskContext, userConf) {
+  override def onStart(startTime: StartTime): Unit = ???
+  override def onNext(msg: Message): Unit = ???
 }
 
-class TestTask2 extends Actor {
-  override def receive: Receive = null
+class TestTask2(taskContext : TaskContext, userConf : UserConfig)
+    extends Task(taskContext, userConf) {
+  override def onStart(startTime: StartTime): Unit = ???
+  override def onNext(msg: Message): Unit = ???
 }
 
-class TestTask3 extends Actor {
-  override def receive: Receive = null
+class TestTask3(taskContext : TaskContext, userConf : UserConfig)
+    extends Task(taskContext, userConf) {
+  override def onStart(startTime: StartTime): Unit = ???
+  override def onNext(msg: Message): Unit = ???
 }

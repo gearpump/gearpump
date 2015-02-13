@@ -16,26 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming
+package org.apache.gearpump.streaming.executor
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
-import org.apache.gearpump._
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
-import org.apache.gearpump.streaming.Executor.RestartExecutor
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
+import org.apache.gearpump.streaming.executor.Executor.{RestartExecutor, TaskLocationReady}
 import org.apache.gearpump.streaming.task.TaskActor.RestartTask
-import org.apache.gearpump.streaming.task.{TaskId, TaskLocations}
+import org.apache.gearpump.streaming.task.{TaskId, TaskLocations, TaskWrapper}
 import org.apache.gearpump.transport.{Express, HostPort}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
-import scala.language.postfixOps
-import scala.concurrent.duration._
 
-case object TaskLocationReady
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 
 class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends Actor {
 
@@ -64,10 +62,11 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
     }
 
   def appMasterMsgHandler : Receive = {
-    case LaunchTask(taskId, taskContext, taskClass) => {
+    case LaunchTask(taskId, taskContext, taskClass, taskActorClass) => {
       LOG.info(s"Launching Task $taskId for app: ${appId}, $taskClass")
+      val task = new TaskWrapper(taskClass, taskContext, userConf)
       val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
-      val task = context.actorOf(Props(taskClass, taskContext, userConf).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
+      val taskActor = context.actorOf(Props(taskActorClass, taskContext, userConf, task).withDispatcher(taskDispatcher), "group_" + taskId.groupId + "_task_" + taskId.index)
     }
     case TaskLocations(locations) =>
       val result = locations.flatMap { kv =>
@@ -98,4 +97,6 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
 
 object Executor {
   case object RestartExecutor
+
+  case object TaskLocationReady
 }
