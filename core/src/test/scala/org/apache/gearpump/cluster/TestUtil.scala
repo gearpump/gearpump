@@ -19,9 +19,15 @@ package org.apache.gearpump.cluster
 
 import akka.actor._
 import akka.testkit.TestActorRef
+import akka.util.Timeout
 import com.typesafe.config.ConfigValueFactory
+import org.apache.gearpump.cluster.AppMasterToMaster.GetAllWorkers
+import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
 import org.apache.gearpump.cluster.master.Master
 import org.apache.gearpump.cluster.worker.Worker
+import org.apache.gearpump.util.Constants
+
+import scala.concurrent.{Await, Future}
 
 object TestUtil {
   val rawConfig = ClusterConfig.load("test.conf")
@@ -37,19 +43,41 @@ object TestUtil {
     implicit val system = ActorSystem("system", MASTER_CONFIG.
       withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(mockMasterIP)))
 
-    val mockMaster: ActorRef = {
-      system.actorOf(Props(classOf[Master]), "master")
-    }
+    val (mockMaster, worker) = {
+      val master = system.actorOf(Props(classOf[Master]), "master")
+      val worker = system.actorOf(Props(classOf[Worker], master), "worker")
 
-    val worker: ActorRef = {
-      system.actorOf(Props(classOf[Worker], mockMaster), "worker")
+      //wait until worker register itself to master
+      waitUtilWorkerIsRegistered(master)
+      (master, worker)
     }
 
     def launchActor(props: Props): TestActorRef[Actor] = {
       TestActorRef(props)
     }
 
-    def shutDown() = system.shutdown()
+
+    private def waitUtilWorkerIsRegistered(master: ActorRef): Unit = {
+      while(!isWorkerRegistered(master)) {}
+    }
+
+
+    private def isWorkerRegistered(master: ActorRef): Boolean = {
+      import akka.pattern.ask
+      import scala.concurrent.duration._
+      implicit val dispatcher = system.dispatcher
+
+      implicit val futureTimeout = Constants.FUTURE_TIMEOUT
+
+      val workerListFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]]
+      val workers = Await.result[WorkerList](workerListFuture, 1 seconds)
+      workers.workers.size > 0
+    }
+
+    def shutDown() = {
+      system.shutdown()
+      system.awaitTermination()
+    }
   }
 
   class DummyAppMaster(context: AppMasterContext, app: Application) extends ApplicationMaster {

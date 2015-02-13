@@ -30,7 +30,7 @@ import scala.util.{Failure, Success}
 
 trait WorkerService extends HttpService {
   import upickle._
-  val master:ActorRef
+  def master:ActorRef
 
   def workerRoute = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
