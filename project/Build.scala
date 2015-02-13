@@ -44,6 +44,7 @@ object Build extends sbt.Build {
   val scalaVersionNumber = "2.11.5"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
+  val sprayWebSocketsVersion = "0.1.4"
   val scalaTestVersion = "2.2.0"
   val scalaCheckVersion = "1.11.3"
   val mockitoVersion = "1.10.8"
@@ -55,7 +56,7 @@ object Build extends sbt.Build {
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
           "maven-repo" at "http://repo.maven.apache.org/maven2",
           "maven1-repo" at "http://repo1.maven.org/maven2",
-          "maven2-repo" at "http://mvnrepository.com",
+          "maven2-repo" at "http://mvnrepository.com/artifact",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
@@ -142,7 +143,7 @@ object Build extends sbt.Build {
         "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
         "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
         "io.spray" %%  "spray-can"       % sprayVersion,
-        "io.spray" %%  "spray-routing"   % sprayVersion,
+        "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
@@ -166,7 +167,7 @@ object Build extends sbt.Build {
                         "local" -> "org.apache.gearpump.cluster.main.Local",
                         "master" -> "org.apache.gearpump.cluster.main.Master",
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
-                        "rest" -> "org.apache.gearpump.cluster.main.Rest"
+                        "services" -> "org.apache.gearpump.cluster.main.Services"
                        ),
         packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
                            "master" -> Seq("-DlogFilename=master"),
@@ -174,6 +175,7 @@ object Build extends sbt.Build {
                         ),
         packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
+        packResourceDir += (baseDirectory.value / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         parallelExecution in ThisBuild := false,
         travis_deploy := {
@@ -186,10 +188,10 @@ object Build extends sbt.Build {
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
-        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf"))
+        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
       )
-  ).dependsOn(core, streaming, rest, external_kafka, distributedshell).aggregate(core, streaming, fsio, examples_kafka,
-      sol, wordcount, complexdag, rest, external_kafka, examples, distributedshell)
+  ).dependsOn(core, streaming, services, external_kafka, distributedshell)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -296,9 +298,9 @@ object Build extends sbt.Build {
     settings = commonSettings ++ myAssemblySettings
   ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka)
   
-  lazy val rest = Project(
-    id = "gearpump-rest",
-    base = file("rest"),
+  lazy val services = Project(
+    id = "gearpump-services",
+    base = file("services"),
     settings = commonSettings  ++ 
       Seq(
         libraryDependencies ++= Seq(
@@ -306,6 +308,20 @@ object Build extends sbt.Build {
           "io.spray" %%  "spray-httpx"     % sprayVersion,
           "io.spray" %%  "spray-client"    % sprayVersion,
           "io.spray" %%  "spray-json"    % sprayJsonVersion,
+          "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion,
+          "org.webjars" % "angularjs" % "1.2.26",
+          "org.webjars" % "angular-ui-bootstrap" % "0.11.0",
+          "org.webjars" % "angular-route-segment" % "1.3.3",
+          "org.webjars" % "font-awesome" % "4.3.0",
+          "org.webjars" % "jquery" % "2.0.3",
+          "org.webjars" % "jquery-ui" % "1.10.3",
+          "org.webjars" % "angular-ui-sortable" % "0.12.11-1",
+          "org.webjars" % "angular-local-storage" % "0.1.1",
+          "org.webjars" % "bootstrap" % "3.2.0",
+          "org.webjars" % "visjs" % "3.8.0",
+          "org.webjars" % "d3js" % "3.5.3",
+          "org.webjars" % "json3" % "3.3.2",
+          "org.webjars" % "es5-shim" % "2.1.0",
           "org.json4s" %% "json4s-jackson" % json4sVersion,
           "org.json4s" %% "json4s-native"   % json4sVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test"

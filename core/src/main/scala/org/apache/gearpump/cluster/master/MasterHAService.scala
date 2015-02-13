@@ -81,6 +81,7 @@ class MasterHAService extends Actor with Stash with ClusterReplication {
             client ! DeleteMasterStateFailed(new Exception(fail.getClass.getName))
         }
       }
+
   }
 }
 
