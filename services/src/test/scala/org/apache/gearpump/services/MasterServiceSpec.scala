@@ -19,8 +19,10 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterToMaster.MasterData
+import org.apache.gearpump.cluster.TestUtil
+import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
 
@@ -28,7 +30,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 
-class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers with BeforeAndAfterEach {
+class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers with BeforeAndAfterAll {
 
   import upickle._
 
@@ -36,17 +38,15 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
 
   def actorRefFactory = system
 
-  var restUtil = RestTestUtil.startRestServices
+  var miniCluster:MiniCluster = null
+  def master = miniCluster.mockMaster
 
-  val master = restUtil match {
-    case Success(v) =>
-      v.miniCluster.mockMaster
-    case Failure(v) =>
-      LOG.error("Could not start rest services", v)
-      null
+  override def beforeAll: Unit = {
+    miniCluster = TestUtil.startMiniCluster
   }
 
-  override def beforeEach: Unit = {
+  override def afterAll: Unit = {
+    miniCluster.shutDown()
   }
 
   it should "return master info when asked" in {
@@ -55,16 +55,6 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
       // check the type
       val content = response.entity.asString
       read[MasterData](content)
-    }
-  }
-
-  override def afterEach: Unit = {
-    restUtil match {
-      case Success(v) =>
-        LOG.info("shutting down the cluster....")
-        v.shutdown()
-      case Failure(v) =>
-        LOG.error("Could not start rest services", v)
     }
   }
 }
