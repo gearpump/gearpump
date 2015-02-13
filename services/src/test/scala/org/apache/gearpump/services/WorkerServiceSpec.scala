@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.services
 
+import org.apache.gearpump.cluster.AppMasterToMaster.WorkerData
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
@@ -56,16 +57,11 @@ with Matchers with BeforeAndAfterAll {
     (Get("/workers") ~> workersRoute).asInstanceOf[RouteResult] ~> check {
       //check the type
       val workerListJson = response.entity.asString
-      val workers = read[WorkerList](workerListJson).workers
-      workers.foreach { workerId =>
-        (Get(s"/workers/$workerId") ~> workerRoute).asInstanceOf[RouteResult] ~> check {
-          //check the type
-          val responseBody = response.entity.asString
-          LOG.info(s"$responseBody")
-          val workerDescription = read[WorkerDescription](responseBody)
-          workerDescription.workerId shouldBe workerId
-          workerDescription.state shouldBe "active"
-        }
+      val workers = read[List[WorkerData]](workerListJson).map(_.workerDescription)
+      workers.foreach { workerOption =>
+        assert(workerOption.nonEmpty)
+        val worker = workerOption.get
+        worker.state shouldBe "active"
       }
     }
   }
