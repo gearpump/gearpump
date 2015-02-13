@@ -43,6 +43,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
 
   import context.dispatcher
 
+  private var startClock: Long = 0
   private val taskGroupClocks = new util.TreeSet[TaskGroupClock]()
   private val taskGroupLookup = new util.HashMap[TaskGroup, TaskGroupClock]()
 
@@ -69,6 +70,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   }
 
   private def initializeDagWithStartClock(startClock: TimeStamp) = {
+    this.startClock = startClock
     dag.tasks.foreach {
       taskIdWithDescription =>
         val (taskGroupId, description) = taskIdWithDescription
@@ -115,8 +117,13 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   }
 
   private def minClock: TimeStamp = {
-    val taskGroup = taskGroupClocks.first()
-    taskGroup.minClock
+    if (taskGroupClocks.isEmpty) {
+      LOG.warn("Try to get MinClock for a empty DAG")
+      startClock
+    } else {
+      val taskGroup = taskGroupClocks.first()
+      taskGroup.minClock
+    }
   }
 
   def reportGlobalMinClock() : Unit = {
