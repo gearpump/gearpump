@@ -82,7 +82,7 @@ angular.module('app.widgets.visdag', ['adf.provider'])
       width: '700px',
       height: '700px',
       hierarchicalLayout: {
-        layout: 'hubsize'
+        layout: 'direction'
       },
       stabilize: true /* stabilize positions before displaying */,
       nodes: {
@@ -91,7 +91,8 @@ angular.module('app.widgets.visdag', ['adf.provider'])
       },
       edges: {
         style: 'arrow',
-        labelAlignment: 'line-center'
+        labelAlignment: 'line-center',
+        fontSize: 12
       }
     };
     new vis.Network(el[0], data, options);
