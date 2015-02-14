@@ -79,15 +79,15 @@ angular.module('app.widgets.visdag', ['adf.provider'])
       edges: new vis.DataSet()
     };
     var options = {
-      width: '700px',
+      width: '100%',
       height: '700px',
       hierarchicalLayout: {
         layout: 'direction'
       },
       stabilize: true /* stabilize positions before displaying */,
       nodes: {
-        radiusMin: 8,
-        radiusMax: 16
+        radiusMin: 16,
+        radiusMax: 24
       },
       edges: {
         style: 'arrow',

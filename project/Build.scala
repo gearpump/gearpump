@@ -319,6 +319,7 @@ object Build extends sbt.Build {
           "org.webjars" % "angular-local-storage" % "0.1.1",
           "org.webjars" % "bootstrap" % "3.2.0",
           "org.webjars" % "d3js" % "3.5.3",
+          "org.webjars" % "visjs" % "3.10.0",
           "org.webjars" % "json3" % "3.3.2",
           "org.webjars" % "es5-shim" % "2.1.0",
           "org.json4s" %% "json4s-jackson" % json4sVersion,
