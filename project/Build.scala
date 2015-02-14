@@ -318,7 +318,6 @@ object Build extends sbt.Build {
           "org.webjars" % "angular-ui-sortable" % "0.12.11-1",
           "org.webjars" % "angular-local-storage" % "0.1.1",
           "org.webjars" % "bootstrap" % "3.2.0",
-          "org.webjars" % "visjs" % "3.8.0",
           "org.webjars" % "d3js" % "3.5.3",
           "org.webjars" % "json3" % "3.3.2",
           "org.webjars" % "es5-shim" % "2.1.0",
