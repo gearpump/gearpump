@@ -21,33 +21,65 @@
  */
 'use strict';
 
-angular.module('app-01', ['adf', 'LocalStorageModule'])
-.controller('app01Ctrl', function($scope, localStorageService){
-  
-  var name = 'app-01';
-  var model = null;//localStorageService.get(name);
-  if (!model) {
-    model = {
-      title: "Master/Workers",
-      structure: "4-8",
-      rows: [{
-        columns: [{
-          styleClass: "col-md-4",
-          widgets: [
-          ]
-        }, {
-          styleClass: "col-md-8",
-          widgets: [
-          ]
-        }]
-      }]      
-    };
-  }
-  $scope.name = name;
-  $scope.model = model;
-  $scope.collapsible = false;
-
-  $scope.$on('adfDashboardChanged', function (event, name, model) {
-    localStorageService.set(name, model);
+angular.module('app-01', ['ngTable', 'readable'])
+  .controller('app01Ctrl', function ($scope) {
+    $scope.panes = [
+      {name: "Master", templateUrl: "partials/master.html", controller: "masterControl"},
+      {name: "Workers", templateUrl: "partials/workers.html", controller: "workerControl"},
+    ];
+  })
+  .controller('masterControl', function ($scope, $http) {
+    var url = location.origin + '/master';
+    $scope.summary = {};
+    $http.get(url).then(function (response) {
+      var description = response.data.masterDescripton;
+      $scope.summary = {
+        aliveFor: description.aliveFor,
+        logFile: description.logFile,
+        jarStore: description.jarStore,
+        status: description.masterStatus,
+        leader: description.leader.join(':'),
+        clusters: description.cluster.map(function(item) {
+            return item.join(':');
+          })
+      };
+    }, function (err) {
+      throw err;
+    });
+  })
+  .controller('workerControl', function ($scope, $http, $filter, ngTableParams) {
+    $scope.tableParams = new ngTableParams({page: 1, count: 10}, {
+      counts: [10, 25, 50],
+      total: 0,
+      getData: function ($defer, params) {
+        var url = location.origin + '/workers';
+        var workers = [];
+        $http.get(url).then(function (response) {
+          workers = response.data.map(function(worker) {
+            var slotsTaken = worker.executors.reduce(function(a, b) {
+              return a.slots + b.slots;
+            }, 0);
+            return {
+              id: worker.workerId,
+              state: worker.state,
+              actorPath: worker.actorPath,
+              aliveFor: worker.aliveFor,
+              logFile: worker.logFile,
+              executors: worker.executors,
+              slotsTotal: worker.totalSlots,
+              slotsTaken: slotsTaken,
+              slotUsage: worker.totalSlots > 0 ?
+                  Math.floor(100 * slotsTaken / worker.totalSlots) : 0
+            }
+          });
+          var orderedData = params.sorting() ?
+              $filter('orderBy')(workers, $scope.tableParams.orderBy()) : workers;
+          $defer.resolve(
+              orderedData.slice((params.page() - 1) * params.count(),
+                  params.page() * params.count()));
+        }, function (err) {
+          throw err;
+        });
+      }
+    });
   });
-});

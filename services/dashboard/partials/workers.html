@@ -1,0 +1,24 @@
+<div class="row">
+  <table ng-table="tableParams" class="table table-striped-inverse">
+    <caption><h4>Registered Workers</h4></caption>
+    <tr ng-repeat="worker in $data track by $index">
+      <td header-class="ng-table-header-cell" data-title="'ID'">{{worker.id}}</td>
+      <td header-class="ng-table-header-cell" data-title="'Actor Path'">{{worker.actorPath}}</td>
+      <td header-class="ng-table-header-cell" data-title="'State'">
+        <span ng-class="worker.state=='active'?'label-success':'label-warning'" class="label">{{worker.state}}</span></td>
+      <td header-class="ng-table-header-cell" data-title="'Slots'">
+        <p class="text-center" style="padding:0;margin:0;font-size:11px;line-height:100%">
+          {{worker.slotsTaken}} / {{worker.slotsTotal}}</p>
+        <div class="progress" style="padding:0;margin:3px 0;height:3px">
+          <div class="progress-bar" role="progressbar" aria-valuenow="{{worker.slotUsage}}" aria-valuemin="0"
+               aria-valuemax="100" style="min-width:2em;width:{{worker.slotUsage}}%">
+          </div>
+        </div>
+      </td>
+      <td header-class="ng-table-header-cell" data-title="'Alive For'">
+        {{worker.aliveFor|readableTime}}
+      </td>
+      <td header-class="ng-table-header-cell" data-title="'Log File'">{{worker.logFile}}</td>
+    </tr>
+  </table>
+</div>

@@ -1,0 +1,31 @@
+<div class="row">
+  <table class="table table-striped">
+    <caption><h4>Master Summary</h4></caption>
+    <tbody>
+    <tr>
+      <td class="summaryItemName">Leader</td>
+      <td>{{summary.leader}}</td>
+    </tr>
+    <tr>
+      <td class="summaryItemName">Cluster</td>
+      <td><div ng-repeat="cluster in summary.clusters track by $index">{{cluster}}</div></td>
+    </tr>
+    <tr>
+      <td class="summaryItemName">Status</td>
+      <td>{{summary.status}}</td>
+    </tr>
+    <tr>
+      <td class="summaryItemName">Alive For</td>
+      <td>{{summary.aliveFor|readableTime}}</td>
+    </tr>
+    <tr>
+      <td class="summaryItemName">Logfile Location</td>
+      <td>{{summary.logFile}}</td>
+    </tr>
+    <tr>
+      <td class="summaryItemName">JAR Store Location</td>
+      <td>{{summary.jarStore}}</td>
+    </tr>
+    </tbody>
+  </table>
+</div>

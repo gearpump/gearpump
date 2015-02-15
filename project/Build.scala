@@ -322,6 +322,7 @@ object Build extends sbt.Build {
           "org.webjars" % "visjs" % "3.10.0",
           "org.webjars" % "json3" % "3.3.2",
           "org.webjars" % "es5-shim" % "2.1.0",
+          "org.webjars" % "ng-table" % "0.3.3",
           "org.json4s" %% "json4s-jackson" % json4sVersion,
           "org.json4s" %% "json4s-native"   % json4sVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
