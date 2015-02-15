@@ -22,6 +22,7 @@ import akka.actor.ActorRef
 import akka.pattern._
 import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, GetAllWorkers}
 import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, AppMastersData}
+import org.apache.gearpump.cluster.worker.WorkerDescription
 import org.apache.gearpump.util.Constants
 import spray.http.StatusCodes
 import spray.routing.HttpService
@@ -39,13 +40,18 @@ trait WorkersService extends HttpService {
     path("workers") {
       val workerDataFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].flatMap { workerList =>
         val workers = workerList.workers
-        val workerDataList = List.empty[WorkerData]
+        val workerDataList = List.empty[WorkerDescription]
         Future.fold(workers.map(master ? GetWorkerData(_)))(workerDataList) { (workerDataList, workerData) =>
-          workerDataList :+ workerData.asInstanceOf[WorkerData]
+          val workerDescription = workerData.asInstanceOf[WorkerData].workerDescription
+          if (workerDescription.isEmpty) {
+            workerDataList
+          } else {
+            workerDataList :+ workerDescription.get
+          }
         }
       }
       onComplete(workerDataFuture) {
-        case Success(result: List[WorkerData]) => complete(write(result))
+        case Success(result: List[WorkerDescription]) => complete(write(result))
         case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
       }
     }
