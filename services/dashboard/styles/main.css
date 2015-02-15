@@ -64,3 +64,67 @@ pre.edit {
 .padding-bottom {
   padding-bottom: 5px;
 }
+
+/**
+ * ngTable overrides
+ */
+.ng-table-header-cell {
+  text-align: left !important;
+  background-color: #f9f9f9;
+}
+
+.summaryItemName {
+  text-align: right;
+  font-weight: bold;
+}
+.table > caption {
+  text-align: left;
+}
+
+.table-striped-inverse > tbody > tr:nth-child(even) > td,
+.table-striped-inverse > tbody > tr:nth-child(even) > th {
+  background-color: #f9f9f9;
+}
+
+.nav-tabs {
+  margin-bottom: 20px !important;
+}
+.nav-tabs-google > li {
+  margin: 0 -1px 0 0;
+}
+.nav-tabs-google > li > a {
+  padding: 12px 8px;
+  margin: 0 8px;
+  line-height: 1.4;
+  color: #777;
+  border: 3px solid transparent;
+  border-width: 3px 0;
+  border-radius: 0;
+}
+.nav-tabs-google > li > a:first-of-type {
+  margin-left: 0;
+}
+.nav-tabs-google > li > a:hover,
+.nav-tabs-google > li > a:focus {
+  background-color: transparent;
+  border-top-color: transparent;
+}
+.nav-tabs-google > li > a:hover {
+  color: #000;
+  border-bottom-color: transparent;
+}
+.nav-tabs-google > li > a:active {
+  color: #dd4b39;
+}
+.nav-tabs-google > li > a:focus {
+  color: #000;
+  outline: 0;
+}
+.nav-tabs-google > li.active > a,
+.nav-tabs-google > li.active > a:hover,
+.nav-tabs-google > li.active > a:focus {
+  color: #dd4b39;
+  border: 3px solid transparent;
+  border-width: 3px 0;
+  border-bottom-color: #dd4b39;
+}

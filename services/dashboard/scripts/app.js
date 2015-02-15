@@ -24,22 +24,27 @@
 'use strict';
 
 angular.module('app', [
-  'adf', 
-  'app.widgets.visdag',
-  'app.widgets.applist', 
+  // Angular modules
   'LocalStorageModule',
-  'structures', 
+  'ngRoute',
+  // Angular-dashboard-framework (including extensions)
+  'adf',
+  'structures',
+  'app.widgets.visdag',
+  'app.widgets.applist',
+  // Application extensions
+  'app.tabset',
+  // Application controllers
   'app-01', 
-  'app-02', 
-  'ngRoute'
+  'app-02'
 ])
 .config(function($routeProvider, localStorageServiceProvider){
   localStorageServiceProvider.setPrefix('adf');
 
-  $routeProvider.when('/app/01', {
-    templateUrl: 'partials/app.html',
+  $routeProvider.when('/cluster', {
+    templateUrl: 'partials/cluster.html',
     controller: 'app01Ctrl'
-  }).when('/app/02', {
+  }).when('/apps', {
     templateUrl: 'partials/app.html',
     controller: 'app02Ctrl'
   });

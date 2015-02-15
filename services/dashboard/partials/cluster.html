@@ -1,0 +1,7 @@
+<div ng-controller="app01Ctrl">
+  <tabs>
+    <pane ng-repeat="pane in panes" title="{{pane.name}}"
+      controller="{{pane.controller}}" template-url="{{pane.templateUrl}}">
+    </pane>
+  </tabs>
+</div>
