@@ -37,15 +37,16 @@ trait WorkersService extends HttpService {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     path("workers") {
-      onComplete((master ? GetAllWorkers).asInstanceOf[Future[WorkerList]]) {
-        case Success(value: WorkerList) =>
-          val workers = value.workers
-          val workerDataList = List.empty[WorkerData]
-          Future.fold(workers.map(master ? GetWorkerData(_)))(workerDataList) { (workerDataList, workerData) =>
-            workerDataList :+ workerData.asInstanceOf[WorkerData]
-          }
-          complete(write(workerDataList))
-        case Failure(ex)    => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+      val workerDataFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].flatMap { workerList =>
+        val workers = workerList.workers
+        val workerDataList = List.empty[WorkerData]
+        Future.fold(workers.map(master ? GetWorkerData(_)))(workerDataList) { (workerDataList, workerData) =>
+          workerDataList :+ workerData.asInstanceOf[WorkerData]
+        }
+      }
+      onComplete(workerDataFuture) {
+        case Success(result: List[WorkerData]) => complete(write(result))
+        case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
       }
     }
   }
