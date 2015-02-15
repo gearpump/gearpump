@@ -20,11 +20,12 @@ package org.apache.gearpump.streaming.kafka.lib
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
-import kafka.producer.{KeyedMessage, Producer}
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.apache.gearpump.util.LogUtil
+import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
+import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.slf4j.Logger
 
 import scala.util.{Try, Failure, Success}
@@ -34,14 +35,15 @@ object KafkaStorage {
 
   def apply(config: KafkaConfig, topic: String, topicExists: Boolean, topicAndPartition: TopicAndPartition) = {
     val getConsumer = () => KafkaConsumer(topic, 0, config)
-    val producer = new Producer[Array[Byte], Array[Byte]](KafkaUtil.buildProducerConfig(config))
+    val producer = new KafkaProducer[Array[Byte], Array[Byte]](
+      KafkaUtil.buildProducerConfig(config), new ByteArraySerializer, new ByteArraySerializer)
     new KafkaStorage(topic, topicExists, producer, getConsumer())
   }
 }
 
 private[kafka] class KafkaStorage(topic: String,
                                   topicExists: Boolean,
-                                  producer: Producer[Array[Byte], Array[Byte]],
+                                  producer: KafkaProducer[Array[Byte], Array[Byte]],
                                   getConsumer: => KafkaConsumer) extends OffsetStorage {
   private val dataByTime: List[(TimeStamp, Array[Byte])] = {
     if (topicExists){
@@ -75,8 +77,8 @@ private[kafka] class KafkaStorage(topic: String,
   }
 
   override def append(time: TimeStamp, offset: Array[Byte]): Unit = {
-    val message = new KeyedMessage[Array[Byte], Array[Byte]](
-      topic, Injection[Long, Array[Byte]](time), 0, offset)
+    val message = new ProducerRecord[Array[Byte], Array[Byte]](
+      topic, 0, Injection[Long, Array[Byte]](time), offset)
     producer.send(message)
   }
 

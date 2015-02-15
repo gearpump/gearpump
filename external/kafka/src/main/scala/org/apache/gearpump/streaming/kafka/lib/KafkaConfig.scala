@@ -18,15 +18,12 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
-import java.util.{List => JList}
-
 import com.typesafe.config.Config
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouperFactory
 import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, MessageDecoder}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-import scala.collection.JavaConverters._
 import scala.util.Try
 
 object KafkaConfig {
@@ -46,11 +43,12 @@ object KafkaConfig {
 
   // producer config
   val PRODUCER_TOPIC = "kafka.producer.topic"
-  val METADATA_BROKER_LIST = "kafka.producer.metadata.broker.list"
-  val PRODUCER_TYPE = "kafka.producer.producer.type"
-  val REQUEST_REQUIRED_ACKS = "kafka.producer.request.required.acks"
-  val PRODUCER_EMIT_BATCH_SIZE = "kafka.producer.emit.batch.size"
-  val FETCH_METADATA_TIMEOUT_MS = "kafka.producer.fetch.metadata.timeout.ms"
+  val PRODUCER_BOOTSTRAP_SERVERS = "kafka.producer.bootstrap.servers"
+  val PRODUCER_ACKS = "kafka.producer.acks"
+  val PRODUCER_BUFFER_MEMORY = "kafka.producer.buffer.memory"
+  val PRODUCER_COMPRESSION_TYPE = "kafka.producer.compression.type"
+  val PRODUCER_BATCH_SIZE = "kafka.producer.batch.size"
+  val PRODUCER_RETRIES = "kafka.producer.retries"
 
   // storage config
   val STORAGE_REPLICAS = "kafka.storage.replicas"
@@ -83,6 +81,9 @@ class KafkaConfig(config: Config) extends Serializable  {
     get[Int](key, Try(config.getInt(key)).toOption, defaultValue)
   }
 
+  private def getLong(key: String, defaultValue: Option[Long] = None): Long = {
+    get[Long](key, Try(config.getLong(key)).toOption, defaultValue)
+  }
 
   private def getInstance[C](key: String, defaultValue: Option[String] = None): C = {
     Class.forName(getString(key, defaultValue)).newInstance().asInstanceOf[C]
@@ -128,24 +129,28 @@ class KafkaConfig(config: Config) extends Serializable  {
     getString(PRODUCER_TOPIC)
   }
 
-  def getProducerEmitBatchSize: Int = {
-    getInt(PRODUCER_EMIT_BATCH_SIZE)
+  def getProducerAcks: String = {
+    getString(PRODUCER_ACKS)
   }
 
-  def getProducerType: String = {
-    getString(PRODUCER_TYPE)
+  def getProducerBootstrapServers: String = {
+    getString(PRODUCER_BOOTSTRAP_SERVERS)
   }
 
-  def getRequestRequiredAcks: String = {
-    getString(REQUEST_REQUIRED_ACKS)
+  def getProducerBufferMemory: Long = {
+    getLong(PRODUCER_BUFFER_MEMORY)
   }
 
-  def getFetchMetadataTimeoutMS: Int = {
-    getInt(FETCH_METADATA_TIMEOUT_MS)
+  def getProducerCompressionType: String = {
+    getString(PRODUCER_COMPRESSION_TYPE)
   }
 
-  def getMetadataBrokerList: String = {
-    getString(METADATA_BROKER_LIST)
+  def getProducerBatchSize: Int = {
+    getInt(PRODUCER_BATCH_SIZE)
+  }
+
+  def getProducerRetries: Int = {
+    getInt(PRODUCER_RETRIES)
   }
 
   def getGrouperFactory: KafkaGrouperFactory = {

@@ -18,38 +18,29 @@
 
 package org.apache.gearpump.streaming.kafka
 
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+import java.util.Properties
+
 import org.apache.gearpump.streaming.kafka.lib.{KafkaUtil, KafkaConfig}
+import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
+import org.apache.kafka.common.serialization.ByteArraySerializer
 
-import scala.collection.mutable.ArrayBuffer
+class KafkaSink private[kafka](producer: KafkaProducer[Array[Byte], Array[Byte]]) {
 
-class KafkaSink private[kafka](producer: Producer[Array[Byte], Array[Byte]], batchSize: Int) {
+  def this(producerConfig: Properties) =
+    this(new KafkaProducer[Array[Byte], Array[Byte]](
+      producerConfig, new ByteArraySerializer, new ByteArraySerializer))
 
-  private var buffer = ArrayBuffer[KeyedMessage[Array[Byte], Array[Byte]]]()
+  def this(config: KafkaConfig) = this(KafkaUtil.buildProducerConfig(config))
 
-  def this(producerConfig: ProducerConfig, batchSize: Int) =
-    this(new Producer[Array[Byte], Array[Byte]](producerConfig), batchSize)
-
-  def this(config: KafkaConfig) = this(KafkaUtil.buildProducerConfig(config), config.getProducerEmitBatchSize)
-
-  def write(topic: String, key: Array[Byte], msg: Array[Byte]): Unit = write(topic, key, key, msg)
-
-  def write(topic: String, key: Array[Byte], partKey: Any, msg: Array[Byte]): Unit = {
-    buffer += new KeyedMessage(topic, key, partKey, msg)
-    if (buffer.size >= batchSize) {
-      flush()
-    }
+  def write(topic: String, key: Array[Byte], msg: Array[Byte]): Unit = {
+    producer.send(new ProducerRecord[Array[Byte], Array[Byte]](topic, key, msg))
   }
 
-  def flush(): Unit = {
-    if (buffer.nonEmpty) {
-      producer.send(buffer: _*)
-      buffer.clear()
-    }
+  def write(topic: String, partition: Int, key: Array[Byte], msg: Array[Byte]): Unit = {
+    producer.send(new ProducerRecord[Array[Byte], Array[Byte]](topic, partition, key, msg))
   }
 
   def close(): Unit = {
-    flush()
     producer.close()
   }
 }
