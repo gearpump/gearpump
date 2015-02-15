@@ -57,10 +57,9 @@ with Matchers with BeforeAndAfterAll {
     (Get("/workers") ~> workersRoute).asInstanceOf[RouteResult] ~> check {
       //check the type
       val workerListJson = response.entity.asString
-      val workers = read[List[WorkerData]](workerListJson).map(_.workerDescription)
-      workers.foreach { workerOption =>
-        assert(workerOption.nonEmpty)
-        val worker = workerOption.get
+      val workers = read[List[WorkerDescription]](workerListJson)
+      assert(workers.size > 0)
+      workers.foreach { worker =>
         worker.state shouldBe "active"
       }
     }
