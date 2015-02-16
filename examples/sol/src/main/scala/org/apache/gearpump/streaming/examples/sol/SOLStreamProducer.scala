@@ -26,7 +26,7 @@ import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 class SOLStreamProducer(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import org.apache.gearpump.streaming.examples.sol.SOLStreamProducer._
-  import taskContext.{output, self}
+  import taskContext.output
 
   private val sizeInBytes = conf.getInt(SOLStreamProducer.BYTES_PER_MESSAGE).get
   private var messages : Array[String] = null
