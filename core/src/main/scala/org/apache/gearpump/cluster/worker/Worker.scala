@@ -43,7 +43,8 @@ import scala.util.{Failure, Success, Try}
 
 case class WorkerDescription(workerId: Int, state: String, actorPath: String,
                              aliveFor: Long, logFile: String,
-                             executors: Array[ExecutorInfo], totalSlots: Int)
+                             executors: Array[ExecutorInfo], totalSlots: Int, availableSlots: Int,
+                             homeDirectory: String)
 /**
  * masterProxy is used to resolve the master
  */
@@ -52,7 +53,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
   private val systemConfig : Config = context.system.settings.config
   private val configStr = systemConfig.root().render
-  private val logFile = System.getProperty("gearpump.log.file")
+
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()
@@ -60,6 +61,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private var id = -1
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
+
+  private var totalSlots: Int = 0
 
   override def receive : Receive = null
   val LOG : Logger = LogUtil.getLogger(getClass, worker = id)
@@ -116,8 +119,10 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       LOG.info(s"Worker $id update resource succeed")
     case GetWorkerData(workerId) =>
       val aliveFor = System.currentTimeMillis() - createdTime
+      val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
+      val userDir = System.getProperty("user.dir");
       sender ! WorkerData(Some(WorkerDescription(id, "active", address,
-        aliveFor, logFile, executorsInfo.values.toArray, resource.slots)))
+        aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir)))
   }
 
   def terminationWatch(master : ActorRef) : Receive = {
@@ -143,8 +148,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   import context.dispatcher
   override def preStart() : Unit = {
     LOG.info(s"Worker[$id] Sending master RegisterNewWorker")
-    val slots = systemConfig.getInt(Constants.GEARPUMP_WORKER_SLOTS)
-    this.resource = Resource(slots)
+    totalSlots = systemConfig.getInt(Constants.GEARPUMP_WORKER_SLOTS)
+    this.resource = Resource(totalSlots)
     masterProxy ! RegisterNewWorker
     context.become(waitForMasterConfirm(repeatActionUtil(30)(Unit)))
   }
