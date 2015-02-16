@@ -19,7 +19,8 @@
 package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
+import org.apache.gearpump._
+import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, AppMasterDataDetail}
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
@@ -27,10 +28,13 @@ import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
+import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.util._
 import org.slf4j.Logger
+
+import scala.concurrent.Future
 
 class AppMaster(appContext : AppMasterContext, app : Application)  extends ApplicationMaster {
   import app.userConfig
@@ -40,8 +44,9 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
+  private val address = ActorUtil.getFullPath(context.system, self.path)
 
-  private val (taskManager, executorManager) = {
+  private val (taskManager, executorManager, clockService) = {
     val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
 
     val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext))
@@ -52,7 +57,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
     val taskScheduler: TaskScheduler = new TaskSchedulerImpl(appId, context.system.settings.config)
     val taskManager = context.actorOf(Props(new TaskManager(appContext.appId, dag,
       taskScheduler, executorManager, clockService, self, app.name)))
-    (taskManager, executorManager)
+    (taskManager, executorManager, clockService)
   }
 
   override def receive : Receive =
@@ -78,10 +83,23 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       executorManager forward register
   }
 
+  implicit val timeOut = Constants.FUTURE_TIMEOUT
+
   def appMasterInfoService: Receive = {
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.info(s"***AppMaster got AppMasterDataDetailRequest for $appId ***")
-      sender ! AppMasterDataDetail(appId, app)
+
+
+      val executorsFuture = getExecutorList
+      val clockFuture = getMinClock
+
+      val appMasterDataDetail = for {executors <- executorsFuture
+        clock <- clockFuture } yield AppMasterDataDetail(appId, app.name, app, address, clock, executors)
+
+      val client = sender
+      appMasterDataDetail.map{appData =>
+        client ! appData
+      }
   }
 
   def recover: Receive = {
@@ -89,6 +107,16 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       LOG.error(s"Failed to allocate resource in time")
       masterProxy ! ShutdownApplication(appId)
       context.stop(self)
+  }
+
+  import akka.pattern.ask
+  implicit val dispatcher = context.dispatcher
+  private def getMinClock: Future[TimeStamp] = {
+    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
+  }
+
+  private def getExecutorList: Future[List[String]] = {
+    (executorManager ? GetExecutorPathList).asInstanceOf[Future[List[ActorPath]]].map(list => list.map(_.toString))
   }
 }
 

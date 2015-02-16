@@ -35,11 +35,7 @@ import com.typesafe.config.Config
  *  use ClusterConfigSource(filePath) to construct the object, while filePath points to the .conf file.
  */
 
-final class Application(val name : String, val appMaster : String, val userConfig: UserConfig, val clusterConfig: ClusterConfigSource = null) extends Serializable
-
-object Application {
-  def apply(name : String, appMaster : String, conf: UserConfig, appMasterClusterConfig: ClusterConfigSource = null) : Application = new Application(name, appMaster, conf, appMasterClusterConfig)
-}
+case class Application(val name : String, val appMaster : String, val userConfig: UserConfig, val clusterConfig: ClusterConfigSource = null)
 
 /**
  * Used for verification. All AppMaster must extend this interface
@@ -55,7 +51,7 @@ abstract class ApplicationMaster extends Actor
  *                request more resource from Master.
  * @param appJar: application Jar. If the jar is already in classpath, then it can be None.
  * @param masterProxy: The proxy to master actor, it will bridge the messages between appmaster and master
- * @param registerData: The AppMaster are required to register this data back to Master by [[org.apache.gearpump.cluster.AppMasterToMaster.RegisterAppMaster]]
+ * @param registerData: The AppMaster are required to register this data back to Master by RegisterAppMaster
  *
  */
 case class AppMasterContext(appId : Int, username : String,
@@ -93,7 +89,7 @@ case class ExecutorContext(executorId : Int, workerId: Int, appId : Int,
  * @param arguments Executor command line arguments
  * @param jar application jar
  * @param executorAkkaConfig Akka config used to initialize the actor system of this executor. It will
- * use [[org.apache.gearpump.util.Constants.GEARPUMP_CUSTOM_CONFIG_FILE]] to pass the config to executor
+ * use org.apache.gearpump.util.Constants.GEARPUMP_CUSTOM_CONFIG_FILE to pass the config to executor
  * process
  *
  */

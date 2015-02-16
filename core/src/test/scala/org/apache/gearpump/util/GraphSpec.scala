@@ -92,4 +92,9 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     }
   }
 
+  property("Check empty graph") {
+    val graph = Graph.empty[String, String]
+    assert(graph.isEmpty)
+  }
+
 }
