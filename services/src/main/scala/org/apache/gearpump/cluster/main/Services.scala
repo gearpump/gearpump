@@ -19,13 +19,22 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
+import org.apache.gearpump.cluster.main.Local._
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
 import org.apache.gearpump.services.{RestServices,WebSocketServices}
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.Util
+import org.apache.gearpump.util.LogUtil.ProcessType
+import org.apache.gearpump.util.{LogUtil, Util}
+import org.slf4j.Logger
 
 object Services extends App with ArgumentsParser {
+  val systemConfig = ClusterConfig.load.master.withFallback(ClusterConfig.load.worker)
+
+  private val LOG: Logger = {
+    LogUtil.loadConfiguration(systemConfig, ProcessType.UI)
+    LogUtil.getLogger(getClass)
+  }
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true))
