@@ -23,28 +23,17 @@
  */
 'use strict';
 
-angular.module('app-02', ['adf', 'LocalStorageModule'])
-.controller('app02Ctrl', function($scope, localStorageService){
+angular.module('app-02', ['adf', 'app.widgets.visdag'])
+.controller('app02Ctrl', function($scope, $rootScope, $http){
   
   var name = 'app-02';
   var model = null;//localStorageService.get(name);
   if (!model) {
     model = {
-      title: "Applications",
+      title: " ",
       structure: "4-8",
       rows: [{
         columns: [{
-          styleClass: "col-md-4",
-          widgets: [
-            {
-              type: "applist",
-              config: {
-              },
-              title: "Active"
-            }
-          ]
-        }, {
-          styleClass: "col-md-8",
           widgets: [
             {
               type: "visdag",
@@ -61,7 +50,22 @@ angular.module('app-02', ['adf', 'LocalStorageModule'])
   $scope.model = model;
   $scope.collapsible = false;
 
-  $scope.$on('adfDashboardChanged', function (event, name, model) {
-    localStorageService.set(name, model);
+  $scope.loadDag = function(appId) {
+    $scope.$broadcast('appmaster-selected', {appId: appId});
+  }
+
+  var url = location.origin + '/appmasters';
+  $http.get(url).then(function (response) {
+    var masters = response.data.appMasters;
+    $scope.apps = masters.map(function(app) {
+      return {
+        id: app.appId,
+        name: app.appName,
+        workerPath: app.workerPath
+      };
+    });
+  }, function (err) {
+  console.log(err);
+    throw err;
   });
 });

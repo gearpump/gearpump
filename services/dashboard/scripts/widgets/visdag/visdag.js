@@ -38,7 +38,7 @@ angular.module('app.widgets.visdag', ['adf.provider'])
   });
 })
 .controller('visDagCtrl', function ($scope, $http) {
-  $scope.$on('appmaster-selected', function (event, appMasterSelected) {
+  $scope.$on('appmaster-selected', function(event, appMasterSelected) {
     var url = location.origin + '/appmaster/' + appMasterSelected.appId + '?detail=true';
     $http.get(url).then(function (response) {
       var json = response.data;
@@ -65,10 +65,13 @@ angular.module('app.widgets.visdag', ['adf.provider'])
       });
 
       $scope.$broadcast('appmaster-data', {
-        data: $scope.data
+        data: $scope.data,
+        reset: false
       });
     }, function (err) {
-      throw err;
+      $scope.$broadcast('appmaster-data', {
+        reset: true
+      });
     });
   });
 })
@@ -96,9 +99,14 @@ angular.module('app.widgets.visdag', ['adf.provider'])
     };
     new vis.Network(el[0], data, options);
 
-    scope.$on('appmaster-data', function (event, newVal) {
-      data.nodes.update(newVal.data.nodes);
-      data.edges.update(newVal.data.edges);
+    scope.$on('appmaster-data', function(event, newVal) {
+      if (newVal.reset) {
+        data.nodes.clear();
+        data.edges.clear();
+      } else {
+        data.nodes.update(newVal.data.nodes);
+        data.edges.update(newVal.data.edges);
+      }
     });
   }
 
