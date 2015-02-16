@@ -18,16 +18,24 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.{ActorSystem, ActorRef}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
+import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.MasterToClient.ShutdownApplicationResult
 import org.apache.gearpump.partitioner.Partitioner
+
+import org.apache.gearpump.streaming.appmaster.AppMaster
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.util.{Constants, Graph, LogUtil}
+import org.apache.gearpump.streaming.appmaster.{StreamingAppMasterDataDetail, AppMaster}
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription, DAG}
 import org.apache.gearpump.util.{Graph, Constants}
 import spray.http.StatusCodes
 import spray.routing.HttpService
+import upickle.{Js, Writer}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -36,34 +44,39 @@ trait AppMasterService extends HttpService  {
   import upickle._
   def master:ActorRef
   implicit val system: ActorSystem
+  private val LOG = LogUtil.getLogger(getClass)
 
-  def appMasterRoute = get {
+  def appMasterRoute = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    path("appmaster"/IntNumber) { appId => {
-       parameter("detail" ? "false") { detail =>
-         val detailValue = Try(detail.toBoolean).getOrElse(false)
-         detailValue match {
-           case true =>
-             onComplete((master ? AppMasterDataDetailRequest(appId)).asInstanceOf[Future[AppMasterDataDetail]]) {
-               case Success(value: AppMasterDataDetail) =>
-                 val appDescription: AppDescription = value.application
-                 Option(appDescription) match {
-                   case Some(app) =>
-                     complete(write(app))
-                   case None =>
-                     complete(StatusCodes.InternalServerError, "UserConfig is null")
-                 }
-               case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-             }
-           case false =>
-             onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
-               case Success(value: AppMasterData) => complete(write(value))
-               case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-             }
-         }
-       }
-     }
+    path("appmaster"/IntNumber) { appId =>
+      get {
+        parameter("detail" ? "false") { detail =>
+          val detailValue = Try(detail.toBoolean).getOrElse(false)
+          detailValue match {
+            case true =>
+              onComplete((master ? AppMasterDataDetailRequest(appId)).asInstanceOf[Future[AppMasterDataDetail]]) {
+                case Success(value: AppMasterDataDetail) =>
+                  complete(value.toJson)
+                case Failure(ex) =>
+                  complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+              }
+            case false =>
+              onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
+                case Success(value: AppMasterData) => complete(write(value))
+                case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+              }
+          }
+        }
+      } ~
+      delete {
+        onComplete((master ? ShutdownApplication(appId)).asInstanceOf[Future[ShutdownApplicationResult]]) {
+          case Success(value: ShutdownApplicationResult) =>
+            val result = if (value.appId.isSuccess) Map("status"->"success", "info" -> null) else Map("status" -> "fail", "info" -> value.appId.failed.get.toString)
+            complete(write(result))
+          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+        }
+      }
     }
   }
 }

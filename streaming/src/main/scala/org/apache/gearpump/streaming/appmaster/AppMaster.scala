@@ -19,18 +19,24 @@
 package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, ShutdownApplication}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.metrics.Metrics.MetricType
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
+import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
+import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.util._
 import org.slf4j.Logger
+
+import scala.concurrent.Future
 
 class AppMaster(appContext : AppMasterContext, app : Application)  extends ApplicationMaster {
   import app.userConfig
@@ -40,10 +46,12 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
+  private val address = ActorUtil.getFullPath(context.system, self.path)
+  private var subscribers = false
 
-  private val (taskManager, executorManager) = {
-    val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
+  val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
 
+  private val (taskManager, executorManager, clockService) = {
     val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext))
 
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
@@ -52,8 +60,22 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
     val taskScheduler: TaskScheduler = new TaskSchedulerImpl(appId, context.system.settings.config)
     val taskManager = context.actorOf(Props(new TaskManager(appContext.appId, dag,
       taskScheduler, executorManager, clockService, self, app.name)))
-    (taskManager, executorManager)
+    (taskManager, executorManager, clockService)
   }
+
+  private def getHistoryMetricsConfig: HistoryMetricsConfig = {
+    val historyHour = context.system.settings.config.getInt(Constants.GEARPUMP_METRIC_RETAIN_HISTORY_DATA_HOURS)
+    val historyInterval = context.system.settings.config.getInt(Constants.GEARPUMP_RETAIN_HISTORY_DATA_INTERVAL_MS)
+
+    val recentSeconds = context.system.settings.config.getInt(Constants.GEARPUMP_RETAIN_RECENT_DATA_SECONDS)
+    val recentInterval = context.system.settings.config.getInt(Constants.GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS)
+    HistoryMetricsConfig(historyHour, historyInterval, recentSeconds, recentInterval)
+  }
+
+  private val historyMetricsService = {
+    context.actorOf(Props(new HistoryMetricsService(appId, getHistoryMetricsConfig)))
+  }
+  actorSystem.eventStream.subscribe(historyMetricsService, classOf[MetricType])
 
   override def receive : Receive =
     taskMessageHandler orElse
@@ -71,6 +93,11 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       taskManager forward register
     case ReplayFromTimestampWindowTrailingEdge =>
       taskManager forward ReplayFromTimestampWindowTrailingEdge
+    case metrics: MetricType =>
+      if(subscribers) {
+        LOG.info(s"***AppMaster publishing metrics***")
+        actorSystem.eventStream.publish(metrics)
+      }
   }
 
   def executorMessageHandler: Receive = {
@@ -78,10 +105,33 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       executorManager forward register
   }
 
+  implicit val timeOut = Constants.FUTURE_TIMEOUT
+
   def appMasterInfoService: Receive = {
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.info(s"***AppMaster got AppMasterDataDetailRequest for $appId ***")
-      sender ! AppMasterDataDetail(appId, app)
+
+      val executorsFuture = getExecutorList
+      val clockFuture = getMinClock
+
+      val appMasterDataDetail = for {executors <- executorsFuture
+        clock <- clockFuture } yield {
+        StreamingAppMasterDataDetail(appId, app.name, dag.processors,
+          Graph.vertexHierarchyLevelMap(dag.graph), dag.graph, address, clock, executors)
+      }
+
+      val client = sender()
+
+      appMasterDataDetail.map{appData =>
+        client ! appData
+      }
+    case appMasterMetricsRequest: AppMasterMetricsRequest =>
+      val client = sender()
+      subscribers = true
+      actorSystem.eventStream.subscribe(client, classOf[MetricType])
+
+    case query: QueryHistoryMetrics =>
+      historyMetricsService forward query
   }
 
   def recover: Receive = {
@@ -89,6 +139,16 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       LOG.error(s"Failed to allocate resource in time")
       masterProxy ! ShutdownApplication(appId)
       context.stop(self)
+  }
+
+  import akka.pattern.ask
+  implicit val dispatcher = context.dispatcher
+  private def getMinClock: Future[TimeStamp] = {
+    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
+  }
+
+  private def getExecutorList: Future[List[String]] = {
+    (executorManager ? GetExecutorPathList).asInstanceOf[Future[List[ActorPath]]].map(list => list.map(_.toString))
   }
 }
 

@@ -92,4 +92,45 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     }
   }
 
+  property("Check empty graph") {
+    val graph = Graph.empty[String, String]
+    assert(graph.isEmpty)
+  }
+
+  property("check level map for a graph") {
+    val graph = Graph.empty[String, String]
+
+    val defaultEdge = "edge"
+
+    graph.addVertex("A")
+    graph.addVertex("B")
+    graph.addVertex("C")
+
+    graph.addEdge("A", defaultEdge, "B")
+    graph.addEdge("B", defaultEdge, "C")
+    graph.addEdge("A", defaultEdge, "C")
+
+    graph.addVertex("D")
+    graph.addVertex("E")
+    graph.addVertex("F")
+
+    graph.addEdge("D", defaultEdge, "E")
+    graph.addEdge("E", defaultEdge, "F")
+    graph.addEdge("D", defaultEdge, "F")
+
+    graph.addEdge("C", defaultEdge, "E")
+
+    val levelMap = vertexHierarchyLevelMap(graph)
+
+    //check whether the rule holds: : if vertex A -> B, then level(A) < level(B)
+    levelMap("A") < levelMap("B")
+    levelMap("A") < levelMap("C")
+    levelMap("B") < levelMap("C")
+
+    levelMap("D") < levelMap("E")
+    levelMap("D") < levelMap("F")
+    levelMap("E") < levelMap("F")
+
+    levelMap("C") < levelMap("F")
+  }
 }

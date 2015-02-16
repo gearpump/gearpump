@@ -21,28 +21,41 @@ package org.apache.gearpump.services
 import akka.actor._
 import akka.io.IO
 import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.cluster.main.Local._
+import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.LogUtil.ProcessType
+import org.slf4j.Logger
 import spray.can.Http
 import spray.can.server.UHttp
 
-class WebSocketServices(masters: ActorRef) extends Actor with ActorLogging {
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
+class WebSocketServices(master: ActorRef) extends Actor with ActorLogging {
   def receive = {
-    // when a new connection comes in we register a WebSocketConnection actor as the per connection handler
     case Http.Connected(remoteAddress, localAddress) =>
-      val serverConnection = sender()
-      val conn = context.actorOf(WebSocketWorker.props(serverConnection))
-      serverConnection ! Http.Register(conn)
+      sender ! Http.Register(WebSocketWorker(sender, master))
   }
 }
 
 object WebSocketServices {
-  def start(master:ActorRef) {
-    implicit val system = ActorSystem("ws-services" , ClusterConfig.load.application)
+  private val LOG = LogUtil.getLogger(getClass)
+
+  def apply(master:ActorRef)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
+    implicit val timeout = Constants.FUTURE_TIMEOUT
     val services = system.actorOf(Props(classOf[WebSocketServices], master),"ws-services")
     val config = system.settings.config
     val port = config.getInt("gearpump.services.ws")
     val host = config.getString("gearpump.services.host")
     IO(UHttp) ! Http.Bind(services, interface = host, port = port)
+    Option(Await.result(system.actorSelection("user/IO-HTTP").resolveOne(), Duration.Inf)).map(iohttp => {
+      system.stop(iohttp)
+    })
+
+    LOG.info(s"WebSocket server is enabled http://$host:$port")
+    println(s"WebSocket server is enabled http://$host:$port")
+
   }
 }
 

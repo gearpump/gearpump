@@ -20,17 +20,13 @@ package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
-import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
-import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.{StreamingTestUtil, AppDescription, TaskDescription, DAG}
-import org.apache.gearpump.util.{Graph, LogUtil}
-import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec, BeforeAndAfterEach}
+import org.apache.gearpump.cluster.{TestUtil}
+import org.apache.gearpump.streaming.{StreamingTestUtil}
+import org.apache.gearpump.util.{LogUtil}
+import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 import org.slf4j.Logger
-import spray.routing.RequestContext
 import spray.testkit.{ScalatestRouteTest}
 
-import scala.util.{Failure, Success}
 import scala.concurrent.duration._
 
 class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterAll {
@@ -53,7 +49,14 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
     (Get("/appmaster/0?detail=false") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
-      read[AppMasterData](response.entity.asString)
+      val responseBody = response.entity.asString
+      read[AppMasterData](responseBody)
     }
+
+    //TODO: fix this UT
+//    (Get("/appmaster/streaming/0?detail=true") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
+//      val responseBody = response.entity.asString
+//      read[StreamingAppMasterDataDetail](responseBody)
+//    }
   }
 }

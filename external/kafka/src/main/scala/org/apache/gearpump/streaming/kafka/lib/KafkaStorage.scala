@@ -28,6 +28,7 @@ import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.slf4j.Logger
 
+import scala.collection.mutable
 import scala.util.{Try, Failure, Success}
 
 object KafkaStorage {
@@ -87,23 +88,19 @@ private[kafka] class KafkaStorage(topic: String,
   }
 
   private[kafka] def load(consumer: KafkaConsumer): List[(TimeStamp, Array[Byte])] = {
-    @annotation.tailrec
-    def fetch(offsets: List[(TimeStamp, Array[Byte])]): List[(TimeStamp, Array[Byte])] = {
-      if (consumer.hasNext) {
-        val kafkaMsg = consumer.next
-        val offset = kafkaMsg.key.map { k =>
-          Injection.invert[TimeStamp, Array[Byte]](k) match {
-            case Success(time) => (time, kafkaMsg.msg)
-            case Failure(e) => throw e
-          }
-        } orElse (throw new RuntimeException("offset key should not be null"))
-        fetch(offsets :+ offset.get)
-      } else {
-        consumer.close()
-        offsets
-      }
+    var messagesBuilder = new mutable.ArrayBuilder.ofRef[(TimeStamp, Array[Byte])]
+    while (consumer.hasNext) {
+      val kafkaMsg = consumer.next
+      kafkaMsg.key.map { k =>
+        Injection.invert[TimeStamp, Array[Byte]](k) match {
+          case Success(time) =>
+            messagesBuilder += (time -> kafkaMsg.msg)
+          case Failure(e) => throw e
+        }
+      } orElse (throw new RuntimeException("offset key should not be null"))
     }
-    fetch(List.empty[(TimeStamp, Array[Byte])])
+    consumer.close()
+    messagesBuilder.result().toList
   }
 
 }

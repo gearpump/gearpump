@@ -1,3 +1,65 @@
+gearpump-0.3.0-rc1
+====================
+Change List:
+---------------
+ - #510, add log directory for UI server
+ - #485, retain inactive application history in Master
+ - #504, 1) AppMaster return more detailed application runtime information. 2) fix a worker bug when returning executors which run on worker. 
+ - #422, [UI] show the number of executors (2) changed layout of application page
+ - #417, add a experiment module to distribute a zip file to different machines
+ - #502, fix KafkaStorage loading data for async kafka consumer
+ - #422, [UI] (1) added home directory in UI (2) removed millis from duration 3) updated dag control height
+ - #476, fix worker and master log path format in rest service
+ - #498, worker rest data is not updated in UI
+ - #397, move distributed shell from experiments to examples folder
+ - #493 add implicit sender so that the Task can send itself messages[work around]
+ - #427, use new kafka producer in kafka 0.8.2
+ - #422, added cluster page to show master and worker information
+ - #489, make the worker rest information easier to parse
+ - #202, Add a default serializer for all kinds of messages
+ - #477, REST Workers should return more information
+ - #456, uses webjars to serve visjs 3.10.0
+ - #483, upgrade visdag to 3.10 because widget does not repaint correctly when a node is moved
+ - #473, Use webjars with spray support instead of bower to serve static resources
+ - #477, return more data for rest call workers/
+ - #474, fix rest service UT test fail.
+ - #479, publish test jar as artifacts
+ - #419, Reorder the application log by master startup timestamp
+ - #456, Use visdag to render the graph DAG
+ - #464， Travis bower integration
+ - #394, fix kafka producer hang issue
+ - #468, For test code, the ClockService will throw excepton when the DAG is not defined
+ - #465, fix appname prefix bug
+ - #461, AppMasterSpec and WorkServiceSpec UT are failing 
+ - #270, Create a force-direct dag 
+ - #453, Add rest service to serve master info 
+ - #423, refactor task by seperating TaskActor and Task
+ - #422, add worker rest api
+ - #449: avoid load external resource by removing all CDN external links
+ - #397 refactor distributed shell by using new Cluster API
+ - #441, ui-portal is failed to build because of spray version conflict
+ - #430 use application name as unique identifier for an application
+ - #440, moved dashboard code from conf to service/dashboard
+ - #402, refactor task manager
+ - #280, Add websockets to REST api
+ - #269, Define UI Dashboard structure
+ - #406, custom executor jvm config in gear.conf is not effective.
+ - #394, fix ActorSystemBooter process not shut down after application finishes
+ - #412, add version.sbt 
+ - #410 Add sbt-eclipse plugin and wiki for how to build gearpump on eclipse
+ - #408, handle Ctrl+C(sigint) gracefully.
+ - #396, bump up kafka version to 0.8.2.0
+ - #398, Expose more metrics info
+ - #389, fix kafka fetch thread bug 
+ - #386 UT fail due to unclosed sequence file
+ - #370, refactor streaming appmaster
+ - #358, use uPickle for REST Service
+ - #372, fix DAG subgraph build and more Graph UT
+ - #377, fix KafkaSource.pull performance due to the List.append is not having good performance
+ - #378, construct the serializer explicitly, instead of implicitly via the kryo serializer akka extension
+ - #380, set the context class loader as the URL class loader for ActorSystem.
+
+
 gearpump-0.2.3
 ====================
 Change List:

@@ -104,12 +104,6 @@ private[cluster] class Master extends Actor with Stash {
     case registerAppMaster : RegisterAppMaster =>
       //forward to appManager
       appManager forward registerAppMaster
-    case AppMastersDataRequest =>
-      LOG.info("Master received AppMastersDataRequest")
-      appManager forward AppMastersDataRequest
-    case appMasterDataRequest: AppMasterDataRequest =>
-      LOG.info("Master received AppMasterDataRequest")
-      appManager forward appMasterDataRequest
     case save : SaveAppData =>
       appManager forward save
     case get : GetAppData =>
@@ -126,8 +120,9 @@ private[cluster] class Master extends Actor with Stash {
 
     case GetMasterData =>
       val aliveFor = System.currentTimeMillis() - birth
-      val logFilePath = System.getProperty("gearpump.log.file")
-      val masterDescription = MasterDescription(hostPort.toTuple, getMasterClusterList.map(_.toTuple), aliveFor, logFilePath, jarStoreRootPath, MasterStatus.Synced)
+      val logFileDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
+      val userDir = System.getProperty("user.dir");
+      val masterDescription = MasterDescription(hostPort.toTuple, getMasterClusterList.map(_.toTuple), aliveFor, logFileDir, jarStoreRootPath, MasterStatus.Synced, userDir)
       sender ! MasterData(masterDescription)
 
     case invalidAppMaster: InvalidAppMaster =>
@@ -164,7 +159,22 @@ private[cluster] class Master extends Actor with Stash {
     case app : AppMasterDataDetailRequest =>
       LOG.info(s"Receive from client, forwarding to AppManager")
       appManager.forward(app)
+    case app : AppMasterMetricsRequest =>
+      LOG.info(s"AppMasterMetricsRequestFromActor Receive from client, forwarding to AppManager")
+      appManager.forward(app)
 
+    case AppMastersDataRequest =>
+      LOG.info("Master received AppMastersDataRequest")
+      appManager forward AppMastersDataRequest
+    case appMasterDataRequest: AppMasterDataRequest =>
+      LOG.info("Master received AppMasterDataRequest")
+      appManager forward appMasterDataRequest
+    case query: QueryAppMasterConfig =>
+      LOG.info("Master received QueryAppMasterConfig")
+      appManager forward query
+    case query: QueryHistoryMetrics =>
+      LOG.info("Master received QueryHistoryMetrics")
+      appManager forward query
   }
 
   def disassociated : Receive = {
@@ -217,7 +227,8 @@ object Master {
 
   case class MasterDescription(leader: (String, Int), cluster: List[(String, Int)], aliveFor: Long,
                                logFile: String, jarStore: String,
-                               masterStatus: MasterStatus.Type)
+                               masterStatus: MasterStatus.Type,
+                                homeDirectory: String)
 
   case class SlotStatus(totalSlots: Int, availableSlots: Int)
 }

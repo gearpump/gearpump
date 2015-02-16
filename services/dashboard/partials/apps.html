@@ -1,0 +1,28 @@
+<div class="row">
+  <table class="table table-striped table-hover">
+    <caption><h4>Applications History</h4></caption>
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Status</th>
+      <th>AppMaster Path</th>
+      <th>Worker Path</th>
+      <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="app in apps track by $index">
+      <th scope="row" ng-click="loadDag(app.id)">{{app.id}}</th>
+      <td>{{app.name}}</td>
+      <td><span ng-class="app.status==='active'?'label-success':'label-default'" class="label">
+        {{app.status}}</span>
+      </td>
+      <td>{{app.appMasterPath}}</td>
+      <td>{{app.workerPath}}</td>
+      <td><button ng-if="app.status==='active'" ng-click="viewapp(app.id)"
+                  class="btn btn-primary btn-xs media-middle">View Charts</button></td>
+    </tr>
+    </tbody>
+  </table>
+</div>

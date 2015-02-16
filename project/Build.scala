@@ -29,6 +29,7 @@ object Build extends sbt.Build {
   val commonsLangVersion = "3.3.2"
   val commonsLoggingVersion = "1.1.3"
   val commonsIOVersion = "2.4"
+  val clouderaVersion = "2.5.0-cdh5.3.1"
   val findbugsVersion = "2.0.1"
   val guavaVersion = "15.0"
   val dataReplicationVersion = "0.7"
@@ -38,7 +39,6 @@ object Build extends sbt.Build {
   val kafkaVersion = "0.8.2.0"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
-  val uPickleVersion = "0.2.5"
   
   val scalaVersionMajor = "scala-2.11"
   val scalaVersionNumber = "2.11.5"
@@ -59,6 +59,7 @@ object Build extends sbt.Build {
           "maven2-repo" at "http://mvnrepository.com/artifact",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
+          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
     ) ++
@@ -145,6 +146,7 @@ object Build extends sbt.Build {
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
+        "com.lihaoyi" %% "upickle" % "0.2.6",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
@@ -167,19 +169,20 @@ object Build extends sbt.Build {
                         "local" -> "org.apache.gearpump.cluster.main.Local",
                         "master" -> "org.apache.gearpump.cluster.main.Master",
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
-                        "services" -> "org.apache.gearpump.cluster.main.Services"
+                        "services" -> "org.apache.gearpump.cluster.main.Services",
+                        "yarnclient" -> "org.apache.gearpump.experiments.yarn.Client"
                        ),
         packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
                            "master" -> Seq("-DlogFilename=master"),
                            "worker" -> Seq("-DlogFilename=worker")
                         ),
-        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id),
+        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id, distributedshell.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         parallelExecution in ThisBuild := false,
         travis_deploy := {
-          val packagePath = s"target/gearpump-${version}.tar.gz"
+          val packagePath = s"target/gearpump-${version.value}.tar.gz"
           val target = s"target/binary.gearpump.tar.gz"
           println(s"[Travis-Deploy] Move file $packagePath to $target")
           new File(packagePath).renameTo(new File(target))
@@ -190,8 +193,8 @@ object Build extends sbt.Build {
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
       )
-  ).dependsOn(core, streaming, services, external_kafka, distributedshell)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell)
+  ).dependsOn(core, streaming, services, external_kafka)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, yarn)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -202,12 +205,7 @@ object Build extends sbt.Build {
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
-    settings = commonSettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "com.lihaoyi" %% "upickle" % "0.2.5"
-        )
-     )
+    settings = commonSettings
   )  dependsOn(core % "test->test;compile->compile")
 
   lazy val external_kafka = Project(
@@ -229,7 +227,7 @@ object Build extends sbt.Build {
 
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
-    base = file("examples/kafka"),
+    base = file("examples/streaming/kafka"),
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
@@ -242,7 +240,7 @@ object Build extends sbt.Build {
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
-    base = file("examples/fsio"),
+    base = file("examples/streaming/fsio"),
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
@@ -255,7 +253,7 @@ object Build extends sbt.Build {
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",
-    base = file("examples/sol"),
+    base = file("examples/streaming/sol"),
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
@@ -268,7 +266,7 @@ object Build extends sbt.Build {
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
-    base = file("examples/wordcount"),
+    base = file("examples/streaming/wordcount"),
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
@@ -281,7 +279,7 @@ object Build extends sbt.Build {
 
   lazy val complexdag = Project(
     id = "gearpump-examples-complexdag",
-    base = file("examples/complexdag"),
+    base = file("examples/streaming/complexdag"),
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
@@ -296,7 +294,7 @@ object Build extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ myAssemblySettings
-  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka)
+  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell)
   
   lazy val services = Project(
     id = "gearpump-services",
@@ -331,9 +329,29 @@ object Build extends sbt.Build {
   ) dependsOn(streaming % "test->test;compile->compile")
 
   lazy val distributedshell = Project(
-    id = "gearpump-experiments-distributedshell",
-    base = file("experiments/distributedshell"),
+    id = "gearpump-examples-distributedshell",
+    base = file("examples/distributedshell"),
+    settings = commonSettings
+  ) dependsOn(core % "test->test", core % "provided")
+
+  lazy val distributeservice = Project(
+    id = "gearpump-experiments-distributeservice",
+    base = file("experiments/distributeservice"),
     settings = commonSettings
   ) dependsOn(core % "test->test;compile->compile")
-  
+
+  lazy val yarn = Project(
+    id = "gearpump-experiments-yarn",
+    base = file("experiments/yarn"),
+    settings = commonSettings ++ 
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion
+        )
+      ) 
+  ) dependsOn(core % "test->test", core % "provided")
 }

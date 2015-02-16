@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Props
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult}
 import org.apache.gearpump.cluster.MasterToWorker.WorkerRegistered
 import org.apache.gearpump.cluster.WorkerToMaster.RegisterNewWorker
@@ -97,7 +97,7 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
       Array("-master", s"$getHost:$getPort"))
 
     masterReceiver.expectMsg(PROCESS_BOOT_TIME, AppMastersDataRequest)
-    masterReceiver.reply(AppMastersData(List(AppMasterData(0, null))))
+    masterReceiver.reply(AppMastersData(List(AppMasterData(AppMasterActive, 0, "appName"))))
 
     info.destroy()
   }

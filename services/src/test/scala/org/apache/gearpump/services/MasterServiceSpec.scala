@@ -21,20 +21,14 @@ package org.apache.gearpump.services
 import org.apache.gearpump.cluster.AppMasterToMaster.MasterData
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
-import org.apache.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
-
 
 class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers with BeforeAndAfterAll {
 
   import upickle._
-
-  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   def actorRefFactory = system
 

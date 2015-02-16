@@ -37,41 +37,43 @@ angular.module('app.widgets.visdag', ['adf.provider'])
     }
   });
 })
-.controller('visDagCtrl', function ($scope, $http) {
-  $scope.$on('appmaster-selected', function (event, appMasterSelected) {
-    var url = location.origin + '/appmaster/' + appMasterSelected.appId + '?detail=true';
-    $http.get(url).then(function (response) {
-      var json = response.data;
-      $scope.data = {
-        nodes: [],
-        edges: []
-      };
+.controller('visDagCtrl', ['$scope','$http','$routeParams','StreamingService', function ($scope, $http, $routeParams, StreamingService) {
+  var url = location.origin + '/appmaster/' + $routeParams.appId + '?detail=true';
+  $http.get(url).then(function (response) {
+    var json = response.data;
+    $scope.data = {
+      nodes: [],
+      edges: []
+    };
 
-      function lastPart(name) {
-        var parts = name.split(/\./);
-        return parts[parts.length - 1];
-      }
+    function lastPart(name) {
+      var parts = name.split(/\./);
+      return parts[parts.length - 1];
+    }
 
-      json.dag.vertices.forEach(function (vertex, i) {
-        var name = lastPart(vertex);
-        $scope.data.nodes.push({id: name, label: name});
-      });
+    json.dag.vertices.forEach(function (vertex, i) {
+      var name = lastPart(vertex);
+      $scope.data.nodes.push({id: name, label: name});
+    });
 
-      json.dag.edges.forEach(function (edge, i) {
-        var source = lastPart(edge[0]);
-        var target = lastPart(edge[2]);
-        var value = lastPart(edge[1]);
-        $scope.data.edges.push({from: source, to: target, label: value});
-      });
+    json.dag.edges.forEach(function (edge, i) {
+      var source = lastPart(edge[0]);
+      var target = lastPart(edge[2]);
+      var value = lastPart(edge[1]);
+      $scope.data.edges.push({from: source, to: target, label: value});
+    });
 
-      $scope.$broadcast('appmaster-data', {
-        data: $scope.data
-      });
-    }, function (err) {
-      throw err;
+    $scope.$broadcast('appmaster-data', {
+      data: $scope.data,
+      reset: false
+    });
+  }, function (err) {
+    $scope.$broadcast('appmaster-data', {
+      reset: true
     });
   });
-})
+  StreamingService.send(JSON.stringify(["org.apache.gearpump.cluster.MasterToAppMaster.AppMasterMetricsRequest",{appId:parseInt($routeParams.appId)}]));
+}])
 .directive('visdag', function () {
   function visdag(scope, el, attr) {
     var data = {
@@ -80,14 +82,13 @@ angular.module('app.widgets.visdag', ['adf.provider'])
     };
     var options = {
       width: '100%',
-      height: '700px',
+      height: '600px',
       hierarchicalLayout: {
-        layout: 'direction'
+        layout: 'direction',
+        direction: "UD"
       },
       stabilize: true /* stabilize positions before displaying */,
       nodes: {
-        radiusMin: 16,
-        radiusMax: 24
       },
       edges: {
         style: 'arrow',
@@ -97,9 +98,14 @@ angular.module('app.widgets.visdag', ['adf.provider'])
     };
     new vis.Network(el[0], data, options);
 
-    scope.$on('appmaster-data', function (event, newVal) {
-      data.nodes.update(newVal.data.nodes);
-      data.edges.update(newVal.data.edges);
+    scope.$on('appmaster-data', function(event, newVal) {
+      if (newVal.reset) {
+        data.nodes.clear();
+        data.edges.clear();
+      } else {
+        data.nodes.update(newVal.data.nodes);
+        data.edges.update(newVal.data.edges);
+      }
     });
   }
 

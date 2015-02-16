@@ -12,14 +12,18 @@
     </tr>
     <tr>
       <td class="summaryItemName">Status</td>
-      <td>{{summary.status}}</td>
+      <td><span ng-class="summary.status=='synced'?'label-success':'label-warning'" class="label">{{summary.status}}</span></td>
     </tr>
     <tr>
       <td class="summaryItemName">Alive For</td>
       <td>{{summary.aliveFor|readableTime}}</td>
     </tr>
     <tr>
-      <td class="summaryItemName">Logfile Location</td>
+        <td class="summaryItemName">Home Directory</td>
+        <td>{{summary.homeDir}}</td>
+    </tr>
+    <tr>
+      <td class="summaryItemName">Log File Location</td>
       <td>{{summary.logFile}}</td>
     </tr>
     <tr>

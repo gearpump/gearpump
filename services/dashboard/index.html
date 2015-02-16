@@ -36,6 +36,7 @@
     <!-- build:css css/app.min.css -->
     <!-- Bootstrap core CSS -->
     <link href="webjars/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="webjars/bootstrap/3.2.0/css/bootstrap-theme.min.css" rel="stylesheet">
 
     <!-- dashboard style -->
     <link href="styles/main.css" rel="stylesheet">
@@ -67,7 +68,9 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">GearPump</a>
+          <a class="navbar-brand" href="#" style="color:#fff">GearPump</a>
+          <span class="label label-default"
+            style="float:left;vertical-align:middle;margin:17px 30px 0 0;clear:none">0.3.0</span>
         </div>
         <div collapse="navCollapsed" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
@@ -85,6 +88,13 @@
     <div class="container">
       <div ng-view></div>
     </div>
+
+    <nav class="navbar navbar-default navbar-fixed-bottom" style="min-height:0">
+      <div class="container">
+       <p style="display:table-cell;padding:8px 0 8px 0">Project site
+         <a href="//gearpump.io" target="_blank">gearpump.io</a></p>
+      </div>
+    </nav>
 
     <!-- build:js js/jquery.min.js -->
     <script src="webjars/jquery/2.0.3/jquery.min.js"></script>
@@ -129,6 +139,7 @@
 
     <!-- application scripts -->
     <script src="scripts/directives/tabset.js"></script>
+    <script src="scripts/directives/visdag.js"></script>
     <script src="scripts/filters/readable.js"></script>
 
     <!-- local storage -->
@@ -136,15 +147,15 @@
 
     <!-- app -->
     <script src="scripts/app.js"></script>
+    <script src="scripts/services.js"></script>
+    <script src="scripts/controllers.js"></script>
     <script src="scripts/app-01.js"></script>
     <script src="scripts/app-02.js"></script>
+    <script src="scripts/app-03.js"></script>
     <script src="scripts/structures.js"></script>
 
     <!-- applist widget -->
     <script src="scripts/widgets/applist/applist.js"></script>
-
-    <!-- visdag widget -->
-    <script src="scripts/widgets/visdag/visdag.js"></script>
 
     <!-- dag widget -->
     <script src="webjars/d3js/3.5.3/d3.min.js"></script>

@@ -38,12 +38,13 @@ import org.apache.gearpump.util._
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 case class WorkerDescription(workerId: Int, state: String, actorPath: String,
                              aliveFor: Long, logFile: String,
-                             executors: Array[ExecutorInfo], totalSlots: Int)
+                             executors: Array[ExecutorInfo], totalSlots: Int, availableSlots: Int,
+                             homeDirectory: String)
 /**
  * masterProxy is used to resolve the master
  */
@@ -52,14 +53,17 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
   private val systemConfig : Config = context.system.settings.config
   private val configStr = systemConfig.root().render
-  private val logFile = System.getProperty("gearpump.log.file")
+
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()
-  private var executorsInfo = Map[Int, ExecutorInfo]()
+  private var executorsInfo = Map[ActorRef, ExecutorInfo]()
   private var id = -1
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
+  private var executorNameToActor = Map.empty[String, ActorRef]
+
+  private var totalSlots: Int = 0
 
   override def receive : Receive = null
   val LOG : Logger = LogUtil.getLogger(getClass, worker = id)
@@ -76,7 +80,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   }
 
   private def updateResourceTimeOut(): Unit = {
-
     LOG.error(s"Worker $id update resource time out")
   }
 
@@ -84,10 +87,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     case shutdown @ ShutdownExecutor(appId, executorId, reason : String) =>
       val actorName = ActorUtil.actorNameForExecutor(appId, executorId)
       LOG.info(s"Worker shutting down executor: $actorName due to: $reason")
+      val executorToStop = executorNameToActor.get(actorName)
 
-      if (context.child(actorName).isDefined) {
-        LOG.info(s"Shuttting down child: ${context.child(actorName).get.path.toString}")
-        context.child(actorName).get.forward(shutdown)
+      if (executorToStop.isDefined) {
+        LOG.info(s"Shuttting down child: ${executorToStop.get.path.toString}")
+        executorToStop.get.forward(shutdown)
       } else {
         LOG.info(s"There is no child $actorName, ignore this message")
         sender ! ShutdownExecutorFailed(s"Can not find executor $executorId for app $appId")
@@ -99,14 +103,15 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       } else {
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
-        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo), actorName)
+        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo))
+        executorNameToActor += actorName ->executor
 
         resource = resource - launch.resource
         allocatedResource = allocatedResource + (executor -> launch.resource)
 
         sendMsgWithTimeOutCallBack(masterInfo.master,
           ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
-        executorsInfo += launch.executorId -> ExecutorInfo(launch.appId, launch.executorId, launch.resource.slots)
+        executorsInfo += executor -> ExecutorInfo(launch.appId, launch.executorId, launch.resource.slots)
         context.watch(executor)
       }
     case UpdateResourceFailed(reason, ex) =>
@@ -116,8 +121,10 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       LOG.info(s"Worker $id update resource succeed")
     case GetWorkerData(workerId) =>
       val aliveFor = System.currentTimeMillis() - createdTime
+      val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
+      val userDir = System.getProperty("user.dir");
       sender ! WorkerData(Some(WorkerDescription(id, "active", address,
-        aliveFor, logFile, executorsInfo.values.toArray, resource.slots)))
+        aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir)))
   }
 
   def terminationWatch(master : ActorRef) : Receive = {
@@ -133,18 +140,18 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         val allocated = allocatedResource.get(actor)
         if (allocated.isDefined) {
           resource = resource + allocated.get
+          executorsInfo -= actor
           allocatedResource = allocatedResource - actor
           sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         }
       }
   }
 
-
   import context.dispatcher
   override def preStart() : Unit = {
     LOG.info(s"Worker[$id] Sending master RegisterNewWorker")
-    val slots = systemConfig.getInt(Constants.GEARPUMP_WORKER_SLOTS)
-    this.resource = Resource(slots)
+    totalSlots = systemConfig.getInt(Constants.GEARPUMP_WORKER_SLOTS)
+    this.resource = Resource(totalSlots)
     masterProxy ! RegisterNewWorker
     context.become(waitForMasterConfirm(repeatActionUtil(30)(Unit)))
   }

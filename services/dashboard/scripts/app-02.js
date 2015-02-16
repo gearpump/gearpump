@@ -23,45 +23,26 @@
  */
 'use strict';
 
-angular.module('app-02', ['adf', 'LocalStorageModule'])
-.controller('app02Ctrl', function($scope, localStorageService){
-  
-  var name = 'app-02';
-  var model = null;//localStorageService.get(name);
-  if (!model) {
-    model = {
-      title: "Applications",
-      structure: "4-8",
-      rows: [{
-        columns: [{
-          styleClass: "col-md-4",
-          widgets: [
-            {
-              type: "applist",
-              config: {
-              },
-              title: "Active"
-            }
-          ]
-        }, {
-          styleClass: "col-md-8",
-          widgets: [
-            {
-              type: "visdag",
-              config: {
-              },
-              title: "DAG"
-            }
-          ]
-        }]
-      }]      
-    };
-  }
-  $scope.name = name;
-  $scope.model = model;
-  $scope.collapsible = false;
-
-  $scope.$on('adfDashboardChanged', function (event, name, model) {
-    localStorageService.set(name, model);
+angular.module('app-02', [])
+.controller('app02Ctrl', function($scope, $http, $location) {
+  var url = location.origin + '/appmasters';
+  $http.get(url).then(function (response) {
+    var masters = response.data.appMasters;
+    $scope.apps = masters.map(function(app) {
+      return {
+        id: app.appId,
+        name: app.appName,
+        status: app.status,
+        appMasterPath: app.appMasterPath,
+        workerPath: app.workerPath
+      };
+    });
+  }, function (err) {
+  console.log(err);
+    throw err;
   });
+
+  $scope.viewapp = function(id) {
+    $location.path("/app/" + id);
+  };
 });

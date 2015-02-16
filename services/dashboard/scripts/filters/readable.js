@@ -55,7 +55,9 @@ angular.module('readable', [])
     checkAndAdd(parts, period.hours, "hours");
     checkAndAdd(parts, period.minutes, "mins");
     checkAndAdd(parts, period.seconds, "secs");
-    checkAndAdd(parts, period.millis, "ms");
+    if (parts.length == 0) {
+        return period.millis > 0 ? period.millis + "ms" : "N/A";
+    }
     return parts.slice(0, 2).join(" and ");
   };
 });

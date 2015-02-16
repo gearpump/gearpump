@@ -20,6 +20,8 @@ package org.apache.gearpump.services
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
+import org.apache.gearpump.services.WebSocketServices._
+import org.apache.gearpump.util.LogUtil
 import spray.can._
 import spray.routing.RoutingSettings
 
@@ -27,7 +29,7 @@ trait RestServices extends AppMastersService
     with AppMasterService with WorkerService with WorkersService with MasterService with StaticService {
   implicit def executionContext = actorRefFactory.dispatcher
 
-  lazy val route = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ masterRoute ~ staticRoute
+  lazy val routes = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ masterRoute ~ staticRoute
 }
 
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
@@ -36,16 +38,21 @@ class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with R
   implicit val eh = RoutingSettings.default(context)
 
   val master = masters
-  def receive = runRoute(route)
+  def receive = runRoute(routes)
 }
 
 object RestServices {
-  def start(master:ActorRef)(implicit system:ActorSystem) {
+  private val LOG = LogUtil.getLogger(getClass)
+
+  def apply(master:ActorRef)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
     val services = system.actorOf(Props(classOf[RestServicesActor], master, system), "rest-services")
     val config = system.settings.config
     val port = config.getInt("gearpump.services.http")
     val host = config.getString("gearpump.services.host")
     IO(Http) ! Http.Bind(services, interface = host, port = port)
+
+    LOG.info(s"Please browse to http://$host:$port to see the web UI")
+    println(s"Please browse to http://$host:$port to see the web UI")
   }
 }

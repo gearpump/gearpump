@@ -43,6 +43,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
       val getConsumer = () => mock[KafkaConsumer]
       val storage = new KafkaStorage(topic, topicExists = false, producer, getConsumer())
       storage.lookUp(time) shouldBe Failure(StorageEmpty)
+      storage.close()
     }
   }
 
@@ -93,6 +94,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
             case Success(_) => fail("time larger than max should return Overflow failure")
           }
       }
+      storage.close()
     }
   }
 
@@ -105,6 +107,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
       val offsetBytes = Injection[Long, Array[Byte]](offset)
       storage.append(time, offsetBytes)
       verify(producer).send(anyObject[ProducerRecord[Array[Byte], Array[Byte]]]())
+      storage.close()
     }
   }
 
@@ -139,6 +142,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
               when(consumer.next).thenReturn(kafkaMsgList.head, kafkaMsgList.tail: _*)
           }
           kafkaStorage.load(consumer) shouldBe msgList
+        kafkaStorage.close()
     }
   }
 
@@ -148,6 +152,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
       val getConsumer = mock[() => KafkaConsumer]
       val kafkaStorage = new KafkaStorage(topic, topicExists = false, producer, getConsumer())
       verify(getConsumer, never()).apply()
+      kafkaStorage.close()
     }
   }
 
@@ -167,6 +172,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
       when(consumer.hasNext).thenReturn(true, false)
       when(consumer.next).thenReturn(invalidKafkaMsg, invalidKafkaMsg)
       Try(kafkaStorage.load(consumer)).isFailure shouldBe true
+      kafkaStorage.close()
     }
   }
 

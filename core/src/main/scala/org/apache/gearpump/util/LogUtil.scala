@@ -1,5 +1,6 @@
 package org.apache.gearpump.util
 
+import java.io.File
 import java.net.InetAddress
 import java.util.Properties
 
@@ -12,7 +13,7 @@ import scala.util.Try
 object LogUtil {
   object ProcessType extends Enumeration {
     type ProcessType = Value
-    val MASTER, WORKER, LOCAL, APPLICATION = Value
+    val MASTER, WORKER, LOCAL, APPLICATION, UI = Value
   }
 
   def getLogger[T](clazz : Class[T], context : String = null, master : Any = null, worker : Any = null, executor : Any = null, task : Any = null, app : Any = null) : Logger = {
@@ -63,15 +64,23 @@ object LogUtil {
     processType match {
       case ProcessType.APPLICATION =>
         props.setProperty("log4j.rootLogger", "${gearpump.application.logger}")
-        val appLogDir = config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
-        props.setProperty("gearpump.application.log.rootdir", appLogDir)
+        props.setProperty("gearpump.application.log.rootdir", applicationLogDir(config).getAbsolutePath)
       case _ =>
         props.setProperty("log4j.rootLogger", "${gearpump.root.logger}")
-        val daemonLogDir = config.getString(Constants.GEARPUMP_LOG_DAEMON_DIR)
-        props.setProperty("gearpump.log.dir", daemonLogDir)
+        props.setProperty("gearpump.log.dir", daemonLogDir(config).getAbsolutePath)
     }
 
     PropertyConfigurator.configure(props)
+  }
+
+  def daemonLogDir(config: Config): File = {
+    val dir = config.getString(Constants.GEARPUMP_LOG_DAEMON_DIR)
+    new File(dir)
+  }
+
+  def applicationLogDir(config: Config): File = {
+    val appLogDir = config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
+    new File(appLogDir)
   }
 
   private def setHostnameSystemProperty : Unit = {
