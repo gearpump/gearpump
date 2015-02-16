@@ -61,7 +61,9 @@ angular.module('app-02', ['adf', 'app.widgets.visdag'])
       return {
         id: app.appId,
         name: app.appName,
-        workerPath: app.workerPath
+        workerPath: app.workerPath,
+        status: app.status,
+        appMasterPath: app.appMasterPath
       };
     });
   }, function (err) {
