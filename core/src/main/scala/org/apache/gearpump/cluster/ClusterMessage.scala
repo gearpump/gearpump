@@ -79,7 +79,7 @@ object AppMasterToMaster {
   case class WorkerData(workerDescription: Option[WorkerDescription])
 
   case object GetMasterData
-  case class MasterData(masterDescripton: MasterDescription)
+  case class MasterData(masterDescription: MasterDescription)
 }
 
 object MasterToAppMaster {

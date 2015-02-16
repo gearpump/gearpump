@@ -47,7 +47,7 @@ angular.module('app', [
   }).when('/apps', {
     templateUrl: 'partials/app.html',
     controller: 'app02Ctrl'
-  });
+  }).otherwise({redirectTo: '/cluster'});
 
 })
 .controller('navigationCtrl', function($scope, $location){
