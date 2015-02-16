@@ -20,6 +20,7 @@ package org.apache.gearpump.services
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
+import org.apache.gearpump.util.LogUtil
 import spray.can._
 import spray.routing.RoutingSettings
 

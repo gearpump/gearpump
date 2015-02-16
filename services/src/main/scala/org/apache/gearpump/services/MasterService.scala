@@ -1,9 +1,8 @@
 package org.apache.gearpump.services
 
 import akka.actor.ActorRef
-import org.apache.gearpump.cluster.AppMasterToMaster.{MasterData, GetMasterData, WorkerData, GetWorkerData}
-import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
-import org.apache.gearpump.util.Constants
+import org.apache.gearpump.cluster.AppMasterToMaster.{MasterData, GetMasterData}
+import org.apache.gearpump.util.{Constants}
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
