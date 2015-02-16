@@ -26,7 +26,6 @@ import org.jgrapht.traverse.TopologicalOrderIterator
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 
-
 /**
  * Application DAG
  */
@@ -76,6 +75,16 @@ class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) e
     val newGraph = graph.clone().asInstanceOf[DefaultDirectedGraph[N, Edge[E]]]
     Graphs.addGraph(newGraph, other.graph)
     new Graph(newGraph)
+  }
+
+  def isEmpty: Boolean = {
+    val vertexCount = vertices.size
+    val edgeCount = edges.length
+    if (vertexCount + edgeCount == 0) {
+      true
+    } else {
+      false
+    }
   }
 
   /**

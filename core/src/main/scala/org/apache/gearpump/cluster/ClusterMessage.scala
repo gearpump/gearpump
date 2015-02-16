@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.ActorRef
+import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.master.Master.{MasterInfo, MasterDescription}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerDescription
@@ -72,7 +73,12 @@ object AppMasterToMaster {
 
   case class GetAppData(appId: Int, key: String)
   case class GetAppDataResult(key: String, value: Any)
-  case class AppMasterDataDetail(appId: Int, application: Application)
+
+  //TODO:
+  // clock field may not make sense for applications other than streaming
+  case class AppMasterDataDetail(
+      appId: Int, appName: String = null, application: Application = null,
+      actorPath: String = null, clock: TimeStamp = 0, executors: List[String] = null)
 
   case object GetAllWorkers
   case class GetWorkerData(workerId: Int)
@@ -95,7 +101,12 @@ object MasterToAppMaster {
   }
   case class AppMasterRegistered(appId: Int)
   case object ShutdownAppMaster
-  case class AppMasterData(appId: Int, workerPath: String)
+
+  type AppMasterStatus = String
+  val AppMasterActive: AppMasterStatus = "active"
+  val AppMasterInActive: AppMasterStatus = "inactive"
+
+  case class AppMasterData(appId: Int, appName: String, appMasterPath: String, workerPath: String, status: AppMasterStatus)
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
   case class AppMastersData(appMasters: List[AppMasterData])
   case object AppMastersDataRequest

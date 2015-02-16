@@ -62,6 +62,9 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   //from appid to appMaster data
   private var appMasterRegistry = Map.empty[Int, (ActorRef, AppMasterRuntimeInfo)]
 
+  // dead appmaster list
+  private var deadAppMasters = Map.empty[Int, (ActorRef, AppMasterRuntimeInfo)]
+
   def receive: Receive = null
 
   masterHA ! GetMasterState
@@ -146,19 +149,32 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       val appMastersData = collection.mutable.ListBuffer[AppMasterData]()
       appMasterRegistry.foreach(pair => {
         val (id, (appMaster:ActorRef, info:AppMasterRuntimeInfo)) = pair
-        appMastersData += AppMasterData(id,info.worker.path.toString)
-      }
-      )
+        val appMasterPath = ActorUtil.getFullPath(context.system, appMaster.path)
+        val workerPath = ActorUtil.getFullPath(context.system, info.worker.path)
+
+        appMastersData += AppMasterData(id, info.appName, appMasterPath, workerPath, AppMasterActive)
+      })
+
+      deadAppMasters.foreach(pair => {
+        val (id, (appMaster:ActorRef, info:AppMasterRuntimeInfo)) = pair
+        appMastersData += AppMasterData(id, info.appName, null, null, AppMasterInActive)
+      })
+
       sender ! AppMastersData(appMastersData.toList)
     case appMasterDataRequest: AppMasterDataRequest =>
       val appId = appMasterDataRequest.appId
       val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
       Option(info) match {
-        case a@Some(data) =>
-          val worker = a.get.worker
-          sender ! AppMasterData(appId = appId, workerPath = worker.path.toString)
+        case Some(info) =>
+          val worker = info.worker
+
+          val appMasterPath = ActorUtil.getFullPath(context.system, appMaster.path)
+          val workerPath = ActorUtil.getFullPath(context.system, worker.path)
+
+          sender ! AppMasterData(appId = appId, info.appName, appMasterPath, workerPath, AppMasterActive)
         case None =>
-          sender ! AppMasterData(appId = appId, workerPath = null)
+          // TODO: refactor this to make sure it more more clear that we don't have this application
+          sender ! AppMasterData(appId = appId, null, appMasterPath = null, workerPath = null, AppMasterInActive)
       }
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       val appId = appMasterDataDetailRequest.appId
@@ -167,7 +183,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         case Some(_appMaster) =>
           _appMaster forward appMasterDataDetailRequest
         case None =>
-          sender ! AppMasterDataDetail(appId, null)
+          sender ! AppMasterDataDetail(appId)
       }
   }
 
@@ -248,7 +264,11 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   case class RecoverApplication(applicationStatus : ApplicationState)
 
   private def cleanApplicationData(appId : Int) : Unit = {
+
+    //add the dead app to dead appMaster
+    appMasterRegistry.get(appId).map(deadAppMasters += appId -> _)
     appMasterRegistry -= appId
+
     masterHA ! DeleteMasterState(appId)
     kvService ! DeleteKVGroup(appId.toString)
   }

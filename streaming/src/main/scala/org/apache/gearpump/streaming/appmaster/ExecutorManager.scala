@@ -90,6 +90,9 @@ private[appmaster] class ExecutorManager (
     case BroadCast(msg) =>
       LOG.info(s"broadcasting $msg")
       context.children.foreach(_ ! msg)
+
+    case GetExecutorPathList =>
+      sender ! context.children.map(_.path).toList
     }
 
   def terminationWatch : Receive = {
@@ -113,6 +116,8 @@ private[appmaster] class ExecutorManager (
 private[appmaster] object ExecutorManager {
   case class StartExecutors(resources: Array[ResourceRequest])
   case class BroadCast(msg: Any)
+
+  case object GetExecutorPathList
 
   type ExecutorId = Int
 

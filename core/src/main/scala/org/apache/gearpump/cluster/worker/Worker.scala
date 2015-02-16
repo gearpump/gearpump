@@ -57,7 +57,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
   private var allocatedResource = Map[ActorRef, Resource]()
-  private var executorsInfo = Map[Int, ExecutorInfo]()
+  private var executorsInfo = Map[ActorRef, ExecutorInfo]()
   private var id = -1
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
@@ -109,7 +109,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
         sendMsgWithTimeOutCallBack(masterInfo.master,
           ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
-        executorsInfo += launch.executorId -> ExecutorInfo(launch.appId, launch.executorId, launch.resource.slots)
+        executorsInfo += executor -> ExecutorInfo(launch.appId, launch.executorId, launch.resource.slots)
         context.watch(executor)
       }
     case UpdateResourceFailed(reason, ex) =>
@@ -138,6 +138,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         val allocated = allocatedResource.get(actor)
         if (allocated.isDefined) {
           resource = resource + allocated.get
+          executorsInfo -= actor
           allocatedResource = allocatedResource - actor
           sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         }

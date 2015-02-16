@@ -42,6 +42,9 @@ object AppDescription {
   }
 
   implicit def ApplicationToAppDescription(app: Application)(implicit system: ActorSystem): AppDescription = {
+    if (null == app) {
+      return null
+    }
     val config = Option(app.userConfig)
     val graph  = config match {
       case Some(_config) =>
@@ -52,19 +55,6 @@ object AppDescription {
     AppDescription(app.name,  app.userConfig, graph, app.clusterConfig)
   }
 
-  // for now we only serialize name and dag. We may also need a reader once we allow DAG mods.
-  implicit val writer: Writer[AppDescription] = upickle.Writer[AppDescription] {
-    case appDescription => Js.Obj(
-      ("name", Js.Str(appDescription.name)),
-      ("dag", Js.Obj(
-        ("vertices", Js.Arr(appDescription.dag.vertices.map(taskDescription => {
-          Js.Str(taskDescription.taskClass)
-        }).toSeq:_*)),
-        ("edges", Js.Arr(appDescription.dag.edges.map(f => {
-          var (node1, edge, node2) = f
-          Js.Arr(Js.Str(node1.taskClass), Js.Str(edge.getClass.getName), Js.Str(node2.taskClass))
-        }).toSeq:_*)))))
-  }
 
   val DAG = "DAG"
   val EXECUTOR_CLUSTER_CONFIG = "executorClusterConfig"
