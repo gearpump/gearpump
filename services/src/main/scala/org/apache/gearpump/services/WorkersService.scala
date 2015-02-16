@@ -23,7 +23,8 @@ import akka.pattern._
 import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, GetAllWorkers}
 import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, AppMastersData}
 import org.apache.gearpump.cluster.worker.WorkerDescription
-import org.apache.gearpump.util.Constants
+import org.apache.gearpump.util.{LogUtil, Constants}
+import org.slf4j.Logger
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
@@ -38,7 +39,8 @@ trait WorkersService extends HttpService {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     path("workers") {
-      val workerDataFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].flatMap { workerList =>
+
+      def workerDataFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].flatMap { workerList =>
         val workers = workerList.workers
         val workerDataList = List.empty[WorkerDescription]
         Future.fold(workers.map(master ? GetWorkerData(_)))(workerDataList) { (workerDataList, workerData) =>
