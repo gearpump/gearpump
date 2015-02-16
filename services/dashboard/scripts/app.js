@@ -30,8 +30,6 @@ angular.module('app', [
   // Angular-dashboard-framework (including extensions)
   'adf',
   'structures',
-  'app.widgets.visdag',
-  'app.widgets.applist',
   // Application extensions
   'app.tabset',
   // Application controllers
@@ -45,7 +43,7 @@ angular.module('app', [
     templateUrl: 'partials/cluster.html',
     controller: 'app01Ctrl'
   }).when('/apps', {
-    templateUrl: 'partials/app.html',
+    templateUrl: 'partials/apps.html',
     controller: 'app02Ctrl'
   }).otherwise({redirectTo: '/cluster'});
 

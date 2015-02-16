@@ -1,0 +1,24 @@
+<div class="row">
+  <div class="col-md-6">
+    <table class="table table-striped">
+      <caption><h4>Applications</h4></caption>
+      <thead>
+        <tr>
+          <td>ID</td>
+          <td>Name</td>
+          <td>Worker Path</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="app in apps track by $index">
+          <td ng-click="loadDag(app.id)">{{app.id}}</td>
+          <td ng-click="loadDag(app.id)">{{app.name}}</td>
+          <td ng-click="loadDag(app.id)">{{app.workerPath}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-6">
+    <adf-dashboard name="{{name}}" collapsible="{{collapsible}}" structure="4-8" adf-model="model"/>
+  </div>
+</div>

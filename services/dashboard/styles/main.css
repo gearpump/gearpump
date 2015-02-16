@@ -71,12 +71,22 @@ pre.edit {
 .ng-table-header-cell {
   text-align: left !important;
   background-color: #f9f9f9;
+  white-space:nowrap;
+}
+.ng-table-tbody-cell {
+  vertical-align: middle;
 }
 
+.nowrap-small-text {
+  font-size:11px;
+  line-height:100%;
+  white-space:nowrap;
+}
 .summaryItemName {
   text-align: right;
   font-weight: bold;
 }
+
 .table > caption {
   text-align: left;
 }
