@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.distributedshell
+package org.apache.gearpump.examples.distributedshell
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
-import org.apache.gearpump.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
+import org.apache.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.sys.process._

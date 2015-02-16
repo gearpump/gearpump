@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.distributedshell
+package org.apache.gearpump.examples.distributedshell
 
 import akka.actor.{Deploy, Props}
 import akka.remote.RemoteScope
@@ -23,7 +23,7 @@ import com.typesafe.config.{ConfigFactory, Config}
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, StartExecutorSystemTimeout, ExecutorSystemStarted}
 import org.apache.gearpump.cluster.{ApplicationMaster, ExecutorContext, AppMasterContext, Application}
-import org.apache.gearpump.distributedshell.DistShellAppMaster._
+import org.apache.gearpump.examples.distributedshell.DistShellAppMaster._
 import org.apache.gearpump.util.{LogUtil, Constants, ActorUtil, Util}
 import org.slf4j.Logger
 

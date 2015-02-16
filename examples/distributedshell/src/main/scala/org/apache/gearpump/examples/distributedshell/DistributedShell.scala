@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.distributedshell
+package org.apache.gearpump.examples.distributedshell
 
-import org.apache.gearpump.cluster.{UserConfig, ClusterConfig, Application}
+import org.apache.gearpump.cluster.{UserConfig, Application}
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ParseResult, CLIOption, ArgumentsParser}
 import org.apache.gearpump.util.LogUtil

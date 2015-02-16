@@ -15,19 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.distributedshell
+package org.apache.gearpump.examples.distributedshell
 
-import com.typesafe.config.Config
-import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
-import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
+import akka.testkit.TestProbe
+import org.apache.gearpump.cluster.ClientToMaster.ResolveAppId
+import org.apache.gearpump.cluster.MasterToClient.ResolveAppIdResult
 import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
+import org.apache.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
 import org.apache.gearpump.util.Util
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
 
 import scala.util.{Try, Success}
 
-class DistributedShellSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
+class DistributedShellClientSpec extends PropSpec with Matchers with BeforeAndAfter with MasterHarness {
 
   before {
     startActorSystem()
@@ -37,19 +37,23 @@ class DistributedShellSpec extends PropSpec with PropertyChecks with Matchers wi
     shutdownActorSystem()
   }
 
-  override def config: Config = TestUtil.DEFAULT_CONFIG
+  override def config = TestUtil.DEFAULT_CONFIG
 
-  property("DistributedShell should succeed to submit application with required arguments") {
-    val requiredArgs = Array("-master", s"$getHost:$getPort")
-
+  property("DistributedShellClient should succeed to submit application with required arguments") {
+    val command = "ls"
+    val arguments = "/"
+    val requiredArgs = Array("-master", s"$getHost:$getPort", "-appid", "0", "-command", command, "-args", arguments)
     val masterReceiver = createMockMaster()
 
-    assert(Try(DistributedShell.main(Array.empty[String])).isFailure, "missing required arguments, print usage")
+    assert(Try(DistributedShellClient.main(Array.empty[String])).isFailure, "missing required arguments, print usage")
 
     val process = Util.startProcess(Array.empty[String], getContextClassPath,
-        getMainClassName(DistributedShell), requiredArgs)
-    masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-    masterReceiver.reply(SubmitApplicationResult(Success(0)))
+        getMainClassName(DistributedShellClient), requiredArgs)
+    masterReceiver.expectMsg(PROCESS_BOOT_TIME, ResolveAppId(0))
+    val mockAppMaster = TestProbe()(getActorSystem)
+    masterReceiver.reply(ResolveAppIdResult(Success(mockAppMaster.ref)))
+    mockAppMaster.expectMsg(PROCESS_BOOT_TIME, ShellCommand(command, arguments))
+    mockAppMaster.reply("result")
     process.destroy()
   }
 }
