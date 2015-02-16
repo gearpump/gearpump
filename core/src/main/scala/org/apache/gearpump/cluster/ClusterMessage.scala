@@ -73,9 +73,6 @@ object AppMasterToMaster {
 
   case class GetAppData(appId: Int, key: String)
   case class GetAppDataResult(key: String, value: Any)
-
-  //TODO:
-  // clock field may not make sense for applications other than streaming
   case class AppMasterDataDetail(
       appId: Int, appName: String = null, application: Application = null,
       actorPath: String = null, clock: TimeStamp = 0, executors: List[String] = null)
