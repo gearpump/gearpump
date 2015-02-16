@@ -35,6 +35,7 @@ angular.module('app-01', ['ngTable', 'readable'])
       var description = response.data.masterDescription;
       $scope.summary = {
         aliveFor: description.aliveFor,
+        homeDir: description.homeDirectory,
         logFile: description.logFile,
         jarStore: description.jarStore,
         status: description.masterStatus,
@@ -56,20 +57,18 @@ angular.module('app-01', ['ngTable', 'readable'])
         var workers = [];
         $http.get(url).then(function (response) {
           workers = response.data.map(function(worker) {
-            var slotsTaken = worker.executors.reduce(function(a, b) {
-              return a.slots + b.slots;
-            }, 0);
             return {
               id: worker.workerId,
               state: worker.state,
               actorPath: worker.actorPath,
               aliveFor: worker.aliveFor,
+              homeDir: worker.homeDirectory,
               logFile: worker.logFile,
               executors: worker.executors,
               slotsTotal: worker.totalSlots,
-              slotsTaken: slotsTaken,
+              slotsTaken: worker.totalSlots - worker.availableSlots,
               slotUsage: worker.totalSlots > 0 ?
-                  Math.floor(100 * slotsTaken / worker.totalSlots) : 0
+                Math.floor(100 * (worker.totalSlots - worker.availableSlots) / worker.totalSlots) : 0
             }
           });
           var orderedData = params.sorting() ?
