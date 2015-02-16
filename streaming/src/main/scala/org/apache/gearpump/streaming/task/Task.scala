@@ -146,11 +146,13 @@ trait TaskInterface {
 
 abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends TaskInterface{
 
-  import taskContext.{appId, executorId, taskId, self}
+  import taskContext.{appId, executorId, taskId}
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
   protected implicit val system = taskContext.system
+
+  implicit val self = taskContext.self
 
   def onStart(startTime : StartTime) : Unit
 
