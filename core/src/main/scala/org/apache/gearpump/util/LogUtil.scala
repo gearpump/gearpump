@@ -13,7 +13,7 @@ import scala.util.Try
 object LogUtil {
   object ProcessType extends Enumeration {
     type ProcessType = Value
-    val MASTER, WORKER, LOCAL, APPLICATION = Value
+    val MASTER, WORKER, LOCAL, APPLICATION, UI = Value
   }
 
   def getLogger[T](clazz : Class[T], context : String = null, master : Any = null, worker : Any = null, executor : Any = null, task : Any = null, app : Any = null) : Logger = {

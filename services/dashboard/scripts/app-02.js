@@ -39,7 +39,7 @@ angular.module('app-02', ['adf', 'app.widgets.visdag'])
               type: "visdag",
               config: {
               },
-              title: "DAG"
+              title: "DAG(Click AppId on the left to show the DAG)"
             }
           ]
         }]
