@@ -21,9 +21,7 @@ package org.apache.gearpump.streaming.kafka.lib
 import java.util.Properties
 
 import kafka.admin.AdminUtils
-import kafka.client.ClientUtils
-import kafka.common.{TopicAndPartition, TopicExistsException}
-import kafka.producer.ProducerConfig
+import kafka.common.TopicAndPartition
 import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.streaming.kafka.lib.KafkaConsumer.Broker
@@ -90,19 +88,17 @@ object KafkaUtil {
     }
   }
 
-  def validateTopic(topic: String, brokerList: String, clientId: String, timeoutMs: Int) = {
-    ClientUtils.fetchTopicMetadata(Set(topic), ClientUtils.parseBrokerList(brokerList), clientId, timeoutMs)
-  }
 
-  def buildProducerConfig(config: KafkaConfig): ProducerConfig = {
-    val brokerList = config.getMetadataBrokerList
-    val producerType = config.getProducerType
-    val requiredAcks = config.getRequestRequiredAcks
+  def buildProducerConfig(config: KafkaConfig): Properties = {
     val props = new Properties()
-    props.put("metadata.broker.list", brokerList)
-    props.put("producer.type", producerType)
-    props.put("request.required.acks", requiredAcks)
-    new ProducerConfig(props)
+    props.put("bootstrap.servers", config.getProducerBootstrapServers)
+    props.put("acks", config.getProducerAcks)
+    // scala Int/Long extends AnyVal while this requires AnyRef (java Object)
+    props.put("buffer.memory", config.getProducerBufferMemory.asInstanceOf[java.lang.Long])
+    props.put("compression.type", config.getProducerCompressionType)
+    props.put("batch.size", config.getProducerBatchSize.asInstanceOf[java.lang.Integer])
+    props.put("retries", config.getProducerRetries.asInstanceOf[java.lang.Integer])
+    props
   }
 
   def connectZookeeper(config: KafkaConfig): ZkClient = {

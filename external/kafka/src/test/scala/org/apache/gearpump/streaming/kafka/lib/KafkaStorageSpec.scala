@@ -22,8 +22,8 @@ import java.nio.ByteBuffer
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
-import kafka.producer.{KeyedMessage, Producer}
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
+import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -39,7 +39,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
 
   property("KafkaStorage lookup time should report StorageEmpty if storage is empty") {
     forAll { (time: Long, topic: String) =>
-      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val getConsumer = () => mock[KafkaConsumer]
       val storage = new KafkaStorage(topic, topicExists = false, producer, getConsumer())
       storage.lookUp(time) shouldBe Failure(StorageEmpty)
@@ -59,7 +59,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
             Injection[Long, Array[Byte]](offset))
       }.toList
 
-      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val consumer = mock[KafkaConsumer]
       val getConsumer = () => consumer
 
@@ -97,13 +97,14 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
   }
 
   property("KafkaStorage append should send data to Kafka") {
-    forAll { (time: Long, offset: Long, topic: String, topicExists: Boolean) =>
-      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+    forAll(Gen.chooseNum[Long](1, 1000), Gen.chooseNum[Long](0, 1000), Gen.alphaStr, Gen.oneOf(true, false)) {
+      (time: Long, offset: Long, topic: String, topicExists: Boolean) =>
+      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val getConsumer = () => mock[KafkaConsumer]
       val storage = new KafkaStorage(topic, topicExists, producer, getConsumer())
       val offsetBytes = Injection[Long, Array[Byte]](offset)
       storage.append(time, offsetBytes)
-      verify(producer).send(anyObject[KeyedMessage[Array[Byte], Array[Byte]]]())
+      verify(producer).send(anyObject[ProducerRecord[Array[Byte], Array[Byte]]]())
     }
   }
 
@@ -122,7 +123,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
 
     forAll(topicAndPartitionGen, msgListGen) {
       (topicAndPartition: TopicAndPartition, msgList: List[(Long, Array[Byte])]) =>
-        val producer=  mock[Producer[Array[Byte], Array[Byte]]]
+        val producer=  mock[KafkaProducer[Array[Byte], Array[Byte]]]
         val consumer = mock[KafkaConsumer]
         val getConsumer = () => consumer
         val kafkaStorage = new KafkaStorage(topicAndPartition.topic, topicExists = true, producer, getConsumer())
@@ -143,7 +144,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
 
   property("KafkaStorage should get consumer when topic doesn't exist") {
     forAll(Gen.alphaStr) { (topic: String) =>
-      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val getConsumer = mock[() => KafkaConsumer]
       val kafkaStorage = new KafkaStorage(topic, topicExists = false, producer, getConsumer())
       verify(getConsumer, never()).apply()
@@ -160,7 +161,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
     forAll(invalidKafkaMsgGen) { (invalidKafkaMsg: KafkaMessage) =>
       val consumer = mock[KafkaConsumer]
       val getConsumer = () => consumer
-      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val kafkaStorage = new KafkaStorage(invalidKafkaMsg.topicAndPartition.topic, topicExists = true,
         producer, getConsumer())
       when(consumer.hasNext).thenReturn(true, false)
@@ -170,7 +171,7 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
   }
 
   property("KafkaStorage close should close kafka producer") {
-    val producer = mock[Producer[Array[Byte], Array[Byte]]]
+    val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
     val getConsumer = mock[() => KafkaConsumer]
     val kafkaStorage = new KafkaStorage("topic", false, producer, getConsumer())
     kafkaStorage.close()

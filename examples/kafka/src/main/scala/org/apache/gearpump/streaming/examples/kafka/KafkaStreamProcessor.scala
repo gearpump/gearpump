@@ -35,9 +35,8 @@ class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
 
   private val kafkaConfig = inputConfig.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val topic = kafkaConfig.getProducerTopic
-  private val batchSize = kafkaConfig.getProducerEmitBatchSize
   private val producerConfig = KafkaUtil.buildProducerConfig(kafkaConfig)
-  private val kafkaSink = new KafkaSink(producerConfig, batchSize)
+  private val kafkaSink = new KafkaSink(producerConfig)
 
   private var count = 0L
   private var lastCount = 0L

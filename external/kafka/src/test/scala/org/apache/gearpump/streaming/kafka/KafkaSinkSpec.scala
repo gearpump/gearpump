@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.kafka
 
 import com.twitter.bijection.Injection
-import kafka.producer.{KeyedMessage, Producer}
+import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -29,53 +29,27 @@ import org.scalatest.{Matchers, PropSpec}
 
 class KafkaSinkSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
-  val batchSizeGen = Gen.choose[Int](2, 1000)
-  val iterationGen = Gen.choose[Int](1, 1000)
   val dataGen = for {
     topic <- Gen.alphaStr
     key <- Gen.alphaStr
     msg <- Gen.alphaStr
   } yield (topic, Injection[String, Array[Byte]](key), Injection[String, Array[Byte]](msg))
 
-  property("KafkaProducer should send data in batch") {
-    forAll(batchSizeGen, iterationGen, dataGen) {
-      (batchSize: Int, iteration: Int, data: (String, Array[Byte], Array[Byte])) =>
-      val producer = mock[Producer[Array[Byte], Array[Byte]]]
+  property("KafkaSink write should send producer record") {
+    forAll(dataGen) {
+      (data: (String, Array[Byte], Array[Byte])) =>
+      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val (topic, key, msg) = data
-      val kafkaSink = new KafkaSink(producer, batchSize)
-      0.until(batchSize * iteration) foreach { _ =>
-        kafkaSink.write(topic, key, msg)
-      }
-      verify(producer, times(iteration)).send(anyObject[KeyedMessage[Array[Byte], Array[Byte]]]())
-    }
-  }
-
-  property("KafkaProducer close should flush data") {
-    forAll(batchSizeGen, dataGen) { (batchSize: Int, data: (String, Array[Byte], Array[Byte])) =>
-      val (topic, key, msg) = data
-      forAll(Gen.choose[Int](1, batchSize - 1)) { (sendTimes: Int) =>
-        val producer = mock[Producer[Array[Byte], Array[Byte]]]
-        val kafkaSink = new KafkaSink(producer, batchSize)
-        0.until(sendTimes) foreach { _ =>
-          kafkaSink.write(topic, key, msg)
-        }
-        kafkaSink.close()
-        verify(producer).send(anyObject[KeyedMessage[Array[Byte], Array[Byte]]]())
-      }
-    }
-  }
-
-  property("KafkaProducer flush should send out data") {
-    forAll(batchSizeGen, dataGen) { (batchSize: Int, data: (String, Array[Byte], Array[Byte])) =>
-      val producer = mock[Producer[Array[Byte], Array[Byte]]]
-      val (topic, key, msg) = data
-      val kafkaSink = new KafkaSink(producer, batchSize)
-      kafkaSink.flush()
-      verify(producer, never()).send(anyObject[KeyedMessage[Array[Byte], Array[Byte]]])
-
+      val kafkaSink = new KafkaSink(producer)
       kafkaSink.write(topic, key, msg)
-      kafkaSink.flush()
-      verify(producer).send(anyObject[KeyedMessage[Array[Byte], Array[Byte]]])
+      verify(producer).send(anyObject[ProducerRecord[Array[Byte], Array[Byte]]]())
     }
+  }
+
+  property("KafkaSink close should close kafka producer") {
+    val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
+    val kafkaSink = new KafkaSink(producer)
+    kafkaSink.close()
+    verify(producer).close()
   }
 }

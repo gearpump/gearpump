@@ -101,11 +101,13 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
   private def getKafkaConfig(producerTopic: String, producerEmitBatchSize: Int, brokerList: String, zookeeperConnect: String): UserConfig = {
 
     val kafka = UserConfig.empty.withValue[KafkaConfig](KafkaConfig.NAME, KafkaConfig(ConfigFactory.parseMap(Map(
-      KafkaConfig.METADATA_BROKER_LIST -> brokerList,
-      KafkaConfig.PRODUCER_EMIT_BATCH_SIZE -> producerEmitBatchSize.toString,
+      KafkaConfig.PRODUCER_BOOTSTRAP_SERVERS -> brokerList,
       KafkaConfig.PRODUCER_TOPIC -> producerTopic,
-      KafkaConfig.PRODUCER_TYPE -> "sync",
-      KafkaConfig.REQUEST_REQUIRED_ACKS -> "1",
+      KafkaConfig.PRODUCER_ACKS -> "1",
+      KafkaConfig.PRODUCER_BUFFER_MEMORY -> "1000000",
+      KafkaConfig.PRODUCER_COMPRESSION_TYPE -> "none",
+      KafkaConfig.PRODUCER_RETRIES -> "0",
+      KafkaConfig.PRODUCER_BATCH_SIZE -> "100",
       KafkaConfig.ZOOKEEPER_CONNECT -> zookeeperConnect
     ).asJava)))
     kafka

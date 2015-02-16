@@ -36,7 +36,6 @@ object KafkaOffsetManager {
     val replicas = config.getStorageReplicas
     val zkClient = KafkaUtil.connectZookeeper(config)
     val topicExists = KafkaUtil.createTopic(zkClient, storageTopic, partitions = 1, replicas)
-    KafkaUtil.validateTopic(storageTopic, config.getMetadataBrokerList, config.getClientId, config.getFetchMetadataTimeoutMS)
     new KafkaOffsetManager(KafkaStorage(config, storageTopic, topicExists, topicAndPartition))
   }
 }
