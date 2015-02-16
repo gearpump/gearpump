@@ -32,7 +32,7 @@ angular.module('app-01', ['ngTable', 'readable'])
     var url = location.origin + '/master';
     $scope.summary = {};
     $http.get(url).then(function (response) {
-      var description = response.data.masterDescripton;
+      var description = response.data.masterDescription;
       $scope.summary = {
         aliveFor: description.aliveFor,
         logFile: description.logFile,
