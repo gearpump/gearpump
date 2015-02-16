@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.distributedshell
+package org.apache.gearpump.examples.distributedshell
 
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import org.apache.gearpump.distributedshell.DistShellAppMaster.ShellCommand
+import org.apache.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
 
 import akka.pattern.ask
 import org.apache.gearpump.util.Constants

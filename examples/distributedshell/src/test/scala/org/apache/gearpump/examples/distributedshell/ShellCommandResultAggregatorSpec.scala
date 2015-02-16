@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.distributedshell
+package org.apache.gearpump.examples.distributedshell
 
 import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
-import org.apache.gearpump.distributedshell.DistShellAppMaster.{ShellCommandResultAggregator, ShellCommandResult}
+import org.apache.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommandResultAggregator, ShellCommandResult}
 
 
 class ShellCommandResultAggregatorSpec extends WordSpec with Matchers with BeforeAndAfter {

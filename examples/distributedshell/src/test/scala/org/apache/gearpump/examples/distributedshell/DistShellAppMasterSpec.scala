@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.distributedshell
+package org.apache.gearpump.examples.distributedshell
 
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestProbe}

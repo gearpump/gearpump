@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.distributedshell
+package org.apache.gearpump.examples.distributedshell
 
 import akka.actor.Actor
 import org.apache.gearpump.cluster.{UserConfig, ExecutorContext}
-import org.apache.gearpump.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
+import org.apache.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommandResult, ShellCommand}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
