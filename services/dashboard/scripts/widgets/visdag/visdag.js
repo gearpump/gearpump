@@ -80,14 +80,13 @@ angular.module('app.widgets.visdag', ['adf.provider'])
     };
     var options = {
       width: '100%',
-      height: '700px',
+      height: '600px',
       hierarchicalLayout: {
-        layout: 'direction'
+        layout: 'direction',
+        direction: "UD",
       },
       stabilize: true /* stabilize positions before displaying */,
       nodes: {
-        radiusMin: 16,
-        radiusMax: 24
       },
       edges: {
         style: 'arrow',
