@@ -179,7 +179,7 @@ object Build extends sbt.Build {
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         parallelExecution in ThisBuild := false,
         travis_deploy := {
-          val packagePath = s"target/gearpump-${version}.tar.gz"
+          val packagePath = s"target/gearpump-${version.value}.tar.gz"
           val target = s"target/binary.gearpump.tar.gz"
           println(s"[Travis-Deploy] Move file $packagePath to $target")
           new File(packagePath).renameTo(new File(target))
