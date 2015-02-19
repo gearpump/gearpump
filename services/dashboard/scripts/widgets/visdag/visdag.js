@@ -37,41 +37,39 @@ angular.module('app.widgets.visdag', ['adf.provider'])
     }
   });
 })
-.controller('visDagCtrl', function ($scope, $http) {
-  $scope.$on('appmaster-selected', function(event, appMasterSelected) {
-    var url = location.origin + '/appmaster/' + appMasterSelected.appId + '?detail=true';
-    $http.get(url).then(function (response) {
-      var json = response.data;
-      $scope.data = {
-        nodes: [],
-        edges: []
-      };
+.controller('visDagCtrl', function ($scope, $http, $routeParams) {
+  var url = location.origin + '/appmaster/' + $routeParams.appId + '?detail=true';
+  $http.get(url).then(function (response) {
+    var json = response.data;
+    $scope.data = {
+      nodes: [],
+      edges: []
+    };
 
-      function lastPart(name) {
-        var parts = name.split(/\./);
-        return parts[parts.length - 1];
-      }
+    function lastPart(name) {
+      var parts = name.split(/\./);
+      return parts[parts.length - 1];
+    }
 
-      json.dag.vertices.forEach(function (vertex, i) {
-        var name = lastPart(vertex);
-        $scope.data.nodes.push({id: name, label: name});
-      });
+    json.dag.vertices.forEach(function (vertex, i) {
+      var name = lastPart(vertex);
+      $scope.data.nodes.push({id: name, label: name});
+    });
 
-      json.dag.edges.forEach(function (edge, i) {
-        var source = lastPart(edge[0]);
-        var target = lastPart(edge[2]);
-        var value = lastPart(edge[1]);
-        $scope.data.edges.push({from: source, to: target, label: value});
-      });
+    json.dag.edges.forEach(function (edge, i) {
+      var source = lastPart(edge[0]);
+      var target = lastPart(edge[2]);
+      var value = lastPart(edge[1]);
+      $scope.data.edges.push({from: source, to: target, label: value});
+    });
 
-      $scope.$broadcast('appmaster-data', {
-        data: $scope.data,
-        reset: false
-      });
-    }, function (err) {
-      $scope.$broadcast('appmaster-data', {
-        reset: true
-      });
+    $scope.$broadcast('appmaster-data', {
+      data: $scope.data,
+      reset: false
+    });
+  }, function (err) {
+    $scope.$broadcast('appmaster-data', {
+      reset: true
     });
   });
 })
@@ -86,7 +84,7 @@ angular.module('app.widgets.visdag', ['adf.provider'])
       height: '600px',
       hierarchicalLayout: {
         layout: 'direction',
-        direction: "UD",
+        direction: "UD"
       },
       stabilize: true /* stabilize positions before displaying */,
       nodes: {

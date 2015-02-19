@@ -138,3 +138,7 @@ pre.edit {
   border-width: 3px 0;
   border-bottom-color: #dd4b39;
 }
+
+.breadcrumb {
+  background-color: transparent;
+}

@@ -25,7 +25,6 @@
 
 angular.module('app', [
   // Angular modules
-  'LocalStorageModule',
   'ngRoute',
   // Angular-dashboard-framework (including extensions)
   'adf',
@@ -33,18 +32,20 @@ angular.module('app', [
   // Application extensions
   'app.tabset',
   // Application controllers
-  'app-01', 
-  'app-02'
+  'app-01',
+  'app-02',
+  'app-03'
 ])
-.config(function($routeProvider, localStorageServiceProvider){
-  localStorageServiceProvider.setPrefix('adf');
-
+.config(function($routeProvider){
   $routeProvider.when('/cluster', {
     templateUrl: 'partials/cluster.html',
     controller: 'app01Ctrl'
   }).when('/apps', {
     templateUrl: 'partials/apps.html',
     controller: 'app02Ctrl'
+  }).when('/app/:appId', {
+    templateUrl: 'partials/app.html',
+    controller: 'app03Ctrl'
   }).otherwise({redirectTo: '/cluster'});
 
 })

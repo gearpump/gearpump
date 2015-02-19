@@ -23,22 +23,24 @@
  */
 'use strict';
 
-angular.module('app-02', [])
-.controller('app02Ctrl', function($scope, $http){
-  var url = location.origin + '/appmasters';
-  $http.get(url).then(function (response) {
-    var masters = response.data.appMasters;
-    $scope.apps = masters.map(function(app) {
-      return {
-        id: app.appId,
-        name: app.appName,
-        status: app.status,
-        appMasterPath: app.appMasterPath,
-        workerPath: app.workerPath
-      };
-    });
-  }, function (err) {
-  console.log(err);
-    throw err;
-  });
+angular.module('app-03', ['adf', 'app.widgets.visdag'])
+.controller('app03Ctrl', function($scope) {
+  $scope.name = 'app-03';
+  $scope.model = {
+    title: " ",
+    structure: "4-8",
+    rows: [{
+      columns: [{
+        widgets: [
+          {
+            type: "visdag",
+            config: {
+            },
+            title: "DAG"
+          }
+        ]
+      }]
+    }]
+  };
+  $scope.collapsible = false;
 });
