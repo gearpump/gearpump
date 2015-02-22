@@ -23,11 +23,11 @@ import java.util
 import akka.actor._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
+import org.apache.gearpump.metrics.Metrics.MetricType
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor._
-import org.apache.gearpump.streaming.executor.Executor
-import Executor.TaskLocationReady
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
+import org.apache.gearpump.streaming.executor.Executor.TaskLocationReady
 import org.apache.gearpump.util.{LogUtil, TimeOutScheduler, Util}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
@@ -38,7 +38,6 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   import taskContextData._
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
-
   private val metricName = s"app${appId}.task${taskId.groupId}_${taskId.index}"
   private val latencies = Metrics(context.system).histogram(s"$metricName.latency")
   private val throughput = Metrics(context.system).meter(s"$metricName.throughput")
@@ -104,6 +103,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   final override def preStart() : Unit = {
 
     sendMsgWithTimeOutCallBack(appMaster, RegisterTask(taskId, executorId, local), 10, registerTaskTimeOut())
+    system.eventStream.subscribe(taskContextData.appMaster, classOf[MetricType])
 
     val graph = dag.graph
     LOG.info(s"TaskInit... taskId: $taskId")
@@ -176,7 +176,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
         msg match {
           case SendAck(ack, targetTask) =>
             transport(ack, targetTask)
-            LOG.debug("Sending ack back, taget taskId: " + taskId + ", my task: " + taskId + ", received message: " + ack.actualReceivedNum)
+            LOG.info("Sending ack back, taget taskId: " + taskId + ", my task: " + taskId + ", received message: " + ack.actualReceivedNum)
           case m : Message =>
             val updated = clockTracker.onProcess(m)
             if (updated) {
@@ -230,7 +230,6 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
         doHandleMessage()
       }
     case inputMessage: Message =>
-
       val messageAfterCheck = securityChecker.checkMessage(inputMessage, sender)
       messageAfterCheck match {
         case Some(msg) =>

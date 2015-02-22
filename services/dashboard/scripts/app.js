@@ -66,4 +66,55 @@ angular.module('app', [
     return page === currentRoute || new RegExp(page).test(currentRoute) ? 'active' : '';
   };
 
+})
+.factory('StreamingService', function() {
+  var StreamingService = (function() {
+    function StreamingService() {
+      this.wsUri = "ws://localhost:8091/";
+      this.onOpen = this.onOpen.bind(this);
+      this.onClose = this.onClose.bind(this);
+      this.onMessage = this.onMessage.bind(this);
+      this.onError = this.onError.bind(this);
+      this.send = this.send.bind(this);
+      this.websocket = new WebSocket(this.wsUri);
+      this.websocket.onopen = this.onOpen;
+      this.websocket.onclose = this.onClose;
+      this.websocket.onmessage = this.onMessage;
+      this.websocket.onerror = this.onError;
+    }
+    StreamingService.prototype.onOpen = function (evt) {
+      console.log("CONNECTED");
+    }
+    StreamingService.prototype.onClose = function (evt) {
+      console.log("DISCONNECTED");
+    }
+    StreamingService.prototype.onMessage = function (evt) {
+      console.log("MESSAGE "+evt.data);
+    }
+    StreamingService.prototype.onError = function (evt) {
+      console.log("ERROR "+evt.data);
+    }
+    StreamingService.prototype.send = function (data) {
+      function send() {
+        console.log("connected="+self.websocket.readyState);
+        switch(self.websocket.readyState) {
+          case 1:
+            console.log("SENDING "+data);
+            self.websocket.send(data);
+            break;
+          default:
+            setTimeout(send, 500);
+            break;
+        }
+      }
+      try {
+        var self = this;
+        send();
+      } catch(e) {
+        console.log("Caught "+e.message);
+      }
+    }
+    return StreamingService;
+  })();
+  return new StreamingService;
 });

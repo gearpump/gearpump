@@ -165,6 +165,9 @@ private[cluster] class Master extends Actor with Stash {
     case app : AppMasterDataDetailRequest =>
       LOG.info(s"Receive from client, forwarding to AppManager")
       appManager.forward(app)
+    case app : AppMasterMetricsRequest =>
+      LOG.info(s"AppMasterMetricsRequestFromActor Receive from client, forwarding to AppManager")
+      appManager.forward(app)
 
   }
 
