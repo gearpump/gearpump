@@ -18,39 +18,66 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.{ActorRefFactory, Props, ActorRef}
+import akka.actor._
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterMetricsRequest, StreamingType}
+import org.apache.gearpump.metrics.Metrics._
+import org.apache.gearpump.util.LogUtil
 import spray.can.websocket
 import spray.can.websocket.FrameCommandFailed
-import spray.can.websocket.frame.{TextFrame, BinaryFrame}
+import spray.can.websocket.frame.{BinaryFrame, TextFrame}
 import spray.http.HttpRequest
 import spray.routing.HttpServiceActor
 
-class WebSocketWorker(val serverConnection: ActorRef) extends HttpServiceActor with websocket.WebSocketServerWorker {
+class WebSocketWorker(val serverConnection: ActorRef, val master: ActorRef) extends HttpServiceActor with websocket.WebSocketServerWorker {
+  import upickle._
   final case class Push(msg: String)
+  private val LOG = LogUtil.getLogger(getClass)
+  var client: ActorRef = _
 
-  override def receive = handshaking orElse businessLogicNoUpgrade orElse closeLogic
+  override def receive = handshaking orElse businessLogic orElse closeLogic
 
   def businessLogic: Receive = {
-    // just bounce frames back for Autobahn testsuite
-    case x@(_: BinaryFrame | _: TextFrame) =>
-      sender() ! x
+    case x:TextFrame =>
+      LOG.info(s"Got TextFrame ${x.payload.utf8String}")
+      val req = read[StreamingType](x.payload.utf8String)
+      req match {
+        case appMasterMetricsRequest: AppMasterMetricsRequest =>
+          master ! appMasterMetricsRequest
+          client = sender()
+        case _ =>
+          LOG.error("unknown type")
+      }
+    case x:BinaryFrame =>
+      LOG.info(s"Got BinaryFrame ${x.payload}")
+
+    case metrics: MetricType =>
+      LOG.info("writing metrics")
+      metrics match {
+        case histogram: Histogram =>
+          client ! TextFrame(write(histogram))
+        case counter: Counter =>
+          client ! TextFrame(write(counter))
+        case meter: Meter =>
+          client ! TextFrame(write(meter))
+        case timer: Timer =>
+          client ! TextFrame(write(timer))
+        case gauge: Gauge[_] =>
+          LOG.error("cannot handle gauge")
+        case _ =>
+          LOG.error("unknown type")
+      }
 
     case Push(msg) => send(TextFrame(msg))
 
     case x: FrameCommandFailed =>
-      log.error("frame command failed", x)
+      LOG.error("frame command failed", x)
 
     case x: HttpRequest => // do something
-  }
-
-  def businessLogicNoUpgrade: Receive = {
-    implicit val refFactory: ActorRefFactory = context
-    runRoute {
-      getFromResourceDirectory("webapp")
-    }
   }
 }
 
 object WebSocketWorker {
-  def props(serverConnection: ActorRef) = Props(classOf[WebSocketWorker], serverConnection)
+  def apply(serverConnection: ActorRef, master: ActorRef)(implicit context: ActorContext): ActorRef = {
+    context.actorOf(Props(classOf[WebSocketWorker], serverConnection, master))
+  }
 }

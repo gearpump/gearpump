@@ -18,28 +18,28 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.{ActorSystem, ActorRef}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import org.apache.gearpump._
-import org.apache.gearpump.cluster.AppMasterToMaster.{AppMasterDataDetail}
+import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.{Application, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.services.AppMasterService._
 import org.apache.gearpump.streaming.appmaster.AppMaster
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription, DAG}
-import org.apache.gearpump.util.{Graph, Constants}
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.util.{Constants, Graph, LogUtil}
 import spray.http.StatusCodes
 import spray.routing.HttpService
-import upickle.{Js, Writer, Reader}
+import upickle.{Js, Writer}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-import AppMasterService._
 
 trait AppMasterService extends HttpService  {
   import upickle._
   def master:ActorRef
   implicit val system: ActorSystem
+  private val LOG = LogUtil.getLogger(getClass)
 
   def appMasterRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
@@ -71,6 +71,7 @@ trait AppMasterService extends HttpService  {
      }
     }
   }
+
 }
 
 object AppMasterService {
@@ -91,7 +92,7 @@ object AppMasterService {
       val clock = Js.Num(app.clock)
 
       val executorsSeq = Some(app.executors).map{ executors =>
-        executors.map(Js.Str(_)).toSeq
+        executors.map(Js.Str).toSeq
       }.map { seq =>
         Js.Arr(seq: _*)
       }
@@ -118,29 +119,27 @@ object AppMasterService {
   }
 
   implicit def appMasterDetailToStreaming(app: AppMasterDataDetail)(implicit system: ActorSystem): StreamingAppMasterDataDetail = {
-    import app.{appId, appName, application, actorPath, clock, executors}
-    import AppDescription._
+    import app.{actorPath, appId, appName, application, clock, executors}
+    import org.apache.gearpump.streaming.AppDescription._
     val appDescription: AppDescription =  application
-    return new StreamingAppMasterDataDetail(appId, appName, appDescription.dag, actorPath, clock, executors)
+    new StreamingAppMasterDataDetail(appId, appName, appDescription.dag, actorPath, clock, executors)
   }
 
   implicit def appMasterDetailToGeneralApp(app: AppMasterDataDetail)(implicit system: ActorSystem): GeneralAppMasterDataDetail = {
-    import app.{appId, appName, application, actorPath, executors}
-    import AppDescription._
-    val appDescription: AppDescription =  application
-    return new GeneralAppMasterDataDetail(appId, appName, actorPath, executors)
+    import app.{actorPath, appId, appName, executors}
+    new GeneralAppMasterDataDetail(appId, appName, actorPath, executors)
   }
 
   def isStreamingApplication(appDetail: AppMasterDataDetail): Boolean = {
     val app = appDetail.application
     if (app == null) {
-      return false
+      false
     } else {
       val className = app.appMaster
       if (className == classOf[AppMaster].getName) {
-        return true;
+        true
       } else {
-        return false;
+        false
       }
     }
   }

@@ -47,8 +47,8 @@ object Services extends App with ArgumentsParser {
     implicit val system = ActorSystem("services" , ClusterConfig.load.application)
     val master = system.actorOf(MasterProxy.props(Util.parseHostList(masterList)), MASTER)
 
-    RestServices.start(master)
-    WebSocketServices.start(master)
+    WebSocketServices(master)
+    RestServices(master)
   }
   start()
 }

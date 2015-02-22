@@ -29,7 +29,7 @@ trait RestServices extends AppMastersService
     with AppMasterService with WorkerService with WorkersService with MasterService with StaticService {
   implicit def executionContext = actorRefFactory.dispatcher
 
-  lazy val route = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ masterRoute ~ staticRoute
+  lazy val routes = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ masterRoute ~ staticRoute
 }
 
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
@@ -38,13 +38,13 @@ class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with R
   implicit val eh = RoutingSettings.default(context)
 
   val master = masters
-  def receive = runRoute(route)
+  def receive = runRoute(routes)
 }
 
 object RestServices {
   private val LOG = LogUtil.getLogger(getClass)
 
-  def start(master:ActorRef)(implicit system:ActorSystem) {
+  def apply(master:ActorRef)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
     val services = system.actorOf(Props(classOf[RestServicesActor], master, system), "rest-services")
     val config = system.settings.config
@@ -52,7 +52,7 @@ object RestServices {
     val host = config.getString("gearpump.services.host")
     IO(Http) ! Http.Bind(services, interface = host, port = port)
 
-    LOG.info(s"Please browser http://$host:$port to see the web UI")
-    println(s"Please browser http://$host:$port to see the web UI")
+    LOG.info(s"Please browse to http://$host:$port to see the web UI")
+    println(s"Please browse to http://$host:$port to see the web UI")
   }
 }
