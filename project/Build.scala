@@ -29,6 +29,7 @@ object Build extends sbt.Build {
   val commonsLangVersion = "3.3.2"
   val commonsLoggingVersion = "1.1.3"
   val commonsIOVersion = "2.4"
+  val clouderaVersion = "2.5.0-cdh5.3.1"
   val findbugsVersion = "2.0.1"
   val guavaVersion = "15.0"
   val dataReplicationVersion = "0.7"
@@ -59,6 +60,7 @@ object Build extends sbt.Build {
           "maven2-repo" at "http://mvnrepository.com/artifact",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
+          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
     ) ++
@@ -168,7 +170,8 @@ object Build extends sbt.Build {
                         "local" -> "org.apache.gearpump.cluster.main.Local",
                         "master" -> "org.apache.gearpump.cluster.main.Master",
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
-                        "services" -> "org.apache.gearpump.cluster.main.Services"
+                        "services" -> "org.apache.gearpump.cluster.main.Services",
+                        "yarnclient" -> "org.apache.gearpump.experiments.yarn.Client"
                        ),
         packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
                            "master" -> Seq("-DlogFilename=master"),
@@ -189,11 +192,10 @@ object Build extends sbt.Build {
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
-        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
+        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard", "$HADOOP_CONF_DIR"))
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm)
-
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -358,4 +360,18 @@ object Build extends sbt.Build {
       )
   ) dependsOn (streaming % "test->test; provided")
 
+  lazy val yarn = Project(
+    id = "gearpump-experiments-yarn",
+    base = file("experiments/yarn"),
+    settings = commonSettings ++ 
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion
+        )
+      ) 
+  ) dependsOn(core % "test->test", core % "provided")
 }

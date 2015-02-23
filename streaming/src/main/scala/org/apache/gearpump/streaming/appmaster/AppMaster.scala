@@ -46,6 +46,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
   private val address = ActorUtil.getFullPath(context.system, self.path)
+  private var subscribers = false
 
   val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
 

@@ -31,6 +31,8 @@ import upickle.Js
 
 import scala.reflect.ClassTag
 
+import scala.reflect.ClassTag
+
 class Metrics(sampleRate: Int) extends Extension {
 
   val registry = new MetricRegistry()
