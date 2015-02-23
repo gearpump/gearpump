@@ -191,7 +191,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, yarn)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -342,4 +342,18 @@ object Build extends sbt.Build {
     settings = commonSettings
   ) dependsOn(core % "test->test;compile->compile")
 
+  lazy val yarn = Project(
+    id = "gearpump-experiments-yarn",
+    base = file("experiments/yarn"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-yarn-common" % hadoopVersion,
+          ("org.apache.hadoop" % "hadoop-yarn-client" % hadoopVersion % "compile").
+          exclude("hadoop-yarn-api", "org.apache.hadoop"),
+          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % hadoopVersion % "compile",
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % hadoopVersion % "compile"
+        )
+      )
+  ) dependsOn(core % "test->test;compile->compile")
 }
