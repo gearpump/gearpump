@@ -45,7 +45,9 @@ Features for YARNClient
  */
 
 object EnvVars {
+  val APPMASTER_NAME = "gearpump"
   val APPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
+  val APPMASTER_QUEUE = "default"
   val APPMASTER_MASTER_MEMORY = "gearpump.yarn.applicationmaster.masterMemory"
   val APPMASTER_MASTER_VMCORES = "gearpump.yarn.applicationmaster.masterVMCores"
   val CONTAINER_COMMAND = "gearpump.yarn.container.command"
@@ -53,18 +55,19 @@ object EnvVars {
   val JARS = "gearpump.yarn.client.jars"
   val MIN_WORKER_COUNT = "gearpump.yarn.applicationmaster.minWorkerCount"
 
-  val VARS = Seq(APPMASTER_COMMAND,APPMASTER_MASTER_MEMORY,APPMASTER_MASTER_VMCORES,CONTAINER_COMMAND,HDFS_PATH,JARS,MIN_WORKER_COUNT)
+  val VARS = Seq(APPMASTER_NAME,APPMASTER_COMMAND,APPMASTER_MASTER_MEMORY,APPMASTER_MASTER_VMCORES,CONTAINER_COMMAND,HDFS_PATH,JARS,MIN_WORKER_COUNT)
 }
 
 trait ClientAPI {
+  def configureAMLaunchContext: ContainerLaunchContext
   def getConf: Config
   def getYarnConf: YarnConfiguration
   def getEnvVars(conf: Config)(key: String): String
   def getAppEnv: Map[String, String]
   def getAMCapability: Resource
   def getAMLocalResourcesMap: Map[String, LocalResource]
-  def uploadAMResourcesToHDFS: Array[Path]
-  def configureAMLaunchContext: ContainerLaunchContext
+  def monitorAM(appContext: ApplicationSubmissionContext): Unit
+  def uploadAMResourcesToHDFS: Unit
 }
 
 class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, yarnClient: YarnClient) extends ClientAPI {
@@ -80,9 +83,15 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def getHdfs = new Path(getEnv(HDFS_PATH))
 
   def getEnvVars(conf: Config)(key: String): String = {
-    VARS.map(evar => {
-      (evar, conf.getString(evar))
-    }).toMap.getOrElse(key, "")
+    var option = key.split(".").last.toUpperCase
+    cliopts.exists(option) match {
+      case true =>
+        cliopts.getString(option)
+      case false =>
+        VARS.map(evar => {
+          (evar, conf.getString(evar))
+        }).toMap.getOrElse(key,"")
+    }
   }
 
   def getAppEnv: Map[String, String] = {
@@ -100,20 +109,19 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     appMasterEnv.toMap
   }
 
-  def uploadAMResourcesToHDFS: Array[Path] = {
-    val jars = getEnv(JARS).split(",").map(_.trim)
-    val scalaJar = language.getClass.getProtectionDomain.getCodeSource.getLocation.getPath
-    getFs.copyFromLocalFile(false, true, new Path(scalaJar), getHdfs)
-    jars.foldLeft(Array(new Path(getHdfs, scalaJar)))((jars, jarPath) => {
-      val copied = Try(getFs.copyFromLocalFile(false, true, new Path(jarPath), getHdfs)) match {
+  def uploadAMResourcesToHDFS: Unit = {
+    val jarDir = getEnv(JARS)
+    Option(new File(jarDir)).map(_.list.filter(file => {
+      file.endsWith(".jar")
+    }).toList.foreach(jarPath => {
+      Try(getFs.copyFromLocalFile(false, true, new Path(jarPath), getHdfs)) match {
         case Success(a) =>
-          Some(jars :+ new Path(getHdfs, jarPath))
+          LOG.info(s"$jarPath uploaded to HDFS")
         case Failure(error) =>
           LOG.error(s"$jarPath could not be uploaded to HDFS ${error.getMessage}")
           None
       }
-      copied.getOrElse(jars)
-    })
+    }))
   }
 
   def configureAMLaunchContext: ContainerLaunchContext = {
@@ -154,13 +162,35 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     })
   }
 
+  def monitorAM(appContext: ApplicationSubmissionContext): Unit = {
+    val appId = appContext.getApplicationId
+    var appReport = yarnClient.getApplicationReport(appId)
+    var appState = appReport.getYarnApplicationState
+    while (appState != YarnApplicationState.FINISHED &&
+      appState != YarnApplicationState.KILLED &&
+      appState != YarnApplicationState.FAILED) {
+      Thread.sleep(1000)
+      appReport = yarnClient.getApplicationReport(appId)
+      appState = appReport.getYarnApplicationState
+    }
+
+    LOG.info(
+      "Application " + appId + " finished with" +
+        " state " + appState +
+        " at " + appReport.getFinishTime)
+
+  }
+
   def deploy() = {
     yarnClient.init(yarnConf)
     yarnClient.start()
     val appContext = yarnClient.createApplication.getApplicationSubmissionContext
+    appContext.setApplicationName(getEnv(APPMASTER_NAME))
     appContext.setAMContainerSpec(configureAMLaunchContext)
+    appContext.setResource(getAMCapability)
+    appContext.setQueue(getEnv(APPMASTER_QUEUE))
     yarnClient.submitApplication(appContext)
-
+    monitorAM(appContext)
   }
   deploy()
 }
@@ -169,8 +199,9 @@ object Client extends App with ArgumentsParser {
   case class ClusterResources(totalFreeMemory: Long, totalContainers: Int, nodeManagersFreeMemory: Map[String, Long])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "jar" -> CLIOption[String]("<AppMaster jar file>", required = true),
-    "main" -> CLIOption[String]("<AppMaster main class>", required = true)
+    "jars" -> CLIOption[String]("<AppMaster jar directory>", required = false),
+    "main" -> CLIOption[String]("<AppMaster main class>", required = false),
+    "monitor" -> CLIOption[Boolean]("<monitor AppMaster state>", required = false, defaultValue = Some(false))
   )
 
   new Client(parse(args), ConfigFactory.load, new YarnConfiguration, YarnClient.createYarnClient)
