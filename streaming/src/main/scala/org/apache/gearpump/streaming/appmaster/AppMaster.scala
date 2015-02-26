@@ -20,10 +20,11 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import org.apache.gearpump._
-import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, AppMasterDataDetail}
+import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.metrics.Metrics.MetricType
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
@@ -45,6 +46,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
   private val address = ActorUtil.getFullPath(context.system, self.path)
+  private var subscribers = false
 
   private val (taskManager, executorManager, clockService) = {
     val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
@@ -76,6 +78,11 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       taskManager forward register
     case ReplayFromTimestampWindowTrailingEdge =>
       taskManager forward ReplayFromTimestampWindowTrailingEdge
+    case metrics: MetricType =>
+      if(subscribers) {
+        LOG.info(s"***AppMaster publishing metrics***")
+        actorSystem.eventStream.publish(metrics)
+      }
   }
 
   def executorMessageHandler: Receive = {
@@ -95,11 +102,15 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
 
       val appMasterDataDetail = for {executors <- executorsFuture
         clock <- clockFuture } yield AppMasterDataDetail(appId, app.name, app, address, clock, executors)
+      val client = sender()
 
-      val client = sender
       appMasterDataDetail.map{appData =>
         client ! appData
       }
+    case appMasterMetricsRequest: AppMasterMetricsRequest =>
+      val client = sender()
+      subscribers = true
+      actorSystem.eventStream.subscribe(client, classOf[MetricType])
   }
 
   def recover: Receive = {

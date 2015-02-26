@@ -57,6 +57,7 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
       intercept[RuntimeException] {
         source.setStartTime(startTime)
       }
+      source.close()
     }
   }
 
@@ -79,6 +80,7 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
         intercept[RuntimeException] {
           source.setStartTime(startTime)
         }
+        source.close()
     }
   }
 
@@ -120,6 +122,7 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
           source.pull(number).size shouldBe Math.min(number, kafkaMsgList.size)
           verify(fetchThread, times(number)).poll
         }
+        source.close()
     }
   }
 

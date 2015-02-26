@@ -98,6 +98,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
         compareResult
       }))
     }
+    producer.onStop()
   }
 
   private def getKafkaConfig(consumerTopic: String, consumerEmitBatchSize: Int, brokerList: String, zookeeperConnect: String): UserConfig = {

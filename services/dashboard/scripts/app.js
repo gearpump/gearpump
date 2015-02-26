@@ -30,7 +30,8 @@ angular.module('app', [
   'adf',
   'structures',
   // Application extensions
-  'app.tabset',
+  'directive.tabset',
+  'directive.visdag',
   // Application controllers
   'app-01',
   'app-02',
@@ -47,23 +48,5 @@ angular.module('app', [
     templateUrl: 'partials/app.html',
     controller: 'app03Ctrl'
   }).otherwise({redirectTo: '/cluster'});
-
-})
-.controller('navigationCtrl', function($scope, $location){
-
-  $scope.navCollapsed = true;
-
-  $scope.toggleNav = function(){
-    $scope.navCollapsed = !$scope.navCollapsed;
-  };
-
-  $scope.$on('$routeChangeStart', function() {
-    $scope.navCollapsed = true;
-  });
-
-  $scope.navClass = function(page) {
-    var currentRoute = $location.path().substring(1) || 'Applications';
-    return page === currentRoute || new RegExp(page).test(currentRoute) ? 'active' : '';
-  };
 
 });

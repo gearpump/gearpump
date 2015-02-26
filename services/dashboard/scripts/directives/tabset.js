@@ -21,7 +21,7 @@
  */
 'use strict';
 
-angular.module("app.tabset", [])
+angular.module("directive.tabset", [])
 .directive("tabs", function () {
   return {
     restrict: "E",

@@ -37,7 +37,7 @@ angular.module('app.widgets.visdag', ['adf.provider'])
     }
   });
 })
-.controller('visDagCtrl', function ($scope, $http, $routeParams) {
+.controller('visDagCtrl', ['$scope','$http','$routeParams','StreamingService', function ($scope, $http, $routeParams, StreamingService) {
   var url = location.origin + '/appmaster/' + $routeParams.appId + '?detail=true';
   $http.get(url).then(function (response) {
     var json = response.data;
@@ -72,7 +72,8 @@ angular.module('app.widgets.visdag', ['adf.provider'])
       reset: true
     });
   });
-})
+  StreamingService.send(JSON.stringify(["org.apache.gearpump.cluster.MasterToAppMaster.AppMasterMetricsRequest",{appId:parseInt($routeParams.appId)}]));
+}])
 .directive('visdag', function () {
   function visdag(scope, el, attr) {
     var data = {

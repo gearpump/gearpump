@@ -185,6 +185,15 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         case None =>
           sender ! AppMasterDataDetail(appId)
       }
+    case appMasterMetricsRequest: AppMasterMetricsRequest =>
+      val appId = appMasterMetricsRequest.appId
+      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(appMaster) match {
+        case Some(_appMaster) =>
+          _appMaster forward appMasterMetricsRequest
+        case None =>
+      }
+
   }
 
   def workerMessage: Receive = {
