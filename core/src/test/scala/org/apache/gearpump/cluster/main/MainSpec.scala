@@ -97,7 +97,7 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
       Array("-master", s"$getHost:$getPort"))
 
     masterReceiver.expectMsg(PROCESS_BOOT_TIME, AppMastersDataRequest)
-    masterReceiver.reply(AppMastersData(List(AppMasterData(0, "appName", null, null, AppMasterActive))))
+    masterReceiver.reply(AppMastersData(List(AppMasterData(AppMasterActive, 0, "appName"))))
 
     info.destroy()
   }

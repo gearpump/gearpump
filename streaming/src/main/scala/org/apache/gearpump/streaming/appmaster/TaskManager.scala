@@ -20,24 +20,22 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.pattern.ask
-import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.AppMasterContext
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation}
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, StartClock}
-import org.apache.gearpump.streaming.executor.Executor
+import org.apache.gearpump.streaming.executor.{ExecutorRestartPolicy, Executor}
 import Executor.RestartExecutor
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
-import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.DAG
-import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil}
+import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import TaskManager._
 
 private[appmaster] class TaskManager(
@@ -53,6 +51,7 @@ private[appmaster] class TaskManager(
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   val systemConfig = context.system.settings.config
 
+  private val executorRestartPolicy = new ExecutorRestartPolicy(maxNrOfRetries = 5, withinTimeRange = 20 seconds)
   implicit val timeout = Constants.FUTURE_TIMEOUT
   implicit val actorSystem = context.system
   import context.dispatcher
@@ -82,7 +81,7 @@ private[appmaster] class TaskManager(
       LOG.info("Executor has been started, start to launch tasks")
 
       def launchTask(remainResources: Resource): Unit = {
-        if ((remainResources > Resource.empty)) {
+        if (remainResources > Resource.empty) {
 
           val taskLaunchData = taskScheduler.resourceAllocated(workerId, executorId)
 
@@ -93,6 +92,7 @@ private[appmaster] class TaskManager(
 
               val taskContext = TaskContextData(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, dag)
               executor ! LaunchTask(taskId, taskContext, TaskUtil.loadClass(taskDescription.taskClass))
+              executorRestartPolicy.addTaskToExecutor(executorId, taskId)
               //Todo: subtract the actual resource used by task
               val usedResource = Resource(1)
               launchTask(remainResources - usedResource)
@@ -105,8 +105,12 @@ private[appmaster] class TaskManager(
       stay using state
 
     case Event(ExecutorStopped(executorId), state@ TaskRegistrationState( register)) =>
-      val newResourceRequests = taskScheduler.executorFailed(executorId)
-      executorManager ! StartExecutors(newResourceRequests)
+      if(executorRestartPolicy.allowRestartExecutor(executorId)) {
+        val newResourceRequests = taskScheduler.executorFailed(executorId)
+        executorManager ! StartExecutors(newResourceRequests)
+      } else {
+        LOG.error(s"Executor restarted to many times")
+      }
       stay using state
 
     case Event(StartExecutorsTimeOut, state: TaskRegistrationState) =>
