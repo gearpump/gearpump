@@ -82,12 +82,12 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
 
   def getEnvVars(conf: Config)(key: String): String = {
     val option = key.split("\\.").last.toUpperCase
-    cliopts.exists(option) match {
+    Option(cliopts).map(_.exists(option) match {
       case true =>
         cliopts.getString(option)
       case false =>
         conf.getString(key)
-    }
+    }).get
   }
 
   def getAppEnv: Map[String, String] = {
@@ -110,12 +110,12 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     LOG.info(s"jarDir=$jarDir")
     Option(new File(jarDir)).map(_.list.filter(file => {
       file.endsWith(".jar")
-    }).toList.foreach(jarPath => {
-      Try(getFs.copyFromLocalFile(false, true, new Path(jarPath), getHdfs)) match {
+    }).toList.foreach(jarFile => {
+      Try(getFs.copyFromLocalFile(false, true, new Path(jarDir, jarFile), getHdfs)) match {
         case Success(a) =>
-          LOG.info(s"$jarPath uploaded to HDFS")
+          LOG.info(s"$jarFile uploaded to HDFS")
         case Failure(error) =>
-          LOG.error(s"$jarPath could not be uploaded to HDFS ${error.getMessage}")
+          LOG.error(s"$jarFile could not be uploaded to HDFS ${error.getMessage}")
           None
       }
     }))
