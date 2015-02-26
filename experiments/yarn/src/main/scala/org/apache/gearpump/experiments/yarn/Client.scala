@@ -78,14 +78,19 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def getYarnConf = yarnConf
   def getFs = FileSystem.get(getYarnConf)
   def getEnv = getEnvVars(getConf)_
-  def getHdfs = new Path(getEnv(HDFS_PATH))
+  def getHdfs = new Path(getFs.getHomeDirectory, getEnv(HDFS_PATH))
 
   def getEnvVars(conf: Config)(key: String): String = {
     val option = key.split("\\.").last.toUpperCase
-    cliopts.exists(option) match {
-      case true =>
-        cliopts.getString(option)
-      case false =>
+    Option(cliopts) match {
+      case Some(cliopts) =>
+        cliopts.exists(option) match {
+          case true =>
+            cliopts.getString(option)
+          case false =>
+            conf.getString(key)
+        }
+      case None =>
         conf.getString(key)
     }
   }
@@ -110,12 +115,12 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     LOG.info(s"jarDir=$jarDir")
     Option(new File(jarDir)).map(_.list.filter(file => {
       file.endsWith(".jar")
-    }).toList.foreach(jarPath => {
-      Try(getFs.copyFromLocalFile(false, true, new Path(jarPath), getHdfs)) match {
+    }).toList.foreach(jarFile => {
+      Try(getFs.copyFromLocalFile(false, true, new Path(jarDir, jarFile), getHdfs)) match {
         case Success(a) =>
-          LOG.info(s"$jarPath uploaded to HDFS")
+          LOG.info(s"$jarFile uploaded to HDFS")
         case Failure(error) =>
-          LOG.error(s"$jarPath could not be uploaded to HDFS ${error.getMessage}")
+          LOG.error(s"$jarFile could not be uploaded to HDFS ${error.getMessage}")
           None
       }
     }))
