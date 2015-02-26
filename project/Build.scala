@@ -29,6 +29,7 @@ object Build extends sbt.Build {
   val commonsLangVersion = "3.3.2"
   val commonsLoggingVersion = "1.1.3"
   val commonsIOVersion = "2.4"
+  val clouderaVersion = "2.5.0-cdh5.3.1"
   val findbugsVersion = "2.0.1"
   val guavaVersion = "15.0"
   val dataReplicationVersion = "0.7"
@@ -59,6 +60,7 @@ object Build extends sbt.Build {
           "maven2-repo" at "http://mvnrepository.com/artifact",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
+          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
     ) ++
@@ -167,7 +169,8 @@ object Build extends sbt.Build {
                         "local" -> "org.apache.gearpump.cluster.main.Local",
                         "master" -> "org.apache.gearpump.cluster.main.Master",
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
-                        "services" -> "org.apache.gearpump.cluster.main.Services"
+                        "services" -> "org.apache.gearpump.cluster.main.Services",
+                        "yarnclient" -> "org.apache.gearpump.experiments.yarn.Client"
                        ),
         packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
                            "master" -> Seq("-DlogFilename=master"),
@@ -345,15 +348,15 @@ object Build extends sbt.Build {
   lazy val yarn = Project(
     id = "gearpump-experiments-yarn",
     base = file("experiments/yarn"),
-    settings = commonSettings ++
+    settings = commonSettings ++ 
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-yarn-common" % hadoopVersion,
-          ("org.apache.hadoop" % "hadoop-yarn-client" % hadoopVersion % "compile").
-          exclude("hadoop-yarn-api", "org.apache.hadoop"),
-          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % hadoopVersion % "compile",
-          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % hadoopVersion % "compile"
+          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion
         )
-      )
-  ) dependsOn(core % "test->test;compile->compile")
+      ) 
+  ) dependsOn(core % "test->test", core % "provided")
 }

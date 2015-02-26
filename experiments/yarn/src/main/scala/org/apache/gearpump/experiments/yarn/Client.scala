@@ -45,7 +45,7 @@ Features for YARNClient
  */
 
 object EnvVars {
-  val APPMASTER_NAME = "gearpump"
+  val APPMASTER_NAME = "gearpump.yarn.applicationmaster.name"
   val APPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
   val APPMASTER_QUEUE = "default"
   val APPMASTER_MASTER_MEMORY = "gearpump.yarn.applicationmaster.masterMemory"
@@ -54,8 +54,6 @@ object EnvVars {
   val HDFS_PATH = "gearpump.yarn.client.hdfsPath"
   val JARS = "gearpump.yarn.client.jars"
   val MIN_WORKER_COUNT = "gearpump.yarn.applicationmaster.minWorkerCount"
-
-  val VARS = Seq(APPMASTER_NAME,APPMASTER_COMMAND,APPMASTER_MASTER_MEMORY,APPMASTER_MASTER_VMCORES,CONTAINER_COMMAND,HDFS_PATH,JARS,MIN_WORKER_COUNT)
 }
 
 trait ClientAPI {
@@ -67,7 +65,7 @@ trait ClientAPI {
   def getAMCapability: Resource
   def getAMLocalResourcesMap: Map[String, LocalResource]
   def monitorAM(appContext: ApplicationSubmissionContext): Unit
-  def uploadAMResourcesToHDFS: Unit
+  def uploadAMResourcesToHDFS(): Unit
 }
 
 class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, yarnClient: YarnClient) extends ClientAPI {
@@ -83,14 +81,12 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def getHdfs = new Path(getEnv(HDFS_PATH))
 
   def getEnvVars(conf: Config)(key: String): String = {
-    var option = key.split(".").last.toUpperCase
+    val option = key.split("\\.").last.toUpperCase
     cliopts.exists(option) match {
       case true =>
         cliopts.getString(option)
       case false =>
-        VARS.map(evar => {
-          (evar, conf.getString(evar))
-        }).toMap.getOrElse(key,"")
+        conf.getString(key)
     }
   }
 
@@ -109,8 +105,9 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     appMasterEnv.toMap
   }
 
-  def uploadAMResourcesToHDFS: Unit = {
+  def uploadAMResourcesToHDFS(): Unit = {
     val jarDir = getEnv(JARS)
+    LOG.info(s"jarDir=$jarDir")
     Option(new File(jarDir)).map(_.list.filter(file => {
       file.endsWith(".jar")
     }).toList.foreach(jarPath => {
@@ -125,7 +122,7 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   }
 
   def configureAMLaunchContext: ContainerLaunchContext = {
-    uploadAMResourcesToHDFS
+    uploadAMResourcesToHDFS()
     val amContainer = Records.newRecord(classOf[ContainerLaunchContext])
     amContainer.setCommands(Seq(getEnv(APPMASTER_COMMAND)))
     amContainer.setEnvironment(getAppEnv)
