@@ -78,14 +78,19 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def getYarnConf = yarnConf
   def getFs = FileSystem.get(getYarnConf)
   def getEnv = getEnvVars(getConf)_
-  def getHdfs = new Path(getEnv(HDFS_PATH))
+  def getHdfs = new Path(getFs.getHomeDirectory, getEnv(HDFS_PATH))
 
   def getEnvVars(conf: Config)(key: String): String = {
     val option = key.split("\\.").last.toUpperCase
-    Option(cliopts).map(_.exists(option) match {
-      case true =>
-        cliopts.getString(option)
-      case false =>
+    Option(cliopts) match {
+      case Some(cliopts) =>
+        cliopts.exists(option) match {
+          case true =>
+            cliopts.getString(option)
+          case false =>
+            conf.getString(key)
+        }
+      case None =>
         conf.getString(key)
     }).get
   }
