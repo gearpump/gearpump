@@ -37,6 +37,10 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.util.Records
 import org.slf4j.Logger
 import scala.collection.JavaConverters._
+import org.apache.gearpump.experiments.yarn.Client._
+import org.apache.gearpump.experiments.yarn.CmdLineVars._
+import org.apache.gearpump.experiments.yarn.EnvVars._
+
 
 
 object Actions {
@@ -53,22 +57,17 @@ object Actions {
   case class AMStatusMessage(appStatus: FinalApplicationStatus, appMessage: String, appTrackingUrl: String)
 }
 
-case class YarnAMArgs(results: ParseResult) {
-  val containers = results.getInt("containers")
-  val containerMemory = results.getInt("containerMemory")
-  val containerVCores = results.getInt("containerVCores")
-}
-
 /**
  * Yarn ApplicationMaster.
  */
-class YarnAMActor(amArgs: YarnAMArgs, yarnConf: YarnConfiguration) extends Actor {
+class YarnAMActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
   val LOG: Logger = LogUtil.getLogger(getClass)
   val nmCallbackHandler = createNMCallbackHandler
   val nmClientAsync = createNMClient(nmCallbackHandler)
-  val rmCallbackHandler = context.actorOf(Props(classOf[RMCallbackHandlerActor], amArgs, self), "rmCallbackHandler")
+  val rmCallbackHandler = context.actorOf(Props(classOf[RMCallbackHandlerActor], appConfig, self), "rmCallbackHandler")
   val amRMClient = context.actorOf(Props(classOf[AMRMClientAsyncActor], yarnConf, self), "amRMClient")
-
+  
+  
   override def receive: Receive = {
     case containerRequest: ContainerRequestMessage =>
       LOG.info("Received ContainerRequestMessage")
@@ -105,10 +104,10 @@ class YarnAMActor(amArgs: YarnAMArgs, yarnConf: YarnConfiguration) extends Actor
   private[this] def requestContainers(registrationResponse: RegisterApplicationMasterResponse) {
     val previousContainersCount = registrationResponse.getContainersFromPreviousAttempts.size
     LOG.info(s"Previous container count : $previousContainersCount")
-    val containersToRequestCount = amArgs.containers - previousContainersCount
+    val containersToRequestCount = appConfig.getEnv(CONTAINER_COUNT).toInt - previousContainersCount
 
     (1 to containersToRequestCount).foreach(requestId => {
-      amRMClient ! ContainerRequestMessage(amArgs.containerMemory, amArgs.containerVCores)
+      amRMClient ! ContainerRequestMessage(appConfig.getEnv(CONTAINER_MEMORY).toInt, appConfig.getEnv(CONTAINER_VCORES).toInt)
     })
 
   }
@@ -121,21 +120,21 @@ class YarnAMActor(amArgs: YarnAMArgs, yarnConf: YarnConfiguration) extends Actor
     val stats = done.rMHandlerContainerStats
     done.reason match {
       case failed: Failed =>
-        val message = s"Failed. total=${amArgs.containers}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
+        val message = s"Failed. total=${appConfig.getEnv(CONTAINER_COUNT).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
         amRMClient ! AMStatusMessage(FinalApplicationStatus.FAILED, message, null)
         success = false
       case ShutdownRequest =>
-        if (stats.failed == 0 && stats.completed == amArgs.containers) {
-          val message = s"ShutdownRequest. total=${amArgs.containers}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
+        if (stats.failed == 0 && stats.completed == appConfig.getEnv(CONTAINER_COUNT).toInt) {
+          val message = s"ShutdownRequest. total=${appConfig.getEnv(CONTAINER_COUNT).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
           amRMClient ! AMStatusMessage(FinalApplicationStatus.KILLED, message, null)
           success = false
         } else {
-          val message = s"ShutdownRequest. total=${amArgs.containers}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
+          val message = s"ShutdownRequest. total=${appConfig.getEnv(CONTAINER_COUNT).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
           amRMClient ! AMStatusMessage(FinalApplicationStatus.FAILED, message, null)
           success = false
         }
       case AllRequestedContainersCompleted =>
-        val message = s"Diagnostics. total=${amArgs.containers}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
+        val message = s"Diagnostics. total=${appConfig.getEnv(CONTAINER_COUNT).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
         amRMClient ! AMStatusMessage(FinalApplicationStatus.SUCCEEDED, message, null)
         success = true
     }
@@ -221,14 +220,14 @@ class AMRMClientAsyncActor(yarnConf: YarnConfiguration, yarnAM: ActorRef) extend
 
 }
 
-class RMCallbackHandler(amArgs: YarnAMArgs, am: ActorRef) extends AMRMClientAsync.CallbackHandler {
+class RMCallbackHandler(appConfig: AppConfig, am: ActorRef) extends AMRMClientAsync.CallbackHandler {
   val LOG: Logger = LogUtil.getLogger(getClass)
   val completedContainersCount = new AtomicInteger(0)
   val failedContainersCount = new AtomicInteger(0)
   val allocatedContainersCount = new AtomicInteger(0)
   val requestedContainersCount = new AtomicInteger(0)
 
-  def getProgress: Float = completedContainersCount.get / amArgs.containers
+  def getProgress: Float = completedContainersCount.get / appConfig.getEnv(CONTAINER_COUNT).toInt
 
   def onContainersAllocated(allocatedContainers: java.util.List[Container]) {
     LOG.info(s"Got response from RM for container request, allocatedCnt=${allocatedContainers.size}")
@@ -259,14 +258,14 @@ class RMCallbackHandler(amArgs: YarnAMArgs, am: ActorRef) extends AMRMClientAsyn
     })
 
     // request more containers if any failed
-    val requestCount = amArgs.containers - requestedContainersCount.get
+    val requestCount = appConfig.getEnv(CONTAINER_COUNT).toInt - requestedContainersCount.get
     requestedContainersCount.addAndGet(requestCount)
 
     (0 until requestCount).foreach(request => {
-      am ! ContainerRequestMessage(amArgs.containerMemory, amArgs.containerVCores)
+      am ! ContainerRequestMessage(appConfig.getEnv(CONTAINER_MEMORY).toInt, appConfig.getEnv(CONTAINER_VCORES).toInt)
     })
 
-    if (completedContainersCount.get == amArgs.containers) {
+    if (completedContainersCount.get == appConfig.getEnv(CONTAINER_COUNT).toInt) {
       am ! RMHandlerDone(AllRequestedContainersCompleted, RMHandlerContainerStats(allocatedContainersCount.get, completedContainersCount.get, failedContainersCount.get))
     }
 
@@ -288,9 +287,9 @@ class RMCallbackHandler(amArgs: YarnAMArgs, am: ActorRef) extends AMRMClientAsyn
 
 }
 
-class RMCallbackHandlerActor(args: YarnAMArgs, yarnAM: ActorRef) extends Actor {
+class RMCallbackHandlerActor(appConfig: AppConfig, yarnAM: ActorRef) extends Actor {
   val LOG: Logger = LogUtil.getLogger(getClass)
-  val rmCallbackHandler = new RMCallbackHandler(args, yarnAM)
+  val rmCallbackHandler = new RMCallbackHandler(appConfig, yarnAM)
 
   override def preStart(): Unit = {
     LOG.info("Sending RMCallbackHandler to YarnAM")
@@ -339,9 +338,8 @@ object YarnAM extends App with ArgumentsParser {
   val TIME_INTERVAL = 1000
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "containers" -> CLIOption[Int]("<Required number of containers>", required = false, defaultValue = Some(2)),
-    "containerMemory" -> CLIOption[Int]("<Required amount of memory for container>", required = false, defaultValue = Some(2048)),
-    "containerVCores" -> CLIOption[Int]("<Required number of vcores for container>", required = false, defaultValue = Some(1))
+    APPMASTER_IP -> CLIOption[String]("<Gearpump master ip>", required = false),
+    APPMASTER_PORT -> CLIOption[String]("<Gearpump master port>", required = false)
   )
 
   def apply(args: Array[String]) = {
@@ -350,7 +348,7 @@ object YarnAM extends App with ArgumentsParser {
       val config = ConfigFactory.load
       implicit val system = ActorSystem("GearPumpAM", config)
       LOG.info("Creating YarnAMActor")
-      system.actorOf(Props(classOf[YarnAMActor], YarnAMArgs(parse(args)), new YarnConfiguration), "GearPumpAMActor")
+      system.actorOf(Props(classOf[YarnAMActor], new AppConfig(parse(args), config), new YarnConfiguration), "GearPumpAMActor")
       system.awaitTermination()
       LOG.info("Shutting down")
       system.shutdown()

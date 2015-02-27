@@ -48,45 +48,32 @@ Features for YARNClient
 - [ ] Client needs to use YARN cluster API to find best nodes to run Workers
  */
 
-object EnvVars {
-  val APPMASTER_NAME = "gearpump.yarn.applicationmaster.name"
-  val APPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
-  val APPMASTER_MEMORY = "gearpump.yarn.applicationmaster.memory"
-  val APPMASTER_VCORES = "gearpump.yarn.applicationmaster.vcores"
-  val APPMASTER_QUEUE = "gearpump.yarn.applicationmaster.queue"
-  val APPMASTER_MAIN = "gearpump.yarn.applicationmaster.main"
-  val CONTAINER_COUNT = "gearpump.yarn.container.count"
-  val CONTAINER_MEMORY = "gearpump.yarn.container.memory"
-  val CONTAINER_VCORES = "gearpump.yarn.container.vcores"
-  val EXCLUDE_JARS = "gearpump.yarn.client.excludejars"
-  val HDFS_PATH = "gearpump.yarn.client.hdfsPath"
-  val JARS = "gearpump.yarn.client.jars"
-}
 
 trait ClientAPI {
   def configureAMLaunchContext: ContainerLaunchContext
-  def getConf: Config
+  def getConfiguration: AppConfig
   def getCommand: String
   def getYarnConf: YarnConfiguration
-  def getEnvVars(conf: Config)(key: String): String
   def getAppEnv: Map[String, String]
   def getAMCapability: Resource
   def getAMLocalResourcesMap: Map[String, LocalResource]
   def monitorAM(appContext: ApplicationSubmissionContext): Unit
   def uploadAMResourcesToHDFS(): Unit
 }
+//def getEnvVars(conf: Config)(key: String): String
 
-class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, yarnClient: YarnClient) extends ClientAPI {
+//cliopts: ParseResult, conf: Config
+class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: YarnClient) extends ClientAPI {
   import org.apache.gearpump.experiments.yarn.Client._
   import org.apache.gearpump.experiments.yarn.EnvVars._
 
   val LOG: Logger = LogUtil.getLogger(getClass)
-
-  def getConf = conf
+  def getConfiguration = configuration
+  def getEnv = getConfiguration.getEnv _
   def getYarnConf = yarnConf
-  def getFs = FileSystem.get(getYarnConf)
-  def getEnv = getEnvVars(getConf)_
+  def getFs = FileSystem.get(getYarnConf)  
   def getHdfs = new Path(getFs.getHomeDirectory, getEnv(HDFS_PATH))
+  
 
   private[this] def getMemory(envVar: String): Int = {
     val memory = getEnv(envVar).trim
@@ -104,8 +91,8 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   }
 
   def getCommand: String = {
-    val exe = getEnv(APPMASTER_COMMAND)
-    val mainClass = getEnv(APPMASTER_MAIN)
+    val exe = getEnv(YARNAPPMASTER_COMMAND)
+    val mainClass = getEnv(YARNAPPMASTER_MAIN)
     val count = getEnv(CONTAINER_COUNT).trim
     val memory = getMemory(CONTAINER_MEMORY)
     val vmcores = getEnv(CONTAINER_VCORES)
@@ -115,21 +102,7 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     command
   }
 
-  def getEnvVars(conf: Config)(key: String): String = {
-    val option = key.split("\\.").last.toUpperCase
-    Option(cliopts) match {
-      case Some(_cliopts) =>
-        _cliopts.exists(option) match {
-          case true =>
-            _cliopts.getString(option)
-          case false =>
-            conf.getString(key)
-        }
-      case None =>
-        conf.getString(key)
-    }
-  }
-
+ 
   def getAppEnv: Map[String, String] = {
     val appMasterEnv = new java.util.HashMap[String,String]
     for (
@@ -186,7 +159,7 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
 
   def getAMCapability: Resource = {
     val capability = Records.newRecord(classOf[Resource])
-    val memory = getEnv(APPMASTER_MEMORY).trim
+    val memory = getEnv(YARNAPPMASTER_MEMORY).trim
     val containerMemory = memory.substring(0, memory.length-1).toInt
     val memoryUnits = memory.last.toUpper match {
       case 'G' =>
@@ -198,7 +171,7 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
         2048
     }
     capability.setMemory(containerMemory)
-    capability.setVirtualCores(getEnv(APPMASTER_VCORES).toInt)
+    capability.setVirtualCores(getEnv(YARNAPPMASTER_VCORES).toInt)
     capability
   }
 
@@ -245,14 +218,15 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
 
   }
 
+
   def deploy() = {
     yarnClient.init(yarnConf)
     yarnClient.start()
     val appContext = yarnClient.createApplication.getApplicationSubmissionContext
-    appContext.setApplicationName(getEnv(APPMASTER_NAME))
+    appContext.setApplicationName(getEnv(YARNAPPMASTER_NAME))
     appContext.setAMContainerSpec(configureAMLaunchContext)
     appContext.setResource(getAMCapability)
-    appContext.setQueue(getEnv(APPMASTER_QUEUE))
+    appContext.setQueue(getEnv(YARNAPPMASTER_QUEUE))
     yarnClient.submitApplication(appContext)
     monitorAM(appContext)
   }
@@ -261,6 +235,8 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
 }
 
 object Client extends App with ArgumentsParser {
+  import org.apache.gearpump.experiments.yarn.EnvVars._
+  
   case class ClusterResources(totalFreeMemory: Long, totalContainers: Int, nodeManagersFreeMemory: Map[String, Long])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -269,5 +245,5 @@ object Client extends App with ArgumentsParser {
     "monitor" -> CLIOption[Boolean]("<monitor AppMaster state>", required = false, defaultValue = Some(false))
   )
 
-  new Client(parse(args), ConfigFactory.load, new YarnConfiguration, YarnClient.createYarnClient)
+  new Client(new AppConfig(parse(args), ConfigFactory.load), new YarnConfiguration, YarnClient.createYarnClient)
 }
