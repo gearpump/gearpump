@@ -47,7 +47,7 @@ Features for YARNClient
 object EnvVars {
   val APPMASTER_NAME = "gearpump.yarn.applicationmaster.name"
   val APPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
-  val APPMASTER_QUEUE = "default"
+  val APPMASTER_QUEUE = "gearpump.yarn.applicationmaster.queue"
   val APPMASTER_MASTER_MEMORY = "gearpump.yarn.applicationmaster.masterMemory"
   val APPMASTER_MASTER_VMCORES = "gearpump.yarn.applicationmaster.masterVMCores"
   val CONTAINER_COMMAND = "gearpump.yarn.container.command"
