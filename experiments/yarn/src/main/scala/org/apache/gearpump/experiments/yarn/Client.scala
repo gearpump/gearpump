@@ -94,8 +94,8 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     val mainClass = getEnv(APPMASTER_MAIN)
     val ip = getEnv(APPMASTER_IP)
     val port = getEnv(APPMASTER_PORT)
-    val logdir = ApplicationConstants.LOG_DIR_EXPANSION_VAR
-    val command = s"$exe $mainClass -ip $ip -port $port 1>$logdir/stdout 2>$logdir/stderr"
+    val logdir = "/tmp" //ApplicationConstants.LOG_DIR_EXPANSION_VAR
+    val command = s"$exe $mainClass -ip $ip -port $port 1>$logdir/AM_stdout 2>$logdir/AM_stderr"
     LOG.info(s"command=$command")
     command
   }
