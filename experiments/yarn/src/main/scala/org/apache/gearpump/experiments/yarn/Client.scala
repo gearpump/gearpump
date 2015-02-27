@@ -96,7 +96,7 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   }
 
   def getAppEnv: Map[String, String] = {
-    val appMasterEnv = Map.empty[String,String]
+    val appMasterEnv = new java.util.HashMap[String,String]
     for (
       c <- getYarnConf.getStrings(
         YarnConfiguration.YARN_APPLICATION_CLASSPATH,
