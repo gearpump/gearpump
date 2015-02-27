@@ -83,16 +83,16 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def getEnvVars(conf: Config)(key: String): String = {
     val option = key.split("\\.").last.toUpperCase
     Option(cliopts) match {
-      case Some(cliopts) =>
-        cliopts.exists(option) match {
+      case Some(_cliopts) =>
+        _cliopts.exists(option) match {
           case true =>
-            cliopts.getString(option)
+            _cliopts.getString(option)
           case false =>
             conf.getString(key)
         }
       case None =>
         conf.getString(key)
-    }).get
+    }
   }
 
   def getAppEnv: Map[String, String] = {
