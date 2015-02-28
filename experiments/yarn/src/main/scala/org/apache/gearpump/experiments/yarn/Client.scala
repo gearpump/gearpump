@@ -137,7 +137,18 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
 
   def getAMCapability: Resource = {
     val capability = Records.newRecord(classOf[Resource])
-    capability.setMemory(getEnv(APPMASTER_MASTER_MEMORY).toInt)
+    val memory = getEnv(APPMASTER_MASTER_MEMORY).trim
+    val memoryValue = memory.substring(0, memory.length-2).toInt
+    val memoryNumber = memory.last.toUpper match {
+      case 'G' =>
+        memoryValue*1024
+      case 'M' =>
+        memoryValue/1024000
+      case _ =>
+        LOG.error(s"Invalid value $memory defaulting to 2G")
+        2048
+    }
+    capability.setMemory(memoryNumber)
     capability.setVirtualCores(getEnv(APPMASTER_MASTER_VMCORES).toInt)
     capability
   }
