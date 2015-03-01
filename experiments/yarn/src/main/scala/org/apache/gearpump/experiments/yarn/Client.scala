@@ -19,11 +19,14 @@
 package org.apache.gearpump.experiments.yarn
 
 import java.io.File
+import java.nio.ByteBuffer
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.io.DataOutputBuffer
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
 import org.apache.hadoop.yarn.api.records._
 import org.apache.hadoop.yarn.client.api.YarnClient
@@ -48,6 +51,7 @@ object EnvVars {
   val APPMASTER_NAME = "gearpump.yarn.applicationmaster.name"
   val APPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
   val APPMASTER_QUEUE = "gearpump.yarn.applicationmaster.queue"
+  val APPMASTER_MAIN = "gearpump.yarn.applicationmaster.main"
   val APPMASTER_MASTER_MEMORY = "gearpump.yarn.applicationmaster.masterMemory"
   val APPMASTER_MASTER_VMCORES = "gearpump.yarn.applicationmaster.masterVMCores"
   val CONTAINER_COMMAND = "gearpump.yarn.container.command"
@@ -59,6 +63,7 @@ object EnvVars {
 trait ClientAPI {
   def configureAMLaunchContext: ContainerLaunchContext
   def getConf: Config
+  def getCommand: String
   def getYarnConf: YarnConfiguration
   def getEnvVars(conf: Config)(key: String): String
   def getAppEnv: Map[String, String]
@@ -80,6 +85,12 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def getEnv = getEnvVars(getConf)_
   def getHdfs = new Path(getFs.getHomeDirectory, getEnv(HDFS_PATH))
 
+  def getCommand: String = {
+    val exe = getEnv(APPMASTER_COMMAND)
+    val mainClass = getEnv(APPMASTER_MAIN)
+    val command = s"$exe $mainClass"
+    command
+  }
   def getEnvVars(conf: Config)(key: String): String = {
     val option = key.split("\\.").last.toUpperCase
     Option(cliopts) match {
@@ -129,16 +140,20 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def configureAMLaunchContext: ContainerLaunchContext = {
     uploadAMResourcesToHDFS()
     val amContainer = Records.newRecord(classOf[ContainerLaunchContext])
-    amContainer.setCommands(Seq(getEnv(APPMASTER_COMMAND)))
+    amContainer.setCommands(Seq(getCommand))
     amContainer.setEnvironment(getAppEnv)
     amContainer.setLocalResources(getAMLocalResourcesMap)
+    val credentials = UserGroupInformation.getCurrentUser.getCredentials
+    val dob = new DataOutputBuffer
+    credentials.writeTokenStorageToStream(dob)
+    amContainer.setTokens(ByteBuffer.wrap(dob.getData))
     amContainer
   }
 
   def getAMCapability: Resource = {
     val capability = Records.newRecord(classOf[Resource])
     val memory = getEnv(APPMASTER_MASTER_MEMORY).trim
-    val memoryValue = memory.substring(0, memory.length-2).toInt
+    val memoryValue = memory.substring(0, memory.length-1).toInt
     val memoryNumber = memory.last.toUpper match {
       case 'G' =>
         memoryValue*1024
@@ -156,7 +171,9 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def getAMLocalResourcesMap: Map[String, LocalResource] = {
     getFs.listStatus(getHdfs).map(fileStatus => {
       val localResouceFile = Records.newRecord(classOf[LocalResource])
-      localResouceFile.setResource(ConverterUtils.getYarnUrlFromPath(fileStatus.getPath))
+      val path = ConverterUtils.getYarnUrlFromPath(fileStatus.getPath)
+      LOG.info(s"local resource path=${path.getFile}")
+      localResouceFile.setResource(path)
       localResouceFile.setType(LocalResourceType.FILE)
       localResouceFile.setSize(fileStatus.getLen)
       localResouceFile.setTimestamp(fileStatus.getModificationTime)
