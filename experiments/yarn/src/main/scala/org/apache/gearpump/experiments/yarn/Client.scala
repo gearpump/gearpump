@@ -132,10 +132,10 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def uploadAMResourcesToHDFS(): Unit = {
     val jarDir = getEnv(JARS)
     val excludeJars = getEnv(EXCLUDE_JARS).split("\\,").map(excludeJar => {
-      excludeJar.trim()
+      excludeJar.trim
     }).toIndexedSeq
     LOG.info(s"jarDir=$jarDir")
-    Option(new File(jarDir)).map(_.list.filter(file => {
+    Option(new File(jarDir)).foreach(_.list.filter(file => {
       file.endsWith(".jar")
     }).filter(jar => {
       excludeJars.contains(jar)
@@ -147,8 +147,7 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
             LOG.error(s"$jarFile could not be uploaded to HDFS ${error.getMessage}")
             None
         }
-      })
-    })
+    }))
   }
 
   def configureAMLaunchContext: ContainerLaunchContext = {
