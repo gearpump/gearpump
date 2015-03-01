@@ -57,6 +57,7 @@ object EnvVars {
   val APPMASTER_MASTER_MEMORY = "gearpump.yarn.applicationmaster.masterMemory"
   val APPMASTER_MASTER_VMCORES = "gearpump.yarn.applicationmaster.masterVMCores"
   val APPMASTER_PORT = "gearpump.yarn.applicationmaster.masterPort"
+  val EXCLUDE_JARS = "gearpump.yarn.client.excludejars"
   val CONTAINER_COMMAND = "gearpump.yarn.container.command"
   val HDFS_PATH = "gearpump.yarn.client.hdfsPath"
   val JARS = "gearpump.yarn.client.jars"
@@ -130,24 +131,35 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
 
   def uploadAMResourcesToHDFS(): Unit = {
     val jarDir = getEnv(JARS)
+    val excludeJars = getEnv(EXCLUDE_JARS).split("\\,").map(excludeJar => {
+      excludeJar.trim()
+    }).toIndexedSeq
     LOG.info(s"jarDir=$jarDir")
     Option(new File(jarDir)).map(_.list.filter(file => {
       file.endsWith(".jar")
+    }).filter(jar => {
+      excludeJars.contains(jar)
     }).toList.foreach(jarFile => {
-      Try(getFs.copyFromLocalFile(false, true, new Path(jarDir, jarFile), getHdfs)) match {
-        case Success(a) =>
-          LOG.info(s"$jarFile uploaded to HDFS")
-        case Failure(error) =>
-          LOG.error(s"$jarFile could not be uploaded to HDFS ${error.getMessage}")
-          None
-      }
-    }))
+        Try(getFs.copyFromLocalFile(false, true, new Path(jarDir, jarFile), getHdfs)) match {
+          case Success(a) =>
+            LOG.info(s"$jarFile uploaded to HDFS")
+          case Failure(error) =>
+            LOG.error(s"$jarFile could not be uploaded to HDFS ${error.getMessage}")
+            None
+        }
+      })
+    })
   }
 
   def configureAMLaunchContext: ContainerLaunchContext = {
     uploadAMResourcesToHDFS()
     val amContainer = Records.newRecord(classOf[ContainerLaunchContext])
     amContainer.setCommands(Seq(getCommand))
+    val environment = getAppEnv
+    environment.foreach(pair => {
+      val (key, value) = pair
+      LOG.info(s"getAppEnv key=$key value=$value")
+    })
     amContainer.setEnvironment(getAppEnv)
     amContainer.setLocalResources(getAMLocalResourcesMap)
     val credentials = UserGroupInformation.getCurrentUser.getCredentials
