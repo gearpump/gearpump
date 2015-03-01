@@ -27,6 +27,7 @@ import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.DataOutputBuffer
 import org.apache.hadoop.security.UserGroupInformation
+import org.apache.hadoop.yarn.api.ApplicationConstants
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
 import org.apache.hadoop.yarn.api.records._
 import org.apache.hadoop.yarn.client.api.YarnClient
@@ -92,7 +93,9 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     val mainClass = getEnv(APPMASTER_MAIN)
     val ip = getEnv(APPMASTER_IP)
     val port = getEnv(APPMASTER_PORT)
-    val command = s"$exe $mainClass -ip $ip -port $port"
+    val logdir = ApplicationConstants.LOG_DIR_EXPANSION_VAR
+    val command = s"$exe $mainClass -ip $ip -port $port 1>$logdir/stdout 2>$logdir/stderr"
+    LOG.info(s"command=$command")
     command
   }
   def getEnvVars(conf: Config)(key: String): String = {
@@ -145,6 +148,11 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     uploadAMResourcesToHDFS()
     val amContainer = Records.newRecord(classOf[ContainerLaunchContext])
     amContainer.setCommands(Seq(getCommand))
+    val environment = getAppEnv
+    environment.foreach(pair => {
+      val (key, value) = pair
+      LOG.info(s"getAppEnv key=$key value=$value")
+    })
     amContainer.setEnvironment(getAppEnv)
     amContainer.setLocalResources(getAMLocalResourcesMap)
     val credentials = UserGroupInformation.getCurrentUser.getCredentials
