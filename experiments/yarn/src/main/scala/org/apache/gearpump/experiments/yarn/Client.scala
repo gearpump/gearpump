@@ -51,9 +51,11 @@ object EnvVars {
   val APPMASTER_NAME = "gearpump.yarn.applicationmaster.name"
   val APPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
   val APPMASTER_QUEUE = "gearpump.yarn.applicationmaster.queue"
+  val APPMASTER_IP = "gearpump.yarn.applicationmaster.masterIp"
   val APPMASTER_MAIN = "gearpump.yarn.applicationmaster.main"
   val APPMASTER_MASTER_MEMORY = "gearpump.yarn.applicationmaster.masterMemory"
   val APPMASTER_MASTER_VMCORES = "gearpump.yarn.applicationmaster.masterVMCores"
+  val APPMASTER_PORT = "gearpump.yarn.applicationmaster.masterPort"
   val CONTAINER_COMMAND = "gearpump.yarn.container.command"
   val HDFS_PATH = "gearpump.yarn.client.hdfsPath"
   val JARS = "gearpump.yarn.client.jars"
@@ -88,7 +90,9 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def getCommand: String = {
     val exe = getEnv(APPMASTER_COMMAND)
     val mainClass = getEnv(APPMASTER_MAIN)
-    val command = s"$exe $mainClass"
+    val ip = getEnv(APPMASTER_IP)
+    val port = getEnv(APPMASTER_PORT)
+    val command = s"$exe $mainClass -ip $ip -port $port"
     command
   }
   def getEnvVars(conf: Config)(key: String): String = {
