@@ -148,6 +148,11 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     uploadAMResourcesToHDFS()
     val amContainer = Records.newRecord(classOf[ContainerLaunchContext])
     amContainer.setCommands(Seq(getCommand))
+    val environment = getAppEnv
+    environment.foreach(pair => {
+      val (key, value) = pair
+      LOG.info(s"getAppEnv key=$key value=$value")
+    })
     amContainer.setEnvironment(getAppEnv)
     amContainer.setLocalResources(getAMLocalResourcesMap)
     val credentials = UserGroupInformation.getCurrentUser.getCredentials
