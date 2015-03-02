@@ -24,7 +24,7 @@
 'use strict';
 
 angular.module('app-02', [])
-.controller('app02Ctrl', function($scope, $http){
+.controller('app02Ctrl', function($scope, $http, $location) {
   var url = location.origin + '/appmasters';
   $http.get(url).then(function (response) {
     var masters = response.data.appMasters;
@@ -41,4 +41,8 @@ angular.module('app-02', [])
   console.log(err);
     throw err;
   });
+
+  $scope.viewapp = function(id) {
+    $location.path("/app/" + id);
+  };
 });

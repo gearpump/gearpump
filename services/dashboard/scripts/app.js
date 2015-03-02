@@ -30,7 +30,8 @@ angular.module('app', [
   'adf',
   'structures',
   // Application extensions
-  'app.tabset',
+  'directive.tabset',
+  'directive.visdag',
   // Application controllers
   'app-01',
   'app-02',

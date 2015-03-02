@@ -15,12 +15,13 @@
     <tr ng-repeat="app in apps track by $index">
       <th scope="row" ng-click="loadDag(app.id)">{{app.id}}</th>
       <td>{{app.name}}</td>
-      <td><span ng-class="app.status=='active'?'label-success':'label-default'" class="label">
+      <td><span ng-class="app.status==='active'?'label-success':'label-default'" class="label">
         {{app.status}}</span>
       </td>
       <td>{{app.appMasterPath}}</td>
       <td>{{app.workerPath}}</td>
-      <td><a href="#/app/{{app.id}}">View Charts</a></td>
+      <td><button ng-if="app.status==='active'"
+                  ng-click="viewapp(app.id)">View Charts</button></td>
     </tr>
     </tbody>
   </table>
