@@ -173,7 +173,7 @@ object Build extends sbt.Build {
                            "master" -> Seq("-DlogFilename=master"),
                            "worker" -> Seq("-DlogFilename=worker")
                         ),
-        packExclude := Seq(fsio.id/*, examples_kafka.id*/, sol.id, wordcount.id, complexdag.id, examples.id, distributedshell.id),
+        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id, distributedshell.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
@@ -191,7 +191,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio/*, examples_kafka*/, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -226,7 +226,7 @@ object Build extends sbt.Build {
         unmanagedClasspath in Test += baseDirectory.value.getParentFile.getParentFile / "conf"
       )
   ) dependsOn (streaming % "provided")
-/*
+
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
     base = file("examples/streaming/kafka"),
@@ -239,7 +239,7 @@ object Build extends sbt.Build {
         )
       )
   ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided")
-*/
+
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
     base = file("examples/streaming/fsio"),
@@ -296,7 +296,7 @@ object Build extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ myAssemblySettings
-  ) dependsOn (wordcount, complexdag, sol, fsio/*, examples_kafka*/, distributedshell)
+  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell)
   
   lazy val services = Project(
     id = "gearpump-services",

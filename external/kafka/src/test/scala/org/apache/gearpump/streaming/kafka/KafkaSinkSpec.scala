@@ -43,6 +43,7 @@ class KafkaSinkSpec extends PropSpec with PropertyChecks with Matchers with Mock
       val kafkaSink = new KafkaSink(producer)
       kafkaSink.write(topic, key, msg)
       verify(producer).send(anyObject[ProducerRecord[Array[Byte], Array[Byte]]]())
+      kafkaSink.close()
     }
   }
 
