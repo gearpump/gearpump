@@ -138,7 +138,7 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     Option(new File(jarDir)).foreach(_.list.filter(file => {
       file.endsWith(".jar")
     }).filter(jar => {
-      excludeJars.contains(jar)
+      !excludeJars.contains(jar)
     }).toList.foreach(jarFile => {
         Try(getFs.copyFromLocalFile(false, true, new Path(jarDir, jarFile), getHdfs)) match {
           case Success(a) =>
