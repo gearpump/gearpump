@@ -51,6 +51,7 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
         verify(offsetStorage).append(newMax, Injection[Long, Array[Byte]](offset.toLong))
         newMax
       }
+      offsetManager.close()
     }
   }
 
@@ -67,6 +68,7 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
       intercept[RuntimeException] {
         offsetManager.resolveOffset(time)
       }
+      offsetManager.close()
     }
   }
 
@@ -91,6 +93,7 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
         intercept[RuntimeException] {
           offsetManager.resolveOffset(time)
         }
+        offsetManager.close()
     }
   }
 

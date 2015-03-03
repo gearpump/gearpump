@@ -24,6 +24,7 @@ import org.apache.gearpump.cluster.master.Master.{MasterInfo, MasterDescription}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerDescription
 
+import scala.reflect.ClassTag
 import scala.util.Try
 
 /**
@@ -106,11 +107,13 @@ object MasterToAppMaster {
   val AppMasterActive: AppMasterStatus = "active"
   val AppMasterInActive: AppMasterStatus = "inactive"
 
+  sealed trait StreamingType
   case class AppMasterData(appId: Int, appName: String, appMasterPath: String, workerPath: String, status: AppMasterStatus)
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
   case class AppMastersData(appMasters: List[AppMasterData])
   case object AppMastersDataRequest
   case class AppMasterDataDetailRequest(appId: Int)
+  case class AppMasterMetricsRequest(appId: Int) extends StreamingType
 
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
 
@@ -127,4 +130,5 @@ object WorkerToAppMaster {
   case class ShutdownExecutorSucceed(appId: Int, executorId: Int)
   case class ShutdownExecutorFailed(reason: String = null, ex: Throwable = null)
 }
+
 
