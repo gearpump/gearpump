@@ -38,7 +38,6 @@ object Build extends sbt.Build {
   val kafkaVersion = "0.8.2.0"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
-  val uPickleVersion = "0.2.5"
   
   val scalaVersionMajor = "scala-2.11"
   val scalaVersionNumber = "2.11.5"
@@ -145,7 +144,7 @@ object Build extends sbt.Build {
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
-        "com.lihaoyi" %% "upickle" % "0.2.5",
+        "com.lihaoyi" %% "upickle" % "0.2.6",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",

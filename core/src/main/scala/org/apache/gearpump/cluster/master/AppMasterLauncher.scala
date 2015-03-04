@@ -65,7 +65,8 @@ class AppMasterLauncher(
       val ResourceAllocation(resource, worker, workerId) = allocations(0)
 
       val submissionTime = System.currentTimeMillis()
-      val appMasterInfo = AppMasterRuntimeInfo(appId, app.name, worker, username, submissionTime)
+      val appMasterInfo = AppMasterRuntimeInfo(appId, app.name, worker, username,
+        submissionTime, config = appMasterAkkaConfig)
       val appMasterContext = AppMasterContext(appId, username, resource, jar, null, appMasterInfo)
 
       LOG.info(s"Try to launch a executor for app Master on ${worker} for app $appId")

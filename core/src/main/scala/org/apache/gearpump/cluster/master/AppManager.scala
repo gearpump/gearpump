@@ -23,6 +23,7 @@ import java.util.concurrent.{TimeUnit, TimeoutException}
 import akka.actor._
 import akka.cluster.Cluster
 import akka.pattern.ask
+import com.typesafe.config.Config
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
@@ -30,7 +31,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import InMemoryKVService._
 import MasterHAService._
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
@@ -153,7 +154,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         val appMasterPath = ActorUtil.getFullPath(context.system, appMaster.path)
         val workerPath = Option(info.worker).map(worker => ActorUtil.getFullPath(context.system, worker.path))
         appMastersData += AppMasterData(
-          AppMasterInActive, id, info.appName, appMasterPath, workerPath.orNull,
+          AppMasterActive, id, info.appName, appMasterPath, workerPath.orNull,
           info.submissionTime, info.startTime, info.finishTime, info.user)
       })
 
@@ -168,6 +169,19 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       })
 
       sender ! AppMastersData(appMastersData.toList)
+    case QueryAppMasterConfig(appId) =>
+      val config =
+        if (appMasterRegistry.contains(appId)) {
+          val (appMaster, info) = appMasterRegistry(appId)
+          info.config
+        } else if (deadAppMasters.contains(appId)) {
+          val (appMaster, info) = deadAppMasters(appId)
+          info.config
+        } else {
+          null
+        }
+      sender ! AppMasterConfig(config)
+
     case appMasterDataRequest: AppMasterDataRequest =>
       val appId = appMasterDataRequest.appId
 
@@ -321,7 +335,8 @@ case class AppMasterRuntimeInfo(
     user: String = null,
     submissionTime: TimeStamp = 0,
     startTime: TimeStamp = 0,
-    finishTime: TimeStamp = 0)
+    finishTime: TimeStamp = 0,
+    config: Config = null)
   extends AppMasterRegisterData
 
 object AppManager {

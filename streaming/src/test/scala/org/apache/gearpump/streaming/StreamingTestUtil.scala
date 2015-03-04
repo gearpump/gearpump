@@ -53,6 +53,7 @@ object StreamingTestUtil {
     val registerAppMaster = RegisterAppMaster(miniCluster.mockMaster, masterConf.registerData)
     val appMaster = miniCluster.launchActor(props).asInstanceOf[TestActorRef[AppMaster]]
     miniCluster.mockMaster.tell(registerAppMaster, appMaster)
+
     appMaster
   }
 }
