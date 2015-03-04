@@ -38,14 +38,14 @@ class MessageSerializer extends Serializer[Message] {
 
 class TaskIdSerializer  extends Serializer[TaskId] {
   override def write(kryo: Kryo, output: Output, obj: TaskId) = {
-    output.writeInt(obj.groupId)
+    output.writeInt(obj.processorId)
     output.writeInt(obj.index)
   }
 
   override def read(kryo: Kryo, input: Input, typ: Class[TaskId]): TaskId = {
-    val groupId = input.readInt()
+    val processorId = input.readInt()
     val index = input.readInt()
-    new TaskId(groupId, index)
+    new TaskId(processorId, index)
   }
 }
 

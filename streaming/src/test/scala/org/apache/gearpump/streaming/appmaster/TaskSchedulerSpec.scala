@@ -55,10 +55,10 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
       val tasksOnWorker1 = ArrayBuffer[Int]()
       val tasksOnWorker2 = ArrayBuffer[Int]()
       for (i <- 0 until 4) {
-        tasksOnWorker1.append(taskScheduler.resourceAllocated(1, executorId = 0).get.taskId.groupId)
+        tasksOnWorker1.append(taskScheduler.resourceAllocated(1, executorId = 0).get.taskId.processorId)
       }
       for (i <- 0 until 2) {
-        tasksOnWorker2.append(taskScheduler.resourceAllocated(2, executorId = 1).get.taskId.groupId)
+        tasksOnWorker2.append(taskScheduler.resourceAllocated(2, executorId = 1).get.taskId.processorId)
       }
 
       //allocate more resource, and no tasks to launch
@@ -77,7 +77,7 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
       val launchedTask = taskScheduler.resourceAllocated(workerId  = 3, executorId = 3)
 
       //start the failed 2 tasks Task(0, 0) and Task(0, 1)
-      assert(launchedTask.get.taskId.groupId == 0)
+      assert(launchedTask.get.taskId.processorId == 0)
     }
   }
 }

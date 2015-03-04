@@ -183,7 +183,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         case Some(_appMaster) =>
           _appMaster forward appMasterDataDetailRequest
         case None =>
-          sender ! AppMasterDataDetail(appId)
+          sender ! GeneralAppMasterDataDetail(appId)
       }
     case appMasterMetricsRequest: AppMasterMetricsRequest =>
       val appId = appMasterMetricsRequest.appId

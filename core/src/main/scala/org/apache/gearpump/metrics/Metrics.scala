@@ -48,16 +48,34 @@ class Metrics(sampleRate: Int) extends Extension {
 }
 
 object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
+
   val LOG: Logger = LogUtil.getLogger(getClass)
   import org.apache.gearpump.util.Constants._
 
   sealed trait MetricType
-  case class Histogram(count: Long, min: Long, max: Long, mean: Double, stddev: Double, median: Double, p75: Double, p95: Double, p98: Double, p99: Double, p999: Double) extends MetricType
+
+  case class Histogram
+      (name: String, count: Long, min: Long, max: Long, mean: Double,
+       stddev: Double, median: Double, p75: Double,
+       p95: Double, p98: Double, p99: Double, p999: Double)
+    extends MetricType
+
   case class Counter(name: String, value: Long) extends MetricType
-  case class Meter(name: String, count: Long, meanRate: Double, m1: Double, m5: Double, m15: Double, rateUnit: String) extends MetricType
-  case class Timer(name: String, count: Long, min: Double, max: Double, mean: Double, stddev: Double,
-                   median: Double, p75: Double, p95: Double, p98: Double, p99: Double, p999: Double, meanRate: Double,
-                   m1: Double, m5: Double, m15: Double, rateUnit: String, durationUnit: String) extends MetricType
+
+  case class Meter(
+      name: String, count: Long, meanRate: Double,
+      m1: Double, m5: Double, m15: Double, rateUnit: String)
+    extends MetricType
+
+  case class Timer(
+      name: String, count: Long, min: Double, max: Double,
+      mean: Double, stddev: Double, median: Double,
+      p75: Double, p95: Double, p98: Double,
+      p99: Double, p999: Double, meanRate: Double,
+      m1: Double, m5: Double, m15: Double,
+      rateUnit: String, durationUnit: String)
+    extends MetricType
+
   case class Gauge[T:ClassTag](name: String, value: T) extends MetricType
 
   override def get(system: ActorSystem): Metrics = super.get(system)

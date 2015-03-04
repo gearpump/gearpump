@@ -24,10 +24,13 @@ import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.services.AppMasterService._
+
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.{Constants, Graph, LogUtil}
+import org.apache.gearpump.streaming.appmaster.{StreamingAppMasterDataDetail, AppMaster}
+import org.apache.gearpump.streaming.{AppDescription, TaskDescription, DAG}
+import org.apache.gearpump.util.{Graph, Constants}
 import spray.http.StatusCodes
 import spray.routing.HttpService
 import upickle.{Js, Writer}
@@ -51,13 +54,7 @@ trait AppMasterService extends HttpService  {
            case true =>
              onComplete((master ? AppMasterDataDetailRequest(appId)).asInstanceOf[Future[AppMasterDataDetail]]) {
                case Success(value: AppMasterDataDetail) =>
-                 if (isStreamingApplication(value)) {
-                   val streamApp: StreamingAppMasterDataDetail = value
-                   complete(write(streamApp))
-                 } else {
-                    val app: GeneralAppMasterDataDetail = value
-                   complete(write(app))
-                 }
+                 complete(value.toJson)
                case Failure(ex) =>
                  complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
               }
@@ -72,75 +69,4 @@ trait AppMasterService extends HttpService  {
     }
   }
 
-}
-
-object AppMasterService {
-  case class StreamingAppMasterDataDetail(appId: Int, appName: String = null, dag: Graph[TaskDescription, Partitioner] = null,
-                                          actorPath: String = null, clock: TimeStamp = 0, executors: List[String] = null)
-
-  case class GeneralAppMasterDataDetail(
-     appId: Int, appName: String = null, actorPath: String = null, executors: List[String] = null)
-
-  // for now we only serialize name and dag. We may also need a reader once we allow DAG mods.
-  implicit val writer: Writer[StreamingAppMasterDataDetail] = upickle.Writer[StreamingAppMasterDataDetail] {
-
-    case app =>
-
-      val appId = Js.Num(app.appId)
-      val appName = Js.Str(app.appName)
-      val actorPath = Js.Str(app.actorPath)
-      val clock = Js.Num(app.clock)
-
-      val executorsSeq = Some(app.executors).map{ executors =>
-        executors.map(Js.Str).toSeq
-      }.map { seq =>
-        Js.Arr(seq: _*)
-      }
-
-      val dag = Some(app.dag).map {dag =>
-        Js.Obj(
-          ("vertices", Js.Arr(app.dag.vertices.map(taskDescription => {
-            Js.Str(taskDescription.taskClass)
-          }).toSeq:_*)),
-          ("edges", Js.Arr(app.dag.edges.map(f => {
-            var (node1, edge, node2) = f
-            Js.Arr(Js.Str(node1.taskClass), Js.Str(edge.getClass.getName), Js.Str(node2.taskClass))
-          }).toSeq:_*)))
-      }.getOrElse(Js.Null)
-
-      Js.Obj(
-        ("appId", appId),
-        ("appName", appName),
-        ("actorPath", actorPath),
-        ("clock", clock),
-        ("executors", executorsSeq.getOrElse(Js.Null)),
-        ("dag", dag)
-      )
-  }
-
-  implicit def appMasterDetailToStreaming(app: AppMasterDataDetail)(implicit system: ActorSystem): StreamingAppMasterDataDetail = {
-    import app.{actorPath, appId, appName, application, clock, executors}
-    import org.apache.gearpump.streaming.AppDescription._
-    val appDescription: AppDescription =  application
-    new StreamingAppMasterDataDetail(appId, appName, appDescription.dag, actorPath, clock, executors)
-  }
-
-  implicit def appMasterDetailToGeneralApp(app: AppMasterDataDetail)(implicit system: ActorSystem): GeneralAppMasterDataDetail = {
-    import app.{actorPath, appId, appName, executors}
-    new GeneralAppMasterDataDetail(appId, appName, actorPath, executors)
-  }
-
-  def isStreamingApplication(appDetail: AppMasterDataDetail): Boolean = {
-    val app = appDetail.application
-    if (app == null) {
-      false
-    } else {
-      val className = app.appMaster
-      if (className == classOf[AppMaster].getName) {
-        true
-      } else {
-        false
-      }
-    }
-  }
 }

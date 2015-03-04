@@ -36,7 +36,7 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
   private val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
   private val filter: TimeStampFilter = kafkaConfig.getTimeStampFilter
 
-  val taskParallelism = dag.tasks(taskId.groupId).parallelism
+  val taskParallelism = dag.processors(taskId.processorId).parallelism
 
   private val source: TimeReplayableSource = new KafkaSource(taskContext.appName, taskId, taskParallelism,
     kafkaConfig, msgDecoder)

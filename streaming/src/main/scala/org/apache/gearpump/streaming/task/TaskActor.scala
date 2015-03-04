@@ -38,7 +38,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   import taskContextData._
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
-  private val metricName = s"app${appId}.task${taskId.groupId}_${taskId.index}"
+  private val metricName = s"app${appId}.task${taskId.processorId}_${taskId.index}"
   private val latencies = Metrics(context.system).histogram(s"$metricName.latency")
   private val throughput = Metrics(context.system).meter(s"$metricName.throughput")
 
@@ -107,30 +107,30 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
     val graph = dag.graph
     LOG.info(s"TaskInit... taskId: $taskId")
-    val outDegree = dag.graph.outDegreeOf(taskId.groupId)
+    val outDegree = dag.graph.outDegreeOf(taskId.processorId)
 
     if (outDegree > 0) {
 
-      val edges = graph.outgoingEdgesOf(taskId.groupId)
+      val edges = graph.outgoingEdgesOf(taskId.processorId)
 
       LOG.info(s"task: ${taskId} out degree is $outDegree, edge length: ${edges.length}")
 
       this.partitioner = edges.foldLeft(MergedPartitioner.empty) { (mergedPartitioner, nodeEdgeNode) =>
-        val (_, partitioner, taskgroupId) = nodeEdgeNode
-        val taskParallism = dag.tasks.get(taskgroupId).get.parallelism
+        val (_, partitioner, processorId) = nodeEdgeNode
+        val taskParallism = dag.processors.get(processorId).get.parallelism
         mergedPartitioner.add(partitioner, taskParallism)
       }
 
       LOG.info(s"task: ${taskId} partitioner: $partitioner")
 
       outputTaskIds = edges.flatMap {nodeEdgeNode =>
-        val (_, _, taskgroupId) = nodeEdgeNode
-        val taskParallism = dag.tasks.get(taskgroupId).get.parallelism
+        val (_, _, processorId) = nodeEdgeNode
+        val taskParallism = dag.processors.get(processorId).get.parallelism
 
-        LOG.info(s"get output taskIds, groupId: $taskgroupId, parallism: $taskParallism")
+        LOG.info(s"get output taskIds, processorId: $processorId, parallism: $taskParallism")
 
         0.until(taskParallism).map { taskIndex =>
-          TaskId(taskgroupId, taskIndex)
+          TaskId(processorId, taskIndex)
         }
       }.toArray
 

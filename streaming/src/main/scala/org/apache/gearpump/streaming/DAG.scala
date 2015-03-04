@@ -25,26 +25,27 @@ import upickle._
 
 import scala.collection.JavaConversions._
 
-case class DAG(tasks : Map[Int, TaskDescription], graph : Graph[Int, Partitioner]) extends Serializable {
 
-  def subGraph(task : Int): DAG = {
-    val newGraph = Graph.empty[Int, Partitioner]
-    newGraph.addVertex(task)
-    graph.edgesOf(task).foreach { edge =>
+case class DAG(processors : Map[ProcessorId, TaskDescription], graph : Graph[ProcessorId, Partitioner]) extends Serializable {
+
+  def subGraph(processorId : Int): DAG = {
+    val newGraph = Graph.empty[ProcessorId, Partitioner]
+    newGraph.addVertex(processorId)
+    graph.edgesOf(processorId).foreach { edge =>
       val (node1, partitioner, node2) = edge
       newGraph.addEdge(node1, partitioner, node2)
     }
-    val newMap = newGraph.vertices.foldLeft(Map.empty[Int, TaskDescription]){ (map, vertex) =>
-      val task = tasks.get(vertex).get
+    val newMap = newGraph.vertices.foldLeft(Map.empty[ProcessorId, TaskDescription]){ (map, vertex) =>
+      val task = processors.get(vertex).get
 
-      //clean out other in-degree and out-degree tasks' data except the task parallelism
+      //clean out other in-degree and out-degree processors' data except the task parallelism
       map + (vertex -> task.copy(null, task.parallelism))
     }
     new DAG(newMap, newGraph)
   }
 
   def taskCount: Int = {
-    tasks.foldLeft(0) { (count, task) =>
+    processors.foldLeft(0) { (count, task) =>
       count + task._2.parallelism
     }
   }
@@ -59,28 +60,27 @@ object DAG {
   def apply (graph : Graph[TaskDescription, Partitioner]) : DAG = {
     val topologicalOrderIterator = graph.topologicalOrderIterator
 
-    val outputGraph = Graph.empty[Int, Partitioner]
-    val (_, tasks) = topologicalOrderIterator.foldLeft((0, Map.empty[Int, TaskDescription])) { (first, task) =>
-      val (taskId, tasks) = first
-      outputGraph.addVertex(taskId)
-      (taskId + 1, tasks + (taskId -> task))
+    val outputGraph = Graph.empty[ProcessorId, Partitioner]
+    val (_, processors) = topologicalOrderIterator.foldLeft((0, Map.empty[ProcessorId, TaskDescription])) { (first, processor) =>
+      val (processorId, processors) = first
+      outputGraph.addVertex(processorId)
+      (processorId + 1, processors + (processorId -> processor))
     }
 
     graph.edges.foreach { edge =>
       val (node1, partitioner, node2) = edge
-      outputGraph.addEdge(getTaskId(tasks, node1), partitioner, getTaskId(tasks, node2))
+      outputGraph.addEdge(getProcessorId(processors, node1), partitioner, getProcessorId(processors, node2))
     }
 
-    new DAG(tasks, outputGraph)
+    new DAG(processors, outputGraph)
   }
 
   def empty() = apply(Graph.empty)
 
-  private def getTaskId(tasks : Map[Int, TaskDescription], node : TaskDescription) = {
-    tasks.find { task =>
+  private def getProcessorId(processors : Map[ProcessorId, TaskDescription], node : TaskDescription) = {
+    processors.find { task =>
       val (_, taskDescription) = task
       taskDescription.equals(node)
     }.get._1
   }
-
 }
