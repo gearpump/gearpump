@@ -88,3 +88,15 @@ class AckSerializer extends Serializer[Ack] {
     new Ack(taskId, Seq(id, seq), actualReceivedNum, sessionId)
   }
 }
+
+class LatencyProbeSerializer extends Serializer[LatencyProbe] {
+
+  override def write(kryo: Kryo, output: Output, obj: LatencyProbe) = {
+    output.writeLong(obj.timestamp)
+  }
+
+  override def read(kryo: Kryo, input: Input, typ: Class[LatencyProbe]): LatencyProbe = {
+    val timestamp = input.readLong()
+    new LatencyProbe(timestamp)
+  }
+}
