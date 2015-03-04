@@ -29,10 +29,10 @@ import org.slf4j.Logger
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
-case class TaskId(groupId : ProcessorId, index : TaskIndex)
+case class TaskId(processorId : ProcessorId, index : TaskIndex)
 
 object TaskId {
-  def toLong(id : TaskId) = (id.groupId.toLong << 32) + id.index
+  def toLong(id : TaskId) = (id.processorId.toLong << 32) + id.index
   def fromLong(id : Long) = TaskId(((id >> 32) & 0xFFFFFFFF).toInt, (id & 0xFFFFFFFF).toInt)
 }
 

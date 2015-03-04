@@ -34,11 +34,11 @@ class DAGSpec extends PropSpec with PropertyChecks with Matchers {
       val task = TaskDescription("task", parallelism)
       val graph: Graph[TaskDescription, Partitioner] = Graph(task)
       val dag = DAG(graph)
-      dag.tasks.size shouldBe 1
+      dag.processors.size shouldBe 1
       dag.graph.edges shouldBe empty
       val subGraph = dag.subGraph(0)
       subGraph.graph.vertices shouldBe Graph(0).vertices
-      subGraph.tasks(0).parallelism shouldBe parallelism
+      subGraph.processors(0).parallelism shouldBe parallelism
     }
   }
 }

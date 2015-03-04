@@ -25,7 +25,6 @@ import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.partitioner.Partitioner
 
-import org.apache.gearpump.services.AppMasterService._
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.{Constants, Graph, LogUtil}

@@ -80,7 +80,7 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
   private var executorToTaskIds = Map.empty[Int, Set[TaskId]]
 
   def setTaskDAG(dag: DAG): Unit = {
-    dag.tasks.foreach { params =>
+    dag.processors.foreach { params =>
       val (taskGroupId, taskDescription) = params
       0.until(taskDescription.parallelism).map((taskIndex: Int) => {
         val taskId = TaskId(taskGroupId, taskIndex)
