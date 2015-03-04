@@ -53,10 +53,14 @@ class AkkaReporter(system: ActorSystem, registry: MetricRegistry, marker: Marker
       val shistograms = collection.SortedMap(histograms.toSeq: _*)
       shistograms.foreach(pair => {
         import org.apache.gearpump.metrics.Metrics._
-        val (_, value: com.codahale.metrics.Histogram) = pair
+        val (key, value: com.codahale.metrics.Histogram) = pair
         val s = value.getSnapshot
-        system.eventStream.publish(Histogram(value.getCount, s.getMin, s.getMax, s.getMean, s.getStdDev,
-          s.getMedian, s.get75thPercentile, s.get95thPercentile, s.get98thPercentile, s.get99thPercentile, s.get999thPercentile))
+        system.eventStream.publish(
+          Histogram(
+            key, value.getCount, s.getMin, s.getMax, s.getMean,
+            s.getStdDev, s.getMedian, s.get75thPercentile,
+            s.get95thPercentile, s.get98thPercentile,
+            s.get99thPercentile, s.get999thPercentile))
       })
 
       val smeters = collection.SortedMap(meters.toSeq: _*)
