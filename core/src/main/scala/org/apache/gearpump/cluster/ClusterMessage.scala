@@ -77,9 +77,21 @@ object AppMasterToMaster {
 
   //TODO:
   // clock field may not make sense for applications other than streaming
-  case class AppMasterDataDetail(
-      appId: Int, appName: String = null, application: Application = null,
-      actorPath: String = null, clock: TimeStamp = 0, executors: List[String] = null)
+  trait AppMasterDataDetail {
+    def appId: Int
+    def appName: String
+    def actorPath: String
+    def executors: List[String]
+    def toJson: String
+  }
+
+  case class GeneralAppMasterDataDetail(
+      appId: Int, appName: String = null, actorPath: String = null, executors: List[String] = null)
+    extends AppMasterDataDetail {
+    def toJson: String = {
+      upickle.write(this)
+    }
+  }
 
   case object GetAllWorkers
   case class GetWorkerData(workerId: Int)

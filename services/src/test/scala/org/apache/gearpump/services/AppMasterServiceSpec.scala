@@ -21,7 +21,6 @@ package org.apache.gearpump.services
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.{TestUtil}
-import org.apache.gearpump.services.AppMasterService.{StreamingAppMasterDataDetail}
 import org.apache.gearpump.streaming.{StreamingTestUtil}
 import org.apache.gearpump.util.{LogUtil}
 import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
@@ -47,7 +46,6 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
     miniCluster.shutDown()
   }
 
-  import StreamingAppMasterDataDetail._
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
     (Get("/appmaster/0?detail=false") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{

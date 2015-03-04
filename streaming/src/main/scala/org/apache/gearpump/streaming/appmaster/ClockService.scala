@@ -28,7 +28,7 @@ import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
 import org.apache.gearpump.streaming.appmaster.ClockService._
 import org.apache.gearpump.streaming.storage.AppDataStore
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{DAG, TaskGroup}
+import org.apache.gearpump.streaming.{DAG, ProcessorId}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -45,7 +45,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
 
   private var startClock: Long = 0
   private val taskGroupClocks = new util.TreeSet[TaskGroupClock]()
-  private val taskGroupLookup = new util.HashMap[TaskGroup, TaskGroupClock]()
+  private val taskGroupLookup = new util.HashMap[ProcessorId, TaskGroupClock]()
 
   private var reportScheduler : Cancellable = null
   private var snapshotScheduler : Cancellable = null
@@ -138,7 +138,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
 object ClockService {
   val START_CLOCK = "startClock"
 
-  class TaskGroupClock(val taskGroup : TaskGroup, var minClock : TimeStamp = Long.MaxValue,
+  class TaskGroupClock(val taskGroup : ProcessorId, var minClock : TimeStamp = Long.MaxValue,
                        var taskClocks : Array[TimeStamp] = null) extends Comparable[TaskGroupClock] {
     override def equals(obj: Any): Boolean = {
       this.eq(obj.asInstanceOf[AnyRef])

@@ -48,9 +48,9 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var subscribers = false
 
-  private val (taskManager, executorManager, clockService) = {
-    val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
+  val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
 
+  private val (taskManager, executorManager, clockService) = {
     val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext))
 
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
@@ -96,12 +96,14 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.info(s"***AppMaster got AppMasterDataDetailRequest for $appId ***")
 
-
       val executorsFuture = getExecutorList
       val clockFuture = getMinClock
 
       val appMasterDataDetail = for {executors <- executorsFuture
-        clock <- clockFuture } yield AppMasterDataDetail(appId, app.name, app, address, clock, executors)
+        clock <- clockFuture } yield {
+        StreamingAppMasterDataDetail(appId, app.name, dag.tasks, dag.graph, address, clock, executors)
+      }
+
       val client = sender()
 
       appMasterDataDetail.map{appData =>

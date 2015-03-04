@@ -145,6 +145,7 @@ object Build extends sbt.Build {
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
+        "com.lihaoyi" %% "upickle" % "0.2.5",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
@@ -202,12 +203,7 @@ object Build extends sbt.Build {
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
-    settings = commonSettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "com.lihaoyi" %% "upickle" % "0.2.5"
-        )
-     )
+    settings = commonSettings
   )  dependsOn(core % "test->test;compile->compile")
 
   lazy val external_kafka = Project(

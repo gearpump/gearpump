@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.task
 import akka.actor.{Cancellable, Props, ActorRef, ActorSystem}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.{DAG, TaskGroup, TaskIndex}
+import org.apache.gearpump.streaming.{DAG, ProcessorId, TaskIndex}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
@@ -29,7 +29,7 @@ import org.slf4j.Logger
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
-case class TaskId(groupId : TaskGroup, index : TaskIndex)
+case class TaskId(groupId : ProcessorId, index : TaskIndex)
 
 object TaskId {
   def toLong(id : TaskId) = (id.groupId.toLong << 32) + id.index
