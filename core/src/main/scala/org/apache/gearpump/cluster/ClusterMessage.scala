@@ -118,9 +118,10 @@ object MasterToAppMaster {
   type AppMasterStatus = String
   val AppMasterActive: AppMasterStatus = "active"
   val AppMasterInActive: AppMasterStatus = "inactive"
+  val AppMasterNonExist: AppMasterStatus = "nonexist"
 
   sealed trait StreamingType
-  case class AppMasterData(appId: Int, appName: String, appMasterPath: String, workerPath: String, status: AppMasterStatus)
+  case class AppMasterData(status: AppMasterStatus, appId: Int = 0, appName: String = null, appMasterPath: String = null, workerPath: String = null, submissionTime: TimeStamp = 0, startTime: TimeStamp = 0, finishTime: TimeStamp = 0, user: String = null)
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
   case class AppMastersData(appMasters: List[AppMasterData])
   case object AppMastersDataRequest

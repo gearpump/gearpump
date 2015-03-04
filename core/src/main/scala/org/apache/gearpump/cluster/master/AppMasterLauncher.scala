@@ -41,7 +41,10 @@ import scala.util.{Failure, Success}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 
-class AppMasterLauncher(appId : Int, executorId: Int, app : Application, jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef]) extends Actor {
+class AppMasterLauncher(
+    appId : Int, executorId: Int, app : Application,
+    jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef])
+  extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
   import app._
@@ -60,7 +63,10 @@ class AppMasterLauncher(appId : Int, executorId: Int, app : Application, jar: Op
     case ResourceAllocated(allocations) =>
       LOG.info(s"Resource allocated for appMaster $appId")
       val ResourceAllocation(resource, worker, workerId) = allocations(0)
-      val appMasterContext = AppMasterContext(appId, username, resource, jar, null, AppMasterRuntimeInfo(worker, appId, app.name, resource))
+
+      val submissionTime = System.currentTimeMillis()
+      val appMasterInfo = AppMasterRuntimeInfo(appId, app.name, worker, username, submissionTime)
+      val appMasterContext = AppMasterContext(appId, username, resource, jar, null, appMasterInfo)
 
       LOG.info(s"Try to launch a executor for app Master on ${worker} for app $appId")
       val name = ActorUtil.actorNameForExecutor(appId, executorId)
