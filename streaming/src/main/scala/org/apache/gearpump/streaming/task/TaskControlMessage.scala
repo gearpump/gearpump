@@ -40,3 +40,5 @@ case class ClockUpdated(latestMinClock: TimeStamp)
 object GetLatestMinClock
 
 case class LatestMinClock(clock: TimeStamp)
+
+case class LatencyProbe(timestamp: Long)

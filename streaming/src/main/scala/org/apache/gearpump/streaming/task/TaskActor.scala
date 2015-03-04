@@ -19,6 +19,7 @@
 package org.apache.gearpump.streaming.task
 
 import java.util
+import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import org.apache.gearpump.cluster.UserConfig
@@ -38,9 +39,19 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   import taskContextData._
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
+
+  //metrics
   private val metricName = s"app${appId}.task${taskId.processorId}_${taskId.index}"
-  private val latencies = Metrics(context.system).histogram(s"$metricName.latency")
-  private val throughput = Metrics(context.system).meter(s"$metricName.throughput")
+  private val receiveLatency = Metrics(context.system).histogram(s"$metricName.receiveLatency")
+  private val processTime = Metrics(context.system).histogram(s"$metricName.processTime")
+  private val sendThroughput = Metrics(context.system).meter(s"$metricName.sendThroughput")
+  private val receiveThroughput = Metrics(context.system).meter(s"$metricName.receiveThroughput")
+
+  //latency probe
+  import scala.concurrent.duration._
+  import context.dispatcher
+  final val LATENCY_PROBE_INTERVAL = FiniteDuration(5, TimeUnit.SECONDS)
+  context.system.scheduler.schedule(LATENCY_PROBE_INTERVAL, LATENCY_PROBE_INTERVAL, self, SendMessageProbe)
 
   private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
   private var partitioner : MergedPartitioner = null
@@ -81,7 +92,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
     var start = 0
 
-    throughput.mark(partitions.length)
+    sendThroughput.mark(partitions.length)
 
     while (start < partitions.length) {
       val partition = partitions(start)
@@ -93,6 +104,15 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       }
 
       start = start + 1
+    }
+  }
+
+  def sendLatencyProbeMessage: Unit = {
+    val probe = LatencyProbe(System.currentTimeMillis())
+    if (null != outputTaskIds) {
+      outputTaskIds.foreach { taskId =>
+        transport(probe, taskId)
+      }
     }
   }
 
@@ -170,24 +190,33 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
   private def doHandleMessage() : Unit = {
     var done = false
+
+    var count = 0
+    val start = System.currentTimeMillis()
     while (flowControl.allowSendingMoreMessages() && !done) {
       val msg = queue.poll()
       if (msg != null) {
         msg match {
           case SendAck(ack, targetTask) =>
             transport(ack, targetTask)
-            LOG.info(s"Sending ack back, target taskId: $taskId, my task: $taskId, received message: ${ack.actualReceivedNum}")
+            LOG.debug(s"Sending ack back, target taskId: $taskId, my task: $taskId, received message: ${ack.actualReceivedNum}")
           case m : Message =>
             val updated = clockTracker.onProcess(m)
             if (updated) {
               tryToSyncToClockService()
             }
 
+            count += 1
             onNext(m)
         }
       } else {
         done = true
       }
+    }
+
+    receiveThroughput.mark(count)
+    if (count > 0) {
+      processTime.update((System.currentTimeMillis() - start) / count)
     }
   }
 
@@ -233,9 +262,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       val messageAfterCheck = securityChecker.checkMessage(inputMessage, sender)
       messageAfterCheck match {
         case Some(msg) =>
-          if (msg.timestamp != Message.noTimeStamp) {
-            latencies.update(System.currentTimeMillis() - msg.timestamp)
-          }
+
           val updatedMessage = clockTracker.onReceive(msg)
           queue.add(updatedMessage)
           if (handlNow) {
@@ -256,6 +283,14 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       throw new RestartException
     case TaskLocationReady =>
       sendLater.sendAllPendingMsgs()
+
+    case SendMessageProbe =>
+      if (handlNow) {
+        // when the connection to downstream is established
+        sendLatencyProbeMessage
+      }
+    case LatencyProbe(timeStamp) =>
+      receiveLatency.update(System.currentTimeMillis() - timeStamp)
     case other =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
   }
@@ -341,4 +376,6 @@ object TaskActor {
   }
 
   case class SendAck(ack: Ack, targetTask: TaskId)
+
+  case object SendMessageProbe
 }
