@@ -79,4 +79,16 @@ object Constants {
   val GEARPUMP_METRIC_GRAPHITE_PORT = "gearpump.metrics.graphite.port"
   val GEARPUMP_METRIC_REPORTER = "gearpump.metrics.reporter"
 
+  // we will retain at max @RETAIN_HISTORY_HOURS history data
+  val GEARPUMP_METRIC_RETAIN_HISTORY_DATA_HOURS = "gearpump.metrics.retainHistoryData.hours"
+
+  // time interval between two history data points.
+  val GEARPUMP_RETAIN_HISTORY_DATA_INTERVAL_MS = "gearpump.metrics.retainHistoryData.intervalMs"
+
+  // we will retain at max @RETAIN_LATEST_SECONDS recent data points
+  val GEARPUMP_RETAIN_RECENT_DATA_SECONDS = "gearpump.metrics.retainRecentData.seconds"
+
+  // time interval between two recent data points.
+  val GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS = "gearpump.metrics.retainRecentData.intervalMs"
+
 }

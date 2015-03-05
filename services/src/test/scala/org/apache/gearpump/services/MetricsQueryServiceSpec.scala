@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.streaming.StreamingTestUtil
@@ -26,12 +26,11 @@ import org.apache.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
-import com.typesafe.config.{ConfigFactory}
+
 import scala.concurrent.duration._
 import scala.util.Try
 
-class ConfigQueryServiceSpec extends FlatSpec with ScalatestRouteTest with ConfigQueryService with Matchers with BeforeAndAfterAll {
-  import upickle._
+class MetricsQueryServiceSpec extends FlatSpec with ScalatestRouteTest with MetricsQueryService with Matchers with BeforeAndAfterAll {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
 
@@ -41,17 +40,15 @@ class ConfigQueryServiceSpec extends FlatSpec with ScalatestRouteTest with Confi
   override def beforeAll: Unit = {
     miniCluster = TestUtil.startMiniCluster
     StreamingTestUtil.startAppMaster(miniCluster, 0)
-
-    Thread.sleep(1000)
   }
 
   override def afterAll: Unit = {
     miniCluster.shutDown()
   }
 
-  "ConfigQueryService" should "return config for application" in {
+  "MetricsQueryService" should "return history metrics" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get("/config/app/0") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
+    (Get("/metrics/app/0/processor") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
       val responseBody = response.entity.asString
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)

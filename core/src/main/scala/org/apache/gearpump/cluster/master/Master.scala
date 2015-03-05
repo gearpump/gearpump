@@ -104,15 +104,6 @@ private[cluster] class Master extends Actor with Stash {
     case registerAppMaster : RegisterAppMaster =>
       //forward to appManager
       appManager forward registerAppMaster
-    case AppMastersDataRequest =>
-      LOG.info("Master received AppMastersDataRequest")
-      appManager forward AppMastersDataRequest
-    case appMasterDataRequest: AppMasterDataRequest =>
-      LOG.info("Master received AppMasterDataRequest")
-      appManager forward appMasterDataRequest
-    case query: QueryAppMasterConfig =>
-      LOG.info("Master received QueryAppMasterConfig")
-      appManager forward query
     case save : SaveAppData =>
       appManager forward save
     case get : GetAppData =>
@@ -172,6 +163,18 @@ private[cluster] class Master extends Actor with Stash {
       LOG.info(s"AppMasterMetricsRequestFromActor Receive from client, forwarding to AppManager")
       appManager.forward(app)
 
+    case AppMastersDataRequest =>
+      LOG.info("Master received AppMastersDataRequest")
+      appManager forward AppMastersDataRequest
+    case appMasterDataRequest: AppMasterDataRequest =>
+      LOG.info("Master received AppMasterDataRequest")
+      appManager forward appMasterDataRequest
+    case query: QueryAppMasterConfig =>
+      LOG.info("Master received QueryAppMasterConfig")
+      appManager forward query
+    case query: QueryHistoryMetrics =>
+      LOG.info("Master received QueryHistoryMetrics")
+      appManager forward query
   }
 
   def disassociated : Receive = {

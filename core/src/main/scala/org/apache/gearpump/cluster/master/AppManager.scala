@@ -229,6 +229,13 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         case None =>
       }
 
+    case query@ QueryHistoryMetrics(appId, _) =>
+      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(appMaster) match {
+        case Some(_appMaster) =>
+          _appMaster forward query
+        case None =>
+      }
   }
 
   def workerMessage: Receive = {

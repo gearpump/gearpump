@@ -27,6 +27,7 @@ import com.codahale.metrics.{Slf4jReporter, ConsoleReporter, MetricFilter, Metri
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
+import upickle.Js
 
 import scala.reflect.ClassTag
 
@@ -52,7 +53,21 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
   val LOG: Logger = LogUtil.getLogger(getClass)
   import org.apache.gearpump.util.Constants._
 
-  sealed trait MetricType
+  sealed trait MetricType {
+    def name: String
+  }
+
+  object MetricType {
+
+    implicit val metricJsonWriter: upickle.Writer[MetricType] = upickle.Writer[MetricType] {
+      case histogram: Histogram => upickle.writeJs(histogram)
+      case counter: Counter => upickle.writeJs(counter)
+      case meter: Meter => upickle.writeJs(meter)
+      case timer: Timer => upickle.writeJs(timer)
+      case gauge: Gauge[_] =>
+        upickle.writeJs(Map("name"-> gauge.name, "value" -> gauge.value.toString))
+    }
+  }
 
   case class Histogram
       (name: String, count: Long, min: Long, max: Long, mean: Double,
