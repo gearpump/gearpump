@@ -23,13 +23,15 @@ import java.util.concurrent.{TimeUnit, TimeoutException}
 import akka.actor._
 import akka.cluster.Cluster
 import akka.pattern.ask
+import com.typesafe.config.Config
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
 import InMemoryKVService._
 import MasterHAService._
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
@@ -110,7 +112,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       Option(info) match {
         case Some(info) =>
           val worker = info.worker
-          LOG.info(s"Shuttdown app master at ${worker.path}, appId: $appId, executorId: $executorId")
+          LOG.info(s"Shutdown app master at ${Option(worker).map(_.path).orNull}, appId: $appId, executorId: $executorId")
           cleanApplicationData(appId)
           val shutdown = ShutdownExecutor(appId, executorId, s"AppMaster $appId shutdown requested by master...")
           sendMsgWithTimeOutCallBack(worker, shutdown, 30, shutDownExecutorTimeOut())
@@ -146,36 +148,69 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         sender ! ResolveAppIdResult(Failure(new Exception(errorMsg)))
       }
     case AppMastersDataRequest =>
-      val appMastersData = collection.mutable.ListBuffer[AppMasterData]()
+      var appMastersData = collection.mutable.ListBuffer[AppMasterData]()
       appMasterRegistry.foreach(pair => {
-        val (id, (appMaster:ActorRef, info:AppMasterRuntimeInfo)) = pair
+        val (id, (appMaster:ActorRef, info: AppMasterRuntimeInfo)) = pair
         val appMasterPath = ActorUtil.getFullPath(context.system, appMaster.path)
-        val workerPath = ActorUtil.getFullPath(context.system, info.worker.path)
-
-        appMastersData += AppMasterData(id, info.appName, appMasterPath, workerPath, AppMasterActive)
+        val workerPath = Option(info.worker).map(worker => ActorUtil.getFullPath(context.system, worker.path))
+        appMastersData += AppMasterData(
+          AppMasterActive, id, info.appName, appMasterPath, workerPath.orNull,
+          info.submissionTime, info.startTime, info.finishTime, info.user)
       })
 
       deadAppMasters.foreach(pair => {
         val (id, (appMaster:ActorRef, info:AppMasterRuntimeInfo)) = pair
-        appMastersData += AppMasterData(id, info.appName, null, null, AppMasterInActive)
+        val appMasterPath = ActorUtil.getFullPath(context.system, appMaster.path)
+        val workerPath = Option(info.worker).map(worker => ActorUtil.getFullPath(context.system, worker.path))
+
+        appMastersData += AppMasterData(
+          AppMasterInActive, id, info.appName, appMasterPath, workerPath.orNull,
+          info.submissionTime, info.startTime, info.finishTime, info.user)
       })
 
       sender ! AppMastersData(appMastersData.toList)
+    case QueryAppMasterConfig(appId) =>
+      val config =
+        if (appMasterRegistry.contains(appId)) {
+          val (appMaster, info) = appMasterRegistry(appId)
+          info.config
+        } else if (deadAppMasters.contains(appId)) {
+          val (appMaster, info) = deadAppMasters(appId)
+          info.config
+        } else {
+          null
+        }
+      sender ! AppMasterConfig(config)
+
     case appMasterDataRequest: AppMasterDataRequest =>
       val appId = appMasterDataRequest.appId
-      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(info) match {
-        case Some(info) =>
+
+      val (appStatus, appMaster, info) =
+        if (appMasterRegistry.contains(appId)) {
+          val (appMaster, info) = appMasterRegistry(appId)
+          (AppMasterActive, appMaster, info)
+        } else if (deadAppMasters.contains(appId)) {
+          val (appMaster, info) = deadAppMasters(appId)
+          (AppMasterInActive, appMaster, info)
+        } else {
+          (AppMasterNonExist, null, null)
+        }
+
+      appStatus match {
+        case AppMasterActive | AppMasterInActive =>
           val worker = info.worker
-
           val appMasterPath = ActorUtil.getFullPath(context.system, appMaster.path)
-          val workerPath = ActorUtil.getFullPath(context.system, worker.path)
+          val workerPath = Option(info.worker).map(
+            worker => ActorUtil.getFullPath(context.system, worker.path)).orNull
 
-          sender ! AppMasterData(appId = appId, info.appName, appMasterPath, workerPath, AppMasterActive)
-        case None =>
-          // TODO: refactor this to make sure it more more clear that we don't have this application
-          sender ! AppMasterData(appId = appId, null, appMasterPath = null, workerPath = null, AppMasterInActive)
+          sender ! AppMasterData(
+            appStatus, appId, info.appName, appMasterPath, workerPath,
+            info.submissionTime, info.startTime, info.finishTime, info.user)
+
+        case AppMasterNonExist =>
+          sender ! AppMasterData(AppMasterNonExist)
       }
+
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       val appId = appMasterDataDetailRequest.appId
       val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
@@ -208,10 +243,11 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   }
 
   def appMasterMessage: Receive = {
-    case RegisterAppMaster(appMaster, register: AppMasterRuntimeInfo) =>
-      val appMasterPath = appMaster.path.address.toString
-      val workerPath = register.worker.path.address.toString
-      LOG.info(s"Register AppMaster for app: ${register.appId} appMaster=$appMasterPath worker=$workerPath")
+    case RegisterAppMaster(appMaster, registerBack: AppMasterRuntimeInfo) =>
+      val startTime = System.currentTimeMillis()
+      val register = registerBack.copy(startTime = startTime)
+
+      LOG.info(s"Register AppMaster for app: ${register.appId} $register")
       context.watch(appMaster)
       appMasterRegistry += register.appId -> (appMaster, register)
       sender ! AppMasterRegistered(register.appId)
@@ -275,7 +311,11 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   private def cleanApplicationData(appId : Int) : Unit = {
 
     //add the dead app to dead appMaster
-    appMasterRegistry.get(appId).map(deadAppMasters += appId -> _)
+    appMasterRegistry.get(appId).map { pair =>
+      val (appMasterActor, info) = pair
+      deadAppMasters += appId -> (appMasterActor, info.copy(finishTime = System.currentTimeMillis()))
+    }
+
     appMasterRegistry -= appId
 
     masterHA ! DeleteMasterState(appId)
@@ -287,4 +327,18 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   }
 }
 
-case class AppMasterRuntimeInfo(worker : ActorRef, appId: Int = 0, appName: String, resource: Resource = Resource.empty) extends AppMasterRegisterData
+case class AppMasterRuntimeInfo(
+    appId: Int,
+    // appName is the unique Id for an application
+    appName: String,
+    worker : ActorRef = null,
+    user: String = null,
+    submissionTime: TimeStamp = 0,
+    startTime: TimeStamp = 0,
+    finishTime: TimeStamp = 0,
+    config: Config = null)
+  extends AppMasterRegisterData
+
+object AppManager {
+
+}

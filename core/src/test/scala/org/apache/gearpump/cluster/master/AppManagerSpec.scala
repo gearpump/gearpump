@@ -60,7 +60,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     val appMaster = TestProbe()(getActorSystem)
     val worker = TestProbe()(getActorSystem)
 
-    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, 0, "appName", Resource(1)))
+    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId = 0, "appName"))
     appMaster.send(appManager, register)
     appMaster.expectMsgType[AppMasterRegistered]
   }
@@ -99,7 +99,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     assert(mockClient.receiveN(1).head.asInstanceOf[ResolveAppIdResult].appMaster.isFailure)
 
     mockClient.send(appManager, AppMasterDataRequest(1))
-    mockClient.expectMsg(AppMasterData(1, appName = null, null, null, AppMasterInActive))
+    mockClient.expectMsg(AppMasterData(AppMasterNonExist))
   }
 
   "AppManager" should "reject the application submission if the app name already existed" in {
@@ -114,7 +114,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
 
     haService.expectMsgType[UpdateMasterState]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, appId, "dummy", Resource(1))))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId = appId, app.name)))
     appMaster.expectMsgType[AppMasterRegistered]
 
     client.send(appManager, submit)
@@ -133,7 +133,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
 
     haService.expectMsgType[UpdateMasterState]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(worker.ref, appId, "appName", Resource(1))))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId = appId, app.name)))
     appMaster.expectMsgType[AppMasterRegistered]
 
     client.send(appManager, ResolveAppId(appId))
