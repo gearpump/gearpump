@@ -37,11 +37,11 @@ angular.module('app-03', [])
             name: data.appName
           };
         }
-        if (data.hasOwnProperty("dag")) {
+        if (data.hasOwnProperty('dag') && data.hasOwnProperty('processors')) {
           if (!$scope.dag) {
             initDag();
           }
-          updateDag(data.dag);
+          updateDag(data.dag, data.processors);
         }
       },
       function (err) {
@@ -74,27 +74,33 @@ angular.module('app-03', [])
       };
     }
 
-    function updateDag(dag) {
+    function updateDag(dag, processors) {
+
       function lastPart(name) {
         var parts = name.split('.');
         return parts[parts.length - 1];
       }
+
+      var processorLookup = {};
+      processors.map(function (item) {
+        processorLookup[item[0]] = item[1];
+      });
 
       var updates = {
         nodes: [],
         edges: []
       };
 
-      dag.vertices.forEach(function (vertex, i) {
-        var name = lastPart(vertex);
-        var item = $scope.dag.data.nodes.get(name);
+      dag.vertices.forEach(function (id, i) {
+        var name = lastPart(processorLookup[id].taskClass);
+        var item = $scope.dag.data.nodes.get(id);
         if (!item || item.label !== name) {
-          updates.nodes.push({id: name, label: name});
+          updates.nodes.push({id: id, label: name});
         }
       });
       dag.edges.forEach(function (edge, i) {
-        var source = lastPart(edge[0]);
-        var target = lastPart(edge[2]);
+        var source = edge[0];
+        var target = edge[2];
         var value = lastPart(edge[1]);
         var id = source + "_" + target;
         var item = $scope.dag.data.edges.get(id);
@@ -103,11 +109,8 @@ angular.module('app-03', [])
         }
       });
 
-      if (updates.nodes.length > 0) {
-        $scope.dag.data.nodes.update(updates.nodes);
-      }
-      if (updates.edges.length > 0) {
-        $scope.dag.data.edges.update(updates.edges);
-      }
+      $scope.dag.data.nodes.update(updates.nodes);
+      $scope.dag.data.edges.update(updates.edges);
     }
-  });
+  })
+;
