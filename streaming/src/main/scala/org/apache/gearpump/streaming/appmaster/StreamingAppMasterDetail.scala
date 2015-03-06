@@ -29,6 +29,8 @@ case class StreamingAppMasterDataDetail(
     appId: Int,
     appName: String = null,
     processors: Map[ProcessorId, TaskDescription],
+    // hiearachy level for each processor
+    processorLevels: Map[ProcessorId, Int],
     dag: Graph[ProcessorId, Partitioner] = null,
     actorPath: String = null,
     clock: TimeStamp = 0,
@@ -81,6 +83,7 @@ object StreamingAppMasterDataDetail {
         ("clock", clock),
         ("executors", executorsSeq.getOrElse(Js.Null)),
         ("processors", processors),
+        ("processorLevels", upickle.writeJs(app.processorLevels)),
         ("dag", dag)
       )
   }

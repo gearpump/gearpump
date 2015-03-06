@@ -41,7 +41,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
   //metrics
-  private val metricName = s"app${appId}.processor${taskId.processorId}task${taskId.index}"
+  private val metricName = s"app${appId}.processor${taskId.processorId}.task${taskId.index}"
   private val receiveLatency = Metrics(context.system).histogram(s"$metricName.receiveLatency")
   private val processTime = Metrics(context.system).histogram(s"$metricName.processTime")
   private val sendThroughput = Metrics(context.system).meter(s"$metricName.sendThroughput")

@@ -116,7 +116,8 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
 
       val appMasterDataDetail = for {executors <- executorsFuture
         clock <- clockFuture } yield {
-        StreamingAppMasterDataDetail(appId, app.name, dag.processors, dag.graph, address, clock, executors)
+        StreamingAppMasterDataDetail(appId, app.name, dag.processors,
+          Graph.vertexHierarchyLevelMap(dag.graph), dag.graph, address, clock, executors)
       }
 
       val client = sender()
