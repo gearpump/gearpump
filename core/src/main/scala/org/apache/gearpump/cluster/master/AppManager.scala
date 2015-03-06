@@ -18,10 +18,7 @@
 
 package org.apache.gearpump.cluster.master
 
-import java.util.concurrent.{TimeUnit, TimeoutException}
-
 import akka.actor._
-import akka.cluster.Cluster
 import akka.pattern.ask
 import com.typesafe.config.Config
 import org.apache.gearpump._
@@ -34,16 +31,13 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
-import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.ActorSystemBooter._
+import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
-import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 /**
@@ -54,6 +48,8 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
 
   private val executorId : Int = APPMASTER_DEFAULT_EXECUTOR_ID
   private val systemconfig = context.system.settings.config
+  private val appMasterMaxRetries: Int = 5
+  private val appMasterRetryTimeRange: Duration = 20 seconds
 
   implicit val timeout = FUTURE_TIMEOUT
   implicit val executionContext = context.dispatcher
@@ -66,6 +62,8 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
 
   // dead appmaster list
   private var deadAppMasters = Map.empty[Int, (ActorRef, AppMasterRuntimeInfo)]
+
+  private var appMasterRestartPolicies = Map.empty[Int, RestartPolicy]
 
   def receive: Receive = null
 
@@ -103,6 +101,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         val appLauncher = context.actorOf(launcher.props(appId, executorId, app, jar, username, context.parent, Some(client)), s"launcher${appId}_${Util.randInt}")
 
         val appState = new ApplicationState(appId, app.name, 0, app, jar, username, null)
+        appMasterRestartPolicies += appId -> new RestartPolicy(appMasterMaxRetries, appMasterRetryTimeRange)
         masterHA ! UpdateMasterState(appState)
         appId += 1
       }
@@ -309,8 +308,12 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   def selfMsgHandler: Receive = {
     case RecoverApplication(state) =>
       val appId = state.appId
-      LOG.info(s"AppManager Recovering Application $appId...")
-      context.actorOf(launcher.props(appId, executorId, state.app, state.jar, state.username, context.parent, None), s"launcher${appId}_${Util.randInt}")
+      if(appMasterRestartPolicies.get(appId).get.allowRestart) {
+        LOG.info(s"AppManager Recovering Application $appId...")
+        context.actorOf(launcher.props(appId, executorId, state.app, state.jar, state.username, context.parent, None), s"launcher${appId}_${Util.randInt}")
+      } else {
+        LOG.error(s"Application $appId failed to many times")
+      }
   }
 
   case class RecoverApplication(applicationStatus : ApplicationState)
