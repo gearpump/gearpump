@@ -187,6 +187,36 @@ object Graph {
   case class ~[N, E](node: N, edge: E)
 
   case class ~>[Node1, Node2](node1: Node1, node2: Node2)
+
+
+  /**
+   * Generate a level map for each vertex
+   * withholding: if vertex A -> B, then level(A) < level(B)
+   *
+   * @param graph
+   * @tparam N
+   * @tparam E
+   * @return
+   */
+  def vertexHierarchyLevelMap[N, E](graph: Graph[N, E]): Map[N, Int] = {
+    val levelGraph = graph.graph.clone().asInstanceOf[DefaultDirectedGraph[N, Edge[E]]]
+
+    var levelMap = Map.empty[N, Int]
+    var currentLevel = 0
+    while (levelGraph.vertexSet().size() > 0) {
+      val nodes = vertexsZeroInDegree(levelGraph)
+      levelMap = nodes.foldLeft(levelMap)((map, node) => map + (node -> currentLevel))
+      levelGraph.removeAllVertices(nodes)
+      currentLevel += 1
+    }
+    levelMap
+  }
+
+  import scala.collection.JavaConverters._
+  import scala.collection.JavaConversions
+  private def vertexsZeroInDegree[N, E](graph: DefaultDirectedGraph[N, Edge[E]]) = {
+    graph.vertexSet().asScala.filter(node => graph.inDegreeOf(node) == 0)
+  }
 }
 
 object GraphHelper {

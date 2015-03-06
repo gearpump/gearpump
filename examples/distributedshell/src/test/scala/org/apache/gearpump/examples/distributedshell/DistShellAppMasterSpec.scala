@@ -45,7 +45,7 @@ class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
 
   "DistributedShell AppMaster" should {
     "launch one ShellTask on each worker" in {
-      val appMasterInfo = AppMasterRuntimeInfo(mockWorker1.ref, appId, "appName", resource)
+      val appMasterInfo = AppMasterRuntimeInfo(appId, appName = appId.toString)
       val appMasterContext = AppMasterContext(appId, userName, resource, appJar, masterProxy, appMasterInfo)
       TestActorRef[DistShellAppMaster](
         AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription, appMasterContext))

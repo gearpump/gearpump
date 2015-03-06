@@ -19,10 +19,13 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.ActorRef
+import com.typesafe.config.Config
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.master.Master.{MasterInfo, MasterDescription}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerDescription
+import org.apache.gearpump.metrics.Metrics._
+import upickle._
 
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -52,6 +55,10 @@ object ClientToMaster {
   case class ResolveAppId(appId: Int)
 
   case object GetJarFileContainer
+
+  case class QueryAppMasterConfig(appId: Int)
+
+  case class QueryHistoryMetrics(appId: Int, path: String)
 }
 
 object MasterToClient {
@@ -59,6 +66,12 @@ object MasterToClient {
   case class ShutdownApplicationResult(appId : Try[Int])
   case class ReplayApplicationResult(appId: Try[Int])
   case class ResolveAppIdResult(appMaster: Try[ActorRef])
+
+  case class AppMasterConfig(config: Config)
+
+  case class HistoryMetricsItem(time: TimeStamp, value: MetricType)
+
+  case class HistoryMetrics(appId: Int, path: String, metrics: List[HistoryMetricsItem])
 }
 
 trait AppMasterRegisterData
@@ -77,9 +90,21 @@ object AppMasterToMaster {
 
   //TODO:
   // clock field may not make sense for applications other than streaming
-  case class AppMasterDataDetail(
-      appId: Int, appName: String = null, application: Application = null,
-      actorPath: String = null, clock: TimeStamp = 0, executors: List[String] = null)
+  trait AppMasterDataDetail {
+    def appId: Int
+    def appName: String
+    def actorPath: String
+    def executors: List[String]
+    def toJson: String
+  }
+
+  case class GeneralAppMasterDataDetail(
+      appId: Int, appName: String = null, actorPath: String = null, executors: List[String] = null)
+    extends AppMasterDataDetail {
+    def toJson: String = {
+      upickle.write(this)
+    }
+  }
 
   case object GetAllWorkers
   case class GetWorkerData(workerId: Int)
@@ -106,10 +131,12 @@ object MasterToAppMaster {
   type AppMasterStatus = String
   val AppMasterActive: AppMasterStatus = "active"
   val AppMasterInActive: AppMasterStatus = "inactive"
+  val AppMasterNonExist: AppMasterStatus = "nonexist"
 
   sealed trait StreamingType
-  case class AppMasterData(appId: Int, appName: String, appMasterPath: String, workerPath: String, status: AppMasterStatus)
+  case class AppMasterData(status: AppMasterStatus, appId: Int = 0, appName: String = null, appMasterPath: String = null, workerPath: String = null, submissionTime: TimeStamp = 0, startTime: TimeStamp = 0, finishTime: TimeStamp = 0, user: String = null)
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
+
   case class AppMastersData(appMasters: List[AppMasterData])
   case object AppMastersDataRequest
   case class AppMasterDataDetailRequest(appId: Int)

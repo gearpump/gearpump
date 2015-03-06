@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.appmaster
 import akka.actor._
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
+import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, ShutdownApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.metrics.Metrics.MetricType
@@ -30,6 +30,7 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
+import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.util._
@@ -48,9 +49,9 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var subscribers = false
 
-  private val (taskManager, executorManager, clockService) = {
-    val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
+  val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
 
+  private val (taskManager, executorManager, clockService) = {
     val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext))
 
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
@@ -61,6 +62,20 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       taskScheduler, executorManager, clockService, self, app.name)))
     (taskManager, executorManager, clockService)
   }
+
+  private def getHistoryMetricsConfig: HistoryMetricsConfig = {
+    val historyHour = context.system.settings.config.getInt(Constants.GEARPUMP_METRIC_RETAIN_HISTORY_DATA_HOURS)
+    val historyInterval = context.system.settings.config.getInt(Constants.GEARPUMP_RETAIN_HISTORY_DATA_INTERVAL_MS)
+
+    val recentSeconds = context.system.settings.config.getInt(Constants.GEARPUMP_RETAIN_RECENT_DATA_SECONDS)
+    val recentInterval = context.system.settings.config.getInt(Constants.GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS)
+    HistoryMetricsConfig(historyHour, historyInterval, recentSeconds, recentInterval)
+  }
+
+  private val historyMetricsService = {
+    context.actorOf(Props(new HistoryMetricsService(appId, getHistoryMetricsConfig)))
+  }
+  actorSystem.eventStream.subscribe(historyMetricsService, classOf[MetricType])
 
   override def receive : Receive =
     taskMessageHandler orElse
@@ -96,12 +111,15 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.info(s"***AppMaster got AppMasterDataDetailRequest for $appId ***")
 
-
       val executorsFuture = getExecutorList
       val clockFuture = getMinClock
 
       val appMasterDataDetail = for {executors <- executorsFuture
-        clock <- clockFuture } yield AppMasterDataDetail(appId, app.name, app, address, clock, executors)
+        clock <- clockFuture } yield {
+        StreamingAppMasterDataDetail(appId, app.name, dag.processors,
+          Graph.vertexHierarchyLevelMap(dag.graph), dag.graph, address, clock, executors)
+      }
+
       val client = sender()
 
       appMasterDataDetail.map{appData =>
@@ -111,6 +129,9 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       val client = sender()
       subscribers = true
       actorSystem.eventStream.subscribe(client, classOf[MetricType])
+
+    case query: QueryHistoryMetrics =>
+      historyMetricsService forward query
   }
 
   def recover: Receive = {
