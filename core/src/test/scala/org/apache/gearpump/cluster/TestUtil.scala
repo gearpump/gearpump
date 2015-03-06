@@ -70,7 +70,9 @@ object TestUtil {
       implicit val futureTimeout = Constants.FUTURE_TIMEOUT
 
       val workerListFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]]
-      val workers = Await.result[WorkerList](workerListFuture, 1 seconds)
+
+      // wait until the worker is registered.
+      val workers = Await.result[WorkerList](workerListFuture, 5 seconds)
       workers.workers.size > 0
     }
 

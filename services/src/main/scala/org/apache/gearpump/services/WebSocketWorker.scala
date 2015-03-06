@@ -52,20 +52,7 @@ class WebSocketWorker(val serverConnection: ActorRef, val master: ActorRef) exte
 
     case metrics: MetricType =>
       LOG.info("writing metrics")
-      metrics match {
-        case histogram: Histogram =>
-          client ! TextFrame(write(histogram))
-        case counter: Counter =>
-          client ! TextFrame(write(counter))
-        case meter: Meter =>
-          client ! TextFrame(write(meter))
-        case timer: Timer =>
-          client ! TextFrame(write(timer))
-        case gauge: Gauge[_] =>
-          LOG.error("cannot handle gauge")
-        case _ =>
-          LOG.error("unknown type")
-      }
+      client ! TextFrame(write(metrics))
 
     case Push(msg) => send(TextFrame(msg))
 

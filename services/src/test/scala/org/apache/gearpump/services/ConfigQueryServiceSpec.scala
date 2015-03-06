@@ -19,17 +19,18 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
+import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
-import org.apache.gearpump.cluster.{TestUtil}
-import org.apache.gearpump.streaming.{StreamingTestUtil}
-import org.apache.gearpump.util.{LogUtil}
-import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
+import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.util.LogUtil
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
-import spray.testkit.{ScalatestRouteTest}
-
+import spray.testkit.ScalatestRouteTest
+import com.typesafe.config.{ConfigFactory}
 import scala.concurrent.duration._
+import scala.util.Try
 
-class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterAll {
+class ConfigQueryServiceSpec extends FlatSpec with ScalatestRouteTest with ConfigQueryService with Matchers with BeforeAndAfterAll {
   import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
@@ -40,23 +41,20 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
   override def beforeAll: Unit = {
     miniCluster = TestUtil.startMiniCluster
     StreamingTestUtil.startAppMaster(miniCluster, 0)
+
+    Thread.sleep(1000)
   }
 
   override def afterAll: Unit = {
     miniCluster.shutDown()
   }
 
-  "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
+  "ConfigQueryService" should "return config for application" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get("/appmaster/0?detail=false") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
+    (Get("/config/app/0") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
       val responseBody = response.entity.asString
-      read[AppMasterData](responseBody)
+      val config = Try(ConfigFactory.parseString(responseBody))
+      assert(config.isSuccess)
     }
-
-    //TODO: fix this UT
-//    (Get("/appmaster/streaming/0?detail=true") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
-//      val responseBody = response.entity.asString
-//      read[StreamingAppMasterDataDetail](responseBody)
-//    }
   }
 }
