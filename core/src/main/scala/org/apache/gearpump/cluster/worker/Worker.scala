@@ -38,7 +38,7 @@ import org.apache.gearpump.util._
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 case class WorkerDescription(workerId: Int, state: String, actorPath: String,
@@ -61,6 +61,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private var id = -1
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
+  private var executorNameToActor = Map.empty[String, ActorRef]
 
   private var totalSlots: Int = 0
 
@@ -79,7 +80,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   }
 
   private def updateResourceTimeOut(): Unit = {
-
     LOG.error(s"Worker $id update resource time out")
   }
 
@@ -87,10 +87,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     case shutdown @ ShutdownExecutor(appId, executorId, reason : String) =>
       val actorName = ActorUtil.actorNameForExecutor(appId, executorId)
       LOG.info(s"Worker shutting down executor: $actorName due to: $reason")
+      val executorToStop = executorNameToActor.get(actorName)
 
-      if (context.child(actorName).isDefined) {
-        LOG.info(s"Shuttting down child: ${context.child(actorName).get.path.toString}")
-        context.child(actorName).get.forward(shutdown)
+      if (executorToStop.isDefined) {
+        LOG.info(s"Shuttting down child: ${executorToStop.get.path.toString}")
+        executorToStop.get.forward(shutdown)
       } else {
         LOG.info(s"There is no child $actorName, ignore this message")
         sender ! ShutdownExecutorFailed(s"Can not find executor $executorId for app $appId")
@@ -102,7 +103,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       } else {
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
-        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo), actorName)
+        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo))
+        executorNameToActor += actorName ->executor
 
         resource = resource - launch.resource
         allocatedResource = allocatedResource + (executor -> launch.resource)
@@ -144,7 +146,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         }
       }
   }
-
 
   import context.dispatcher
   override def preStart() : Unit = {

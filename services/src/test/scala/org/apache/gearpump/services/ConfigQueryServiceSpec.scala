@@ -51,7 +51,7 @@ class ConfigQueryServiceSpec extends FlatSpec with ScalatestRouteTest with Confi
 
   "ConfigQueryService" should "return config for application" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get("/appConfig/0") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
+    (Get("/config/app/0") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
       val responseBody = response.entity.asString
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)

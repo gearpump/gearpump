@@ -104,6 +104,7 @@ class AppMasterLauncher(
   def waitForAppMasterToStart(worker : ActorRef, cancel: Cancellable) : Receive = {
     case ActorCreated(appMaster, _) =>
       cancel.cancel()
+      sender ! BindLifeCycle(appMaster)
       LOG.info(s"AppMaster is created, stopping myself...")
       replyToClient(SubmitApplicationResult(Success(appId)))
       context.stop(self)
