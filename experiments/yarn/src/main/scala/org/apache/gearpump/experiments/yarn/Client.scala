@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.experiments.yarn
 
-import java.io.File
+import java.io._
 import java.nio.ByteBuffer
 
 import com.typesafe.config.{Config, ConfigFactory}
@@ -99,6 +99,7 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     LOG.info(s"command=$command")
     command
   }
+
   def getEnvVars(conf: Config)(key: String): String = {
     val option = key.split("\\.").last.toUpperCase
     Option(cliopts) match {

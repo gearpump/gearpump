@@ -38,14 +38,14 @@ class MessageSerializer extends Serializer[Message] {
 
 class TaskIdSerializer  extends Serializer[TaskId] {
   override def write(kryo: Kryo, output: Output, obj: TaskId) = {
-    output.writeInt(obj.groupId)
+    output.writeInt(obj.processorId)
     output.writeInt(obj.index)
   }
 
   override def read(kryo: Kryo, input: Input, typ: Class[TaskId]): TaskId = {
-    val groupId = input.readInt()
+    val processorId = input.readInt()
     val index = input.readInt()
-    new TaskId(groupId, index)
+    new TaskId(processorId, index)
   }
 }
 
@@ -86,5 +86,17 @@ class AckSerializer extends Serializer[Ack] {
     val actualReceivedNum = input.readLong()
     val sessionId = input.readInt()
     new Ack(taskId, Seq(id, seq), actualReceivedNum, sessionId)
+  }
+}
+
+class LatencyProbeSerializer extends Serializer[LatencyProbe] {
+
+  override def write(kryo: Kryo, output: Output, obj: LatencyProbe) = {
+    output.writeLong(obj.timestamp)
+  }
+
+  override def read(kryo: Kryo, input: Input, typ: Class[LatencyProbe]): LatencyProbe = {
+    val timestamp = input.readLong()
+    new LatencyProbe(timestamp)
   }
 }
