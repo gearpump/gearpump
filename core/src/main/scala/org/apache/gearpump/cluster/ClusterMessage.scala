@@ -24,6 +24,8 @@ import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.master.Master.{MasterInfo, MasterDescription}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerDescription
+import org.apache.gearpump.metrics.Metrics._
+import upickle._
 
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -55,6 +57,8 @@ object ClientToMaster {
   case object GetJarFileContainer
 
   case class QueryAppMasterConfig(appId: Int)
+
+  case class QueryHistoryMetrics(appId: Int, path: String)
 }
 
 object MasterToClient {
@@ -64,6 +68,10 @@ object MasterToClient {
   case class ResolveAppIdResult(appMaster: Try[ActorRef])
 
   case class AppMasterConfig(config: Config)
+
+  case class HistoryMetricsItem(time: TimeStamp, value: MetricType)
+
+  case class HistoryMetrics(appId: Int, path: String, metrics: List[HistoryMetricsItem])
 }
 
 trait AppMasterRegisterData
