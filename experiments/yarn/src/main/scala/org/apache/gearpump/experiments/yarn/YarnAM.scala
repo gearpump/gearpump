@@ -67,17 +67,21 @@ class YarnAMActor(amArgs: YarnAMArgs, yarnConf: YarnConfiguration) extends Actor
   val nmCallbackHandler = createNMCallbackHandler
   val nmClientAsync = createNMClient(nmCallbackHandler)
   val rmCallbackHandler = context.actorOf(Props(classOf[RMCallbackHandlerActor], amArgs, self), "rmCallbackHandler")
-  val amRMClient = context.actorOf(Props(classOf[AMRMClientAsyncActor], yarnConf), "amRMClient")
+  val amRMClient = context.actorOf(Props(classOf[AMRMClientAsyncActor], yarnConf, self), "amRMClient")
 
   override def receive: Receive = {
     case containerRequest: ContainerRequestMessage =>
+      LOG.info("Received ContainerRequestMessage")
       amRMClient ! containerRequest
     case rmCallbackHandler: RMCallbackHandler =>
+      LOG.info("Received RMCallbackHandler")
       amRMClient forward rmCallbackHandler
       amRMClient ! RegisterAMMessage("", 0, "")
     case amResponse: RegisterApplicationMasterResponse =>
+      LOG.info("Received RegisterApplicationMasterResponse")
       requestContainers(amResponse)
     case launchContainers: LaunchContainers =>
+      LOG.info("Received LaunchContainers")
       launchContainers.containers.foreach(container => {
         context.actorOf(Props(classOf[ContainerLauncherActor], container, nmClientAsync, nmCallbackHandler))
       })
@@ -86,6 +90,7 @@ class YarnAMActor(amArgs: YarnAMArgs, yarnConf: YarnConfiguration) extends Actor
   }
 
   private[this] def createNMClient(containerListener: NMCallbackHandler): NMClientAsync = {
+    LOG.info("Creating NMClientAsync")
     val nmClient = new NMClientAsyncImpl(containerListener)
     nmClient.init(yarnConf)
     nmClient.start()
@@ -93,6 +98,7 @@ class YarnAMActor(amArgs: YarnAMArgs, yarnConf: YarnConfiguration) extends Actor
   }
 
   private[this] def createNMCallbackHandler: NMCallbackHandler = {
+    LOG.info("Creating NMCallbackHandler")
     NMCallbackHandler()
   }
 
@@ -171,10 +177,12 @@ object NMCallbackHandler {
   def apply() = new NMCallbackHandler()
 }
 
-class AMRMClientAsyncActor(yarnConf: YarnConfiguration) extends Actor {
+class AMRMClientAsyncActor(yarnConf: YarnConfiguration, yarnAM: ActorRef) extends Actor {
+  val LOG: Logger = LogUtil.getLogger(getClass)
   var client: AMRMClientAsync[ContainerRequest] = _
 
   private[this] def createContainerRequest(attrs: ContainerRequestMessage): ContainerRequest = {
+    LOG.info("creating ContainerRequest")
     val priorityRecord = Records.newRecord(classOf[Priority])
     priorityRecord.setPriority(0)
     val priority = Priority.newInstance(0)
@@ -183,6 +191,7 @@ class AMRMClientAsyncActor(yarnConf: YarnConfiguration) extends Actor {
   }
 
   private[this] def start(rmCallbackHandler: RMCallbackHandler): AMRMClientAsync[ContainerRequest] = {
+    LOG.info("starting AMRMClientAsync")
     import YarnAM._
     val amrmClient: AMRMClientAsync[ContainerRequest] = AMRMClientAsync.createAMRMClientAsync(TIME_INTERVAL, rmCallbackHandler)
     amrmClient.init(yarnConf)
@@ -190,14 +199,23 @@ class AMRMClientAsyncActor(yarnConf: YarnConfiguration) extends Actor {
     amrmClient
   }
 
+  override def preStart(): Unit = {
+    LOG.info("preStart")
+  }
+
   override def receive: Receive = {
     case rmCallbackHandler: RMCallbackHandler =>
+      LOG.info("Received RMCallbackHandler")
       client = start(rmCallbackHandler)
     case containerRequest: ContainerRequestMessage =>
+      LOG.info("Received ContainerRequestMessage")
       client.addContainerRequest(createContainerRequest(containerRequest))
     case amAttr: RegisterAMMessage =>
-      client.registerApplicationMaster(amAttr.appHostName, amAttr.appHostPort, amAttr.appTrackingUrl)
+      LOG.info(s"Received RegisterAMMessage ${amAttr.appHostName} ${amAttr.appHostPort} ${amAttr.appTrackingUrl}")
+      val response = client.registerApplicationMaster(amAttr.appHostName, amAttr.appHostPort, amAttr.appTrackingUrl)
+      yarnAM ! response
     case amStatus: AMStatusMessage =>
+      LOG.info("Received AMStatusMessage")
       client.unregisterApplicationMaster(amStatus.appStatus, amStatus.appMessage, amStatus.appTrackingUrl)
   }
 
@@ -259,7 +277,9 @@ class RMCallbackHandler(amArgs: YarnAMArgs, am: ActorRef) extends AMRMClientAsyn
     am ! RMHandlerDone(Failed(throwable), RMHandlerContainerStats(allocatedContainersCount.get, completedContainersCount.get, failedContainersCount.get))
   }
 
-  def onNodesUpdated(updatedNodes: java.util.List[NodeReport]) {}
+  def onNodesUpdated(updatedNodes: java.util.List[NodeReport]): Unit = {
+    LOG.info("onNodesUpdates")
+  }
 
   def onShutdownRequest() {
     LOG.info("Shutdown requested")
@@ -268,12 +288,13 @@ class RMCallbackHandler(amArgs: YarnAMArgs, am: ActorRef) extends AMRMClientAsyn
 
 }
 
-class RMCallbackHandlerActor(args: YarnAMArgs, am: ActorRef) extends Actor {
+class RMCallbackHandlerActor(args: YarnAMArgs, yarnAM: ActorRef) extends Actor {
   val LOG: Logger = LogUtil.getLogger(getClass)
-  val rm = new RMCallbackHandler(args, am)
+  val rmCallbackHandler = new RMCallbackHandler(args, yarnAM)
 
   override def preStart(): Unit = {
-    am ! rm
+    LOG.info("Sending RMCallbackHandler to YarnAM")
+    yarnAM ! rmCallbackHandler
   }
 
   override def receive: Receive = {
@@ -314,21 +335,30 @@ class ContainerLauncherActor(container: Container, nmClientAsync: NMClientAsync,
 
 
 object YarnAM extends App with ArgumentsParser {
+  val LOG: Logger = LogUtil.getLogger(getClass)
   val TIME_INTERVAL = 1000
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "containers" -> CLIOption[Int]("<Required number of containers>", required = false, defaultValue = Some(1)),
-    "containerMemory" -> CLIOption[Int]("<Required amount of memory for container>", required = false, defaultValue = Some(1024)),
+    "containers" -> CLIOption[Int]("<Required number of containers>", required = false, defaultValue = Some(2)),
+    "containerMemory" -> CLIOption[Int]("<Required amount of memory for container>", required = false, defaultValue = Some(2048)),
     "containerVCores" -> CLIOption[Int]("<Required number of vcores for container>", required = false, defaultValue = Some(1))
   )
 
   def apply(args: Array[String]) = {
-    implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-    val config = ConfigFactory.load
-    implicit val system = ActorSystem("GearPumpAM", config)
-    system.actorOf(Props(classOf[YarnAMActor], YarnAMArgs(parse(args)), new YarnConfiguration), "GearPumpAMActor")
-    system.awaitTermination()
-    system.shutdown()
+    try {
+      implicit val timeout = Timeout(5, TimeUnit.SECONDS)
+      val config = ConfigFactory.load
+      implicit val system = ActorSystem("GearPumpAM", config)
+      LOG.info("Creating YarnAMActor")
+      system.actorOf(Props(classOf[YarnAMActor], YarnAMArgs(parse(args)), new YarnConfiguration), "GearPumpAMActor")
+      system.awaitTermination()
+      LOG.info("Shutting down")
+      system.shutdown()
+    } catch {
+      case throwable: Throwable =>
+        LOG.error("Caught exception", throwable)
+    }
+
   }
 
   apply(args)
