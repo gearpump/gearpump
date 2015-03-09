@@ -26,7 +26,8 @@ import spray.can._
 import spray.routing.RoutingSettings
 
 trait RestServices extends AppMastersService
-    with AppMasterService with WorkerService with WorkersService with MasterService with StaticService {
+    with AppMasterService with WorkerService with WorkersService with MasterService
+    with ConfigQueryService with MetricsQueryService with StaticService {
   implicit def executionContext = actorRefFactory.dispatcher
 
   lazy val routes = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ masterRoute ~ staticRoute

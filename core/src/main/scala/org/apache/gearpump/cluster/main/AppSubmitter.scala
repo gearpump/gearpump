@@ -28,7 +28,7 @@ object AppSubmitter extends App with ArgumentsParser {
   override val ignoreUnknownArgument = true
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "namePrefix" -> CLIOption[String]("application name prefix", required = false, defaultValue = Some("")),
+    "namePrefix" -> CLIOption[String]("<application name prefix>", required = false, defaultValue = Some("")),
     "jar" -> CLIOption("<application>.jar", required = true))
 
   override val remainArgs = Array(
