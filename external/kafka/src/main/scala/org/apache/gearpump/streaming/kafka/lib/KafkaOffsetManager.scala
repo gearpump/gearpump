@@ -47,8 +47,10 @@ private[kafka] class KafkaOffsetManager(storage: OffsetStorage) extends OffsetMa
 
   override def filter(messageAndOffset: (Message, Long)): Option[Message] = {
     val (message, offset) = messageAndOffset
-    maxTime = Math.max(maxTime, message.timestamp)
-    storage.append(maxTime, Injection[Long, Array[Byte]](offset))
+    if (message.timestamp > maxTime) {
+      maxTime = message.timestamp
+      storage.append(maxTime, Injection[Long, Array[Byte]](offset))
+    }
     Some(message)
   }
 
