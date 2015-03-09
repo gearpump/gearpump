@@ -47,9 +47,14 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
       messageAndOffsets.foldLeft(0L){ (max, messageAndOffset) =>
         val (message, offset) = messageAndOffset
         offsetManager.filter((message, offset.toLong)) shouldBe Option(message)
-        val newMax = Math.max(max, message.timestamp)
-        verify(offsetStorage).append(newMax, Injection[Long, Array[Byte]](offset.toLong))
-        newMax
+        if (message.timestamp > max) {
+          val newMax = message.timestamp
+          verify(offsetStorage).append(newMax, Injection[Long, Array[Byte]](offset.toLong))
+          newMax
+        } else {
+          verifyZeroInteractions(offsetStorage)
+          max
+        }
       }
       offsetManager.close()
     }
