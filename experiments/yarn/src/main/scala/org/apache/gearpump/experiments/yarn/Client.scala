@@ -51,17 +51,16 @@ Features for YARNClient
 object EnvVars {
   val APPMASTER_NAME = "gearpump.yarn.applicationmaster.name"
   val APPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
+  val APPMASTER_MEMORY = "gearpump.yarn.applicationmaster.memory"
+  val APPMASTER_VCORES = "gearpump.yarn.applicationmaster.vcores"
   val APPMASTER_QUEUE = "gearpump.yarn.applicationmaster.queue"
-  val APPMASTER_IP = "gearpump.yarn.applicationmaster.masterIp"
   val APPMASTER_MAIN = "gearpump.yarn.applicationmaster.main"
-  val APPMASTER_MASTER_MEMORY = "gearpump.yarn.applicationmaster.masterMemory"
-  val APPMASTER_MASTER_VMCORES = "gearpump.yarn.applicationmaster.masterVMCores"
-  val APPMASTER_PORT = "gearpump.yarn.applicationmaster.masterPort"
+  val CONTAINER_COUNT = "gearpump.yarn.container.count"
+  val CONTAINER_MEMORY = "gearpump.yarn.container.memory"
+  val CONTAINER_VCORES = "gearpump.yarn.container.vcores"
   val EXCLUDE_JARS = "gearpump.yarn.client.excludejars"
-  val CONTAINER_COMMAND = "gearpump.yarn.container.command"
   val HDFS_PATH = "gearpump.yarn.client.hdfsPath"
   val JARS = "gearpump.yarn.client.jars"
-  val MIN_WORKER_COUNT = "gearpump.yarn.applicationmaster.minWorkerCount"
 }
 
 trait ClientAPI {
@@ -89,13 +88,29 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
   def getEnv = getEnvVars(getConf)_
   def getHdfs = new Path(getFs.getHomeDirectory, getEnv(HDFS_PATH))
 
+  private[this] def getMemory(envVar: String): Int = {
+    val memory = getEnv(envVar).trim
+    val containerMemory = memory.substring(0, memory.length-1).toInt
+    val memoryUnits = memory.last.toUpper match {
+      case 'G' =>
+        containerMemory*1024
+      case 'M' =>
+        containerMemory
+      case _ =>
+        LOG.error(s"Invalid value $memory defaulting to 2G")
+        2048
+    }
+    containerMemory
+  }
+
   def getCommand: String = {
     val exe = getEnv(APPMASTER_COMMAND)
     val mainClass = getEnv(APPMASTER_MAIN)
-    val ip = getEnv(APPMASTER_IP)
-    val port = getEnv(APPMASTER_PORT)
+    val count = getEnv(CONTAINER_COUNT).trim
+    val memory = getMemory(CONTAINER_MEMORY)
+    val vmcores = getEnv(CONTAINER_VCORES)
     val logdir = "/tmp" //ApplicationConstants.LOG_DIR_EXPANSION_VAR
-    val command = s"$exe $mainClass -ip $ip -port $port 1>$logdir/AM_stdout 2>$logdir/AM_stderr"
+    val command = s"$exe $mainClass -containers $count -containerMemory $memory -containerVCores $vmcores 1>$logdir/AM_stdout 2>$logdir/AM_stderr"
     LOG.info(s"command=$command")
     command
   }
@@ -171,19 +186,19 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
 
   def getAMCapability: Resource = {
     val capability = Records.newRecord(classOf[Resource])
-    val memory = getEnv(APPMASTER_MASTER_MEMORY).trim
-    val memoryValue = memory.substring(0, memory.length-1).toInt
-    val memoryNumber = memory.last.toUpper match {
+    val memory = getEnv(APPMASTER_MEMORY).trim
+    val containerMemory = memory.substring(0, memory.length-1).toInt
+    val memoryUnits = memory.last.toUpper match {
       case 'G' =>
-        memoryValue*1024
+        containerMemory*1024
       case 'M' =>
-        memoryValue/1024000
+        containerMemory
       case _ =>
         LOG.error(s"Invalid value $memory defaulting to 2G")
         2048
     }
-    capability.setMemory(memoryNumber)
-    capability.setVirtualCores(getEnv(APPMASTER_MASTER_VMCORES).toInt)
+    capability.setMemory(containerMemory)
+    capability.setVirtualCores(getEnv(APPMASTER_VCORES).toInt)
     capability
   }
 
@@ -241,6 +256,7 @@ class Client(cliopts: ParseResult, conf: Config, yarnConf: YarnConfiguration, ya
     yarnClient.submitApplication(appContext)
     monitorAM(appContext)
   }
+
   deploy()
 }
 
