@@ -38,7 +38,7 @@ trait MetricsQueryService extends HttpService  {
   implicit val system: ActorSystem
   private val LOG = LogUtil.getLogger(getClass)
 
-  def appMasterRoute = get {
+  def metricQueryRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     path("metrics"/"app"/IntNumber/Rest) { (appId, path) =>

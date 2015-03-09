@@ -37,7 +37,7 @@ trait ConfigQueryService extends HttpService  {
   implicit val system: ActorSystem
   private val LOG = LogUtil.getLogger(getClass)
 
-  def appMasterRoute = get {
+  def configQueryRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     path("config"/"app"/IntNumber) { appId =>
