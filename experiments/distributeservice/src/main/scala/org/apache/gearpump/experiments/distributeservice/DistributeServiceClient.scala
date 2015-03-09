@@ -21,8 +21,8 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{CLIOption, ArgumentsParser}
-import org.apache.gearpump.experiments.distributeservice.DistServiceAppMaster.{DistributeFile, FileContainer, GetFileContainer}
-import org.apache.gearpump.util.{FileServer, Constants}
+import org.apache.gearpump.experiments.distributeservice.DistServiceAppMaster.{InstallService, FileContainer, GetFileContainer}
+import org.apache.gearpump.util.{LogUtil, FileServer, Constants}
 import org.slf4j.{LoggerFactory, Logger}
 
 import akka.pattern.ask
@@ -32,27 +32,53 @@ import scala.util.{Failure, Success}
 object DistributeServiceClient extends App with ArgumentsParser{
   implicit val timeout = Constants.FUTURE_TIMEOUT
   import scala.concurrent.ExecutionContext.Implicits.global
-  private val LOG: Logger = LoggerFactory.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "appid" -> CLIOption[Int]("<the distributed shell appid>", required = true),
-    "file" -> CLIOption[String]("<file path>", required = true)
+    "file" -> CLIOption[String]("<service zip file path>", required = true),
+    "script" -> CLIOption[String]("<file path of service script that will be installed to /etc/init.d>", required = true),
+    "serviceName" -> CLIOption[String]("<service name>", required = true),
+    "target" -> CLIOption[String]("<target path on each machine>", required = true)
   )
 
-  val config = parse(args)
+  override def help : Unit = {
+    super.help
+    Console.println(s"-D<name>=<value> set a property to the service")
+  }
+
+  val config = parse(filterCustomOptions(args))
   val context = ClientContext(config.getString("master"))
   val appid = config.getInt("appid")
-  val file = new File(config.getString("file"))
+  val zipFile = new File(config.getString("file"))
+  val script = new File(config.getString("script"))
+  val serviceName = config.getString("serviceName")
   val appMaster = context.resolveAppID(appid)
   (appMaster ? GetFileContainer).asInstanceOf[Future[FileContainer]].map { container =>
-    val bytes = FileUtils.readFileToByteArray(file)
+    val bytes = FileUtils.readFileToByteArray(zipFile)
     val result = FileServer.newClient.save(container.url, bytes)
     result match {
       case Success(_) =>
-        appMaster ! DistributeFile(container.url, file.getName)
+        appMaster ! InstallService(container.url, zipFile.getName, config.getString("target"),
+          FileUtils.readFileToByteArray(script), serviceName, parseServiceConfig(args))
         context.close()
       case Failure(ex) => throw ex
+    }
+  }
+
+  private def filterCustomOptions(args: Array[String]): Array[String] = {
+    args.filter(!_.startsWith("-D"))
+  }
+
+  private def parseServiceConfig(args: Array[String]): Map[String, Any] = {
+    val result = Map.empty[String, Any]
+    args.foldLeft(result) { (result, argument) =>
+      if(argument.startsWith("-D") && argument.contains("=")) {
+        val fixedKV = argument.substring(2).split("=")
+        result + (fixedKV(0) -> fixedKV(1))
+      } else {
+        result
+      }
     }
   }
 }

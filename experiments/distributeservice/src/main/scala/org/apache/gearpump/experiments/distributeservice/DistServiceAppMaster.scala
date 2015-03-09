@@ -25,7 +25,7 @@ import com.typesafe.config.{ConfigFactory, Config}
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, StartExecutorSystemTimeout, ExecutorSystemStarted}
 import org.apache.gearpump.cluster.{ExecutorContext, ApplicationMaster, Application, AppMasterContext}
-import org.apache.gearpump.experiments.distributeservice.DistServiceAppMaster.{DistributeFile, FileContainer, GetFileContainer}
+import org.apache.gearpump.experiments.distributeservice.DistServiceAppMaster.{InstallService, FileContainer, GetFileContainer}
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -40,7 +40,7 @@ class DistServiceAppMaster(appContext : AppMasterContext, app : Application) ext
   private var currentExecutorId = 0
   private var fileServerPort = -1
 
-  val rootDirectory = new File("/tmp")
+  val rootDirectory = new File("/")
   val host = context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)
   val server = context.actorOf(Props(classOf[FileServer], rootDirectory, host , 0))
 
@@ -69,8 +69,8 @@ class DistServiceAppMaster(appContext : AppMasterContext, app : Application) ext
     case GetFileContainer =>
       val name = Math.abs(new java.util.Random().nextLong()).toString
       sender ! new FileContainer(s"http://$host:$fileServerPort/$name")
-    case DistributeFile(url, fileName) =>
-      context.children.foreach(_ ! DistributeFile(url, fileName))
+    case installService: InstallService =>
+      context.children.foreach(_ ! installService)
   }
 
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
@@ -86,5 +86,11 @@ object DistServiceAppMaster {
 
   case class FileContainer(url: String)
 
-  case class DistributeFile(url: String, fileName: String)
+  case class InstallService(
+    url: String,
+    zipFileName: String,
+    targetPath: String,
+    script : Array[Byte],
+    serviceName: String,
+    serviceSettings: Map[String, Any])
 }
