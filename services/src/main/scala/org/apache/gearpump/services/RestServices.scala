@@ -30,7 +30,7 @@ trait RestServices extends AppMastersService
     with ConfigQueryService with MetricsQueryService with StaticService {
   implicit def executionContext = actorRefFactory.dispatcher
 
-  lazy val routes = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ masterRoute ~ staticRoute
+  lazy val routes = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ masterRoute ~  configQueryRoute ~ metricQueryRoute ~ staticRoute
 }
 
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
