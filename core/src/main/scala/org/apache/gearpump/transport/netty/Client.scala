@@ -19,6 +19,7 @@
 package org.apache.gearpump.transport.netty
 
 import java.net.{ConnectException, InetSocketAddress}
+import java.nio.channels.ClosedChannelException
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
@@ -184,7 +185,9 @@ object Client {
 
     override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) {
       event.getCause match {
-        case ex : ConnectException => Unit
+        case ex: ConnectException => Unit
+        case ex: ClosedChannelException =>
+          LOG.warn("exception found when trying to close netty connection", ex.getMessage)
         case ex => LOG.error("Connection failed " + name, ex)
       }
     }
