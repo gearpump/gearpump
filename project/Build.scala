@@ -304,23 +304,15 @@ object Build extends sbt.Build {
           "io.spray" %%  "spray-client"    % sprayVersion,
           "io.spray" %%  "spray-json"    % sprayJsonVersion,
           "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion,
-          "org.webjars" % "angularjs" % "1.2.26",
-          "org.webjars" % "angular-ui-bootstrap" % "0.11.0",
-          "org.webjars" % "angular-route-segment" % "1.3.3",
-          "org.webjars" % "font-awesome" % "4.3.0",
-          "org.webjars" % "jquery" % "2.0.3",
-          "org.webjars" % "jquery-ui" % "1.10.3",
-          "org.webjars" % "angular-ui-sortable" % "0.12.11-1",
-          "org.webjars" % "angular-local-storage" % "0.1.1",
-          "org.webjars" % "bootstrap" % "3.2.0",
-          "org.webjars" % "d3js" % "3.5.3",
-          "org.webjars" % "visjs" % "3.10.0",
-          "org.webjars" % "json3" % "3.3.2",
-          "org.webjars" % "es5-shim" % "2.1.0",
-          "org.webjars" % "ng-table" % "0.3.3",
           "org.json4s" %% "json4s-jackson" % json4sVersion,
           "org.json4s" %% "json4s-native"   % json4sVersion,
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.webjars" % "angularjs" % "1.3.14",
+          "org.webjars" % "bootstrap" % "3.3.2-1",
+          "org.webjars" % "d3js" % "3.5.3",
+          "org.webjars" % "momentjs" % "2.9.0",
+          "org.webjars" % "smart-table" % "1.4.11",
+          "org.webjars" % "visjs" % "3.10.0"
         )
       )
   ) dependsOn(streaming % "test->test;compile->compile")
