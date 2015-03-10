@@ -70,7 +70,7 @@ class DistShellAppMaster(appContext : AppMasterContext, app : Application) exten
 }
 
 object DistShellAppMaster {
-  case class ShellCommand(command: String, args: String)
+  case class ShellCommand(command: String)
 
   case class ShellCommandResult(executorId: Int, msg: Any)
 

@@ -45,7 +45,7 @@ class ShellExecutorSpec extends WordSpec with Matchers {
         case Success(msg) => msg
         case Failure(ex) => ex.getMessage
       }
-      executor.tell(ShellCommand("ls", "/"), mockMaster.ref)
+      executor.tell(ShellCommand("ls /"), mockMaster.ref)
       assert(mockMaster.receiveN(1).head.asInstanceOf[ShellCommandResult].equals(
         ShellCommandResult(executorId, result)))
 
