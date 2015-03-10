@@ -1,0 +1,52 @@
+<h4>Applications</h4>
+
+<div ng-if="apps.length===0" class="bs-callout bs-callout-default">
+  <p>No running or completed applications found</p>
+</div>
+
+<table ng-if="apps.length>0" st-table="ng" st-safe-src="apps"
+       class="table table-striped table-hover">
+  <caption></caption>
+  <thead>
+  <tr class="sortable">
+    <th st-sort="id" st-sort-default="reverse">ID<i st-sort="id"></i></th>
+    <th st-sort="status">Status<i st-sort="status"></i></th>
+    <th st-sort="name">Name<i st-sort="name"></i></th>
+    <th st-sort="submissionTime">Submission Time<i st-sort="submissionTime"></i></th>
+    <th st-sort="startTime">Start Time<i st-sort="startTime"></i></th>
+    <th st-sort="finishTime">Finish Time<i st-sort="finishTime"></i></th>
+    <th st-sort="user">User<i st-sort="user"></i></th>
+    <th st-sort="appMasterPath">Path<i st-sort="appMasterPath"></i></th>
+    <th></th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr ng-repeat="app in ng">
+    <td><span ng-bind="app.id"></span></td>
+    <td><span ng-bind="app.status" class="label"
+              ng-class="{'label-success': app.active, 'label-default': !app.active}"></span></td>
+    <td><span ng-bind="app.name"></span></td>
+    <td><span ng-bind="app.submissionTime"></span></td>
+    <td><span ng-bind="app.startTime"></span></td>
+    <td><span ng-bind="app.finishTime"></span></td>
+    <td><span ng-bind="app.user"></span></td>
+    <td><span ng-bind="app.appMasterPath"></span></td>
+    <td class="text-right">
+      <button ng-click="view(app.id)" ng-if="app.active"
+              type="button" class="btn btn-primary btn-xs media-middle vert-align">View Details
+      </button>
+      <button ng-click="kill(app.id)" ng-if="app.active"
+              type="button" class="btn btn-danger btn-xs media-middle vert-align">Kill
+      </button>
+    </td>
+  </tr>
+  </tbody>
+  <!--
+  <tfoot>
+  <tr>
+    <td colspan="4" class="text-center">
+      <div st-pagination="" st-items-by-page="10" st-displayed-pages="10"></div>
+    </td>
+  </tr>
+  </tfoot>-->
+</table>

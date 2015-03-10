@@ -1,0 +1,107 @@
+/**
+ * Extra Bootstrap styles
+ */
+.breadcrumb-sm {
+  font-size: 0.9em;
+  background-color: transparent;
+  margin-bottom: 8px;
+}
+
+.progress-tiny {
+  height: 3px;
+  border-style: none;
+  background-color: rgb(235, 235, 235);
+  padding: 0;
+  margin: 1px 0 0 0;
+}
+
+.progress-bar-blue {
+  background-color: rgb(66, 139, 202);
+  background-image: none;
+}
+
+.progress-bar-yellow {
+  background-color: rgb(240, 173, 79);
+  background-image: none;
+}
+
+.progress-bar-red {
+  background-color: rgb(202, 24, 30);
+  background-image: none;
+}
+
+.panel-heading, .panel-footer {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  text-transform: uppercase;
+  font-size: 0.85em;
+}
+
+.navbar-brand {
+  color: #fff !important;
+  font-weight: bold;
+}
+
+.table tbody > tr > td.vert-align {
+  vertical-align: middle;
+}
+
+/**
+ * Application specific styles
+ */
+body {
+  padding-top: 60px; /*equals navbar height*/
+}
+
+.table-two-column td:first-child {
+  text-align: right;
+  font-size: 0.85em;
+  /*text-transform: uppercase;*/
+  font-weight: bold;
+}
+
+.table-striped tr:first-child td {
+  border-top-style: none;
+}
+
+.table-xs {
+  font-size: 0.85em;
+}
+
+/**
+ *.table-complex-details
+ */
+.table-complex-details {
+  margin: 6px;
+}
+
+.table-complex-details td {
+  padding: 3px 6px 3px 6px;
+}
+
+.table-complex-details td:first-child {
+  text-align: right;
+  font-size: 0.85em;
+  /*text-transform: uppercase;*/
+  font-weight: bold;
+}
+
+/**
+ * Sort arrows
+ */
+.sortable {
+  cursor: pointer;
+}
+
+.st-sort-ascent i,
+.st-sort-descent i {
+  padding-left: 4px;
+}
+
+.st-sort-ascent i:before {
+  content: '\25B2';
+}
+
+.st-sort-descent i:before {
+  content: '\25BC';
+}

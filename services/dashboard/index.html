@@ -1,167 +1,104 @@
 <!DOCTYPE html>
-<!--*
- The MIT License
+<html lang="en" ng-app="dashboard">
+<head>
+  <!-- Standard Meta -->
+  <meta charset="utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
- Copyright (c) 2013, Sebastian Sdorra
+  <!-- Site Properties -->
+  <title>Dashboard</title>
+  <meta name="description" content=""/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
+  <!-- Static Resources -->
+  <link href="webjars/bootstrap/3.3.2-1/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="webjars/bootstrap/3.3.2-1/css/bootstrap-theme.min.css" rel="stylesheet"/>
+  <link href="webjars/visjs/3.10.0/vis.min.css" rel="stylesheet"/>
+  <!-- TODO: Minimize as one for production server -->
+  <link href="styles/bootstrap-override.css" rel="stylesheet"/>
+  <link href="styles/bootstrap-doc.css" rel="stylesheet"/>
+  <link href="styles/dashboard.css" rel="stylesheet"/>
+</head>
 
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
+<body ng-controller="DashboardCtrl">
 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
--->
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Dashboard</title>
-
-    <!-- font awesome -->
-    <link href="webjars/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
-
-    <!-- build:css css/app.min.css -->
-    <!-- Bootstrap core CSS -->
-    <link href="webjars/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="webjars/bootstrap/3.2.0/css/bootstrap-theme.min.css" rel="stylesheet">
-
-    <!-- dashboard style -->
-    <link href="styles/main.css" rel="stylesheet">
-    <!-- endbuild -->
-
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
-    <![endif]-->
-
-    <!--[if lte IE 8]>
-      <script>
-        document.createElement('adf-dashboard');
-        document.createElement('adf-widget');
-        document.createElement('adf-widget-content');
-      </script>
-    <![endif]-->
-  </head>
-
-  <body ng-app="app">
-
-    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-      <div class="container" ng-controller="navigationCtrl">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle" ng-click="toggleNav()">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="#" style="color:#fff">GearPump</a>
-          <span class="label label-default"
-            style="float:left;vertical-align:middle;margin:17px 30px 0 0;clear:none">0.3.0</span>
-        </div>
-        <div collapse="navCollapsed" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
-            <li ng-class="navClass('cluster')">
-              <a href="#/cluster">Cluster</a>
-            </li>
-            <li ng-class="navClass('apps')">
-              <a href="#/apps">Applications</a>
-            </li>
-          </ul>
-        </div><!--/.nav-collapse -->
-      </div>
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#/">GearPump
+        <span class="label label-primary">0.3</span></a>
     </div>
-
-    <div class="container">
-      <div ng-view></div>
+    <div class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li ng-repeat="link in links track by $index" ng-class="{active:navClass(link.url)}">
+          <a ng-href="{{link.url}}"><span ng-class="link.iconClass"></span>
+            <span ng-bind="link.label"></span></a>
+        </li>
+        <!--
+        <li>
+          <a href="//gearpump.io" title="View official website">
+            <span class="glyphicon glyphicon-book"></span>
+            gearpump.io
+          </a>
+        </li>
+        <li>
+          <div>
+          <iframe class="github" src="//ghbtns.com/github-btn.html?user=intel-hadoop&amp;repo=gearpump&amp;type=watch&amp;count=true" allowtransparency="true" frameborder="0" scrolling="0" width="100" height="20"></iframe>
+        </div></li>-->
+      </ul>
     </div>
+  </div>
+</nav>
 
-    <nav class="navbar navbar-default navbar-fixed-bottom" style="min-height:0">
-      <div class="container">
-       <p style="display:table-cell;padding:8px 0 8px 0">Project site
-         <a href="//gearpump.io" target="_blank">gearpump.io</a></p>
-      </div>
-    </nav>
+<!-- Content -->
+<div class="container-fluid">
 
-    <!-- build:js js/jquery.min.js -->
-    <script src="webjars/jquery/2.0.3/jquery.min.js"></script>
-    <!-- endbuild -->
+  <!-- Breadcrumb as navigation -->
+  <ol class="breadcrumb breadcrumb-sm">
+    <li ng-repeat="breadcrumb in breadcrumbs.get() track by breadcrumb.path" ng-class="{active:$last}">
+      <a ng-if="!$last" ng-href="#{{breadcrumb.path}}" ng-bind="breadcrumb.label"></a>
+      <span ng-if="$last" ng-bind="breadcrumb.label"></span>
+    </li>
+  </ol>
 
-    <!-- build:js js/jquery.ui.sortable.min.js -->
-    <script src="webjars/jquery-ui/1.10.3/ui/jquery.ui.core.js"></script>
-    <script src="webjars/jquery-ui/1.10.3/ui/jquery.ui.widget.js"></script>
-    <script src="webjars/jquery-ui/1.10.3/ui/jquery.ui.mouse.js"></script>
-    <script src="webjars/jquery-ui/1.10.3/ui/jquery.ui.sortable.js"></script>
-    <!-- endbuild -->
+  <!-- Main content -->
+  <div class="container-fluid">
+    <ng-view></ng-view>
+  </div>
 
-    <!-- build:js js/angular.min.js -->
-    <script src="webjars/angularjs/1.2.26/angular.min.js"></script>
-    <!-- endbuild -->
+</div>
 
-    <!-- build:js js/angular-route.min.js -->
-    <script src="webjars/angularjs/1.2.26/angular-route.min.js"></script>
-    <!-- endbuild -->
+<!-- Footer -->
+<footer class="navbar navbar-default navbar-fixed-bottom">
+  <div class="container-fluid">
+    <span class="navbar-text">
+      Project site <a href="//gearpump.io" target="_blank">gearpump.io</a>
+    </span>
+  </div>
+</footer>
 
-    <!-- build:js js/app.min.js -->
-    <!-- angular-ui-sortable -->
-    <script src="webjars/angular-ui-sortable/0.12.11/sortable.min.js"></script>
+<!-- Static Resources -->
+<script src="webjars/angularjs/1.3.14/angular.min.js"></script>
+<script src="webjars/angularjs/1.3.14/angular-route.min.js"></script>
+<script src="webjars/smart-table/1.4.11/smart-table.min.js"></script>
+<script src="webjars/momentjs/2.9.0/min/moment.min.js"></script>
+<script src="webjars/visjs/3.10.0/vis.min.js"></script>
+<script src="webjars/d3js/3.5.3/d3.min.js"></script>
+<script src="shared/vendors/ng-breadcrumbs/ng-breadcrumbs.min.js"></script>
+<script src="shared/filters/readable.js"></script>
+<script src="shared/directives/visdag.js"></script>
+<!-- TODO: Minimize as one for production server -->
+<script src="views/dashboard.js"></script>
+<script src="views/restapi.js"></script>
+<script src="views/streamingservice.js"></script>
+<script src="views/model/metrics.js"></script>
+<script src="views/model/streamingdag.js"></script>
+<script src="views/cluster/master.js"></script>
+<script src="views/cluster/workers/workers.js"></script>
+<script src="views/apps/apps.js"></script>
+<script src="views/apps/app/appmaster.js"></script>
 
-    <!-- angular-bootstrap -->
-    <script src="webjars/angular-ui-bootstrap/0.11.0/ui-bootstrap.min.js"></script>
-    <script src="webjars/angular-ui-bootstrap/0.11.0/ui-bootstrap-tpls.min.js"></script>
-
-    <!-- visjs -->
-    <script src="webjars/visjs/3.10.0/vis.min.js"></script>
-
-    <!-- ng-table -->
-    <link href="webjars/ng-table/0.3.3/ng-table.min.css" rel="stylesheet">
-    <script src="webjars/ng-table/0.3.3/ng-table.min.js"></script>
-
-    <!-- angular-dashboard-framework -->
-    <script src="scripts/adf.js"></script>
-    <script src="scripts/provider.js"></script>
-    <script src="scripts/widget-content.js"></script>
-    <script src="scripts/widget.js"></script>
-    <script src="scripts/dashboard.js"></script>
-
-    <!-- application scripts -->
-    <script src="scripts/directives/tabset.js"></script>
-    <script src="scripts/directives/visdag.js"></script>
-    <script src="scripts/filters/readable.js"></script>
-
-    <!-- local storage -->
-    <script src="webjars/angular-local-storage/0.1.1/angular-local-storage.min.js"></script>
-
-    <!-- app -->
-    <script src="scripts/app.js"></script>
-    <script src="scripts/services.js"></script>
-    <script src="scripts/controllers.js"></script>
-    <script src="scripts/app-01.js"></script>
-    <script src="scripts/app-02.js"></script>
-    <script src="scripts/app-03.js"></script>
-    <script src="scripts/structures.js"></script>
-
-    <!-- applist widget -->
-    <script src="scripts/widgets/applist/applist.js"></script>
-
-    <!-- dag widget -->
-    <script src="webjars/d3js/3.5.3/d3.min.js"></script>
-    <script src="scripts/widgets/dag/fisheye.js"></script>
-    <script src="scripts/widgets/dag/dag.js"></script>
-
-    <!-- endbuild -->
-  </body>
+</body>
 </html>
