@@ -8,7 +8,6 @@ The original code comes from: https://github.com/yahoo/storm-perf-test
 ```
     "streamProducer"-> CLIOption[Int]("<stream producer number>", required = false, defaultValue = Some(2)),
     "streamProcessor"-> CLIOption[Int]("<stream processor number>", required = false, defaultValue = Some(2)),
-    "runseconds" -> CLIOption[Int]("<run seconds>", required = false, defaultValue = Some(60)),
     "bytesPerMessage" -> CLIOption[Int]("<size of each message>", required = false, defaultValue = Some(100)),
     "stages"-> CLIOption[Int]("<how many stages to run>", required = false, defaultValue = Some(2)))
 ```

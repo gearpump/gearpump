@@ -33,9 +33,8 @@ object SequenceFileIO extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
-    "source"-> CLIOption[Int]("<sequence file reader number>", required = false, defaultValue = Some(2)),
-    "sink"-> CLIOption[Int]("<sequence file writer number>", required = false, defaultValue = Some(2)),
-    "runseconds" -> CLIOption[Int]("<run seconds>", required = false, defaultValue = Some(60)),
+    "source"-> CLIOption[Int]("<sequence file reader number>", required = false, defaultValue = Some(1)),
+    "sink"-> CLIOption[Int]("<sequence file writer number>", required = false, defaultValue = Some(1)),
     "input"-> CLIOption[String]("<input file path>", required = true),
     "output"-> CLIOption[String]("<output file directory>", required = true)
   )
@@ -60,7 +59,5 @@ object SequenceFileIO extends App with ArgumentsParser {
   implicit val system = context.system
 
   val appId = context.submit(application(config))
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  context.shutdown(appId)
   context.close()
 }

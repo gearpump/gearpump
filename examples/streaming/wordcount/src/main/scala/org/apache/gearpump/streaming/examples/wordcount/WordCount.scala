@@ -33,9 +33,8 @@ object WordCount extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
-    "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
-    "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
-    "runseconds"-> CLIOption[Int]("<how long to run this example, set to -1 if run forever>", required = false, defaultValue = Some(60))
+    "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(1)),
+    "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1))
   )
 
   def application(config: ParseResult) : AppDescription = {
@@ -52,8 +51,6 @@ object WordCount extends App with ArgumentsParser {
   val context = ClientContext(config.getString("master"))
   implicit val system = context.system
   val appId = context.submit(application(config))
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  context.shutdown(appId)
   context.close()
 }
 

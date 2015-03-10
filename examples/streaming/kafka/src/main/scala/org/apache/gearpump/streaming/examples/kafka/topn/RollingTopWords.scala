@@ -36,9 +36,8 @@ object RollingTopWords extends App with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "kafka_stream_producer" -> CLIOption[Int]("<hom many kafka producer tasks>", required = false, defaultValue = Some(1)),
-    "rolling_count" -> CLIOption[Int]("<how many rolling count tasks>", required = false, defaultValue = Some(4)),
-    "intermediate_ranker" -> CLIOption[Int]("<how many intermediate ranker tasks>", required = false, defaultValue = Some(4)),
-    "runseconds" -> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
+    "rolling_count" -> CLIOption[Int]("<how many rolling count tasks>", required = false, defaultValue = Some(1)),
+    "intermediate_ranker" -> CLIOption[Int]("<how many intermediate ranker tasks>", required = false, defaultValue = Some(1)))
 
   def application(config: ParseResult) : AppDescription = {
     val windowConfig = UserConfig(Map(
@@ -70,8 +69,6 @@ object RollingTopWords extends App with ArgumentsParser {
   implicit val system = context.system
 
   val appId = context.submit(application(config))
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  context.shutdown(appId)
   context.close()
 }
 

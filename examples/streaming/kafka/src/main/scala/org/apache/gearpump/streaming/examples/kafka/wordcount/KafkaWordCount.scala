@@ -36,10 +36,10 @@ object KafkaWordCount extends App with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "kafka_stream_producer" -> CLIOption[Int]("<hom many kafka producer tasks>", required = false, defaultValue = Some(1)),
-    "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
-    "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
-    "kafka_stream_processor" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(4)),
-    "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
+    "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(1)),
+    "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1)),
+    "kafka_stream_processor" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(4))
+    )
 
   def application(config: ParseResult) : AppDescription = {
     val kafkaStreamProducerNum = config.getInt("kafka_stream_producer")
@@ -66,7 +66,5 @@ object KafkaWordCount extends App with ArgumentsParser {
   implicit val system = context.system
 
   val appId = context.submit(application(config))
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  context.shutdown(appId)
   context.close()
 }
