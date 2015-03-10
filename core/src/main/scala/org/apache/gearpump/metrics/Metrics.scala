@@ -124,55 +124,49 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
           .build(graphite)
 
         LOG.info(s"reporting to $graphiteHost, $graphitePort")
-
-        reporter.start(reportInterval, TimeUnit.MILLISECONDS)
-
-        system.registerOnTermination(new Runnable {
-          override def run = reporter.stop()
-        })
+        reporter
       }
 
       def startSlf4jReporter = {
-
-        val reporter = Slf4jReporter.forRegistry(meters.registry)
+        Slf4jReporter.forRegistry(meters.registry)
           .convertRatesTo(TimeUnit.SECONDS)
           .convertDurationsTo(TimeUnit.MILLISECONDS)
           .filter(MetricFilter.ALL)
           .outputTo(LOG)
           .build()
-
-        reporter.start(reportInterval, TimeUnit.MILLISECONDS)
-
-        system.registerOnTermination(new Runnable {
-          override def run = reporter.stop()
-        })
       }
 
       def startAkkaReporter = {
-
-        val reporter = AkkaReporter.forRegistry(meters.registry)
+        AkkaReporter.forRegistry(meters.registry)
           .convertRatesTo(TimeUnit.SECONDS)
           .convertDurationsTo(TimeUnit.MILLISECONDS)
           .filter(MetricFilter.ALL)
           .build(system)
-
-        reporter.start(reportInterval, TimeUnit.MILLISECONDS)
-
-        system.registerOnTermination(new Runnable {
-          override def run = reporter.stop()
-        })
       }
 
-      val reporter = system.settings.config.getString(GEARPUMP_METRIC_REPORTER)
+      val reporterType = system.settings.config.getString(GEARPUMP_METRIC_REPORTER)
 
-      LOG.info(s"Metrics reporter is enabled, using $reporter reporter")
+      LOG.info(s"Metrics reporter is enabled, using $reporterType reporter")
 
-      reporter match {
+      val reporter = reporterType match {
         case "graphite" => startGraphiteReporter
         case "logfile" => startSlf4jReporter
         case "akka" => startAkkaReporter
         case other =>
           LOG.error(s"Metrics reporter will be disabled, as we cannot recognize reporter: $other")
+          null
+      }
+
+      Option(reporter).foreach { reporter =>
+        // do a initial metrics report
+        reporter.report()
+
+        // set the timer to report on interval
+        reporter.start(reportInterval, TimeUnit.MILLISECONDS)
+
+        system.registerOnTermination(new Runnable {
+          override def run = reporter.stop()
+        })
       }
     }
 
