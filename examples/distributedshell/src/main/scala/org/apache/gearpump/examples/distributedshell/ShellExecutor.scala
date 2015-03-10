@@ -34,8 +34,8 @@ class ShellExecutor(executorContext: ExecutorContext, userConf : UserConfig) ext
   LOG.info(s"ShellExecutor started!")
 
   override def receive: Receive = {
-    case ShellCommand(command, args) =>
-      val process = Try(s"$command $args" !!)
+    case ShellCommand(command) =>
+      val process = Try(s"$command" !!)
       val result = process match {
         case Success(msg) => msg
         case Failure(ex) => ex.getMessage

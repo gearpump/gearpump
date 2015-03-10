@@ -13,5 +13,5 @@ In order to run the example:
 
   3. Submit the shell command:<br>
   ```bash
-  target/pack/bin/gear app -jar experiments/distributedshell/target/$SCALA_VERSION_MAJOR/gearpump-experiments-distributedshell_$VERSION.jar org.apache.gearpump.distributedshell.DistributedShellClient -master 127.0.0.1:3000 -appid $APPID -command ls -args /
+  target/pack/bin/gear app -jar experiments/distributedshell/target/$SCALA_VERSION_MAJOR/gearpump-experiments-distributedshell_$VERSION.jar org.apache.gearpump.distributedshell.DistributedShellClient -master 127.0.0.1:3000 -appid $APPID -command "ls /"
   ```

@@ -33,17 +33,15 @@ object DistributedShellClient extends App with ArgumentsParser  {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "appid" -> CLIOption[Int]("<the distributed shell appid>", required = true),
-    "command" -> CLIOption[String]("<shell command>", required = true),
-    "args" -> CLIOption[String]("<shell arguments>", required = true)
+    "command" -> CLIOption[String]("<shell command>", required = true)
   )
 
   val config = parse(args)
   val context = ClientContext(config.getString("master"))
   val appid = config.getInt("appid")
   val command = config.getString("command")
-  val arguments = config.getString("args")
   val appMaster = context.resolveAppID(appid)
-  (appMaster ? ShellCommand(command, arguments)).map { reslut =>
+  (appMaster ? ShellCommand(command)).map { reslut =>
     LOG.info(s"Result: $reslut")
     context.close()
   }

@@ -40,9 +40,8 @@ class DistributedShellClientSpec extends PropSpec with Matchers with BeforeAndAf
   override def config = TestUtil.DEFAULT_CONFIG
 
   property("DistributedShellClient should succeed to submit application with required arguments") {
-    val command = "ls"
-    val arguments = "/"
-    val requiredArgs = Array("-master", s"$getHost:$getPort", "-appid", "0", "-command", command, "-args", arguments)
+    val command = "ls /"
+    val requiredArgs = Array("-master", s"$getHost:$getPort", "-appid", "0", "-command", command)
     val masterReceiver = createMockMaster()
 
     assert(Try(DistributedShellClient.main(Array.empty[String])).isFailure, "missing required arguments, print usage")
@@ -52,7 +51,7 @@ class DistributedShellClientSpec extends PropSpec with Matchers with BeforeAndAf
     masterReceiver.expectMsg(PROCESS_BOOT_TIME, ResolveAppId(0))
     val mockAppMaster = TestProbe()(getActorSystem)
     masterReceiver.reply(ResolveAppIdResult(Success(mockAppMaster.ref)))
-    mockAppMaster.expectMsg(PROCESS_BOOT_TIME, ShellCommand(command, arguments))
+    mockAppMaster.expectMsg(PROCESS_BOOT_TIME, ShellCommand(command))
     mockAppMaster.reply("result")
     process.destroy()
   }
