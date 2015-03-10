@@ -287,7 +287,7 @@ private[cluster] object Worker {
     }
 
     private def getFormatedTime(timestamp: Long): String = {
-      val datePattern = "yyyy-MM-dd-hh-mm"
+      val datePattern = "yyyy-MM-dd-HH-mm"
       val format = new java.text.SimpleDateFormat(datePattern)
       format.format(timestamp)
     }
