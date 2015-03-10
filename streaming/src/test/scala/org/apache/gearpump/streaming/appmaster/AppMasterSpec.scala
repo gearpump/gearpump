@@ -30,6 +30,7 @@ import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
 import org.apache.gearpump.cluster.master.{AppMasterRuntimeInfo, MasterProxy}
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
@@ -119,7 +120,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       watcher.expectTerminated(mockMasterProxy)
 
       mockMasterProxy = getActorSystem.actorOf(Props(new MasterProxy(List(mockMaster.ref.path))), AppMasterSpec.MOCK_MASTER_PROXY)
-      mockMaster.expectMsgType[RegisterAppMaster]
+      mockMaster.expectMsgClass(15 seconds, classOf[RegisterAppMaster])
     }
 
     "launch executor and task properly" in {
