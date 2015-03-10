@@ -27,8 +27,8 @@ angular
   .constant('conf', {
     debug: true,
     restapiAutoRefreshInterval: 2000,
-    restapiRoot: '//localhost:8090', //'',
-    webSocketUri: 'ws://localhost:8091/',
+    restapiRoot: '',
+    webSocketUri: 'ws://' + document.location.hostname + ':8091/',
     webSocketSendTimeout: 500
   })
 
