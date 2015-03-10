@@ -32,9 +32,8 @@ object SOL extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
-    "streamProducer"-> CLIOption[Int]("<stream producer number>", required = false, defaultValue = Some(2)),
-    "streamProcessor"-> CLIOption[Int]("<stream processor number>", required = false, defaultValue = Some(2)),
-    "runseconds" -> CLIOption[Int]("<run seconds>", required = false, defaultValue = Some(60)),
+    "streamProducer"-> CLIOption[Int]("<stream producer number>", required = false, defaultValue = Some(1)),
+    "streamProcessor"-> CLIOption[Int]("<stream processor number>", required = false, defaultValue = Some(1)),
     "bytesPerMessage" -> CLIOption[Int]("<size of each message>", required = false, defaultValue = Some(100)),
     "stages"-> CLIOption[Int]("<how many stages to run>", required = false, defaultValue = Some(2)))
 
@@ -61,7 +60,5 @@ object SOL extends App with ArgumentsParser {
   implicit val system = context.system
 
   val appId = context.submit(application(config))
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  context.shutdown(appId)
   context.close()
 }

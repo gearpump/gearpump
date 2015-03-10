@@ -48,9 +48,6 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
       "-source", "1",
       "-sink", "1"
     )
-
-    val runseconds = Array("-runseconds", "0")
-
     val validArgs = {
       Table(
         ("requiredArgs", "optionalArgs"),
@@ -61,15 +58,12 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
     }
     val masterReceiver = createMockMaster()
     forAll(validArgs) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
-      val args = requiredArgs ++ optionalArgs ++ runseconds
+      val args = requiredArgs ++ optionalArgs
 
       val process = Util.startProcess(Array.empty[String], getContextClassPath,
         getMainClassName(SequenceFileIO), args)
       masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
       masterReceiver.reply(SubmitApplicationResult(Success(0)))
-      masterReceiver.expectMsgType[ShutdownApplication](PROCESS_BOOT_TIME)
-      masterReceiver.reply(ShutdownApplicationResult(Success(0)))
-
       process.destroy()
     }
 
@@ -82,7 +76,7 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
       )
     }
     forAll(invalidArgs) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
-      val args = optionalArgs ++ runseconds
+      val args = optionalArgs
       assert(Try(SequenceFileIO.main(args)).isFailure, "missing required arguments, print usage")
     }
   }

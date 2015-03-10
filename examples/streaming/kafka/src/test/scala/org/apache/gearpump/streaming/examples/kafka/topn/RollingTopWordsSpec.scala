@@ -45,7 +45,6 @@ class RollingTopWordsSpec extends PropSpec with PropertyChecks with Matchers wit
       "-kafka_stream_producer", "1",
       "-rolling_count", "1",
       "-intermediate_ranker", "1")
-    val runseconds = Array("-runseconds", "0")
 
     val args = {
       Table(
@@ -58,20 +57,18 @@ class RollingTopWordsSpec extends PropSpec with PropertyChecks with Matchers wit
     }
     val masterReceiver = createMockMaster()
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
-      val args = requiredArgs ++ optionalArgs ++ runseconds
+      val args = requiredArgs ++ optionalArgs
 
       val process = Util.startProcess(Array.empty[String], getContextClassPath,
         getMainClassName(RollingTopWords), args)
       masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
       masterReceiver.reply(SubmitApplicationResult(Success(0)))
-      masterReceiver.expectMsgType[ShutdownApplication](PROCESS_BOOT_TIME)
-      masterReceiver.reply(ShutdownApplicationResult(Success(0)))
 
       process.destroy()
     }
 
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
-      val args = optionalArgs ++ runseconds
+      val args = optionalArgs
       assert(Try(RollingTopWords.main(args)).isFailure, "missing required arguments, print usage")
     }
   }

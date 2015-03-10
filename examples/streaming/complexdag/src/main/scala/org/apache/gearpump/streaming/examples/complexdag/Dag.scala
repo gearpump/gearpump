@@ -66,9 +66,8 @@ object Dag extends App with ArgumentsParser {
   val RUN_FOR_EVER = -1
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
-    "runseconds"-> CLIOption[Int]("<how long to run this example, set to -1 if run forever>", required = false, defaultValue = Some(60))
-  )
+    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true)
+    )
 
   def application(config: ParseResult) : AppDescription = {
     val partitioner = new HashPartitioner()
@@ -108,8 +107,6 @@ object Dag extends App with ArgumentsParser {
   val context = ClientContext(config.getString("master"))
   implicit val system = context.system
   val appId = context.submit(application(config))
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  context.shutdown(appId)
   context.close()
 }
 

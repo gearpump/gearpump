@@ -41,23 +41,15 @@ class DagSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
 
   property("Dag should succeed to submit application with required arguments") {
     val requiredArgs = Array("-master", s"$getHost:$getPort")
-    val runseconds = Array("-runseconds", "0")
 
     val masterReceiver = createMockMaster()
-    val args = requiredArgs ++ runseconds
+    val args = requiredArgs
 
     val process = Util.startProcess(Array.empty[String], getContextClassPath,
       getMainClassName(Dag), args)
     masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
     masterReceiver.reply(SubmitApplicationResult(Success(0)))
-    masterReceiver.expectMsgType[ShutdownApplication](PROCESS_BOOT_TIME)
-    masterReceiver.reply(ShutdownApplicationResult(Success(0)))
 
     process.destroy()
-
-    val missingargs = runseconds
-    assert(Try(Dag.main(missingargs)).isFailure, "missing required arguments, print usage")
   }
-
-
 }
