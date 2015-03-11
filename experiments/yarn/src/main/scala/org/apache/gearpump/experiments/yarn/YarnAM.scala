@@ -21,7 +21,6 @@ package org.apache.gearpump.experiments.yarn
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -40,6 +39,7 @@ import scala.collection.JavaConverters._
 import org.apache.gearpump.experiments.yarn.Client._
 import org.apache.gearpump.experiments.yarn.CmdLineVars._
 import org.apache.gearpump.experiments.yarn.EnvVars._
+import org.apache.hadoop.yarn.api.ApplicationConstants
 
 
 
@@ -318,8 +318,8 @@ class ContainerLauncherActor(container: Container, nmClientAsync: NMClientAsync,
   def launch(container: Container) {
     val command: List[String] = List(
       "/bin/date",
-      "1>/tmp/panchostdout",
-      "2>/tmp/panchostderr")
+      "1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/" + ApplicationConstants.STDOUT,
+      "2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/" + ApplicationConstants.STDERR)
 
     val ctx = ContainerLaunchContext.newInstance(Map[String, LocalResource]().asJava,
       Map[String, String]().asJava,
