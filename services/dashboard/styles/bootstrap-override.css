@@ -1,0 +1,13 @@
+@import 'https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic&subset=latin';
+
+body, .tooltip, .popover {
+  font-family: lato, 'helvetica neue', 'segoe ui', arial, helvetica, sans-serif;
+}
+
+.navbar-nav > li:first-child {
+  margin-left: 30px;
+}
+
+.panel-heading {
+  text-transform: none !important;
+}
