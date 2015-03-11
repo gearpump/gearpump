@@ -88,7 +88,7 @@ Check [Maven settings](http://www.gearpump.io/site/downloads/downloads/#maven)
 
 ## Further information
 
-- Document site [gearPump.io](https://gearpump.io)
+- Document site [gearpump.io](http://gearpump.io)
 - User List: [gearpump-user](https://groups.google.com/forum/#!forum/gearpump-user).
 - Report issues: [issue tracker](https://github.com/intel-hadoop/gearpump/issues)
 
@@ -105,9 +105,10 @@ Check [Maven settings](http://www.gearpump.io/site/downloads/downloads/#maven)
 
 ## Contacts:
 
-Please use the google user list if possible. For things that are not OK to be shared in maillist, please contact
-seanzhong@apache.org
-
+Please use the google user list if possible. For things that are not OK to be shared in maillist, please contact:
+xiang.zhong@intel.com
+kam.d.kasravi@intel.com
+weihua.jiang@intel.com
 
 ## License
 
