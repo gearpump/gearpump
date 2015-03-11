@@ -19,158 +19,78 @@ Per initial benchmarks we are able to process 11 million messages/second (100 by
 
 ![](https://raw.githubusercontent.com/intel-hadoop/gearpump/master/doc/dashboard.png)
 
-For steps to reproduce the performance test, please check [Performance benchmark](https://github.com/intel-hadoop/gearpump/wiki#how-do-we-do-benchmark)
+For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/site/0.3/performance/)
 
 ## Technical papers
 There is a 20 pages technical paper on typesafe blog, with technical highlights https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka
 
+## Introduction and Motivation
+
+Check [Introduction](http://www.gearpump.io/site/0.3/introduction/)
 
 ## Getting Started
 
-The latest release binary can be found at: https://github.com/intel-hadoop/gearpump/releases
+Check guide [Get Started](http://www.gearpump.io/site/0.3/getstarted/)
 
-You can skip step 1 and step 2 if you are using pre-build binaries.
+## How to Build
 
-The latest released version can be found at: https://github.com/intel-hadoop/gearpump/releases
+1). Clone the GearPump repository
 
-1. Clone the GearPump repository
-
-  ```bash
+```bash
   git clone https://github.com/intel-hadoop/gearpump.git
   cd gearpump
-  ```
+```
 
-2. Build package
+2). Build package
 
-  Build a package
-
-  ```bash
-  
+```bash
   ## Please use scala 2.11
   ## The target package path: target/gearpump-$VERSION.tar.gz
   sbt clean assembly packArchive ## Or use: sbt clean assembly pack-archive
-  ```
+```
 
-3. Configure
+  After the build, there will be a package file gearpump-${version}.tar.gz generated under target/ folder.
   
-  Distribute the package to all nodes. Modify `conf/gear.conf` on all nodes. You MUST configure ```akka.remote.netty.tcp.hostname``` to make it point to your hostname(or ip), and `gearpump.cluster.masters` to represent a list of master nodes.
+  **NOTE:**
+The build requires network connection. If you are behind an enterprise proxy, make sure you have set the proxy in your env before running the build commands. 
+For windows:
 
-  ```
-  ### Put Akka configuration here
-  base {
+```bash
+Set HTTP_PROXY=http://host:port
+set HTTPS_PROXT= http://host:port
+```
 
-    ##############################
-    ### Required to change!!
-    ### You need to set the ip address or hostname of this machine
-    ###
-    akka.remote.netty.tcp.hostname = "127.0.0.1"
-  }
+For Linux:
 
-  #########################################
-  ### This is the default configuration for gearpump
-  ### To use the application, you at least need to change gearpump.cluster to point to right master
-  #########################################
-  gearpump {
+```bash
+export HTTP_PROXY=http://host:port
+export HTTPS_PROXT= http://host:port
+```
 
-    ##############################
-    ### Required to change!!
-    ### You need to set the master cluster address here
-    ###
-    ###
-    ### For example, you may start three master
-    ### on node1: bin/master -ip node1 -port 3000
-    ### on node2: bin/master -ip node2 -port 3000
-    ### on node3: bin/master -ip node3 -port 3000
-    ###
-    ### Then you need to set the cluster.masters = ["node1:3000","node2:3000","node3:3000"]
-    cluster {
-      masters = ["127.0.0.1:3000"]
-    }
-  }
-  ```
+After the build, the package directory layout looks like this: [Layout](http://www.gearpump.io/site/0.3/getstarted/#gearpump-package-structure)
 
-4. Start Master nodes
- 
-  Start the master daemon on all nodes you have configured in `gearpump.cluster.masters`. If you have configured `gearpump.cluster.masters` to:
-  
-  ```
-  gearpump{
-     cluster {
-      masters = ["node1:3000", "node2:3000"]
-    }
-  }
-  ```
-  
-  Then start master daemon on ```node1``` and ```node2```.
 
-  ```bash
-  ## on node1
-  cd gearpump-$VERSION
-  bin/master -ip node1 -port 3000
-  
-  ## on node2
-  cd gearpump-$VERSION
-  bin/master -ip node1 -port 3000
-  ```
+## Concepts
 
-  We support [Master HA](https://github.com/intel-hadoop/gearpump/wiki#master-ha) and allow master to start on multiple nodes. 
-
-5. Start worker
-
-  Start multiple workers on one or more nodes. 
- 
-  ```bash
-  bin/worker
-  ```
-
-6. Submit application jar and run
-
-  You can submit your application to cluster by providing an application jar. For example, for built-in examples, the jar is located at `examples/gearpump-examples-assembly-$VERSION.jar`
-
-  ```bash
-  ## To run WordCount example
-  bin/gear app -jar examples/gearpump-examples-assembly-$VERSION.jar org.apache.gearpump.streaming.examples.wordcount.WordCount -master node1:3000
-  ```
-  Check the wiki pages for more on [build](https://github.com/intel-hadoop/gearpump/wiki#build) and [running examples] in local modes](https://github.com/intel-hadoop/gearpump/wiki#how-to-run-gearpump).
+Check guide [Concepts](http://www.gearpump.io/site/0.3/concepts/)
 
 ## How to write a GearPump Application
 
-This is what a [GearPump WordCount](https://github.com/intel-hadoop/gearpump/tree/master/examples/wordcount/src/main/scala/org/apache/gearpump/streaming/examples/wordcount) looks like.
+Check guide [Streaming Application Developer Guide](http://www.gearpump.io/site/0.3/how_to_write_a_streaming_application/)
 
-  ```scala
-  object WordCount extends App with ArgumentsParser {
+## How to manage the cluster
 
-    def application(config: ParseResult) : AppDescription = {
-      val partitioner = new HashPartitioner()
-      val split = TaskDescription(classOf[Split].getName, splitNum)
-      val sum = TaskDescription(classOf[Sum].getName, sumNum)
-      
-      // Here we define the dag
-      val dag = Graph(split ~ partitioner ~> sum)
-      
-      val app = AppDescription("wordCount", classOf[AppMaster].getName, appConfig, dag)
-      app
-    }
-    
-    val config = parse(args)
-    val context = ClientContext(config.getString("master"))
-    context.submit(application(config))
-  }
-  ```
-
-For detailed description on writing a GearPump application, please check [Write GearPump Applications](https://github.com/intel-hadoop/gearpump/wiki#how-to-write-a-gearpump-application) on the wiki.
+Check [Admin Guide](http://www.gearpump.io/site/0.3/adminguide/)
 
 # Maven dependencies
 
-Please check [here](https://github.com/intel-hadoop/gearpump/wiki#maven-dependencies)
+Check [Maven settings](http://www.gearpump.io/site/downloads/downloads/#maven)
 
 ## Further information
 
-For more documentation and implementation details, please visit [GearPump Wiki](https://github.com/intel-hadoop/gearpump/wiki).
-
-We'll have QnA and discussions at [GearPump User List](https://groups.google.com/forum/#!forum/gearpump-user).
-
-Issues should be reported to [GearPump GitHub issue tracker](https://github.com/intel-hadoop/gearpump/issues) and contributions are welcomed via [pull requests](https://github.com/intel-hadoop/gearpump/pulls)
+Document site [gearPump.io](https://gearpump.io)
+User List: [gearpump-user](https://groups.google.com/forum/#!forum/gearpump-user).
+Report issues: [issue tracker](https://github.com/intel-hadoop/gearpump/issues)
 
 ## Contributors (time order)
 
@@ -180,6 +100,8 @@ Issues should be reported to [GearPump GitHub issue tracker](https://github.com/
 * [Huafeng Wang](https://github.com/huafengw)
 * [Weihua Jiang](https://github.com/whjiang)
 * [Suneel Marthi](https://github.com/smarthi)
+* [Stanley Xu](https://github.com/stanleyxu2005)
+* [Tomasz Targonski](https://github.com/TomaszT)
 
 ## Contacts:
 
