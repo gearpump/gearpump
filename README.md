@@ -88,9 +88,9 @@ Check [Maven settings](http://www.gearpump.io/site/downloads/downloads/#maven)
 
 ## Further information
 
-Document site [gearPump.io](https://gearpump.io)
-User List: [gearpump-user](https://groups.google.com/forum/#!forum/gearpump-user).
-Report issues: [issue tracker](https://github.com/intel-hadoop/gearpump/issues)
+- Document site [gearPump.io](https://gearpump.io)
+- User List: [gearpump-user](https://groups.google.com/forum/#!forum/gearpump-user).
+- Report issues: [issue tracker](https://github.com/intel-hadoop/gearpump/issues)
 
 ## Contributors (time order)
 
