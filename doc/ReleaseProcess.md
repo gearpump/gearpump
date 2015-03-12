@@ -6,7 +6,7 @@ The version must follow a format. For example, 0.2.3 is a valid release version,
 Step1: Pre-release, 
 ===================
 1. Modify Changes.md, 
-2. Change the gearpump version in project/Build.scala, ```val gearPumpVersion = "RELEASE_VERSION"```
+2. Change the gearpump version in version.sbt
 3. Follow [[https://github.com/intel-hadoop/gearpump/blob/master/doc/CommitGuideline.md]] to submit a PR
 
 Step2: Release
