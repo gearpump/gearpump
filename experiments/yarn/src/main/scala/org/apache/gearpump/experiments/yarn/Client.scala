@@ -20,7 +20,6 @@ package org.apache.gearpump.experiments.yarn
 
 import java.io._
 import java.nio.ByteBuffer
-
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.util.LogUtil
@@ -34,9 +33,9 @@ import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.util.{Apps, ConverterUtils, Records}
 import org.slf4j.Logger
-
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
+import java.nio.file.Paths
 
 /**
 Features for YARNClient
@@ -50,19 +49,15 @@ Features for YARNClient
 
 
 trait ClientAPI {
-  def configureAMLaunchContext: ContainerLaunchContext
   def getConfiguration: AppConfig
   def getCommand: String
   def getYarnConf: YarnConfiguration
   def getAppEnv: Map[String, String]
   def getAMCapability: Resource
-  def getAMLocalResourcesMap: Map[String, LocalResource]
   def monitorAM(appContext: ApplicationSubmissionContext): Unit
   def uploadAMResourcesToHDFS(): Unit
 }
-//def getEnvVars(conf: Config)(key: String): String
 
-//cliopts: ParseResult, conf: Config
 class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: YarnClient) extends ClientAPI {
   import org.apache.gearpump.experiments.yarn.Client._
   import org.apache.gearpump.experiments.yarn.EnvVars._
@@ -84,8 +79,8 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
       case 'M' =>
         containerMemory
       case _ =>
-        LOG.error(s"Invalid value $memory defaulting to 2G")
-        2048
+        LOG.error(s"Invalid value $memory defaulting to 1G")
+        1024
     }
     containerMemory
   }
@@ -96,8 +91,15 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     val count = getEnv(CONTAINER_COUNT).trim
     val memory = getMemory(CONTAINER_MEMORY)
     val vmcores = getEnv(CONTAINER_VCORES)
-    val logdir = "/tmp" //ApplicationConstants.LOG_DIR_EXPANSION_VAR
-    val command = s"$exe $mainClass -containers $count -containerMemory $memory -containerVCores $vmcores 1>$logdir/AM_stdout 2>$logdir/AM_stderr"
+    val logdir = ApplicationConstants.LOG_DIR_EXPANSION_VAR
+/*    val command = s"$exe $mainClass -containers $count -containerMemory $memory -containerVCores $vmcores" +
+    " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/" + ApplicationConstants.STDOUT + 
+    " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/" + ApplicationConstants.STDERR;
+*/      
+    val command = s"$exe $mainClass" +
+    " 1>" + logdir +"/" + ApplicationConstants.STDOUT + 
+    " 2>" + logdir +"/" + ApplicationConstants.STDERR;
+
     LOG.info(s"command=$command")
     command
   }
@@ -124,6 +126,7 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
       excludeJar.trim
     }).toIndexedSeq
     LOG.info(s"jarDir=$jarDir")
+    //TODO: if jarDir didn't file will be created instead of dir    
     Option(new File(jarDir)).foreach(_.list.filter(file => {
       file.endsWith(".jar")
     }).filter(jar => {
@@ -139,24 +142,6 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     }))
   }
 
-  def configureAMLaunchContext: ContainerLaunchContext = {
-    uploadAMResourcesToHDFS()
-    val amContainer = Records.newRecord(classOf[ContainerLaunchContext])
-    amContainer.setCommands(Seq(getCommand))
-    val environment = getAppEnv
-    environment.foreach(pair => {
-      val (key, value) = pair
-      LOG.info(s"getAppEnv key=$key value=$value")
-    })
-    amContainer.setEnvironment(getAppEnv)
-    amContainer.setLocalResources(getAMLocalResourcesMap)
-    val credentials = UserGroupInformation.getCurrentUser.getCredentials
-    val dob = new DataOutputBuffer
-    credentials.writeTokenStorageToStream(dob)
-    amContainer.setTokens(ByteBuffer.wrap(dob.getData))
-    amContainer
-  }
-
   def getAMCapability: Resource = {
     val capability = Records.newRecord(classOf[Resource])
     val memory = getEnv(YARNAPPMASTER_MEMORY).trim
@@ -167,28 +152,14 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
       case 'M' =>
         containerMemory
       case _ =>
-        LOG.error(s"Invalid value $memory defaulting to 2G")
-        2048
+        LOG.error(s"Invalid value $memory defaulting to 1G")
+        1024
     }
     capability.setMemory(containerMemory)
     capability.setVirtualCores(getEnv(YARNAPPMASTER_VCORES).toInt)
     capability
   }
 
-  def getAMLocalResourcesMap: Map[String, LocalResource] = {
-    getFs.listStatus(getHdfs).map(fileStatus => {
-      val localResouceFile = Records.newRecord(classOf[LocalResource])
-      val path = ConverterUtils.getYarnUrlFromPath(fileStatus.getPath)
-      LOG.info(s"local resource path=${path.getFile}")
-      localResouceFile.setResource(path)
-      localResouceFile.setType(LocalResourceType.FILE)
-      localResouceFile.setSize(fileStatus.getLen)
-      localResouceFile.setTimestamp(fileStatus.getModificationTime)
-      localResouceFile.setVisibility(LocalResourceVisibility.APPLICATION)
-      fileStatus.getPath.getName -> localResouceFile
-    }).toMap
-  }
-  
   def clusterResources: ClusterResources = {
     val nodes:Seq[NodeReport] = yarnClient.getNodeReports(NodeState.RUNNING)
     nodes.foldLeft(ClusterResources(0L, 0, Map.empty[String, Long]))((clusterResources, nodeReport) => {
@@ -215,18 +186,20 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
       "Application " + appId + " finished with" +
         " state " + appState +
         " at " + appReport.getFinishTime)
-
   }
 
 
   def deploy() = {
+    LOG.info("Starting AM")
+    //uploadAMResourcesToHDFS()
     yarnClient.init(yarnConf)
     yarnClient.start()
     val appContext = yarnClient.createApplication.getApplicationSubmissionContext
     appContext.setApplicationName(getEnv(YARNAPPMASTER_NAME))
-    appContext.setAMContainerSpec(configureAMLaunchContext)
+    appContext.setAMContainerSpec(YarnContainerUtil.getContainerContext(yarnConf, getCommand))
     appContext.setResource(getAMCapability)
     appContext.setQueue(getEnv(YARNAPPMASTER_QUEUE))
+    
     yarnClient.submitApplication(appContext)
     monitorAM(appContext)
   }
@@ -244,6 +217,7 @@ object Client extends App with ArgumentsParser {
     "main" -> CLIOption[String]("<AppMaster main class>", required = false),
     "monitor" -> CLIOption[Boolean]("<monitor AppMaster state>", required = false, defaultValue = Some(false))
   )
-
+  
   new Client(new AppConfig(parse(args), ConfigFactory.load), new YarnConfiguration, YarnClient.createYarnClient)
 }
+
