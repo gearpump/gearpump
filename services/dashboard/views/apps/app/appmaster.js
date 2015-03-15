@@ -14,9 +14,8 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
       });
   }])
 
-  .controller('AppMasterCtrl',
-  ['$scope', '$routeParams', 'breadcrumbs', 'restapi', 'StreamingService', 'visdagUtil', 'StreamingDag',
-    function ($scope, $routeParams, breadcrumbs, restapi, StreamingService, visdagUtil, StreamingDag) {
+  .controller('AppMasterCtrl', ['$scope', '$routeParams', 'breadcrumbs', 'restapi', 'StreamingService', 'dagStyle', 'StreamingDag',
+    function ($scope, $routeParams, breadcrumbs, restapi, StreamingService, dagStyle, StreamingDag) {
       $scope.app = {id: $routeParams.id};
       breadcrumbs.options = {'Application ': 'Application ' + $scope.app.id};
 
@@ -27,7 +26,6 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
           if (data.hasOwnProperty('appName')) {
             $scope.app = {
               actorPath: data.actorPath,
-              duration: data.clock,
               executors: data.executors,
               id: data.appId,
               name: data.appName
@@ -39,9 +37,12 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
             if ($scope.streamingDag === null) {
               $scope.streamingDag = new StreamingDag($scope.app.id, data.processors,
                 data.processorLevels, data.dag.edges);
+              var depth = data.processorLevels.reduce(function(total, b) {
+                return Math.max(total, b[1]);
+              }, 0);
               $scope.visgraph = {
-                options: visdagUtil.newOptions(),
-                data: visdagUtil.newData()
+                options: dagStyle.newOptions({depth: depth}),
+                data: dagStyle.newData()
               };
 
               // Usually metrics will be pushed by websocket. In worst case, metrics might be available
@@ -65,8 +66,8 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
 
       /** Redraw VisGraph on demand */
       $scope.redrawVisGraph = function() {
-        $scope.streamingDag.updateVisGraphNodes($scope.visgraph.data.nodes, [2, 16]);
-        $scope.streamingDag.updateVisGraphEdges($scope.visgraph.data.edges, [0.5, 4], [0.5, 0.1]);
+        $scope.streamingDag.updateVisGraphNodes($scope.visgraph.data.nodes, dagStyle.nodeRadiusRange());
+        $scope.streamingDag.updateVisGraphEdges($scope.visgraph.data.edges, dagStyle.edgeWidthRange(), dagStyle.edgeArrowSizeRange());
       };
 
       var request = JSON.stringify(
@@ -79,42 +80,4 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
         $scope.streamingDag.updateMetrics(obj[0], obj[1]);
       });
     }])
-
-  .factory('visdagUtil', function () {
-    var fontFace = "'lato', 'helvetica neue', 'segoe ui', arial";
-    return {
-      newOptions: function () {
-        return {
-          width: '100%',
-          height: '100%',
-          hierarchicalLayout: {
-            layout: 'direction',
-            direction: "UD"
-          },
-          stabilize: true /* stabilize positions before displaying */,
-          freezeForStabilization: true,
-          nodes: {
-            shape: 'dot',
-            fontSize: 12,
-            fontFace: fontFace,
-            fontStrokeColor: '#fff',
-            fontStrokeWidth: 2
-          },
-          edges: {
-            style: 'arrow',
-            labelAlignment: 'line-center',
-            fontSize: 11,
-            fontFace: fontFace
-          }
-        };
-      },
-
-      newData: function () {
-        return {
-          nodes: new vis.DataSet(),
-          edges: new vis.DataSet()
-        };
-      }
-    };
-  })
 ;

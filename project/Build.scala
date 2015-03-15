@@ -312,7 +312,7 @@ object Build extends sbt.Build {
           "org.webjars" % "d3js" % "3.5.3",
           "org.webjars" % "momentjs" % "2.9.0",
           "org.webjars" % "smart-table" % "1.4.11",
-          "org.webjars" % "visjs" % "3.10.0"
+          "org.webjars" % "visjs" % "3.11.0"
         )
       )
   ) dependsOn(streaming % "test->test;compile->compile")

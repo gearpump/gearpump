@@ -1,16 +1,15 @@
-<div class="col-lg-6">
+<div class="row">
 
-  <div class="row">
-    <div ng-if="visgraph" class="panel panel-default">
-      <div class="panel-heading">{{app.name}}</div>
-      <div class="panel-body" style="height:80vh">
-        <visgraph data="visgraph.data" options="visgraph.options"/>
-      </div>
+  <!-- left half -->
+  <div class="col-md-6">
+    <div ng-if="visgraph">
+      <visnetwork data="visgraph.data" options="visgraph.options"/>
     </div>
   </div>
-</div>
+  <!-- end of left half -->
 
-<div class="col-lg-6">
+  <!-- right half -->
+  <div class="col-md-6">
 
   <div class="col-lg-12">
     <h5>Send Throughput</h5>
@@ -147,5 +146,8 @@
       </tbody>
     </table>
   </div>
+
+  </div>
+  <!-- end of right half -->
 
 </div>
