@@ -121,6 +121,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         angular.forEach(this.edges, function (_, id) {
           bandwidths[id] = this._calculateEdgeBandwidth(id);
         }, this);
+        bandwidths[-1] = 0;
         var suggestWidth = _rangeMapper(bandwidths, widthRange);
         var suggestArrowSize = _rangeMapper(bandwidths, arrowSizeRange);
 
@@ -128,7 +129,6 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         for (var id in this.edges) {
           if (this.edges.hasOwnProperty(id)) {
             var data = this.edges[id];
-            var label = _lastPart(data.type);
             var edge = edges.get(id);
             var newWidth = d3.round(suggestWidth(bandwidths[id]), 1);
             var newArrowSize = d3.round(suggestArrowSize(bandwidths[id]), 1);
@@ -155,13 +155,27 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
           var parts = id.split('_');
           var sourceId = parseInt(parts[0]);
           var targetId = parseInt(parts[1]);
-          var sourceTasks = this.processors[sourceId].parallelism;
-          var targetTasks = this.processors[targetId].parallelism;
+          var sourceTasks = this._calculateProcessorConnections(sourceId).outputs;
+          var targetTasks = this._calculateProcessorConnections(targetId).inputs;
           var sourceSendThroughput = d3.sum(this._getMetricsByProcessor(sourceId, sourceTasks, sendThroughput, 'meanRate'));
           var targetReceiveThroughput = d3.sum(this._getMetricsByProcessor(targetId, targetTasks, receiveThroughput, 'meanRate'));
-          bandwidth = Math.min(sourceSendThroughput, targetReceiveThroughput);
+          bandwidth = Math.min(
+            sourceTasks === 0 ? 0 : sourceSendThroughput / sourceTasks,
+            targetTasks === 0 ? 0 : targetReceiveThroughput / targetTasks);
         }
         return bandwidth;
+      },
+
+      _calculateProcessorConnections: function (id) {
+        var result = {inputs: 0, outputs: 0};
+        angular.forEach(this.edges, function (edge, _) {
+          if (edge.source === id) {
+            result.outputs++;
+          } else if (edge.target === id) {
+            result.inputs++;
+          }
+        }, this);
+        return result;
       },
 
       _getMetricsByProcessor: function (id, tasks, dictionary, metrics) {
