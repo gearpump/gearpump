@@ -6,7 +6,7 @@
 
 angular.module('dashboard.streamingdag', ['dashboard.metrics'])
 
-  .factory('StreamingDag', ['Metrics', function (Metrics) {
+  .service('StreamingDag', ['Metrics', function (Metrics) {
 
     /** The constructor */
     function StreamingDag(id, processors, levels, edges) {
@@ -89,9 +89,14 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
             var data = this.processors[id];
             var label = id + ', ' + _lastPart(data.taskClass);
             var node = nodes.get(id);
-            var newRadius = suggestRadius(weights[id]);
+            var newRadius = d3.round(suggestRadius(weights[id]), 1);
             if (!node || node.label !== label || node.radius !== newRadius) {
-              diff.push({id: id, label: label, level: this.processorsLevels[id], radius: newRadius});
+              diff.push({
+                id: id,
+                label: label,
+                level: this.processorsLevels[id],
+                radius: newRadius
+              });
             }
           }
         }
@@ -125,15 +130,15 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
             var data = this.edges[id];
             var label = _lastPart(data.type);
             var edge = edges.get(id);
-            var newWidth = suggestWidth(bandwidths[id]);
-            var newArrowSize = suggestArrowSize(bandwidths[id]);
-            if (!edge /*|| edge.label !== label*/ || edge.width !== newWidth) {
+            var newWidth = d3.round(suggestWidth(bandwidths[id]), 1);
+            var newArrowSize = d3.round(suggestArrowSize(bandwidths[id]), 1);
+            if (!edge || edge.width !== newWidth) {
               diff.push({
                 id: id,
                 from: data.source,
                 to: data.target,
-                //label: label,
                 width: newWidth,
+                hoverWidth: newWidth,
                 arrowScaleFactor: newArrowSize
               });
             }

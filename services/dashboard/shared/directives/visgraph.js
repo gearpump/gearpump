@@ -5,7 +5,10 @@
 'use strict';
 
 angular.module('directive.visgraph', [])
-  .directive('visgraph', function () {
+
+/** Directive of visjs's Network */
+  // TODO: Operate network component
+  .directive('visnetwork', [function () {
     return {
       restrict: 'EA',
       transclude: false,
@@ -13,18 +16,20 @@ angular.module('directive.visgraph', [])
         data: '=',
         options: '='
       },
-      link: function (scope, element, attr) {
-        var network = new vis.Network(element[0], scope.data, scope.options);
-        scope.$watch('data', function () {
-          if (scope.data) {
-            network.setData(scope.data);
+      link: function (scope, elem) {
+        var network = new vis.Network(elem[0], scope.data, scope.options);
+        scope.$watch('data', function (data) {
+          if (data) {
+            network.setData(data);
             network.freezeSimulation(true);
           }
         });
         scope.$watchCollection('options', function (options) {
-          network.setOptions(options);
+          if (options) {
+            network.setOptions(options);
+          }
         });
       }
     };
-  })
+  }])
 ;
