@@ -81,8 +81,11 @@ class KafkaUtilSpec extends PropSpec with PropertyChecks with BeforeAndAfterEach
     }
     val partitionsToBrokers = createTopicUntilLeaderIsElected(topic, partitions, replicas)
     0.until(partitions).foreach { part =>
+      val hostPorts = brokerList(partitionsToBrokers(part).get).split(":")
       val broker = getBroker(newZkClient, topic, part)
-      broker.toString shouldBe brokerList(partitionsToBrokers(part).get)
+
+      broker.host shouldBe hostPorts(0)
+      broker.port.toString shouldBe hostPorts(1)
     }
   }
 

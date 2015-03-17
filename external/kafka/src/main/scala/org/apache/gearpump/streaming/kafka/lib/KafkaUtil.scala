@@ -21,10 +21,10 @@ package org.apache.gearpump.streaming.kafka.lib
 import java.util.Properties
 
 import kafka.admin.AdminUtils
+import kafka.cluster.Broker
 import kafka.common.TopicAndPartition
 import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
-import org.apache.gearpump.streaming.kafka.lib.KafkaConsumer.Broker
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
@@ -36,9 +36,8 @@ object KafkaUtil {
     try {
       val leader = ZkUtils.getLeaderForPartition(zkClient, topic, partition)
         .getOrElse(throw new RuntimeException(s"leader not available for TopicAndPartition($topic, $partition)"))
-      val broker = ZkUtils.getBrokerInfo(zkClient, leader)
+      ZkUtils.getBrokerInfo(zkClient, leader)
         .getOrElse(throw new RuntimeException(s"broker info not found for leader $leader"))
-      Broker(broker.host, broker.port)
     } catch {
       case e: Exception =>
         LOG.error(e.getMessage)

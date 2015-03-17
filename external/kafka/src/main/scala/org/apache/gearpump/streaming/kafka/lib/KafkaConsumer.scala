@@ -26,15 +26,6 @@ import kafka.message.MessageAndOffset
 import kafka.utils.Utils
 
 object KafkaConsumer {
-  // TODO: use kafka.cluster.Broker once it is not package private in 0.8.2
-  object Broker {
-    def toString(brokers: List[Broker]) = brokers.mkString(",")
-  }
-
-  case class Broker(host: String, port: Int) {
-    override def toString = s"$host:$port"
-  }
-
   def apply(topic: String, partition: Int, config: KafkaConfig): KafkaConsumer = {
     val zkClient = KafkaUtil.connectZookeeper(config)
     val broker = KafkaUtil.getBroker(zkClient, topic, partition)
