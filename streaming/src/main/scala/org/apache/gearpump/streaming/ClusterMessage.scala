@@ -20,13 +20,14 @@ package org.apache.gearpump.streaming
 
 import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.task.{TaskActor, Task, TaskContextData, TaskId}
 import org.apache.gearpump.transport.HostPort
 import scala.language.existentials
 
 object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, taskContext: TaskContextData, taskClass: Class[_ <: Task], taskActorClass: Class[_ <: Actor] = classOf[TaskActor])
+  case class LaunchTask(taskId: TaskId, taskContext: TaskContextData, taskClass: Class[_ <: Task], taskActorClass: Class[_ <: Actor] = classOf[TaskActor], taskConfig: UserConfig = null)
 
   case class StartClock(clock : TimeStamp)
   case object RestartClockService

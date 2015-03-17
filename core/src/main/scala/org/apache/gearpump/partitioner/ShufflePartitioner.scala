@@ -30,7 +30,7 @@ class ShufflePartitioner extends Partitioner {
   private var count = 0
 
 
-  override def getPartition(msg : Message, partitionNum : Int) : Int = {
+  override def getPartition(msg : Message, partitionNum : Int, currentPartitionId: Int) : Int = {
 
     if (seed == 0) {
       seed = newSeed

@@ -20,7 +20,14 @@ angular.module('dashboard.apps.appmaster')
 
       angular.forEach(data.processors, function (processor, key) {
         var processorId = parseInt(key);
-        var label = processorId + ', ' + _lastPart(processor.taskClass);
+
+        var label = '[' + processorId + '] ';
+        if (processor.description == "") {
+            label = label + _lastPart(processor.taskClass);
+        } else {
+            label = label + processor.description;
+        }
+
         var weight = parseInt(data.weights[processorId]);
         var hierarchyLevels = data.hierarchyLevels[processorId];
         var visNode = visNodes.get(processorId);

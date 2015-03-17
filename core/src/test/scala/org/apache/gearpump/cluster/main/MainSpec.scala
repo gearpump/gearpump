@@ -167,7 +167,9 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
     }
 
     assert(Try(Gear.main(Array("unknownCommand"))).isFailure, "unknown command, throw ")
-    assert(Try(Gear.main(Array("unknownCommand", "-noexist"))).isFailure, "unknown command, throw")
+
+    val tryThis = Try(Gear.main(Array("unknownCommand", "-noexist")))
+    assert(tryThis.isFailure, "unknown command, throw")
   }
 
   "Shell" should "be started without exception" in {

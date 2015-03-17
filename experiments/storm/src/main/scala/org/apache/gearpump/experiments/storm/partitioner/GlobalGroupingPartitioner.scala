@@ -22,5 +22,5 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.partitioner.Partitioner
 
 private[storm] class GlobalGroupingPartitioner extends Partitioner {
-  override def getPartition(msg: Message, partitionNum: Int): Int = 0
+  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = 0
 }
