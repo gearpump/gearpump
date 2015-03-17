@@ -45,14 +45,61 @@ class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) e
     graph.outDegreeOf(node)
   }
 
+  def inDegreeOf(node: N): Int = {
+    graph.inDegreeOf(node)
+  }
+
   def outgoingEdgesOf(node : N): Array[(N, E, N)]  = {
     toEdgeArray(graph.outgoingEdgesOf(node))
+  }
+
+  def incomingEdgesOf(node: N): Array[(N, E, N)] = {
+    toEdgeArray(graph.incomingEdgesOf(node))
+  }
+
+  def removeVertex(node: N): Unit = {
+    graph.removeVertex(node)
   }
 
   def addEdge(node1 : N, edge: E, node2: N): Unit = {
     addVertex(node1)
     addVertex(node2)
     graph.addEdge(node1, node2, Edge(edge))
+  }
+
+  /**
+   * Map a graph to a new graph, with vertex converted to a new type
+   * @param fun
+   * @tparam NewNode
+   * @return
+   */
+  def mapVertex[NewNode](fun: N => NewNode): Graph[NewNode, E] = {
+    val vertexMap = vertices.foldLeft(Map.empty[N, NewNode]){(map, vertex) =>
+      map + (vertex -> fun(vertex))
+    }
+    val newGraph = Graph.empty[NewNode, E]
+    vertexMap.values.foreach(newGraph.addVertex(_))
+    edges.foreach {edgeWithEnds =>
+      val (node1, edge, node2) = edgeWithEnds
+      newGraph.addEdge(vertexMap(node1), edge, vertexMap(node2))
+    }
+    newGraph
+  }
+
+  /**
+   * Map a graph to a new graph, with edge converted to new type
+   * @param fun
+   * @tparam NewEdge
+   * @return
+   */
+  def mapEdge[NewEdge](fun: E => NewEdge): Graph[N, NewEdge] = {
+    val newGraph = Graph.empty[N, NewEdge]
+    vertices.foreach(newGraph.addVertex(_))
+    edges.foreach {edgeWithEnds =>
+      val (node1, edge, node2) = edgeWithEnds
+      newGraph.addEdge(node1, fun(edge), node2)
+    }
+    newGraph
   }
 
   def edgesOf(node : N): Array[(N, E, N)] = {

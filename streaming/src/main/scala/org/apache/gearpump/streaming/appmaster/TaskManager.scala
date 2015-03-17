@@ -91,7 +91,7 @@ private[appmaster] class TaskManager(
               LOG.info("Sending Launch Task to executor: " + executor.toString())
 
               val taskContext = TaskContextData(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, dag)
-              executor ! LaunchTask(taskId, taskContext, TaskUtil.loadClass(taskDescription.taskClass))
+              executor ! LaunchTask(taskId, taskContext, TaskUtil.loadClass(taskDescription.taskClass), classOf[TaskActor], taskDescription.taskConf)
               executorRestartPolicy.addTaskToExecutor(executorId, taskId)
               //Todo: subtract the actual resource used by task
               val usedResource = Resource(1)

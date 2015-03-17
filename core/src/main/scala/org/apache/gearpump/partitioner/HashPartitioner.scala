@@ -26,7 +26,7 @@ import org.apache.gearpump.Message
  * same hash code after serialization and deserialization.
  */
 class HashPartitioner extends Partitioner {
-  override def getPartition(msg : Message, partitionNum : Int) : Int = {
+  override def getPartition(msg : Message, partitionNum : Int, currentPartitionId: Int) : Int = {
     (msg.msg.hashCode & Integer.MAX_VALUE) % partitionNum
   }
 }

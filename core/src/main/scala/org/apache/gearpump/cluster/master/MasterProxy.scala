@@ -97,7 +97,7 @@ class MasterProxy (masters: Iterable[ActorPath])
 
   def messageHandler(master: ActorRef): Receive = {
     case msg =>
-      LOG.info(s"Get msg ${msg.getClass.getSimpleName}, forwarding to ${master.path}")
+      LOG.debug(s"Get msg ${msg.getClass.getSimpleName}, forwarding to ${master.path}")
       master forward msg
   }
 

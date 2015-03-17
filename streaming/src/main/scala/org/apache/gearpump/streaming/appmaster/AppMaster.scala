@@ -32,7 +32,8 @@ import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathLi
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.util._
+import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.{ActorUtil, LogUtil, Graph}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
@@ -62,11 +63,11 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   }
 
   private def getHistoryMetricsConfig: HistoryMetricsConfig = {
-    val historyHour = context.system.settings.config.getInt(Constants.GEARPUMP_METRIC_RETAIN_HISTORY_DATA_HOURS)
-    val historyInterval = context.system.settings.config.getInt(Constants.GEARPUMP_RETAIN_HISTORY_DATA_INTERVAL_MS)
+    val historyHour = context.system.settings.config.getInt(GEARPUMP_METRIC_RETAIN_HISTORY_DATA_HOURS)
+    val historyInterval = context.system.settings.config.getInt(GEARPUMP_RETAIN_HISTORY_DATA_INTERVAL_MS)
 
-    val recentSeconds = context.system.settings.config.getInt(Constants.GEARPUMP_RETAIN_RECENT_DATA_SECONDS)
-    val recentInterval = context.system.settings.config.getInt(Constants.GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS)
+    val recentSeconds = context.system.settings.config.getInt(GEARPUMP_RETAIN_RECENT_DATA_SECONDS)
+    val recentInterval = context.system.settings.config.getInt(GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS)
     HistoryMetricsConfig(historyHour, historyInterval, recentSeconds, recentInterval)
   }
 
@@ -92,7 +93,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
     case ReplayFromTimestampWindowTrailingEdge =>
       taskManager forward ReplayFromTimestampWindowTrailingEdge
     case metrics: MetricType =>
-      LOG.info(s"***AppMaster publishing metrics***")
+
       actorSystem.eventStream.publish(metrics)
   }
 
@@ -101,11 +102,11 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       executorManager forward register
   }
 
-  implicit val timeOut = Constants.FUTURE_TIMEOUT
+  implicit val timeOut = FUTURE_TIMEOUT
 
   def appMasterInfoService: Receive = {
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
-      LOG.info(s"***AppMaster got AppMasterDataDetailRequest for $appId ***")
+      LOG.debug(s"AppMaster got AppMasterDataDetailRequest for $appId ")
 
       val executorsFuture = getExecutorList
       val clockFuture = getMinClock

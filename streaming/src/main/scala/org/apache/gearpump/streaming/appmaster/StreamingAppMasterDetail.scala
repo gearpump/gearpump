@@ -58,7 +58,8 @@ object StreamingAppMasterDataDetail {
         Js.Arr(seq: _*)
       }
 
-      val processors = upickle.writeJs(app.processors)
+      // erase task configuration
+      val processors = upickle.writeJs(app.processors.mapValues(_.copy(taskConf = null)))
 
       val dag = Some(app.dag).map {dag =>
 

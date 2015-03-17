@@ -24,7 +24,7 @@ import org.apache.gearpump.partitioner.Partitioner
 import scala.util.Random
 
 class NoneGroupingPartitioner extends Partitioner {
-  override def getPartition(msg: Message, partitionNum: Int): Int = {
+  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
     val random = new Random
     random.nextInt % partitionNum
   }

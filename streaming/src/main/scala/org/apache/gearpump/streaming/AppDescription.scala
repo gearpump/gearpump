@@ -27,7 +27,7 @@ import upickle.{Writer, Js}
 
 import scala.language.implicitConversions
 
-case class TaskDescription(taskClass: String, parallelism : Int, description: String = "") extends ReferenceEqual
+case class TaskDescription(taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null) extends ReferenceEqual
 
 case class AppDescription(name : String, userConfig: UserConfig, dag: Graph[TaskDescription, Partitioner], clusterConfig: ClusterConfigSource = null)
 

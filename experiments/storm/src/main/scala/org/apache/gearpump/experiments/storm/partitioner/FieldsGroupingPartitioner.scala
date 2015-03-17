@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
 
 
 private[storm] class FieldsGroupingPartitioner(outFields: Fields, groupFields: Fields) extends Partitioner {
-  override def getPartition(msg: Message, partitionNum: Int): Int = {
+  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
     val values = msg.msg.asInstanceOf[StormTuple].values
     val hash = outFields.select(groupFields, values.asJava).hashCode()
     (hash & Integer.MAX_VALUE) % partitionNum

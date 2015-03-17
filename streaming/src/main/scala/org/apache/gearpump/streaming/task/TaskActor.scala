@@ -88,7 +88,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       return
     }
 
-    val partitions = partitioner.getPartitions(msg)
+    val partitions = partitioner.getPartitions(msg, taskId.index)
 
     var start = 0
 
@@ -319,12 +319,12 @@ object TaskActor {
       new MergedPartitioner(partitioners :+ partitioner, newPartitionStart, newPartitionEnd)
     }
 
-    def getPartitions(msg : Message) : Array[Int] = {
+    def getPartitions(msg : Message, currentPartitionId: Int) : Array[Int] = {
       var start = 0
       val length = partitioners.length
       val result = new Array[Int](length)
       while (start < length) {
-        result(start) = partitioners(start).getPartition(msg, partitionStop(start) - partitionStart(start)) + partitionStart(start)
+        result(start) = partitioners(start).getPartition(msg, partitionStop(start) - partitionStart(start), currentPartitionId) + partitionStart(start)
         start += 1
       }
       result
