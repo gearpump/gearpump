@@ -20,7 +20,9 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.pattern.ask
-import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
+import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, GetAllWorkers}
+import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, StartClock}
 import org.apache.gearpump.streaming.executor.{ExecutorRestartPolicy, Executor}
@@ -31,7 +33,7 @@ import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.DAG
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
@@ -57,7 +59,6 @@ private[appmaster] class TaskManager(
   import context.dispatcher
 
   startWith(Uninitialized, null)
-  self ! DagInit(dag)
 
   when (Uninitialized) {
     case Event(DagInit(dag), _) =>

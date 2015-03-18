@@ -23,13 +23,13 @@ import akka.actor.Actor
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.streaming.TaskDescription
-import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, NonLocality, Locality}
+import org.apache.gearpump.streaming.appmaster.ScheduleUsingUserConfig.{WorkerLocality, NonLocality, Locality}
 import org.apache.gearpump.streaming.task.{Task, TaskUtil}
 import org.apache.gearpump.util.{ActorUtil, Constants}
 
 import scala.collection.mutable
 
-class TaskLocator(config: Config) {
+class ScheduleUsingUserConfig(config: Config) extends TaskSchedulePolicy{
   private var userScheduledTask = Map.empty[Class[_ <: Task], mutable.Queue[Locality]]
 
   initTasks()
@@ -44,7 +44,7 @@ class TaskLocator(config: Config) {
     }
   }
 
-  def locateTask(taskDescription : TaskDescription) : Locality = {
+  def scheduleTask(taskDescription : TaskDescription) : Locality = {
     if(userScheduledTask.contains(TaskUtil.loadClass(taskDescription.taskClass))){
       val localityQueue = userScheduledTask.get(TaskUtil.loadClass(taskDescription.taskClass)).get
       if(localityQueue.size > 0){
@@ -87,7 +87,7 @@ gearpump {
   }
 }
 
-object TaskLocator {
+object ScheduleUsingUserConfig {
 
   trait Locality
 

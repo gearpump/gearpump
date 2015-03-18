@@ -18,12 +18,13 @@
 package org.apache.gearpump.streaming.appmaster
 
 import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.testkit.{TestActorRef, TestProbe}
+import akka.testkit.TestActor.AutoPilot
+import akka.testkit.{TestActor, TestActorRef, TestProbe}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated}
+import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, AppMasterRegistered, ResourceAllocated}
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
@@ -86,10 +87,12 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     val registerAppMaster = mockMaster.receiveOne(15 seconds)
     assert(registerAppMaster.isInstanceOf[RegisterAppMaster])
     appMaster = registerAppMaster.asInstanceOf[RegisterAppMaster].appMaster
-
     mockMaster.reply(AppMasterRegistered(appId))
-    mockMaster.expectMsg(15 seconds, GetAppData(appId, "startClock"))
-    mockMaster.reply(GetAppDataResult("startClock", 0L))
+
+    mockMaster.receiveWhile(15 seconds, messages = 2) {
+      case GetAllWorkers => mockMaster.reply(WorkerList(List.empty[Int]))
+      case get: GetAppData => mockMaster.reply(GetAppDataResult("startClock", 0L))
+    }
     mockMaster.expectMsg(15 seconds, RequestResource(appId, ResourceRequest(Resource(4))))
   }
 

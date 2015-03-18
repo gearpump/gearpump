@@ -30,7 +30,7 @@ import Executor.RestartExecutor
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
-import org.apache.gearpump.streaming.appmaster.TaskManager.MessageLoss
+import org.apache.gearpump.streaming.appmaster.TaskManager.{DagInit, MessageLoss}
 import org.apache.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.task._
@@ -130,6 +130,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val taskManager = system.actorOf(
       Props(new TaskManager(appId, dag, scheduler, executorManager.ref, clockService.ref, appMaster.ref, "appName")))
 
+    taskManager ! DagInit(dag)
     // taskmanager should return the latest clock to task(0,0)
     clockService.expectMsg(GetLatestMinClock)
     clockService.reply(LatestMinClock(0))
