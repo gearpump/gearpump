@@ -35,7 +35,7 @@ object Build extends sbt.Build {
   val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
   val json4sVersion = "3.2.10"
-  val kafkaVersion = "0.8.2.0"
+  val kafkaVersion = "0.8.2.1"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
   
