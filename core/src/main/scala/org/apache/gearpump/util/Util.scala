@@ -33,9 +33,14 @@ import scala.util.Try
 object Util {
   val LOG = LogUtil.getLogger(getClass)
   private val appNamePattern = "^[a-zA-Z_][a-zA-Z0-9_]+$".r.pattern
+  private val validIpAddressRegex = "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)".r
 
   def validApplicationName(appName: String): Boolean = {
     appNamePattern.matcher(appName).matches()
+  }
+
+  def parseIp(path: String): Option[String] = {
+    validIpAddressRegex.findFirstIn(path)
   }
 
   def getCurrentClassPath : Array[String] = {
@@ -114,5 +119,10 @@ object Util {
       val decoded = BaseEncoding.base64().decode(base64)
       SerializationUtils.deserialize(decoded).asInstanceOf[T]
     }.toOption
+  }
+
+  def configToMap(config : Config, path: String) = {
+    import scala.collection.JavaConverters._
+    config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ k -> v.toString }
   }
 }

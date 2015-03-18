@@ -42,4 +42,12 @@ class UtilSpec extends FlatSpec with Matchers with MockitoSugar {
     assert(!Util.validApplicationName("0_application_1"))
     assert(!Util.validApplicationName("_applicat&&ion_1"))
   }
+
+  it should "parse the ip address from the given path" in {
+    assert(Util.parseIp("this is a test") == None)
+    assert(Util.parseIp("this is a test 999.999.999.999") == None)
+    assert(Util.parseIp("this is a test 127.0.0.1:1024") == Some("127.0.0.1"))
+    assert(Util.parseIp("this is a test 255.255.255.255:1024") == Some("255.255.255.255"))
+    assert(Util.parseIp("this is a test 192.168.10.132:1024") == Some("192.168.10.132"))
+  }
 }

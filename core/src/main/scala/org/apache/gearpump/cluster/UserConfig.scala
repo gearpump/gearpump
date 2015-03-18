@@ -26,7 +26,6 @@ import com.google.common.io.BaseEncoding
  * Immutable configuration
  */
 final class UserConfig(private val _config: Map[String, String])  extends Serializable{
-import org.apache.gearpump.cluster.UserConfig._
 
   def withInt(key: String, value: Int) : UserConfig = {
     new UserConfig(_config + (key -> value.toString))

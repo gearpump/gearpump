@@ -17,9 +17,8 @@
  */
 package org.apache.gearpump.streaming.appmaster
 
-import com.typesafe.config.Config
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
-import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, NonLocality, Locality}
+import org.apache.gearpump.streaming.appmaster.ScheduleUsingUserConfig.{WorkerLocality, NonLocality, Locality}
 import org.apache.gearpump.streaming.{DAG, TaskDescription}
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.task.TaskId
@@ -64,9 +63,17 @@ trait TaskScheduler {
    * @return
    */
   def executorFailed(executorId: Int) : Array[ResourceRequest]
+
+  /**
+   * This notify the scheduler to update the task schedule policy, the policy will determinate
+   * the task location to launch.
+   *
+   * @param taskSchedulePolicy task schedule policy that will be used
+   */
+  def updateTaskSchedulePolicy(taskSchedulePolicy: TaskSchedulePolicy): Unit
 }
 
-class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
+class TaskSchedulerImpl(appId : Int) extends TaskScheduler {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
   private var tasks = Map.empty[TaskId, TaskLaunchData]
@@ -74,8 +81,7 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
   // maintain a list to tasks to be scheduled
   private var tasksToBeScheduled = Map.empty[Locality, mutable.Queue[TaskLaunchData]]
 
-  // find the locality of the tasks
-  private val taskLocator = new TaskLocator(config)
+  private var taskSchedulePolicy: TaskSchedulePolicy = null
 
   private var executorToTaskIds = Map.empty[Int, Set[TaskId]]
 
@@ -84,7 +90,7 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
       val (taskGroupId, taskDescription) = params
       0.until(taskDescription.parallelism).map((taskIndex: Int) => {
         val taskId = TaskId(taskGroupId, taskIndex)
-        val locality = taskLocator.locateTask(taskDescription)
+        val locality = taskSchedulePolicy.scheduleTask(taskDescription)
         val taskLaunchData = TaskLaunchData(taskId, taskDescription, dag.subGraph(taskGroupId))
         tasks += (taskId -> taskLaunchData)
         scheduleTaskLater(taskLaunchData, locality)
@@ -148,19 +154,15 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
   }
 
   def executorFailed(executorId: Int) : Array[ResourceRequest] = {
-
     val tasksForExecutor = executorToTaskIds.get(executorId)
     executorToTaskIds = executorToTaskIds - executorId
 
-    tasksForExecutor match {
-      case Some(taskIds) =>
-        taskIds.foreach { taskId =>
-          val task = tasks(taskId)
-
-          //add the failed task back
-          scheduleTaskLater(task)
-        }
-      case None => //skip
+    tasksForExecutor.map{ taskIds =>
+      taskIds.foreach { taskId =>
+        val task = tasks(taskId)
+        //add the failed task back
+        scheduleTaskLater(task)
+      }
     }
 
     fetchResourceRequests(fromOneWorker = true)
@@ -170,6 +172,10 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
     val taskQueue = tasksToBeScheduled.getOrElse(locality, mutable.Queue.empty[TaskLaunchData])
     taskQueue.enqueue(taskLaunchData)
     tasksToBeScheduled += (locality -> taskQueue)
+  }
+
+  def updateTaskSchedulePolicy(taskSchedulePolicy: TaskSchedulePolicy): Unit = {
+    this.taskSchedulePolicy = taskSchedulePolicy
   }
 }
 

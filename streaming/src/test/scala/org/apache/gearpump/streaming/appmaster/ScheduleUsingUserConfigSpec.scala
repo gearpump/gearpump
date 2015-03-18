@@ -20,14 +20,14 @@ package org.apache.gearpump.streaming.appmaster
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
 import org.apache.gearpump.streaming.TaskDescription
-import org.apache.gearpump.streaming.appmaster.TaskLocator.{NonLocality, WorkerLocality}
+import org.apache.gearpump.streaming.appmaster.ScheduleUsingUserConfig.{NonLocality, WorkerLocality}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.util.Constants._
 import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.mutable.ArrayBuffer
 
-class TaskLocatorSpec extends WordSpec with Matchers {
+class ScheduleUsingUserConfigSpec extends WordSpec with Matchers {
   val resource = getClass.getClassLoader.getResource("tasklocation.conf").getPath
   System.setProperty(GEARPUMP_CUSTOM_CONFIG_FILE, resource)
   val taskDescription1 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask1", 4)
@@ -36,23 +36,23 @@ class TaskLocatorSpec extends WordSpec with Matchers {
 
   val config = ClusterConfig.load.application
 
-  "TaskLocator" should {
+  "ScheduleUsingUserConfig" should {
     "locate task properly according user's configuration" in {
-      val taskLocator = new TaskLocator(config)
-      assert(taskLocator.locateTask(taskDescription2) == WorkerLocality(1))
-      assert(taskLocator.locateTask(taskDescription2) == WorkerLocality(1))
-      assert(taskLocator.locateTask(taskDescription2) == NonLocality)
+      val taskLocator = new ScheduleUsingUserConfig(config)
+      assert(taskLocator.scheduleTask(taskDescription2) == WorkerLocality(1))
+      assert(taskLocator.scheduleTask(taskDescription2) == WorkerLocality(1))
+      assert(taskLocator.scheduleTask(taskDescription2) == NonLocality)
       val localities = ArrayBuffer[WorkerLocality]()
       for (i <- 0 until 4) {
-        localities.append(taskLocator.locateTask(taskDescription1).asInstanceOf[WorkerLocality])
+        localities.append(taskLocator.scheduleTask(taskDescription1).asInstanceOf[WorkerLocality])
       }
       localities.sortBy(_.workerId)
       assert(localities(0) == WorkerLocality(2))
       assert(localities(1) == WorkerLocality(2))
       assert(localities(2) == WorkerLocality(1))
       assert(localities(3) == WorkerLocality(1))
-      assert(taskLocator.locateTask(taskDescription1) == NonLocality)
-      assert(taskLocator.locateTask(taskDescription3) == NonLocality)
+      assert(taskLocator.scheduleTask(taskDescription1) == NonLocality)
+      assert(taskLocator.scheduleTask(taskDescription3) == NonLocality)
     }
   }
 }

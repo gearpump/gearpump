@@ -20,9 +20,9 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import org.apache.gearpump._
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
+import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, GetAllWorkers}
 import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, ShutdownApplication}
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, AppMasterDataDetailRequest, AppMasterMetricsRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.metrics.Metrics.MetricType
 import org.apache.gearpump.partitioner.Partitioner
@@ -31,6 +31,7 @@ import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
+import org.apache.gearpump.streaming.appmaster.TaskManager.DagInit
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.util._
@@ -38,11 +39,12 @@ import org.slf4j.Logger
 
 import scala.concurrent.Future
 
-class AppMaster(appContext : AppMasterContext, app : Application)  extends ApplicationMaster {
+class AppMaster(appContext : AppMasterContext, app : Application) extends ApplicationMaster {
   import app.userConfig
   import appContext.{appId, masterProxy, username}
-
+  implicit val dispatcher = context.dispatcher
   implicit val actorSystem = context.system
+  implicit val timeOut = Constants.FUTURE_TIMEOUT
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
@@ -57,9 +59,14 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
     val clockService = context.actorOf(Props(new ClockService(dag, store)))
 
-    val taskScheduler: TaskScheduler = new TaskSchedulerImpl(appId, context.system.settings.config)
+    val taskScheduler: TaskScheduler = new TaskSchedulerImpl(appId)
     val taskManager = context.actorOf(Props(new TaskManager(appContext.appId, dag,
       taskScheduler, executorManager, clockService, self, app.name)))
+    ipToWorkerIDMap().map{ ipToWorkerID =>
+      taskScheduler.updateTaskSchedulePolicy(
+        new ScheduleUsingDataDetector(context.system.settings.config, userConfig, ipToWorkerID, actorSystem))
+      taskManager ! DagInit(dag)
+    }
     (taskManager, executorManager, clockService)
   }
 
@@ -105,8 +112,6 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       executorManager forward register
   }
 
-  implicit val timeOut = Constants.FUTURE_TIMEOUT
-
   def appMasterInfoService: Receive = {
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.info(s"***AppMaster got AppMasterDataDetailRequest for $appId ***")
@@ -139,16 +144,32 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       LOG.error(s"Failed to allocate resource in time")
       masterProxy ! ShutdownApplication(appId)
       context.stop(self)
+
   }
 
   import akka.pattern.ask
-  implicit val dispatcher = context.dispatcher
   private def getMinClock: Future[TimeStamp] = {
     (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
   }
 
   private def getExecutorList: Future[List[String]] = {
     (executorManager ? GetExecutorPathList).asInstanceOf[Future[List[ActorPath]]].map(list => list.map(_.toString))
+  }
+
+  //Todo: Simplify this function, now the Master side could not provide direct ip info of workers
+  private def ipToWorkerIDMap(): Future[Map[String, Set[Int]]] = {
+    masterProxy.ask(GetAllWorkers).asInstanceOf[Future[WorkerList]].flatMap { workerList =>
+      Future.fold(workerList.workers.map(masterProxy ? GetWorkerData(_)))(Map.empty[String, Set[Int]]){ (ipToWorkerIds, workerData) =>
+        val description = workerData.asInstanceOf[WorkerData].workerDescription
+        if(description.isEmpty || Util.parseIp(description.get.actorPath).isEmpty) {
+          ipToWorkerIds
+        } else {
+          val ip = Util.parseIp(description.get.actorPath).get
+          val workerIdSet = ipToWorkerIds.getOrElse(ip, Set.empty[Int])
+          ipToWorkerIds + (ip -> (workerIdSet + description.get.workerId))
+        }
+      }
+    }
   }
 }
 

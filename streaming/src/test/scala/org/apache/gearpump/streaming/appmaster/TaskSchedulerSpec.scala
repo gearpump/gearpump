@@ -40,8 +40,8 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
 
   "TaskScheduler" should {
     "schedule tasks on different workers properly according user's configuration" in {
-      val taskScheduler = new TaskSchedulerImpl(appId = 0, config)
-
+      val taskScheduler = new TaskSchedulerImpl(appId = 0)
+      taskScheduler.updateTaskSchedulePolicy(new ScheduleUsingUserConfig(config))
       val expectedRequests =
         Array( ResourceRequest(Resource(4), 1, relaxation = Relaxation.SPECIFICWORKER),
           ResourceRequest(Resource(2), 2, relaxation = Relaxation.SPECIFICWORKER))
