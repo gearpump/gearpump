@@ -20,7 +20,6 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import org.apache.gearpump._
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
 import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, ShutdownApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
@@ -47,7 +46,6 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
   private val address = ActorUtil.getFullPath(context.system, self.path)
-  private var subscribers = false
 
   val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
 
@@ -94,10 +92,8 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
     case ReplayFromTimestampWindowTrailingEdge =>
       taskManager forward ReplayFromTimestampWindowTrailingEdge
     case metrics: MetricType =>
-      if(subscribers) {
-        LOG.info(s"***AppMaster publishing metrics***")
-        actorSystem.eventStream.publish(metrics)
-      }
+      LOG.info(s"***AppMaster publishing metrics***")
+      actorSystem.eventStream.publish(metrics)
   }
 
   def executorMessageHandler: Receive = {
@@ -127,9 +123,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       }
     case appMasterMetricsRequest: AppMasterMetricsRequest =>
       val client = sender()
-      subscribers = true
       actorSystem.eventStream.subscribe(client, classOf[MetricType])
-
     case query: QueryHistoryMetrics =>
       historyMetricsService forward query
   }
