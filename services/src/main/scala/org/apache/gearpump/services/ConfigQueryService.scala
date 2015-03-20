@@ -40,13 +40,15 @@ trait ConfigQueryService extends HttpService  {
   def configQueryRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    path("config"/"app"/IntNumber) { appId =>
-      onComplete((master ? QueryAppMasterConfig(appId)).asInstanceOf[Future[AppMasterConfig]]) {
-        case Success(value: AppMasterConfig) =>
-          val config = Option(value.config).map(_.root.render()).getOrElse("{}")
-          complete(config)
-        case Failure(ex) =>
-          complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+    pathPrefix("api"/s"$REST_VERSION") {
+      path("config" / "app" / IntNumber) { appId =>
+        onComplete((master ? QueryAppMasterConfig(appId)).asInstanceOf[Future[AppMasterConfig]]) {
+          case Success(value: AppMasterConfig) =>
+            val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+            complete(config)
+          case Failure(ex) =>
+            complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+        }
       }
     }
   }

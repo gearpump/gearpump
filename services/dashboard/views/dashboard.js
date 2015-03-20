@@ -26,7 +26,7 @@ angular
   .constant('conf', {
     debug: false,
     restapiAutoRefreshInterval: 2000,
-    restapiRoot: '',
+    restapiRoot: 'api/v1.0',
     // TODO: Port of websocket should not be hard coded (#546)
     webSocketUri: 'ws://' + document.location.hostname + ':8091/',
     webSocketSendTimeout: 500

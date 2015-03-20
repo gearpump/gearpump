@@ -45,7 +45,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
 
   it should "return master info when asked" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get("/master") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
+    (Get(s"/api/$REST_VERSION/master") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
       // check the type
       val content = response.entity.asString
       read[MasterData](content)

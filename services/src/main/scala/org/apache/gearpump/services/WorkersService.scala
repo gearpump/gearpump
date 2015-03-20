@@ -38,23 +38,24 @@ trait WorkersService extends HttpService {
   def workersRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    path("workers") {
-
-      def workerDataFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].flatMap { workerList =>
-        val workers = workerList.workers
-        val workerDataList = List.empty[WorkerDescription]
-        Future.fold(workers.map(master ? GetWorkerData(_)))(workerDataList) { (workerDataList, workerData) =>
-          val workerDescription = workerData.asInstanceOf[WorkerData].workerDescription
-          if (workerDescription.isEmpty) {
-            workerDataList
-          } else {
-            workerDataList :+ workerDescription.get
+    pathPrefix("api"/s"$REST_VERSION") {
+      path("workers") {
+        def workerDataFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].flatMap { workerList =>
+          val workers = workerList.workers
+          val workerDataList = List.empty[WorkerDescription]
+          Future.fold(workers.map(master ? GetWorkerData(_)))(workerDataList) { (workerDataList, workerData) =>
+            val workerDescription = workerData.asInstanceOf[WorkerData].workerDescription
+            if (workerDescription.isEmpty) {
+              workerDataList
+            } else {
+              workerDataList :+ workerDescription.get
+            }
           }
         }
-      }
-      onComplete(workerDataFuture) {
-        case Success(result: List[WorkerDescription]) => complete(write(result))
-        case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+        onComplete(workerDataFuture) {
+          case Success(result: List[WorkerDescription]) => complete(write(result))
+          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+        }
       }
     }
   }

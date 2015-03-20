@@ -48,7 +48,7 @@ with Matchers with BeforeAndAfterAll {
 
   "WorkerService" should "return a json structure of worker data for GET request" in {
     implicit val customTimeout = RouteTestTimeout(25.seconds)
-    (Get("/workers") ~> workersRoute).asInstanceOf[RouteResult] ~> check {
+    (Get(s"/api/$REST_VERSION/workers") ~> workersRoute).asInstanceOf[RouteResult] ~> check {
       //check the type
       val workerListJson = response.entity.asString
       val workers = read[List[WorkerDescription]](workerListJson)

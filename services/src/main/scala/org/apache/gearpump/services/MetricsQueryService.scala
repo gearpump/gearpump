@@ -41,12 +41,14 @@ trait MetricsQueryService extends HttpService  {
   def metricQueryRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    path("metrics"/"app"/IntNumber/Rest) { (appId, path) =>
-      onComplete((master ? QueryHistoryMetrics(appId, path)).asInstanceOf[Future[HistoryMetrics]]) {
-        case Success(value: HistoryMetrics) =>
-          complete(upickle.write(value))
-        case Failure(ex) =>
-          complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+    pathPrefix("api"/s"$REST_VERSION") {
+      path("metrics" / "app" / IntNumber / Rest) { (appId, path) =>
+        onComplete((master ? QueryHistoryMetrics(appId, path)).asInstanceOf[Future[HistoryMetrics]]) {
+          case Success(value: HistoryMetrics) =>
+            complete(upickle.write(value))
+          case Failure(ex) =>
+            complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+        }
       }
     }
   }
