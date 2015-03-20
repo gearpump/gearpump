@@ -6,18 +6,20 @@
 angular.module('dashboard.apps.appmaster')
 
   .factory('dagStyle', function () {
-    var fontFace = "'lato','helvetica neue','segoe ui',arial";
+    var fontFace = "lato,'helvetica neue','segoe ui',arial,helvetica,sans-serif";
+    var maxNodeRadius = 16;
     return {
       newOptions: function (flags) {
-        var levelSeparation = 85;
+        var verticalMargin = 30;
+        var levelDistance = 85;
         return {
           hover: true,
           width: '100%',
-          height: ((levelSeparation + 20) * flags.depth) + 'px',
+          height: (maxNodeRadius * (flags.depth + 1) + levelDistance * flags.depth + verticalMargin * 2) + 'px',
           hierarchicalLayout: {
             layout: 'direction',
             direction: 'UD',
-            levelSeparation: levelSeparation
+            levelSeparation: levelDistance
           },
           stabilize: true /* stabilize positions before displaying */,
           freezeForStabilization: true,
@@ -57,9 +59,9 @@ angular.module('dashboard.apps.appmaster')
         return [2, 16];
       },
       edgeWidthRange: function () {
-        return [0.5, 4];
+        return [0.5, 5];
       },
-      edgeArrowSizeRange: function() {
+      edgeArrowSizeRange: function () {
         return [0.5, 0.1];
       }
     };

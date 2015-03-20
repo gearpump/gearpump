@@ -8,7 +8,7 @@ angular.module('dashboard.metrics', [])
 
   .factory('Metrics', [function () {
     return {
-      meter: function (data) {
+      decodeMeter: function (data) {
         // TODO: Serde Meter (#458)
         return {
           name: _decodeName(data.name),
@@ -22,7 +22,7 @@ angular.module('dashboard.metrics', [])
         };
       },
 
-      histogram: function (data) {
+      decodeHistogram: function (data) {
         // TODO: Serde Histogram (#458)
         return {
           name: _decodeName(data.name),

@@ -105,3 +105,75 @@ body {
 .st-sort-descent i:before {
   content: '\25BC';
 }
+
+/**
+ * Underlined tabset style (Similar to Google's comment system)
+ */
+
+.nav-tabs {
+  margin-bottom: 30px !important;
+  border-bottom: 1px solid rgba(0,39,59,.1);
+}
+
+.nav-tabs-underlined > li {
+  margin-bottom: -1px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.nav-tabs-underlined > li:first-of-type {
+  margin-left: 0;
+}
+
+.nav-tabs-underlined > li > a {
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+  padding-bottom: 5px !important;
+  border: 1px solid transparent;
+  border-width: 1px 0;
+  border-radius: 0;
+  color: #777;
+  font-size: 0.85em;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.nav-tabs-underlined > li > a:hover,
+.nav-tabs-underlined > li > a:focus {
+  background-color: transparent;
+  border-top-color: transparent;
+}
+
+.nav-tabs-underlined > li > a:hover {
+  color: #333;
+  border-bottom-color: rgba(0,39,59,.15);
+}
+
+.nav-tabs-underlined > li > a:active {
+  color: #dd4b39;
+}
+
+.nav-tabs-underlined > li > a:focus {
+  color: #000;
+  outline: 0;
+}
+
+.nav-tabs-underlined > li.active > a,
+.nav-tabs-underlined > li.active > a:hover,
+.nav-tabs-underlined > li.active > a:focus {
+  color: #dd4b39;
+  border: 0 solid transparent;
+}
+
+.nav-tabs-underlined .active {
+  border: 1px solid transparent;
+  border-width: 1px 0;
+  border-bottom-color: #dd4b39;
+}
+
+/**
+ */
+.board-digits {
+  font-size: 20px;
+  font-weight: bold;
+}
