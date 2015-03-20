@@ -130,7 +130,7 @@ private[cluster] class Master extends Actor with Stash {
   }
 
   private def getMasterClusterList: List[HostPort] = {
-    var cluster = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS)
+    val cluster = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS)
       .asScala.map(HostPort(_)).toList
 
     if (cluster.isEmpty) {
