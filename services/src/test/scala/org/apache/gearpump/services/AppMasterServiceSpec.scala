@@ -48,7 +48,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
 
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get("/appmaster/0?detail=false") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
+    (Get(s"/api/$REST_VERSION/appmaster/0?detail=false") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
       val responseBody = response.entity.asString
       read[AppMasterData](responseBody)
     }

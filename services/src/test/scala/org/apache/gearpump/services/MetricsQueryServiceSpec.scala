@@ -48,7 +48,7 @@ class MetricsQueryServiceSpec extends FlatSpec with ScalatestRouteTest with Metr
 
   "MetricsQueryService" should "return history metrics" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get("/metrics/app/0/processor") ~> metricQueryRoute).asInstanceOf[RouteResult] ~> check{
+    (Get(s"/api/$REST_VERSION/metrics/app/0/processor") ~> metricQueryRoute).asInstanceOf[RouteResult] ~> check{
       val responseBody = response.entity.asString
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)

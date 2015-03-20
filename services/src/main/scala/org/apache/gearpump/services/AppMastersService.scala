@@ -37,11 +37,13 @@ trait AppMastersService extends HttpService {
   def appMastersRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    path("appmasters") {
-      onComplete((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]]) {
-        case Success(value:AppMastersData) =>
-          complete(write(value))
-        case Failure(ex)    => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+    pathPrefix("api"/s"$REST_VERSION") {
+      path("appmasters") {
+        onComplete((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]]) {
+          case Success(value: AppMastersData) =>
+            complete(write(value))
+          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+        }
       }
     }
   }

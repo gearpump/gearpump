@@ -18,11 +18,13 @@ trait MasterService extends HttpService {
   def masterRoute: routing.Route = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    path("master") {
-      get {
-        onComplete((master ? GetMasterData).asInstanceOf[Future[MasterData]]) {
-          case Success(value: MasterData) => complete(write(value))
-          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+    pathPrefix("api"/s"$REST_VERSION") {
+      path("master") {
+        get {
+          onComplete((master ? GetMasterData).asInstanceOf[Future[MasterData]]) {
+            case Success(value: MasterData) => complete(write(value))
+            case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+          }
         }
       }
     }

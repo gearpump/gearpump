@@ -49,7 +49,7 @@ class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMas
 
   "AppMastersService" should "return a json structure of appMastersData for GET request" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get("/appmasters") ~> appMastersRoute).asInstanceOf[RouteResult] ~> check {
+    (Get(s"/api/$REST_VERSION/appmasters") ~> appMastersRoute).asInstanceOf[RouteResult] ~> check {
       //check the type
       read[AppMastersData](response.entity.asString)
     }
