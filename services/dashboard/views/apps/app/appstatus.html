@@ -1,0 +1,47 @@
+<div class="row">
+
+  <!-- left half -->
+  <div class="col-md-6">
+
+    <h4>Status Summary</h4>
+    <table class="table table-striped table-hover table-two-column">
+      <tbody>
+      <tr ng-repeat="item in summary track by $index">
+        <td class="col-xs-3"><span ng-bind="item.name"></span></td>
+        <td class="col-xs-9"><span ng-bind="item.value" ng-class="item.clazz"></span></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- end of left half -->
+
+  <!-- right half -->
+  <div class="col-md-6" ng-controller="AppSummaryChartsCtrl">
+
+    <h4>Charts</h4>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">Total Throughput (events/second)</div>
+      <div class="panel-body">
+        <div linechart options="chart.options" data="chart.throughput"></div>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">Average Process Time (ms)
+      <i></i></div>
+      <div class="panel-body">
+        <div linechart options="chart.options" data="chart.processTime"></div>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">Average Receive Latency (ms)</div>
+      <div class="panel-body">
+        <div linechart options="chart.options" data="chart.receiveLatency"></div>
+      </div>
+    </div>
+  </div>
+  <!-- end of right half -->
+
+</div>
