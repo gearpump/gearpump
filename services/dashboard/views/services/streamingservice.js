@@ -6,14 +6,22 @@
 
 angular.module('dashboard.streamingservice', [])
 
-  .factory('StreamingService', ['conf', '$timeout', function (conf, $timeout) {
+  .factory('StreamingService', ['$http', '$timeout', 'conf', function ($http, $timeout, conf) {
+    var webSocketUri;
+    $http.get(conf.restapiRoot + '/websocket/url')
+      .success(function (data) {
+        webSocketUri = data.url;
+      });
+
     return {
       subscribe: function (request, scope, onMessage) {
         scope.$on('$destroy', function () {
-          ws.close();
+          if (ws) {
+            ws.close();
+          }
         });
 
-        var ws = new WebSocket(conf.webSocketUri);
+        var ws = new WebSocket(webSocketUri);
         ws.onmessage = onMessage;
 
         var sendOrRetry = function () {
