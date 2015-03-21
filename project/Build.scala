@@ -36,6 +36,7 @@ object Build extends sbt.Build {
   val jgraphtVersion = "0.9.0"
   val json4sVersion = "3.2.10"
   val kafkaVersion = "0.8.2.1"
+  val stormVersion = "0.9.3"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
   
@@ -90,7 +91,7 @@ object Build extends sbt.Build {
       },
 
       publishArtifact in Test := true,
-      
+
       pomExtra := {
       <url>https://github.com/intel-hadoop/gearpump</url>
       <licenses>
@@ -191,7 +192,8 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm)
+
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -328,5 +330,32 @@ object Build extends sbt.Build {
     base = file("experiments/distributeservice"),
     settings = commonSettings
   ) dependsOn(core % "test->test;compile->compile")
+
+  lazy val storm = Project(
+    id = "gearpump-experiments-storm",
+    base = file("experiments/storm"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.storm" % "storm-core" % stormVersion
+            exclude("clj-stacktrace", "clj-stacktrace")
+            exclude("clj-time", "clj-time")
+            exclude("clout", "clout")
+            exclude("compojure", "compojure")
+            exclude("com.esotericsoftware.kryo", "kryo")
+            exclude("com.twitter", "carbonite")
+            exclude("hiccup", "hiccup")
+            exclude("javax.servlet", "servlet-api")
+            exclude("ring", "ring-core")
+            exclude("ring", "ring-devel")
+            exclude("ring", "ring-jetty-adapter")
+            exclude("ring", "ring-servlet"),
+          "org.apache.storm" % "storm-starter" % stormVersion,
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        )
+      )
+  ) dependsOn (streaming % "test->test; provided")
 
 }
