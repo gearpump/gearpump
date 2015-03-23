@@ -32,15 +32,15 @@ import org.slf4j.Logger
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 import org.apache.gearpump.experiments.yarn.AppConfig
-import org.apache.gearpump.experiments.yarn.EnvVars.EXCLUDE_JARS
-import org.apache.gearpump.experiments.yarn.EnvVars.HDFS_PATH
-import org.apache.gearpump.experiments.yarn.EnvVars.JARS
-import org.apache.gearpump.experiments.yarn.EnvVars.YARNAPPMASTER_COMMAND
-import org.apache.gearpump.experiments.yarn.EnvVars.YARNAPPMASTER_MAIN
-import org.apache.gearpump.experiments.yarn.EnvVars.YARNAPPMASTER_MEMORY
-import org.apache.gearpump.experiments.yarn.EnvVars.YARNAPPMASTER_NAME
-import org.apache.gearpump.experiments.yarn.EnvVars.YARNAPPMASTER_QUEUE
-import org.apache.gearpump.experiments.yarn.EnvVars.YARNAPPMASTER_VCORES
+import org.apache.gearpump.experiments.yarn.Constants.EXCLUDE_JARS
+import org.apache.gearpump.experiments.yarn.Constants.HDFS_PATH
+import org.apache.gearpump.experiments.yarn.Constants.JARS
+import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_COMMAND
+import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_MAIN
+import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_MEMORY
+import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_NAME
+import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_QUEUE
+import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_VCORES
 import org.apache.gearpump.experiments.yarn.YarnContainerUtil
 
 
@@ -67,7 +67,7 @@ trait ClientAPI {
 
 class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: YarnClient) extends ClientAPI {
   import org.apache.gearpump.experiments.yarn.client.Client._
-  import org.apache.gearpump.experiments.yarn.EnvVars._
+  import org.apache.gearpump.experiments.yarn.Constants._
 
   val LOG: Logger = LogUtil.getLogger(getClass)
   def getConfiguration = configuration
