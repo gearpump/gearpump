@@ -12,7 +12,7 @@ import org.apache.gearpump.experiments.yarn.Actions._
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus
-import org.apache.gearpump.experiments.yarn.EnvVars._
+import org.apache.gearpump.experiments.yarn.Constants._
 import org.apache.gearpump.experiments.yarn.AppConfig
 
 class ResourceManagerCallbackHandler(appConfig: AppConfig, am: ActorRef) extends AMRMClientAsync.CallbackHandler {

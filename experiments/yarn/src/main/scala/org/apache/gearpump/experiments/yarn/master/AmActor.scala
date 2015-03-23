@@ -34,7 +34,7 @@ import org.apache.gearpump.experiments.yarn.Actions.ShutdownRequest
 import org.apache.gearpump.experiments.yarn.AppConfig
 import org.apache.gearpump.experiments.yarn.CmdLineVars.APPMASTER_IP
 import org.apache.gearpump.experiments.yarn.CmdLineVars.APPMASTER_PORT
-import org.apache.gearpump.experiments.yarn.EnvVars._
+import org.apache.gearpump.experiments.yarn.Constants._
 import org.apache.gearpump.experiments.yarn.NodeManagerCallbackHandler
 import org.apache.gearpump.experiments.yarn.ResourceManagerClientActor
 import org.apache.gearpump.util.LogUtil
@@ -60,6 +60,8 @@ import akka.actor.FSM
 import org.apache.gearpump.experiments.yarn.Actions._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.transport.HostPort
+
+import org.apache.gearpump.util.Constants.GEARPUMP_CLUSTER_MASTERS
 
 
 /**
@@ -149,13 +151,16 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
 
   private[this] def launchMasterContainers(containers: List[Container]) {
     containers.foreach(container => {
-      launchCommand(container, getMasterCommand(getMasterAddrCliOpt(container.getNodeId.getHost, appConfig.getEnv(GEARPUMPMASTER_PORT).toInt)))
+      launchCommand(container, getMasterCommand(container.getNodeId.getHost, appConfig.getEnv(GEARPUMPMASTER_PORT).toInt))
     })
   }
 
   private[this] def launchWorkerContainers(containers: List[Container], masterAddr: HostPort) {
     containers.foreach(container => {
-      launchCommand(container, getWorkerCommand(getMasterAddrCliOpt(masterAddr.host, masterAddr.port)))
+      val masterHost = masterAddr.host
+      val masterPort = masterAddr.port
+      val workerHost = container.getNodeId.getHost
+      launchCommand(container, getWorkerCommand(masterHost, masterPort, workerHost))
     })
   }
 
@@ -165,23 +170,24 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
       context.actorOf(Props(classOf[ContainerLauncherActor], container, nodeManagerClient, yarnConf, command))
   }
 
-  private[this] def getMasterAddrCliOpt(masterHost:String, masterPort:Int): String = {
-    return s"-ip $masterHost -port $masterPort"
+  private[this] def getMasterCommand(masterHost: String, masterPort: Int): String = {
+    val masterArguments = s"-ip $masterHost -port $masterPort"
+    val masterClusterSetting = s"-D${GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}"
+    getCommand(GEARPUMPMASTER_COMMAND,  Array(masterClusterSetting), GEARPUMPMASTER_MAIN,
+      masterArguments, GEARPUMPMASTER_LOG)
   }
 
-  private[this] def getMasterCommand(cliOpts: String): String = {
-    getCommand(GEARPUMPMASTER_COMMAND, GEARPUMPMASTER_MAIN, cliOpts, GEARPUMPMASTER_LOG)
-  }
-
-  private[this] def getWorkerCommand(cliOpts: String): String = {
-    getCommand(WORKER_COMMAND, WORKER_MAIN, cliOpts, WORKER_LOG)
+  private[this] def getWorkerCommand(masterHost: String, masterPort: Int, workerHost: String): String = {
+    val masterAddress = s"-D${GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}"
+    val arguments = s"-ip $workerHost"
+    getCommand(WORKER_COMMAND, Array(masterAddress),  WORKER_MAIN, arguments, WORKER_LOG)
   }
   
-  private[this] def getCommand(exeProp: String, mainProp: String, cliOpts: String, lognameProp: String):String = {
-    val exe = appConfig.getEnv(exeProp)
+  private[this] def getCommand(java: String, properties: Array[String], mainProp: String, cliOpts: String, lognameProp: String):String = {
+    val exe = appConfig.getEnv(java)
     val main = appConfig.getEnv(mainProp)
     val logname = appConfig.getEnv(lognameProp)
-    s"$exe $main $cliOpts 2>&1 | /usr/bin/tee -a ${ApplicationConstants.LOG_DIR_EXPANSION_VAR}/$logname"
+    s"$exe ${properties.mkString(" ")}  $main $cliOpts 2>&1 | /usr/bin/tee -a ${ApplicationConstants.LOG_DIR_EXPANSION_VAR}/$logname"
   }
   
 

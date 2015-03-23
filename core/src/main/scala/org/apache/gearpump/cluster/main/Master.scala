@@ -72,7 +72,7 @@ object Master extends App with ArgumentsParser {
     val quorum = masterList.size() /2  + 1
     masterConfig = masterConfig.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
-      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(ip)).
+      withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(ip)).
       withValue("akka.cluster.seed-nodes", ConfigValueFactory.fromAnyRef(masterList)).
       withValue(s"akka.cluster.role.${MASTER}.min-nr-of-members", ConfigValueFactory.fromAnyRef(quorum))
 
