@@ -24,7 +24,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.MockUtil.argMatch
-import org.apache.gearpump.streaming.TaskDescription
+import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.task.LatencyProbe
 import org.apache.gearpump.streaming.task.SubscriptionSpec.NextTask
 import org.scalatest.{Matchers, FlatSpec}
@@ -46,7 +46,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
   val partitioner = new HashPartitioner()
 
   val parallism = 2
-  val downstreamProcessor = TaskDescription(classOf[NextTask].getName, parallism)
+  val downstreamProcessor = ProcessorDescription(classOf[NextTask].getName, parallism)
   val subscriber = Subscriber(downstreamProcessorId, partitioner, downstreamProcessor)
 
   private def prepare: (Subscription, ExpressTransport) = {
