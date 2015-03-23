@@ -104,6 +104,7 @@ object KafkaUtil {
     val zookeeperConnect = config.getZookeeperConnect
     val sessionTimeout = config.getSocketTimeoutMS
     val connectionTimeout = config.getSocketTimeoutMS
+    LOG.info(s"ZOOKEEPER CONNECTION $zookeeperConnect")
     new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
   }
 }

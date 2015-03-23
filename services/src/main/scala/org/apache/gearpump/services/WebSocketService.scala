@@ -18,6 +18,7 @@
 package org.apache.gearpump.services
 
 import akka.actor.{ActorSystem, ActorRef}
+import com.typesafe.config.Config
 import org.apache.gearpump.services.WebSocketService.WebSocketUrl
 import org.apache.gearpump.util.Constants
 import spray.routing.HttpService
@@ -26,17 +27,17 @@ import scala.concurrent.ExecutionContext
 
 trait WebSocketService extends HttpService{
   import upickle._
-  def master:ActorRef
   implicit val system: ActorSystem
+  implicit def master:ActorRef
+  implicit val config: Config
 
   def webSocketRoute = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    val systemConfig = system.settings.config
     pathPrefix("api"/s"$REST_VERSION"){
       path("websocket" / "url") {
-        val port = systemConfig.getInt("gearpump.services.ws")
-        val host = systemConfig.getString("gearpump.services.host")
+        val port = config.getInt("gearpump.services.ws")
+        val host = config.getString("gearpump.services.host")
         complete(write(WebSocketUrl(s"ws://$host:$port")))
       }
     }

@@ -10,6 +10,10 @@ import sbtrelease._
 
 import scala.collection.immutable.Map.WithDefault
 
+/*
+run 'sbt dependencySvg' to generate dependencies that can be visualized in graphviz
+*/
+
 object Build extends sbt.Build {
 
   class DefaultValueMap[+B](value : B) extends WithDefault[String, B](null, (key) => value) {
@@ -21,47 +25,49 @@ object Build extends sbt.Build {
    */
   val travis_deploy = taskKey[Unit]("use this after sbt assembly packArchive, it will rename the package so that travis deploy can find the package.")
   
+  val scalaVersionMajor = "scala-2.11"
+  val scalaVersionNumber = "2.11.5"
+  val scalaTestVersion = "2.2.0"
+  val scalaCheckVersion = "1.11.3"
+  
   val akkaVersion = "2.3.6"
-  val kryoVersion = "0.3.2"
-  val clouderaVersion = "2.5.0-cdh5.3.2"
-  val clouderaHBaseVersion = "0.98.6-cdh5.3.2"
+  val bijectionVersion = "0.7.0"
   val codahaleVersion = "3.0.2"
+  val commonsBeanUtilsVersion = "1.7.0"
   val commonsCodecVersion = "1.6"
   val commonsHttpVersion = "3.1"
   val commonsLangVersion = "3.3.2"
   val commonsLoggingVersion = "1.1.3"
   val commonsIOVersion = "2.4"
+  val clouderaVersion = "2.5.0-cdh5.3.2"
+  val clouderaHBaseVersion = "0.98.6-cdh5.3.2"
+  val clouderaKafkaVersion = "0.8.2.0-kafka-1.2.0"
+  val dataReplicationVersion = "0.7"
   val findbugsVersion = "2.0.1"
   val guavaVersion = "15.0"
-  val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
   val json4sVersion = "3.2.10"
   val kafkaVersion = "0.8.2.1"
-  val stormVersion = "0.9.3"
+  val kryoVersion = "0.3.2"
+  val mockitoVersion = "1.10.8"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
-  
-  val scalaVersionMajor = "scala-2.11"
-  val scalaVersionNumber = "2.11.5"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
   val sprayWebSocketsVersion = "0.1.4"
-  val scalaTestVersion = "2.2.0"
-  val scalaCheckVersion = "1.11.3"
-  val mockitoVersion = "1.10.8"
-  val bijectionVersion = "0.7.0"
+  val stormVersion = "0.9.3"
 
   val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
         resolvers ++= Seq(
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
+          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
           "maven-repo" at "http://repo.maven.apache.org/maven2",
           "maven1-repo" at "http://repo1.maven.org/maven2",
           "maven2-repo" at "http://mvnrepository.com/artifact",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
-          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
     ) ++
@@ -125,8 +131,7 @@ object Build extends sbt.Build {
         "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
         "org.slf4j" % "slf4j-api" % slf4jVersion,
         "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-        "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
-        "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
+        "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive,
         "org.fusesource" % "sigar" % sigarVersion classifier("native"),
         "com.google.code.findbugs" % "jsr305" % findbugsVersion,
         "org.apache.commons" % "commons-lang3" % commonsLangVersion,
@@ -143,8 +148,10 @@ object Build extends sbt.Build {
         "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
-        "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
-        "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
+        ("org.apache.hadoop" % "hadoop-common" % clouderaVersion).
+            exclude("commons-beanutils", "commons-beanutils-core").
+            exclude("commons-beanutils", "commons-beanutils"),
+        "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion,
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
@@ -165,46 +172,39 @@ object Build extends sbt.Build {
     id = "gearpump",
     base = file("."),
     settings = commonSettings ++
-      Seq(
-        parallelExecution in ThisBuild := false,
-        travis_deploy := {
-          val packagePath = s"output/target/gearpump-pack-${version.value}.tar.gz"
-          val target = s"target/binary.gearpump.tar.gz"
-          println(s"[Travis-Deploy] Move file $packagePath to $target")
-          new File(packagePath).renameTo(new File(target))
-        }
-      )
-  ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase, pack)
-
-  lazy val pack = Project(
-    id = "gearpump-pack",
-    base = file("output"),
-    settings = commonSettings ++
       packSettings ++
       Seq(
         packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
-          "local" -> "org.apache.gearpump.cluster.main.Local",
-          "master" -> "org.apache.gearpump.cluster.main.Master",
-          "worker" -> "org.apache.gearpump.cluster.main.Worker",
-          "services" -> "org.apache.gearpump.cluster.main.Services",
-          "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
-        ),
+                        "local" -> "org.apache.gearpump.cluster.main.Local",
+                        "master" -> "org.apache.gearpump.cluster.main.Master",
+                        "worker" -> "org.apache.gearpump.cluster.main.Worker",
+                        "services" -> "org.apache.gearpump.cluster.main.Services",
+                        "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
+                       ),
         packJvmOpts := Map("local" -> Seq("-server", "-DlogFilename=local"),
-          "master" -> Seq("-server", "-DlogFilename=master"),
-          "worker" -> Seq("-server", "-DlogFilename=worker"),
-          "services" -> Seq("-server")
-        ),
-        packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
-        packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
-        packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
-
+                           "master" -> Seq("-server", "-DlogFilename=master"),
+                           "worker" -> Seq("-server", "-DlogFilename=worker"),
+                           "services" -> Seq("-server")
+                        ),
+        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id, distributedshell.id),
+        packResourceDir += (baseDirectory.value / "conf" -> "conf"),
+        packResourceDir += (baseDirectory.value / "services" / "dashboard" -> "dashboard"),
+        packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
+        parallelExecution in ThisBuild := false,
+        travis_deploy := {
+          val packagePath = s"target/gearpump-${version.value}.tar.gz"
+          val target = s"target/binary.gearpump.tar.gz"
+          println(s"[Travis-Deploy] Move file $packagePath to $target")
+          new File(packagePath).renameTo(new File(target))
+        },
+        
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard", "/etc/hadoop/conf"))
       )
-  ).dependsOn(core, streaming, services, external_kafka, yarn,storm,dsl,hbase)
+  ).dependsOn(core, streaming, services, external_kafka)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn, pipeline, dsl)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -458,7 +458,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         )
       )
-  ) dependsOn(core % "test->test", core % "provided")
+  ) dependsOn(services % "test->test;compile->compile", core % "provided")
 
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",
@@ -466,45 +466,15 @@ object Build extends sbt.Build {
     settings = commonSettings
   ) dependsOn(streaming % "test->test;compile->compile")
 
-  lazy val hbase = Project(
-    id = "gearpump-experiments-hbase",
-    base = file("experiments/hbase"),
-    settings = commonSettings ++
-      Seq(
-        resolvers ++= Seq(
-          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos"
-        )
-      ) ++
+  lazy val pipeline = Project(
+    id = "gearpump-experiments-pipeline",
+    base = file("experiments/pipeline"),
+    settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
-          "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion
-            exclude("com.github.stephenc.findbugs", "findbugs-annotations")
-            exclude("com.google.guava", "guava")
-            exclude("com.google.protobuf", "protobuf-java")
-            exclude("commons-codec", "commons-codec")
-            exclude("commons-io", "commons-io")
-            exclude("commons-lang", "commons-lang")
-            exclude("commons-logging", "commons-logging")
-            exclude("io.netty", "netty")
-            exclude("junit", "junit")
-            exclude("log4j", "log4j")
-            exclude("org.apache.hbase", "hbase-protocol")
-            exclude("org.apache.zookeeper", "zookeeper")
-            exclude("org.cloudera.htrace", "htrace-core")
-            exclude("org.codehaus.jackson", "jackson-mapper-asl"),
+          "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion,
           "org.apache.hbase" % "hbase-common" % clouderaHBaseVersion
-            exclude("com.github.stephenc.findbugs", "findbugs-annotations")
-            exclude("com.google.guava", "guava")
-            exclude("com.google.protobuf", "protobuf-java")
-            exclude("commons-codec", "commons-codec")
-            exclude("commons-collections", "commons-collections")
-            exclude("commons-io", "commons-io")
-            exclude("commons-lang", "commons-lang")
-            exclude("commons-logging", "commons-logging")
-            exclude("junit", "junit")
-            exclude("log4j", "log4j")
         )
-      )
-  )
+      ) 
+  ) dependsOn(streaming % "test->test;compile->compile", streaming % "provided", external_kafka  % "test->test", external_kafka % "provided")
 }
