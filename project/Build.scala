@@ -352,7 +352,8 @@ object Build extends sbt.Build {
             exclude("ring", "ring-core")
             exclude("ring", "ring-devel")
             exclude("ring", "ring-jetty-adapter")
-            exclude("ring", "ring-servlet"),
+            exclude("ring", "ring-servlet")
+            exclude("ch.qos.logback", "logback-classic"),
           "org.apache.storm" % "storm-starter" % stormVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
