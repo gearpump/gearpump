@@ -161,7 +161,7 @@ object ExecutorSystemScheduler {
       case request: RequestResource =>
         unallocatedResource += request.request.resource.slots
         Option(timeOutClock).map(_.cancel)
-        timeOutClock = context.system.scheduler.scheduleOnce(15 seconds)(self ! ResourceAllocationTimeOut)
+        timeOutClock = context.system.scheduler.scheduleOnce(15 seconds, self, ResourceAllocationTimeOut)
         resourceRequestor = sender
         master ! request
       case ResourceAllocated(allocations) =>

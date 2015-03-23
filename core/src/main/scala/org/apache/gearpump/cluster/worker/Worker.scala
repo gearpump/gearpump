@@ -249,10 +249,11 @@ private[cluster] object Worker {
         val remoteDebugFlag = config.getBoolean(Constants.GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM)
         val remoteDebugConfig = if (remoteDebugFlag) {
           val availablePort = Util.findFreePort.get
-          LOG.info(s"Remote debug executor, listening on $availablePort")
+          LOG.info(s"Remote debug executor enabled, listening on $availablePort")
           List(
             "-Xdebug",
-            s"-Xrunjdwp:server=y,transport=dt_socket,address=${availablePort},suspend=n"
+            s"-Xrunjdwp:server=y,transport=dt_socket,address=${availablePort},suspend=n",
+            s"-D${Constants.GEARPUMP_REMOTE_DEBUG_PORT}=$availablePort"
             )
         } else {
           List.empty[String]

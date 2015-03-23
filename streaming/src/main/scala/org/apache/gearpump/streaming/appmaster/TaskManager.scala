@@ -87,12 +87,13 @@ private[appmaster] class TaskManager(
           val taskLaunchData = taskScheduler.resourceAllocated(workerId, executorId)
 
           taskLaunchData match {
-            case Some(TaskLaunchData(taskId, taskDescription, dag)) =>
+            case Some(TaskLaunchData(taskId, taskDescription, subscriptions)) =>
               //Launch task
               LOG.info("Sending Launch Task to executor: " + executor.toString())
 
-              val taskContext = TaskContextData(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, dag)
+              val taskContext = TaskContextData(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, subscriptions)
               executor ! LaunchTask(taskId, taskContext, TaskUtil.loadClass(taskDescription.taskClass), classOf[TaskActor], taskDescription.taskConf)
+
               executorRestartPolicy.addTaskToExecutor(executorId, taskId)
               //Todo: subtract the actual resource used by task
               val usedResource = Resource(1)
@@ -148,10 +149,13 @@ private[appmaster] class TaskManager(
       goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
     case Event(MessageLoss, _) =>
       //restart all tasks
+      LOG.info("We have detected MessageLoss, going to restart the whole topology")
       executorManager ! BroadCast(RestartExecutor)
       goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
 
     case Event(reply: ReplayFromTimestampWindowTrailingEdge, _) =>
+
+      LOG.info("We have detected ReplayFromTimestampWindowTrailingEdge")
       self ! MessageLoss
       stay
 

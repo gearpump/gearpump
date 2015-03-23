@@ -36,7 +36,7 @@ trait ExpressTransport {
 
   val sendLater = new SendLater(express, serializer, self)
 
-  def transport(msg : AnyRef, remotes : TaskId *) = {
+  def transport(msg : AnyRef, remotes : TaskId *): Unit = {
 
     var serializedMessage : Array[Byte] = null
 

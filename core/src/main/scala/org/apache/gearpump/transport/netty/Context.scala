@@ -25,7 +25,7 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.Config
 import org.apache.gearpump.transport.netty.Server.ServerPipelineFactory
 import org.apache.gearpump.transport.{ActorLookupById, HostPort}
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{Constants, LogUtil}
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.slf4j.Logger
 
@@ -65,8 +65,7 @@ import org.apache.gearpump.transport.netty.Context._
 
   def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true, inputPort: Int = 0): Int = {
     //TODO: whether we should expose it as application config?
-    val taskDispatcher = system.settings.config.getString("gearpump.task-dispatcher")
-    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor, deserializeFlag).withDispatcher(taskDispatcher), name)
+    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor, deserializeFlag).withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), name)
     val (port, channel) = NettyUtil.newNettyServer(name, new ServerPipelineFactory(server), 5242880, inputPort)
     val factory = channel.getFactory
     closeHandler.add{ () =>
@@ -80,7 +79,7 @@ import org.apache.gearpump.transport.netty.Context._
   }
 
   def connect(hostPort : HostPort) : ActorRef = {
-    val nettyDispatcher = system.settings.config.getString("gearpump.netty-dispatcher")
+    val nettyDispatcher = Constants.GEARPUMP_TASK_DISPATCHER
     val client = system.actorOf(Props(classOf[Client], conf, clientChannelFactory, hostPort).withDispatcher(nettyDispatcher))
     closeHandler.add { () =>
 

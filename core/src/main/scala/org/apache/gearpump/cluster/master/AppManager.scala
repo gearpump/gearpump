@@ -122,13 +122,13 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
 
-    case ReplayFromTimestampWindowTrailingEdge(appId) =>
+    case replay @ReplayFromTimestampWindowTrailingEdge(appId) =>
       LOG.info(s"App Manager Replaying application $appId")
       val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
       Option(appMaster) match {
         case Some(ref) =>
           LOG.info(s"Replaying application: $appId")
-          ref forward ReplayFromTimestampWindowTrailingEdge
+          ref forward replay
           sender ! ReplayApplicationResult(Success(appId))
         case None =>
           val errorMsg = s"Can not find regisration information for appId: $appId"

@@ -29,11 +29,13 @@ import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.executor.Executor.TaskLocationReady
-import org.apache.gearpump.util.{LogUtil, TimeOutScheduler, Util}
+import org.apache.gearpump.util.{ActorUtil, LogUtil, TimeOutScheduler, Util}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
 class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, val task: TaskWrapper) extends Actor with ExpressTransport  with TimeOutScheduler{
+  var upstreamMinClock: TimeStamp = 0L
+
 
   import org.apache.gearpump.streaming.task.TaskActor._
   import taskContextData._
@@ -51,19 +53,16 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   import scala.concurrent.duration._
   import context.dispatcher
   final val LATENCY_PROBE_INTERVAL = FiniteDuration(5, TimeUnit.SECONDS)
-  context.system.scheduler.schedule(LATENCY_PROBE_INTERVAL, LATENCY_PROBE_INTERVAL, self, SendMessageProbe)
+
+  // clock report interval
+  final val CLOCK_REPORT_INTERVAL = FiniteDuration(1, TimeUnit.SECONDS)
+
+  // flush interval
+  final val FLUSH_INTERVAL = FiniteDuration(100, TimeUnit.MILLISECONDS)
 
   private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
-  private var partitioner : MergedPartitioner = null
 
-  private var outputTaskIds : Array[TaskId] = null
-  private var flowControl : FlowControl = null
-  private var clockTracker : ClockTracker = null
-
-  private var unackedClockSyncTimestamp : TimeStamp = 0
-  private var needSyncToClockService = false
-
-  private var minClock : TimeStamp = 0L
+  private var subscriptions = Map.empty[Int, Subscription]
 
   // securityChecker will be responsible of dropping messages from
   // unknown sources
@@ -86,36 +85,13 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   def onStop() : Unit = task.onStop()
 
   def output(msg : Message) : Unit = {
-    if (null == outputTaskIds || outputTaskIds.length == 0) {
-      return
-    }
-
-    val partitions = partitioner.getPartitions(msg, taskId.index)
-
-    var start = 0
-
-    sendThroughput.mark(partitions.length)
-
-    while (start < partitions.length) {
-      val partition = partitions(start)
-
-      transport(msg, outputTaskIds(partition))
-      val ackRequest = flowControl.sendMessage(partition)
-      if (null != ackRequest) {
-        transport(ackRequest, outputTaskIds(partition))
-      }
-
-      start = start + 1
-    }
+    this.subscriptions.foreach(_._2.sendMessage(msg))
+    sendThroughput.mark(subscriptions.keySet.size)
   }
 
   def sendLatencyProbeMessage: Unit = {
     val probe = LatencyProbe(System.currentTimeMillis())
-    if (null != outputTaskIds) {
-      outputTaskIds.foreach { taskId =>
-        transport(probe, taskId)
-      }
-    }
+    subscriptions.foreach(_._2.probeLatency(probe))
   }
 
   final override def postStop() : Unit = {
@@ -124,78 +100,39 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
   final override def preStart() : Unit = {
 
-    sendMsgWithTimeOutCallBack(appMaster, RegisterTask(taskId, executorId, local), 10, registerTaskTimeOut())
+    val register = RegisterTask(taskId, executorId, local)
+    LOG.info(s"registering task $register ")
+    sendMsgWithTimeOutCallBack(appMaster, register, 10, registerTaskTimeOut())
     system.eventStream.subscribe(taskContextData.appMaster, classOf[MetricType])
-
-    val graph = dag.graph
-    LOG.info(s"TaskInit... taskId: $taskId")
-    val outDegree = dag.graph.outDegreeOf(taskId.processorId)
-
-    if (outDegree > 0) {
-
-      val edges = graph.outgoingEdgesOf(taskId.processorId)
-
-      LOG.info(s"task: ${taskId} out degree is $outDegree, edge length: ${edges.length}")
-
-      this.partitioner = edges.foldLeft(MergedPartitioner.empty) { (mergedPartitioner, nodeEdgeNode) =>
-        val (_, partitioner, processorId) = nodeEdgeNode
-        val taskParallism = dag.processors.get(processorId).get.parallelism
-        mergedPartitioner.add(partitioner, taskParallism)
-      }
-
-      LOG.info(s"task: ${taskId} partitioner: $partitioner")
-
-      outputTaskIds = edges.flatMap {nodeEdgeNode =>
-        val (_, _, processorId) = nodeEdgeNode
-        val taskParallism = dag.processors.get(processorId).get.parallelism
-
-        LOG.info(s"get output taskIds, processorId: $processorId, parallism: $taskParallism")
-
-        0.until(taskParallism).map { taskIndex =>
-          TaskId(processorId, taskIndex)
-        }
-      }.toArray
-
-    } else {
-      //outer degree == 0
-      this.partitioner = null
-      this.outputTaskIds = Array.empty[TaskId]
-    }
-
-    this.flowControl = new FlowControl(taskId, outputTaskIds.length, sessionId)
-    this.clockTracker = new ClockTracker(flowControl)
-
     context.become(waitForStartClock orElse stashMessages)
+
+    LOG.info(s"Task actor path: ${ActorUtil.getFullPath(system, self.path)}")
   }
 
   private def registerTaskTimeOut(): Unit = {
-    LOG.error(s"Task ${taskId} failed to register to AppMaster of application ${appId}")
+    LOG.error(s"Task ${taskId} failed to register to AppMaster of application $appId")
     throw new RestartException
   }
 
-  private def tryToSyncToClockService() : Unit = {
-    if (unackedClockSyncTimestamp == 0) {
-      appMaster ! UpdateClock(taskId, clockTracker.minClockAtCurrentTask)
-      needSyncToClockService = false
-      unackedClockSyncTimestamp = System.currentTimeMillis()
-    } else {
-      val current = System.currentTimeMillis()
-      if (current - unackedClockSyncTimestamp > CLOCK_SYNC_TIMEOUT_INTERVAL) {
-        appMaster ! UpdateClock(taskId, clockTracker.minClockAtCurrentTask)
-        needSyncToClockService = false
-        unackedClockSyncTimestamp  = System.currentTimeMillis()
-      } else {
-        needSyncToClockService = true
-      }
+  def minClockAtCurrentTask: TimeStamp = {
+    this.subscriptions.foldLeft(Long.MaxValue){ (clock, subscription) =>
+      Math.min(clock, subscription._2.minClock)
     }
   }
 
-  private def doHandleMessage() : Unit = {
+  private def allowSendingMoreMessages(): Boolean = {
+    this.subscriptions.foldLeft(true) {
+      (status, subscrption) => status && subscrption._2.allowSendingMoreMessages()
+    }
+  }
+
+  private def doHandleMessage(): Unit = {
     var done = false
 
     var count = 0
     val start = System.currentTimeMillis()
-    while (flowControl.allowSendingMoreMessages() && !done) {
+
+    while (allowSendingMoreMessages() && !done) {
       val msg = queue.poll()
       if (msg != null) {
         msg match {
@@ -203,11 +140,6 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
             transport(ack, targetTask)
             LOG.debug(s"Sending ack back, target taskId: $taskId, my task: $taskId, received message: ${ack.actualReceivedNum}")
           case m : Message =>
-            val updated = clockTracker.onProcess(m)
-            if (updated) {
-              tryToSyncToClockService()
-            }
-
             count += 1
             onNext(m)
         }
@@ -222,62 +154,53 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
     }
   }
 
-  private def sendFirstAckRequests() : Unit = {
-    for(i <- 0 until outputTaskIds.length) {
-      val firstAckRequest = AckRequest(taskId, Seq(i, 0), sessionId)
-      transport(firstAckRequest, outputTaskIds(i))
-    }
-  }
-
   def waitForStartClock : Receive = {
-    case StartClock(clock) =>
+    case start@ StartClock(clock) =>
       onStart(new StartTime(clock))
-      context.become(handleMessages)
-      sendFirstAckRequests()
+
+      LOG.info(s"received $start")
+
+      this.upstreamMinClock = clock
+
+      subscriptions = subscribers.map { subscriber =>
+        subscriber.processorId ->
+          (new Subscription(appId, executorId, taskId, subscriber, sessionId,  this))
+      }.toMap
+
+      subscriptions.foreach(_._2.start)
+
+      context.system.scheduler.schedule(
+        LATENCY_PROBE_INTERVAL, LATENCY_PROBE_INTERVAL, self, SendMessageProbe)
+
+      context.become(handleMessages(doHandleMessage))
   }
 
-  def stashMessages = stashAndHandleMessages(handlNow = false)
+  def stashMessages: Receive = handleMessages(() => Unit)
 
-  def handleMessages = stashAndHandleMessages(handlNow = true)
-
-  def stashAndHandleMessages(handlNow: Boolean) : Receive = {
-    case ackRequest : AckRequest =>
+  def handleMessages(handler: () => Unit): Receive = {
+    case ackRequest: AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
-      val ack = securityChecker.generateAckResponse(ackRequest, sender)
-      if(null != ack){
-        queue.add(SendAck(ack, ackRequest.taskId))
+      val ackResponse = securityChecker.generateAckResponse(ackRequest, sender)
+      if (null != ackResponse) {
+        queue.add(SendAck(ackResponse, ackRequest.taskId))
       }
     case ack: Ack =>
-      if(flowControl.messageLossDetected(ack)){
-        LOG.error(s"Failed! Some messages sent from actor ${taskId} to ${taskId} are lost, try to replay...")
-        throw new MsgLostException
-      }
-      flowControl.receiveAck(ack)
-      val updated = clockTracker.onAck(ack)
-      if (updated) {
-        tryToSyncToClockService()
-      }
-      if (handlNow) {
-        doHandleMessage()
-      }
+      LOG.info(s"receiving $ack")
+      subscriptions.get(ack.taskId.processorId).foreach(_.receiveAck(ack))
+      handler()
     case inputMessage: Message =>
       val messageAfterCheck = securityChecker.checkMessage(inputMessage, sender)
       messageAfterCheck match {
         case Some(msg) =>
-
-          val updatedMessage = clockTracker.onReceive(msg)
-          queue.add(updatedMessage)
-          if (handlNow) {
-            doHandleMessage()
-          }
+          queue.add(msg)
+          handler()
         case None =>
       }
-
-    case ClockUpdated(timestamp) =>
-      minClock = timestamp
-      unackedClockSyncTimestamp = 0
-      if (needSyncToClockService) {
-        tryToSyncToClockService()
+    case upstream@ UpstreamMinClock(upstreamClock) =>
+      this.upstreamMinClock = upstreamClock
+      val update = UpdateClock(taskId, minClock)
+      context.system.scheduler.scheduleOnce(CLOCK_REPORT_INTERVAL) {
+        appMaster ! update
       }
     case RestartTask =>
       LOG.info(s"Restarting myself ${taskId} ")
@@ -285,18 +208,21 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       throw new RestartException
     case TaskLocationReady =>
       sendLater.sendAllPendingMsgs()
+      appMaster ! UpdateClock(taskId, minClock)
 
     case SendMessageProbe =>
-      if (handlNow) {
-        // when the connection to downstream is established
-        sendLatencyProbeMessage
-      }
+      sendLatencyProbeMessage
     case LatencyProbe(timeStamp) =>
       receiveLatency.update(System.currentTimeMillis() - timeStamp)
+    case send: SendMessageLoss =>
+      LOG.info("received SendMessageLoss")
+      throw new MsgLostException
     case other =>
       // un-managed message
       onUnManagedMessage(other)
   }
+
+  private def minClock: TimeStamp = Math.min(upstreamMinClock, minClockAtCurrentTask)
 }
 
 object TaskActor {
@@ -305,38 +231,6 @@ object TaskActor {
 
   val INITIAL_WINDOW_SIZE = 1024 * 16
   val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000 //3 seconds
-
-  class MergedPartitioner(partitioners : Array[Partitioner], partitionStart : Array[Int], partitionStop : Array[Int]) {
-
-    def length = partitioners.length
-
-    override def toString = {
-
-      partitioners.mkString("partitioners: ", ",", "") + "\n" + partitionStart.mkString("start partitions:" , "," ,"") + "\n" + partitionStop.mkString("stopPartitions:" , "," ,"")
-
-    }
-
-    def add(partitioner : Partitioner, partitionNum : Int) = {
-      val newPartitionStart = if (partitionStart.isEmpty) Array[Int](0) else { partitionStart :+ partitionStop.last }
-      val newPartitionEnd = if (partitionStop.isEmpty) Array[Int](partitionNum) else {partitionStop :+ (partitionStop.last + partitionNum)}
-      new MergedPartitioner(partitioners :+ partitioner, newPartitionStart, newPartitionEnd)
-    }
-
-    def getPartitions(msg : Message, currentPartitionId: Int) : Array[Int] = {
-      var start = 0
-      val length = partitioners.length
-      val result = new Array[Int](length)
-      while (start < length) {
-        result(start) = partitioners(start).getPartition(msg, partitionStop(start) - partitionStart(start), currentPartitionId) + partitionStart(start)
-        start += 1
-      }
-      result
-    }
-  }
-
-  object MergedPartitioner {
-    def empty = new MergedPartitioner(Array.empty[Partitioner], Array.empty[Int], Array.empty[Int])
-  }
 
   // If the message comes from an unknown source, securityChecker will drop it
   class SecurityChecker(task_id: TaskId, self : ActorRef) {
@@ -349,7 +243,7 @@ object TaskActor {
       if (receivedMsgCount.contains(sender)) {
         Ack(task_id, ackRequest.seq, receivedMsgCount.get(sender).get.num, ackRequest.sessionId)
       } else {
-        if(ackRequest.seq.seq == 0){ //We got the first AckRequest before the real messages
+        if(ackRequest.seq == 0){ //We got the first AckRequest before the real messages
           receivedMsgCount += sender -> new MsgCount(0L)
           Ack(task_id, ackRequest.seq, 0, ackRequest.sessionId)
         } else {
@@ -381,4 +275,6 @@ object TaskActor {
   case class SendAck(ack: Ack, targetTask: TaskId)
 
   case object SendMessageProbe
+
+  case object FLUSH
 }

@@ -22,7 +22,7 @@ import akka.actor.Actor.Receive
 import akka.actor.{Cancellable, Props, ActorRef, ActorSystem}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.{DAG, ProcessorId, TaskIndex}
+import org.apache.gearpump.streaming.{ProcessorId, TaskIndex}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger

@@ -61,7 +61,8 @@ class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with M
     task = TestProbe()
     val userConfig = UserConfig.empty.withValue(ExecutorSpec.TASK_PROBE, task.ref)
     executorContext = ExecutorContext(executorId, workerId, appId, appMaster.ref, resource)
-    taskContext = TaskContextData(TaskId(0, 0), executorId, appId, "appName", appMaster.ref, 1, DAG.empty())
+    taskContext = TaskContextData(TaskId(0, 0), executorId, appId,
+      "appName", appMaster.ref, 1, List.empty[Subscriber])
     executor = TestActorRef(Props(classOf[Executor], executorContext, userConfig))(getActorSystem)
     appMaster.expectMsg(RegisterExecutor(executor, executorId, resource, workerId))
   }
@@ -95,7 +96,7 @@ class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with M
       EventFilter[MsgLostException](occurrences = 1) intercept {
         executor.children.head ! MsgLost
       }
-      appMaster.expectMsg(ReplayFromTimestampWindowTrailingEdge)
+      appMaster.expectMsgType[ReplayFromTimestampWindowTrailingEdge]
       task.expectMsg(MockTaskStarted)
       EventFilter[RestartException](occurrences = 1) intercept {
         executor.children.head ! new RestartException

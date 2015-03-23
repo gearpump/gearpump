@@ -55,9 +55,9 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   val dag: DAG = Graph[ProcessorDescription, Partitioner](task1 ~ partitioner ~> task2)
 
   val task1LaunchData = TaskLaunchData(TaskId(0, 0), ProcessorDescription(task1Class,
-    parallelism = 1), dag)
+    parallelism = 1), Subscriber.of(processorId = 0, dag))
   val task2LaunchData = TaskLaunchData(TaskId(1, 0), ProcessorDescription(task2Class,
-    parallelism = 1), dag)
+    parallelism = 1), Subscriber.of(processorId = 1, dag))
 
   val appId = 0
 

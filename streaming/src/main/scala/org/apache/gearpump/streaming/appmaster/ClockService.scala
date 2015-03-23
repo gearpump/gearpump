@@ -29,26 +29,33 @@ import org.apache.gearpump.streaming.appmaster.ClockService._
 import org.apache.gearpump.streaming.storage.AppDataStore
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{DAG, ProcessorId}
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.collection.JavaConversions._
 
 /**
  * The clockService will maintain a global view of message timestamp in the application
  */
 class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
+
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   import context.dispatcher
 
   private var startClock: Long = 0
-  private val processorClocks = new util.TreeSet[ProcessorClock]()
+  
   private val processorClockLookup = new util.HashMap[ProcessorId, ProcessorClock]()
 
   private var reportScheduler : Cancellable = null
   private var snapshotScheduler : Cancellable = null
+
+  var processorIdToLevel: Map[ProcessorId, Int] = null
+  var levelMinClock: Array[TimeStamp] = null
+  
+  
 
   override def receive = null
 
@@ -75,10 +82,12 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
       processorIdWithDescription =>
         val (processorId, description) = processorIdWithDescription
         val taskClocks = new Array[TimeStamp](description.parallelism).map(_ => startClock)
-        val processorClock = new ProcessorClock(processorId, startClock, taskClocks)
-        processorClocks.add(processorClock)
+        val processorClock = new ProcessorClock(taskClocks)
         processorClockLookup.put(processorId, processorClock)
     }
+
+    this.processorIdToLevel = dag.graph.topologicalOrderIterator.zipWithIndex.toMap
+    this.levelMinClock = Array.fill(processorIdToLevel.size)(startClock)
   }
 
   def waitForStartClock: Receive = {
@@ -90,11 +99,11 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
 
       //period report current clock
       reportScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-        new FiniteDuration(5, TimeUnit.SECONDS))(reportGlobalMinClock())
+        new FiniteDuration(5, TimeUnit.SECONDS), self, ReportGlobalClock)
 
       //period snpashot latest min startclock to external storage
       snapshotScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-        new FiniteDuration(5, TimeUnit.SECONDS))(snapshotStartClock())
+        new FiniteDuration(5, TimeUnit.SECONDS), self, SnapshotStartClock)
 
       unstashAll()
       context.become(clockService)
@@ -103,26 +112,41 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   }
 
   def clockService: Receive = {
-    case UpdateClock(task, clock) =>
+    case update@ UpdateClock(task, clock) =>
+
       val TaskId(processorId, taskIndex) = task
 
       val processor = processorClockLookup.get(processorId)
-      processorClocks.remove(processor)
       processor.taskClocks(taskIndex) = clock
-      processor.minClock = processor.taskClocks.min
-      processorClocks.add(processor)
-      sender ! ClockUpdated(minClock)
+
+      val level = processorIdToLevel(processorId)
+      levelMinClock(level) = processor.taskClocks.min
+
+      val upstream = UpstreamMinClock(minClockOfLevel(level - 1))
+      sender ! upstream
+
     case GetLatestMinClock =>
       sender ! LatestMinClock(minClock)
+
+    case ReportGlobalClock =>
+      reportGlobalMinClock()
+    case SnapshotStartClock =>
+      snapshotStartClock()
+  }
+
+  private def minClockOfLevel(level: Int): TimeStamp = {
+    if (level >= 0) {
+      levelMinClock(level)
+    }  else {
+      Long.MaxValue
+    }
   }
 
   private def minClock: TimeStamp = {
-    if (processorClocks.isEmpty) {
-      LOG.warn("Try to get MinClock for a empty DAG")
-      startClock
+    if (levelMinClock.length > 0) {
+      levelMinClock(levelMinClock.length - 1)
     } else {
-      val processor = processorClocks.first()
-      processor.minClock
+      0
     }
   }
 
@@ -138,21 +162,9 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
 object ClockService {
   val START_CLOCK = "startClock"
 
-  class ProcessorClock(val procesorId : ProcessorId, var minClock : TimeStamp = Long.MaxValue,
-                       var taskClocks : Array[TimeStamp] = null) extends Comparable[ProcessorClock] {
-    override def equals(obj: Any): Boolean = {
-      this.eq(obj.asInstanceOf[AnyRef])
-    }
+  case object ReportGlobalClock
+  case object SnapshotStartClock
 
-    override def compareTo(o: ProcessorClock): Int = {
-      val delta = minClock - o.minClock
-      if (delta > 0) {
-        1
-      } else if (delta < 0) {
-        -1
-      } else {
-        procesorId - o.procesorId
-      }
-    }
-  }
+  class ProcessorClock(var taskClocks : Array[TimeStamp] = null)
+
 }

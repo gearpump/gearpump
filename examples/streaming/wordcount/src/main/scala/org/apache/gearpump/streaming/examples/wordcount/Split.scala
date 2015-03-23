@@ -26,6 +26,7 @@ class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContex
   import taskContext.{output, self}
 
   override def onStart(startTime : StartTime) : Unit = {
+
     self ! Message("start")
   }
 
@@ -35,7 +36,9 @@ class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContex
         output(new Message(msg, System.currentTimeMillis()))
       }
     }
+    Thread.sleep(10)
     self ! Message("continue", System.currentTimeMillis())
+
   }
 }
 
