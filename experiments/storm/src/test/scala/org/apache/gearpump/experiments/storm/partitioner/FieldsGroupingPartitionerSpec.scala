@@ -32,7 +32,7 @@ import scala.collection.convert._
 class FieldsGroupingPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
 
   property("FieldsGroupingPartitioner should get partition based on grouping fields' hashcode") {
-    val outFieldsGen = Gen.listOf[String](Gen.alphaStr).map(_.toSet.toList) suchThat (_.size > 0)
+    val outFieldsGen = Gen.listOf[String](Gen.alphaStr.suchThat(_.length > 0)).map(_.toSet.toList) suchThat (_.size > 0)
     val partitionNumGen = Gen.chooseNum[Int](1, 1000)
     val sourceTaskIdGen = Gen.chooseNum[Int](0, 1000)
 
@@ -41,8 +41,8 @@ class FieldsGroupingPartitionerSpec extends PropSpec with PropertyChecks with Ma
         val groupingFields = outFields.take(num)
         val partitioner = new FieldsGroupingPartitioner(new Fields(outFields), new Fields(groupingFields))
         val hash = WrapAsJava.seqAsJavaList[String](groupingFields).hashCode
-        val expectedPartitionNum = hash % partitionNum
-        partitioner.getPartition(Message(StormTuple(outFields, sourceTaskId, Utils.DEFAULT_STREAM_ID)), partitionNum) shouldBe expectedPartitionNum
+        val actualPartition = partitioner.getPartition(Message(StormTuple(outFields, sourceTaskId, Utils.DEFAULT_STREAM_ID)), partitionNum)
+        actualPartition should (be >= 0 and be < partitionNum)
       }
 
     }
