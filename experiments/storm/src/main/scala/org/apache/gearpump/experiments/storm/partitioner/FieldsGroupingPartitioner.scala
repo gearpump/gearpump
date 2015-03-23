@@ -29,6 +29,6 @@ private[storm] class FieldsGroupingPartitioner(outFields: Fields, groupFields: F
   override def getPartition(msg: Message, partitionNum: Int): Int = {
     val values = msg.msg.asInstanceOf[StormTuple].values
     val hash = outFields.select(groupFields, values.asJava).hashCode()
-    hash % partitionNum
+    (hash & Integer.MAX_VALUE) % partitionNum
   }
 }
