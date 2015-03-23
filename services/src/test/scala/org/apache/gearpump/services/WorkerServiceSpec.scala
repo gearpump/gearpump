@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.services
 
+import akka.actor.ActorRef
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.worker.WorkerDescription
@@ -36,7 +37,7 @@ with Matchers with BeforeAndAfterAll {
   def actorRefFactory = system
 
   var miniCluster:MiniCluster = null
-  def master = miniCluster.mockMaster
+  implicit def master:ActorRef = miniCluster.mockMaster
 
   override def beforeAll: Unit = {
     miniCluster = TestUtil.startMiniCluster

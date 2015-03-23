@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.cluster.main.Local._
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
@@ -37,18 +38,44 @@ object Services extends App with ArgumentsParser {
   }
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true))
+    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true)
+  )
 
   def start(): Unit = {
-    val config = parse(args)
-    val masterList = config.getString("master")
-    Console.out.println("Master URL: " + masterList)
+    Option(parse(args)).map(options => {
+      Option(options.getString("master")).map(masterList => {
+        LOG.info("Master URL: " + masterList)
 
-    implicit val system = ActorSystem("services" , ClusterConfig.load.application)
-    val master = system.actorOf(MasterProxy.props(Util.parseHostList(masterList)), MASTER)
+        implicit val system = ActorSystem("services", ClusterConfig.load.application)
+        val master = system.actorOf(MasterProxy.props(Util.parseHostList(masterList)), MASTER)
+        val config = system.settings.config
 
-    WebSocketServices(master)
-    RestServices(master)
+        WebSocketServices(master, config)
+        RestServices(master, config)
+      })
+    }
+    )
   }
+
+  private[this] def getProp(value: Option[String], text: String): Option[String] = {
+    value match {
+      case Some(prop) =>
+        Option(String.format(text, prop))
+      case None =>
+        None
+    }
+
+  }
+
+  private[this] def getOption(name: String, config: ParseResult): Option[String] = {
+    config.exists(name) match {
+      case true =>
+        val value = config.getString(name)
+        Some(value)
+      case false =>
+        None
+    }
+  }
+
   start()
 }
