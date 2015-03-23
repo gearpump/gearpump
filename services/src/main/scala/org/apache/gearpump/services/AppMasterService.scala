@@ -49,33 +49,35 @@ trait AppMasterService extends HttpService  {
   def appMasterRoute = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    path("appmaster"/IntNumber) { appId =>
-      get {
-        parameter("detail" ? "false") { detail =>
-          val detailValue = Try(detail.toBoolean).getOrElse(false)
-          detailValue match {
-            case true =>
-              onComplete((master ? AppMasterDataDetailRequest(appId)).asInstanceOf[Future[AppMasterDataDetail]]) {
-                case Success(value: AppMasterDataDetail) =>
-                  complete(value.toJson)
-                case Failure(ex) =>
-                  complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-              }
-            case false =>
-              onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
-                case Success(value: AppMasterData) => complete(write(value))
-                case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-              }
+    pathPrefix("api"/s"$REST_VERSION") {
+      path("appmaster" / IntNumber) { appId =>
+        get {
+          parameter("detail" ? "false") { detail =>
+            val detailValue = Try(detail.toBoolean).getOrElse(false)
+            detailValue match {
+              case true =>
+                onComplete((master ? AppMasterDataDetailRequest(appId)).asInstanceOf[Future[AppMasterDataDetail]]) {
+                  case Success(value: AppMasterDataDetail) =>
+                    complete(value.toJson)
+                  case Failure(ex) =>
+                    complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+                }
+              case false =>
+                onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
+                  case Success(value: AppMasterData) => complete(write(value))
+                  case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+                }
+            }
           }
-        }
-      } ~
-      delete {
-        onComplete((master ? ShutdownApplication(appId)).asInstanceOf[Future[ShutdownApplicationResult]]) {
-          case Success(value: ShutdownApplicationResult) =>
-            val result = if (value.appId.isSuccess) Map("status"->"success", "info" -> null) else Map("status" -> "fail", "info" -> value.appId.failed.get.toString)
-            complete(write(result))
-          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-        }
+        } ~
+          delete {
+            onComplete((master ? ShutdownApplication(appId)).asInstanceOf[Future[ShutdownApplicationResult]]) {
+              case Success(value: ShutdownApplicationResult) =>
+                val result = if (value.appId.isSuccess) Map("status" -> "success", "info" -> null) else Map("status" -> "fail", "info" -> value.appId.failed.get.toString)
+                complete(write(result))
+              case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+            }
+          }
       }
     }
   }

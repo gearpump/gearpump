@@ -9,6 +9,8 @@ angular
     'ngRoute',
     'ng-breadcrumbs',
     'smart-table',
+    'directive.echartfactory',
+    'directive.tabset',
     'filter.readable',
     'dashboard.restapi',
     'dashboard.streamingservice',
@@ -25,10 +27,10 @@ angular
 
   .constant('conf', {
     debug: false,
+    updateChartInterval: 2000,
+    updateVisDagInterval: 2000,
     restapiAutoRefreshInterval: 2000,
-    restapiRoot: '',
-    // TODO: Port of websocket should not be hard coded (#546)
-    webSocketUri: 'ws://' + document.location.hostname + ':8091/',
+    restapiRoot: '/api/v1.0',
     webSocketSendTimeout: 500
   })
 

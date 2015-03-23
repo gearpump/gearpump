@@ -1,0 +1,36 @@
+<!-- left half -->
+<div class="col-md-9">
+  <div class="panel panel-default">
+    <div class="panel-heading">Graph: {{app.name}}</div>
+    <div class="panel-body">
+      <div ng-if="visgraph">
+        <visnetwork data="visgraph.data" options="visgraph.options"/>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end of left half -->
+
+<div class="col-md-3">
+  <div class="row">
+    <div class="panel panel-default">
+      <div class="panel-heading">Total Events Received</div>
+      <div class="panel-body">
+        <p><span class='board-digits' ng-bind="processedEvents.received|number:0"></span></p>
+        <span ng-bind="throughput.received|number:0"></span> events/second
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">Total Events Sent</div>
+      <div class="panel-body">
+        <p><span class='board-digits' ng-bind="processedEvents.sent|number:0"></span></p>
+        <span ng-bind="throughput.sent|number:0"></span> events/second
+      </div>
+    </div>
+  </div>
+</div>
+<!-- right half --
+<div class="col-md-3">
+</div>
+<!-- end of right half -->
+

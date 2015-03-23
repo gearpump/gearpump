@@ -14,7 +14,7 @@ angular.module('dashboard.apps', [])
       });
   }])
 
-  .controller('AppsCtrl', ['$scope', '$location', 'restapi', function ($scope, $location, restapi) {
+  .controller('AppsCtrl', ['$scope', '$location', 'restapi', 'util', function ($scope, $location, restapi, util) {
     $scope.view = function (id) {
       $location.path("/apps/app/" + id);
     };
@@ -31,20 +31,16 @@ angular.module('dashboard.apps', [])
           return {
             active: app.status === 'active',
             appMasterPath: app.appMasterPath,
-            finishTime: stringToDateTime(app.finishTime),
+            finishTime: util.stringToDateTime(app.finishTime),
             id: app.appId,
             name: app.appName,
-            startTime: stringToDateTime(app.startTime),
-            submissionTime: stringToDateTime(app.submissionTime),
+            startTime: util.stringToDateTime(app.startTime),
+            submissionTime: util.stringToDateTime(app.submissionTime),
             status: app.status,
             user: app.user,
             workerPath: app.workerPath
           };
         });
       });
-
-    function stringToDateTime(s) {
-      return s ? moment(Number(s)).format('YYYY/MM/DD HH:mm:ss') : '-';
-    }
   }])
 ;

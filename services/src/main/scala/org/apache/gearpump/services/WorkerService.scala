@@ -35,16 +35,18 @@ trait WorkerService extends HttpService {
   def workerRoute = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    path("workers"/IntNumber) { workerId =>
-      onComplete((master ? GetWorkerData(workerId)).asInstanceOf[Future[WorkerData]]) {
-        case Success(value: WorkerData) =>
-          value.workerDescription match {
-            case Some(description) =>
-              complete(write(description))
-            case None =>
-              complete(StatusCodes.InternalServerError, s"worker $workerId not exists")
-          }
-        case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+    pathPrefix("api"/s"$REST_VERSION") {
+      path("workers" / IntNumber) { workerId =>
+        onComplete((master ? GetWorkerData(workerId)).asInstanceOf[Future[WorkerData]]) {
+          case Success(value: WorkerData) =>
+            value.workerDescription match {
+              case Some(description) =>
+                complete(write(description))
+              case None =>
+                complete(StatusCodes.InternalServerError, s"worker $workerId not exists")
+            }
+          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+        }
       }
     }
   }

@@ -21,7 +21,8 @@ Per initial benchmarks we are able to process 11 million messages/second (100 by
 
 For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/site/0.3/performance/)
 
-## Technical papers
+## Design Document
+
 There is a 20 pages technical paper on typesafe blog, with technical highlights https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka
 
 ## Introduction and Motivation

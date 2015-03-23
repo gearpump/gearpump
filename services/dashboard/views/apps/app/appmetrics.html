@@ -1,0 +1,131 @@
+<div class="col-md-6">
+  <h4>Send Throughput <small>(events/second)</small></h4>
+  <table class="table table-striped table-hover table-condensed table-xs"
+         st-table="ng" st-safe-src="sendThroughputMetrics">
+    <thead>
+    <tr>
+      <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
+      <th st-sort="taskClass">Task Class</th>
+      <th class="text-right" st-sort="taskId">Task</th>
+      <th class="text-right" st-sort="count">Count</th>
+      <th class="text-right" st-sort="meanRate">Mean Rate</th>
+      <th class="text-right" st-sort="movingAverage1m">MA 1m</th>
+      <th class="text-right" st-sort="movingAverage5m">MA 5m</th>
+      <th class="text-right" st-sort="movingAverage15m">MA 15m</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="m in ng">
+      <td class="text-right"><span ng-bind="m.processorId"></span></td>
+      <td><span ng-bind="m.taskClass|lpart"></span></td>
+      <td class="text-right"><span ng-bind="m.taskId"></span></td>
+      <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.meanRate|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.movingAverage1m|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.movingAverage5m|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.movingAverage15m|number:0"></span></td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="col-md-6">
+  <h4>Receive Throughput <small>(events/second)</small></h4>
+  <table class="table table-striped table-hover table-condensed table-xs"
+         st-table="ng2" st-safe-src="receiveThroughputMetrics">
+    <thead>
+    <tr>
+      <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
+      <th st-sort="taskClass">Task Class</th>
+      <th class="text-right" st-sort="taskId">Task</th>
+      <th class="text-right" st-sort="count">Count</th>
+      <th class="text-right" st-sort="meanRate">Mean Rate</th>
+      <th class="text-right" st-sort="movingAverage1m">MA 1m</th>
+      <th class="text-right" st-sort="movingAverage5m">MA 5m</th>
+      <th class="text-right" st-sort="movingAverage15m">MA 15m</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="m in ng2">
+      <td class="text-right"><span ng-bind="m.processorId"></span></td>
+      <td><span ng-bind="m.taskClass|lpart"></span></td>
+      <td class="text-right"><span ng-bind="m.taskId"></span></td>
+      <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.meanRate|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.movingAverage1m|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.movingAverage5m|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.movingAverage15m|number:0"></span></td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="col-md-6">
+  <h4>Process Time <small>(ms)</small></h4>
+  <table class="table table-striped table-hover table-condensed table-xs"
+         st-table="ng3" st-safe-src="processTimeMetrics">
+    <thead>
+    <tr>
+      <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
+      <th st-sort="taskClass">Task Class</th>
+      <th class="text-right" st-sort="taskId">Task</th>
+      <th class="text-right" st-sort="count">Count</th>
+      <th class="text-right" st-sort="minimum">Min</th>
+      <th class="text-right" st-sort="maximum">Max</th>
+      <th class="text-right" st-sort="mean">Mean</th>
+      <th class="text-right" st-sort="stddev">Std. Dev.</th>
+      <th class="text-right" st-sort="median">Median</th>
+      <th class="text-right" st-sort="p95">p95%</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="m in ng3">
+      <td class="text-right"><span ng-bind="m.processorId"></span></td>
+      <td><span ng-bind="m.taskClass|lpart"></span></td>
+      <td class="text-right"><span ng-bind="m.taskId"></span></td>
+      <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.minimum|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.maximum|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.mean|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.stddev|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.median|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.p95|number:2"></span></td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="col-md-6">
+  <h4>Receive Latency <small>(ms)</small></h4>
+  <table class="table table-striped table-hover table-condensed table-xs"
+         st-table="ng4" st-safe-src="receiveLatencyMetrics">
+    <thead>
+    <tr>
+      <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
+      <th st-sort="taskClass">Task Class</th>
+      <th class="text-right" st-sort="taskId">Task</th>
+      <th class="text-right" st-sort="count">Count</th>
+      <th class="text-right" st-sort="minimum">Min</th>
+      <th class="text-right" st-sort="maximum">Max</th>
+      <th class="text-right" st-sort="mean">Mean</th>
+      <th class="text-right" st-sort="stddev">Std. Dev.</th>
+      <th class="text-right" st-sort="median">Median</th>
+      <th class="text-right" st-sort="p95">p95%</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="m in ng4">
+      <td class="text-right"><span ng-bind="m.processorId"></span></td>
+      <td><span ng-bind="m.taskClass|lpart"></span></td>
+      <td class="text-right"><span ng-bind="m.taskId"></span></td>
+      <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.minimum|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.maximum|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.mean|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.stddev|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.median|number:2"></span></td>
+      <td class="text-right"><span ng-bind="m.p95|number:2"></span></td>
+    </tr>
+    </tbody>
+  </table>
+</div>

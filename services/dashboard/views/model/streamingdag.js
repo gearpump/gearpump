@@ -6,168 +6,171 @@
 
 angular.module('dashboard.streamingdag', ['dashboard.metrics'])
 
-  .factory('StreamingDag', ['Metrics', function (Metrics) {
+  .service('StreamingDag', ['Metrics', function (Metrics) {
 
     /** The constructor */
-    function StreamingDag(id, processors, levels, edges) {
-      this.id = id;
-      this.processors = {};
-      this.processorsLevels = {};
-      this.edges = {};
+    function StreamingDag(appId, processors, levels, edges) {
+      this.appId = appId;
+      this.processors = _flatMap(processors); // TODO: Try and convert to Scala (#458)
+      this.processorHierarchyLevels = _flatMap(levels);
+      this.edges = _flatMap(edges, function (item) {
+        return [item[0] + '_' + item[2], {source: item[0], target: item[2], type: item[1]}];
+      });
       this.meter = {};
       this.histogram = {};
-      this.lastUpdated = null;
-
-      // TODO: Try and convert to Scala (#458)
-      processors.map(function (item) {
-        this.processors[item[0]] = item[1];
-      }, /* thisArg */ this);
-
-      levels.map(function (item) {
-        this.processorsLevels[item[0]] = item[1];
-      }, /* thisArg */ this);
-
-      edges.map(function (item) {
-        var source = item[0];
-        var target = item[2];
-        var type = item[1];
-        var id = source + '_' + target;
-        this.edges[id] = {source: source, target: target, type: type};
-      }, /* thisArg */ this);
     }
 
     StreamingDag.prototype = {
 
-      /** update (or add) specified metrics in an array */
-      updateMetricsArray: function(array) {
-        array.map(function(item) {
-          this.updateMetrics(item.value[0], item.value[1]);
-        }, /* thisArg */ this);
+      /** Update (or add) specified metrics in an array */
+      updateMetricsArray: function (array) {
+        for (var i = 0; i < array.length; i++) {
+          var value = array[i].value;
+          this.updateMetrics(value[0], value[1]);
+        }
       },
 
-      /** update (or add) specified metrics */
+      /** Update (or add) specified metrics */
       updateMetrics: function (name, data) {
-        var updated = false;
         switch (name) {
           case 'org.apache.gearpump.metrics.Metrics.Meter':
-            updated = _update(Metrics.meter, this.meter, this.id);
+            _update(Metrics.decodeMeter, this.meter, this);
             break;
           case 'org.apache.gearpump.metrics.Metrics.Histogram':
-            updated = _update(Metrics.histogram, this.histogram, this.id);
+            _update(Metrics.decodeHistogram, this.histogram, this);
             break;
         }
-        if (updated) {
-          this.lastUpdated = new Date();
-        }
 
-        function _update(fn, coll, id) {
-          var metric = fn(data);
-          if (metric.name.appId === id) {
+        function _update(decodeFn, coll, self) {
+          var metric = decodeFn(data);
+          if (metric.name.appId === self.appId) {
             var item = _getOrCreate(coll, metric.name.metric, {});
             var key = metric.name.processorId + '_' + metric.name.taskId;
             item[key] = metric.values;
             item[key].processorId = metric.name.processorId;
+            item[key].taskClass = self.processors[metric.name.processorId].taskClass;
             item[key].taskId = metric.name.taskId;
-            return true;
           }
-          return false;
         }
       },
 
-      /** Update node dataset on a vis widget. */
-      updateVisGraphNodes: function (nodes, radiusRange) {
+      hasMetrics: function () {
+        return Object.keys(this.meter).length + Object.keys(this.histogram).length > 0;
+      },
+
+      getProcessorsData: function () {
         var weights = {};
-        angular.forEach(this.processors, function (_, id) {
-          weights[id] = this._calculateProcessorWeight(id);
+        angular.forEach(this.processors, function (_, key) {
+          var processorId = parseInt(key);
+          weights[processorId] = this._calculateProcessorWeight(processorId);
         }, this);
-        weights[-1] = 0;
-        var suggestRadius = _rangeMapper(weights, radiusRange);
-
-        var diff = [];
-        for (var id in this.processors) {
-          if (this.processors.hasOwnProperty(id)) {
-            var data = this.processors[id];
-            var label = id + ', ' + _lastPart(data.taskClass);
-            var node = nodes.get(id);
-            var newRadius = suggestRadius(weights[id]);
-            if (!node || node.label !== label || node.radius !== newRadius) {
-              diff.push({id: id, label: label, level: this.processorsLevels[id], radius: newRadius});
-            }
-          }
-        }
-        nodes.update(diff);
+        return {
+          processors: angular.copy(this.processors),
+          hierarchyLevels: angular.copy(this.processorHierarchyLevels),
+          weights: weights
+        };
       },
 
-      _calculateProcessorWeight: function (id) {
+      /** Weight of a processor equals the sum of its send throughput and receive throughput. */
+      _calculateProcessorWeight: function (processorId) {
         var weight = 0;
-        var sendThroughput = this.meter.sendThroughput;
-        var receiveThroughput = this.meter.receiveThroughput;
-        if (sendThroughput && receiveThroughput) {
-          var tasks = this.processors[id].parallelism;
-          weight += d3.sum(this._getMetricsByProcessor(id, tasks, sendThroughput, 'meanRate'));
-          weight += d3.sum(this._getMetricsByProcessor(id, tasks, receiveThroughput, 'meanRate'));
-        }
-        return weight;
+        //var connections = this._calculateProcessorConnections(processorId);
+        return Math.max(d3.sum(this._getProcessorMetrics(processorId, this.meter.sendThroughput, 'meanRate')),
+          d3.sum(this._getProcessorMetrics(processorId, this.meter.receiveThroughput, 'meanRate')));
+        //return weight;
       },
 
-      /** Return the difference of a Vis edge dataset. */
-      updateVisGraphEdges: function (edges, widthRange, arrowSizeRange) {
+      getEdgesData: function () {
         var bandwidths = {};
-        angular.forEach(this.edges, function (_, id) {
-          bandwidths[id] = this._calculateEdgeBandwidth(id);
-        }, this);
-        var suggestWidth = _rangeMapper(bandwidths, widthRange);
-        var suggestArrowSize = _rangeMapper(bandwidths, arrowSizeRange);
+        angular.forEach(this.edges, function (_, edgeId) {
+          bandwidths[edgeId] = this._calculateEdgeBandwidth(edgeId);
+        }, /* scope */ this);
+        return {
+          edges: angular.copy(this.edges),
+          bandwidths: bandwidths
+        };
+      },
 
-        var diff = [];
-        for (var id in this.edges) {
-          if (this.edges.hasOwnProperty(id)) {
-            var data = this.edges[id];
-            var label = _lastPart(data.type);
-            var edge = edges.get(id);
-            var newWidth = suggestWidth(bandwidths[id]);
-            var newArrowSize = suggestArrowSize(bandwidths[id]);
-            if (!edge /*|| edge.label !== label*/ || edge.width !== newWidth) {
-              diff.push({
-                id: id,
-                from: data.source,
-                to: data.target,
-                //label: label,
-                width: newWidth,
-                arrowScaleFactor: newArrowSize
-              });
-            }
+      /** Bandwidth of an edge equals the minimum of average send throughput and average receive throughput. */
+      _calculateEdgeBandwidth: function (edgeId) {
+        var digits = edgeId.split('_');
+        var sourceId = parseInt(digits[0]);
+        var targetId = parseInt(digits[1]);
+        var sourceOutputs = this._calculateProcessorConnections(sourceId).outputs;
+        var targetInputs = this._calculateProcessorConnections(targetId).inputs;
+        var sourceSendThroughput = d3.sum(this._getProcessorMetrics(sourceId, this.meter.sendThroughput, 'meanRate'));
+        var targetReceiveThroughput = d3.sum(this._getProcessorMetrics(targetId, this.meter.receiveThroughput, 'meanRate'));
+        return Math.min(
+          sourceOutputs === 0 ? 0 : (sourceSendThroughput / sourceOutputs),
+          targetInputs === 0 ? 0 : (targetReceiveThroughput / targetInputs));
+      },
+
+      _calculateProcessorConnections: function (processorId) {
+        var result = {inputs: 0, outputs: 0};
+        angular.forEach(this.edges, function (edge) {
+          if (edge.source === processorId) {
+            result.outputs++;
+          } else if (edge.target === processorId) {
+            result.inputs++;
           }
-        }
-        edges.update(diff);
+        }, /* scope */ this);
+        return result;
       },
 
-      _calculateEdgeBandwidth: function (id) {
-        var bandwidth = 0;
-        var sendThroughput = this.meter.sendThroughput;
-        var receiveThroughput = this.meter.receiveThroughput;
-        if (sendThroughput && receiveThroughput) {
-          var parts = id.split('_');
-          var sourceId = parseInt(parts[0]);
-          var targetId = parseInt(parts[1]);
-          var sourceTasks = this.processors[sourceId].parallelism;
-          var targetTasks = this.processors[targetId].parallelism;
-          var sourceSendThroughput = d3.sum(this._getMetricsByProcessor(sourceId, sourceTasks, sendThroughput, 'meanRate'));
-          var targetReceiveThroughput = d3.sum(this._getMetricsByProcessor(targetId, targetTasks, receiveThroughput, 'meanRate'));
-          bandwidth = Math.min(sourceSendThroughput, targetReceiveThroughput);
-        }
-        return bandwidth;
-      },
-
-      _getMetricsByProcessor: function (id, tasks, dictionary, metrics) {
+      /** Return particular metrics value of a processor as an array. */
+      _getProcessorMetrics: function (processorId, metricsGroup, metricType) {
         var values = [];
-        for (var i = 0; i < tasks; i++) {
-          var name = id + '_' + i;
-          if (dictionary.hasOwnProperty(name)) {
-            values.push(dictionary[name][metrics]);
+        if (metricsGroup) {
+          var tasks = this.processors[processorId].parallelism;
+          for (var taskId = 0; taskId < tasks; taskId++) {
+            var name = processorId + '_' + taskId;
+            if (metricsGroup.hasOwnProperty(name)) {
+              values.push(metricsGroup[name][metricType]);
+            }
           }
         }
         return values;
+      },
+
+      /** Return particular metrics value of all processors as an array. */
+      _getAggregatedMetrics: function(metricsGroup, metricsType, op) {
+        var values = [];
+        if (metricsGroup) {
+          angular.forEach(this.processors, function(_, key) {
+            var processorId = parseInt(key);
+            var processorValues = this._getProcessorMetrics(processorId, metricsGroup, metricsType);
+            if (op === 'sum') {
+              processorValues = d3.sum(processorValues);
+            }
+            values.push(processorValues);
+          }, /* scope */ this);
+        }
+        return values;
+      },
+
+      getTotalProcessedEvents: function() {
+        var sent = this._getAggregatedMetrics(this.meter.sendThroughput, 'count');
+        var received = this._getAggregatedMetrics(this.meter.receiveThroughput, 'count');
+        return {sent: d3.sum(sent), received: d3.sum(received)};
+      },
+
+      getThroughput: function() {
+        var sent = this._getAggregatedMetrics(this.meter.sendThroughput, 'meanRate');
+        var received = this._getAggregatedMetrics(this.meter.receiveThroughput, 'meanRate');
+        return {sent: d3.sum(sent), received: d3.sum(received)};
+      },
+
+      getProcessTime: function() {
+        return d3.mean(this._getAggregatedMetrics(this.histogram.processTime, 'mean'));
+      },
+
+      getReceiveLatency: function() {
+        return d3.mean(this._getAggregatedMetrics(this.histogram.receiveLatency, 'mean'));
+      },
+
+      /** Return the depth of the hierarchy layout */
+      hierarchyDepth: function () {
+        return d3.max(d3.values(this.processorHierarchyLevels));
       }
     };
 
@@ -178,23 +181,15 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       return obj[prop];
     }
 
-    function _lastPart(name) {
-      var parts = name.split('.');
-      return parts[parts.length - 1];
-    }
-
-    function _rangeMapper(dict, range) {
-      var values = [];
-      for (var key in dict) {
-        if (dict.hasOwnProperty(key)) {
-          var value = dict[key];
-          values.push(value);
+    function _flatMap(array, fn) {
+      var result = {};
+      array.map(function (item) {
+        if (fn) {
+          item = fn(item);
         }
-      }
-      return d3.scale.linear().domain([
-        values.length > 0 ? d3.min(values) : 0,
-        values.length > 0 ? d3.max(values) : 0])
-        .range(range);
+        result[item[0]] = item[1];
+      });
+      return result;
     }
 
     return StreamingDag;

@@ -29,13 +29,17 @@ object Build extends sbt.Build {
   val commonsLangVersion = "3.3.2"
   val commonsLoggingVersion = "1.1.3"
   val commonsIOVersion = "2.4"
+  val clouderaVersion = "2.5.0-cdh5.3.2"
+  val clouderaHBaseVersion = "0.98.6-cdh5.3.2"
+  val clouderaKafkaVersion = "0.8.2.0-kafka-1.2.0"
   val findbugsVersion = "2.0.1"
   val guavaVersion = "15.0"
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
   val json4sVersion = "3.2.10"
-  val kafkaVersion = "0.8.2.0"
+  val kafkaVersion = "0.8.2.1"
+  val stormVersion = "0.9.3"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
   
@@ -90,7 +94,7 @@ object Build extends sbt.Build {
       },
 
       publishArtifact in Test := true,
-      
+
       pomExtra := {
       <url>https://github.com/intel-hadoop/gearpump</url>
       <licenses>
@@ -167,7 +171,8 @@ object Build extends sbt.Build {
                         "local" -> "org.apache.gearpump.cluster.main.Local",
                         "master" -> "org.apache.gearpump.cluster.main.Master",
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
-                        "services" -> "org.apache.gearpump.cluster.main.Services"
+                        "services" -> "org.apache.gearpump.cluster.main.Services",
+                        "pipeline" -> "org.apache.gearpump.experiments.pipeline.PipeLine"
                        ),
         packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
                            "master" -> Seq("-DlogFilename=master"),
@@ -191,7 +196,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, pipeline)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -312,7 +317,7 @@ object Build extends sbt.Build {
           "org.webjars" % "d3js" % "3.5.3",
           "org.webjars" % "momentjs" % "2.9.0",
           "org.webjars" % "smart-table" % "1.4.11",
-          "org.webjars" % "visjs" % "3.10.0"
+          "org.webjars" % "visjs" % "3.11.0"
         )
       )
   ) dependsOn(streaming % "test->test;compile->compile")
@@ -329,4 +334,48 @@ object Build extends sbt.Build {
     settings = commonSettings
   ) dependsOn(core % "test->test;compile->compile")
 
+  lazy val storm = Project(
+    id = "gearpump-experiments-storm",
+    base = file("experiments/storm"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.storm" % "storm-core" % stormVersion
+            exclude("clj-stacktrace", "clj-stacktrace")
+            exclude("clj-time", "clj-time")
+            exclude("clout", "clout")
+            exclude("compojure", "compojure")
+            exclude("com.esotericsoftware.kryo", "kryo")
+            exclude("com.twitter", "carbonite")
+            exclude("hiccup", "hiccup")
+            exclude("javax.servlet", "servlet-api")
+            exclude("ring", "ring-core")
+            exclude("ring", "ring-devel")
+            exclude("ring", "ring-jetty-adapter")
+            exclude("ring", "ring-servlet"),
+          "org.apache.storm" % "storm-starter" % stormVersion,
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        )
+      )
+  ) dependsOn (streaming % "test->test; provided")
+
+  lazy val pipeline = Project(
+    id = "gearpump-experiments-pipeline",
+    base = file("experiments/pipeline"),
+    settings = commonSettings ++ 
+      Seq(
+        resolvers ++= Seq(
+          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+        )
+      ) ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion,
+          "org.apache.hbase" % "hbase-common" % clouderaHBaseVersion,
+          "org.apache.kafka" % "kafka-clients" % clouderaKafkaVersion
+        )
+      ) 
+  ) dependsOn(streaming % "test->test;compile->compile", external_kafka  % "test->test; provided")
 }
