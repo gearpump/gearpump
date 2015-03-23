@@ -23,6 +23,7 @@ object Build extends sbt.Build {
   
   val akkaVersion = "2.3.6"
   val kryoVersion = "0.3.2"
+  val clouderaVersion = "2.5.0-cdh5.3.2"
   val codahaleVersion = "3.0.2"
   val commonsCodecVersion = "1.6"
   val commonsHttpVersion = "3.1"
@@ -59,6 +60,7 @@ object Build extends sbt.Build {
           "maven2-repo" at "http://mvnrepository.com/artifact",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
+          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
     ) ++
@@ -168,7 +170,8 @@ object Build extends sbt.Build {
                         "local" -> "org.apache.gearpump.cluster.main.Local",
                         "master" -> "org.apache.gearpump.cluster.main.Master",
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
-                        "services" -> "org.apache.gearpump.cluster.main.Services"
+                        "services" -> "org.apache.gearpump.cluster.main.Services",
+                        "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
                        ),
         packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
                            "master" -> Seq("-DlogFilename=master"),
@@ -192,7 +195,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn)
 
 
   lazy val core = Project(
@@ -358,4 +361,18 @@ object Build extends sbt.Build {
       )
   ) dependsOn (streaming % "test->test; provided")
 
+  lazy val yarn = Project(
+    id = "gearpump-experiments-yarn",
+    base = file("experiments/yarn"),
+    settings = commonSettings ++ 
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion
+        )
+      ) 
+  ) dependsOn(core % "test->test", core % "provided")
 }

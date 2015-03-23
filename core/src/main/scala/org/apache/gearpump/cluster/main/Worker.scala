@@ -21,7 +21,7 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.cluster.worker.{Worker=>WorkerActor}
+import org.apache.gearpump.cluster.worker.{Worker => WorkerActor}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil
@@ -41,7 +41,8 @@ Worker extends App with ArgumentsParser {
 
   def uuid = java.util.UUID.randomUUID.toString
 
-  val options = Array.empty[(String, CLIOption[Any])]
+  val options: Array[(String, CLIOption[Any])] =
+    Array("master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = false))
 
   def start(): Unit = {
     worker()
@@ -50,19 +51,42 @@ Worker extends App with ArgumentsParser {
   def worker(): Unit = {
     val id = uuid
     val system = ActorSystem(id, config)
-
-    val masterAddress = config.getStringList("gearpump.cluster.masters").asScala.map { address =>
-      val hostAndPort = address.split(":")
-      HostPort(hostAndPort(0), hostAndPort(1).toInt)
+    val mastersAddresses:Option[Iterable[HostPort]] = getMasterAddressFromArgs orElse getMastersAddressesFromConfig
+    mastersAddresses match {
+      case Some(addresses) =>
+        LOG.info(s"Trying to connect to masters " + addresses.mkString(",") + "...")
+        val masterProxy = system.actorOf(MasterProxy.props(addresses), MASTER)
+        system.actorOf(Props(classOf[WorkerActor], masterProxy),
+          classOf[WorkerActor].getSimpleName + id)
+        system.awaitTermination()
+      case None =>
+        LOG.error("Master address not found as command line option or in conf")
+        system.shutdown()
     }
+  }
 
-    LOG.info(s"Trying to connect to masters " + masterAddress.mkString(",") + "...")
-    val masterProxy = system.actorOf(MasterProxy.props(masterAddress), MASTER)
+  def getMasterAddressFromArgs:Option[Iterable[HostPort]] = {
+       val cmdLineConfig = Option(parse(args))
+       cmdLineConfig match {
+         case Some(opts) =>
+           opts.exists("master") match {
+             case true =>
+               Some(opts.getString("master").split(",").map(hostAndPort))
+             case false =>
+               None
+           }
+         case None =>
+           None
+       }
+  }
+  
+  def getMastersAddressesFromConfig:Option[Iterable[HostPort]] = {
+    Some(config.getStringList("gearpump.cluster.masters").asScala.map(hostAndPort))
+  }
 
-    system.actorOf(Props(classOf[WorkerActor], masterProxy),
-      classOf[WorkerActor].getSimpleName + id)
-
-    system.awaitTermination()
+  private[this] def hostAndPort(address: String): HostPort = {
+    val hostAndPort = address.split(":")
+    HostPort(hostAndPort(0), hostAndPort(1).toInt)
   }
 
   start()
