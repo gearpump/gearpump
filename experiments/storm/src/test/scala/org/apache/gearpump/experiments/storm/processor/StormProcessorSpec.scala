@@ -42,7 +42,7 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers {
     val graphBuilder = new GraphBuilder(topology)
     graphBuilder.build()
     val processorToComponent = graphBuilder.getProcessorToComponent
-    val componentToProcessor = graphBuilder.getComponenToProcessor
+    val componentToProcessor = graphBuilder.getComponentToProcessor
     val stormConfig = Utils.readStormConfig()
     val userConfig = UserConfig.empty
       .withValue(TOPOLOGY, topology)

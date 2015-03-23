@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.experiments.storm.util
 
-import backtype.storm.generated.{Grouping, StormTopology}
+import backtype.storm.generated.{ComponentCommon, Grouping, StormTopology}
 import backtype.storm.tuple.Fields
 import backtype.storm.utils.ThriftTopologyUtils
 import org.apache.gearpump.experiments.storm.partitioner.{NoneGroupingPartitioner, ShuffleGroupingPartitioner, FieldsGroupingPartitioner, GlobalGroupingPartitioner}
@@ -43,13 +43,13 @@ private[storm] class GraphBuilder(topology: StormTopology) {
   def build(): Unit = {
     val spouts = topology.get_spouts()
     val spoutTasks = spouts.map { spout =>
-      val parallelism = spout._2.get_common().get_parallelism_hint()
+      val parallelism = getParallelism(spout._2.get_common())
       val taskDescription = TaskDescription(classOf[StormProducer].getName, parallelism)
       spout._1 -> taskDescription
     }
     val bolts = topology.get_bolts()
     val boltTasks = bolts.map { bolt =>
-      val parallelism = bolt._2.get_common().get_parallelism_hint()
+      val parallelism = getParallelism(bolt._2.get_common())
       val taskDescription = TaskDescription(classOf[StormProcessor].getName, parallelism)
       bolt._1 -> taskDescription
     }
@@ -89,7 +89,7 @@ private[storm] class GraphBuilder(topology: StormTopology) {
 
   def getProcessorToComponent: Map[Int, String] = processorToComponent
 
-  def getComponenToProcessor: Map[String, Int] = componentToProcessor
+  def getComponentToProcessor: Map[String, Int] = componentToProcessor
 
   def getTargets(componentId: String): Map[String, Map[String, Grouping]] = {
     val componentIds = ThriftTopologyUtils.getComponentIds(topology)
@@ -135,5 +135,15 @@ private[storm] class GraphBuilder(topology: StormTopology) {
   def isGlobalGrouping(grouping: Grouping): Boolean = {
     grouping.getSetField == Grouping._Fields.FIELDS &&
     grouping.get_fields.isEmpty
+  }
+
+  def getParallelism(component: ComponentCommon): Int = {
+    val parallelism = component.get_parallelism_hint()
+    if (parallelism == 0) {
+      // for global grouping
+      1
+    } else {
+      parallelism
+    }
   }
 }
