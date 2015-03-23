@@ -34,8 +34,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 trait MetricsQueryService extends HttpService  {
-  def master:ActorRef
   implicit val system: ActorSystem
+  implicit val master:ActorRef
   private val LOG = LogUtil.getLogger(getClass)
 
   def metricQueryRoute = get {

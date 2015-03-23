@@ -33,13 +33,14 @@ import scala.util.{Failure, Success}
 
 trait WorkersService extends HttpService {
   import upickle._
-  def master:ActorRef
+  implicit val master:ActorRef
 
   def workersRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     pathPrefix("api"/s"$REST_VERSION") {
       path("workers") {
+
         def workerDataFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].flatMap { workerList =>
           val workers = workerList.workers
           val workerDataList = List.empty[WorkerDescription]

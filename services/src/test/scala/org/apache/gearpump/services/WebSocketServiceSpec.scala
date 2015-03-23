@@ -17,6 +17,7 @@
  */
 package org.apache.gearpump.services
 
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.services.WebSocketService.WebSocketUrl
@@ -28,6 +29,7 @@ import scala.concurrent.duration._
 class WebSocketServiceSpec extends FlatSpec with ScalatestRouteTest with WebSocketService with Matchers with BeforeAndAfterAll {
   import upickle._
   def actorRefFactory = system
+  implicit val config: Config = system.settings.config
 
   var miniCluster:MiniCluster = null
   def master = miniCluster.mockMaster

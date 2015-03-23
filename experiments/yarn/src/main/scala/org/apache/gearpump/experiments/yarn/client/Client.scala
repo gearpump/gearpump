@@ -79,17 +79,12 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
   val version = configuration.getEnv("version")
 
   private[this] def getMemory(envVar: String): Int = {
-    val memory = getEnv(envVar).trim
-    val containerMemory = memory.substring(0, memory.length-1).toInt
-    val memoryUnits = memory.last.toUpper match {
-      case 'G' =>
-        containerMemory*1024
-      case 'M' =>
-        containerMemory
-      case _ =>
-        containerMemory
+    try {
+      getEnv(envVar).trim.toInt
+    } catch {
+      case throwable: Throwable =>
+        MEMORY_DEFAULT
     }
-    memoryUnits
   }
 
   def getCommand = {
@@ -149,18 +144,7 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
 
   def getAMCapability: Resource = {
     val capability = Records.newRecord(classOf[Resource])
-    val memory = getEnv(YARNAPPMASTER_MEMORY).trim
-    val containerMemory = memory.substring(0, memory.length-1).toInt
-    val memoryUnits = memory.last.toUpper match {
-      case 'G' =>
-        containerMemory*1024
-      case 'M' =>
-        containerMemory
-      case _ =>
-        LOG.error(s"Invalid value $memory defaulting to 1G")
-        1024
-    }
-    capability.setMemory(containerMemory)
+    capability.setMemory(getMemory(YARNAPPMASTER_MEMORY))
     capability.setVirtualCores(getEnv(YARNAPPMASTER_VCORES).toInt)
     capability
   }

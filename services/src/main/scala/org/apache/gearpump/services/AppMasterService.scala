@@ -42,7 +42,7 @@ import scala.util.{Failure, Success, Try}
 
 trait AppMasterService extends HttpService  {
   import upickle._
-  def master:ActorRef
+  implicit val master:ActorRef
   implicit val system: ActorSystem
   private val LOG = LogUtil.getLogger(getClass)
 

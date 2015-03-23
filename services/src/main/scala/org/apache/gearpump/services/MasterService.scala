@@ -13,7 +13,7 @@ import akka.pattern.ask
 
 trait MasterService extends HttpService {
   import upickle._
-  def master:ActorRef
+  implicit val master:ActorRef
 
   def masterRoute: routing.Route = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
