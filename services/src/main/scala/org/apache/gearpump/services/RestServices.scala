@@ -20,7 +20,7 @@ package org.apache.gearpump.services
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
-import org.apache.gearpump.services.WebSocketServices._
+import com.typesafe.config.Config
 import org.apache.gearpump.util.LogUtil
 import spray.can._
 import spray.routing.RoutingSettings
@@ -46,10 +46,9 @@ class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with R
 object RestServices {
   private val LOG = LogUtil.getLogger(getClass)
 
-  def apply(master:ActorRef)(implicit system:ActorSystem) {
+  def apply(master:ActorRef, config: Config)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
     val services = system.actorOf(Props(classOf[RestServicesActor], master, system), "rest-services")
-    val config = system.settings.config
     val port = config.getInt("gearpump.services.http")
     val host = config.getString("gearpump.services.host")
     IO(Http) ! Http.Bind(services, interface = host, port = port)

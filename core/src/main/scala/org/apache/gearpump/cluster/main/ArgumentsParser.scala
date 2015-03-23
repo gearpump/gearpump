@@ -27,7 +27,17 @@ class ParseResult(optionMap : Map[String, String], remainArguments : Array[Strin
 
   def getBoolean (key : String) = optionMap.get(key).get.toBoolean
 
-  def exists(key : String) = optionMap.get(key).isDefined
+  def exists(key : String) = optionMap.get(key) match {
+    case Some(value) =>
+      value.length match {
+        case 0 =>
+          false
+        case _ =>
+          true
+      }
+    case None =>
+      false
+  }
 
   def remainArgs : Array[String] = this.remainArguments
 }

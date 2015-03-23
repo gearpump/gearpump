@@ -394,6 +394,6 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion
         )
-      )
-  ) dependsOn(core % "test->test", core % "provided")
+      ) 
+  ) dependsOn(services % "test->test;compile->compile", core % "provided")
 }
