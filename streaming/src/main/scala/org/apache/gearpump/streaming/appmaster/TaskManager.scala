@@ -26,11 +26,12 @@ import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, StartClock
 import org.apache.gearpump.streaming.executor.{ExecutorRestartPolicy, Executor}
 import Executor.RestartExecutor
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
-import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
+import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef, AllocateResourceTimeOut}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.DAG
+import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
@@ -121,11 +122,11 @@ private[appmaster] class TaskManager(
       val client = sender
       getMinClock.map(client ! StartClock(_))
 
-      register.registerTask(taskId, host)
+      register.registerTask(taskId, executorId, host)
       if (register.isAllTasksRegistered) {
         LOG.info(s"Sending Task locations to executors")
         executorManager ! BroadCast(register.getTaskLocations)
-        goto (ApplicationReady)
+        goto (ApplicationReady) using state
       } else {
         stay using state
       }
@@ -152,6 +153,17 @@ private[appmaster] class TaskManager(
 
     case Event(reply: ReplayFromTimestampWindowTrailingEdge, _) =>
       self ! MessageLoss
+      stay
+
+    case Event(LookupTaskActorRef(taskId), state@ TaskRegistrationState(register)) =>
+      val executorId = register.getExecutorId(taskId)
+      val requestor = sender
+      executorId.map { executorId =>
+        val taskPath = ActorPathUtil.taskActorPath(appMaster, executorId, taskId)
+        context.actorSelection(taskPath).resolveOne(3 seconds).map { taskActorRef =>
+          requestor ! TaskActorRef(taskActorRef)
+        }
+      }
       stay
   }
 

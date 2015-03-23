@@ -1,3 +1,29 @@
+gearpump-0.3.2
+====================
+Change List:
+ - #654, Use yarn to distribute whole gearpump package instead of jars
+ - #631, remove unnecessary storm dependencies
+ - #652, log conflict between slf4j and log4j
+ - #652, log is muted when running on yarn
+ - #650, remove logback classic slf4j binding from classpath
+ - #648, yarn unable to start worker
+ - #27, Integrate YARN into scheduler
+ - #643: metrics tables are now sortable
+ - #639, fix parallelism is 0 on GlobalGrouping
+ - #636, fix FieldsGroupingPartitioner
+ - #629 - query backend for actual websocket address 
+ - #634: create websocket can be failed when url is undefined
+ - #415, support storm connector
+ - #613, Show metrics charts in application's detail page
+ - #546 add a rest api to query WebSocket url
+ - #624, add description field to TaskDescription
+ - #434 add api/v1.0 prefix for all rest services
+ - #618 fix no data returned when call Metrics rest
+ - #607, bump up kafka version to 0.8.2.1
+ - #615, Incorrect Dag edge width
+ - #608 increase the maximum frame size of Akka
+ - #611: dag looks more elegant
+ 
 gearpump-0.3.1
 ====================
 Change List:
