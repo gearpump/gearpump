@@ -6,8 +6,8 @@ body, .tooltip, .popover {
   margin-left: 30px;
 }
 
-.navbar-fixed-bottom {
-  margin-top: 50px;
+#main {
+  margin-bottom: 60px;
 }
 
 .navbar-fixed-bottom > * {
