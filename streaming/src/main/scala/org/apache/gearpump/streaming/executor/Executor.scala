@@ -27,6 +27,7 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.executor.Executor.{RestartExecutor, TaskLocationReady}
 import org.apache.gearpump.streaming.task.TaskActor.RestartTask
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations, TaskWrapper}
+import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.transport.{Express, HostPort}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
@@ -66,7 +67,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
       LOG.info(s"Launching Task $taskId for app: ${appId}, $taskClass")
       val task = new TaskWrapper(taskClass, taskContext, userConf)
       val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
-      val taskActor = context.actorOf(Props(taskActorClass, taskContext, userConf, task).withDispatcher(taskDispatcher), "group_" + taskId.processorId + "_task_" + taskId.index)
+      val taskActor = context.actorOf(Props(taskActorClass, taskContext, userConf, task).withDispatcher(taskDispatcher), ActorPathUtil.taskActorName(taskId))
     }
     case TaskLocations(locations) =>
       val result = locations.flatMap { kv =>

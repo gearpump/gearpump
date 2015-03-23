@@ -43,6 +43,8 @@ object Constants {
   val GEARPUMP_LOG_APPLICATION_DIR = "gearpump.log.application.dir"
   val HADOOP_CONF = "hadoopConf"
 
+  val GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM = "gearpump.remote-debug-executor-jvm"
+
   //the time out for Future
   val FUTURE_TIMEOUT = akka.util.Timeout(15, TimeUnit.SECONDS)
 

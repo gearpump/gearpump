@@ -81,6 +81,8 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
   def onNext(msg : Message) : Unit = task.onNext(msg)
 
+  def onUnManagedMessage(msg: Any): Unit = task.receiveUnManagedMessage.apply(msg)
+
   def onStop() : Unit = task.onStop()
 
   def output(msg : Message) : Unit = {
@@ -292,7 +294,8 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
     case LatencyProbe(timeStamp) =>
       receiveLatency.update(System.currentTimeMillis() - timeStamp)
     case other =>
-      LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + other.toString)
+      // un-managed message
+      onUnManagedMessage(other)
   }
 }
 

@@ -77,7 +77,7 @@ trait MasterHarness {
     val test = ConfigFactory.parseResourcesAnySyntax("test.conf",
       ConfigParseOptions.defaults.setAllowMissing(true))
 
-    val newConf = test.withValue("gearpump.cluster.masters",
+    val newConf = test.withValue(GEARPUMP_CLUSTER_MASTERS,
       ConfigValueFactory.fromAnyRef(Array(s"$host:$port").toList.asJava))
 
     val confFile = File.createTempFile("main", ".conf")
