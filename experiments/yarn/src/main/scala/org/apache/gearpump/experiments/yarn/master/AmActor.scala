@@ -61,7 +61,7 @@ import org.apache.gearpump.experiments.yarn.Actions._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.transport.HostPort
 
-import org.apache.gearpump.util.Constants.GEARPUMP_CLUSTER_MASTERS
+import org.apache.gearpump.util.Constants.{GEARPUMP_CLUSTER_MASTERS,GEARPUMP_LOG_DAEMON_DIR,GEARPUMP_LOG_APPLICATION_DIR }
 
 
 /**
@@ -172,15 +172,24 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
 
   private[this] def getMasterCommand(masterHost: String, masterPort: Int): String = {
     val masterArguments = s"-ip $masterHost -port $masterPort"
-    val masterClusterSetting = s"-D${GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}"
-    getCommand(GEARPUMPMASTER_COMMAND,  Array(masterClusterSetting), GEARPUMPMASTER_MAIN,
+
+    val properties = Array(
+      s"-D${GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
+      s"-D${GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
+      s"-D${GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
+
+    getCommand(GEARPUMPMASTER_COMMAND, properties, GEARPUMPMASTER_MAIN,
       masterArguments, GEARPUMPMASTER_LOG)
   }
 
   private[this] def getWorkerCommand(masterHost: String, masterPort: Int, workerHost: String): String = {
-    val masterAddress = s"-D${GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}"
+
     val arguments = s"-ip $workerHost"
-    getCommand(WORKER_COMMAND, Array(masterAddress),  WORKER_MAIN, arguments, WORKER_LOG)
+    val properties = Array(
+      s"-D${GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
+      s"-D${GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
+      s"-D${GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
+    getCommand(WORKER_COMMAND, properties,  WORKER_MAIN, arguments, WORKER_LOG)
   }
   
   private[this] def getCommand(java: String, properties: Array[String], mainProp: String, cliOpts: String, lognameProp: String):String = {
