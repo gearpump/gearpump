@@ -21,9 +21,7 @@ package org.apache.gearpump.experiments.yarn
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.yarn.api.records.LocalResource
-import org.apache.hadoop.yarn.api.records.LocalResourceType
-import org.apache.hadoop.yarn.api.records.LocalResourceVisibility
+import org.apache.hadoop.yarn.api.records._
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.util.ConverterUtils
 import org.apache.hadoop.yarn.util.Records
@@ -32,9 +30,6 @@ import org.apache.hadoop.yarn.util.Apps
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
 import java.io.File
 import scala.collection.JavaConversions._
-import org.apache.hadoop.yarn.api.records.Container
-import org.apache.hadoop.yarn.api.records.Container
-import org.apache.hadoop.yarn.api.records.ContainerLaunchContext
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.io.DataOutputBuffer
 import java.nio.ByteBuffer
@@ -44,11 +39,10 @@ object YarnContainerUtil {
   val LOG: Logger = LogUtil.getLogger(getClass)
   
   //TODO: move to config
-  val HDFS_JARS_DIR = "/user/gearpump/jars/"
+  val HDFS_ROOT = "/user/gearpump/"
+
   
   def getFs(yarnConf: YarnConfiguration) = FileSystem.get(yarnConf)  
-  
-  def getHdfsPath(yarnConf: YarnConfiguration) = new Path(getFs(yarnConf).getHomeDirectory, HDFS_JARS_DIR)
 
   def getAppEnv(yarnConf: YarnConfiguration): Map[String, String] = {
     val appMasterEnv = new java.util.HashMap[String,String]
@@ -65,26 +59,30 @@ object YarnContainerUtil {
     appMasterEnv.toMap
   }
 
-  def getAMLocalResourcesMap(yarnConf: YarnConfiguration): Map[String, LocalResource] = {
-      val hdfsPath = getHdfsPath(yarnConf)
-      getFs(yarnConf).listStatus(hdfsPath).map(fileStatus => {
-      val localResouceFile = Records.newRecord(classOf[LocalResource])
-      val path = ConverterUtils.getYarnUrlFromPath(fileStatus.getPath)
-      //LOG.info(s"local resource path=${path.getFile}")
-      localResouceFile.setResource(path)
-      localResouceFile.setType(LocalResourceType.FILE)
-      localResouceFile.setSize(fileStatus.getLen)
-      localResouceFile.setTimestamp(fileStatus.getModificationTime)
-      localResouceFile.setVisibility(LocalResourceVisibility.APPLICATION)
-      fileStatus.getPath.getName -> localResouceFile
-    }).toMap
+  def getAMLocalResourcesMap(yarnConf: YarnConfiguration, version: String): Map[String, LocalResource] = {
+    val fs = getFs(yarnConf)
+    Map("pack" -> (newYarnAppResource(fs, new Path(s"${HDFS_ROOT}/${version}.tar.gz"),
+      LocalResourceType.ARCHIVE, LocalResourceVisibility.PUBLIC)))
   }
 
-  def getContainerContext(yarnConf: YarnConfiguration, command:String): ContainerLaunchContext = {    
+  private def newYarnAppResource(fs: FileSystem, path: Path,
+    resourceType: LocalResourceType, vis: LocalResourceVisibility): LocalResource = {
+    val qualified = fs.makeQualified(path);
+    val status = fs.getFileStatus(qualified);
+    val resource = Records.newRecord(classOf[LocalResource])
+    resource.setType(resourceType);
+    resource.setVisibility(vis);
+    resource.setResource(ConverterUtils.getYarnUrlFromPath(qualified));
+    resource.setTimestamp(status.getModificationTime());
+    resource.setSize(status.getLen());
+    return resource;
+  }
+
+  def getContainerContext(yarnConf: YarnConfiguration, version: String, command:String): ContainerLaunchContext = {
     val ctx = Records.newRecord(classOf[ContainerLaunchContext])
     ctx.setCommands(Seq(command)) 
     ctx.setEnvironment(getAppEnv(yarnConf))
-    ctx.setLocalResources(getAMLocalResourcesMap(yarnConf))
+    ctx.setLocalResources(getAMLocalResourcesMap(yarnConf, version))
     ctx.setTokens(getToken)
     ctx
   }

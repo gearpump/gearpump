@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.experiments.yarn.master
 
+import java.io.File
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 import org.apache.gearpump.cluster.main.ArgumentsParser
@@ -79,6 +80,8 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
   var masterContainersStarted = 0
   var workerContainersStarted = 0
   var workerContainersRequested = 0
+
+  val version = appConfig.getEnv("version")
   
   override def receive: Receive = {
     case containerStarted: ContainerStarted =>
@@ -167,7 +170,7 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
   private[this] def launchCommand(container: Container, command:String) {
       LOG.info(s"Launching containter: containerId :  ${container.getId}, host ip : ${container.getNodeId.getHost}")
       LOG.info("Launching command : " + command)
-      context.actorOf(Props(classOf[ContainerLauncherActor], container, nodeManagerClient, yarnConf, command))
+      context.actorOf(Props(classOf[ContainerLauncherActor], container, nodeManagerClient, yarnConf, command, version))
   }
 
   private[this] def getMasterCommand(masterHost: String, masterPort: Int): String = {
@@ -178,7 +181,12 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
       s"-D${GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
       s"-D${GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
 
-    getCommand(GEARPUMPMASTER_COMMAND, properties, GEARPUMPMASTER_MAIN,
+    val classPath = Array(
+      s"pack/$version/conf",
+      s"pack/$version/dashboard",
+      s"pack/$version/lib/*")
+
+    getCommand(GEARPUMPMASTER_COMMAND, classPath, properties, GEARPUMPMASTER_MAIN,
       masterArguments, GEARPUMPMASTER_LOG)
   }
 
@@ -189,14 +197,19 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
       s"-D${GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
       s"-D${GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
       s"-D${GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
-    getCommand(WORKER_COMMAND, properties,  WORKER_MAIN, arguments, WORKER_LOG)
+
+    val classPath = Array(s"pack/$version/conf", s"pack/$version/dashboard", s"pack/$version/lib/*")
+
+    getCommand(WORKER_COMMAND, classPath, properties,  WORKER_MAIN, arguments, WORKER_LOG)
   }
   
-  private[this] def getCommand(java: String, properties: Array[String], mainProp: String, cliOpts: String, lognameProp: String):String = {
+  private[this] def getCommand(java: String, classPath: Array[String], properties: Array[String], mainProp: String, cliOpts: String, lognameProp: String):String = {
     val exe = appConfig.getEnv(java)
     val main = appConfig.getEnv(mainProp)
     val logname = appConfig.getEnv(lognameProp)
-    s"$exe ${properties.mkString(" ")}  $main $cliOpts 2>&1 | /usr/bin/tee -a ${ApplicationConstants.LOG_DIR_EXPANSION_VAR}/$logname"
+    s"$exe -cp ${classPath.mkString(File.pathSeparator)}${File.pathSeparator}" +
+      "$CLASSPATH " + properties.mkString(" ") +
+      s"  $main $cliOpts 2>&1 | /usr/bin/tee -a ${ApplicationConstants.LOG_DIR_EXPANSION_VAR}/$logname"
   }
   
 
@@ -292,7 +305,8 @@ object YarnApplicationMaster extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     APPMASTER_IP -> CLIOption[String]("<Gearpump master ip>", required = false),
-    APPMASTER_PORT -> CLIOption[String]("<Gearpump master port>", required = false)
+    APPMASTER_PORT -> CLIOption[String]("<Gearpump master port>", required = false),
+    "version" -> CLIOption[String]("<Gearpump version>", required = true)
   )
 
   /**
