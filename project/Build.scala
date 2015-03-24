@@ -345,17 +345,36 @@ object Build extends sbt.Build {
             exclude("clj-time", "clj-time")
             exclude("clout", "clout")
             exclude("compojure", "compojure")
-            exclude("com.esotericsoftware.kryo", "kryo")
-            exclude("com.twitter", "carbonite")
+            exclude("com.esotericsoftware.minlog", "minlog")
+            exclude("com.esotericsoftware.reflectasm", "reflectasm")
+            exclude("com.googlecode.disruptor", "disruptor")
+            exclude("commons-codec", "commons-codec")
+            exclude("commons-fileupload", "commons-fileupload")
+            exclude("commons-io", "commons-io")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-loggin")
             exclude("hiccup", "hiccup")
             exclude("javax.servlet", "servlet-api")
-            exclude("ring", "ring-core")
-            exclude("ring", "ring-devel")
-            exclude("ring", "ring-jetty-adapter")
-            exclude("ring", "ring-servlet")
-            exclude("ch.qos.logback", "logback-classic")
-            exclude("org.slf4j","log4j-over-slf4j"),
-          "org.apache.storm" % "storm-starter" % stormVersion,
+            exclude("jline", "jline")
+            exclude("joda-time", "joda-time")
+            exclude("org.apache.commons", "commons-exec")
+            exclude("org.clojure", "core.incubator")
+            exclude("org.clojure", "math.numeric-tower")
+            exclude("org.clojure", "tools.logging")
+            exclude("org.clojure", "tools.cli")
+            exclude("org.clojure", "tools.macro")
+            exclude("jgrapht", "jgrapht-core")
+            exclude("org.objenisis", "objenisis")
+            exclude("org.ow2.asm", "asm")
+            excludeAll(ExclusionRule(organization = "org.mortbay.jetty"))
+            excludeAll(ExclusionRule(organization = "org.slf4j"))
+            excludeAll(ExclusionRule(organization = "ch.qos.logback"))
+            excludeAll(ExclusionRule(organization = "com.twitter"))
+            excludeAll(ExclusionRule(organization = "ring")),
+          "org.apache.storm" % "storm-starter" % stormVersion
+            exclude("com.google.guava", "guava")
+            exclude("commons-collections", "commons-collections")
+            exclude("org.twitter4j", "twitter4j-stream"),
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
@@ -366,7 +385,7 @@ object Build extends sbt.Build {
   lazy val yarn = Project(
     id = "gearpump-experiments-yarn",
     base = file("experiments/yarn"),
-    settings = commonSettings ++ 
+    settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
@@ -375,6 +394,6 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion
         )
-      ) 
+      )
   ) dependsOn(core % "test->test", core % "provided")
 }
