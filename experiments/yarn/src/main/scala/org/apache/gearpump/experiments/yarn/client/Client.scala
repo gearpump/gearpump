@@ -75,7 +75,8 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
   def getYarnConf = yarnConf
   def getFs = FileSystem.get(getYarnConf)  
   def getHdfs = new Path(getFs.getHomeDirectory, getEnv(HDFS_PATH))
-  
+
+  val version = configuration.getEnv("version")
 
   private[this] def getMemory(envVar: String): Int = {
     val memory = getEnv(envVar).trim
@@ -91,13 +92,18 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     memoryUnits
   }
 
-  def getCommand: String = {
+  def getCommand = {
     val exe = getEnv(YARNAPPMASTER_COMMAND)
+
+    val classPath = Array(s"pack/$version/conf", s"pack/$version/dashboard", s"pack/$version/lib/*")
     val mainClass = getEnv(YARNAPPMASTER_MAIN)
     val logdir = ApplicationConstants.LOG_DIR_EXPANSION_VAR
-    val command = s"$exe $mainClass" +
-    " 1>" + logdir +"/" + ApplicationConstants.STDOUT + 
-    " 2>" + logdir +"/" + ApplicationConstants.STDERR
+    val command = s"$exe  -cp ${classPath.mkString(File.pathSeparator)}${File.pathSeparator}" +
+      "$CLASSPATH" +
+      s" $mainClass" +
+      s" -version $version" +
+      " 1>" + logdir +"/" + ApplicationConstants.STDOUT +
+      " 2>" + logdir +"/" + ApplicationConstants.STDERR
 
     LOG.info(s"command=$command")
     command
@@ -195,7 +201,8 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     yarnClient.start()
     val appContext = yarnClient.createApplication.getApplicationSubmissionContext
     appContext.setApplicationName(getEnv(YARNAPPMASTER_NAME))
-    appContext.setAMContainerSpec(YarnContainerUtil.getContainerContext(yarnConf, getCommand))
+
+    appContext.setAMContainerSpec(YarnContainerUtil.getContainerContext(yarnConf, version, getCommand))
     appContext.setResource(getAMCapability)
     appContext.setQueue(getEnv(YARNAPPMASTER_QUEUE))
     
@@ -212,6 +219,7 @@ object Client extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "jars" -> CLIOption[String]("<AppMaster jar directory>", required = false),
+    "version" -> CLIOption[String]("<gearpump version, we allow multiple gearpump version to co-exist on yarn>", required = true),
     "main" -> CLIOption[String]("<AppMaster main class>", required = false),
     "monitor" -> CLIOption[Boolean]("<monitor AppMaster state>", required = false, defaultValue = Some(false))
   )

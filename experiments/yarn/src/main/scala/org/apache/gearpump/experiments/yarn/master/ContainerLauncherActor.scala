@@ -8,11 +8,11 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import akka.actor._
 
-class ContainerLauncherActor(container: Container, nodeManagerClient: NMClientAsync,  yarnConf: YarnConfiguration, command: String) extends Actor {
+class ContainerLauncherActor(container: Container, nodeManagerClient: NMClientAsync,  yarnConf: YarnConfiguration, command: String, version: String) extends Actor {
   val LOG = LogUtil.getLogger(getClass)  
   
   override def preStart(): Unit = {
-    nodeManagerClient.startContainerAsync(container, YarnContainerUtil.getContainerContext(yarnConf, command))
+    nodeManagerClient.startContainerAsync(container, YarnContainerUtil.getContainerContext(yarnConf, version, command))
   }
 
   override def receive: Receive = {
