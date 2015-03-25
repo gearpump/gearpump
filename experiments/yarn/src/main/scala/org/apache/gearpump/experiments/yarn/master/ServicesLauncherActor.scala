@@ -1,14 +1,8 @@
 package org.apache.gearpump.experiments.yarn.master
 
-import java.net.InetAddress
-
-import org.apache.hadoop.yarn.api.records.Container
-import org.apache.hadoop.yarn.client.api.async.NMClientAsync
-import org.apache.gearpump.experiments.yarn.YarnContainerUtil
-import org.apache.gearpump.util.LogUtil
-import org.apache.hadoop.yarn.conf.YarnConfiguration
-import org.apache.hadoop.yarn.conf.YarnConfiguration
 import akka.actor._
+import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.util.LogUtil
 
 class ServicesLauncherActor(masters: Array[String], host: String, port: Int) extends Actor {
   val LOG = LogUtil.getLogger(getClass)  
@@ -19,6 +13,7 @@ class ServicesLauncherActor(masters: Array[String], host: String, port: Int) ext
     System.setProperty("gearpump.services.host", host)
     System.setProperty("gearpump.services.http", port.toString)
     System.setProperty("akka.remote.netty.tcp.hostname", host)
+    ConfigFactory.invalidateCaches()
     org.apache.gearpump.cluster.main.Services.main(Array("-master", mastersArg))
   }
 
