@@ -109,13 +109,13 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     command
   }
 
- 
+
   def getAppEnv: Map[String, String] = {
     val appMasterEnv = new java.util.HashMap[String,String]
     for (
       c <- getYarnConf.getStrings(
         YarnConfiguration.YARN_APPLICATION_CLASSPATH,
-        YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH.mkString(","))
+        YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH.mkString(File.pathSeparator))
     ) {
       Apps.addToEnvironment(appMasterEnv, Environment.CLASSPATH.name(),
         c.trim(), File.pathSeparator)
