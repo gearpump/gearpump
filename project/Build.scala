@@ -388,11 +388,48 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
-          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
-          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
-          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion,
-          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion
+          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion
+            exclude("com.google.guava", "guava")
+            exclude("com.google.protobuf", "protobuf-java")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("org.apache.hadoop", "hadoop-annotations"),
+          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion
+            exclude("com.google.guava", "guava")
+            exclude("com.sun.jersey", "jersey-client")
+            exclude("commons-cli", "commons-cli")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("log4j", "log4j")
+            exclude("org.apache.hadoop", "hadoop-annotations")
+            exclude("org.mortbay.jetty", "jetty-util")
+            exclude("org.apache.hadoop", "hadoop-yarn-api")
+            exclude("org.apache.hadoop", "hadoop-yarn-common"),
+          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion
+            exclude("com.google.guava", "guava")
+            exclude("com.google.inject.extensions", "guice-servlet")
+            exclude("com.google.inject", "guice")
+            exclude("com.google.protobuf", "protobuf-java")
+            exclude("com.sun.jersey.contribs", "jersey.guice")
+            exclude("com.sun.jersey", "jersey-core")
+            exclude("com.sun.jersey", "jersey-json")
+            exclude("commons-cli", "commons-cli")
+            exclude("commons-codec", "commons-codec")
+            exclude("commons-io", "commons-io")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("javax.servlet", "servlet-api")
+            exclude("javax.xml.bind", "jaxb-api")
+            exclude("log4j", "log4j")
+            exclude("org.apache.commons", "commons-compress")
+            exclude("org.apache.hadoop", "hadoop-annotations")
+            exclude("org.codehaus.jackson", "jackson-core-asl")
+            exclude("org.codehaus.jackson", "jackson-jaxrs")
+            exclude("org.codehaus.jackson", "jackson-mapper-asl")
+            exclude("org.codehaus.jackson", "jackson-xc")
+            exclude("org.slf4j", "slf4j-api"),
+          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         )
       )
   ) dependsOn(core % "test->test", core % "provided")
