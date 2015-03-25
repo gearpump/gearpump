@@ -26,7 +26,7 @@ object CmdLineVars {
   val APPMASTER_PORT = "port"
 }
 
-class AppConfig(cliopts: ParseResult, conf: Config) {
+class AppConfig(cliopts: ParseResult, val conf: Config) {
   
    def getEnv(key: String): String = {
     Option(cliopts) match {

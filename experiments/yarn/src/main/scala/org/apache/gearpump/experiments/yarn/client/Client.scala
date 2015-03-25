@@ -32,15 +32,6 @@ import org.slf4j.Logger
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 import org.apache.gearpump.experiments.yarn.AppConfig
-import org.apache.gearpump.experiments.yarn.Constants.EXCLUDE_JARS
-import org.apache.gearpump.experiments.yarn.Constants.HDFS_PATH
-import org.apache.gearpump.experiments.yarn.Constants.JARS
-import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_COMMAND
-import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_MAIN
-import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_MEMORY
-import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_NAME
-import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_QUEUE
-import org.apache.gearpump.experiments.yarn.Constants.YARNAPPMASTER_VCORES
 import org.apache.gearpump.experiments.yarn.YarnContainerUtil
 
 
@@ -53,7 +44,6 @@ Features for YARNClient
 - [ ] Client needs to use YARN cluster API to find best nodes to run Master(s)
 - [ ] Client needs to use YARN cluster API to find best nodes to run Workers
  */
-
 
 trait ClientAPI {
   def getConfiguration: AppConfig
@@ -74,28 +64,14 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
   def getEnv = getConfiguration.getEnv _
   def getYarnConf = yarnConf
   def getFs = FileSystem.get(getYarnConf)  
-  def getHdfs = new Path(getFs.getHomeDirectory, getEnv(HDFS_PATH))
+  def jarPath = new Path(getFs.getHomeDirectory, getEnv(HDFS_ROOT) + "/jars/" )
 
   val version = configuration.getEnv("version")
-
-  private[this] def getMemory(envVar: String): Int = {
-    val memory = getEnv(envVar).trim
-    val containerMemory = memory.substring(0, memory.length-1).toInt
-    val memoryUnits = memory.last.toUpper match {
-      case 'G' =>
-        containerMemory*1024
-      case 'M' =>
-        containerMemory
-      case _ =>
-        containerMemory
-    }
-    memoryUnits
-  }
+  private val confOnYarn = getEnv(HDFS_ROOT) + "/conf/" + YARN_CONFIG
 
   def getCommand = {
     val exe = getEnv(YARNAPPMASTER_COMMAND)
-
-    val classPath = Array(s"pack/$version/conf", s"pack/$version/dashboard", s"pack/$version/lib/*")
+    val classPath = Array(s"pack/$version/conf", s"pack/$version/dashboard", s"pack/$version/lib/*", "yarnConf")
     val mainClass = getEnv(YARNAPPMASTER_MAIN)
     val logdir = ApplicationConstants.LOG_DIR_EXPANSION_VAR
     val command = s"$exe  -cp ${classPath.mkString(File.pathSeparator)}${File.pathSeparator}" +
@@ -108,7 +84,6 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     LOG.info(s"command=$command")
     command
   }
-
 
   def getAppEnv: Map[String, String] = {
     val appMasterEnv = new java.util.HashMap[String,String]
@@ -137,7 +112,7 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     }).filter(jar => {
       !excludeJars.contains(jar)
     }).toList.foreach(jarFile => {
-        Try(getFs.copyFromLocalFile(false, true, new Path(jarDir, jarFile), getHdfs)) match {
+        Try(getFs.copyFromLocalFile(false, true, new Path(jarDir, jarFile), jarPath)) match {
           case Success(a) =>
             LOG.info(s"$jarFile uploaded to HDFS")
           case Failure(error) =>
@@ -145,6 +120,20 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
             None
         }
     }))
+  }
+
+  def uploadConfigToHDFS(): Unit = {
+    val localConfigPath = getEnv("config")
+    val configDir = new Path(confOnYarn)
+    if(!getFs.exists(configDir.getParent)){
+      getFs.mkdirs(configDir.getParent)
+    }
+    Try(getFs.copyFromLocalFile(false, true, new Path(localConfigPath), configDir)) match {
+      case Success(a) =>
+        LOG.info(s"$localConfigPath uploaded to HDFS")
+      case Failure(error) =>
+        LOG.error(s"$localConfigPath could not be uploaded to HDFS ${error.getMessage}")
+    }
   }
 
   def getAMCapability: Resource = {
@@ -160,7 +149,7 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
         LOG.error(s"Invalid value $memory defaulting to 1G")
         1024
     }
-    capability.setMemory(containerMemory)
+    capability.setMemory(memoryUnits)
     capability.setVirtualCores(getEnv(YARNAPPMASTER_VCORES).toInt)
     capability
   }
@@ -193,16 +182,18 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
         " at " + appReport.getFinishTime)
   }
 
-
   def deploy() = {
     LOG.info("Starting AM")
     //uploadAMResourcesToHDFS()
+    uploadConfigToHDFS()
     yarnClient.init(yarnConf)
     yarnClient.start()
     val appContext = yarnClient.createApplication.getApplicationSubmissionContext
     appContext.setApplicationName(getEnv(YARNAPPMASTER_NAME))
 
-    appContext.setAMContainerSpec(YarnContainerUtil.getContainerContext(yarnConf, version, getCommand))
+    val containerContext: ContainerLaunchContext = YarnContainerUtil.getContainerContext(yarnConf, getCommand)
+    containerContext.setLocalResources(YarnContainerUtil.getAMLocalResourcesMap(yarnConf, getConfiguration))
+    appContext.setAMContainerSpec(containerContext)
     appContext.setResource(getAMCapability)
     appContext.setQueue(getEnv(YARNAPPMASTER_QUEUE))
     
@@ -221,9 +212,12 @@ object Client extends App with ArgumentsParser {
     "jars" -> CLIOption[String]("<AppMaster jar directory>", required = false),
     "version" -> CLIOption[String]("<gearpump version, we allow multiple gearpump version to co-exist on yarn>", required = true),
     "main" -> CLIOption[String]("<AppMaster main class>", required = false),
+    "config" ->CLIOption[String]("<Config file path>", required = true),
     "monitor" -> CLIOption[Boolean]("<monitor AppMaster state>", required = false, defaultValue = Some(false))
   )
-  
-  new Client(new AppConfig(parse(args), ConfigFactory.load), new YarnConfiguration, YarnClient.createYarnClient)
-}
 
+  val parseResult = parse(args)
+  val config = ConfigFactory.parseFile(new File(parseResult.getString("config")))
+  
+  new Client(new AppConfig(parseResult, config), new YarnConfiguration, YarnClient.createYarnClient)
+}

@@ -27,9 +27,8 @@ object Constants {
   val YARNAPPMASTER_MAIN = "gearpump.yarn.applicationmaster.main"
   val YARNAPPMASTER_PORT = "gearpump.yarn.applicationmaster.port"
 
-
   val EXCLUDE_JARS = "gearpump.yarn.client.excludejars"
-  val HDFS_PATH = "gearpump.yarn.client.hdfsPath"
+  val HDFS_ROOT = "gearpump.yarn.client.hdfsRoot"
   val JARS = "gearpump.yarn.client.jars"
   val GEARPUMPMASTER_COMMAND = "gearpump.master.command"
   val GEARPUMPMASTER_MAIN = "gearpump.master.main"
@@ -54,4 +53,5 @@ object Constants {
   val SERVICES_VCORES = "gearpump.services.vcores"
   val SERVICES_LOG = "gearpump.services.logname"
 
+  val YARN_CONFIG = "gearpump_on_yarn.conf"
 }

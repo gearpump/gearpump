@@ -40,6 +40,7 @@ import org.apache.gearpump.experiments.yarn.NodeManagerCallbackHandler
 import org.apache.gearpump.experiments.yarn.ResourceManagerClientActor
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileUtil, FileSystem, Path}
 import org.apache.hadoop.net.NetUtils
 import org.apache.hadoop.yarn.api.ApplicationConstants
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse
@@ -49,7 +50,7 @@ import org.apache.hadoop.yarn.client.api.async.NMClientAsync
 import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.slf4j.Logger
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigParseOptions, ConfigFactory}
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -57,9 +58,7 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.util.Timeout
-import akka.actor.FSM
 import org.apache.gearpump.experiments.yarn.Actions._
-import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.transport.HostPort
 
 import org.apache.gearpump.util.Constants.{GEARPUMP_CLUSTER_MASTERS,GEARPUMP_LOG_DAEMON_DIR,GEARPUMP_LOG_APPLICATION_DIR }
@@ -170,7 +169,7 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
   private[this] def launchCommand(container: Container, command:String) {
       LOG.info(s"Launching containter: containerId :  ${container.getId}, host ip : ${container.getNodeId.getHost}")
       LOG.info("Launching command : " + command)
-      context.actorOf(Props(classOf[ContainerLauncherActor], container, nodeManagerClient, yarnConf, command, version))
+      context.actorOf(Props(classOf[ContainerLauncherActor], container, nodeManagerClient, yarnConf, command, appConfig))
   }
 
   private[this] def getMasterCommand(masterHost: String, masterPort: Int): String = {
@@ -233,7 +232,6 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
     (1 to appConfig.getEnv(WORKER_CONTAINERS).toInt).foreach(requestId => {
       amRMClient ! ContainerRequestMessage(appConfig.getEnv(WORKER_MEMORY).toInt, appConfig.getEnv(WORKER_VCORES).toInt)
     })
-
   }
 
   private[this] def requestMasterContainers(registrationResponse: RegisterApplicationMasterResponse) {
@@ -325,7 +323,7 @@ object YarnApplicationMaster extends App with ArgumentsParser {
   def apply(args: Array[String]) = {
     try {
       implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-      val config = ConfigFactory.load
+      val config = ConfigFactory.parseResourcesAnySyntax(YARN_CONFIG)
       implicit val system = ActorSystem("GearPumpAM", config)
       val appConfig = new AppConfig(parse(args), config)
       val yarnConfiguration = getForcedDefaultYarnConf
@@ -341,9 +339,7 @@ object YarnApplicationMaster extends App with ArgumentsParser {
         LOG.error("Caught exception", throwable)
         throwable.printStackTrace()
     }
-
   }
 
   apply(args)
-
 }

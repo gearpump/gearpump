@@ -34,15 +34,12 @@ import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.io.DataOutputBuffer
 import java.nio.ByteBuffer
 
+import org.apache.gearpump.experiments.yarn.Constants._
 
 object YarnContainerUtil {
   val LOG: Logger = LogUtil.getLogger(getClass)
   
-  //TODO: move to config
-  val HDFS_ROOT = "/user/gearpump/"
-
-  
-  def getFs(yarnConf: YarnConfiguration) = FileSystem.get(yarnConf)  
+  def getFs(yarnConf: YarnConfiguration) = FileSystem.get(yarnConf)
 
   def getAppEnv(yarnConf: YarnConfiguration): Map[String, String] = {
     val appMasterEnv = new java.util.HashMap[String,String]
@@ -59,30 +56,34 @@ object YarnContainerUtil {
     appMasterEnv.toMap
   }
 
-  def getAMLocalResourcesMap(yarnConf: YarnConfiguration, version: String): Map[String, LocalResource] = {
+  def getAMLocalResourcesMap(yarnConf: YarnConfiguration, appConfig: AppConfig): Map[String, LocalResource] = {
     val fs = getFs(yarnConf)
-    Map("pack" -> (newYarnAppResource(fs, new Path(s"${HDFS_ROOT}/${version}.tar.gz"),
-      LocalResourceType.ARCHIVE, LocalResourceVisibility.PUBLIC)))
+    val version = appConfig.getEnv("version")
+    val hdfsRoot = appConfig.getEnv(HDFS_ROOT)
+    Map(
+      "pack" -> newYarnAppResource(fs, new Path(s"$hdfsRoot/$version.tar.gz"),
+        LocalResourceType.ARCHIVE, LocalResourceVisibility.PUBLIC),
+      "yarnConf" -> newYarnAppResource(fs, new Path(s"$hdfsRoot/conf"),
+        LocalResourceType.FILE, LocalResourceVisibility.PUBLIC))
   }
 
   private def newYarnAppResource(fs: FileSystem, path: Path,
-    resourceType: LocalResourceType, vis: LocalResourceVisibility): LocalResource = {
-    val qualified = fs.makeQualified(path);
-    val status = fs.getFileStatus(qualified);
+      resourceType: LocalResourceType, vis: LocalResourceVisibility): LocalResource = {
+    val qualified = fs.makeQualified(path)
+    val status = fs.getFileStatus(qualified)
     val resource = Records.newRecord(classOf[LocalResource])
-    resource.setType(resourceType);
-    resource.setVisibility(vis);
-    resource.setResource(ConverterUtils.getYarnUrlFromPath(qualified));
-    resource.setTimestamp(status.getModificationTime());
-    resource.setSize(status.getLen());
-    return resource;
+    resource.setType(resourceType)
+    resource.setVisibility(vis)
+    resource.setResource(ConverterUtils.getYarnUrlFromPath(qualified))
+    resource.setTimestamp(status.getModificationTime())
+    resource.setSize(status.getLen())
+    resource
   }
 
-  def getContainerContext(yarnConf: YarnConfiguration, version: String, command:String): ContainerLaunchContext = {
+  def getContainerContext(yarnConf: YarnConfiguration, command:String): ContainerLaunchContext = {
     val ctx = Records.newRecord(classOf[ContainerLaunchContext])
     ctx.setCommands(Seq(command)) 
     ctx.setEnvironment(getAppEnv(yarnConf))
-    ctx.setLocalResources(getAMLocalResourcesMap(yarnConf, version))
     ctx.setTokens(getToken)
     ctx
   }
