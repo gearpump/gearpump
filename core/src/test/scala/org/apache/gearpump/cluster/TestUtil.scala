@@ -41,7 +41,7 @@ object TestUtil {
     private val mockMasterIP = "127.0.0.1"
 
     implicit val system = ActorSystem("system", MASTER_CONFIG.
-      withValue("akka.remote.netty.tcp.hostname", ConfigValueFactory.fromAnyRef(mockMasterIP)))
+      withValue(Constants.NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(mockMasterIP)))
 
     val (mockMaster, worker) = {
       val master = system.actorOf(Props(classOf[Master]), "master")

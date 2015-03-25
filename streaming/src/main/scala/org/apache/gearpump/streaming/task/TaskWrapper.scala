@@ -58,7 +58,9 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
 
   override def output(msg: Message): Unit = actor.output(msg)
 
-  def self: ActorRef = actor.context.self
+  override def self: ActorRef = actor.context.self
+
+  override def sender: ActorRef = actor.context.sender()
 
   def system: ActorSystem = actor.context.system
 
@@ -91,5 +93,10 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable = {
     val dispatcher = actor.context.system.dispatcher
     actor.context.system.scheduler.schedule(initialDelay, interval)(f)(dispatcher)
+  }
+
+  def scheduleOnce(initialDelay: FiniteDuration)(f: ⇒ Unit): Cancellable = {
+    val dispatcher = actor.context.system.dispatcher
+    actor.context.system.scheduler.scheduleOnce(initialDelay)(f)(dispatcher)
   }
 }

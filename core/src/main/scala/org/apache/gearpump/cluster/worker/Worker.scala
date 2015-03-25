@@ -227,10 +227,12 @@ private[cluster] object Worker {
         val classPathPrefix = Util.getCurrentClassPath ++ ctx.classPath
         val classPath = jarPath.map(classPathPrefix :+ _).getOrElse(classPathPrefix)
 
+        val appLogDir = context.system.settings.config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
         val logArgs = List(
           s"-D${Constants.GEARPUMP_APPLICATION_ID}=${launch.appId}",
           s"-D${Constants.GEARPUMP_EXECUTOR_ID}=${launch.executorId}",
-          s"-D${Constants.GEARPUMP_MASTER_STARTTIME}=${getFormatedTime(masterInfo.startTime)}")
+          s"-D${Constants.GEARPUMP_MASTER_STARTTIME}=${getFormatedTime(masterInfo.startTime)}",
+          s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${appLogDir}")
         val configArgs = configFile.map(confFilePath =>
           List(s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=$confFilePath")
           ).getOrElse(List.empty[String])

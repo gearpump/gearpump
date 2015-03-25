@@ -23,6 +23,7 @@ object Build extends sbt.Build {
   
   val akkaVersion = "2.3.6"
   val kryoVersion = "0.3.2"
+  val clouderaVersion = "2.5.0-cdh5.3.2"
   val codahaleVersion = "3.0.2"
   val commonsCodecVersion = "1.6"
   val commonsHttpVersion = "3.1"
@@ -62,6 +63,7 @@ object Build extends sbt.Build {
           "maven2-repo" at "http://mvnrepository.com/artifact",
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
+          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
         )
     ) ++
@@ -172,7 +174,7 @@ object Build extends sbt.Build {
                         "master" -> "org.apache.gearpump.cluster.main.Master",
                         "worker" -> "org.apache.gearpump.cluster.main.Worker",
                         "services" -> "org.apache.gearpump.cluster.main.Services",
-                        "pipeline" -> "org.apache.gearpump.experiments.pipeline.PipeLine"
+                        "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
                        ),
         packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
                            "master" -> Seq("-DlogFilename=master"),
@@ -193,10 +195,10 @@ object Build extends sbt.Build {
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
-        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard"))
+        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard", "/etc/hadoop/conf"))
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, pipeline)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn, pipeline)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -345,21 +347,94 @@ object Build extends sbt.Build {
             exclude("clj-time", "clj-time")
             exclude("clout", "clout")
             exclude("compojure", "compojure")
-            exclude("com.esotericsoftware.kryo", "kryo")
-            exclude("com.twitter", "carbonite")
+            exclude("com.esotericsoftware.minlog", "minlog")
+            exclude("com.esotericsoftware.reflectasm", "reflectasm")
+            exclude("com.googlecode.disruptor", "disruptor")
+            exclude("commons-codec", "commons-codec")
+            exclude("commons-fileupload", "commons-fileupload")
+            exclude("commons-io", "commons-io")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-loggin")
             exclude("hiccup", "hiccup")
             exclude("javax.servlet", "servlet-api")
-            exclude("ring", "ring-core")
-            exclude("ring", "ring-devel")
-            exclude("ring", "ring-jetty-adapter")
-            exclude("ring", "ring-servlet"),
-          "org.apache.storm" % "storm-starter" % stormVersion,
+            exclude("jline", "jline")
+            exclude("joda-time", "joda-time")
+            exclude("org.apache.commons", "commons-exec")
+            exclude("org.clojure", "core.incubator")
+            exclude("org.clojure", "math.numeric-tower")
+            exclude("org.clojure", "tools.logging")
+            exclude("org.clojure", "tools.cli")
+            exclude("org.clojure", "tools.macro")
+            exclude("jgrapht", "jgrapht-core")
+            exclude("org.objenisis", "objenisis")
+            exclude("org.ow2.asm", "asm")
+            excludeAll(ExclusionRule(organization = "org.mortbay.jetty"))
+            excludeAll(ExclusionRule(organization = "org.slf4j"))
+            excludeAll(ExclusionRule(organization = "ch.qos.logback"))
+            excludeAll(ExclusionRule(organization = "com.twitter"))
+            excludeAll(ExclusionRule(organization = "ring")),
+          "org.apache.storm" % "storm-starter" % stormVersion
+            exclude("com.google.guava", "guava")
+            exclude("commons-collections", "commons-collections")
+            exclude("org.twitter4j", "twitter4j-stream"),
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
   ) dependsOn (streaming % "test->test; provided")
+
+  lazy val yarn = Project(
+    id = "gearpump-experiments-yarn",
+    base = file("experiments/yarn"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion
+            exclude("com.google.guava", "guava")
+            exclude("com.google.protobuf", "protobuf-java")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("org.apache.hadoop", "hadoop-annotations"),
+          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion
+            exclude("com.google.guava", "guava")
+            exclude("com.sun.jersey", "jersey-client")
+            exclude("commons-cli", "commons-cli")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("log4j", "log4j")
+            exclude("org.apache.hadoop", "hadoop-annotations")
+            exclude("org.mortbay.jetty", "jetty-util")
+            exclude("org.apache.hadoop", "hadoop-yarn-api")
+            exclude("org.apache.hadoop", "hadoop-yarn-common"),
+          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion
+            exclude("com.google.guava", "guava")
+            exclude("com.google.inject.extensions", "guice-servlet")
+            exclude("com.google.inject", "guice")
+            exclude("com.google.protobuf", "protobuf-java")
+            exclude("com.sun.jersey.contribs", "jersey.guice")
+            exclude("com.sun.jersey", "jersey-core")
+            exclude("com.sun.jersey", "jersey-json")
+            exclude("commons-cli", "commons-cli")
+            exclude("commons-codec", "commons-codec")
+            exclude("commons-io", "commons-io")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("javax.servlet", "servlet-api")
+            exclude("javax.xml.bind", "jaxb-api")
+            exclude("log4j", "log4j")
+            exclude("org.apache.commons", "commons-compress")
+            exclude("org.apache.hadoop", "hadoop-annotations")
+            exclude("org.codehaus.jackson", "jackson-core-asl")
+            exclude("org.codehaus.jackson", "jackson-jaxrs")
+            exclude("org.codehaus.jackson", "jackson-mapper-asl")
+            exclude("org.codehaus.jackson", "jackson-xc")
+            exclude("org.slf4j", "slf4j-api"),
+          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
+        )
+      )
+  ) dependsOn(core % "test->test", core % "provided")
 
   lazy val pipeline = Project(
     id = "gearpump-experiments-pipeline",
