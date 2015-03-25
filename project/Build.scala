@@ -341,13 +341,18 @@ object Build extends sbt.Build {
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.storm" % "storm-core" % stormVersion
+            exclude("ch.qos.logback", "logback-classic")
+            exclude("ch.qos.logback", "logback-core")
             exclude("clj-stacktrace", "clj-stacktrace")
             exclude("clj-time", "clj-time")
             exclude("clout", "clout")
             exclude("compojure", "compojure")
+            exclude("com.esotericsoftware.kryo", "kryo")
             exclude("com.esotericsoftware.minlog", "minlog")
             exclude("com.esotericsoftware.reflectasm", "reflectasm")
             exclude("com.googlecode.disruptor", "disruptor")
+            exclude("com.twitter", "carbonite")
+            exclude("com.twitter", "chill-java")
             exclude("commons-codec", "commons-codec")
             exclude("commons-fileupload", "commons-fileupload")
             exclude("commons-io", "commons-io")
@@ -355,6 +360,7 @@ object Build extends sbt.Build {
             exclude("commons-logging", "commons-loggin")
             exclude("hiccup", "hiccup")
             exclude("javax.servlet", "servlet-api")
+            exclude("jgrapht", "jgrapht-core")
             exclude("jline", "jline")
             exclude("joda-time", "joda-time")
             exclude("org.apache.commons", "commons-exec")
@@ -363,18 +369,16 @@ object Build extends sbt.Build {
             exclude("org.clojure", "tools.logging")
             exclude("org.clojure", "tools.cli")
             exclude("org.clojure", "tools.macro")
-            exclude("jgrapht", "jgrapht-core")
+            exclude("org.mortbay.jetty", "jetty-util")
+            exclude("org.mortbay.jetty", "jetty")
             exclude("org.objenisis", "objenisis")
             exclude("org.ow2.asm", "asm")
-            excludeAll(ExclusionRule(organization = "org.mortbay.jetty"))
-            excludeAll(ExclusionRule(organization = "org.slf4j"))
-            excludeAll(ExclusionRule(organization = "ch.qos.logback"))
-            excludeAll(ExclusionRule(organization = "com.twitter"))
-            excludeAll(ExclusionRule(organization = "ring")),
-          "org.apache.storm" % "storm-starter" % stormVersion
-            exclude("com.google.guava", "guava")
-            exclude("commons-collections", "commons-collections")
-            exclude("org.twitter4j", "twitter4j-stream"),
+            exclude("org.slf4j", "log4j-over-slf4j")
+            exclude("org.slf4j", "slf4j-api")
+            exclude("ring", "ring-core")
+            exclude("ring", "ring-devel")
+            exclude("ring", "ring-jetty-adapter")
+            exclude("ring", "ring-servlet"),
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"

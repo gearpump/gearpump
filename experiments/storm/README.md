@@ -3,28 +3,23 @@ on Gearpump. This documentation illustrates how to do so in a local Gearpump clu
 
 ## How to run a Storm application over Gearpump 
 
-  1. add default serializer for `StormTuple` in `gear.conf`
+  1. launch a local cluster
 
-  ```
-      serializers {
-  #      ## Follow this format when adding new serializer for new message types
-  #      ##    "org.apache.gearpump.Message" = "org.apache.gearpump.streaming.MessageSerializer"
-        "org.apache.gearpump.experiments.storm.util.StormTuple" = ""
-    }
-  ```
-
-  `StormTuple` is a simplified version of `Tuple` in Storm and carries `Spout` and `Bolt` outputs across Gearpump cluster.
-  
-  2. submit a Storm topology from storm-starter
-  
   ```bash
     ./target/pack/bin/local -port 3000 
-    ./target/pack/bin/gear app -jar examples/target/scala-2.11/gearpump-examples-assembly-$VERSION.jar org.apache.gearpump.experiments.storm.StormRunner -storm_topology storm.starter.WordCountTopology -storm_args wordcount -master 127.0.0.1:3000
+
+  ```
+
+  2. submit a topology from storm-starter
+
+  ```bash
+    ./target/pack/bin/gear app -jar storm-starter-${STORM_VERSION}.jar org.apache.gearpump.experiments.storm.StormRunner -storm_topology storm.starter.ExclamationTopology -storm_args exclamation -master 127.0.0.1:3000
   
   ```
   
-  There are two options user could configure. 
-   * `storm_topology` for user to set the topology to run;
+  There are three options user need configure. 
+   * `jar` for user to set the path of a storm application jar
+   * `storm_topology` for user to set the topology main class 
    * `storm_args`, a comma separated arguments list for user to set command line options which would be passed into `args` parameter of the topology's main function.
   
   That's it. Check the dashboard and you should see data flowing from `StormProducer` to `StormProcessor`.
