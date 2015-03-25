@@ -49,7 +49,7 @@ object YarnContainerUtil {
     for (
       c <- yarnConf.getStrings(
         YarnConfiguration.YARN_APPLICATION_CLASSPATH,
-        YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH.mkString(","))
+        YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH.mkString(File.pathSeparator))
     ) {
       Apps.addToEnvironment(appMasterEnv, Environment.CLASSPATH.name(),
         c.trim(), File.pathSeparator)
