@@ -18,6 +18,7 @@
  
 package org.apache.gearpump.streaming.task
 
+import akka.actor.Actor._
 import akka.actor.{ActorSystem, Cancellable, Props, ActorRef}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
@@ -54,8 +55,6 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
 
   override def appMaster: ActorRef = context.appMaster
 
-  override def dag: DAG = context.dag
-
   override def output(msg: Message): Unit = actor.output(msg)
 
   override def self: ActorRef = actor.context.self
@@ -88,6 +87,10 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
   override def onStop(): Unit = {
     task.onStop()
     task = null
+  }
+
+  override def receiveUnManagedMessage: Receive = {
+    Option(task).map(_.receiveUnManagedMessage).get
   }
 
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable = {
