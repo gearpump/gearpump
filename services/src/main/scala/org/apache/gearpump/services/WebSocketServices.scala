@@ -20,6 +20,7 @@ package org.apache.gearpump.services
 
 import akka.actor._
 import akka.io.IO
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.main.Local._
 import org.apache.gearpump.util.{Constants, LogUtil}
@@ -41,11 +42,10 @@ class WebSocketServices(master: ActorRef) extends Actor with ActorLogging {
 object WebSocketServices {
   private val LOG = LogUtil.getLogger(getClass)
 
-  def apply(master:ActorRef)(implicit system:ActorSystem) {
+  def apply(master:ActorRef, config: Config)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     val services = system.actorOf(Props(classOf[WebSocketServices], master),"ws-services")
-    val config = system.settings.config
     val port = config.getInt("gearpump.services.ws")
     val host = config.getString("gearpump.services.host")
     IO(UHttp) ! Http.Bind(services, interface = host, port = port)

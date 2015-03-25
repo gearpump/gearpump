@@ -21,7 +21,7 @@ package org.apache.gearpump.services
 import akka.actor.ActorRef
 import akka.pattern._
 import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, AppMasterDataDetail}
-import org.apache.gearpump.util.Constants
+import org.apache.gearpump.util.{LogUtil, Constants}
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
@@ -30,13 +30,15 @@ import scala.util.{Failure, Success}
 
 trait WorkerService extends HttpService {
   import upickle._
-  def master:ActorRef
+  implicit val master:ActorRef
+  private val LOG = LogUtil.getLogger(getClass)
 
   def workerRoute = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     pathPrefix("api"/s"$REST_VERSION") {
       path("workers" / IntNumber) { workerId =>
+        LOG.info(s"master = ${master.path}")
         onComplete((master ? GetWorkerData(workerId)).asInstanceOf[Future[WorkerData]]) {
           case Success(value: WorkerData) =>
             value.workerDescription match {
