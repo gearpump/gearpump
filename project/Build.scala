@@ -279,6 +279,19 @@ object Build extends sbt.Build {
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
 
+  lazy val stockcrawler = Project(
+    id = "gearpump-examples-stockcrawler",
+    base = file("examples/streaming/stockcrawler"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "net.sourceforge.nekohtml" % "nekohtml" % "1.9.21",
+          "net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
+          "joda-time" % "joda-time" % "2.7"
+        )
+      )
+  ) dependsOn (streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided")
+
   lazy val complexdag = Project(
     id = "gearpump-examples-complexdag",
     base = file("examples/streaming/complexdag"),
@@ -296,7 +309,7 @@ object Build extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ myAssemblySettings
-  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell)
+  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler)
   
   lazy val services = Project(
     id = "gearpump-services",
