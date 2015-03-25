@@ -33,9 +33,10 @@ class TaskRegistrationSpec extends FlatSpec with Matchers with BeforeAndAfterEac
     val task0 = TaskId(0, 0)
     val task1 = TaskId(0, 1)
     val task2 = TaskId(0, 2)
-    register.registerTask(task0, host1)
-    register.registerTask(task1, host1)
-    register.registerTask(task2, host2)
+    val executorId = 0
+    register.registerTask(task0, executorId, host1)
+    register.registerTask(task1, executorId, host1)
+    register.registerTask(task2, executorId, host2)
 
     assert(register.isAllTasksRegistered)
     val TaskLocations(taskLocations) = register.getTaskLocations

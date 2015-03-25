@@ -77,14 +77,6 @@ trait TaskContext {
 
 
   /**
-   * The processor graph
-   *
-   * @return
-   */
-  //TODO: we should remote this kind of detail from TaskContext.
-  def dag : DAG
-
-  /**
    * Please don't use this if possible.
    * @return
    */
@@ -180,13 +172,13 @@ abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends Ta
   implicit val self = taskContext.self
 
   /**
-     * For managed message(type of Message), the sender mean nothing,
+   * For managed message(type of Message), the sender mean nothing,
    * you should not use this directory
    *
    * For unmanaged message, the sender represent the sender actor
    * @return
    */
-    protected def sender: ActorRef = taskContext.sender
+  protected def sender: ActorRef = taskContext.sender
 
   def onStart(startTime : StartTime) : Unit
 
