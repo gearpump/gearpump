@@ -92,4 +92,9 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
     val dispatcher = actor.context.system.dispatcher
     actor.context.system.scheduler.schedule(initialDelay, interval)(f)(dispatcher)
   }
+
+  def scheduleOnce(initialDelay: FiniteDuration)(f: ⇒ Unit): Cancellable = {
+    val dispatcher = actor.context.system.dispatcher
+    actor.context.system.scheduler.scheduleOnce(initialDelay)(f)(dispatcher)
+  }
 }

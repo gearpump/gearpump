@@ -121,6 +121,15 @@ trait TaskContext {
    * @see ActorRefProducer.schedule
    */
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable
+
+  /**
+   *
+   * ActorRefProvider.scheduleOnce
+   * @param initialDelay
+   * @param f
+   * @return
+   */
+  def scheduleOnce(initialDelay: FiniteDuration)(f: ⇒ Unit): Cancellable
 }
 
 /**
