@@ -1,7 +1,7 @@
 gearpump {
   yarn {
     client {
-      hdfsPath = "/user/gearpump/jars/"
+      hdfsRoot = "/user/gearpump/"
       jars = "target/pack/lib"
       excludejars = ""
     }
