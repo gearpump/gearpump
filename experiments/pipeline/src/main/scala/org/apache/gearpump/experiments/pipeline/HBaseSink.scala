@@ -28,21 +28,26 @@ import org.apache.hadoop.hbase.{TableName, HColumnDescriptor, HTableDescriptor}
 import scala.collection.JavaConversions._
 
 
-class HBase(taskContext : TaskContext, conf: UserConfig)
+class HBaseSink(taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
 
-  val hbaseConf = Configuration
-  val htd = new HTableDescriptor(TableName.valueOf("order"))
-  val hcd = new HColumnDescriptor("orderFamily")
+  val hbaseConf = new Configuration
+  val htd = new HTableDescriptor(TableName.valueOf(conf.getString(HBaseSink.TABLE_NAME).get))
+  val hcd = new HColumnDescriptor(conf.getString(HBaseSink.TABLE_COLUMN_FAMILY).get)
   htd.addFamily(hcd)
   val tableName = htd.getName
   val table = new HTable(hbaseConf, tableName)
+  table.setAutoFlush(false, false)
 
   override def onStart(newStartTime: StartTime): Unit = {
   }
 
   override def onNext(msg: Message): Unit = {
     insert(hcd.getNameAsString, hcd.getNameAsString, msg.msg.asInstanceOf[String])
+  }
+
+  override def onStop(): Unit ={
+    table.close()
   }
 
     /**
@@ -80,7 +85,6 @@ class HBase(taskContext : TaskContext, conf: UserConfig)
   def deleteByKey(rowKey: String) {
     val delete = new Delete(Bytes.toBytes(rowKey))
     table.delete(delete)
-    table.close()
   }
 
   /**
@@ -94,13 +98,13 @@ class HBase(taskContext : TaskContext, conf: UserConfig)
    * @return – the key of the row just inserted
    */
   def insert(columnGroup: String, columnName: String, columnValue: String): String = {
+    //Todo: redesign the rowkey
     val rowKey = System.currentTimeMillis.toString
     val row1 = Bytes.toBytes(rowKey)
     val p1 = new Put(row1)
     val databytes = Bytes.toBytes(columnGroup)
     p1.add(databytes, Bytes.toBytes(columnName), Bytes.toBytes(columnValue))
     table.put(p1)
-    table.flushCommits()
     rowKey
   }
 
@@ -120,4 +124,9 @@ class HBase(taskContext : TaskContext, conf: UserConfig)
     table.flushCommits()
   }
 
+}
+
+object HBaseSink {
+  final val TABLE_NAME = "hbase.table.name"
+  final val TABLE_COLUMN_FAMILY = "hbase.table.columnfamily"
 }
