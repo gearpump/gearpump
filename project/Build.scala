@@ -285,9 +285,9 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "net.sourceforge.nekohtml" % "nekohtml" % "1.9.21",
           "net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
-          "joda-time" % "joda-time" % "2.7"
+          "joda-time" % "joda-time" % "2.7",
+          "io.spray" %%  "spray-json"    % sprayJsonVersion
         )
       )
   ) dependsOn (streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided")
