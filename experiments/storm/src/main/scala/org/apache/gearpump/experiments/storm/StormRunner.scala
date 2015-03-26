@@ -19,6 +19,7 @@
 package org.apache.gearpump.experiments.storm
 
 import backtype.storm.Config
+import java.io.File
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{CLIOption, ArgumentsParser}
 import org.apache.gearpump.util.{Constants, Util}
@@ -39,12 +40,13 @@ object StormRunner extends App with ArgumentsParser {
 
   val topologyClass = config.getString("storm_topology")
   val stormArgs = config.getString("storm_args")
+  val stormJar = System.getProperty(Constants.GEARPUMP_APP_JAR)
   val stormOptions = Array("-Dstorm.options=" +
     s"${Config.NIMBUS_HOST}=127.0.0.1,${Config.NIMBUS_THRIFT_PORT}=${GearpumpThriftServer.THRIFT_PORT}",
-    "-Dstorm.jar=" + System.getProperty(Constants.GEARPUMP_APP_JAR)
+    "-Dstorm.jar=" + stormJar
   )
 
-  val classPath = Array(System.getProperty("java.class.path"))
+  val classPath = Array(System.getProperty("java.class.path") + File.pathSeparator + stormJar)
   val arguments = stormArgs.split(",")
   Util.startProcess(stormOptions, classPath, topologyClass, arguments)
 

@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.task
 
+import akka.actor.Actor.Receive
 import akka.actor.{Cancellable, Props, ActorRef, ActorSystem}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
@@ -76,14 +77,6 @@ trait TaskContext {
 
 
   /**
-   * The processor graph
-   *
-   * @return
-   */
-  //TODO: we should remote this kind of detail from TaskContext.
-  def dag : DAG
-
-  /**
    * Please don't use this if possible.
    * @return
    */
@@ -121,6 +114,24 @@ trait TaskContext {
    * @see ActorRefProducer.schedule
    */
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable
+
+  /**
+   *
+   * ActorRefProvider.scheduleOnce
+   * @param initialDelay
+   * @param f
+   * @return
+   */
+  def scheduleOnce(initialDelay: FiniteDuration)(f: ⇒ Unit): Cancellable
+
+   /**
+   * For managed message(type of Message), the sender only serve as a unique Id,
+   * It's address is not something meaningful, you should not use this directly
+   *
+   * For unmanaged message, the sender represent the sender ActorRef
+   * @return
+   */
+   def sender: ActorRef
 }
 
 /**
@@ -142,6 +153,12 @@ trait TaskInterface {
    * This can be used to cleanup resource when the application finished.
    */
   def onStop() : Unit
+
+  /**
+   * handler for unmanaged message
+  * @return
+  */
+  def receiveUnManagedMessage: Receive = null
 }
 
 abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends TaskInterface{
@@ -154,9 +171,23 @@ abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends Ta
 
   implicit val self = taskContext.self
 
+  /**
+   * For managed message(type of Message), the sender mean nothing,
+   * you should not use this directory
+   *
+   * For unmanaged message, the sender represent the sender actor
+   * @return
+   */
+  protected def sender: ActorRef = taskContext.sender
+
   def onStart(startTime : StartTime) : Unit
 
   def onNext(msg : Message) : Unit
 
   def onStop() : Unit = {}
+
+  override def receiveUnManagedMessage: Receive = {
+    case msg =>
+      LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + msg.toString)
+  }
 }

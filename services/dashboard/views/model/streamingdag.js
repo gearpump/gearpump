@@ -133,16 +133,13 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       },
 
       /** Return particular metrics value of all processors as an array. */
-      _getAggregatedMetrics: function(metricsGroup, metricsType, op) {
+      _getAggregatedMetrics: function(metricsGroup, metricsType) {
         var values = [];
         if (metricsGroup) {
           angular.forEach(this.processors, function(_, key) {
             var processorId = parseInt(key);
             var processorValues = this._getProcessorMetrics(processorId, metricsGroup, metricsType);
-            if (op === 'sum') {
-              processorValues = d3.sum(processorValues);
-            }
-            values.push(processorValues);
+            values = values.concat(processorValues);
           }, /* scope */ this);
         }
         return values;
