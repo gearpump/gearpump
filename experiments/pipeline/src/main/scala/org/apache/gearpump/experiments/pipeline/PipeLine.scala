@@ -18,10 +18,12 @@
 
 package org.apache.gearpump.experiments.pipeline
 
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
@@ -29,22 +31,28 @@ import org.slf4j.Logger
 
 object PipeLine extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
-  val RUN_FOR_EVER = -1
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "kafka" -> CLIOption[Int]("<how many kafka tasks>", required = false, defaultValue = Some(4)),
     "hbase" -> CLIOption[Int]("<how many hbase tasks>", required = false, defaultValue = Some(4)),
-    "runseconds"-> CLIOption[Int]("<how long to run this example, set to -1 if run forever>", required = false, defaultValue = Some(60))
+    "table" -> CLIOption[String]("<hbase table name>", required = true),
+    "cf" -> CLIOption[String]("<column family of hbase table>", required = true)
   )
 
   def application(config: ParseResult) : AppDescription = {
     val kafkaNum = config.getInt("kafka")
     val hbaseNum = config.getInt("hbase")
+    val tableName = config.getString("table")
+    val columnFamily = config.getString("cf")
     val partitioner = new HashPartitioner()
     val kafka = TaskDescription(classOf[Kafka].getName, kafkaNum)
-    val hbase = TaskDescription(classOf[HBase].getName, hbaseNum)
-    val app = AppDescription("pipeLine", UserConfig.empty, Graph(kafka ~ partitioner ~> hbase))
+    val hbase = TaskDescription(classOf[HBaseSink].getName, hbaseNum)
+    val kafkaConfig = KafkaConfig(ConfigFactory.parseResources("kafka.conf"))
+    val userConfig = UserConfig.empty.withString(HBaseSink.TABLE_NAME, tableName).
+      withString(HBaseSink.TABLE_COLUMN_FAMILY, columnFamily).withValue(KafkaConfig.NAME, kafkaConfig)
+
+    val app = AppDescription("pipeLine", userConfig, Graph(kafka ~ partitioner ~> hbase))
     app
   }
 
@@ -52,8 +60,6 @@ object PipeLine extends App with ArgumentsParser {
   val context = ClientContext(config.getString("master"))
   implicit val system = context.system
   val appId = context.submit(application(config))
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  context.shutdown(appId)
   context.close()
 }
 
