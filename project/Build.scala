@@ -471,9 +471,36 @@ object Build extends sbt.Build {
       ) ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion,
-          "org.apache.hbase" % "hbase-common" % clouderaHBaseVersion,
+          "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion
+            exclude("com.github.stephenc.findbugs", "findbugs-annotations")
+            exclude("com.google.guava", "guava")
+            exclude("com.google.protobuf", "protobuf-java")
+            exclude("commons-codec", "commons-codec")
+            exclude("commons-io", "commons-io")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("io.netty", "netty")
+            exclude("junit", "junit")
+            exclude("log4j", "log4j")
+            exclude("org.apache.hbase", "hbase-protocol")
+            exclude("org.apache.zookeeper", "zookeeper")
+            exclude("org.cloudera.htrace", "htrace-core")
+            exclude("org.codehaus.jackson", "jackson-mapper-asl"),
+          "org.apache.hbase" % "hbase-common" % clouderaHBaseVersion
+            exclude("com.github.stephenc.findbugs", "findbugs-annotations")
+            exclude("com.google.guava", "guava")
+            exclude("com.google.protobuf", "protobuf-java")
+            exclude("commons-codec", "commons-codec")
+            exclude("commons-collections", "commons-collections")
+            exclude("commons-io", "commons-io")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("junit", "junit")
+            exclude("log4j", "log4j"),
           "org.apache.kafka" % "kafka-clients" % clouderaKafkaVersion
+            exclude("net.jpountz.lz4", "lz4")
+            exclude("org.slf4j", "slf4j-api")
+            exclude("org.xerial.snappy", "snappy-java")
         )
       ) 
   ) dependsOn(streaming % "test->test;compile->compile", external_kafka  % "test->test; provided")
