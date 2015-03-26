@@ -29,14 +29,14 @@ import org.apache.gearpump.{Message, TimeStamp}
 class Kafka(taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
 
-  import taskContext.{output, self, taskId, dag}
+  import taskContext.{output, self, taskId, parallelism}
 
   private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val batchSize = kafkaConfig.getConsumerEmitBatchSize
   private val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
   private val filter: TimeStampFilter = kafkaConfig.getTimeStampFilter
 
-  val taskParallelism = dag.processors(taskId.processorId).parallelism
+  val taskParallelism = parallelism
 
   private val source: TimeReplayableSource = new KafkaSource(taskContext.appName, taskId, taskParallelism,
     kafkaConfig, msgDecoder)

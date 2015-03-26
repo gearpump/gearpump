@@ -189,6 +189,7 @@ private[cluster] object Worker {
 
     implicit val executionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
+    val config = context.system.settings.config
     private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
 
     private val executorHandler = {
@@ -227,10 +228,12 @@ private[cluster] object Worker {
         val classPathPrefix = Util.getCurrentClassPath ++ ctx.classPath
         val classPath = jarPath.map(classPathPrefix :+ _).getOrElse(classPathPrefix)
 
+        val appLogDir = context.system.settings.config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
         val logArgs = List(
           s"-D${Constants.GEARPUMP_APPLICATION_ID}=${launch.appId}",
           s"-D${Constants.GEARPUMP_EXECUTOR_ID}=${launch.executorId}",
-          s"-D${Constants.GEARPUMP_MASTER_STARTTIME}=${getFormatedTime(masterInfo.startTime)}")
+          s"-D${Constants.GEARPUMP_MASTER_STARTTIME}=${getFormatedTime(masterInfo.startTime)}",
+          s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${appLogDir}")
         val configArgs = configFile.map(confFilePath =>
           List(s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=$confFilePath")
           ).getOrElse(List.empty[String])
@@ -242,7 +245,20 @@ private[cluster] object Worker {
 
         val username = List(s"-D${Constants.GEARPUMP_USERNAME}=${ctx.username}")
 
-        val options = ctx.jvmArguments ++ host ++ username ++ logArgs ++ configArgs
+        //remote debug executor process
+        val remoteDebugFlag = config.getBoolean(Constants.GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM)
+        val remoteDebugConfig = if (remoteDebugFlag) {
+          val availablePort = Util.findFreePort.get
+          LOG.info(s"Remote debug executor, listening on $availablePort")
+          List(
+            "-Xdebug",
+            s"-Xrunjdwp:server=y,transport=dt_socket,address=${availablePort},suspend=n"
+            )
+        } else {
+          List.empty[String]
+        }
+
+        val options = ctx.jvmArguments ++ host ++ username ++ logArgs ++ remoteDebugConfig ++ configArgs
         val process = Util.startProcess(options, classPath, ctx.mainClass, ctx.arguments)
 
         new ExecutorHandler {

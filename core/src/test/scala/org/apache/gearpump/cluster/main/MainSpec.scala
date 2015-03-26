@@ -57,7 +57,7 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
     val worker = Util.startProcess(Array(s"-D$GEARPUMP_CUSTOM_CONFIG_FILE=${tempTestConf.toString}"),
       getContextClassPath,
       getMainClassName(org.apache.gearpump.cluster.main.Worker),
-      Array.empty[String])
+      Array("-ip", "127.0.0.1"))
 
     masterReceiver.expectMsg(PROCESS_BOOT_TIME, RegisterNewWorker)
 

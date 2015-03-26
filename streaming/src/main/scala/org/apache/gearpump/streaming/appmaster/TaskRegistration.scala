@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.appmaster
 
+import akka.actor.ActorPath
 import org.apache.gearpump.streaming.task.{TaskLocations, TaskId}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
@@ -28,14 +29,18 @@ class TaskRegistration(appId: Int, totalTaskCount: Int) {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
   private var taskLocations = Map.empty[HostPort, Set[TaskId]]
+  private var taskIdToExecutorId = Map.empty[TaskId, Int]
+
   private var startedTasks = Set.empty[TaskId]
 
-  def registerTask(taskId: TaskId, host: HostPort): Unit = {
+  def registerTask(taskId: TaskId, executorId: Int, host: HostPort): Unit = {
     LOG.info(s"Task $taskId has been Launched for app $appId")
 
     var taskIds = taskLocations.getOrElse(host, Set.empty[TaskId])
     taskIds += taskId
     taskLocations += host -> taskIds
+
+    taskIdToExecutorId += taskId -> executorId
 
     startedTasks += taskId
     LOG.info(s" started task size: ${startedTasks.size}")
@@ -43,6 +48,10 @@ class TaskRegistration(appId: Int, totalTaskCount: Int) {
 
   def getTaskLocations: TaskLocations = {
     TaskLocations(taskLocations)
+  }
+
+  def getExecutorId(taskId: TaskId): Option[Int] = {
+    taskIdToExecutorId.get(taskId)
   }
 
   def isAllTasksRegistered: Boolean = {
