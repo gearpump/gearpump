@@ -21,23 +21,28 @@ package org.apache.gearpump.streaming.examples.stock
 
 import java.util.concurrent.TimeUnit
 
+import akka.actor.{Props, Actor}
 import akka.io.IO
 import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef}
-import akka.actor.Actor.Receive
+import akka.actor.Actor._
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterDataDetailRequest
 import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.examples.stock.QueryServer.WebServer
 import org.apache.gearpump.streaming.{ProcessorId, TaskDescription}
 import org.apache.gearpump.streaming.appmaster.StreamingAppMasterDataDetail
 import org.apache.gearpump.streaming.task.{TaskId, StartTime, Task, TaskContext}
 import akka.pattern.ask
 import spray.can.Http
-import spray.http.{HttpResponse, Uri, HttpRequest}
-import spray.http.HttpMethods.GET
+import spray.http.{StatusCodes}
+import spray.routing.HttpService
+import upickle._
+import spray.json._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Future, ExecutionContext}
+import scala.util.{Failure, Success}
 
-class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf){
   import taskContext.{appMaster, appId}
 
   import ExecutionContext.Implicits.global
@@ -47,15 +52,16 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
 
   override def onStart(startTime: StartTime): Unit = {
     appMaster ! AppMasterDataDetailRequest(appId)
-
-    IO(Http) ! Http.Bind(self, interface = "localhost", port = 8080)
+    taskContext.actorOf(Props(new WebServer))
   }
 
   override def onNext(msg: Message): Unit = {
-   //TODO
+   //Skip
   }
 
-  override def receiveUnManagedMessage: Receive = {
+  override def receiveUnManagedMessage: Receive = messageHandler
+
+  def messageHandler: Receive = {
     case detail: StreamingAppMasterDataDetail =>
       analyzer = detail.processors.find { kv =>
         val (processorId, processor) = kv
@@ -76,12 +82,53 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
         requester ! report
       }
     case _ =>
-      //ignore
+    //ignore
   }
+}
 
-  def webServer: Receive = {
-    case HttpRequest(GET, Uri.Path("/ping"), _, _, _) =>
-      val xx = new HttpRequest
-      sender ! HttpResponse(entity = "PONG")
+object QueryServer {
+  class WebServer extends Actor with HttpService {
+
+    import context.dispatcher
+    implicit val timeOut = akka.util.Timeout(3, TimeUnit.SECONDS)
+    def actorRefFactory = context
+    implicit val system = context.system
+
+    IO(Http) ! Http.Bind(self, interface = "localhost", port = 8080)
+
+    override def receive: Receive = runRoute(webServer ~ staticRoute)
+
+    def webServer = {
+      path("report" / PathElement) { stockId =>
+        get {
+          onComplete((context.parent ? GetReport(stockId, null)).asInstanceOf[Future[Report]]) {
+            case Success(report: Report) =>
+              val json = write(report)
+              complete(pretty(json))
+            case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+          }
+        }
+      }
+    }
+
+    val staticRoute = {
+      pathEndOrSingleSlash {
+        getFromResource("stock/stock.html")
+      } ~
+      pathPrefix("css") {
+        get {
+          getFromResourceDirectory("stock/css")
+        }
+      } ~
+      pathPrefix("js") {
+        get {
+          getFromResourceDirectory("stock/js")
+        }
+      }
+    }
+
+    private def pretty(json: String): String = {
+      json.parseJson.prettyPrint
+    }
   }
 }

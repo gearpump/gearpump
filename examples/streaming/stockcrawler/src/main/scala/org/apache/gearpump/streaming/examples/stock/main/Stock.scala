@@ -48,7 +48,9 @@ object Stock extends App with ArgumentsParser {
     val queryServer = TaskDescription(classOf[QueryServer].getName, 1)
     val partitioner = new HashPartitioner
 
-    val stockMarket = new StockMarket(new ServiceHour(true), HostPort(config.getString("proxy")))
+    val proxySetting = config.getString("proxy")
+    val proxy = if (proxySetting.isEmpty) {null } else HostPort(proxySetting)
+    val stockMarket = new StockMarket(new ServiceHour(true), proxy)
     val stocks = stockMarket.getStockIdList
 
     Console.println(s"Successfully fetched stock id for ${stocks.length} stocks")
