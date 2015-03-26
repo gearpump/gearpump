@@ -24,7 +24,7 @@ import org.apache.gearpump.partitioner.Partitioner
 import scala.util.Random
 
 class ShuffleGroupingPartitioner extends Partitioner {
-  override def getPartition(msg: Message, partitionNum: Int): Int = {
+  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
     val random = new Random
     random.shuffle(0.until(partitionNum).toList).head
   }

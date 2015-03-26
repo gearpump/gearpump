@@ -144,36 +144,36 @@ private[cluster] class Master extends Actor with Stash {
 
   def clientMsgHandler : Receive = {
     case app : SubmitApplication =>
-      LOG.info(s"Receive from client, SubmitApplication $app")
+      LOG.debug(s"Receive from client, SubmitApplication $app")
       appManager.forward(app)
     case app : ShutdownApplication =>
-      LOG.info(s"Receive from client, Shutting down Application ${app.appId}")
+      LOG.debug(s"Receive from client, Shutting down Application ${app.appId}")
       scheduler ! ApplicationFinished(app.appId)
       appManager.forward(app)
     case app : ReplayFromTimestampWindowTrailingEdge =>
-      LOG.info(s"Receive from client, Replaying Application ${app.appId} from timestamp window trailing edge")
+      LOG.debug(s"Receive from client, Replaying Application ${app.appId} from timestamp window trailing edge")
       appManager.forward(app)
     case app : ResolveAppId =>
-      LOG.info(s"Receive from client, resolving appId ${app.appId} to ActorRef")
+      LOG.debug(s"Receive from client, resolving appId ${app.appId} to ActorRef")
       appManager.forward(app)
     case app : AppMasterDataDetailRequest =>
-      LOG.info(s"Receive from client, forwarding to AppManager")
+      LOG.debug(s"Receive from client, forwarding to AppManager")
       appManager.forward(app)
     case app : AppMasterMetricsRequest =>
-      LOG.info(s"AppMasterMetricsRequestFromActor Receive from client, forwarding to AppManager")
+      LOG.debug(s"AppMasterMetricsRequestFromActor Receive from client, forwarding to AppManager")
       appManager.forward(app)
 
     case AppMastersDataRequest =>
-      LOG.info("Master received AppMastersDataRequest")
+      LOG.debug("Master received AppMastersDataRequest")
       appManager forward AppMastersDataRequest
     case appMasterDataRequest: AppMasterDataRequest =>
-      LOG.info("Master received AppMasterDataRequest")
+      LOG.debug("Master received AppMasterDataRequest")
       appManager forward appMasterDataRequest
     case query: QueryAppMasterConfig =>
-      LOG.info("Master received QueryAppMasterConfig")
+      LOG.debug("Master received QueryAppMasterConfig")
       appManager forward query
     case query: QueryHistoryMetrics =>
-      LOG.info("Master received QueryHistoryMetrics")
+      LOG.debug("Master received QueryHistoryMetrics")
       appManager forward query
   }
 

@@ -16,16 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.experiments.storm.partitioner
+package org.apache.gearpump.streaming.dsl.partitioner
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.partitioner.Partitioner
+/**
+ * @param groupBy
+ * First apply message with groupBy function, then pick the hashCode of the output to do the partitioning.
+ * You must define hashCode() for output type of groupBy function.
+ *
+ * For example:
+ * case class People(name: String, gender: String)
+ *
+ * object Test{
+ *
+ *   val groupBy: (People => String) = people => people.gender
+ *   val partitioner = GroupByPartitioner(groupBy)
+ * }
 
-import scala.util.Random
-
-class NoneGroupingPartitioner extends Partitioner {
-  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
-    val random = new Random
-    random.nextInt % partitionNum
+ * @tparam T
+ * @tparam GROUP must have method hashCode for this type
+ */
+class GroupByPartitioner[T, GROUP](groupBy: T => GROUP = null) extends Partitioner {
+  override def getPartition(msg : Message, partitionNum : Int, currentPartitionId: Int) : Int = {
+    val hashCode = groupBy(msg.msg.asInstanceOf[T]).hashCode()
+    (hashCode & Integer.MAX_VALUE) % partitionNum
   }
 }

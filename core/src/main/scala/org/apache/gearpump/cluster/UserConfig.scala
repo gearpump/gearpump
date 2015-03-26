@@ -107,6 +107,11 @@ import org.apache.gearpump.cluster.UserConfig._
 
 object UserConfig{
 
+  implicit val userConfigJsonWriter: upickle.Writer[UserConfig] = upickle.Writer[UserConfig] {
+    case config: UserConfig =>
+      upickle.writeJs(config._config)
+  }
+
   def empty = new UserConfig(Map.empty[String, String])
 
   def apply(config : Map[String, String]) = new UserConfig(config)

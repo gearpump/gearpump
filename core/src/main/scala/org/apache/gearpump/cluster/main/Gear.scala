@@ -20,6 +20,8 @@ package org.apache.gearpump.cluster.main
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
+import scala.util.Try
+
 object Gear extends App {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -42,7 +44,7 @@ object Gear extends App {
             throw new Exception("Unknown command " + x)
         }
       case None =>
-        Console.println("Usage: app|info|kill|shell|replay ...")
+        Console.println("Usage: app|info|kill|shell|replay|mainClass ...")
     }
   }
 
@@ -59,8 +61,17 @@ object Gear extends App {
         Replay.main(commandArgs)
       case "app" =>
         AppSubmitter.main(commandArgs)
-      case x =>
-        throw new Exception("Unknown command " + x)
+      case main =>
+        val customCommand = Try {
+          val clazz = Thread.currentThread().getContextClassLoader().loadClass(main)
+          val mainMethod = clazz.getMethod("main", classOf[Array[String]])
+          mainMethod.invoke(null, commandArgs)
+        }
+        if (customCommand.isFailure) {
+          val ex = customCommand.failed.get
+          LOG.error(s"failed to execute command $main", ex)
+          throw ex
+        }
     }
   }
 

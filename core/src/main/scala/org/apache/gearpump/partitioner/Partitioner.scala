@@ -21,6 +21,23 @@ package org.apache.gearpump.partitioner
 import org.apache.gearpump.Message
 
 trait Partitioner extends Serializable {
-  def getPartition(msg : Message, partitionNum : Int) : Int
+
+  /**
+   *
+   * @param msg
+   * @param partitionNum
+   * @param currentPartitionId, used when the downstream processor want to share the same
+   *   partition id,
+   * @return
+   */
+  def getPartition(msg : Message, partitionNum : Int, currentPartitionId: Int) : Int
+
+  def getPartition(msg : Message, partitionNum : Int) : Int = {
+    getPartition(msg, partitionNum, Partitioner.UNKNOWN_PARTITION_ID)
+  }
+}
+
+object Partitioner {
+  val UNKNOWN_PARTITION_ID = -1
 }
 

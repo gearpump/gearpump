@@ -173,9 +173,10 @@ object Build extends sbt.Build {
                         "services" -> "org.apache.gearpump.cluster.main.Services",
                         "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
                        ),
-        packJvmOpts := Map("local" -> Seq("-DlogFilename=local"),
-                           "master" -> Seq("-DlogFilename=master"),
-                           "worker" -> Seq("-DlogFilename=worker")
+        packJvmOpts := Map("local" -> Seq("-server", "-DlogFilename=local"),
+                           "master" -> Seq("-server", "-DlogFilename=master"),
+                           "worker" -> Seq("-server", "-DlogFilename=worker"),
+                           "services" -> Seq("-server")
                         ),
         packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id, distributedshell.id),
         packResourceDir += (baseDirectory.value / "conf" -> "conf"),
@@ -195,7 +196,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard", "/etc/hadoop/conf"))
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn, dsl)
 
 
   lazy val core = Project(
@@ -399,6 +400,7 @@ object Build extends sbt.Build {
       )
   ) dependsOn (streaming % "test->test; provided")
 
+
   lazy val yarn = Project(
     id = "gearpump-experiments-yarn",
     base = file("experiments/yarn"),
@@ -450,4 +452,11 @@ object Build extends sbt.Build {
         )
       )
   ) dependsOn(core % "test->test", core % "provided")
+
+  lazy val dsl = Project(
+    id = "gearpump-experiments-dsl",
+    base = file("experiments/dsl"),
+    settings = commonSettings
+  ) dependsOn(streaming % "test->test;compile->compile")
+
 }

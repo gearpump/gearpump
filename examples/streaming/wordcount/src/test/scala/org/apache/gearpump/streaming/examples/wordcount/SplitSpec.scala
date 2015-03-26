@@ -52,6 +52,8 @@ class SplitSpec extends WordSpec with Matchers {
 
       split.onNext(Message("next"))
       verify(taskContext, times(expectedWordCount)).output(anyObject())
+
+      system.shutdown()
     }
   }
 }
