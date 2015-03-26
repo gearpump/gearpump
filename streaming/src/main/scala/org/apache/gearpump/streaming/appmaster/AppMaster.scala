@@ -27,11 +27,12 @@ import org.apache.gearpump.metrics.Metrics.MetricType
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
-import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
+import org.apache.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, AllocateResourceTimeOut}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
+import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -50,7 +51,8 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
 
   private val (taskManager, executorManager, clockService) = {
-    val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext))
+    val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext),
+      ActorPathUtil.executorManagerActorName)
 
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
     val clockService = context.actorOf(Props(new ClockService(dag, store)))
@@ -94,6 +96,8 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
     case metrics: MetricType =>
       LOG.info(s"***AppMaster publishing metrics***")
       actorSystem.eventStream.publish(metrics)
+    case lookupTask: LookupTaskActorRef =>
+      taskManager forward lookupTask
   }
 
   def executorMessageHandler: Receive = {
@@ -148,4 +152,8 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
 
 object AppMaster {
   case object AllocateResourceTimeOut
+
+  case class LookupTaskActorRef(taskId: TaskId)
+
+  case class TaskActorRef(task: ActorRef)
 }
