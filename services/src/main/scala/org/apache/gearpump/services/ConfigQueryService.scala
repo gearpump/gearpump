@@ -33,8 +33,8 @@ import scala.util.{Failure, Success, Try}
 
 trait ConfigQueryService extends HttpService  {
   import upickle._
-  def master:ActorRef
   implicit val system: ActorSystem
+  implicit def master:ActorRef
   private val LOG = LogUtil.getLogger(getClass)
 
   def configQueryRoute = get {

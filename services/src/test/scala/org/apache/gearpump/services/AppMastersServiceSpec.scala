@@ -18,6 +18,7 @@
 package org.apache.gearpump.services
 
 
+import akka.actor.ActorRef
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
@@ -37,7 +38,7 @@ class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMas
 
 
   var miniCluster:MiniCluster = null
-  def master = miniCluster.mockMaster
+  implicit def master:ActorRef = miniCluster.mockMaster
 
   override def beforeAll: Unit = {
     miniCluster = TestUtil.startMiniCluster
