@@ -24,6 +24,7 @@ object Build extends sbt.Build {
   val akkaVersion = "2.3.6"
   val kryoVersion = "0.3.2"
   val clouderaVersion = "2.5.0-cdh5.3.2"
+  val clouderaHBaseVersion = "0.98.6-cdh5.3.2"
   val codahaleVersion = "3.0.2"
   val commonsCodecVersion = "1.6"
   val commonsHttpVersion = "3.1"
@@ -196,8 +197,8 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard", "/etc/hadoop/conf"))
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn, dsl)
-
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, 
+      external_kafka, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -459,4 +460,45 @@ object Build extends sbt.Build {
     settings = commonSettings
   ) dependsOn(streaming % "test->test;compile->compile")
 
+  lazy val hbase = Project(
+    id = "gearpump-experiments-hbase",
+    base = file("experiments/hbase"),
+    settings = commonSettings ++
+      Seq(
+        resolvers ++= Seq(
+          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+        )
+      ) ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+          "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion
+            exclude("com.github.stephenc.findbugs", "findbugs-annotations")
+            exclude("com.google.guava", "guava")
+            exclude("com.google.protobuf", "protobuf-java")
+            exclude("commons-codec", "commons-codec")
+            exclude("commons-io", "commons-io")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("io.netty", "netty")
+            exclude("junit", "junit")
+            exclude("log4j", "log4j")
+            exclude("org.apache.hbase", "hbase-protocol")
+            exclude("org.apache.zookeeper", "zookeeper")
+            exclude("org.cloudera.htrace", "htrace-core")
+            exclude("org.codehaus.jackson", "jackson-mapper-asl"),
+          "org.apache.hbase" % "hbase-common" % clouderaHBaseVersion
+            exclude("com.github.stephenc.findbugs", "findbugs-annotations")
+            exclude("com.google.guava", "guava")
+            exclude("com.google.protobuf", "protobuf-java")
+            exclude("commons-codec", "commons-codec")
+            exclude("commons-collections", "commons-collections")
+            exclude("commons-io", "commons-io")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("junit", "junit")
+            exclude("log4j", "log4j")
+        )
+      )
+  )
 }
