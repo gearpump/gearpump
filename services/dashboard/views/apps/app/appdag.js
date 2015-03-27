@@ -22,7 +22,7 @@ angular.module('dashboard.apps.appmaster')
         var processorId = parseInt(key);
 
         var label = '[' + processorId + '] ';
-        if (processor.description == "") {
+        if (processor.description == "" || processor.description == null) {
             label = label + _lastPart(processor.taskClass);
         } else {
             label = label + processor.description;
