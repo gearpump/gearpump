@@ -165,40 +165,46 @@ object Build extends sbt.Build {
     id = "gearpump",
     base = file("."),
     settings = commonSettings ++
-      packSettings ++
       Seq(
-        packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
-                        "local" -> "org.apache.gearpump.cluster.main.Local",
-                        "master" -> "org.apache.gearpump.cluster.main.Master",
-                        "worker" -> "org.apache.gearpump.cluster.main.Worker",
-                        "services" -> "org.apache.gearpump.cluster.main.Services",
-                        "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
-                       ),
-        packJvmOpts := Map("local" -> Seq("-server", "-DlogFilename=local"),
-                           "master" -> Seq("-server", "-DlogFilename=master"),
-                           "worker" -> Seq("-server", "-DlogFilename=worker"),
-                           "services" -> Seq("-server")
-                        ),
-        packExclude := Seq(fsio.id, examples_kafka.id, sol.id, wordcount.id, complexdag.id, examples.id, distributedshell.id),
-        packResourceDir += (baseDirectory.value / "conf" -> "conf"),
-        packResourceDir += (baseDirectory.value / "services" / "dashboard" -> "dashboard"),
-        packResourceDir += (baseDirectory.value / "examples" / "target" / scalaVersionMajor -> "examples"),
         parallelExecution in ThisBuild := false,
         travis_deploy := {
-          val packagePath = s"target/gearpump-${version.value}.tar.gz"
+          val packagePath = s"output/target/gearpump-pack-${version.value}.tar.gz"
           val target = s"target/binary.gearpump.tar.gz"
           println(s"[Travis-Deploy] Move file $packagePath to $target")
           new File(packagePath).renameTo(new File(target))
-        },
-        
+        }
+      )
+  ).dependsOn(core, streaming, services, external_kafka)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase, pack)
+
+  lazy val pack = Project(
+    id = "gearpump-pack",
+    base = file("output"),
+    settings = commonSettings ++
+      packSettings ++
+      Seq(
+        packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
+          "local" -> "org.apache.gearpump.cluster.main.Local",
+          "master" -> "org.apache.gearpump.cluster.main.Master",
+          "worker" -> "org.apache.gearpump.cluster.main.Worker",
+          "services" -> "org.apache.gearpump.cluster.main.Services",
+          "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
+        ),
+        packJvmOpts := Map("local" -> Seq("-server", "-DlogFilename=local"),
+          "master" -> Seq("-server", "-DlogFilename=master"),
+          "worker" -> Seq("-server", "-DlogFilename=worker"),
+          "services" -> Seq("-server")
+        ),
+        packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
+        packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
+
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard", "/etc/hadoop/conf"))
       )
-  ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, 
-      external_kafka, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase)
+  ).dependsOn(core, streaming, services, external_kafka, yarn,storm,dsl,hbase)
 
   lazy val core = Project(
     id = "gearpump-core",
