@@ -34,7 +34,7 @@ angular.module('dashboard.apps.appmaster')
     };
 
     var timeoutPromise = $interval(function () {
-      if (!$scope.streamingDag.hasMetrics()) {
+      if (!$scope.streamingDag || !$scope.streamingDag.hasMetrics()) {
         return;
       }
       $scope.chart.throughput = [function () {
