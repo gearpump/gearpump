@@ -171,6 +171,8 @@ abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends Ta
 
   implicit val self = taskContext.self
 
+  val taskConfig = userConf
+
   /**
    * For managed message(type of Message), the sender mean nothing,
    * you should not use this directory
