@@ -1,0 +1,79 @@
+#!/bin/bash
+usage()
+{
+cat << EOF
+usage: $0 options <appname>
+OPTIONS:
+   -h      Show this message
+   -m      Master
+   -p      Prefix
+   -v      Verbose 
+EOF
+}
+MASTER='127.0.0.1:3000'
+GEAR='output/target/pack/bin/gear'
+NAMEPREFIX=''
+VERSION=$(cat version.sbt |sed 's/^.*"\(.*\)"$/\1/')
+while getopts “hvm:p:” OPTION
+do
+     case "${OPTION}" in
+         h)
+             usage
+             exit 1
+             ;;
+         m)
+             MASTER=$OPTARG
+             ;;
+         p)
+             PREFIX=$OPTARG
+             ;;
+         v)
+             VERBOSE=true
+             ;;
+         ?)
+             usage
+             exit
+             ;;
+     esac
+done
+shift $((OPTIND-1))
+if [ $# = 0 ]; then
+  usage
+  exit 1
+fi
+if [ ! -z $PREFIX ]; then
+  NAMEPREFIX='-namePrefix '$PREFIX
+fi
+if [ ! -z $VERBOSE ]; then
+  echo $*
+fi
+case "$1" in 
+  complexdag)
+    echo $GEAR app $NAMEPREFIX -jar ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.${1}.Dag -master $MASTER
+    $GEAR app -jar $NAMEPREFIX ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.${1}.Dag -master $MASTER
+    ;;
+  wordcount)
+    echo $GEAR app $NAMEPREFIX -jar ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.${1}.WordCount -master $MASTER
+    $GEAR app $NAMEPREFIX -jar ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.${1}.WordCount -master $MASTER
+    ;;
+  fsio)
+    echo $GEAR app $NAMEPREFIX -jar ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.${1}.SequenceFileIO -master $MASTER
+    $GEAR app $NAMEPREFIX -jar ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.${1}.SequenceFileIO -master $MASTER
+    ;;
+  pipeline)
+    echo $GEAR app $NAMEPREFIX -jar ./experiments/${1}/target/scala-2.11/gearpump-experiments-${1}-assembly-${VERSION}.jar org.apache.gearpump.experiments.pipeline.PipeLine -master $MASTER
+    $GEAR app $NAMEPREFIX -jar ./experiments/${1}/target/scala-2.11/gearpump-experiments-${1}-assembly-${VERSION}.jar org.apache.gearpump.experiments.pipeline.PipeLine -master $MASTER
+    ;;
+  sol)
+    echo $GEAR app $NAMEPREFIX -jar ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.${1}.SOL -master $MASTER
+    $GEAR app $NAMEPREFIX -jar ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.${1}.SOL -master $MASTER
+    ;;
+  kafkawordcount)
+    echo $GEAR app $NAMEPREFIX -jar ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount -master $MASTER
+    $GEAR app $NAMEPREFIX -jar ./examples/streaming/${1}/target/scala-2.11/gearpump-examples-${1}_2.11-${VERSION}.jar org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount -master $MASTER
+    ;;
+  ?)
+    usage
+    exit
+    ;;
+esac
