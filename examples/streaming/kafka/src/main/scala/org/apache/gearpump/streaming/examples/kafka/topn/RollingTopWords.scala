@@ -23,7 +23,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
+import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducerTask
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
@@ -52,7 +52,7 @@ object RollingTopWords extends App with ArgumentsParser {
     val rcNum = config.getInt("rolling_count")
     val irNum = config.getInt("intermediate_ranker")
     val partitioner = new HashPartitioner()
-    val kafkaStreamProducer = ProcessorDescription(classOf[KafkaStreamProducer].getName, kafkaStreamProducerNum)
+    val kafkaStreamProducer = ProcessorDescription(classOf[KafkaStreamProducerTask].getName, kafkaStreamProducerNum)
     val rollingCount = ProcessorDescription(classOf[RollingCount].getName, rcNum)
     val intermediateRanker = ProcessorDescription(classOf[Ranker].getName, irNum)
     val totalRanker = ProcessorDescription(classOf[Ranker].getName, 1)
