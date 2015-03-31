@@ -50,6 +50,7 @@ angular.module('dashboard.apps.appmaster')
       data.bandwidths[-1] = 0; // bandwidth range from 0 to max bandwidth
       var suggestWidth = _rangeMapper(data.bandwidths, dagStyle.edgeWidthRange());
       var suggestArrowSize = _rangeMapper(data.bandwidths, dagStyle.edgeArrowSizeRange());
+      var suggestOpacity = _rangeMapper(data.bandwidths, dagStyle.edgeOpacityRange());
       var diff = [];
 
       angular.forEach(data.edges, function (edge, edgeId) {
@@ -62,7 +63,8 @@ angular.module('dashboard.apps.appmaster')
             width: newVisWidth,
             hoverWidth: newVisWidth,
             arrowScaleFactor: d3.round(suggestArrowSize(bandwidth), 1),
-            opacity: newVisWidth / dagStyle.edgeWidthRange()[1]
+            opacity: d3.round(suggestOpacity(bandwidth), 1),
+            color: dagStyle.edgeColorSet(bandwidth > 0)
           });
         }
       });

@@ -63,6 +63,17 @@ angular.module('dashboard.apps.appmaster')
       },
       edgeArrowSizeRange: function () {
         return [0.5, 0.1];
+      },
+      edgeOpacityRange: function () {
+        return [0.3, 1];
+      },
+      edgeColorSet: function (alive) {
+        var base = alive ? d3.rgb(79, 143, 232) : d3.rgb(195, 195, 195);
+        return {
+          color: base.toString(),
+          hover: base.darker(0.4).toString(),
+          highlight: base.darker(0.6).toString()
+        }
       }
     };
   })
