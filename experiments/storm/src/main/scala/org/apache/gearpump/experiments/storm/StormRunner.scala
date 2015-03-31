@@ -30,6 +30,7 @@ object StormRunner extends App with ArgumentsParser {
     "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "storm_topology" -> CLIOption[String]("<storm topology main class>", required = true),
     "storm_args" -> CLIOption[String]("<storm topology name>", required = false),
+    "storm_config" -> CLIOption[String]("<storm config path>", required = false),
     "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
 
   val config = parse(args)
@@ -40,13 +41,15 @@ object StormRunner extends App with ArgumentsParser {
 
   val topologyClass = config.getString("storm_topology")
   val stormArgs = config.getString("storm_args")
+  val stormConfig = config.getString("storm_config")
   val stormJar = System.getProperty(Constants.GEARPUMP_APP_JAR)
   val stormOptions = Array("-Dstorm.options=" +
     s"${Config.NIMBUS_HOST}=127.0.0.1,${Config.NIMBUS_THRIFT_PORT}=${GearpumpThriftServer.THRIFT_PORT}",
-    "-Dstorm.jar=" + stormJar
+    "-Dstorm.jar=" + stormJar,
+    "-Dstorm.conf.file=" + stormConfig
   )
 
-  val classPath = Array(System.getProperty("java.class.path") + File.pathSeparator + stormJar)
+  val classPath = Array(System.getProperty("java.class.path"), new File(stormConfig).getParent, stormJar)
   val arguments = stormArgs.split(",")
   Util.startProcess(stormOptions, classPath, topologyClass, arguments)
 
