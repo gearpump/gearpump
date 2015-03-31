@@ -21,8 +21,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client.{HTable, Put}
 import org.apache.hadoop.hbase.util.Bytes
 
-class HBaseSink(tableName: String) {
-  val hbaseConf = new Configuration
+class HBaseSink(tableName: String, hbaseConf: Configuration = new Configuration) {
   val table = new HTable(hbaseConf, tableName)
   
   def insert(rowKey: Array[Byte], columnGroup: Array[Byte], columnName: Array[Byte], value: Array[Byte]): Unit = {
@@ -35,4 +34,12 @@ class HBaseSink(tableName: String) {
   def close(): Unit = {
     table.close()
   }
+}
+
+object HBaseSink {
+  def apply(tableName: String): HBaseSink = new HBaseSink(tableName)
+
+  def apply(tableName: String, hbaseConf: Configuration): HBaseSink = new HBaseSink(tableName, hbaseConf)
+
+  implicit def stringToByteArray(input: String): Array[Byte] = Bytes.toBytes(input)
 }
