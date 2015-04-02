@@ -8,7 +8,14 @@ angular.module('dashboard.apps.appmaster')
   .controller('AppDagCtrl', ['$scope', '$timeout', '$filter', 'conf', 'dagStyle', function ($scope, $timeout, $filter, conf, dagStyle) {
     $scope.visgraph = {
       options: dagStyle.newOptions({depth: $scope.streamingDag.hierarchyDepth()}),
-      data: dagStyle.newData()
+      data: dagStyle.newData(),
+      events: {
+        doubleClick: function (data) {
+          if (data.nodes.length === 1) {
+            $scope.switchToTaskTab(data.nodes[0]);
+          }
+        }
+      }
     };
 
     $scope.updateVisGraphNodes = function () {

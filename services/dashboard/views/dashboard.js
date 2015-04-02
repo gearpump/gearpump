@@ -10,6 +10,7 @@ angular
     'ng-breadcrumbs',
     'smart-table',
     'directive.echartfactory',
+    'directive.echarts',
     'directive.tabset',
     'directive.metricscard',
     'filter.readable',

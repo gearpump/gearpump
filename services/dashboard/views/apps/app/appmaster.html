@@ -1,4 +1,4 @@
-<tabs>
-  <tab ng-repeat="tab in tabs" heading="{{tab.heading}}" template="{{tab.templateUrl}}" controller="{{tab.controller}}">
-  </tab>
-</tabs>
+<tabset switch-to="switchToTabIndex">
+  <tab ng-repeat="tab in tabs"
+       heading="{{tab.heading}}" template="{{tab.templateUrl}}" controller="{{tab.controller}}"></tab>
+</tabset>

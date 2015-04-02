@@ -14,10 +14,15 @@ angular.module('directive.visgraph', [])
       transclude: false,
       scope: {
         data: '=',
-        options: '='
+        options: '=',
+        events: '='
       },
       link: function (scope, elem) {
         var network = new vis.Network(elem[0], scope.data, scope.options);
+        angular.forEach(scope.events, function(callback, name) {
+          network.on(name, callback);
+        });
+
         scope.$watch('data', function (data) {
           if (data) {
             network.setData(data);

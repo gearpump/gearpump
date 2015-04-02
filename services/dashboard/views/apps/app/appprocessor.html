@@ -1,0 +1,73 @@
+<div ng-if="!activeProcessorId" class="bs-callout bs-callout-default">
+  <p>Please switch to DAG tab and double click a node first.</p>
+</div>
+
+<div class="row" ng-if="activeProcessorId">
+
+  <!-- left half -->
+  <div class="col-md-6">
+    <div class="row">
+      <div class="col-md-6">
+        <h6>PROCESSOR #{{activeProcessorId}}</h6>
+        <h4>{{taskClass|lastPart}}
+          <small class="glyphicon glyphicon-question-sign metrics-explanation" title="{{taskClass}}"></small>
+        </h4>
+        <h5>{{description}}</h5>
+        <table>
+          <tbody>
+          <tr>
+            <td style="padding: 1px 8px 1px 8px">Parallelism</td>
+            <td><span style="font-weight:500" ng-bind="parallelism"></span></td>
+          </tr>
+          <tr>
+            <td style="padding: 1px 8px 1px 8px">Inputs</td>
+            <td><span style="font-weight:500" ng-bind="inputs"></span></td>
+          </tr>
+          <tr>
+            <td style="padding: 1px 8px 1px 8px">Outputs</td>
+            <td><span style="font-weight:500" ng-bind="outputs"></span></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-md-6">
+        <sparkline options="opt1" data="data1"/>
+      </div>
+    </div>
+  </div>
+  <!-- end of left half -->
+
+  <!-- right half -->
+  <div class="col-md-6" ng-controller="AppTasksChartsCtrl">
+    <div class="panel panel-default">
+      <div class="panel-heading">Receive Message Rate (message/s)</div>
+      <div class="panel-body">
+        <linechart1 options="chart.receiveMessageRate.options" data="chart.receiveMessageRate.data"/>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">Send Message Rate (message/s)</div>
+      <div class="panel-body">
+        <linechart1 options="chart.sendMessageRate.options" data="chart.sendMessageRate.data"/>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">Average Processing Time (ms)
+        <i></i></div>
+      <div class="panel-body">
+        <linechart1 options="chart.processingTime.options" data="chart.processingTime.data"/>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">Average Receive Latency (ms)</div>
+      <div class="panel-body">
+        <linechart1 options="chart.receiveLatency.options" data="chart.receiveLatency.data"/>
+      </div>
+    </div>
+  </div>
+  <!-- end of right half -->
+
+</div>

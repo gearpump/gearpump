@@ -7,19 +7,21 @@
 angular.module('directive.tabset', [])
 
 /** Directive of Bootstrap's tabs */
-  .directive('tabs', [function () {
+  .directive('tabset', [function () {
     return {
       restrict: 'E',
       transclude: true,
-      scope: {},
-      controller: function ($scope) {
+      scope: {
+        switchTo: '='
+      },
+      controller: ['$scope', function ($scope) {
         var tabs = $scope.tabs = [];
-        $scope.selectTab = function (tab) {
-          tabs.map(function (item) {
+        $scope.selectTab = function (tab, reload) {
+          angular.forEach(tabs, function (item) {
             item.selected = item === tab;
           });
           if (tab.load !== undefined) {
-            tab.load();
+            tab.load(reload);
           }
         };
         this.addTab = function (tab) {
@@ -28,7 +30,16 @@ angular.module('directive.tabset', [])
             $scope.selectTab(tab);
           }
         };
-      },
+        $scope.$watch('switchTo', function (args) {
+          if (args) {
+            var tabIndex = args.tabIndex;
+            if (tabIndex >= 0 && tabIndex < tabs.length) {
+              $scope.selectTab(tabs[tabIndex], args.reload);
+            }
+            $scope.switchTo = null;
+          }
+        });
+      }],
       template: '<div>' +
       '<ul class="nav nav-tabs nav-tabs-underlined">' +
       '<li ng-repeat="tab in tabs" ng-class="{active:tab.selected}">' +
@@ -44,15 +55,15 @@ angular.module('directive.tabset', [])
 /** Directive of tab that is associated with tabs */
   .directive('tab', ['$http', '$controller', '$compile', function ($http, $controller, $compile) {
     return {
-      require: '^tabs',
+      require: '^tabset',
       restrict: 'E',
       transclude: true,
       link: function (scope, elem, attrs, tabsCtrl) {
         scope.heading = attrs.heading;
         if (attrs.template) {
           scope.loaded = false;
-          scope.load = function () {
-            if (scope.loaded) {
+          scope.load = function (reload) {
+            if (scope.loaded && !reload) {
               return;
             }
             $http.get(attrs.template)

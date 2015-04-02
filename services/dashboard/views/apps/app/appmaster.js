@@ -19,6 +19,7 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
       $scope.tabs = [
         {heading: 'Status', templateUrl: 'views/apps/app/appstatus.html', controller: 'AppStatusCtrl'},
         {heading: 'DAG', templateUrl: 'views/apps/app/appdag.html', controller: 'AppDagCtrl'},
+        {heading: 'Processor', templateUrl: 'views/apps/app/appprocessor.html', controller: 'AppProcessorCtrl'},
         {heading: 'Metrics', templateUrl: 'views/apps/app/appmetrics.html', controller: 'AppMetricsCtrl'}
       ];
 
@@ -77,6 +78,11 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
         var obj = angular.fromJson(event.data);
         $scope.streamingDag.updateMetrics(obj[0], obj[1]);
       });
+
+      $scope.switchToTaskTab = function (processorId) {
+        $scope.activeProcessorId = processorId;
+        $scope.switchToTabIndex = {tabIndex: 2, reload: true};
+      };
     }])
 
   .filter('lastPart', function () {

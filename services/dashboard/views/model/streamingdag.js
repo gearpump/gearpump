@@ -147,16 +147,16 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       },
 
       /** Return total received messages from nodes without any outputs. */
-      getReceivedMessages: function() {
+      getReceivedMessages: function(processorId) {
         return this._getProcessedMessages(
-          this._getFilteredProcessorsId({hasOutputs: false}),
+          processorId ? [processorId] : this._getFilteredProcessorsId({hasOutputs: false}),
           this.meter.receiveThroughput);
       },
 
       /** Return total sent messages from nodes without any inputs. */
-      getSentMessages: function() {
+      getSentMessages: function(processorId) {
         return this._getProcessedMessages(
-          this._getFilteredProcessorsId({hasInputs: false}),
+          processorId ? [processorId] : this._getFilteredProcessorsId({hasInputs: false}),
           this.meter.sendThroughput);
       },
 
