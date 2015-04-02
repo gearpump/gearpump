@@ -11,6 +11,7 @@ angular
     'smart-table',
     'directive.echartfactory',
     'directive.tabset',
+    'directive.metricscard',
     'filter.readable',
     'dashboard.restapi',
     'dashboard.streamingservice',

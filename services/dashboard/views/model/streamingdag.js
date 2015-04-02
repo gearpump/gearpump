@@ -96,8 +96,8 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         var digits = edgeId.split('_');
         var sourceId = parseInt(digits[0]);
         var targetId = parseInt(digits[1]);
-        var sourceOutputs = this._calculateProcessorConnections(sourceId).outputs;
-        var targetInputs = this._calculateProcessorConnections(targetId).inputs;
+        var sourceOutputs = this.calculateProcessorConnections(sourceId).outputs;
+        var targetInputs = this.calculateProcessorConnections(targetId).inputs;
         var sourceSendThroughput = d3.sum(this._getProcessorMetrics(sourceId, this.meter.sendThroughput, 'meanRate'));
         var targetReceiveThroughput = d3.sum(this._getProcessorMetrics(targetId, this.meter.receiveThroughput, 'meanRate'));
         return Math.min(
@@ -105,7 +105,8 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
           targetInputs === 0 ? 0 : (targetReceiveThroughput / targetInputs));
       },
 
-      _calculateProcessorConnections: function (processorId) {
+      /** Returns the number of inputs and outputs of a processor */
+      calculateProcessorConnections: function (processorId) {
         var result = {inputs: 0, outputs: 0};
         angular.forEach(this.edges, function (edge) {
           if (edge.source === processorId) {
@@ -133,11 +134,11 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       },
 
       /** Return particular metrics value of all processors as an array. */
-      _getAggregatedMetrics: function(metricsGroup, metricsType) {
+      _getAggregatedMetrics: function (metricsGroup, metricsType, processorId) {
         var values = [];
         if (metricsGroup) {
-          angular.forEach(this.processors, function(_, key) {
-            var processorId = parseInt(key);
+          var ids = processorId ? [processorId] : d3.keys(this.processors);
+          ids.map(function (processorId) {
             var processorValues = this._getProcessorMetrics(processorId, metricsGroup, metricsType);
             values = values.concat(processorValues);
           }, /* scope */ this);
@@ -145,24 +146,49 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         return values;
       },
 
-      getTotalProcessedEvents: function() {
-        var sent = this._getAggregatedMetrics(this.meter.sendThroughput, 'count');
-        var received = this._getAggregatedMetrics(this.meter.receiveThroughput, 'count');
-        return {sent: d3.sum(sent), received: d3.sum(received)};
+      /** Return total received messages from nodes without any outputs. */
+      getReceivedMessages: function() {
+        return this._getProcessedMessages(
+          this._getFilteredProcessorsId({hasOutputs: false}),
+          this.meter.receiveThroughput);
       },
 
-      getThroughput: function() {
-        var sent = this._getAggregatedMetrics(this.meter.sendThroughput, 'meanRate');
-        var received = this._getAggregatedMetrics(this.meter.receiveThroughput, 'meanRate');
-        return {sent: d3.sum(sent), received: d3.sum(received)};
+      /** Return total sent messages from nodes without any inputs. */
+      getSentMessages: function() {
+        return this._getProcessedMessages(
+          this._getFilteredProcessorsId({hasInputs: false}),
+          this.meter.sendThroughput);
       },
 
-      getProcessTime: function() {
-        return d3.mean(this._getAggregatedMetrics(this.histogram.processTime, 'mean'));
+      _getProcessedMessages: function(ids, metricsGroup) {
+        var total = [];
+        var rate = [];
+        ids.map(function(processorId) {
+          total.push(d3.sum(this._getAggregatedMetrics(metricsGroup, 'count', processorId)));
+          rate.push(d3.sum(this._getAggregatedMetrics(metricsGroup, 'meanRate', processorId)));
+        }, /* scope */ this);
+        return {total: d3.sum(total), rate: d3.mean(rate)};
       },
 
-      getReceiveLatency: function() {
-        return d3.mean(this._getAggregatedMetrics(this.histogram.receiveLatency, 'mean'));
+      _getFilteredProcessorsId: function(filter) {
+        var ids = [];
+        d3.keys(this.processors).map(function(processorId) {
+          var connections = this.calculateProcessorConnections(processorId);
+          if (filter.hasOutputs && connections.outputs > 0) { return; }
+          if (filter.hasInputs && connections.inputs > 0) { return; }
+          ids.push(processorId);
+        }, /* scope */ this);
+        return ids;
+      },
+
+      getProcessingTime: function (processorId) {
+        var array = this._getAggregatedMetrics(this.histogram.processTime, 'mean', processorId);
+        return processorId ? array : d3.mean(array);
+      },
+
+      getReceiveLatency: function (processorId) {
+        var array = this._getAggregatedMetrics(this.histogram.receiveLatency, 'mean', processorId);
+        return processorId ? array : d3.mean(array);
       },
 
       /** Return the depth of the hierarchy layout */

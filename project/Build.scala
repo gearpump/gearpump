@@ -333,11 +333,11 @@ object Build extends sbt.Build {
           "org.json4s" %% "json4s-jackson" % json4sVersion,
           "org.json4s" %% "json4s-native"   % json4sVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.webjars" % "angularjs" % "1.3.14",
-          "org.webjars" % "bootstrap" % "3.3.2-1",
+          "org.webjars" % "angularjs" % "1.3.15",
+          "org.webjars" % "bootstrap" % "3.3.4",
           "org.webjars" % "d3js" % "3.5.3",
           "org.webjars" % "momentjs" % "2.9.0",
-          "org.webjars" % "smart-table" % "1.4.11",
+          "org.webjars" % "smart-table" % "2.0.1",
           "org.webjars" % "visjs" % "3.11.0"
         )
       )

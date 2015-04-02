@@ -25,24 +25,22 @@ angular.module('dashboard.apps.appmaster')
   }])
 
   .controller('AppSummaryChartsCtrl', ['$scope', '$interval', 'conf', function ($scope, $interval, conf) {
-    var chartHeight = '108px';
-    $scope.chart = {
-      options: {height: chartHeight},
-      throughput: [],
-      processTime: [],
-      receiveLatency: []
-    };
+    var options = {height: '108px'};
+    $scope.charts = [
+      {title: 'Input Message Rate (unit: message/s)', options: options, data: []},
+      {title: 'Output Message Rate (unit: message/s)', options: options, data: []},
+      {title: 'Average Processing Time per Task (Unit: ms)', options: options, data: []},
+      {title: 'Average Receive Latency per Task (Unit: ms)', options: options, data: []}
+    ];
 
     var timeoutPromise = $interval(function () {
       if (!$scope.streamingDag || !$scope.streamingDag.hasMetrics()) {
         return;
       }
-      $scope.chart.throughput = [function () {
-        var throughput = $scope.streamingDag.getThroughput();
-        return throughput.sent + throughput.received;
-      }()];
-      $scope.chart.processTime = [$scope.streamingDag.getProcessTime()];
-      $scope.chart.receiveLatency = [$scope.streamingDag.getReceiveLatency()];
+      $scope.charts[0].data = [$scope.streamingDag.getReceivedMessages().rate];
+      $scope.charts[1].data = [$scope.streamingDag.getSentMessages().rate];
+      $scope.charts[2].data = [$scope.streamingDag.getProcessingTime()];
+      $scope.charts[3].data = [$scope.streamingDag.getReceiveLatency()];
     }, conf.updateChartInterval);
 
     $scope.$on('$destroy', function () {

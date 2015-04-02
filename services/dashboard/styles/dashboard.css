@@ -1,3 +1,8 @@
+/*
+ * Licensed under the Apache License, Version 2.0
+ * See accompanying LICENSE file.
+ */
+
 /**
  * Extra Bootstrap styles
  */
@@ -171,9 +176,28 @@ th.st-sort-descent:after {
   border-bottom-color: #dd4b39;
 }
 
-/**
+/*
+ * Metrics card widget
  */
-.board-digits {
-  font-size: 20px;
-  font-weight: bold;
+.metrics-title {
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.metrics-explanation {
+  color: #bbb;
+  cursor: help;
+  margin-left: 4px;
+}
+
+.metrics-explanation:hover {
+  color: #888;
+}
+
+.metrics-value {
+  margin-top: 0;
+}
+
+div.metrics {
+  padding-bottom: 10px;
 }

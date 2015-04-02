@@ -53,7 +53,7 @@ angular.module('directive.echartfactory', [])
           ],
           series: [
             {
-              name: 'Throughput',
+              name: 'Value',
               type: 'line',
               data: (function () {
                 var res = [];
