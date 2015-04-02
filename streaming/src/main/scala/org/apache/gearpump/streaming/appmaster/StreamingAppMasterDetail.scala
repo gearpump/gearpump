@@ -28,7 +28,7 @@ import upickle.{Js, Writer}
 case class StreamingAppMasterDataDetail(
     appId: Int,
     appName: String = null,
-    processors: Map[ProcessorId, TaskDescription],
+    processors: Map[ProcessorId, ProcessorDescription],
     // hiearachy level for each processor
     processorLevels: Map[ProcessorId, Int],
     dag: Graph[ProcessorId, Partitioner] = null,

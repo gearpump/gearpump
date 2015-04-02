@@ -32,7 +32,7 @@ import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllo
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{ActorUtil, Graph}
@@ -49,8 +49,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   val appId = 0
   val workerId = 1
   val resource = Resource(1)
-  val taskDescription1 = TaskDescription(classOf[TaskA].getName, 2)
-  val taskDescription2 = TaskDescription(classOf[TaskB].getName, 2)
+  val taskDescription1 = ProcessorDescription(classOf[TaskA].getName, 2)
+  val taskDescription2 = ProcessorDescription(classOf[TaskB].getName, 2)
   var conf: UserConfig = null
 
   var mockTask: TestProbe = null

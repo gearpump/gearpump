@@ -50,7 +50,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
   private val address = ActorUtil.getFullPath(context.system, self.path)
 
-  val dag = DAG(userConfig.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).get)
+  val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, Partitioner]](AppDescription.DAG).get)
 
   private val (taskManager, executorManager, clockService) = {
     val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext),

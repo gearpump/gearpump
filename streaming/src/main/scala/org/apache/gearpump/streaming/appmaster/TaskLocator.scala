@@ -22,7 +22,7 @@ import java.util
 import akka.actor.Actor
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.streaming.TaskDescription
+import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, NonLocality, Locality}
 import org.apache.gearpump.streaming.task.{Task, TaskUtil}
 import org.apache.gearpump.util.{ActorUtil, Constants}
@@ -35,7 +35,7 @@ class TaskLocator(config: Config) {
   initTasks()
 
   def initTasks() : Unit = {
-    val taskLocations : Array[(TaskDescription, Locality)] = loadUserAllocation(config)
+    val taskLocations : Array[(ProcessorDescription, Locality)] = loadUserAllocation(config)
     for(taskLocation <- taskLocations){
       val (taskDescription, locality) = taskLocation
       val localityQueue = userScheduledTask.getOrElse(TaskUtil.loadClass(taskDescription.taskClass), mutable.Queue.empty[Locality])
@@ -44,7 +44,7 @@ class TaskLocator(config: Config) {
     }
   }
 
-  def locateTask(taskDescription : TaskDescription) : Locality = {
+  def locateTask(taskDescription : ProcessorDescription) : Locality = {
     if(userScheduledTask.contains(TaskUtil.loadClass(taskDescription.taskClass))){
       val localityQueue = userScheduledTask.get(TaskUtil.loadClass(taskDescription.taskClass)).get
       if(localityQueue.size > 0){
@@ -70,9 +70,9 @@ gearpump {
   }
 }
  */
-  def loadUserAllocation(config: Config) : Array[(TaskDescription, Locality)] ={
+  def loadUserAllocation(config: Config) : Array[(ProcessorDescription, Locality)] ={
     import scala.collection.JavaConverters._
-    var result = new Array[(TaskDescription, Locality)](0)
+    var result = new Array[(ProcessorDescription, Locality)](0)
     if(!config.hasPath(Constants.GEARPUMP_SCHEDULING_REQUEST))
       return result
     val requests = config.getObject(Constants.GEARPUMP_SCHEDULING_REQUEST)
@@ -80,7 +80,7 @@ gearpump {
       val taskDescriptions = requests.get(workerId).unwrapped().asInstanceOf[util.HashMap[String, Int]].asScala
       for(taskDescription <- taskDescriptions){
         val (taskClass, parallism) = taskDescription
-        result = result :+ (TaskDescription(taskClass, parallism), WorkerLocality(workerId.toInt))
+        result = result :+ (ProcessorDescription(taskClass, parallism), WorkerLocality(workerId.toInt))
       }
     }
     result

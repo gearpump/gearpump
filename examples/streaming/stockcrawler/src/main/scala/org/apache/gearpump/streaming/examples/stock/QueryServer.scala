@@ -29,7 +29,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterDataDetailRequest
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.stock.QueryServer.WebServer
-import org.apache.gearpump.streaming.{ProcessorId, TaskDescription}
+import org.apache.gearpump.streaming.{ProcessorId, ProcessorDescription}
 import org.apache.gearpump.streaming.appmaster.StreamingAppMasterDataDetail
 import org.apache.gearpump.streaming.task.{TaskId, StartTime, Task, TaskContext}
 import akka.pattern.ask
@@ -47,7 +47,7 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
 
   import ExecutionContext.Implicits.global
 
-  var analyzer: (ProcessorId, TaskDescription) = null
+  var analyzer: (ProcessorId, ProcessorDescription) = null
   implicit val timeOut = akka.util.Timeout(3, TimeUnit.SECONDS)
 
   override def onStart(startTime: StartTime): Unit = {

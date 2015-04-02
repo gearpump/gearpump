@@ -27,7 +27,7 @@ import org.apache.gearpump.streaming.AppMasterToExecutor.{MsgLostException, Rest
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
 import org.apache.gearpump.streaming.task.TaskActor.RestartTask
 import org.apache.gearpump.streaming.task.TaskActorSpec.TestTask
-import org.apache.gearpump.streaming.{StreamingTestUtil, DAG, TaskDescription}
+import org.apache.gearpump.streaming.{StreamingTestUtil, DAG, ProcessorDescription}
 import org.apache.gearpump.transport.Express
 import org.apache.gearpump.util.Graph
 import org.scalatest.{WordSpec, Matchers, BeforeAndAfterEach}
@@ -42,8 +42,8 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     withFallback(TestUtil.DEFAULT_CONFIG)
 
   val appId = 0
-  val task1 = TaskDescription(classOf[TestTask].getName, 1)
-  val task2 = TaskDescription(classOf[TestTask].getName, 1)
+  val task1 = ProcessorDescription(classOf[TestTask].getName, 1)
+  val task2 = ProcessorDescription(classOf[TestTask].getName, 1)
   val dag = DAG(Graph(task1 ~ new HashPartitioner() ~> task2))
   val taskId1 = TaskId(0, 0)
   val taskId2 = TaskId(1, 0)

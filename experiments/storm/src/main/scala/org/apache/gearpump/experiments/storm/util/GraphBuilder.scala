@@ -25,7 +25,7 @@ import org.apache.gearpump.experiments.storm.partitioner.{NoneGroupingPartitione
 import org.apache.gearpump.experiments.storm.processor.StormProcessor
 import org.apache.gearpump.experiments.storm.producer.StormProducer
 import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.streaming.TaskDescription
+import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.util.Graph
 
 import scala.collection.JavaConversions._
@@ -36,7 +36,7 @@ object GraphBuilder {
 
 private[storm] class GraphBuilder(topology: StormTopology) {
   private val componentGraph = Graph.empty[String, Grouping]
-  private val processorGraph = Graph.empty[TaskDescription, Partitioner]
+  private val processorGraph = Graph.empty[ProcessorDescription, Partitioner]
   private var processorToComponent = Map.empty[Int, String]
   private var componentToProcessor = Map.empty[String, Int]
 
@@ -44,13 +44,13 @@ private[storm] class GraphBuilder(topology: StormTopology) {
     val spouts = topology.get_spouts()
     val spoutTasks = spouts.map { spout =>
       val parallelism = getParallelism(spout._2.get_common())
-      val taskDescription = TaskDescription(classOf[StormProducer].getName, parallelism)
+      val taskDescription = ProcessorDescription(classOf[StormProducer].getName, parallelism)
       spout._1 -> taskDescription
     }
     val bolts = topology.get_bolts()
     val boltTasks = bolts.map { bolt =>
       val parallelism = getParallelism(bolt._2.get_common())
-      val taskDescription = TaskDescription(classOf[StormProcessor].getName, parallelism)
+      val taskDescription = ProcessorDescription(classOf[StormProcessor].getName, parallelism)
       bolt._1 -> taskDescription
     }
 
@@ -85,7 +85,7 @@ private[storm] class GraphBuilder(topology: StormTopology) {
     processorToComponent = componentToProcessor.map(entry => entry._2 -> entry._1)
   }
 
-  def getProcessorGraph: Graph[TaskDescription, Partitioner] = processorGraph
+  def getProcessorGraph: Graph[ProcessorDescription, Partitioner] = processorGraph
 
   def getProcessorToComponent: Map[Int, String] = processorToComponent
 

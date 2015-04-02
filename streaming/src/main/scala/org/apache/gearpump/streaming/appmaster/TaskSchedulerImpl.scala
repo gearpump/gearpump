@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, NonLocality, Locality}
-import org.apache.gearpump.streaming.{DAG, TaskDescription}
+import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.LogUtil
@@ -174,5 +174,5 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
 }
 
 object TaskSchedulerImpl {
-  case class TaskLaunchData(taskId: TaskId, taskDescription : TaskDescription, dag : DAG)
+  case class TaskLaunchData(taskId: TaskId, taskDescription : ProcessorDescription, dag : DAG)
 }

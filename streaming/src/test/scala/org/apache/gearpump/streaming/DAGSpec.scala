@@ -31,8 +31,8 @@ class DAGSpec extends PropSpec with PropertyChecks with Matchers {
 
   property("DAG should be built correctly for a single task") {
     forAll(parallelismGen) { (parallelism: Int) =>
-      val task = TaskDescription("task", parallelism)
-      val graph: Graph[TaskDescription, Partitioner] = Graph(task)
+      val task = ProcessorDescription("task", parallelism)
+      val graph: Graph[ProcessorDescription, Partitioner] = Graph(task)
       val dag = DAG(graph)
       dag.processors.size shouldBe 1
       dag.graph.edges shouldBe empty

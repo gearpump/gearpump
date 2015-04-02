@@ -21,7 +21,7 @@ import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.{TaskDescription, DAG, MockUtil}
+import org.apache.gearpump.streaming.{ProcessorDescription, DAG, MockUtil}
 import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.apache.gearpump.util.HadoopConfig
 import org.apache.hadoop.conf.Configuration
@@ -55,7 +55,7 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
     val watcher = TestProbe()(system1)
     val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProcessor.OUTPUT_PATH, outputDirectory)).withHadoopConf(new Configuration())
     val context = MockUtil.mockTaskContext
-    val dag = DAG(Map(0 -> TaskDescription(classOf[SeqFileStreamProcessor].getName, 1)), null)
+    val dag = DAG(Map(0 -> ProcessorDescription(classOf[SeqFileStreamProcessor].getName, 1)), null)
     val taskId = TaskId(0, 0)
     when(context.taskId).thenReturn(taskId)
 

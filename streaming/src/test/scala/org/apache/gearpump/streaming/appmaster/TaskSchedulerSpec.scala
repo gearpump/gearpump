@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.{DAG, TaskDescription}
+import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
@@ -29,8 +29,8 @@ import org.scalatest.{Matchers, WordSpec}
 import scala.collection.mutable.ArrayBuffer
 
 class TaskSchedulerSpec extends WordSpec with Matchers {
-  val task1 = TaskDescription(classOf[TestTask1].getName, 4)
-  val task2 = TaskDescription(classOf[TestTask2].getName, 2)
+  val task1 = ProcessorDescription(classOf[TestTask1].getName, 4)
+  val task2 = ProcessorDescription(classOf[TestTask2].getName, 2)
   val partitioner = new HashPartitioner()
   val dag = DAG(Graph(task1 ~ partitioner ~> task2))
   val resource = getClass.getClassLoader.getResource("tasklocation.conf").getPath

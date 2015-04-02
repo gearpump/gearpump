@@ -23,7 +23,7 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.task.TaskContext
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
@@ -71,18 +71,18 @@ object Dag extends App with ArgumentsParser {
 
   def application(config: ParseResult) : AppDescription = {
     val partitioner = new HashPartitioner()
-    val source_0 = TaskDescription(classOf[Source_0].getName, 1)
-    val source_1 = TaskDescription(classOf[Source_1].getName, 1)
-    val node_0 = TaskDescription(classOf[Node_0].getName, 1)
-    val node_1 = TaskDescription(classOf[Node_1].getName, 1)
-    val node_2 = TaskDescription(classOf[Node_2].getName, 1)
-    val node_3 = TaskDescription(classOf[Node_3].getName, 1)
-    val node_4 = TaskDescription(classOf[Node_4].getName, 1)
-    val sink_0 = TaskDescription(classOf[Sink_0].getName, 1)
-    val sink_1 = TaskDescription(classOf[Sink_1].getName, 1)
-    val sink_2 = TaskDescription(classOf[Sink_2].getName, 1)
-    val sink_3 = TaskDescription(classOf[Sink_3].getName, 1)
-    val sink_4 = TaskDescription(classOf[Sink_4].getName, 1)
+    val source_0 = ProcessorDescription(classOf[Source_0].getName, 1)
+    val source_1 = ProcessorDescription(classOf[Source_1].getName, 1)
+    val node_0 = ProcessorDescription(classOf[Node_0].getName, 1)
+    val node_1 = ProcessorDescription(classOf[Node_1].getName, 1)
+    val node_2 = ProcessorDescription(classOf[Node_2].getName, 1)
+    val node_3 = ProcessorDescription(classOf[Node_3].getName, 1)
+    val node_4 = ProcessorDescription(classOf[Node_4].getName, 1)
+    val sink_0 = ProcessorDescription(classOf[Sink_0].getName, 1)
+    val sink_1 = ProcessorDescription(classOf[Sink_1].getName, 1)
+    val sink_2 = ProcessorDescription(classOf[Sink_2].getName, 1)
+    val sink_3 = ProcessorDescription(classOf[Sink_3].getName, 1)
+    val sink_4 = ProcessorDescription(classOf[Sink_4].getName, 1)
     val app = AppDescription("dag", UserConfig.empty, Graph(
       source_0 ~ partitioner ~> sink_1,
       source_0 ~ partitioner ~> sink_2,
