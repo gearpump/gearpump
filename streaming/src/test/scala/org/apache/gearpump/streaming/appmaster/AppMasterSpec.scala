@@ -127,7 +127,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
      TODO: This test is failing on Travis randomly
      We have not identifed the root cause.
-     Check£º https://travis-ci.org/intel-hadoop/gearpump/builds/56826843
+     Check: https://travis-ci.org/intel-hadoop/gearpump/builds/56826843
      Issue tracker: https://github.com/intel-hadoop/gearpump/issues/733
 
     "launch executor and task properly" in {
