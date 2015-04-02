@@ -17,10 +17,11 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
   .controller('AppMasterCtrl', ['$scope', '$routeParams', 'breadcrumbs', 'restapi', 'StreamingService', 'StreamingDag',
     function ($scope, $routeParams, breadcrumbs, restapi, StreamingService, StreamingDag) {
       $scope.tabs = [
-        {heading: "Status", templateUrl: "views/apps/app/appstatus.html", controller: "AppStatusCtrl"},
-        {heading: "DAG", templateUrl: "views/apps/app/appdag.html", controller: "AppDagCtrl"},
-        {heading: "Metrics", templateUrl: "views/apps/app/appmetrics.html", controller: "AppMetricsCtrl"}
+        {heading: 'Status', templateUrl: 'views/apps/app/appstatus.html', controller: 'AppStatusCtrl'},
+        {heading: 'DAG', templateUrl: 'views/apps/app/appdag.html', controller: 'AppDagCtrl'},
+        {heading: 'Metrics', templateUrl: 'views/apps/app/appmetrics.html', controller: 'AppMetricsCtrl'}
       ];
+
       $scope.app = {id: $routeParams.id};
       breadcrumbs.options = {'Application ': 'Application ' + $scope.app.id};
 
@@ -31,6 +32,7 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
           if (data.hasOwnProperty('appName')) {
             $scope.app = {
               actorPath: data.actorPath,
+              clock: data.clock,
               executors: data.executors,
               id: data.appId,
               name: data.appName
@@ -63,7 +65,7 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
         });
 
       /** Redraw VisGraph on demand */
-      $scope.redrawVisGraph = function() {
+      $scope.redrawVisGraph = function () {
       };
 
       var request = JSON.stringify(
@@ -76,4 +78,15 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
         $scope.streamingDag.updateMetrics(obj[0], obj[1]);
       });
     }])
+
+  .filter('lastPart', function () {
+    return function lastPart(name) {
+      if (name) {
+        var parts = name.split('.');
+        if (parts.length > 0) {
+          return parts[parts.length - 1];
+        }
+      }
+    };
+  })
 ;

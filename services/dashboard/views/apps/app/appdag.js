@@ -5,7 +5,7 @@
 'use strict';
 angular.module('dashboard.apps.appmaster')
 
-  .controller('AppDagCtrl', ['$scope', '$timeout', 'conf', 'dagStyle', function ($scope, $timeout, conf, dagStyle) {
+  .controller('AppDagCtrl', ['$scope', '$timeout', '$filter', 'conf', 'dagStyle', function ($scope, $timeout, $filter, conf, dagStyle) {
     $scope.visgraph = {
       options: dagStyle.newOptions({depth: $scope.streamingDag.hierarchyDepth()}),
       data: dagStyle.newData()
@@ -22,11 +22,7 @@ angular.module('dashboard.apps.appmaster')
         var processorId = parseInt(key);
 
         var label = '[' + processorId + '] ';
-        if (processor.description == "" || processor.description == null) {
-            label = label + _lastPart(processor.taskClass);
-        } else {
-            label = label + processor.description;
-        }
+        label += processor.description ? processor.description : $filter('lastPart')(processor.taskClass);
 
         var weight = parseInt(data.weights[processorId]);
         var hierarchyLevels = data.hierarchyLevels[processorId];
@@ -71,9 +67,11 @@ angular.module('dashboard.apps.appmaster')
       visEdges.update(diff);
     };
 
-    $scope.updateMetricsCounter = function() {
-      $scope.processedEvents = $scope.streamingDag.getTotalProcessedEvents();
-      $scope.throughput = $scope.streamingDag.getThroughput();
+    $scope.updateMetricsCounter = function () {
+      $scope.receivedMessages = $scope.streamingDag.getReceivedMessages();
+      $scope.sentMessages = $scope.streamingDag.getSentMessages();
+      $scope.processingTime = $scope.streamingDag.getProcessingTime();
+      $scope.receiveLatency = $scope.streamingDag.getReceiveLatency();
     };
 
     var timeoutPromise;
@@ -93,11 +91,6 @@ angular.module('dashboard.apps.appmaster')
     function _rangeMapper(dict, range) {
       var values = d3.values(dict);
       return d3.scale.linear().domain(d3.extent(values)).range(range);
-    }
-
-    function _lastPart(name) {
-      var parts = name.split('.');
-      return parts[parts.length - 1];
     }
   }])
 ;
