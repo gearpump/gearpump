@@ -458,7 +458,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         )
       )
-  ) dependsOn(core % "test->test", core % "provided")
+  ) dependsOn(services % "test->test;compile->compile", core % "provided", services % "provided")
 
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",

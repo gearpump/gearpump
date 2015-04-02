@@ -32,7 +32,7 @@ angular
     updateChartInterval: 2000,
     updateVisDagInterval: 2000,
     restapiAutoRefreshInterval: 2000,
-    restapiRoot: '/api/v1.0',
+    restapiRoot: location.pathname + 'api/v1.0',
     webSocketSendTimeout: 500
   })
 

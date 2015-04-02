@@ -21,6 +21,7 @@ import akka.actor._
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import org.slf4j.Logger
+import scala.concurrent.duration._
 
 class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -39,7 +40,7 @@ class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with I
       testActor.sendMsgToReply()
       mockActor.expectMsg(Echo)
       testActor.sendMsgToIgnore()
-      mockActor.expectMsg(MessageTimeOut)
+      mockActor.expectMsg(10 seconds, MessageTimeOut)
     }
   }
 }
