@@ -21,7 +21,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.ShufflePartitioner
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.HadoopConfig._
 import org.apache.gearpump.util.{Graph, LogUtil}
@@ -47,8 +47,8 @@ object SequenceFileIO extends App with ArgumentsParser {
     val appConfig = UserConfig.empty.withString(SeqFileStreamProducer.INPUT_PATH, input).withString(SeqFileStreamProcessor.OUTPUT_PATH, output)
     val hadoopConfig = appConfig.withHadoopConf(new Configuration())
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SeqFileStreamProducer].getName, spoutNum)
-    val streamProcessor = TaskDescription(classOf[SeqFileStreamProcessor].getName, boltNum)
+    val streamProducer = ProcessorDescription(classOf[SeqFileStreamProducer].getName, spoutNum)
+    val streamProcessor = ProcessorDescription(classOf[SeqFileStreamProcessor].getName, boltNum)
 
     val app = AppDescription("SequenceFileIO", hadoopConfig, Graph(streamProducer ~ partitioner ~> streamProcessor))
     app

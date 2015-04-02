@@ -23,7 +23,7 @@ import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.appmaster.ClockServiceSpec.Store
 import org.apache.gearpump.streaming.storage.AppDataStore
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{DAG, TaskDescription}
+import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -35,8 +35,8 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
   def this() = this(ActorSystem("ClockServiceSpec"))
 
-  val task1 = TaskDescription(classOf[TaskActor].getName, 1)
-  val task2 = TaskDescription(classOf[TaskActor].getName, 1)
+  val task1 = ProcessorDescription(classOf[TaskActor].getName, 1)
+  val task2 = ProcessorDescription(classOf[TaskActor].getName, 1)
   val dag = DAG(Graph(task1 ~ new HashPartitioner() ~> task2))
 
   override def afterAll {

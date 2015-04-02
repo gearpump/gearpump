@@ -19,7 +19,7 @@ package org.apache.gearpump.streaming.appmaster
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
-import org.apache.gearpump.streaming.TaskDescription
+import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.appmaster.TaskLocator.{NonLocality, WorkerLocality}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.util.Constants._
@@ -30,9 +30,9 @@ import scala.collection.mutable.ArrayBuffer
 class TaskLocatorSpec extends WordSpec with Matchers {
   val resource = getClass.getClassLoader.getResource("tasklocation.conf").getPath
   System.setProperty(GEARPUMP_CUSTOM_CONFIG_FILE, resource)
-  val taskDescription1 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask1", 4)
-  val taskDescription2 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask2", 2)
-  val taskDescription3 = TaskDescription("org.apache.gearpump.streaming.appmaster.TestTask3", 2)
+  val taskDescription1 = ProcessorDescription("org.apache.gearpump.streaming.appmaster.TestTask1", 4)
+  val taskDescription2 = ProcessorDescription("org.apache.gearpump.streaming.appmaster.TestTask2", 2)
+  val taskDescription3 = ProcessorDescription("org.apache.gearpump.streaming.appmaster.TestTask3", 2)
 
   val config = ClusterConfig.load.application
 

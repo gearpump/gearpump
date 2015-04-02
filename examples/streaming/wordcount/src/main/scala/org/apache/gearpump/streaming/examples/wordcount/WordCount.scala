@@ -22,7 +22,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
@@ -41,8 +41,8 @@ object WordCount extends App with ArgumentsParser {
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
     val partitioner = new HashPartitioner()
-    val split = TaskDescription(classOf[Split].getName, splitNum)
-    val sum = TaskDescription(classOf[Sum].getName, sumNum)
+    val split = ProcessorDescription(classOf[Split].getName, splitNum)
+    val sum = ProcessorDescription(classOf[Sum].getName, sumNum)
     val app = AppDescription("wordCount", UserConfig.empty, Graph(split ~ partitioner ~> sum))
     app
   }

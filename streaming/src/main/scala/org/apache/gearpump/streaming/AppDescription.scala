@@ -27,9 +27,9 @@ import upickle.{Writer, Js}
 
 import scala.language.implicitConversions
 
-case class TaskDescription(taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null) extends ReferenceEqual
+case class ProcessorDescription(taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null) extends ReferenceEqual
 
-case class AppDescription(name : String, userConfig: UserConfig, dag: Graph[TaskDescription, Partitioner], clusterConfig: ClusterConfigSource = null)
+case class AppDescription(name : String, userConfig: UserConfig, dag: Graph[ProcessorDescription, Partitioner], clusterConfig: ClusterConfigSource = null)
 
 object AppDescription {
 
@@ -48,9 +48,9 @@ object AppDescription {
     val config = Option(app.userConfig)
     val graph  = config match {
       case Some(_config) =>
-        _config.getValue[Graph[TaskDescription, Partitioner]](AppDescription.DAG).getOrElse(Graph.empty[TaskDescription, Partitioner])
+        _config.getValue[Graph[ProcessorDescription, Partitioner]](AppDescription.DAG).getOrElse(Graph.empty[ProcessorDescription, Partitioner])
       case None =>
-        Graph.empty[TaskDescription,Partitioner]
+        Graph.empty[ProcessorDescription,Partitioner]
     }
     AppDescription(app.name,  app.userConfig, graph, app.clusterConfig)
   }

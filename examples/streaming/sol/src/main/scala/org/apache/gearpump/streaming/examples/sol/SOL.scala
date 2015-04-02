@@ -22,7 +22,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.{Partitioner, ShufflePartitioner}
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
@@ -44,13 +44,13 @@ object SOL extends App with ArgumentsParser {
     val stages = config.getInt("stages")
     val appConfig = UserConfig.empty.withInt(SOLStreamProducer.BYTES_PER_MESSAGE, bytesPerMessage)
     val partitioner = new ShufflePartitioner()
-    val streamProducer = TaskDescription(classOf[SOLStreamProducer].getName, spoutNum)
-    val streamProcessor = TaskDescription(classOf[SOLStreamProcessor].getName, boltNum)
+    val streamProducer = ProcessorDescription(classOf[SOLStreamProducer].getName, spoutNum)
+    val streamProcessor = ProcessorDescription(classOf[SOLStreamProcessor].getName, boltNum)
     var computation : Any = streamProducer ~ partitioner ~> streamProcessor
     computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
       c ~ partitioner ~> streamProcessor.copy()
     }
-    val dag = Graph[TaskDescription, Partitioner](computation)
+    val dag = Graph[ProcessorDescription, Partitioner](computation)
     val app = AppDescription("sol", appConfig, dag)
     app
   }

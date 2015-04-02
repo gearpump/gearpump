@@ -21,7 +21,7 @@ package org.apache.gearpump.experiments.storm
 import backtype.storm.generated.{ComponentCommon, ComponentObject}
 import backtype.storm.utils.Utils
 import org.apache.gearpump.experiments.storm.util.{GraphBuilder, TopologyUtil}
-import org.apache.gearpump.streaming.{ProcessorId, DAG, TaskDescription}
+import org.apache.gearpump.streaming.{ProcessorId, DAG, ProcessorDescription}
 import org.scalatest.{Matchers, WordSpec}
 
 class GraphBuilderSpec extends WordSpec with Matchers {
@@ -63,13 +63,13 @@ class GraphBuilderSpec extends WordSpec with Matchers {
     }
   }
 
-  private def getTaskDescription(component: String, processors: Map[ProcessorId, TaskDescription], componentToProcessor: Map[String, Int]): TaskDescription = {
+  private def getTaskDescription(component: String, processors: Map[ProcessorId, ProcessorDescription], componentToProcessor: Map[String, Int]): ProcessorDescription = {
     componentToProcessor.get(component).flatMap { processorId =>
       processors.get(processorId)
     }.getOrElse(fail(s"processor not found for component $component"))
   }
 
-  private def verifyParallelism(componentCommon: ComponentCommon, taskDescription: TaskDescription): Unit = {
+  private def verifyParallelism(componentCommon: ComponentCommon, taskDescription: ProcessorDescription): Unit = {
     if (componentCommon.get_parallelism_hint() == 0) {
       taskDescription.parallelism shouldBe 1
     } else {

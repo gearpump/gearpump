@@ -26,7 +26,7 @@ import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.stock.StockMarket.ServiceHour
 import org.apache.gearpump.streaming.examples.stock._
-import org.apache.gearpump.streaming.{AppDescription, TaskDescription}
+import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
@@ -43,9 +43,9 @@ object Stock extends App with ArgumentsParser {
     "proxy" -> CLIOption[String]("proxy setting host:port, for example: 127.0.0.1:8443", required = false, defaultValue = Some("")))
 
   def crawler(config: ParseResult)(implicit system: ActorSystem) : AppDescription = {
-    val crawler = TaskDescription(classOf[Crawler].getName, config.getInt("crawler"))
-    val analyzer = TaskDescription(classOf[Analyzer].getName, config.getInt("analyzer"))
-    val queryServer = TaskDescription(classOf[QueryServer].getName, 1)
+    val crawler = ProcessorDescription(classOf[Crawler].getName, config.getInt("crawler"))
+    val analyzer = ProcessorDescription(classOf[Analyzer].getName, config.getInt("analyzer"))
+    val queryServer = ProcessorDescription(classOf[QueryServer].getName, 1)
     val partitioner = new HashPartitioner
 
     val proxySetting = config.getString("proxy")

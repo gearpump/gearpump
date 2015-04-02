@@ -34,7 +34,7 @@ import org.apache.gearpump.streaming.appmaster.TaskManager.MessageLoss
 import org.apache.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{DAG, TaskDescription}
+import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
@@ -48,15 +48,15 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   val task1Class = classOf[Task1].getName
   val task2Class = classOf[Task2].getName
 
-  val task1 = TaskDescription(task1Class, 1)
-  val task2 = TaskDescription(task2Class, 1)
+  val task1 = ProcessorDescription(task1Class, 1)
+  val task2 = ProcessorDescription(task2Class, 1)
   val partitioner = new HashPartitioner()
 
-  val dag: DAG = Graph[TaskDescription, Partitioner](task1 ~ partitioner ~> task2)
+  val dag: DAG = Graph[ProcessorDescription, Partitioner](task1 ~ partitioner ~> task2)
 
-  val task1LaunchData = TaskLaunchData(TaskId(0, 0), TaskDescription(task1Class,
+  val task1LaunchData = TaskLaunchData(TaskId(0, 0), ProcessorDescription(task1Class,
     parallelism = 1), dag)
-  val task2LaunchData = TaskLaunchData(TaskId(1, 0), TaskDescription(task2Class,
+  val task2LaunchData = TaskLaunchData(TaskId(1, 0), ProcessorDescription(task2Class,
     parallelism = 1), dag)
 
   val appId = 0

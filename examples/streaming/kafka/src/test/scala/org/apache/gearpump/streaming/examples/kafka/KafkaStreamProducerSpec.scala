@@ -24,7 +24,7 @@ import com.typesafe.config.ConfigFactory
 import kafka.server.{KafkaConfig => KafkaServerConfig}
 import kafka.utils.{TestUtils => TestKafkaUtils, TestZKUtils}
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.{TaskDescription, DAG, MockUtil}
+import org.apache.gearpump.streaming.{ProcessorDescription, DAG, MockUtil}
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory
 import org.apache.gearpump.streaming.kafka.util.KafkaServerHarness
@@ -74,7 +74,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
 
     val context = mockTaskContext
 
-    val dag = DAG(Map(0 -> TaskDescription(classOf[KafkaStreamProducer].getName, 1)), null)
+    val dag = DAG(Map(0 -> ProcessorDescription(classOf[KafkaStreamProducer].getName, 1)), null)
     val taskId = TaskId(0, 0)
     when(context.parallelism).thenReturn(1)
     when(context.taskId).thenReturn(taskId)

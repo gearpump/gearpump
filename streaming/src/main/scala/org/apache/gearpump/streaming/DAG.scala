@@ -26,7 +26,7 @@ import upickle._
 import scala.collection.JavaConversions._
 
 
-case class DAG(processors : Map[ProcessorId, TaskDescription], graph : Graph[ProcessorId, Partitioner]) extends Serializable {
+case class DAG(processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, Partitioner]) extends Serializable {
 
   def subGraph(processorId : Int): DAG = {
     val newGraph = Graph.empty[ProcessorId, Partitioner]
@@ -35,7 +35,7 @@ case class DAG(processors : Map[ProcessorId, TaskDescription], graph : Graph[Pro
       val (node1, partitioner, node2) = edge
       newGraph.addEdge(node1, partitioner, node2)
     }
-    val newMap = newGraph.vertices.foldLeft(Map.empty[ProcessorId, TaskDescription]){ (map, vertex) =>
+    val newMap = newGraph.vertices.foldLeft(Map.empty[ProcessorId, ProcessorDescription]){ (map, vertex) =>
       val task = processors.get(vertex).get
 
       //clean out other in-degree and out-degree processors' data except the task parallelism
@@ -53,15 +53,15 @@ case class DAG(processors : Map[ProcessorId, TaskDescription], graph : Graph[Pro
 
 object DAG {
 
-  implicit def graphToDAG(graph: Graph[TaskDescription, Partitioner]): DAG = {
+  implicit def graphToDAG(graph: Graph[ProcessorDescription, Partitioner]): DAG = {
     apply(graph)
   }
 
-  def apply (graph : Graph[TaskDescription, Partitioner]) : DAG = {
+  def apply (graph : Graph[ProcessorDescription, Partitioner]) : DAG = {
     val topologicalOrderIterator = graph.topologicalOrderIterator
 
     val outputGraph = Graph.empty[ProcessorId, Partitioner]
-    val (_, processors) = topologicalOrderIterator.foldLeft((0, Map.empty[ProcessorId, TaskDescription])) { (first, processor) =>
+    val (_, processors) = topologicalOrderIterator.foldLeft((0, Map.empty[ProcessorId, ProcessorDescription])) { (first, processor) =>
       val (processorId, processors) = first
       outputGraph.addVertex(processorId)
       (processorId + 1, processors + (processorId -> processor))
@@ -77,7 +77,7 @@ object DAG {
 
   def empty() = apply(Graph.empty)
 
-  private def getProcessorId(processors : Map[ProcessorId, TaskDescription], node : TaskDescription) = {
+  private def getProcessorId(processors : Map[ProcessorId, ProcessorDescription], node : ProcessorDescription) = {
     processors.find { task =>
       val (_, taskDescription) = task
       taskDescription.equals(node)
