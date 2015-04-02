@@ -21,18 +21,32 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client.{HTable, Put}
 import org.apache.hadoop.hbase.util.Bytes
 
-class HBaseSink(tableName: String) {
-  val hbaseConf = new Configuration
+trait HBaseSinkInterface extends java.io.Serializable {
+  def insert(rowKey: Array[Byte], columnGroup: Array[Byte], columnName: Array[Byte], value: Array[Byte]): Unit
+  def insert(rowKey: String, columnGroup: String, columnName: String, value: String): Unit
+  def close(): Unit
+}
+
+class HBaseSink(tableName: String, hbaseConf: Configuration = new Configuration) extends HBaseSinkInterface {
   val table = new HTable(hbaseConf, tableName)
-  
+
   def insert(rowKey: Array[Byte], columnGroup: Array[Byte], columnName: Array[Byte], value: Array[Byte]): Unit = {
     val put = new Put(rowKey)
     put.add(columnGroup, columnName, value)
     table.put(put)
     table.flushCommits()
   }
-  
+
+  def insert(rowKey: String, columnGroup: String, columnName: String, value: String): Unit = {
+    insert(Bytes.toBytes(rowKey), Bytes.toBytes(columnGroup), Bytes.toBytes(columnName), Bytes.toBytes(value))
+  }
+
   def close(): Unit = {
     table.close()
   }
+}
+
+object HBaseSink {
+  def apply(tableName: String): HBaseSink = new HBaseSink(tableName)
+  def apply(tableName: String, hbaseConf: Configuration): HBaseSink = new HBaseSink(tableName, hbaseConf)
 }

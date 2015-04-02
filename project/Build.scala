@@ -51,6 +51,7 @@ object Build extends sbt.Build {
   val scalaCheckVersion = "1.11.3"
   val mockitoVersion = "1.10.8"
   val bijectionVersion = "0.7.0"
+  val scalazVersion = "7.1.1"
 
   val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
@@ -125,8 +126,8 @@ object Build extends sbt.Build {
         "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
         "org.slf4j" % "slf4j-api" % slf4jVersion,
         "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-        "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
-        "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
+        "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive,
+        "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % "provided",
         "org.fusesource" % "sigar" % sigarVersion classifier("native"),
         "com.google.code.findbugs" % "jsr305" % findbugsVersion,
         "org.apache.commons" % "commons-lang3" % commonsLangVersion,
@@ -143,8 +144,16 @@ object Build extends sbt.Build {
         "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
-        "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
-        "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
+        ("org.apache.hadoop" % "hadoop-common" % clouderaVersion).
+            exclude("org.mortbay.jetty", "jetty-util")
+            exclude("org.mortbay.jetty", "jetty")
+            exclude("tomcat", "jasper-runtime")
+            exclude("commons-beanutils", "commons-beanutils-core")
+            exclude("commons-beanutils", "commons-beanutils"),
+        ("org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion).
+            exclude("org.mortbay.jetty", "jetty-util")
+            exclude("org.mortbay.jetty", "jetty")
+            exclude("tomcat", "jasper-runtime"),
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
@@ -175,7 +184,7 @@ object Build extends sbt.Build {
         }
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase, pack)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase, pack, pipeline)
 
   lazy val pack = Project(
     id = "gearpump-pack",
@@ -477,11 +486,11 @@ object Build extends sbt.Build {
       ) ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+          "org.apache.hadoop" % "hadoop-common" % clouderaVersion % "provided",
+          "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion % "provided",
           "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion
             exclude("com.github.stephenc.findbugs", "findbugs-annotations")
             exclude("com.google.guava", "guava")
-            exclude("com.google.protobuf", "protobuf-java")
             exclude("commons-codec", "commons-codec")
             exclude("commons-io", "commons-io")
             exclude("commons-lang", "commons-lang")
@@ -489,14 +498,11 @@ object Build extends sbt.Build {
             exclude("io.netty", "netty")
             exclude("junit", "junit")
             exclude("log4j", "log4j")
-            exclude("org.apache.hbase", "hbase-protocol")
             exclude("org.apache.zookeeper", "zookeeper")
-            exclude("org.cloudera.htrace", "htrace-core")
             exclude("org.codehaus.jackson", "jackson-mapper-asl"),
           "org.apache.hbase" % "hbase-common" % clouderaHBaseVersion
             exclude("com.github.stephenc.findbugs", "findbugs-annotations")
             exclude("com.google.guava", "guava")
-            exclude("com.google.protobuf", "protobuf-java")
             exclude("commons-codec", "commons-codec")
             exclude("commons-collections", "commons-collections")
             exclude("commons-io", "commons-io")
@@ -507,4 +513,15 @@ object Build extends sbt.Build {
         )
       )
   )
+
+  lazy val pipeline = Project(
+    id = "gearpump-experiments-kafka-hbase-pipeline",
+    base = file("experiments/kafka-hbase-pipeline"),
+    settings = commonSettings ++ myAssemblySettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.scalaz" %% "scalaz-core" % scalazVersion
+        )
+      )
+  ) dependsOn(core % "provided", streaming % "test->test;compile->compile", streaming % "provided", external_kafka  % "test->test", external_kafka % "provided", hbase)
 }
