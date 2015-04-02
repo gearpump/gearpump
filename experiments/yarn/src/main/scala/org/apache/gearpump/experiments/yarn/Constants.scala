@@ -48,10 +48,13 @@ object Constants {
 
   val SERVICES_COMMAND = "gearpump.services.command"
   val SERVICES_MAIN = "gearpump.services.main"
+  val SERVICES_PORT = "gearpump.services.port"
   val SERVICES_CONTAINERS = "gearpump.services.containers"
   val SERVICES_MEMORY = "gearpump.services.memory"
   val SERVICES_VCORES = "gearpump.services.vcores"
   val SERVICES_LOG = "gearpump.services.logname"
 
   val YARN_CONFIG = "gearpump_on_yarn.conf"
+  val MEMORY_DEFAULT = 2048 //2 gigabyte
+
 }
