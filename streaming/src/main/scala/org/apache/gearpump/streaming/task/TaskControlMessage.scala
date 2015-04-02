@@ -26,19 +26,21 @@ case class Seq(id: Int, seq: Long)
   Here the sessionId filed is used to distinguish messages
     between different replays after the application restart
  */
-case class AckRequest(taskId: TaskId, seq: Seq, sessionId: Int)
+case class AckRequest(taskId: TaskId, seq: Long, sessionId: Int)
 /*
   Here the seq field represents the expected number of received messages
     and the actualReceivedNum field means the actual received number since start
  */
-case class Ack(taskId: TaskId, seq: Seq, actualReceivedNum: Long, sessionId: Int)
+case class Ack(taskId: TaskId, seq: Long, actualReceivedNum: Long, sessionId: Int)
 
 case class UpdateClock(taskId: TaskId, time: TimeStamp)
 
-case class ClockUpdated(latestMinClock: TimeStamp)
+case class UpstreamMinClock(latestMinClock: TimeStamp)
 
 object GetLatestMinClock
 
 case class LatestMinClock(clock: TimeStamp)
 
 case class LatencyProbe(timestamp: Long)
+
+case class SendMessageLoss()

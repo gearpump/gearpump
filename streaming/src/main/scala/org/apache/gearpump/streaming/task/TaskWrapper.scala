@@ -22,7 +22,6 @@ import akka.actor.Actor._
 import akka.actor.{ActorSystem, Cancellable, Props, ActorRef}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.DAG
 import org.apache.gearpump.util.LogUtil
 
 import scala.concurrent.duration.FiniteDuration
@@ -39,7 +38,7 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
 
   private var actor: TaskActor = null
 
-  private var task: Task = null
+  private var task: Option[Task] = None
 
   def setTaskActor(actor: TaskActor): Unit = this.actor = actor
 
@@ -78,19 +77,19 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
       LOG.error("Task.onStart should not be called multiple times...")
     }
     val constructor = taskClass.getConstructor(classOf[TaskContext], classOf[UserConfig])
-    task = constructor.newInstance(this, userConf)
-    task.onStart(startTime)
+    task = Some(constructor.newInstance(this, userConf))
+    task.foreach(_.onStart(startTime))
   }
 
-  override def onNext(msg: Message): Unit = task.onNext(msg)
+  override def onNext(msg: Message): Unit = task.foreach(_.onNext(msg))
 
   override def onStop(): Unit = {
-    task.onStop()
-    task = null
+    task.foreach(_.onStop())
+    task = None
   }
 
   override def receiveUnManagedMessage: Receive = {
-    Option(task).map(_.receiveUnManagedMessage).get
+    task.map(_.receiveUnManagedMessage).getOrElse(defaultMessageHandler)
   }
 
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable = {
@@ -101,5 +100,10 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
   def scheduleOnce(initialDelay: FiniteDuration)(f: ⇒ Unit): Cancellable = {
     val dispatcher = actor.context.system.dispatcher
     actor.context.system.scheduler.scheduleOnce(initialDelay)(f)(dispatcher)
+  }
+
+  private def defaultMessageHandler: Receive = {
+    case msg =>
+      LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + msg.toString)
   }
 }

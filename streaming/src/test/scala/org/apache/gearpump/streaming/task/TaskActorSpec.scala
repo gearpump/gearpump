@@ -57,8 +57,10 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   override def beforeEach() = {
     startActorSystem()
     mockMaster = TestProbe()(getActorSystem)
-    taskContext1 = TaskContextData(taskId1, executorId1, appId, "appName", mockMaster.ref, 1, dag)
-    taskContext2 = TaskContextData(taskId2, executorId2, appId, "appName", mockMaster.ref, 1, dag)
+    taskContext1 = TaskContextData(taskId1, executorId1, appId,
+      "appName", mockMaster.ref, 1, Subscriber.of(processorId = 0, dag))
+    taskContext2 = TaskContextData(taskId2, executorId2, appId,
+      "appName", mockMaster.ref, 1, Subscriber.of(processorId = 1, dag))
   }
 
   "TaskActor" should {
@@ -72,7 +74,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       mockMaster.reply(StartClock(0))
 
       implicit val system = getActorSystem
-      val ack = Ack(taskId1, Seq(0, 100), 99, testActor.underlyingActor.sessionId)
+      val ack = Ack(taskId2, 100, 99, testActor.underlyingActor.sessionId)
       EventFilter[MsgLostException](occurrences = 1) intercept {
         testActor ! ack
       }

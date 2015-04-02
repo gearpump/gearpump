@@ -56,16 +56,15 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     case msg: TaskMessage =>
       batch += msg
     case flush @ Flush(flushChannel)  =>
-      if (!channel.eq(flushChannel)) {
+      if (channel != flushChannel) {
         Unit //Drop, as it belong to old channel flush message
-      }
-      if (batch.size > 0 && channel.isWritable) {
-        send(batch.iterator)
+      } else if (batch.size > 0 && flushChannel.isWritable) {
+        send(flushChannel, batch.iterator)
         batch.clear()
         self ! flush
       } else {
         import context.dispatcher
-        context.system.scheduler.scheduleOnce(new FiniteDuration(5, TimeUnit.MILLISECONDS))(self ! flush)
+        context.system.scheduler.scheduleOnce(new FiniteDuration(5, TimeUnit.MILLISECONDS), self, flush)
       }
   }
 
@@ -77,7 +76,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
       if (null == channel) {
         connect(tries)
       } else {
-        LOG.error("there already exsit a channel, will not establish a new one...")
+        LOG.error("there already exist a channel, will not establish a new one...")
       }
     case CompareAndReconnectIfEqual(oldChannel) =>
       if (oldChannel == channel) {
@@ -105,7 +104,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
         LOG.error(s"failed to connect to $name, reason: ${ex.getMessage}, class: ${ex.getClass}")
         current.close()
         import context.dispatcher
-        context.system.scheduler.scheduleOnce(new FiniteDuration(getSleepTimeMs(tries), TimeUnit.MILLISECONDS))(self ! Connect(tries + 1))
+        context.system.scheduler.scheduleOnce(new FiniteDuration(getSleepTimeMs(tries), TimeUnit.MILLISECONDS), self, Connect(tries + 1))
       }
     } else {
       LOG.error(s"fail to connect to a remote host $name after retied $tries ...")
@@ -113,7 +112,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     }
   }
 
-  private def send(msgs: Iterator[TaskMessage]) {
+  private def send(flushChannel: Channel, msgs: Iterator[TaskMessage]) {
     var messageBatch: MessageBatch = null
 
     while (msgs.hasNext) {
@@ -124,12 +123,12 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
       messageBatch.add(message)
       if (messageBatch.isFull) {
         val toBeFlushed: MessageBatch = messageBatch
-        flushRequest(channel, toBeFlushed)
+        flushRequest(flushChannel, toBeFlushed)
         messageBatch = null
       }
     }
     if (null != messageBatch && !messageBatch.isEmpty) {
-      flushRequest(channel, messageBatch)
+      flushRequest(flushChannel, messageBatch)
     }
   }
 

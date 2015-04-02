@@ -56,6 +56,14 @@ object ActorSystemBooter  {
 
     LogUtil.loadConfiguration(config, ProcessType.APPLICATION)
 
+    val debugPort = Option(System.getProperty(Constants.GEARPUMP_REMOTE_DEBUG_PORT))
+    debugPort.foreach{ port =>
+      val LOG: Logger = LogUtil.getLogger(ActorSystemBooter.getClass)
+      LOG.info("==========================================")
+      LOG.info("Remote debug port: " + port)
+      LOG.info("==========================================")
+    }
+
     val system = apply(config).boot(name, reportBack)
 
     Runtime.getRuntime().addShutdownHook(new Thread() {

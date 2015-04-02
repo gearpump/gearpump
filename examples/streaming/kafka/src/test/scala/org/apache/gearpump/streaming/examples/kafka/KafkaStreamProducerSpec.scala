@@ -74,7 +74,6 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
 
     val context = mockTaskContext
 
-    val dag = DAG(Map(0 -> ProcessorDescription(classOf[KafkaStreamProducer].getName, 1)), null)
     val taskId = TaskId(0, 0)
     when(context.parallelism).thenReturn(1)
     when(context.taskId).thenReturn(taskId)

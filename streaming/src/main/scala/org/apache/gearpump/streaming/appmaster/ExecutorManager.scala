@@ -70,7 +70,7 @@ private[appmaster] class ExecutorManager (
       masterProxy ! StartExecutorSystems(resources, getExecutorJvmConfig)
     case ExecutorSystemStarted(executorSystem) =>
       import executorSystem.{address, worker, resource => executorResource}
-      val executorContext = ExecutorContext(currentExecutorId, worker.workerId, appId, self, executorResource)
+      val executorContext = ExecutorContext(currentExecutorId, worker.workerId, appId, appMaster =  context.parent, executorResource)
 
       //start executor
       val executor = context.actorOf(executorFactory(executorContext, userConfig, address, currentExecutorId),

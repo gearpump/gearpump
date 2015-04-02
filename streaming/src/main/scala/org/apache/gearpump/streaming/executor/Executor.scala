@@ -29,7 +29,7 @@ import org.apache.gearpump.streaming.task.TaskActor.RestartTask
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations, TaskWrapper}
 import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.transport.{Express, HostPort}
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
@@ -45,6 +45,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
     app = appId)
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
+  LOG.info(s"Executor actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
 
   appMaster ! RegisterExecutor(self, executorId, resource, workerId)
   context.watch(appMaster)
@@ -57,7 +58,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case _: MsgLostException =>
         LOG.info("We got MessageLossException from task, replaying application...")
-        appMaster ! ReplayFromTimestampWindowTrailingEdge
+        LOG.info(s"sending to appMaster ${appMaster.path.toString}")
+
+        appMaster ! ReplayFromTimestampWindowTrailingEdge(appId)
         Restart
       case _: RestartException => Restart
     }
@@ -69,8 +72,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
       val taskConf = userConf.withConfig(taskConfig)
 
       val task = new TaskWrapper(taskClass, taskContext, taskConf)
-      val taskDispatcher = context.system.settings.config.getString(Constants.GEARPUMP_TASK_DISPATCHER)
-      val taskActor = context.actorOf(Props(taskActorClass, taskContext, userConf, task).withDispatcher(taskDispatcher), ActorPathUtil.taskActorName(taskId))
+      val taskActor = context.actorOf(Props(taskActorClass, taskContext, userConf, task).withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), ActorPathUtil.taskActorName(taskId))
     }
     case TaskLocations(locations) =>
       val result = locations.flatMap { kv =>

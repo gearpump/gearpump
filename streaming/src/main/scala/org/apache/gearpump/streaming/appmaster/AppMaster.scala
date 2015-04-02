@@ -48,6 +48,8 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
+  LOG.info(s"AppMaster actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
+
   private val address = ActorUtil.getFullPath(context.system, self.path)
 
   val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, Partitioner]](AppDescription.DAG).get)
@@ -93,8 +95,8 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
       taskManager forward GetLatestMinClock
     case register: RegisterTask =>
       taskManager forward register
-    case ReplayFromTimestampWindowTrailingEdge =>
-      taskManager forward ReplayFromTimestampWindowTrailingEdge
+    case replay: ReplayFromTimestampWindowTrailingEdge =>
+      taskManager forward replay
     case metrics: MetricType =>
 
       actorSystem.eventStream.publish(metrics)

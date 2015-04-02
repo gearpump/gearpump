@@ -22,7 +22,7 @@ import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequ
 import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, NonLocality, Locality}
 import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
-import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.streaming.task.{Subscriber, Subscriber$, TaskId}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -81,11 +81,14 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
 
   def setTaskDAG(dag: DAG): Unit = {
     dag.processors.foreach { params =>
-      val (taskGroupId, taskDescription) = params
+      val (processorId, taskDescription) = params
+
+      val subscriptions = Subscriber.of(processorId, dag)
       0.until(taskDescription.parallelism).map((taskIndex: Int) => {
-        val taskId = TaskId(taskGroupId, taskIndex)
+        val taskId = TaskId(processorId, taskIndex)
         val locality = taskLocator.locateTask(taskDescription)
-        val taskLaunchData = TaskLaunchData(taskId, taskDescription, dag.subGraph(taskGroupId))
+        val taskLaunchData = TaskLaunchData(taskId, taskDescription,
+          subscriptions)
         tasks += (taskId -> taskLaunchData)
         scheduleTaskLater(taskLaunchData, locality)
       })
@@ -174,5 +177,5 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
 }
 
 object TaskSchedulerImpl {
-  case class TaskLaunchData(taskId: TaskId, taskDescription : ProcessorDescription, dag : DAG)
+  case class TaskLaunchData(taskId: TaskId, taskDescription : ProcessorDescription, subscriptions: List[Subscriber])
 }

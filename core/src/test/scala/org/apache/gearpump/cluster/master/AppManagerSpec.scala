@@ -146,7 +146,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     client.expectMsgType[AppMasterData]
 
     client.send(appManager, ReplayFromTimestampWindowTrailingEdge(appId))
-    appMaster.expectMsg(ReplayFromTimestampWindowTrailingEdge)
+    appMaster.expectMsgType[ReplayFromTimestampWindowTrailingEdge]
     client.expectMsg(ReplayApplicationResult(Success(appId)))
 
     if (!withRecover) {

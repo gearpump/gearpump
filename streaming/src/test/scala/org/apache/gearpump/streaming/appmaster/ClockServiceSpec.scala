@@ -55,14 +55,24 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
       //task(0,0): clock(101); task(1,0): clock(100)
       clockService ! UpdateClock(TaskId(0, 0), 101)
-      //min is 100
-      expectMsg(ClockUpdated(100))
+
+      // there is no upstream, so pick Long.MaxValue
+      expectMsg(UpstreamMinClock(Long.MaxValue))
+
+      // min clock is updated
+      clockService ! GetLatestMinClock
+      expectMsg(LatestMinClock(100))
+
 
       //task(0,0): clock(101); task(1,0): clock(101)
       clockService ! UpdateClock(TaskId(1, 0), 101)
 
-      //min is 101
-      expectMsg(ClockUpdated(101))
+      //upstream is Task(0, 0), 101
+      expectMsg(UpstreamMinClock(101))
+
+      // min clock is updated
+      clockService ! GetLatestMinClock
+      expectMsg(LatestMinClock(101))
     }
   }
 }
