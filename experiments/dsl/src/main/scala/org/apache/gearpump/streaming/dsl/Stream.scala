@@ -127,7 +127,7 @@ class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val ed
    * @return
    */
   def process[R](processor: Class[_ <: Task], parallism: Int, description: String = null): Stream[R] = {
-    val processorOp = ProcessorOp(processor.getName, parallism, Option(description).getOrElse("process"))
+    val processorOp = ProcessorOp(processor, parallism, Option(description).getOrElse("process"))
     dag.addVertex(processorOp)
     dag.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
     new Stream(dag, processorOp, Some(Shuffle))

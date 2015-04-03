@@ -24,7 +24,7 @@ import backtype.storm.generated._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.experiments.storm.util.GraphBuilder
-import org.apache.gearpump.streaming.AppDescription
+import org.apache.gearpump.streaming.{StreamApplication}
 import org.apache.gearpump.util.LogUtil
 
 import scala.collection.JavaConverters._
@@ -55,7 +55,7 @@ class GearpumpNimbus(clientContext: ClientContext) extends Nimbus.Iface {
       .withValue[StormTopology](TOPOLOGY, topology)
       .withValue[List[(Int, String)]](PROCESSOR_TO_COMPONENT, processorToComponent.toList)
       .withValue[String](STORM_CONFIG, jsonConf)
-    val app = AppDescription("storm", config, processorGraph)
+    val app = StreamApplication("storm", processorGraph, config)
     val appId = clientContext.submit(app)
 
     applications += name -> appId

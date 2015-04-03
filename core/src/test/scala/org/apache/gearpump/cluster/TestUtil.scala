@@ -82,11 +82,11 @@ object TestUtil {
     }
   }
 
-  class DummyAppMaster(context: AppMasterContext, app: Application) extends ApplicationMaster {
+  class DummyAppMaster(context: AppMasterContext, app: AppDescription) extends ApplicationMaster {
     context.masterProxy ! (context, app)
 
     def receive : Receive = null
   }
 
-  val dummyApp : Application = Application("dummy", classOf[DummyAppMaster].getName, UserConfig.empty)
+  val dummyApp : AppDescription = AppDescription("dummy", classOf[DummyAppMaster].getName, UserConfig.empty)
 }

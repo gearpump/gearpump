@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerList, AppMasterRegistered}
 import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
-import org.apache.gearpump.cluster.{AppMasterContext, UserConfig, Application, TestUtil}
+import org.apache.gearpump.cluster.{AppMasterContext, UserConfig, AppDescription, TestUtil}
 import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, ResourceRequest, Resource}
 import org.apache.gearpump.experiments.distributeservice.DistServiceAppMaster.{FileContainer, GetFileContainer}
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
@@ -45,7 +45,7 @@ class DistServiceAppMasterSpec extends WordSpec with Matchers with BeforeAndAfte
   val workerList = List(1, 2, 3)
   val resource = Resource(1)
   val appJar = None
-  val appDescription = Application("app0", classOf[DistServiceAppMaster].getName, UserConfig.empty)
+  val appDescription = AppDescription("app0", classOf[DistServiceAppMaster].getName, UserConfig.empty)
 
   "DistService AppMaster" should {
     "responsable for service distributing" in {

@@ -18,7 +18,7 @@
 package org.apache.gearpump.experiments.distributeservice
 
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.cluster.{AppJar, UserConfig, Application}
+import org.apache.gearpump.cluster.{Application, AppJar, UserConfig, AppDescription}
 import org.apache.gearpump.cluster.main.{ParseResult, CLIOption, ArgumentsParser}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
@@ -28,14 +28,10 @@ object DistributeService extends App with ArgumentsParser  {
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  def application() : Application = {
-    Application("DistributedShell", classOf[DistServiceAppMaster].getName, UserConfig.empty)
-  }
 
   LOG.info(s"Distribute Service submitting application...")
   val context = ClientContext()
-  implicit val system = context.system
-  val appId = context.submit(application())
+  val appId = context.submit(Application[DistServiceAppMaster]("DistributedService", UserConfig.empty))
   context.close()
   LOG.info(s"Distribute Service Application started with appId $appId !")
 }

@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment._
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{Session, StartExecutorSystems}
 import org.apache.gearpump.cluster.appmaster.MasterConnectionKeeper.MasterConnectionStatus._
 import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.cluster.{AppMasterContext, Application}
+import org.apache.gearpump.cluster.{AppMasterContext, AppDescription}
 import org.apache.gearpump.util.LogUtil
 
 /**
@@ -47,10 +47,10 @@ import org.apache.gearpump.util.LogUtil
 private[appmaster]
 class AppMasterRuntimeEnvironment (
     appContextInput: AppMasterContext,
-    app: Application,
+    app: AppDescription,
     masters: Iterable[ActorPath],
     masterFactory: (AppId, MasterActorRef) => Props,
-    appMasterFactory: (AppMasterContext, Application)=> Props,
+    appMasterFactory: (AppMasterContext, AppDescription)=> Props,
     masterConnectionKeeperFactory: (MasterActorRef, RegisterAppMaster, ListenerActorRef) => Props)
   extends Actor {
 
@@ -90,12 +90,12 @@ class AppMasterRuntimeEnvironment (
 object AppMasterRuntimeEnvironment {
 
 
-  def props(masters: Iterable[ActorPath], app : Application, appContextInput: AppMasterContext): Props = {
+  def props(masters: Iterable[ActorPath], app : AppDescription, appContextInput: AppMasterContext): Props = {
 
     val master = (appId: AppId, masterProxy: MasterActorRef) =>
       MasterWithExecutorSystemProvider.props(appId, masterProxy)
 
-    val appMaster = (appContext: AppMasterContext, app: Application) =>
+    val appMaster = (appContext: AppMasterContext, app: AppDescription) =>
       LazyStartAppMaster.props(appContext, app)
 
     val masterConnectionKeeper =
@@ -148,7 +148,7 @@ object AppMasterRuntimeEnvironment {
 
   private[appmaster]
   object LazyStartAppMaster {
-    def props(appContext: AppMasterContext, app: Application): Props = {
+    def props(appContext: AppMasterContext, app: AppDescription): Props = {
       val appMasterProps = Props(Class.forName(app.appMaster), appContext, app)
       Props(new LazyStartAppMaster(appContext.appId, appMasterProps))
     }

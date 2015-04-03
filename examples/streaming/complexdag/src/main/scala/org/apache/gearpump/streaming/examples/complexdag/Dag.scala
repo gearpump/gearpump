@@ -21,12 +21,13 @@ package org.apache.gearpump.streaming.examples.complexdag
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.task.TaskContext
-import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
+import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
+import org.apache.gearpump.streaming.task.Task
 
 /*
  digraph flow {
@@ -67,21 +68,21 @@ object Dag extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  def application(config: ParseResult) : AppDescription = {
+  def application(config: ParseResult) : StreamApplication = {
     val partitioner = new HashPartitioner()
-    val source_0 = ProcessorDescription(classOf[Source_0].getName, 1)
-    val source_1 = ProcessorDescription(classOf[Source_1].getName, 1)
-    val node_0 = ProcessorDescription(classOf[Node_0].getName, 1)
-    val node_1 = ProcessorDescription(classOf[Node_1].getName, 1)
-    val node_2 = ProcessorDescription(classOf[Node_2].getName, 1)
-    val node_3 = ProcessorDescription(classOf[Node_3].getName, 1)
-    val node_4 = ProcessorDescription(classOf[Node_4].getName, 1)
-    val sink_0 = ProcessorDescription(classOf[Sink_0].getName, 1)
-    val sink_1 = ProcessorDescription(classOf[Sink_1].getName, 1)
-    val sink_2 = ProcessorDescription(classOf[Sink_2].getName, 1)
-    val sink_3 = ProcessorDescription(classOf[Sink_3].getName, 1)
-    val sink_4 = ProcessorDescription(classOf[Sink_4].getName, 1)
-    val app = AppDescription("dag", UserConfig.empty, Graph(
+    val source_0 = Processor[Source_0](1)
+    val source_1 = Processor[Source_1](1)
+    val node_0 = Processor[Node_0](1)
+    val node_1 = Processor[Node_1](1)
+    val node_2 = Processor[Node_2](1)
+    val node_3 = Processor[Node_3](1)
+    val node_4 = Processor[Node_4](1)
+    val sink_0 = Processor[Sink_0](1)
+    val sink_1 = Processor[Sink_1](1)
+    val sink_2 = Processor[Sink_2](1)
+    val sink_3 = Processor[Sink_3](1)
+    val sink_4 = Processor[Sink_4](1)
+    val app = StreamApplication("dag", Graph[Processor[_ <: Task], Partitioner](
       source_0 ~ partitioner ~> sink_1,
       source_0 ~ partitioner ~> sink_2,
       source_0 ~ partitioner ~> node_2,
@@ -97,13 +98,12 @@ object Dag extends App with ArgumentsParser {
       node_3 ~ partitioner ~> sink_3,
       node_4 ~ partitioner ~> sink_3,
       node_0 ~ partitioner ~> sink_3
-    ))
+    ), UserConfig.empty)
     app
   }
 
   val config = parse(args)
   val context = ClientContext()
-  implicit val system = context.system
   val appId = context.submit(application(config))
   context.close()
 }

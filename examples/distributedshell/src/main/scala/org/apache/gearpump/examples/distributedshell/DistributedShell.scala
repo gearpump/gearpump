@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.examples.distributedshell
 
-import org.apache.gearpump.cluster.{UserConfig, Application}
+import org.apache.gearpump.cluster.{Application, UserConfig, AppDescription}
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ParseResult, CLIOption, ArgumentsParser}
 import org.apache.gearpump.util.LogUtil
@@ -28,14 +28,9 @@ object DistributedShell extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  def application() : Application = {
-    Application("DistributedShell", classOf[DistShellAppMaster].getName, UserConfig.empty)
-  }
-
   LOG.info(s"Distributed shell submitting application...")
   val context = ClientContext()
-  implicit val system = context.system
-  val appId = context.submit(application())
+  val appId = context.submit(Application[DistShellAppMaster]("DistributedShell", UserConfig.empty))
   context.close()
   LOG.info(s"Distributed Shell Application started with appId $appId !")
 }

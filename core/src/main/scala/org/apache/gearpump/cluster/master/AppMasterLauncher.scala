@@ -42,7 +42,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 
 class AppMasterLauncher(
-    appId : Int, executorId: Int, app : Application,
+    appId : Int, executorId: Int, app : AppDescription,
     jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef])
   extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
@@ -124,11 +124,11 @@ class AppMasterLauncher(
 }
 
 object AppMasterLauncher extends AppMasterLauncherFactory{
-  def props(appId : Int, executorId: Int, app : Application, jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef]) = {
+  def props(appId : Int, executorId: Int, app : AppDescription, jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef]) = {
     Props(new AppMasterLauncher(appId, executorId, app, jar, username, master, client))
   }
 }
 
 trait AppMasterLauncherFactory {
-  def props(appId : Int, executorId: Int, app : Application, jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef]) : Props
+  def props(appId : Int, executorId: Int, app : AppDescription, jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef]) : Props
 }

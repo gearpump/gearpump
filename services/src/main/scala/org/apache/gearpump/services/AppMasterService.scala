@@ -28,10 +28,10 @@ import org.apache.gearpump.cluster.MasterToClient.ShutdownApplicationResult
 import org.apache.gearpump.partitioner.Partitioner
 
 import org.apache.gearpump.streaming.appmaster.AppMaster
-import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
+import org.apache.gearpump.streaming.{ ProcessorDescription}
 import org.apache.gearpump.util.{Constants, Graph, LogUtil}
 import org.apache.gearpump.streaming.appmaster.{StreamingAppMasterDataDetail, AppMaster}
-import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription, DAG}
+import org.apache.gearpump.streaming.{ ProcessorDescription, DAG}
 import org.apache.gearpump.util.{Graph, Constants}
 import spray.http.StatusCodes
 import spray.routing.HttpService

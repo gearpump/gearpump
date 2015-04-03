@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.cluster.master
 
-import org.apache.gearpump.cluster.{AppJar, Application}
+import org.apache.gearpump.cluster.{AppJar, AppDescription}
 import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
 
 class ApplicationStateSpec  extends FlatSpec with Matchers with BeforeAndAfterEach  {

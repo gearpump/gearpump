@@ -26,7 +26,7 @@ import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.{AppMasterContext, ClusterConfigSource, ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
-import org.apache.gearpump.streaming.AppDescription
+import org.apache.gearpump.streaming.{StreamApplication}
 import org.apache.gearpump.streaming.executor.Executor
 import org.apache.gearpump.util.{LogUtil, Util}
 
@@ -106,7 +106,7 @@ private[appmaster] class ExecutorManager (
   }
 
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
-    val executorClusterConfigSource = userConfig.getValue[ClusterConfigSource](AppDescription.EXECUTOR_CLUSTER_CONFIG)
+    val executorClusterConfigSource = userConfig.getValue[ClusterConfigSource](StreamApplication.EXECUTOR_CLUSTER_CONFIG)
     val executorAkkaConfig = executorClusterConfigSource.map(_.getConfig).getOrElse(ConfigFactory.empty)
     val jvmSetting = Util.resolveJvmSetting(executorAkkaConfig.withFallback(systemConfig)).executor
     ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs, appJar, username, executorAkkaConfig)

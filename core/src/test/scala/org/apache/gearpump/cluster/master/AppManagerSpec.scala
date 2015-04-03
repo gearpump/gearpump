@@ -167,7 +167,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
 
 class DummyAppMasterLauncherFactory(test: TestProbe) extends AppMasterLauncherFactory {
 
-  override def props(appId: Int, executorId: Int, app: Application, jar: Option[AppJar], username: String, master: ActorRef, client: Option[ActorRef]): Props = {
+  override def props(appId: Int, executorId: Int, app: AppDescription, jar: Option[AppJar], username: String, master: ActorRef, client: Option[ActorRef]): Props = {
     Props(new DummyAppMasterLauncher(test, appId))
   }
 }
