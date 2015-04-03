@@ -18,7 +18,10 @@
 
 package org.apache.gearpump.streaming
 
+import java.util.Properties
+
 import akka.actor.ActorSystem
+import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.{Application, ClusterConfigSource, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.appmaster.AppMaster

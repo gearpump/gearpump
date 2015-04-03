@@ -76,7 +76,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
     when(context.parallelism).thenReturn(1)
     when(context.taskId).thenReturn(taskId)
 
-    val producer = new KafkaStreamProducer(context, kafkaConfig)
+    val producer = new KafkaStreamProducerTask(context, kafkaConfig)
     producer.onStart(StartTime(0))
     val round = 3
     for (i <- 1 to round) {

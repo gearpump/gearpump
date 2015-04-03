@@ -22,19 +22,17 @@ import akka.actor.actorRef2Scala
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{StreamProducerTask, StartTime, Task, TaskContext}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource, TimeStampFilter}
 import org.apache.gearpump.{Message, TimeStamp}
 
-class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
-  extends Task(taskContext, conf) {
+class KafkaStreamProducerTask(taskContext : TaskContext, conf: UserConfig)
+  extends StreamProducerTask(taskContext, conf) {
 
   import taskContext.{output, self, taskId, parallelism}
 
   private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val batchSize = kafkaConfig.getConsumerEmitBatchSize
-  private val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
-  private val filter: TimeStampFilter = kafkaConfig.getTimeStampFilter
 
   val taskParallelism = parallelism
 
