@@ -37,18 +37,18 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 //TODO: add interface to query master here
-class ClientContext(config: Config) {
+class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[ActorRef]) {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
   private val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
 
-  implicit val system = ActorSystem(s"client${Util.randInt}" , config)
+  implicit val system = sys.getOrElse(ActorSystem(s"client${Util.randInt}" , config))
   LOG.info(s"Starting system ${system.name}")
 
   import system.dispatcher
 
-  private val master = system.actorOf(MasterProxy.props(masters), system.name)
+  private val master = mster.getOrElse(system.actorOf(MasterProxy.props(masters), system.name))
 
   LOG.info(s"Creating master proxy ${master} for master list: $masters")
 
@@ -130,7 +130,10 @@ class ClientContext(config: Config) {
 }
 
 object ClientContext {
-  def apply() = new ClientContext(ClusterConfig.load.default)
+  def apply() = new ClientContext(ClusterConfig.load.default, None, None)
 
-  def apply(config: Config) = new ClientContext(config)
+  def apply(config: Config) = new ClientContext(config, None, None)
+
+  def apply(config: Config, system: Option[ActorSystem], master: Option[ActorRef]) = new ClientContext(config, system, master)
+
 }
