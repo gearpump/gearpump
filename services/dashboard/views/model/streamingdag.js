@@ -150,24 +150,28 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       getReceivedMessages: function(processorId) {
         return this._getProcessedMessages(
           processorId ? [processorId] : this._getFilteredProcessorsId({hasOutputs: false}),
-          this.meter.receiveThroughput);
+          this.meter.receiveThroughput, processorId === undefined
+        );
       },
 
       /** Return total sent messages from nodes without any inputs. */
       getSentMessages: function(processorId) {
         return this._getProcessedMessages(
           processorId ? [processorId] : this._getFilteredProcessorsId({hasInputs: false}),
-          this.meter.sendThroughput);
+          this.meter.sendThroughput, processorId === undefined
+        );
       },
 
-      _getProcessedMessages: function(ids, metricsGroup) {
-        var total = [];
-        var rate = [];
+      _getProcessedMessages: function(ids, metricsGroup, aggregated) {
+        var result = {total: [], rate: []};
         ids.map(function(processorId) {
-          total.push(d3.sum(this._getAggregatedMetrics(metricsGroup, 'count', processorId)));
-          rate.push(d3.sum(this._getAggregatedMetrics(metricsGroup, 'meanRate', processorId)));
+          result.total.push(d3.sum(this._getAggregatedMetrics(metricsGroup, 'count', processorId)));
+          result.rate.push(d3.sum(this._getAggregatedMetrics(metricsGroup, 'meanRate', processorId)));
         }, /* scope */ this);
-        return {total: d3.sum(total), rate: d3.mean(rate)};
+        if (aggregated) {
+          return {total: d3.sum(result.total), rate: d3.mean(result.rate)};
+        }
+        return result;
       },
 
       _getFilteredProcessorsId: function(filter) {

@@ -24,7 +24,7 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
       ];
 
       $scope.app = {id: $routeParams.id};
-      breadcrumbs.options = {'Application ': 'Application ' + $scope.app.id};
+      breadcrumbs.options = {'Application ': 'Application' + $scope.app.id};
 
       $scope.streamingDag = null;
       restapi.subscribe('/appmaster/' + $scope.app.id + '?detail=true', $scope,
@@ -38,6 +38,8 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
               id: data.appId,
               name: data.appName
             };
+
+            breadcrumbs.options = {'Application ': 'Application' + $scope.app.id + ' (' + data.appName + ')'};
           }
 
           // TODO: Serde Dag (#458)
