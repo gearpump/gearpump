@@ -22,7 +22,7 @@ import org.apache.gearpump.cluster.ClientToMaster.ResolveAppId
 import org.apache.gearpump.cluster.MasterToClient.ResolveAppIdResult
 import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
-import org.apache.gearpump.util.Util
+import org.apache.gearpump.util.{Constants, Util}
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 import scala.util.{Try, Success}
@@ -41,12 +41,12 @@ class DistributedShellClientSpec extends PropSpec with Matchers with BeforeAndAf
 
   property("DistributedShellClient should succeed to submit application with required arguments") {
     val command = "ls /"
-    val requiredArgs = Array("-master", s"$getHost:$getPort", "-appid", "0", "-command", command)
+    val requiredArgs = Array("-appid", "0", "-command", command)
     val masterReceiver = createMockMaster()
 
     assert(Try(DistributedShellClient.main(Array.empty[String])).isFailure, "missing required arguments, print usage")
 
-    val process = Util.startProcess(Array.empty[String], getContextClassPath,
+    val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(DistributedShellClient), requiredArgs)
     masterReceiver.expectMsg(PROCESS_BOOT_TIME, ResolveAppId(0))
     val mockAppMaster = TestProbe()(getActorSystem)

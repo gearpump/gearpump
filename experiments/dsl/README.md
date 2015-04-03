@@ -106,11 +106,11 @@ Run an example
 ---------------------
 ```bash
 # start master
-bin\local -ip 127.0.0.1 -port 3000
+bin\local
 
 # start UI
 bin\services -master 127.0.0.1:3000
 
 # start example topology
-bin\gear org.apache.gearpump.streaming.dsl.example.WordCount -master 127.0.0.1:3000
+bin\gear org.apache.gearpump.streaming.dsl.example.WordCount
 ```

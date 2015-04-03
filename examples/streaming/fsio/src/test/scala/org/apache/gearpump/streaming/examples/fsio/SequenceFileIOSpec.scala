@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.examples.fsio
 import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, SubmitApplication}
 import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
-import org.apache.gearpump.util.Util
+import org.apache.gearpump.util.{Constants, Util}
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
@@ -40,7 +40,6 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
 
   property("SequenceFileIO should succeed to submit application with required arguments") {
     val requiredArgs = Array(
-      "-master", s"$getHost:$getPort",
       "-input", "/tmp/input",
       "-output", "/tmp/output"
     )
@@ -59,8 +58,7 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
     val masterReceiver = createMockMaster()
     forAll(validArgs) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
-
-      val process = Util.startProcess(Array.empty[String], getContextClassPath,
+      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(SequenceFileIO), args)
       masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
       masterReceiver.reply(SubmitApplicationResult(Success(0)))
@@ -71,8 +69,7 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
       Table(
         ("requiredArgs", "optionalArgs"),
         (requiredArgs.take(0), optionalArgs),
-        (requiredArgs.take(2), optionalArgs),
-        (requiredArgs.take(4), optionalArgs)
+        (requiredArgs.take(2), optionalArgs)
       )
     }
     forAll(invalidArgs) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>

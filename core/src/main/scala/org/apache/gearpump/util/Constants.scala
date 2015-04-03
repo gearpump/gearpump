@@ -35,6 +35,7 @@ object Constants {
   val GEARPUMP_SERIALIZERS = "gearpump.serializers"
   val GEARPUMP_TASK_DISPATCHER = "gearpump.task-dispatcher"
   val GEARPUMP_CLUSTER_MASTERS = "gearpump.cluster.masters"
+  val GEARPUMP_LOCAL_HOSTNAME = "gearpump.hostname"
   val GEARPUMP_APPMASTER_ARGS = "gearpump.appmaster.vmargs"
   val GEARPUMP_APPMASTER_EXTRA_CLASSPATH = "gearpump.appmaster.extraClasspath"
   val GEARPUMP_EXECUTOR_ARGS = "gearpump.executor.vmargs"

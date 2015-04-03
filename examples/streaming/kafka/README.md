@@ -75,7 +75,7 @@ We'll leverage the producer performance test for data preparation.
 Change directory into gearpump root, build gearpump with `sbt pack` and launch a local gearpump cluster.
 
    ```bash
-   ./target/pack/bin/local -port 3000
+   ./target/pack/bin/local
    ```
    
 Configure `./target/conf/kafka.conf` as below.
@@ -96,7 +96,7 @@ Configure `./target/conf/kafka.conf` as below.
 Finally, let's run the KafkaWordCount example.
 
    ```bash
-   ./target/pack/bin/gear app -jar ./examples/target/$SCALA_VERSION_MAJOR/gearpump-examples-assembly-$VERSION.jar org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount -master 127.0.0.1:3000
+   ./target/pack/bin/gear app -jar ./examples/target/$SCALA_VERSION_MAJOR/gearpump-examples-assembly-$VERSION.jar org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount
    ```
 
 One more step is to verify that we've succeeded in producing data to Kafka.

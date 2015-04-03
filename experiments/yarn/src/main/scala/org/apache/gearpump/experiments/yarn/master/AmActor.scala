@@ -22,19 +22,13 @@ import java.io.File
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props, actorRef2Scala}
-import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.experiments.yarn.Actions.{AMStatusMessage, AllRequestedContainersCompleted, ContainerInfo, ContainerRequestMessage, Failed, LaunchContainers, RMHandlerDone, RegisterAMMessage, ShutdownRequest, _}
 import org.apache.gearpump.experiments.yarn.CmdLineVars.{APPMASTER_IP, APPMASTER_PORT}
 import org.apache.gearpump.experiments.yarn.Constants._
 import org.apache.gearpump.experiments.yarn.{AppConfig, NodeManagerCallbackHandler, ResourceManagerClientActor}
-import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.Constants.{GEARPUMP_CLUSTER_MASTERS, GEARPUMP_LOG_APPLICATION_DIR, GEARPUMP_LOG_DAEMON_DIR}
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileUtil, FileSystem, Path}
 import org.apache.hadoop.net.NetUtils
 import org.apache.hadoop.yarn.api.ApplicationConstants
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse
@@ -54,7 +48,7 @@ import akka.util.Timeout
 import org.apache.gearpump.experiments.yarn.Actions._
 import org.apache.gearpump.transport.HostPort
 
-import org.apache.gearpump.util.Constants.{GEARPUMP_CLUSTER_MASTERS,GEARPUMP_LOG_DAEMON_DIR,GEARPUMP_LOG_APPLICATION_DIR }
+import org.apache.gearpump.util.Constants
 
 
 /**
@@ -184,9 +178,9 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
     val masterArguments = s"-ip $masterHost -port $masterPort"
 
     val properties = Array(
-      s"-D${GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
-      s"-D${GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
-      s"-D${GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
+      s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
+      s"-D${Constants.GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
+      s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
 
     val classPath = Array(
       s"pack/$version/conf",
@@ -198,15 +192,15 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
   }
 
   private[this] def getWorkerCommand(masterHost: String, masterPort: Int, workerHost: String): String = {
-    val arguments = s"-ip $workerHost"
     val properties = Array(
-      s"-D${GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
-      s"-D${GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
-      s"-D${GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
+      s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
+      s"-D${Constants.GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
+      s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
+      s"-D${Constants.GEARPUMP_LOCAL_HOSTNAME}=$workerHost")
 
     val classPath = Array(s"pack/$version/conf", s"pack/$version/dashboard", s"pack/$version/lib/*")
 
-    getCommand(WORKER_COMMAND, classPath, properties,  WORKER_MAIN, arguments, WORKER_LOG)
+    getCommand(WORKER_COMMAND, classPath, properties,  WORKER_MAIN, "", WORKER_LOG)
   }
   
   private[this] def getCommand(java: String, classPath: Array[String], properties: Array[String], mainProp: String, cliOpts: String, lognameProp: String):String = {

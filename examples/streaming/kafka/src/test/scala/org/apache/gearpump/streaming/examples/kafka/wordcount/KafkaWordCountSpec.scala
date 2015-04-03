@@ -40,7 +40,7 @@ class KafkaWordCountSpec extends PropSpec with PropertyChecks with Matchers with
   override def config = TestUtil.DEFAULT_CONFIG
 
   property("KafkaWordCount should succeed to submit application with required arguments") {
-    val requiredArgs = Array("-master", s"$getHost:$getPort")
+    val requiredArgs = Array.empty[String]
     val optionalArgs = Array(
       "-kafka_stream_producer", "1",
       "-split", "1",
@@ -61,16 +61,11 @@ class KafkaWordCountSpec extends PropSpec with PropertyChecks with Matchers with
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
 
-      val process = Util.startProcess(Array.empty[String], getContextClassPath,
+      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(KafkaWordCount), args)
       masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
       masterReceiver.reply(SubmitApplicationResult(Success(0)))
       process.destroy()
-    }
-
-    forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
-      val args = optionalArgs
-      assert(Try(KafkaWordCount.main(args)).isFailure, "missing required arguments, print usage")
     }
   }
 }

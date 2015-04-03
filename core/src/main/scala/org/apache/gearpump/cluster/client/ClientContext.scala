@@ -23,24 +23,25 @@ import java.util.concurrent.TimeUnit
 import akka.pattern.ask
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.jarstore.JarFileContainer
-import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{LogUtil, Util}
+import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger
 
+import scala.collection.JavaConversions._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 //TODO: add interface to query master here
-class ClientContext(masters: Iterable[HostPort]) {
+class ClientContext(config: Config) {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
-  private val config = ClusterConfig.load.application
+  private val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
 
   implicit val system = ActorSystem(s"client${Util.randInt}" , config)
   import system.dispatcher
@@ -123,13 +124,7 @@ class ClientContext(masters: Iterable[HostPort]) {
 }
 
 object ClientContext {
-  /**
-   * masterList is a list of master node address
-   * host1:port,host2:port2,host3:port3
-   */
-  def apply(masterList : String) = {
-    new ClientContext(Util.parseHostList(masterList))
-  }
+  def apply() = new ClientContext(ClusterConfig.load.application)
 
-  def apply(masters: Iterable[HostPort]) = new ClientContext(masters)
+  def apply(config: Config) = new ClientContext(config)
 }

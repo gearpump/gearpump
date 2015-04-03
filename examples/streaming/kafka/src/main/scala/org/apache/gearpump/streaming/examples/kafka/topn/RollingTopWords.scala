@@ -34,7 +34,6 @@ object RollingTopWords extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "kafka_stream_producer" -> CLIOption[Int]("<hom many kafka producer tasks>", required = false, defaultValue = Some(1)),
     "rolling_count" -> CLIOption[Int]("<how many rolling count tasks>", required = false, defaultValue = Some(1)),
     "intermediate_ranker" -> CLIOption[Int]("<how many intermediate ranker tasks>", required = false, defaultValue = Some(1)))
@@ -64,7 +63,7 @@ object RollingTopWords extends App with ArgumentsParser {
   }
 
   val config = parse(args)
-  val context = ClientContext(config.getString("master"))
+  val context = ClientContext()
 
   implicit val system = context.system
 

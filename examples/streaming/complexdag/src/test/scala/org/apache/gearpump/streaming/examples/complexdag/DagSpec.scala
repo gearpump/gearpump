@@ -40,12 +40,12 @@ class DagSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
   override def config = TestUtil.DEFAULT_CONFIG
 
   property("Dag should succeed to submit application with required arguments") {
-    val requiredArgs = Array("-master", s"$getHost:$getPort")
+    val requiredArgs = Array.empty[String]
 
     val masterReceiver = createMockMaster()
     val args = requiredArgs
 
-    val process = Util.startProcess(Array.empty[String], getContextClassPath,
+    val process = Util.startProcess(getMasterListOption(), getContextClassPath,
       getMainClassName(Dag), args)
     masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
     masterReceiver.reply(SubmitApplicationResult(Success(0)))

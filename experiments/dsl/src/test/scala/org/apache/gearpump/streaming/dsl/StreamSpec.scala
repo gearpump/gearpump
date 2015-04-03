@@ -36,7 +36,7 @@ import scala.util.{Either, Left, Right}
 class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   implicit var system: ActorSystem = null
-  implicit var context =  ClientContext("127.0.0.1:3000")
+  implicit var context = ClientContext()
 
   override def beforeAll: Unit = {
     system = ActorSystem("test")

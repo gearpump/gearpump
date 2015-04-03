@@ -39,7 +39,7 @@ class SOLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
   override def config = TestUtil.DEFAULT_CONFIG
 
   property("SOL should succeed to submit application with required arguments") {
-    val requiredArgs = Array("-master", s"$getHost:$getPort")
+    val requiredArgs = Array.empty[String]
     val optionalArgs = Array(
       "-streamProducer", "1",
       "-streamProcessor", "1",
@@ -60,17 +60,12 @@ class SOLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
 
-      val process = Util.startProcess(Array.empty[String], getContextClassPath,
+      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(SOL), args)
       masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
       masterReceiver.reply(SubmitApplicationResult(Success(0)))
 
       process.destroy()
-    }
-
-    forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
-      val args = optionalArgs
-      assert(Try(SOL.main(args)).isFailure, "missing required arguments, print usage")
     }
   }
 

@@ -37,7 +37,6 @@ object Stock extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "crawler"-> CLIOption[Int]("<how many fetcher to get data from remote>", required = false, defaultValue = Some(10)),
     "analyzer"-> CLIOption[Int]("<parallism of analyzer>", required = false, defaultValue = Some(1)),
     "proxy" -> CLIOption[String]("proxy setting host:port, for example: 127.0.0.1:8443", required = false, defaultValue = Some("")))
@@ -63,7 +62,7 @@ object Stock extends App with ArgumentsParser {
   }
 
   val config = parse(args)
-  val context = ClientContext(config.getString("master"))
+  val context = ClientContext()
   
   implicit val system = context.system
 

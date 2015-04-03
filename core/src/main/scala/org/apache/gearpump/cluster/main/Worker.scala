@@ -21,23 +21,17 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.cluster.main.Master._
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.worker.{Worker=>WorkerActor}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{Constants, LogUtil}
 import org.apache.gearpump.util.LogUtil.ProcessType
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
 
-object
-Worker extends App with ArgumentsParser {
-
-  val options: Array[(String, CLIOption[Any])] =
-    Array("ip"->CLIOption[String]("<master ip address>",required = true))
-
+object Worker extends App{
   var workerConfig = ClusterConfig.load.worker
   val LOG : Logger = {
     LogUtil.loadConfiguration(workerConfig, ProcessType.WORKER)
@@ -48,15 +42,10 @@ Worker extends App with ArgumentsParser {
   def uuid = java.util.UUID.randomUUID.toString
 
   def start(): Unit = {
-    val config = parse(args)
-    worker(config.getString("ip"))
-  }
-
-  def worker(ip: String): Unit = {
     val id = uuid
-
+    val hostName = workerConfig.getString(Constants.GEARPUMP_LOCAL_HOSTNAME)
     workerConfig = workerConfig.
-      withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(ip))
+      withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(hostName))
 
     val system = ActorSystem(id, workerConfig)
 

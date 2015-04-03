@@ -27,7 +27,6 @@ import org.apache.gearpump.util.{Constants, Util}
 
 object StormRunner extends App with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "storm_topology" -> CLIOption[String]("<storm topology main class>", required = true),
     "storm_args" -> CLIOption[String]("<storm topology name>", required = false),
     "storm_config" -> CLIOption[String]("<storm config path>", required = false),
@@ -35,7 +34,7 @@ object StormRunner extends App with ArgumentsParser {
 
   val config = parse(args)
 
-  val clientContext = ClientContext(config.getString("master"))
+  val clientContext = ClientContext()
   val thriftServer = GearpumpThriftServer(clientContext)
   thriftServer.start()
 

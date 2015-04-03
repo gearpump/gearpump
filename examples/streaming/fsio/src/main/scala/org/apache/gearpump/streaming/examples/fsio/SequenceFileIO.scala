@@ -32,7 +32,6 @@ object SequenceFileIO extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "source"-> CLIOption[Int]("<sequence file reader number>", required = false, defaultValue = Some(1)),
     "sink"-> CLIOption[Int]("<sequence file writer number>", required = false, defaultValue = Some(1)),
     "input"-> CLIOption[String]("<input file path>", required = true),
@@ -55,7 +54,7 @@ object SequenceFileIO extends App with ArgumentsParser {
   }
 
   val config = parse(args)
-  val context = ClientContext(config.getString("master"))
+  val context = ClientContext()
   implicit val system = context.system
 
   val appId = context.submit(application(config))

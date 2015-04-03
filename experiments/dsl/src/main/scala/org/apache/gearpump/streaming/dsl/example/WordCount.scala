@@ -23,11 +23,10 @@ import org.apache.gearpump.streaming.dsl.StreamApp
 
 object WordCount extends App with ArgumentsParser{
 
-  override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true))
+  override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  def submit(master: String): Unit = {
-    val context = ClientContext(master)
+  def submit(): Unit = {
+    val context = ClientContext()
     val app = new StreamApp("dsl", context)
 
     val data = "This is a good start, bingo!! bingo!!"
@@ -43,6 +42,5 @@ object WordCount extends App with ArgumentsParser{
     context.close()
   }
 
-  val masterAddress = parse(args).getString("master")
-  submit(masterAddress)
+  submit()
 }

@@ -65,71 +65,63 @@ trait  ArgumentsParser {
   val options : Array[(String, CLIOption[Any])]
   val remainArgs : Array[String] = Array.empty[String]
 
-  def parse(args: Array[String]) : ParseResult = {
+  def parse(args: Array[String]): ParseResult = {
+    var config = Map.empty[String, String]
+    var remain = Array.empty[String]
 
-    if (args == null || args.length == 0) {
-      help
-      null
-    }
-    else {
-      var config = Map.empty[String, String]
-      var remain = Array.empty[String]
+    def doParse(argument: List[String]): Unit = {
+      argument match {
+        case Nil => Unit // true if everything processed successfully
 
-      def doParse(argument: List[String]): Unit = {
-        argument match {
-          case Nil => Unit // true if everything processed successfully
-
-          case key :: value :: rest if key.startsWith("-") && !value.startsWith("-") =>
-            val fixedKey = key.substring(1)
-            if (!options.map(_._1).contains(fixedKey)) {
-              if (!ignoreUnknownArgument) {
-                help
-                throw new Exception(s"found unknown option $fixedKey")
-              }
-            } else {
-              config += fixedKey -> value
-            }
-            doParse(rest)
-
-          case key :: rest if key.startsWith("-") =>
-            val fixedKey = key.substring(1)
-            if (!options.map(_._1).contains(fixedKey)) {
+        case key :: value :: rest if key.startsWith("-") && !value.startsWith("-") =>
+          val fixedKey = key.substring(1)
+          if (!options.map(_._1).contains(fixedKey)) {
+            if (!ignoreUnknownArgument) {
               help
               throw new Exception(s"found unknown option $fixedKey")
-            } else {
-              config += fixedKey -> "true"
             }
-            doParse(rest)
+          } else {
+            config += fixedKey -> value
+          }
+          doParse(rest)
 
-          case value :: rest =>
-            remain ++= value :: rest
-            doParse(Nil)
-        }
+        case key :: rest if key.startsWith("-") =>
+          val fixedKey = key.substring(1)
+          if (!options.map(_._1).contains(fixedKey)) {
+            help
+            throw new Exception(s"found unknown option $fixedKey")
+          } else {
+            config += fixedKey -> "true"
+          }
+          doParse(rest)
+
+        case value :: rest =>
+          remain ++= value :: rest
+          doParse(Nil)
       }
-      doParse(args.toList)
-
-      options.foreach(pair => {
-        val (key, option) = pair
-        if (!config.contains(key) && !option.required) {
-          config += key -> option.defaultValue.getOrElse("").toString
-        }
-      }
-      )
-
-      options.foreach { pair =>
-        val (key, value) = pair
-        if (config.get(key).isEmpty) {
-          help
-          throw new Exception(s"Missing option ${key}...")
-        }
-      }
-
-      if (remain.length < remainArgs.length) {
-        help
-        throw new Exception(s"Missing arguments ...")
-      }
-
-      new ParseResult(config, remain)
     }
+    doParse(args.toList)
+
+    options.foreach{pair =>
+      val (key, option) = pair
+      if (!config.contains(key) && !option.required) {
+        config += key -> option.defaultValue.getOrElse("").toString
+      }
+    }
+
+    options.foreach { pair =>
+      val (key, value) = pair
+      if (config.get(key).isEmpty) {
+        help
+        throw new Exception(s"Missing option ${key}...")
+      }
+    }
+
+    if (remain.length < remainArgs.length) {
+      help
+      throw new Exception(s"Missing arguments ...")
+    }
+
+    new ParseResult(config, remain)
   }
 }

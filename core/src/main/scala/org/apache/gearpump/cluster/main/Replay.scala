@@ -26,7 +26,6 @@ object Replay extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
     "appid" -> CLIOption("<application id>", required = true))
 
   def start : Unit = {
@@ -36,10 +35,7 @@ object Replay extends App with ArgumentsParser {
       return
     }
 
-    val masters = config.getString("master")
-    Console.out.println("Master URL: " + masters)
-
-    val client = ClientContext(masters)
+    val client = ClientContext()
     client.replayFromTimestampWindowTrailingEdge(config.getInt("appid"))
     client.close()
   }

@@ -28,7 +28,7 @@ import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigVal
 import org.apache.commons.io.FileUtils
 import org.apache.gearpump.cluster.MasterHarness.MockMaster
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{LogUtil, ActorUtil, Util}
+import org.apache.gearpump.util.{Constants, LogUtil, ActorUtil, Util}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
@@ -56,6 +56,7 @@ trait MasterHarness {
     systemAddress = ActorUtil.getSystemAddress(system)
     host = systemAddress.host.get
     port = systemAddress.port.get
+    System.setProperty(s"${Constants.GEARPUMP_CLUSTER_MASTERS}.0", s"$host:$port")
     LOG.info(s"Actor system is started, $host, $port")
   }
 
@@ -123,6 +124,11 @@ trait MasterHarness {
    */
   def getMainClassName(mainObj : Any) : String = {
     mainObj.getClass.getName.dropRight(1)
+  }
+
+  def getMasterListOption(): Array[String] = {
+    Array(s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=$getHost:$getPort",
+    s"-D${Constants.GEARPUMP_LOCAL_HOSTNAME}=$getHost")
   }
 }
 
