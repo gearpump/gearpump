@@ -32,10 +32,13 @@ import org.apache.gearpump.streaming.task.{TaskId, StartTime}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeStampFilter}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.mockito.Mockito._
+import org.mockito.internal.verification.VerificationModeFactory
+import org.mockito.verification.After
 import org.scalatest.{BeforeAndAfterEach, Matchers, PropSpec}
 
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 import MockUtil.{mockTaskContext, argMatch}
 
@@ -87,7 +90,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
       producer.onNext(Message("next"))
 
       var expectedMessage = messages
-      verify(context).output(argMatch[Message](msg => {
+      verify(context, new After(10000L, VerificationModeFactory.times(1))).output(argMatch[Message](msg => {
         val compareResult = expectedMessage.head == msg
         expectedMessage = expectedMessage.take(1)
         compareResult
