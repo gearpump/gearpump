@@ -37,40 +37,39 @@ object PipeLine extends App with ArgumentsParser {
   val PERSISTORS = "pipeline.persistors"
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "conf" -> CLIOption[String]("<conf file>", required = true)
   )
   
-  Option(parse(args)).foreach(config => {
-    val context = ClientContext(config.getString("master"))
-    implicit val system = context.system
-    def application(config: ParseResult) : AppDescription = {
-      import Messages._
-      import PipelineConfig._
-      val pipeLinePath = config.getString("conf")
-      val pipelineConfig = PipelineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
-      val processors = pipelineConfig.getInt(PROCESSORS)
-      val persistors = pipelineConfig.getInt(PERSISTORS)
-      val kafkaConfig = KafkaConfig(pipelineConfig)
-      val repo = new HBaseRepo {
-        def getHBase(table:String, conf:Configuration): HBaseSinkInterface = HBaseSink(table,conf)
-      }
-      val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipelineConfig).withValue(HBASESINK, repo)
-      val partitioner = new HashPartitioner
-      val kafka = ProcessorDescription(classOf[KafkaProducer].getName, 1, "KafkaProducer")
-      val cpuProcessor = ProcessorDescription(classOf[CpuProcessor].getName, processors, "CpuProcessor")
-      val memoryProcessor = ProcessorDescription(classOf[MemoryProcessor].getName, processors, "MemoryProcessor")
-      val cpuPersistor = ProcessorDescription(classOf[CpuPersistor].getName, persistors, "CpuPersistor")
-      val memoryPersistor = ProcessorDescription(classOf[MemoryPersistor].getName, persistors, "MemoryPersistor")
-      val app = AppDescription("PipeLine", appConfig, Graph(
-        kafka ~ partitioner ~> cpuProcessor ~ partitioner ~> cpuPersistor,
-        kafka ~ partitioner ~> memoryProcessor ~ partitioner ~> memoryPersistor
-      ))
-      app
+  def application(config: ParseResult): AppDescription = {
+    import Messages._
+    import PipelineConfig._
+    val pipeLinePath = config.getString("conf")
+    val pipelineConfig = PipelineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
+    val processors = pipelineConfig.getInt(PROCESSORS)
+    val persistors = pipelineConfig.getInt(PERSISTORS)
+    val kafkaConfig = KafkaConfig(pipelineConfig)
+    val repo = new HBaseRepo {
+      def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
     }
-    context.submit(application(config))
-    context.close()
-  })
+    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipelineConfig).withValue(HBASESINK, repo)
+    val partitioner = new HashPartitioner
+    val kafka = ProcessorDescription(classOf[KafkaProducer].getName, 1, "KafkaProducer")
+    val cpuProcessor = ProcessorDescription(classOf[CpuProcessor].getName, processors, "CpuProcessor")
+    val memoryProcessor = ProcessorDescription(classOf[MemoryProcessor].getName, processors, "MemoryProcessor")
+    val cpuPersistor = ProcessorDescription(classOf[CpuPersistor].getName, persistors, "CpuPersistor")
+    val memoryPersistor = ProcessorDescription(classOf[MemoryPersistor].getName, persistors, "MemoryPersistor")
+    val app = AppDescription("PipeLine", appConfig, Graph(
+      kafka ~ partitioner ~> cpuProcessor ~ partitioner ~> cpuPersistor,
+      kafka ~ partitioner ~> memoryProcessor ~ partitioner ~> memoryPersistor
+    ))
+    app
+  }
+
+  val config = parse(args)
+  val context = ClientContext()
+  implicit val system = context.system
+  val appId = context.submit(application(config))
+  context.close()
 
 }
 
