@@ -24,7 +24,7 @@ import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
-import upickle.{Js, Writer}
+import upickle.{Reader, Js, Writer}
 
 case class StreamingAppMasterDataDetail(
     appId: Int,
@@ -93,4 +93,34 @@ object StreamingAppMasterDataDetail {
         ("dag", dag)
       )
   }
+
+  implicit val reader: Reader[StreamingAppMasterDataDetail] = upickle.Reader[StreamingAppMasterDataDetail] {
+    case r@Js.Obj(obj) =>
+      var streamingAppMasterDataDetail = StreamingAppMasterDataDetail(-1,null,Map.empty[ProcessorId, ProcessorDescription],Map.empty[ProcessorId, Int])
+      val map = r.value.foreach(pair => {
+        val (member, value) = pair
+        member match {
+          case "appId" =>
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(appId=upickle.readJs[Int](value))
+          case "appName" =>
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(appName=upickle.readJs[String](value))
+          case "actorPath" =>
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(actorPath=upickle.readJs[String](value))
+          case "clock" =>
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(clock=upickle.readJs[Int](value))
+          case "executors" =>
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(executors=upickle.readJs[Map[ExecutorId, String]](value))
+          case "tasks" =>
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(tasks=upickle.readJs[Map[TaskId, ExecutorId]](value))
+          case "processors" =>
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(processors=upickle.readJs[Map[ProcessorId, ProcessorDescription]](value))
+          case "processorLevels" =>
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(processorLevels=upickle.readJs[Map[ProcessorId, Int]](value))
+          case "dag" =>
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(dag=upickle.readJs[Graph[ProcessorId, Partitioner]](value))
+        }
+      })
+      streamingAppMasterDataDetail
+  }
+
 }

@@ -18,10 +18,12 @@
 
 package org.apache.gearpump.util
 
+import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.util.Graph.Edge
 import org.jgrapht.Graphs
 import org.jgrapht.graph.DefaultDirectedGraph
 import org.jgrapht.traverse.TopologicalOrderIterator
+import upickle.{Reader, Js, Writer}
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -286,4 +288,88 @@ object Graph {
       this ~ edge ~> node
     }
   }
+
+  implicit val writer1: Writer[Graph[Int, Partitioner]] = upickle.Writer[Graph[Int, Partitioner]] {
+
+    case dag =>
+        val vertices = dag.vertices.map(processorId => {
+          Js.Num(processorId)
+        })
+
+        val edges = dag.edges.map(f => {
+          var (node1, edge, node2) = f
+          Js.Arr(Js.Num(node1), Js.Str(edge.getClass.getName), Js.Num(node2))
+        })
+
+        Js.Obj(
+          ("vertices", Js.Arr(vertices.toSeq: _*)),
+          ("edges", Js.Arr(edges.toSeq: _*)))
+
+  }
+
+  implicit val writer2: Writer[Graph[Int, String]] = upickle.Writer[Graph[Int, String]] {
+
+    case dag =>
+      val vertices = dag.vertices.map(processorId => {
+        Js.Num(processorId)
+      })
+
+      val edges = dag.edges.map(f => {
+        var (node1, edge, node2) = f
+        Js.Arr(Js.Num(node1), Js.Str(edge), Js.Num(node2))
+      })
+
+      Js.Obj(
+        ("vertices", Js.Arr(vertices.toSeq: _*)),
+        ("edges", Js.Arr(edges.toSeq: _*)))
+
+  }
+
+  implicit val reader1: Reader[Graph[Int, String]] = upickle.Reader[Graph[Int, String]] {
+
+    case r@Js.Obj(obj) =>
+      val graph = Graph.empty[Int, String]
+      r.value.foreach(pair => {
+        val (member, value) = pair
+        member match {
+          case "vertices" =>
+            val vertices = upickle.readJs[Array[Int]](value)
+            vertices.foreach(graph.addVertex(_))
+          case "edges" =>
+            val paths = upickle.readJs[Array[(Int,String,Int)]](value)
+            paths.foreach(tuple => {
+              val (node1, edge, node2) = tuple
+              graph.addEdge(node1, edge, node2)
+            })
+        }
+      })
+      graph
+  }
+
+  implicit val reader2: Reader[Graph[Int, Partitioner]] = upickle.Reader[Graph[Int, Partitioner]] {
+
+    case r@Js.Obj(obj) =>
+      val graph = Graph.empty[Int, Partitioner]
+      r.value.foreach(pair => {
+        val (member, value) = pair
+        member match {
+          case "vertices" =>
+            val vertices = value.asInstanceOf[Js.Arr]
+            vertices.value.map(vertex => {
+              vertex.value.asInstanceOf[Int]
+            }).toSeq.foreach(vertex => graph.addVertex(vertex))
+          case "edges" =>
+            val edges = value.asInstanceOf[Js.Arr]
+            edges.value.map(aedge => {
+              var path = upickle.readJs[(Int,String,Int)](aedge)
+              var node1 = path._1
+              var edge = Class.forName(path._2).asInstanceOf[Partitioner]
+              var node2 = path._3
+              graph.addEdge(node1, edge, node2)
+            })
+        }
+      })
+      graph
+  }
+
 }
