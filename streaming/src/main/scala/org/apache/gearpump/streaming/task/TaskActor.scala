@@ -185,7 +185,6 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
         queue.add(SendAck(ackResponse, ackRequest.taskId))
       }
     case ack: Ack =>
-      LOG.info(s"receiving $ack")
       subscriptions.get(ack.taskId.processorId).foreach(_.receiveAck(ack))
       handler()
     case inputMessage: Message =>

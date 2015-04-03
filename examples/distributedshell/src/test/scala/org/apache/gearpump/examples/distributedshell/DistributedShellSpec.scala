@@ -40,13 +40,11 @@ class DistributedShellSpec extends PropSpec with PropertyChecks with Matchers wi
   override def config: Config = TestUtil.DEFAULT_CONFIG
 
   property("DistributedShell should succeed to submit application with required arguments") {
-    val requiredArgs = Array("-master", s"$getHost:$getPort")
+    val requiredArgs = Array.empty[String]
 
     val masterReceiver = createMockMaster()
 
-    assert(Try(DistributedShell.main(Array.empty[String])).isFailure, "missing required arguments, print usage")
-
-    val process = Util.startProcess(Array.empty[String], getContextClassPath,
+    val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(DistributedShell), requiredArgs)
     masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
     masterReceiver.reply(SubmitApplicationResult(Success(0)))

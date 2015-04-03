@@ -27,11 +27,10 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   implicit var system: ActorSystem = null
   implicit var context: ClientContext = null
-  val master = "127.0.0.1:3000"
 
   override def beforeAll: Unit = {
     system = ActorSystem("test")
-    context = ClientContext(master)
+    context = ClientContext()
   }
 
   override def afterAll: Unit = {

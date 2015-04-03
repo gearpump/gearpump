@@ -34,7 +34,6 @@ object DistributeServiceClient extends App with ArgumentsParser{
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
     "appid" -> CLIOption[Int]("<the distributed shell appid>", required = true),
     "file" -> CLIOption[String]("<service zip file path>", required = true),
     "script" -> CLIOption[String]("<file path of service script that will be installed to /etc/init.d>", required = true),
@@ -48,7 +47,7 @@ object DistributeServiceClient extends App with ArgumentsParser{
   }
 
   val config = parse(filterCustomOptions(args))
-  val context = ClientContext(config.getString("master"))
+  val context = ClientContext()
   val appid = config.getInt("appid")
   val zipFile = new File(config.getString("file"))
   val script = new File(config.getString("script"))

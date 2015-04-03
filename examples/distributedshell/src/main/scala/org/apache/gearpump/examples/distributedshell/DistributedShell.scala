@@ -26,20 +26,16 @@ import org.slf4j.Logger
 object DistributedShell extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true)
-  )
+  override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  def application(config: ParseResult) : Application = {
-    val app = Application("DistributedShell", classOf[DistShellAppMaster].getName, UserConfig.empty)
-    app
+  def application() : Application = {
+    Application("DistributedShell", classOf[DistShellAppMaster].getName, UserConfig.empty)
   }
 
   LOG.info(s"Distributed shell submitting application...")
-  val config = parse(args)
-  val context = ClientContext(config.getString("master"))
+  val context = ClientContext()
   implicit val system = context.system
-  val appId = context.submit(application(config))
+  val appId = context.submit(application())
   context.close()
   LOG.info(s"Distributed Shell Application started with appId $appId !")
 }

@@ -25,11 +25,10 @@ import org.apache.gearpump.cluster.master.{Master => MasterActor}
 import org.apache.gearpump.cluster.worker.{Worker => WorkerActor}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
-import org.apache.gearpump.util.{ActorUtil, LogUtil}
+import org.apache.gearpump.util.{Util, Constants, ActorUtil, LogUtil}
 import org.slf4j.Logger
-import org.apache.gearpump.cluster
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConversions._
 
 object Local extends App with ArgumentsParser {
   val systemConfig = ClusterConfig.load.master.withFallback(ClusterConfig.load.worker)
@@ -40,12 +39,8 @@ object Local extends App with ArgumentsParser {
   }
 
   override val options: Array[(String, CLIOption[Any])] =
-    Array("ip"->CLIOption[String]("<master ip address>",required = false, defaultValue = Some("127.0.0.1")),
-          "port"->CLIOption("<master port>",required = true),
-          "sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
+    Array("sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
           "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(2)))
-
-
 
   def start() : Unit = {
     val config = parse(args)
@@ -53,19 +48,26 @@ object Local extends App with ArgumentsParser {
       return
     }
 
-    local(config.getString("ip"),  config.getInt("port"), config.getInt("workernum"), config.getBoolean("sameprocess"))
+    local(config.getInt("workernum"), config.getBoolean("sameprocess"))
   }
 
-  def local(ip : String, port : Int, workerCount : Int, sameProcess : Boolean) : Unit = {
+  def local(workerCount : Int, sameProcess : Boolean) : Unit = {
     if (sameProcess) {
       LOG.info("Starting local in same process")
       System.setProperty("LOCAL", "true")
     }
+    val masters = systemConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+    val local = systemConfig.getString(Constants.GEARPUMP_LOCAL_HOSTNAME)
 
+    if(masters.size != 1 && masters.head.host != local) {
+      LOG.error(s"The ${Constants.GEARPUMP_CLUSTER_MASTERS} is not match with ${Constants.GEARPUMP_LOCAL_HOSTNAME}")
+      System.exit(0)
+    }
+
+    val hostPort = masters.head
     implicit val system = ActorSystem(MASTER, systemConfig.
-      withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
-      withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(ip)).
-      withValue(GEARPUMP_CLUSTER_MASTERS,  ConfigValueFactory.fromAnyRef(List(s"$ip:$port").asJava))
+      withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port)).
+      withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(hostPort.host))
     )
 
     val master = system.actorOf(Props[MasterActor], MASTER)

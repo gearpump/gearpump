@@ -27,7 +27,6 @@ object Kill extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true),
     "appid" -> CLIOption("<application id>", required = true))
 
   def start : Unit = {
@@ -37,10 +36,7 @@ object Kill extends App with ArgumentsParser {
       return
     }
 
-    val masters = config.getString("master")
-    LOG.info("Master URL: {}", masters)
-
-    val client = ClientContext(masters)
+    val client = ClientContext()
     LOG.info("Client ")
     client.shutdown(config.getInt("appid"))
     client.close()

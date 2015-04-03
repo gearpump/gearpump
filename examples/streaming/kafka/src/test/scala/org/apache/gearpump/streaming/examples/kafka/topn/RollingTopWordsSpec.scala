@@ -40,7 +40,7 @@ class RollingTopWordsSpec extends PropSpec with PropertyChecks with Matchers wit
   override def config = TestUtil.DEFAULT_CONFIG
 
   property("RollingTopWords should succeed to submit application with required arguments") {
-    val requiredArgs = Array("-master", s"$getHost:$getPort")
+    val requiredArgs = Array.empty[String]
     val optionalArgs = Array(
       "-kafka_stream_producer", "1",
       "-rolling_count", "1",
@@ -59,17 +59,12 @@ class RollingTopWordsSpec extends PropSpec with PropertyChecks with Matchers wit
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
 
-      val process = Util.startProcess(Array.empty[String], getContextClassPath,
+      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(RollingTopWords), args)
       masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
       masterReceiver.reply(SubmitApplicationResult(Success(0)))
 
       process.destroy()
-    }
-
-    forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
-      val args = optionalArgs
-      assert(Try(RollingTopWords.main(args)).isFailure, "missing required arguments, print usage")
     }
   }
 

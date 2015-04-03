@@ -20,7 +20,7 @@ import org.apache.gearpump.cluster.client.ClientContext
 
 Console.out.println("Gear Shell is started...")
 
-val context = ClientContext(System.getProperty("masterActorPath"))
+val context = ClientContext()
 implicit val system = context.system
 
 context.listApps

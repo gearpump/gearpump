@@ -6,7 +6,7 @@ In order to run the example:
 
   2. Start the AppMaster:<br>
   ```bash
-  target/pack/bin/gear app -jar experiments/distributeservice/target/$SCALA_VERSION_MAJOR/gearpump-experiments-distributeservice_$VERSION.jar org.apache.gearpump.distributeservice.DistributeService -master 127.0.0.1:3000
+  target/pack/bin/gear app -jar experiments/distributeservice/target/$SCALA_VERSION_MAJOR/gearpump-experiments-distributeservice_$VERSION.jar org.apache.gearpump.distributeservice.DistributeService
   ```
   3. Distribute the service:<br>
   ```bash

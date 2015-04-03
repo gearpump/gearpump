@@ -6,14 +6,14 @@ on Gearpump. This documentation illustrates how to do so in a local Gearpump clu
   1. launch a local cluster
 
   ```bash
-    ./target/pack/bin/local -port 3000 
+    ./target/pack/bin/local
 
   ```
 
   2. submit a topology from storm-starter
 
   ```bash
-    ./target/pack/bin/gear app -jar storm-starter-${STORM_VERSION}.jar org.apache.gearpump.experiments.storm.StormRunner -storm_topology storm.starter.ExclamationTopology -storm_args exclamation -master 127.0.0.1:3000
+    ./target/pack/bin/gear app -jar storm-starter-${STORM_VERSION}.jar org.apache.gearpump.experiments.storm.StormRunner -storm_topology storm.starter.ExclamationTopology -storm_args exclamation
   
   ```
   
