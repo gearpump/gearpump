@@ -18,16 +18,9 @@
 
 package org.apache.gearpump.streaming.kafka.util
 
-import java.util.Properties
-
 import kafka.common.KafkaException
-import kafka.message.{NoCompressionCodec, CompressionCodec}
-import kafka.producer.{KeyedMessage, Producer}
-import kafka.serializer.StringEncoder
 import kafka.server.{KafkaConfig => KafkaServerConfig, KafkaServer}
-import kafka.utils.TestUtils._
-import kafka.utils.{FixedValuePartitioner, IntEncoder, Utils, TestUtils}
-import org.I0Itec.zkclient.ZkClient
+import kafka.utils.{Utils, TestUtils}
 
 trait KafkaServerHarness extends ZookeeperHarness {
   val configs: List[KafkaServerConfig]
@@ -49,32 +42,6 @@ trait KafkaServerHarness extends ZookeeperHarness {
     servers.map(server => server.shutdown())
     servers.map(server => server.config.logDirs.map(Utils.rm(_)))
     super.tearDown
-  }
-
-
-  /**
-   * forked from TestUtils in kafka trunk
-   * TODO: use this method in TestUtils directly when Kafka releases 0.8.2
-   */
-  def sendMessagesToPartition(configs: Seq[KafkaServerConfig],
-                              topic: String,
-                              partition: Int,
-                              numMessages: Int,
-                              compression: CompressionCodec = NoCompressionCodec): List[String] = {
-    val header = "test-%d".format(partition)
-    val props = new Properties()
-    props.put("compression.codec", compression.codec.toString)
-    val producer: Producer[Int, String] =
-      createProducer(TestUtils.getBrokerListStrFromConfigs(configs),
-        encoder = classOf[StringEncoder].getName,
-        keyEncoder = classOf[IntEncoder].getName,
-        partitioner = classOf[FixedValuePartitioner].getName,
-        producerProps = props)
-
-    val ms = 0.until(numMessages).map(x => header + "-" + x)
-    producer.send(ms.map(m => new KeyedMessage[Int, String](topic, partition, m)):_*)
-    producer.close()
-    ms.toList
   }
 
   def createTopicUntilLeaderIsElected(topic: String, partitions: Int, replicas: Int) = {

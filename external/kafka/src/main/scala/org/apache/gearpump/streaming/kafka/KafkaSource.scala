@@ -56,6 +56,15 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
 
   LOG.info(s"assigned ${offsetManagers.keySet}")
 
+  /**
+   * fetchThread will start from beginning (the earliest offset)
+   * on start offset not set
+   */
+  def startFromBeginning(): Unit = {
+    fetchThread.setDaemon(true)
+    fetchThread.start()
+  }
+
   override def setStartTime(startTime: TimeStamp): Unit = {
     this.startTime = startTime
     offsetManagers.foreach { case (tp, offsetManager) =>
