@@ -16,7 +16,7 @@ angular.module('dashboard.apps.appmaster')
     }
 
     if ($scope.activeProcessorId) {
-      var activeProcessorId = $scope.activeProcessorId;
+      var activeProcessorId = Number($scope.activeProcessorId);
       var processor = $scope.streamingDag.processors[activeProcessorId];
       $scope.taskClass = processor.taskClass;
       $scope.description = processor.description;
@@ -25,9 +25,9 @@ angular.module('dashboard.apps.appmaster')
       $scope.inputs = connections.inputs;
       $scope.outputs = connections.outputs;
 
-
       var xAxisDataNum = $scope.parallelism;
-      var skewData = makeArray(xAxisDataNum);
+      var skewData = $scope.streamingDag.getReceivedMessages(activeProcessorId).rate;
+
       $scope.opt1 = {
         inject: {
           height: '110px',
