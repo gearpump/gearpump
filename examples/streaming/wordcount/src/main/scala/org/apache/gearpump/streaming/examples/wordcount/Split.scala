@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
+import java.util.concurrent.TimeUnit
+
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
@@ -36,9 +38,9 @@ class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContex
         output(new Message(msg, System.currentTimeMillis()))
       }
     }
-    Thread.sleep(10)
-    self ! Message("continue", System.currentTimeMillis())
 
+    import scala.concurrent.duration._
+    taskContext.scheduleOnce(Duration(10, TimeUnit.MILLISECONDS))(self ! Message("continue", System.currentTimeMillis()))
   }
 }
 

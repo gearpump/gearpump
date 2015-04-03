@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.task
 
 import akka.actor.Actor._
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import org.apache.gearpump.Message
+import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.util.LogUtil
 
@@ -90,6 +90,10 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
 
   override def receiveUnManagedMessage: Receive = {
     task.map(_.receiveUnManagedMessage).getOrElse(defaultMessageHandler)
+  }
+
+  override def stateClock: Option[TimeStamp] = {
+    task.flatMap(_.stateClock)
   }
 
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable = {
