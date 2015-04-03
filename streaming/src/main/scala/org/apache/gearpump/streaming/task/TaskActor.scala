@@ -52,7 +52,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   //latency probe
   import scala.concurrent.duration._
   import context.dispatcher
-  final val LATENCY_PROBE_INTERVAL = FiniteDuration(5, TimeUnit.SECONDS)
+  final val LATENCY_PROBE_INTERVAL = FiniteDuration(1, TimeUnit.SECONDS)
 
   // clock report interval
   final val CLOCK_REPORT_INTERVAL = FiniteDuration(1, TimeUnit.SECONDS)
@@ -115,7 +115,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   }
 
   def minClockAtCurrentTask: TimeStamp = {
-    this.subscriptions.foldLeft(Long.MaxValue){ (clock, subscription) =>
+    this.subscriptions.foldLeft(task.stateClock.getOrElse(Long.MaxValue)){ (clock, subscription) =>
       Math.min(clock, subscription._2.minClock)
     }
   }
