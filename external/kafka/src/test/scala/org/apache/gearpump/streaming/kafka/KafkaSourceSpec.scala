@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.streaming.kafka
 
-
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.Message
@@ -38,6 +37,19 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
 
   val startTimeGen = Gen.choose[Long](0L, 1000L)
   val offsetGen = Gen.choose[Long](0L, 1000L)
+
+  property("KafkaSource startFromBeginning should set consumer to earliest offset") {
+    val topicAndPartition = mock[TopicAndPartition]
+    val fetchThread = mock[FetchThread]
+    val messageDecoder = mock[MessageDecoder]
+    val offsetManager = mock[KafkaOffsetManager]
+    val kafkaSource = new KafkaSource(fetchThread, messageDecoder, Map(topicAndPartition -> offsetManager))
+
+    kafkaSource.startFromBeginning()
+
+    verify(fetchThread).start()
+    verify(fetchThread, never()).setStartOffset(anyObject[TopicAndPartition](), anyLong())
+  }
 
   property("KafkaSource setStartTime should not set consumer start offset if offset storage is empty") {
     forAll(startTimeGen) { (startTime: Long) =>

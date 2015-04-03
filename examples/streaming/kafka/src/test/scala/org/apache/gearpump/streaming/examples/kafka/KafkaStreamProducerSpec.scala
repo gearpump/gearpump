@@ -24,15 +24,13 @@ import com.typesafe.config.ConfigFactory
 import kafka.server.{KafkaConfig => KafkaServerConfig}
 import kafka.utils.{TestUtils => TestKafkaUtils, TestZKUtils}
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.{ProcessorDescription, DAG, MockUtil}
+import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory
 import org.apache.gearpump.streaming.kafka.util.KafkaServerHarness
 import org.apache.gearpump.streaming.task.{TaskId, StartTime}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeStampFilter}
 import org.apache.gearpump.{Message, TimeStamp}
-import org.mockito.ArgumentMatcher
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterEach, Matchers, PropSpec}
 
@@ -83,10 +81,8 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
     val round = 3
     for (i <- 1 to round) {
       val messages = partitionsToBrokers.foldLeft(List.empty[String]) { (msgs, partitionAndBroker) =>
-        msgs ++ sendMessagesToPartition(configs, topic, partitionAndBroker._1, messageNum)
+        msgs ++ TestKafkaUtils.sendMessagesToPartition(configs, topic, partitionAndBroker._1, messageNum)
       }.map(Message(_, Message.noTimeStamp))
-
-      var index = 0
 
       producer.onNext(Message("next"))
 
