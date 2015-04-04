@@ -1,3 +1,38 @@
+gearpump-0.3.3
+====================
+Change List:
+----------------
+ - #716, Refine the user interface. improve the user interface, like Application, Processor
+ - #755, fix Build breakage, 
+ - #729, remove argument '-master' in command line option, use gear.conf instead.
+ - #713, provide an option to read from beginning of a topic 
+ - #746, support state clock for task so that we can retrieve the state timestamp
+ - #744: fix several metrics issues
+ - #638, Use Subscription to link two processor
+ - #662, [UI] added processor  details tab
+ - #735, [yarn]Launch UI in the same container of Yarn AppMaster container.
+ - #732: [UI]add more charts and add more metrics to dag
+ - #731 rename TaskDescription to ProcessorDescription
+ - #708, fix storm connector config classpath 
+ - #722: [UI]use different color and opacity for edges
+ - #708, allow user to pass in a customized storm config
+ - #709: [UI]npe when streaming dag is not initialized
+ - #704, DAG processor name is "undefined" if "description` field of TaskDescription is not defined
+ - #706, Remove example jars from gearpump built-in classpath.
+ - #701 add a HBase sink
+ - #28, add an experiment module to support a very basic flatmap dsl
+ - #666, add UI for stock crawler example
+ - #691: [UI] fix metrics
+ - #680, add a service in appmaster to support query of task actorRef
+ - #210, allow easier remote debugging executor process
+ - #666, add a stock index crawler example,
+ - #658 make config of Gearpump on Yarn configurable
+ - #676, add a storm connector to allow user to run arbitrary storm jar
+ - #657, remove unnecessary yarn deps
+ - #672, extend Task to support unmanaged messages so that every task can serve as full functional service
+ - #670, fix yarn application path and log path
+ - #665, Add scheduleOnce interface in TaskContext
+
 gearpump-0.3.2
 ====================
 Change List:
