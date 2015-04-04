@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.dsl.op
 
+import org.apache.gearpump.streaming.task.Task
+
 /**
  * Operators for the DSL
  */
@@ -42,7 +44,7 @@ case class MergeOp(source: Op, target: Op, description: String) extends MasterOp
 
 case class GroupByOp[T, R](fun: T => R, parallism: Int, description: String) extends MasterOp
 
-case class ProcessorOp(processor: String, parallism: Int, description: String) extends MasterOp
+case class ProcessorOp(processor: Class[_ <: Task], parallism: Int, description: String) extends MasterOp
 
 case class InMemoryCollectionSource[T](collection: List[T], parallism: Int, description: String) extends MasterOp
 

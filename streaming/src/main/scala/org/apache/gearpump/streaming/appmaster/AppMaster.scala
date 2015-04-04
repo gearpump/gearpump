@@ -40,7 +40,7 @@ import org.slf4j.Logger
 
 import scala.concurrent.Future
 
-class AppMaster(appContext : AppMasterContext, app : Application)  extends ApplicationMaster {
+class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends ApplicationMaster {
   import app.userConfig
   import appContext.{appId, masterProxy, username}
 
@@ -52,7 +52,7 @@ class AppMaster(appContext : AppMasterContext, app : Application)  extends Appli
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
 
-  val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, Partitioner]](AppDescription.DAG).get)
+  val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, Partitioner]](StreamApplication.DAG).get)
 
   private val (taskManager, executorManager, clockService) = {
     val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext),

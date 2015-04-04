@@ -22,7 +22,7 @@ import akka.remote.RemoteScope
 import com.typesafe.config.{ConfigFactory, Config}
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, StartExecutorSystemTimeout, ExecutorSystemStarted}
-import org.apache.gearpump.cluster.{ApplicationMaster, ExecutorContext, AppMasterContext, Application}
+import org.apache.gearpump.cluster.{ApplicationMaster, ExecutorContext, AppMasterContext, AppDescription}
 import org.apache.gearpump.examples.distributedshell.DistShellAppMaster._
 import org.apache.gearpump.util.{LogUtil, Constants, ActorUtil, Util}
 import org.slf4j.Logger
@@ -30,7 +30,7 @@ import org.slf4j.Logger
 import scala.concurrent.Future
 import akka.pattern.{ask, pipe}
 
-class DistShellAppMaster(appContext : AppMasterContext, app : Application) extends ApplicationMaster {
+class DistShellAppMaster(appContext : AppMasterContext, app : AppDescription) extends ApplicationMaster {
   import appContext._
   import context.dispatcher
   implicit val timeout = Constants.FUTURE_TIMEOUT

@@ -18,11 +18,13 @@
 
 package org.apache.gearpump.cluster
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{ActorSystem, Actor, ActorRef}
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.jarstore.JarFileContainer
 import com.typesafe.config.Config
+
+import scala.reflect.ClassTag
 
 /**
  * This contains all information to run an application
@@ -35,7 +37,23 @@ import com.typesafe.config.Config
  *  use ClusterConfigSource(filePath) to construct the object, while filePath points to the .conf file.
  */
 
-case class Application(val name : String, val appMaster : String, val userConfig: UserConfig, val clusterConfig: ClusterConfigSource = null)
+case class AppDescription(val name : String, val appMaster : String, val userConfig: UserConfig, val clusterConfig: ClusterConfigSource = null)
+
+trait Application {
+  def appDescription(implicit system: ActorSystem): AppDescription
+}
+
+object Application {
+  def apply[T <: ApplicationMaster](name: String, userConfig: UserConfig, clusterConfig: ClusterConfigSource = null)(implicit tag: ClassTag[T]): Application = {
+    new DefaultApplication(name, userConfig, clusterConfig, tag.runtimeClass.asInstanceOf[Class[_ <: ApplicationMaster]])
+  }
+
+  class DefaultApplication(name: String, userConfig: UserConfig, clusterConfig: ClusterConfigSource, appMaster: Class[_ <: ApplicationMaster]) extends Application {
+    def appDescription(implicit system: ActorSystem): AppDescription = {
+      AppDescription(name, appMaster.getName, userConfig, clusterConfig)
+    }
+  }
+}
 
 /**
  * Used for verification. All AppMaster must extend this interface

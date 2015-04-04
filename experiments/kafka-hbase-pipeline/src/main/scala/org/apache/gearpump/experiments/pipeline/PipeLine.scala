@@ -23,9 +23,10 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.experiments.hbase.{HBaseSink, HBaseSinkInterface}
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
+import org.apache.gearpump.streaming.task.Task
+import org.apache.gearpump.streaming.{StreamApplication, Processor, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.apache.hadoop.conf.Configuration
@@ -39,8 +40,8 @@ object PipeLine extends App with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "conf" -> CLIOption[String]("<conf file>", required = true)
   )
-  
-  def application(config: ParseResult): AppDescription = {
+
+  def application(config: ParseResult): StreamApplication = {
     import Messages._
     import PipelineConfig._
     val pipeLinePath = config.getString("conf")
@@ -53,15 +54,15 @@ object PipeLine extends App with ArgumentsParser {
     }
     val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipelineConfig).withValue(HBASESINK, repo)
     val partitioner = new HashPartitioner
-    val kafka = ProcessorDescription(classOf[KafkaProducer].getName, 1, "KafkaProducer")
-    val cpuProcessor = ProcessorDescription(classOf[CpuProcessor].getName, processors, "CpuProcessor")
-    val memoryProcessor = ProcessorDescription(classOf[MemoryProcessor].getName, processors, "MemoryProcessor")
-    val cpuPersistor = ProcessorDescription(classOf[CpuPersistor].getName, persistors, "CpuPersistor")
-    val memoryPersistor = ProcessorDescription(classOf[MemoryPersistor].getName, persistors, "MemoryPersistor")
-    val app = AppDescription("PipeLine", appConfig, Graph(
+    val kafka = Processor[KafkaProducer](1, "KafkaProducer")
+    val cpuProcessor = Processor[CpuProcessor](processors, "CpuProcessor")
+    val memoryProcessor = Processor[MemoryProcessor](processors, "MemoryProcessor")
+    val cpuPersistor = Processor[CpuPersistor](persistors, "CpuPersistor")
+    val memoryPersistor = Processor[MemoryPersistor](persistors, "MemoryPersistor")
+    val app = StreamApplication("PipeLine", Graph[Processor[_ <: Task], Partitioner](
       kafka ~ partitioner ~> cpuProcessor ~ partitioner ~> cpuPersistor,
       kafka ~ partitioner ~> memoryProcessor ~ partitioner ~> memoryPersistor
-    ))
+    ), appConfig)
     app
   }
 
@@ -72,4 +73,3 @@ object PipeLine extends App with ArgumentsParser {
   context.close()
 
 }
-

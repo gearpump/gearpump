@@ -20,7 +20,8 @@ package org.apache.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner, Partitioner}
-import org.apache.gearpump.streaming.ProcessorDescription
+import org.apache.gearpump.streaming.task.Task
+import org.apache.gearpump.streaming.{Processor, ProcessorDescription}
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.util.Graph
@@ -32,7 +33,7 @@ class Planner {
   /*
    * Conert Dag[Op] to Dag[TaskDescription] so that we can run it easily.
    */
-  def plan(dag: Graph[Op, OpEdge])(implicit system: ActorSystem): Graph[ProcessorDescription, Partitioner] = {
+  def plan(dag: Graph[Op, OpEdge])(implicit system: ActorSystem): Graph[Processor[_ <: Task], Partitioner] = {
 
     val opTranslator = new OpTranslator()
 

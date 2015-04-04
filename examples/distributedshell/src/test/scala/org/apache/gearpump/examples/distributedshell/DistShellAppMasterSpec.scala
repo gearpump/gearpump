@@ -41,7 +41,7 @@ class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
   val workerList = List(1, 2, 3)
   val resource = Resource(1)
   val appJar = None
-  val appDescription = Application("app0", classOf[DistShellAppMaster].getName, UserConfig.empty)
+  val appDescription = AppDescription("app0", classOf[DistShellAppMaster].getName, UserConfig.empty)
 
   "DistributedShell AppMaster" should {
     "launch one ShellTask on each worker" in {

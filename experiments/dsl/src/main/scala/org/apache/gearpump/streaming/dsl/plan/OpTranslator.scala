@@ -22,7 +22,8 @@ import akka.actor.ActorSystem
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.ProcessorDescription
+import org.apache.gearpump.streaming.Processor.DefaultProcessor
+import org.apache.gearpump.streaming.{Processor, ProcessorDescription}
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
@@ -33,7 +34,7 @@ import scala.collection.TraversableOnce
  * Translate a OP to a TaskDescription
  */
 class OpTranslator extends java.io.Serializable {
-  def translate(ops: OpChain)(implicit system: ActorSystem): ProcessorDescription = {
+  def translate(ops: OpChain)(implicit system: ActorSystem): Processor[_ <: Task] = {
     val head = ops.ops.head
 
     ops.ops.head match {
@@ -44,26 +45,26 @@ class OpTranslator extends java.io.Serializable {
 
         op match {
           case InMemoryCollectionSource(collection, parallism, description) =>
-            ProcessorDescription(classOf[SourceTask[Object, Object]].getName, parallism,
+            Processor[SourceTask[Object, Object]](parallism,
               description = description + "." + func.description,
               taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, collection))
           case groupby@ GroupByOp(_, parallism, description) =>
-            ProcessorDescription(classOf[GroupByTask[Object, Object, Object]].getName, parallism,
+            Processor[GroupByTask[Object, Object, Object]](parallism,
               description = description + "." + func.description,
               taskConf = userConfig.withValue(GEARPUMP_STREAMING_GROUPBY_FUNCTION, groupby))
           case merge: MergeOp =>
-            ProcessorDescription(classOf[TransformTask[Object, Object]].getName, 1,
+            Processor[TransformTask[Object, Object]](1,
               description = op.description + "." + func.description,
               taskConf = userConfig)
           case ProcessorOp(processor, parallism, description) =>
-            ProcessorDescription(processor, parallism,
+            DefaultProcessor(parallism,
               description = description + "." + func.description,
-              taskConf = null)
+              taskConf = null, processor)
         }
       case op: SlaveOp =>
         val func = toFunction(ops.ops)
         val userConfig = UserConfig.empty.withValue(GEARPUMP_STREAMING_OPERATOR, func)
-        ProcessorDescription(classOf[TransformTask[Object, Object]].getName, 1,
+        Processor[TransformTask[Object, Object]](1,
           description = func.description,
           taskConf = userConfig)
     }

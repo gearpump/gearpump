@@ -50,7 +50,7 @@ object MasterToWorker {
  */
 
 object ClientToMaster {
-  case class SubmitApplication(appDescription: Application, appJar: Option[AppJar], username : String = System.getProperty("user.name"))
+  case class SubmitApplication(appDescription: AppDescription, appJar: Option[AppJar], username : String = System.getProperty("user.name"))
   case class ShutdownApplication(appId: Int)
   case class ResolveAppId(appId: Int)
 

@@ -19,9 +19,9 @@
 package org.apache.gearpump.streaming.dsl
 
 import akka.actor.ActorSystem
-import org.apache.gearpump.cluster.{Application, UserConfig}
+import org.apache.gearpump.cluster.{AppDescription, UserConfig}
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.streaming.AppDescription
+import org.apache.gearpump.streaming.{StreamApplication}
 import org.apache.gearpump.streaming.dsl.op.{Op, OpEdge, InMemoryCollectionSource}
 import org.apache.gearpump.streaming.dsl.plan.Planner
 import org.apache.gearpump.util.Graph
@@ -61,11 +61,11 @@ class StreamApp(val name: String, context: ClientContext) {
     new Stream[T](graph, source)
   }
 
-  def plan: AppDescription = {
+  def plan: StreamApplication = {
     implicit val system = context.system
     val planner = new Planner
     val dag = planner.plan(graph)
-    AppDescription(name, UserConfig.empty, dag)
+    StreamApplication(name, dag, UserConfig.empty)
   }
 
   private[StreamApp] def system: ActorSystem = context.system
@@ -73,9 +73,7 @@ class StreamApp(val name: String, context: ClientContext) {
 
 object StreamApp {
 
-  implicit def streamAppToAppDescription(streamApp: StreamApp): Application = {
-    val appDescription = streamApp.plan
-    implicit val system = streamApp.system
-    appDescription
+  implicit def streamAppToApplication(streamApp: StreamApp): StreamApplication = {
+    streamApp.plan
   }
 }

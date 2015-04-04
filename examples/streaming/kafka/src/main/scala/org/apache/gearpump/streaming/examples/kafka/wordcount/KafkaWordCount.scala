@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.kafka.{KafkaStreamProcessor, KafkaStreamProducer}
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.{AppDescription, ProcessorDescription}
+import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
@@ -40,7 +40,7 @@ object KafkaWordCount extends App with ArgumentsParser {
     "kafka_stream_processor" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(4))
     )
 
-  def application(config: ParseResult) : AppDescription = {
+  def application(config: ParseResult) : StreamApplication = {
     val kafkaStreamProducerNum = config.getInt("kafka_stream_producer")
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
@@ -50,12 +50,12 @@ object KafkaWordCount extends App with ArgumentsParser {
     val appConfig = UserConfig.empty
       .withValue(KafkaConfig.NAME, kafkaConfig)
     val partitioner = new HashPartitioner()
-    val kafkaStreamProducer = ProcessorDescription(classOf[KafkaStreamProducer].getName, kafkaStreamProducerNum)
-    val split = ProcessorDescription(classOf[Split].getName, splitNum)
-    val sum = ProcessorDescription(classOf[Sum].getName, sumNum)
-    val kafkaStreamProcessor = ProcessorDescription(classOf[KafkaStreamProcessor].getName, kafkaStreamProcessorNum)
+    val kafkaStreamProducer = Processor[KafkaStreamProducer](kafkaStreamProducerNum)
+    val split = Processor[Split](splitNum)
+    val sum = Processor[Sum](sumNum)
+    val kafkaStreamProcessor = Processor[KafkaStreamProcessor](kafkaStreamProcessorNum)
     val computation = kafkaStreamProducer ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaStreamProcessor
-    val app = AppDescription("KafkaWordCount", appConfig, Graph(computation))
+    val app = StreamApplication("KafkaWordCount", Graph(computation), appConfig)
     app
   }
 
