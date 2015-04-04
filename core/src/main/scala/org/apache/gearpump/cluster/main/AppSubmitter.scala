@@ -22,6 +22,8 @@ import java.net.{URL, URLClassLoader}
 import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger
 
+import scala.util.Try
+
 object AppSubmitter extends App with ArgumentsParser {
   val LOG: Logger = LogUtil.getLogger(getClass)
 
@@ -37,44 +39,49 @@ object AppSubmitter extends App with ArgumentsParser {
 
   def start : Unit = {
 
-    val config = parse(args)
-    if (null == config) {
-      return
-    }
-
-    val jar = config.getString("jar")
-
-    // Set jar path to be submitted to cluster
-    System.setProperty(Constants.GEARPUMP_APP_JAR, jar)
-
-    val namePrefix = config.getString("namePrefix")
-    if (namePrefix.nonEmpty) {
-      if (!Util.validApplicationName(namePrefix)) {
-        throw new Exception(s"$namePrefix is not a valid prefix for an application name")
+    Try({
+      val config = parse(args)
+      if (null == config) {
+        return
       }
-      System.setProperty(Constants.GEARPUMP_APP_NAME_PREFIX, namePrefix)
-    }
 
-    val jarFile = new java.io.File(jar)
+      val jar = config.getString("jar")
 
-    //start main class
-    Option(jarFile.exists()) match {
-      case Some(true) =>
-        val main = config.remainArgs(0)
-        val classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:" + jarFile.getAbsolutePath)),
-          Thread.currentThread().getContextClassLoader())
+      // Set jar path to be submitted to cluster
+      System.setProperty(Constants.GEARPUMP_APP_JAR, jar)
 
-        //set the context classloader as ActorSystem will use context classloader in precedence.
-        Thread.currentThread().setContextClassLoader(classLoader)
-        val clazz = classLoader.loadClass(main)
-        val mainMethod = clazz.getMethod("main", classOf[Array[String]])
-        mainMethod.invoke(null, config.remainArgs.drop(1))
+      val namePrefix = config.getString("namePrefix")
+      if (namePrefix.nonEmpty) {
+        if (!Util.validApplicationName(namePrefix)) {
+          throw new Exception(s"$namePrefix is not a valid prefix for an application name")
+        }
+        System.setProperty(Constants.GEARPUMP_APP_NAME_PREFIX, namePrefix)
+      }
 
-      case Some(false) =>
-        LOG.info(s"jar $jar does not exist")
-      case None =>
-        LOG.info("jar file required")
-    }
+      val jarFile = new java.io.File(jar)
+
+      //start main class
+      Option(jarFile.exists()) match {
+        case Some(true) =>
+          val main = config.remainArgs(0)
+          val classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:" + jarFile.getAbsolutePath)),
+            Thread.currentThread().getContextClassLoader())
+
+          //set the context classloader as ActorSystem will use context classloader in precedence.
+          Thread.currentThread().setContextClassLoader(classLoader)
+          val clazz = classLoader.loadClass(main)
+          val mainMethod = clazz.getMethod("main", classOf[Array[String]])
+          mainMethod.invoke(null, config.remainArgs.drop(1))
+
+        case Some(false) =>
+          LOG.info(s"jar $jar does not exist")
+        case None =>
+          LOG.info("jar file required")
+      }
+    }).failed.foreach(throwable => {
+      val cause = Option(throwable.getCause).getOrElse(throwable)
+      Console.println(cause.getMessage)
+    })
   }
 
   start

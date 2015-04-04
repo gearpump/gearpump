@@ -37,6 +37,7 @@ object Build extends sbt.Build {
   val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
   val json4sVersion = "3.2.10"
+  val junitVersion = "3.8.1"
   val kafkaVersion = "0.8.2.1"
   val stormVersion = "0.9.3"
   val sigarVersion = "1.6.4"
@@ -161,7 +162,8 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-        "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        "org.mockito" % "mockito-core" % mockitoVersion % "test",
+        "junit" % "junit" % junitVersion % "test"
       )
   )
 
