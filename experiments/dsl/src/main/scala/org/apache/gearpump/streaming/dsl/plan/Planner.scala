@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 class Planner {
 
   /*
-   * Conert Dag[Op] to Dag[TaskDescription] so that we can run it easily.
+   * Convert Dag[Op] to Dag[TaskDescription] so that we can run it easily.
    */
   def plan(dag: Graph[Op, OpEdge])(implicit system: ActorSystem): Graph[Processor[_ <: Task], Partitioner] = {
 

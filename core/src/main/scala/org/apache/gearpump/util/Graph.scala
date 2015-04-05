@@ -149,8 +149,6 @@ class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) e
 
 object Graph {
 
-  import org.apache.gearpump.util.GraphHelper._
-
   /**
    * Example:
    * Graph(1 ~ 2 ~> 4 ~ 5 ~> 7, 8~9~>55, 11)
@@ -163,79 +161,20 @@ object Graph {
    * 9: (8->55)
    *
    */
-  def apply[N, E](elems: Array[GraphElement]*) = {
-    val backStoreGraph = empty[N, E]
-    val graph = elems.foldLeft(backStoreGraph) { (g, array) =>
-      array.foreach {
-        case Node(node) =>
-          g.addVertex(node.asInstanceOf[N])
-        case NodeConnection(node1, edge, node2) =>
-          g.addEdge(node1.asInstanceOf[N], edge.asInstanceOf[E], node2.asInstanceOf[N])
-      }
-      g
+  def apply[N, E](elems: Path[_ <: N, _ <: E]*): Graph[N, E] = {
+    val graph = empty[N, E]
+    elems.foreach{ path =>
+      path.updategraph(graph)
     }
     graph
   }
-
-  def apply[N, E](backStoreGraph: Graph[N, E], edges : (N, E, N)*) = {
-    edges.foreach {nodeEdgeNode =>
-      val (node1, edge, node2) = nodeEdgeNode
-      backStoreGraph.addEdge(node1, edge, node2)
-    }
-  }
-
 
   def empty[N, E] = {
     new Graph(new DefaultDirectedGraph[N, Edge[E]](classOf[Edge[E]]))
   }
 
-  implicit def toGraphElements(element: Any): Array[GraphElement] = {
-
-    def toArray(input: Any, output: Array[Any]): Array[Any] = {
-      var result = output
-      input match {
-        case node1 ~> node2 =>
-          result = result :+ node2
-          node1 match {
-            case n ~ e =>
-              result = result :+ e
-              toArray(n, result)
-            case _ =>
-              result = result :+ null
-              toArray(node1, result)
-          }
-        case node =>
-          result = result :+ node
-          result
-      }
-    }
-
-    element match {
-      case _ ~> _ =>
-        val result = toArray(element, Array.empty[Any]).reverse
-
-        0.until(result.length - 1, 2).foldLeft(Array.empty[GraphElement]) { (output, index) =>
-          val node1 = result(index)
-          val edge = result(index + 1)
-          val node2 = result(index + 2)
-          output :+ NodeConnection(node1, edge, node2)
-        }
-      case _ =>
-        Array(Node(element))
-    }
-  }
-
-  implicit def any2NodeWithEdge[A](x: A): NodeWithEdge[A] = new NodeWithEdge(x)
-
-  implicit def any2NodeToNode[A](x: A): NodeToNode[A] = new NodeToNode(x)
-
   //we ensure two edge instance never equal
   case class Edge[E](edge: E)  extends ReferenceEqual
-
-  case class ~[N, E](node: N, edge: E)
-
-  case class ~>[Node1, Node2](node1: Node1, node2: Node2)
-
 
   /**
    * Generate a level map for each vertex
@@ -265,27 +204,51 @@ object Graph {
   private def vertexsZeroInDegree[N, E](graph: DefaultDirectedGraph[N, Edge[E]]) = {
     graph.vertexSet().asScala.filter(node => graph.inDegreeOf(node) == 0)
   }
-}
 
-object GraphHelper {
-  sealed trait GraphElement
+  class Path[N, +E](path: List[Either[N, E]]) {
 
-  case class Node[N](node: N) extends GraphElement
+    def ~[Edge >: E](edge: Edge): Path[N, Edge] = {
+      new Path(path :+ Right(edge))
+    }
 
-  case class NodeConnection[N, E](node1: N, edge: E, node2: N) extends GraphElement
+    def ~>[Node >: N](node: Node): Path[Node, E] = {
+      new Path(path :+ Left(node))
+    }
 
-  /**
-   * Helper class to support operator ~ and ~>
-   */
-  final class NodeWithEdge[A](val __leftOfArrow: A) extends AnyVal {
-    def x = __leftOfArrow
+    def to[Node >: N, Edge >: E](node: Node, edge: Edge): Path[Node, Edge] = {
+      this ~ edge ~> node
+    }
 
-    def ~[B](y: B): Graph.~[A, B] = Graph.~(__leftOfArrow, y)
+    private[Graph] def updategraph[Node >: N, Edge >: E](graph: Graph[Node, Edge]): Unit = {
+      val nodeEdgePair: Tuple2[Option[N], Option[E]] = (None, None)
+      path.foldLeft(nodeEdgePair) { (pair, either) =>
+        val (lastNode, lastEdge) = pair
+        either match {
+          case Left(node) =>
+            graph.addVertex(node)
+            if (lastNode.isDefined && lastEdge.isDefined) {
+              graph.addEdge(lastNode.get, lastEdge.get, node)
+            }
+            (Some(node), None)
+          case Right(edge) =>
+            (lastNode, Some(edge))
+        }
+      }
+    }
   }
 
-  final class NodeToNode[A](val __leftOfArrow: A) extends AnyVal {
-    def x = __leftOfArrow
+  object Path {
+    implicit def anyToPath[N, E](any: N): Path[N, E] = Node(any)
+  }
 
-    def ~>[B](y: B): Graph.~>[A, B] = Graph.~>(__leftOfArrow, y)
+  implicit class Node[N, E](any: N) extends Path[N, E](List(Left(any))) {
+    
+    override def ~[Edge](edge: Edge): Path[N, Edge] = {
+      new Path(List(Left(any), Right(edge)))
+    }
+
+    override def to[Node >: N, Edge >: E](node: Node, edge: Edge): Path[Node, Edge] = {
+      this ~ edge ~> node
+    }
   }
 }

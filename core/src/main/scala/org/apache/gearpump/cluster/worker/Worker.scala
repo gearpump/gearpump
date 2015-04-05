@@ -66,7 +66,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private var totalSlots: Int = 0
 
   override def receive : Receive = null
-  val LOG : Logger = LogUtil.getLogger(getClass, worker = id)
+  val LOG : Logger = LogUtil.getLogger(getClass)
 
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
     case WorkerRegistered(id, masterInfo) =>
@@ -74,26 +74,26 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       this.masterInfo = masterInfo
       killSelf.cancel()
       context.watch(masterInfo.master)
-      LOG.info(s"Worker $id Registered ....")
+      LOG.info(s"Worker[$id] Registered ....")
       sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
       context.become(appMasterMsgHandler orElse terminationWatch(masterInfo.master) orElse ActorUtil.defaultMsgHandler(self))
   }
 
   private def updateResourceTimeOut(): Unit = {
-    LOG.error(s"Worker $id update resource time out")
+    LOG.error(s"Worker[$id] update resource time out")
   }
 
   def appMasterMsgHandler : Receive = {
     case shutdown @ ShutdownExecutor(appId, executorId, reason : String) =>
       val actorName = ActorUtil.actorNameForExecutor(appId, executorId)
-      LOG.info(s"Worker shutting down executor: $actorName due to: $reason")
+      LOG.info(s"Worker[$id] shutting down executor: $actorName due to: $reason")
       val executorToStop = executorNameToActor.get(actorName)
 
       if (executorToStop.isDefined) {
-        LOG.info(s"Shuttting down child: ${executorToStop.get.path.toString}")
+        LOG.info(s"Worker[$id] Shuttting down child: ${executorToStop.get.path.toString}")
         executorToStop.get.forward(shutdown)
       } else {
-        LOG.info(s"There is no child $actorName, ignore this message")
+        LOG.info(s"Worker[$id] There is no child $actorName, ignore this message")
         sender ! ShutdownExecutorFailed(s"Can not find executor $executorId for app $appId")
       }
     case launch : LaunchExecutor =>
@@ -118,7 +118,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       LOG.error(reason)
       context.stop(self)
     case UpdateResourceSucceed =>
-      LOG.info(s"Worker $id update resource succeed")
+      LOG.info(s"Worker[$id] update resource succeed")
     case GetWorkerData(workerId) =>
       val aliveFor = System.currentTimeMillis() - createdTime
       val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
@@ -131,11 +131,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     case Terminated(actor) =>
       if (actor.compareTo(master) == 0) {
         // parent is down, let's make suicide
-        LOG.info("parent master cannot be contacted, find a new master ...")
+        LOG.info(s"Worker[$id] parent master cannot be contacted, find a new master ...")
         context.become(waitForMasterConfirm(repeatActionUtil(30)(masterProxy ! RegisterWorker(id))))
       } else if (ActorUtil.isChildActorPath(self, actor)) {
         //one executor is down,
-        LOG.info(s"Executor is down ${actor.path.name}")
+        LOG.info(s"Worker[$id] Executor is down ${actor.path.name}")
 
         val allocated = allocatedResource.get(actor)
         if (allocated.isDefined) {
@@ -174,7 +174,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   }
 
   override def postStop : Unit = {
-    LOG.info(s"Worker $id is going down....")
+    LOG.info(s"Worker[$id] is going down....")
     context.system.shutdown()
   }
 }

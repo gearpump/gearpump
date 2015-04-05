@@ -58,7 +58,7 @@ object RollingTopWords extends App with ArgumentsParser {
     val intermediateRanker = Processor[Ranker](irNum)
     val totalRanker = Processor[Ranker](1)
     val app = StreamApplication("RollingTopWords",
-      Graph[Processor[_ <: Task], Partitioner](kafkaStreamProducer ~ partitioner ~> rollingCount ~ partitioner
+      Graph(kafkaStreamProducer ~ partitioner ~> rollingCount ~ partitioner
         ~> intermediateRanker ~ partitioner ~> totalRanker), appConfig)
     app
   }

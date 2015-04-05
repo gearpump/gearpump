@@ -525,5 +525,5 @@ object Build extends sbt.Build {
           "org.scalaz" %% "scalaz-core" % scalazVersion
         )
       )
-  ) dependsOn(core % "provided", streaming % "test->test;compile->compile", streaming % "provided", external_kafka  % "test->test", external_kafka % "provided", hbase)
+  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase)
 }

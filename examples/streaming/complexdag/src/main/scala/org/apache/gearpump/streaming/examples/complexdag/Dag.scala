@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult
 import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
-import org.apache.gearpump.util.Graph._
+import org.apache.gearpump.util.Graph.{Node => GraphNode}
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
 import org.apache.gearpump.streaming.task.Task
@@ -82,7 +82,7 @@ object Dag extends App with ArgumentsParser {
     val sink_2 = Processor[Sink_2](1)
     val sink_3 = Processor[Sink_3](1)
     val sink_4 = Processor[Sink_4](1)
-    val app = StreamApplication("dag", Graph[Processor[_ <: Task], Partitioner](
+    val app = StreamApplication("dag", Graph(
       source_0 ~ partitioner ~> sink_1,
       source_0 ~ partitioner ~> sink_2,
       source_0 ~ partitioner ~> node_2,

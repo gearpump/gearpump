@@ -59,7 +59,7 @@ object PipeLine extends App with ArgumentsParser {
     val memoryProcessor = Processor[MemoryProcessor](processors, "MemoryProcessor")
     val cpuPersistor = Processor[CpuPersistor](persistors, "CpuPersistor")
     val memoryPersistor = Processor[MemoryPersistor](persistors, "MemoryPersistor")
-    val app = StreamApplication("PipeLine", Graph[Processor[_ <: Task], Partitioner](
+    val app = StreamApplication("PipeLine", Graph(
       kafka ~ partitioner ~> cpuProcessor ~ partitioner ~> cpuPersistor,
       kafka ~ partitioner ~> memoryProcessor ~ partitioner ~> memoryPersistor
     ), appConfig)

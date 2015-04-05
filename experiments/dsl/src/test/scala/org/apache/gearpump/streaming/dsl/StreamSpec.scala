@@ -86,7 +86,7 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
     val groupBy = classOf[GroupByPartitioner[_, _]].getName
     val colocation = classOf[CoLocationPartitioner].getName
 
-    val expectedDagTopology = Graph[String, String](
+    val expectedDagTopology = Graph(
       source ~ groupBy ~> group ~ colocation ~> merge ~ hash ~> join,
       source ~ hash ~> merge
     )

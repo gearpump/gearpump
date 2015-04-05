@@ -53,11 +53,11 @@ case class DAG(processors : Map[ProcessorId, ProcessorDescription], graph : Grap
 
 object DAG {
 
-  implicit def graphToDAG(graph: Graph[ProcessorDescription, Partitioner]): DAG = {
+  implicit def graphToDAG(graph: Graph[ProcessorDescription, _ <: Partitioner]): DAG = {
     apply(graph)
   }
 
-  def apply (graph : Graph[ProcessorDescription, Partitioner]) : DAG = {
+  def apply (graph : Graph[ProcessorDescription, _ <: Partitioner]) : DAG = {
     val topologicalOrderIterator = graph.topologicalOrderIterator
 
     val outputGraph = Graph.empty[ProcessorId, Partitioner]
