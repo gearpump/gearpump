@@ -1,3 +1,10 @@
+gearpump-0.3.4
+====================
+Change List:
+----------------
+ - #768, Serious performance degration of ui server on windows
+ - #765, improve the graph type inference so we don't need to set template argument type explicitly
+
 gearpump-0.3.3
 ====================
 Change List:
