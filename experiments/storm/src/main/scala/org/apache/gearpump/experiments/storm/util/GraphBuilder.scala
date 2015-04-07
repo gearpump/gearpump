@@ -18,9 +18,11 @@
 
 package org.apache.gearpump.experiments.storm.util
 
+import akka.actor.ActorSystem
 import backtype.storm.generated.{ComponentCommon, Grouping, StormTopology}
 import backtype.storm.tuple.Fields
 import backtype.storm.utils.ThriftTopologyUtils
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.storm.partitioner.{NoneGroupingPartitioner, ShuffleGroupingPartitioner, FieldsGroupingPartitioner, GlobalGroupingPartitioner}
 import org.apache.gearpump.experiments.storm.processor.StormProcessor
 import org.apache.gearpump.experiments.storm.producer.StormProducer
@@ -32,36 +34,43 @@ import org.apache.gearpump.util.Graph
 import scala.collection.JavaConversions._
 
 object GraphBuilder {
-  def apply(topology: StormTopology): GraphBuilder = new GraphBuilder(topology)
+  val COMPONENT_ID = "component_id"
+  val COMPONENT_SPEC = "component_spec"
 }
 
-private[storm] class GraphBuilder(topology: StormTopology) {
-  private val componentGraph = Graph.empty[String, Grouping]
-  private val processorGraph = Graph.empty[Processor[_ <: Task], Partitioner]
-  private var processorToComponent = Map.empty[Int, String]
-  private var componentToProcessor = Map.empty[String, Int]
+private[storm] class GraphBuilder {
+  import org.apache.gearpump.experiments.storm.util.GraphBuilder._
 
-  def build(): Unit = {
+  def build(topology: StormTopology)(implicit system: ActorSystem): Graph[Processor[_ <: Task], Partitioner] = {
+    val processorGraph = Graph.empty[Processor[_ <: Task], Partitioner]
+
     val spouts = topology.get_spouts()
-    val spoutTasks = spouts.map { spout =>
-      val parallelism = getParallelism(spout._2.get_common())
-      val taskDescription = Processor[StormProducer](parallelism)
-      spout._1 -> taskDescription
+    val spoutTasks = spouts.map { case (id, spec) =>
+      val parallelism = getParallelism(spec.get_common())
+      val processor = Processor[StormProducer](parallelism,
+        taskConf = UserConfig.empty
+          .withString(COMPONENT_ID, id)
+          .withValue(COMPONENT_SPEC, spec)
+      )
+      id -> processor
     }
     val bolts = topology.get_bolts()
-    val boltTasks = bolts.map { bolt =>
-      val parallelism = getParallelism(bolt._2.get_common())
-      val taskDescription = Processor[StormProcessor](parallelism)
-      bolt._1 -> taskDescription
+    val boltTasks = bolts.map { case (id, spec) =>
+      val parallelism = getParallelism(spec.get_common())
+      val processor = Processor[StormProcessor](parallelism,
+        taskConf = UserConfig.empty
+          .withString(COMPONENT_ID, id)
+          .withValue(COMPONENT_SPEC, spec)
+      )
+      id -> processor
     }
 
     spoutTasks.foreach { case (sourceId, sourceProducer) =>
       val sourceSpec = spouts.get(sourceId)
-      getTargets(sourceId).foreach { case (streamId, targets) =>
+      getTargets(sourceId, topology).foreach { case (streamId, targets) =>
         val outFields = new Fields(sourceSpec.get_common().get_streams().get(streamId).get_output_fields())
         targets.foreach { case (targetId, grouping) =>
           boltTasks.get(targetId).foreach { targetProcessor =>
-            componentGraph.addEdge(sourceId, grouping, targetId)
             processorGraph.addEdge(sourceProducer, groupingToPartitioner(outFields, grouping), targetProcessor)
           }
         }
@@ -70,29 +79,20 @@ private[storm] class GraphBuilder(topology: StormTopology) {
 
     boltTasks.foreach { case (sourceId, sourceProcessor) =>
       val sourceSpec = bolts.get(sourceId)
-      getTargets(sourceId).foreach { case (streamId, targets) =>
+      getTargets(sourceId, topology).foreach { case (streamId, targets) =>
         val outFields = new Fields(sourceSpec.get_common().get_streams().get(streamId).get_output_fields())
         targets.foreach { case (targetId, grouping) =>
           boltTasks.get(targetId).foreach { targetProcessor =>
-            componentGraph.addEdge(sourceId, grouping, targetId)
             processorGraph.addEdge(sourceProcessor, groupingToPartitioner(outFields, grouping), targetProcessor)
           }
         }
       }
     }
 
-    val topologyWithIndex = componentGraph.topologicalOrderIterator.zipWithIndex
-    componentToProcessor = topologyWithIndex.toMap
-    processorToComponent = componentToProcessor.map(entry => entry._2 -> entry._1)
+    processorGraph
   }
 
-  def getProcessorGraph: Graph[Processor[_<:Task], Partitioner] = processorGraph
-
-  def getProcessorToComponent: Map[Int, String] = processorToComponent
-
-  def getComponentToProcessor: Map[String, Int] = componentToProcessor
-
-  def getTargets(componentId: String): Map[String, Map[String, Grouping]] = {
+  def getTargets(componentId: String, topology: StormTopology): Map[String, Map[String, Grouping]] = {
     val componentIds = ThriftTopologyUtils.getComponentIds(topology)
     componentIds.flatMap { otherComponentId =>
       ThriftTopologyUtils.getComponentCommon(topology, otherComponentId).get_inputs.toList.map(otherComponentId -> _)

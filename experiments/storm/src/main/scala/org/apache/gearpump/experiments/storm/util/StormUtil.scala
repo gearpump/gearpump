@@ -52,12 +52,6 @@ object StormUtil {
       .getOrElse(throw new RuntimeException("storm topology is not found"))
   }
 
-  def getProcessorToComponent(config: UserConfig)(implicit system: ActorSystem) : Map[Int, String] = {
-    config.getValue[List[(ProcessorId, String)]](PROCESSOR_TO_COMPONENT)
-      .getOrElse(throw new RuntimeException("processor to component map is not found"))
-      .toMap
-  }
-
   def getStormConfig(config: UserConfig)(implicit system: ActorSystem) : JMap[_, _] = {
     val serConf = config.getValue[String](STORM_CONFIG)
       .getOrElse(throw new RuntimeException("storm config not found"))

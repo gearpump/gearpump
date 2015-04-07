@@ -21,12 +21,13 @@ package org.apache.gearpump.experiments.storm.processor
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
+import backtype.storm.generated.Bolt
 import backtype.storm.task.{IBolt, OutputCollector}
 import backtype.storm.tuple.TupleImpl
 import backtype.storm.utils.Utils
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.util.StormTuple
+import org.apache.gearpump.experiments.storm.util.{GraphBuilder, StormTuple}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import scala.collection.JavaConversions._
 
@@ -37,13 +38,12 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
   import org.apache.gearpump.experiments.storm.util.StormUtil._
 
   private val topology = getTopology(conf)
-  private val processorToComponent = getProcessorToComponent(conf)
   private val stormConfig = getStormConfig(conf)
   private val pid = taskContext.taskId.processorId
-  private val topologyContext = getTopologyContext(topology, stormConfig, processorToComponent, pid)
-  private val bolts = topology.get_bolts()
-  private val boltSpec = bolts.get(processorToComponent.getOrElse(pid,
-    throw new RuntimeException(s"processor $pid has no mapping component")))
+  private val boltId = conf.getString(GraphBuilder.COMPONENT_ID).getOrElse(
+    throw new RuntimeException(s"Storm bolt id not found for processor $pid"))
+  private val boltSpec = conf.getValue[Bolt](GraphBuilder.COMPONENT_SPEC).getOrElse(
+    throw new RuntimeException(s"Storm bolt spec not found for processor $pid"))
   private val bolt = Utils.getSetComponentObject(boltSpec.get_bolt_object()).asInstanceOf[IBolt]
 
   private var count = 0
@@ -53,7 +53,9 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
   private var scheduler : Cancellable = null
 
   override def onStart(startTime: StartTime): Unit = {
-    val delegate = new StormBoltOutputCollector(pid, taskContext)
+    val delegate = new StormBoltOutputCollector(pid, boltId, taskContext)
+    val topologyContext = getTopologyContext(topology, stormConfig,
+      Map(pid -> boltId), pid)
     bolt.prepare(stormConfig, topologyContext, new OutputCollector(delegate))
     scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
@@ -62,9 +64,14 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
   override def onNext(msg: Message): Unit = {
     val stormTuple = msg.msg.asInstanceOf[StormTuple]
     val values = stormTuple.values
-    val taskId = stormTuple.sourceTaskId
+    val sourceTaskId = stormTuple.sourceTaskId
+    val sourceComponentId = stormTuple.sourceComponentId
     val streamId = stormTuple.streamId
-    val tuple = new TupleImpl(topologyContext, values, taskId, streamId, null)
+
+    val topologyContext = getTopologyContext(topology, stormConfig,
+      Map(pid -> boltId, sourceTaskId -> sourceComponentId), pid)
+
+    val tuple = new TupleImpl(topologyContext, values, sourceTaskId, streamId, null)
     bolt.execute(tuple)
     count += 1
   }

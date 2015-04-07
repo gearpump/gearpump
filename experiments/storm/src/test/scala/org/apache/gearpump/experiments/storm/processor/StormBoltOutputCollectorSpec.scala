@@ -38,10 +38,10 @@ class StormBoltOutputCollectorSpec extends PropSpec with PropertyChecks with Mat
     forAll(valuesGen, pidGen) { (values: List[AnyRef], pid: Int) =>
       val taskContext = MockUtil.mockTaskContext
 
-      val collector = new StormBoltOutputCollector(pid, taskContext)
+      val collector = new StormBoltOutputCollector(pid, pid.toString, taskContext)
       collector.emit(Utils.DEFAULT_STREAM_ID, null, values)
       verify(taskContext).output(MockUtil.argMatch[Message] { msg =>
-        msg.msg.asInstanceOf[StormTuple] == StormTuple(values, pid, Utils.DEFAULT_STREAM_ID)
+        msg.msg.asInstanceOf[StormTuple] == StormTuple(values, pid, pid.toString, Utils.DEFAULT_STREAM_ID)
       })
     }
   }

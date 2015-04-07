@@ -28,11 +28,11 @@ import org.apache.gearpump.streaming.task.TaskContext
 
 import scala.collection.JavaConversions._
 
-private[storm] class StormBoltOutputCollector(pid: Int, taskContext: TaskContext) extends IOutputCollector {
+private[storm] class StormBoltOutputCollector(pid: Int, componentId: String, taskContext: TaskContext) extends IOutputCollector {
   import taskContext.output
 
   override def emit(streamId: String, anchors: JCollection[Tuple], tuple: JList[AnyRef]): JList[Integer] = {
-    output(Message(StormTuple(tuple.toList, pid, streamId)))
+    output(Message(StormTuple(tuple.toList, pid, componentId, streamId)))
     null
   }
 

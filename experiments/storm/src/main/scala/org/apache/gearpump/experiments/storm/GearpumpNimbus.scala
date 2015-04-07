@@ -46,14 +46,11 @@ class GearpumpNimbus(clientContext: ClientContext) extends Nimbus.Iface {
   override def submitTopologyWithOpts(name: String, uploadedJarLocation: String, jsonConf: String, topology: StormTopology, options: SubmitOptions): Unit = {
     import org.apache.gearpump.experiments.storm.util.StormUtil._
     topologies += name -> topology
-    val builder = GraphBuilder(topology)
-    builder.build()
-    val processorGraph = builder.getProcessorGraph
-    val processorToComponent = builder.getProcessorToComponent
     implicit val system = clientContext.system
+    val graphBuilder = new GraphBuilder
+    val processorGraph = graphBuilder.build(topology)
     val config = UserConfig.empty
       .withValue[StormTopology](TOPOLOGY, topology)
-      .withValue[List[(Int, String)]](PROCESSOR_TO_COMPONENT, processorToComponent.toList)
       .withValue[String](STORM_CONFIG, jsonConf)
     val app = StreamApplication("storm", processorGraph, config)
     val appId = clientContext.submit(app)
