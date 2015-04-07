@@ -9,9 +9,9 @@ Build GearPump and run:
 ```bash
 cd ~/gearpump
 sbt clean publishLocal assembly pack
-target/pack/bin/local -ip 127.0.0.1 -port 3000
-target/pack/bin/services -master 127.0.0.1:3000
-target/pack/bin/gear app -jar ./examples/complexdag/target/scala-2.11/gepump-examples-complexdag_2.11-0.2.4-SNAPSHOT.jar org.apache.gearpump.streaming.examples.complexdag.Dag -master 127.0.0.1:3000
+target/pack/bin/local
+target/pack/bin/services
+target/pack/bin/gear app -jar ./examples/complexdag/target/scala-2.11/gepump-examples-complexdag_2.11-0.2.4-SNAPSHOT.jar org.apache.gearpump.streaming.examples.complexdag.Dag
 ```
 
 Launch your browser at http://localhost:8090
