@@ -33,11 +33,13 @@ trait WebSocketService extends HttpService{
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     val systemConfig = system.settings.config
-    pathPrefix("api"/s"$REST_VERSION"){
-      path("websocket" / "url") {
-        val port = systemConfig.getInt("gearpump.services.ws")
-        val host = systemConfig.getString("gearpump.services.host")
-        complete(write(WebSocketUrl(s"ws://$host:$port")))
+    hostName { hostname =>
+      pathPrefix("api" / s"$REST_VERSION") {
+        path("websocket" / "url") {
+          val port = systemConfig.getInt("gearpump.services.ws")
+          val host = hostname
+          complete(write(WebSocketUrl(s"ws://$host:$port")))
+        }
       }
     }
   }

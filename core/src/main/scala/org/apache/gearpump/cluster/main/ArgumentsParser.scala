@@ -17,6 +17,7 @@
  */
 
 package org.apache.gearpump.cluster.main
+import org.apache.gearpump.cluster.main.ArgumentsParser.Syntax
 
 case class CLIOption[+T] (description:String = "", required: Boolean = false, defaultValue: Option[T] = None)
 
@@ -54,6 +55,11 @@ trait  ArgumentsParser {
     usage.foreach(Console.println(_))
   }
 
+  def parse(args: Array[String]): ParseResult = {
+    val syntax = Syntax(options, remainArgs, ignoreUnknownArgument)
+    ArgumentsParser.parse(syntax, args)
+  }
+
   private def removeTrailingDollarChar(className : String) : String = {
     if (className.endsWith("$")) {
       className.dropRight(1)
@@ -64,8 +70,14 @@ trait  ArgumentsParser {
 
   val options : Array[(String, CLIOption[Any])]
   val remainArgs : Array[String] = Array.empty[String]
+}
 
-  def parse(args: Array[String]): ParseResult = {
+object ArgumentsParser {
+
+  case class Syntax(val options: Array[(String, CLIOption[Any])], val remainArgs : Array[String], val ignoreUnknownArgument: Boolean)
+
+  def parse(syntax: Syntax, args: Array[String]): ParseResult = {
+    import syntax.{options, remainArgs, ignoreUnknownArgument}
     var config = Map.empty[String, String]
     var remain = Array.empty[String]
 
@@ -77,7 +89,6 @@ trait  ArgumentsParser {
           val fixedKey = key.substring(1)
           if (!options.map(_._1).contains(fixedKey)) {
             if (!ignoreUnknownArgument) {
-              help
               throw new Exception(s"found unknown option $fixedKey")
             }
           } else {
@@ -88,7 +99,6 @@ trait  ArgumentsParser {
         case key :: rest if key.startsWith("-") =>
           val fixedKey = key.substring(1)
           if (!options.map(_._1).contains(fixedKey)) {
-            help
             throw new Exception(s"found unknown option $fixedKey")
           } else {
             config += fixedKey -> "true"
@@ -112,13 +122,11 @@ trait  ArgumentsParser {
     options.foreach { pair =>
       val (key, value) = pair
       if (config.get(key).isEmpty) {
-        help
         throw new Exception(s"Missing option ${key}...")
       }
     }
 
     if (remain.length < remainArgs.length) {
-      help
       throw new Exception(s"Missing arguments ...")
     }
 

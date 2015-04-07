@@ -46,8 +46,12 @@ object WebSocketServices {
     implicit val timeout = Constants.FUTURE_TIMEOUT
     val services = system.actorOf(Props(classOf[WebSocketServices], master),"ws-services")
     val config = system.settings.config
+
     val port = config.getInt("gearpump.services.ws")
+
+    // web service are allowed to listen on a different hostname or all hostname
     val host = config.getString("gearpump.services.host")
+
     IO(UHttp) ! Http.Bind(services, interface = host, port = port)
     Option(Await.result(system.actorSelection("user/IO-HTTP").resolveOne(), Duration.Inf)).map(iohttp => {
       system.stop(iohttp)
@@ -55,7 +59,6 @@ object WebSocketServices {
 
     LOG.info(s"WebSocket server is enabled http://$host:$port")
     println(s"WebSocket server is enabled http://$host:$port")
-
   }
 }
 

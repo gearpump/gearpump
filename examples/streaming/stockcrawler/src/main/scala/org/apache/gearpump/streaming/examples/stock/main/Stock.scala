@@ -29,7 +29,7 @@ import org.apache.gearpump.streaming.examples.stock._
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.Graph._
+import org.apache.gearpump.util.Graph.{Path, Node}
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
 
@@ -57,8 +57,8 @@ object Stock extends App with ArgumentsParser {
 
     val userConfig = UserConfig.empty.withValue("StockId", stocks).withValue[StockMarket](classOf[StockMarket].getName, stockMarket)
 
-    val graph = Graph[Processor[_ <: Task], Partitioner](crawler ~ partitioner ~> analyzer, queryServer)
-    val app = StreamApplication("stock_direct_analyzer", graph, userConfig
+    val app = StreamApplication("stock_direct_analyzer",
+      Graph(crawler ~ partitioner ~> analyzer, queryServer), userConfig
       )
     app
   }

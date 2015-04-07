@@ -29,7 +29,7 @@ import upickle.{Writer, Js}
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-trait Processor[T <: Task] {
+trait Processor[+T <: Task] {
 
   def parallelism: Int
 
@@ -37,7 +37,7 @@ trait Processor[T <: Task] {
 
   def description: String
 
-  def taskClass: Class[T]
+  def taskClass: Class[_ <: Task]
 }
 
 object Processor {
@@ -60,7 +60,7 @@ object Processor {
 
 case class ProcessorDescription(taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null) extends ReferenceEqual
 
-case class StreamApplication(name : String, userConfig: UserConfig, dag: Graph[ProcessorDescription, Partitioner], clusterConfig: ClusterConfigSource)
+case class StreamApplication(name : String, userConfig: UserConfig, dag: Graph[ProcessorDescription, _ <: Partitioner], clusterConfig: ClusterConfigSource)
   extends Application {
 
   override def appDescription(implicit system: ActorSystem): AppDescription = {
@@ -70,7 +70,7 @@ case class StreamApplication(name : String, userConfig: UserConfig, dag: Graph[P
 
 object StreamApplication {
 
-  def apply (name : String, dag: Graph[Processor[_ <: Task], Partitioner], userConfig: UserConfig, clusterConfig: ClusterConfigSource = null): StreamApplication = {
+  def apply (name : String, dag: Graph[_ <: Processor[Task], _ <: Partitioner], userConfig: UserConfig, clusterConfig: ClusterConfigSource = null): StreamApplication = {
     val graph = dag.mapVertex(Processor.ProcessorToProcessorDescription(_))
     new StreamApplication(name, userConfig, graph, clusterConfig)
   }

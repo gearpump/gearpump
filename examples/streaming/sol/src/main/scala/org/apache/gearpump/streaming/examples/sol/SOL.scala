@@ -46,11 +46,11 @@ object SOL extends App with ArgumentsParser {
     val partitioner = new ShufflePartitioner()
     val streamProducer = Processor[SOLStreamProducer](spoutNum)
     val streamProcessor = Processor[SOLStreamProcessor](boltNum)
-    var computation : Any = streamProducer ~ partitioner ~> streamProcessor
+    var computation = streamProducer ~ partitioner ~> streamProcessor
     computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
       c ~ partitioner ~> streamProcessor.copy()
     }
-    val dag = Graph[Processor[_ <: Task], Partitioner](computation)
+    val dag = Graph(computation)
     val app = StreamApplication("sol", dag, appConfig)
     app
   }

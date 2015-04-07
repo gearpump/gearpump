@@ -18,12 +18,11 @@
 
 package org.apache.gearpump.util
 
-import org.apache.gearpump.util.GraphHelper.{GraphElement, Node}
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{PropSpec, Matchers}
 
-import org.apache.gearpump.util.Graph._
+import org.apache.gearpump.util.Graph.{Path, Node}
 
 class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 
@@ -31,20 +30,11 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
   case class Edge(from: Int, to: Int)
 
   val verticesNumGen = Gen.chooseNum[Int](1, 100)
+
   property("Graph with no edges should be built correctly") {
-    forAll(verticesNumGen) {
-      (num: Int) =>
-        val vertices = 0.until(num).map(Vertex).toArray
-        val graphElements = vertices.map(Graph.toGraphElements)
-        val graph: Graph[Vertex, Edge] = Graph(graphElements: _*)
-        graph.vertices.toArray shouldBe vertices
-        vertices.foreach { vertex =>
-          graph.outDegreeOf(vertex) shouldBe 0
-          graph.edgesOf(vertex) shouldBe empty
-          graph.outgoingEdgesOf(vertex) shouldBe empty
-        }
-        graph.edges shouldBe empty
-    }
+    val vertexSet = Set("A", "B", "C")
+    val graph = Graph(vertexSet.toSeq.map(Node):_ *)
+    graph.vertices.toSet shouldBe vertexSet
   }
 
   property("Graph with vertices and edges should be built correctly") {
@@ -59,17 +49,17 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 
         forAll(genEdges) {
           (edges: Array[Edge]) =>
-            var graphElements = Array.empty[Array[GraphElement]]
+            var graphElements = Array.empty[Path[Vertex, _ <: Edge]]
             val outDegrees = new Array[Int](vertices.length)
             val outGoingEdges = vertices.map(_ => Array.empty[(Vertex, Edge, Vertex)])
             val edgesOf = vertices.map(_ => Array.empty[(Vertex, Edge, Vertex)])
             vertices.foreach { v =>
-              graphElements :+= Graph.toGraphElements(v)
+              graphElements :+= Node(v)
             }
             edges.foreach { e =>
               val from = vertices(e.from)
               val to = vertices(e.to)
-              graphElements :+= Graph.toGraphElements(from ~ e ~> to)
+              graphElements :+= from ~ e ~> to
               outDegrees(e.from) += 1
               outGoingEdges(e.from) :+= (from, e, to)
               edgesOf(e.from) :+= (from, e, to)
@@ -120,7 +110,7 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 
     graph.addEdge("C", defaultEdge, "E")
 
-    val levelMap = vertexHierarchyLevelMap(graph)
+    val levelMap = Graph.vertexHierarchyLevelMap(graph)
 
     //check whether the rule holds: : if vertex A -> B, then level(A) < level(B)
     levelMap("A") < levelMap("B")
