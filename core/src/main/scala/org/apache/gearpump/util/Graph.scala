@@ -169,6 +169,21 @@ object Graph {
     graph
   }
 
+  /**
+   * Reserved for java usage
+   * @param elems
+   * @tparam N
+   * @tparam E
+   * @return
+   */
+  def apply[N, E](elems: java.util.List[Path[_ <: N, _ <: E]]): Graph[N, E] = {
+    val graph = empty[N, E]
+    elems.foreach{ path =>
+      path.updategraph(graph)
+    }
+    graph
+  }
+
   def empty[N, E] = {
     new Graph(new DefaultDirectedGraph[N, Edge[E]](classOf[Edge[E]]))
   }
