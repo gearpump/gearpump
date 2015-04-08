@@ -64,7 +64,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   def startClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
     val clientsToClose = remoteClientMap.get().filterKeys(!hostPorts.contains(_)).keySet
     closeClients(clientsToClose)
-    hostPorts.filter(!localHost.equals(_)).map(hostPort =>
+    hostPorts.toList.filter(!localHost.equals(_)).foldLeft(Future(Map.empty[HostPort, ActorRef])) { (future, hostPort) =>
       remoteClientMap.alter { map =>
         if (!map.contains(hostPort)) {
           val actor = context.connect(hostPort)
@@ -72,7 +72,8 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
         } else {
           map
         }
-      }).lastOption.getOrElse(Future(Map.empty[HostPort, ActorRef]))
+      }
+    }
   }
 
   def closeClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
