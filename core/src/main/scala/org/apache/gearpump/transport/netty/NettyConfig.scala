@@ -26,7 +26,7 @@ class NettyConfig(conf: Config) {
   val buffer_size = conf.getInt(Constants.NETTY_BUFFER_SIZE)
   val max_retries = conf.getInt(Constants.NETTY_MAX_RETRIES)
   val base_sleep_ms = conf.getInt(Constants.NETTY_BASE_SLEEP_MS)
-  val max_sleep_ms = conf.getInt(Constants.NETTY_MAX_RETRIES)
+  val max_sleep_ms = conf.getInt(Constants.NETTY_MAX_SLEEP_MS)
   val messageBatchSize = conf.getInt(Constants.NETTY_MESSAGE_BATCH_SIZE)
   val flushCheckInterval = conf.getInt(Constants.NETTY_FLUSH_CHECK_INTERVAL)
 
