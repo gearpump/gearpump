@@ -48,7 +48,8 @@ object Util {
                    arguments : Array[String]) : Process = {
     val java = System.getProperty("java.home") + "/bin/java"
     val command = List(java) ++ options ++ List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
-    LOG.info(s"Starting executor process $command...")
+    LOG.info(s"Starting executor process $java ${options.mkString(" ")} $mainClass}")
+
     val process = Process(command).run(new ProcessLogRedirector())
     process
   }
