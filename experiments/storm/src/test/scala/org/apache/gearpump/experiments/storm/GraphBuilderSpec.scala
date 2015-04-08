@@ -18,9 +18,11 @@
 
 package org.apache.gearpump.experiments.storm
 
-import backtype.storm.generated.{ComponentCommon, ComponentObject}
+import akka.actor.ActorSystem
+import backtype.storm.generated.{Bolt, SpoutSpec, ComponentCommon}
 import backtype.storm.utils.Utils
-import org.apache.gearpump.experiments.storm.util.{GraphBuilder, TopologyUtil}
+import org.apache.gearpump.experiments.storm.util.{TopologyUtil, GraphBuilder}
+import org.apache.gearpump.experiments.storm.util.GraphBuilder._
 import org.apache.gearpump.streaming.{Processor, ProcessorId, DAG, ProcessorDescription}
 import org.scalatest.{Matchers, WordSpec}
 
@@ -31,52 +33,43 @@ class GraphBuilderSpec extends WordSpec with Matchers {
     val spouts = topology.get_spouts()
     val bolts = topology.get_bolts()
 
-    /**
-     * TODO https://github.com/intel-hadoop/gearpump/issues/759
-     *  UT fail due to unstable topology sort
-     *
-     *  Error log: https://travis-ci.org/intel-hadoop/gearpump/builds/57115195
-     *
-     */
+    "build Graph from Storm topology" in {
+      implicit val system = ActorSystem("test")
+      val graphBuilder = new GraphBuilder()
+      val processorGraph = graphBuilder.build(topology)
+      processorGraph.vertices.size shouldBe 4
+      processorGraph.edges.length shouldBe 3
 
-//    "build Graph from Storm topology" in {
-//      val graphBuilder = new GraphBuilder(topology)
-//      graphBuilder.build()
-//      val processorGraph = graphBuilder.getProcessorGraph.mapVertex{
-//        Processor.ProcessorToProcessorDescription(_)
-//      }
-//      val processors = DAG(processorGraph).processors
-//      val processorToComponent = graphBuilder.getProcessorToComponent
-//      val componentToProcessor = graphBuilder.getComponentToProcessor
-//      processorGraph.vertices.size shouldBe 4
-//      processorGraph.edges.length shouldBe 3
-//      processorToComponent.size shouldBe 4
-//      processorToComponent foreach { case (processor, component) =>
-//        if (spouts.containsKey(component)) {
-//          val spout = spouts.get(component)
-//          spout.get_spout_object().getSetField shouldBe ComponentObject._Fields.SERIALIZED_JAVA
-//          verifyParallelism(spout.get_common(), getTaskDescription(component, processors, componentToProcessor))
-//        } else if (bolts.containsKey(component)) {
-//          val bolt = bolts.get(component)
-//          bolt.get_bolt_object().getSetField shouldBe ComponentObject._Fields.SERIALIZED_JAVA
-//          verifyParallelism(bolt.get_common(), getTaskDescription(component, processors, componentToProcessor))
-//        }
-//      }
-//    }
+      val processors = DAG(processorGraph.mapVertex(Processor.ProcessorToProcessorDescription(_))).processors
+
+      processors foreach { case (pid, procDesc) =>
+        val conf = procDesc.taskConf
+        val cid = conf.getString(COMPONENT_ID).getOrElse(
+          fail(s"component id not found for processor $pid"))
+
+        if (spouts.containsKey(cid)) {
+          val spoutSpec = conf.getValue[SpoutSpec](COMPONENT_SPEC).getOrElse(
+            fail(s"spout spec not found for processor $pid")
+          )
+          spoutSpec shouldBe spouts.get(cid)
+          verifyParallelism(spoutSpec.get_common(), procDesc)
+        } else if (bolts.containsKey(cid)) {
+          val bolt = conf.getValue[Bolt](COMPONENT_SPEC).getOrElse(
+            fail(s"bolt not found for processor $pid")
+          )
+          bolt shouldBe bolts.get(cid)
+          verifyParallelism(bolt.get_common(), procDesc)
+        }
+      }
+    }
 
     "get target components for a source of topology" in {
-      val graphBuilder = new GraphBuilder(topology)
-      val targets = graphBuilder.getTargets("2")
+      val graphBuilder = new GraphBuilder
+      val targets = graphBuilder.getTargets("2", topology)
       targets.contains(Utils.DEFAULT_STREAM_ID)  shouldBe true
       targets.get(Utils.DEFAULT_STREAM_ID).get.contains("3") shouldBe true
       targets.get(Utils.DEFAULT_STREAM_ID).get("3").is_set_fields shouldBe true
     }
-  }
-
-  private def getTaskDescription(component: String, processors: Map[ProcessorId, ProcessorDescription], componentToProcessor: Map[String, Int]): ProcessorDescription = {
-    componentToProcessor.get(component).flatMap { processorId =>
-      processors.get(processorId)
-    }.getOrElse(fail(s"processor not found for component $component"))
   }
 
   private def verifyParallelism(componentCommon: ComponentCommon, taskDescription: ProcessorDescription): Unit = {

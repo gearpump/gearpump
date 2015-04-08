@@ -41,7 +41,7 @@ class FieldsGroupingPartitionerSpec extends PropSpec with PropertyChecks with Ma
         val groupingFields = outFields.take(num)
         val partitioner = new FieldsGroupingPartitioner(new Fields(outFields), new Fields(groupingFields))
         val hash = WrapAsJava.seqAsJavaList[String](groupingFields).hashCode
-        val actualPartition = partitioner.getPartition(Message(StormTuple(outFields, sourceTaskId, Utils.DEFAULT_STREAM_ID)), partitionNum)
+        val actualPartition = partitioner.getPartition(Message(StormTuple(outFields, sourceTaskId, sourceTaskId.toString, Utils.DEFAULT_STREAM_ID)), partitionNum)
         actualPartition should (be >= 0 and be < partitionNum)
       }
 

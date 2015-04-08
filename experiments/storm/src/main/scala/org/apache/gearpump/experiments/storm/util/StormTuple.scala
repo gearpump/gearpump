@@ -18,4 +18,4 @@
 
 package org.apache.gearpump.experiments.storm.util
 
-private[storm] case class StormTuple(values: List[AnyRef], sourceTaskId: Int, streamId: String)
+private[storm] case class StormTuple(values: List[AnyRef], sourceTaskId: Int, sourceComponentId: String, streamId: String)

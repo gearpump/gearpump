@@ -18,10 +18,12 @@
 
 package org.apache.gearpump.experiments.storm.producer
 
+import backtype.storm.generated.{SpoutSpec, ComponentObject}
 import backtype.storm.spout.{ISpout, SpoutOutputCollector}
 import backtype.storm.utils.Utils
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.experiments.storm.util.GraphBuilder
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
@@ -29,19 +31,18 @@ private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
   import org.apache.gearpump.experiments.storm.util.StormUtil._
 
   private val topology = getTopology(conf)
-  private val processorToComponent = getProcessorToComponent(conf)
   private val stormConfig = getStormConfig(conf)
   private val pid = taskContext.taskId.processorId
-  private val topologyContext = getTopologyContext(topology, stormConfig, processorToComponent, pid)
-  private val spouts = topology.get_spouts()
 
-  private val spoutSpec = spouts.get(processorToComponent.getOrElse(pid,
-    throw new RuntimeException(s"processor $pid has no mapping component")))
+  private val spoutId = conf.getString(GraphBuilder.COMPONENT_ID)
+      .getOrElse(throw new RuntimeException(s"Storm spout id not found for processor $pid"))
+  private val spoutSpec = conf.getValue[SpoutSpec](GraphBuilder.COMPONENT_SPEC)
+      .getOrElse(throw new RuntimeException(s"Storm spout spec not found for processor $pid"))
   private val spout = Utils.getSetComponentObject(spoutSpec.get_spout_object()).asInstanceOf[ISpout]
+  private val topologyContext = getTopologyContext(topology, stormConfig, Map(pid -> spoutId), pid)
 
   override def onStart(startTime: StartTime): Unit = {
-    val streamId = spoutSpec.get_common()
-    val delegate = new StormSpoutOutputCollector(pid, taskContext)
+    val delegate = new StormSpoutOutputCollector(pid, spoutId, taskContext)
     spout.open(stormConfig, topologyContext, new SpoutOutputCollector(delegate))
     self ! Message("start")
   }

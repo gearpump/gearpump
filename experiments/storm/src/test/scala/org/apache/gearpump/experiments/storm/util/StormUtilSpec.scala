@@ -33,13 +33,4 @@ class StormUtilSpec extends PropSpec with Matchers {
     StormUtil.getTopology(config) shouldBe topology
   }
 
-  property("get processor to component mapping through user config") {
-    val topology = TopologyUtil.getTestTopology
-    val graphBuilder = GraphBuilder(topology)
-    graphBuilder.build()
-    val processorToComponent = graphBuilder.getProcessorToComponent
-    val config = UserConfig.empty.withValue[List[(Int, String)]](
-      StormUtil.PROCESSOR_TO_COMPONENT, processorToComponent.toList)
-    StormUtil.getProcessorToComponent(config) shouldBe processorToComponent
-  }
 }

@@ -20,11 +20,13 @@ package org.apache.gearpump.experiments.storm.producer
 
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
+import backtype.storm.generated.{SpoutSpec}
 import backtype.storm.utils.Utils
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.util.{GraphBuilder, TopologyUtil}
-import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.experiments.storm.util.GraphBuilder._
+import org.apache.gearpump.experiments.storm.util.{TopologyUtil, GraphBuilder}
+import org.apache.gearpump.streaming.{DAG, Processor, MockUtil}
 import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.json.simple.JSONValue
 import org.mockito.Matchers._
@@ -39,23 +41,32 @@ class StormProducerSpec extends PropSpec with PropertyChecks with Matchers {
   property("StormProducer should work") {
     implicit val system = ActorSystem("test")
     val topology = TopologyUtil.getTestTopology
-    val graphBuilder = new GraphBuilder(topology)
-    graphBuilder.build()
-    val processorToComponent = graphBuilder.getProcessorToComponent
+    val graphBuilder = new GraphBuilder
+    val processorGraph = graphBuilder.build(topology)
+    val processors = DAG(processorGraph.mapVertex(Processor.ProcessorToProcessorDescription(_))).processors
     val stormConfig = Utils.readStormConfig()
     val userConfig = UserConfig.empty
       .withValue(TOPOLOGY, topology)
-      .withValue(PROCESSOR_TO_COMPONENT, processorToComponent.toList)
       .withValue(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
 
     val mockTaskActor = TestProbe()
 
-    topology.get_spouts foreach { case (id, _) =>
-      processorToComponent.find(_._2 == id).foreach { case (pid, _) =>
+    val spouts = topology.get_spouts()
+    processors.foreach { case (pid, procDesc) =>
+      val conf = procDesc.taskConf
+      val cid = conf.getString(COMPONENT_ID).getOrElse(
+        fail(s"component id not found for processor $pid")
+      )
+      if (spouts.containsKey(cid)) {
+        val spoutSpec = conf.getValue[SpoutSpec](COMPONENT_SPEC).getOrElse(
+          fail(s"spout not found for processor $pid")
+        )
+        spoutSpec shouldBe spouts.get(cid)
+
         val taskContext = MockUtil.mockTaskContext
         when(taskContext.self).thenReturn(mockTaskActor.ref)
         when(taskContext.taskId).thenReturn(TaskId(pid, 0))
-        val stormProducer = new StormProducer(taskContext, userConfig)
+        val stormProducer = new StormProducer(taskContext, procDesc.taskConf.withConfig(userConfig))
         stormProducer.onStart(StartTime(0))
         mockTaskActor.expectMsgType[Message]
         stormProducer.onNext(Message("Next"))
