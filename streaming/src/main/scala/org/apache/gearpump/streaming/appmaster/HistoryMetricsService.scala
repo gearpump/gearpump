@@ -21,9 +21,9 @@ package org.apache.gearpump.streaming.appmaster
 import java.util
 
 import akka.actor.Actor
-import org.apache.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
+import org.apache.gearpump.cluster.ClientToMaster.{ QueryHistoryMetrics}
 import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
-import org.apache.gearpump.metrics.Metrics.{Histogram, MetricType, Meter, Counter}
+import org.apache.gearpump.metrics.Metrics.{Counter, Histogram, MetricType, Meter}
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.{HistoryMetricsConfig, MetricsStore}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
@@ -52,23 +52,41 @@ class HistoryMetricsService(appId: Int, config: HistoryMetricsConfig) extends Ac
       }
   }
 
-  def commandHandler: Receive = {
-    case QueryHistoryMetrics(appId, path) =>
-      LOG.info(s"Query History Metrics $path")
-
-      // For now, we only do prefix match, in the future we may support
-      // wildcard match, using character "*"
-      // Caution: Avoid using regular expression, as it may introduce
-      // security problem, like catastrophic backtracking
-
-      val result = new ListBuffer[HistoryMetricsItem]
-      metricsStore.keys.foreach {name =>
-        if (name.startsWith(path)) {
-          result.append(metricsStore(name).read :_*)
-        }
-      }
-      sender ! HistoryMetrics(appId, path, result.toList)
+  private def toRegularExpression(input: String): String = {
+    "^" + input.flatMap {
+      case '*' => ".*"
+      case '?' => "."
+      case char if "()[]$^.{}|\\".contains(char) => "\\" + char
+      case other => s"$other"
+    } + ".*$"
   }
+
+  private def fetchMetricsHistory(pathPattern: String, readLastest: Boolean = false): List[HistoryMetricsItem] = {
+
+    val result = new ListBuffer[HistoryMetricsItem]
+    val regex = toRegularExpression(pathPattern)
+
+    metricsStore.keys.foreach { name =>
+      if (name.matches(regex)) {
+        if (readLastest) {
+          result.append(metricsStore(name).readLast: _*)
+        } else {
+          result.append(metricsStore(name).read: _*)
+        }
+      } else {
+        LOG.error(s"metrics store $name doesn't match pattern $regex")
+      }
+    }
+    result.toList
+  }
+
+  def commandHandler: Receive = {
+
+    //path accept syntax ? *, ? will match one char, * will match at least one char
+    case QueryHistoryMetrics(appId, inputPath, readLatest) =>
+      LOG.info(s"Query History Metrics $inputPath")
+      sender ! HistoryMetrics(appId, inputPath, fetchMetricsHistory(inputPath, readLatest))
+   }
 }
 
 object HistoryMetricsService {
@@ -96,6 +114,12 @@ object HistoryMetricsService {
     def add(inputMetrics: MetricType): Unit
 
     def read: List[HistoryMetricsItem]
+
+    /**
+     * read latest inserted records
+     * @return
+     */
+    def readLast: List[HistoryMetricsItem]
   }
 
   object MetricsStore {
@@ -171,6 +195,15 @@ object HistoryMetricsService {
       }
       result.toList
     }
+
+    override def readLast: List[HistoryMetricsItem] = {
+      val result = new ListBuffer[HistoryMetricsItem]
+      Option(queue.peek()).map { pair =>
+        result.prepend(pair.max)
+        result.prepend(pair.min)
+      }
+      result.toList
+    }
   }
 
   /**
@@ -202,6 +235,14 @@ object HistoryMetricsService {
       val result = new ListBuffer[HistoryMetricsItem]
       import scala.collection.JavaConversions.asScalaIterator
       queue.iterator().foreach(result.prepend(_))
+      result.toList
+    }
+
+    override def readLast: List[HistoryMetricsItem] = {
+      val result = new ListBuffer[HistoryMetricsItem]
+      Option(queue.peek()).map { item =>
+        result.prepend(item)
+      }
       result.toList
     }
   }
@@ -240,6 +281,10 @@ object HistoryMetricsService {
     override def read: List[HistoryMetricsItem] = {
       history.read ++ recent.read
     }
+
+    override def readLast: List[HistoryMetricsItem] = {
+      recent.readLast
+    }
   }
 
   class MeterMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
@@ -263,6 +308,10 @@ object HistoryMetricsService {
     override def read: List[HistoryMetricsItem] = {
       history.read ++ recent.read
     }
+
+    override def readLast: List[HistoryMetricsItem] = {
+      recent.readLast
+    }
   }
 
   class CounterMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
@@ -282,6 +331,10 @@ object HistoryMetricsService {
 
     override def read: List[HistoryMetricsItem] = {
       history.read ++ recent.read
+    }
+
+    override def readLast: List[HistoryMetricsItem] = {
+      recent.readLast
     }
   }
 }

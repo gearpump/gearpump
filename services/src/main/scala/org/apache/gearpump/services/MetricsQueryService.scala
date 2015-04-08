@@ -31,7 +31,7 @@ import spray.routing.HttpService
 import upickle.Js
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 trait MetricsQueryService extends HttpService  {
   def master:ActorRef
@@ -42,12 +42,16 @@ trait MetricsQueryService extends HttpService  {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     pathPrefix("api"/s"$REST_VERSION") {
-      path("metrics" / "app" / IntNumber / Rest) { (appId, path) =>
-        onComplete((master ? QueryHistoryMetrics(appId, path)).asInstanceOf[Future[HistoryMetrics]]) {
-          case Success(value: HistoryMetrics) =>
-            complete(upickle.write(value))
-          case Failure(ex) =>
-            complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+      path("metrics" / "app" / IntNumber / RestPath ) { (appId, path) =>
+        parameter("readlatest" ? "false") { readLatestInput =>
+          val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
+          onComplete((master ? QueryHistoryMetrics(appId, path.head.toString, readLatest))
+            .asInstanceOf[Future[HistoryMetrics]]) {
+            case Success(value: HistoryMetrics) =>
+              complete(upickle.write(value))
+            case Failure(ex) =>
+              complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+          }
         }
       }
     }

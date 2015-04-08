@@ -94,11 +94,12 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
   }
 
   private def connect(tries: Int) : Unit = {
-    LOG.info(s"netty client connect to $name, tries: $tries， hostPort: $hostPort")
+    LOG.info(s"netty client try to connect to $name, tries: $tries")
     if (tries <= conf.max_retries) {
       val remote_addr = new InetSocketAddress(hostPort.host, hostPort.port)
       val future = bootstrap.connect(remote_addr)
       future success { current =>
+        LOG.info(s"netty client successfully connectted to $name, tries: $tries")
         self ! ChannelReady(current)
       } fail { (current, ex) =>
         LOG.error(s"failed to connect to $name, reason: ${ex.getMessage}, class: ${ex.getClass}")
