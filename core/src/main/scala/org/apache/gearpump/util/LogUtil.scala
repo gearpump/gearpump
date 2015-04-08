@@ -16,7 +16,7 @@ object LogUtil {
     val MASTER, WORKER, LOCAL, APPLICATION, UI = Value
   }
 
-  def getLogger[T](clazz : Class[T], context : String = null, master : Any = null, worker : Any = null, executor : Any = null, task : Any = null, app : Any = null) : Logger = {
+  def getLogger[T](clazz : Class[T], context : String = null, master : Any = null, worker : Any = null, executor : Any = null, task : Any = null, app : Any = null, name: String = null) : Logger = {
 
     var env = ""
 
@@ -39,6 +39,9 @@ object LogUtil {
     }
     if (null != task) {
       env += task
+    }
+    if (null != name) {
+      env += name
     }
 
     if (!env.isEmpty) {

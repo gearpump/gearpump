@@ -44,9 +44,11 @@ class ClientContext(config: Config) {
   private val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
 
   implicit val system = ActorSystem(s"client${Util.randInt}" , config)
+  LOG.info(s"Starting system ${system.name}")
+
   import system.dispatcher
 
-  private val master = system.actorOf(MasterProxy.props(masters), MASTER)
+  private val master = system.actorOf(MasterProxy.props(masters), system.name)
 
   LOG.info(s"Creating master proxy ${master} for master list: $masters")
 
@@ -92,6 +94,7 @@ class ClientContext(config: Config) {
   }
 
   def close() : Unit = {
+    LOG.info(s"Shutting down system ${system.name}")
     system.shutdown()
   }
 

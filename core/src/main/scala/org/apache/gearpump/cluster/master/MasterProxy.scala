@@ -39,7 +39,7 @@ class MasterProxy (masters: Iterable[ActorPath])
   extends Actor with Stash {
   import MasterProxy._
 
-  val LOG: Logger = LogUtil.getLogger(getClass)
+  val LOG: Logger = LogUtil.getLogger(getClass, name = self.path.name)
 
   val contacts = masters.map { url =>
     LOG.info(s"Contacts point URL: $url")
