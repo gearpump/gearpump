@@ -228,7 +228,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         case None =>
       }
 
-    case query@ QueryHistoryMetrics(appId, _) =>
+    case query@ QueryHistoryMetrics(appId, _, _) =>
       val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
       Option(appMaster) match {
         case Some(_appMaster) =>

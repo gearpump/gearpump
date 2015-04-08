@@ -52,8 +52,8 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   private var reportScheduler : Cancellable = null
   private var snapshotScheduler : Cancellable = null
 
-  var processorIdToLevel: Map[ProcessorId, Int] = null
-  var levelMinClock: Array[TimeStamp] = null
+  var processorIdToLevel = Map.empty[ProcessorId, Int]
+  var levelMinClock = Array.empty[TimeStamp]
   
   
 
@@ -129,7 +129,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
       sender ! LatestMinClock(minClock)
 
     case ReportGlobalClock =>
-      reportGlobalMinClock()
+      selfChecker()
     case SnapshotStartClock =>
       snapshotStartClock()
   }
@@ -150,10 +150,48 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     }
   }
 
-  def reportGlobalMinClock() : Unit = {
-    val minTimeStamp = new Date(minClock)
+  private var selfCheckClock: SelfCheckClock = new SelfCheckClock(System.currentTimeMillis(), 0)
+  def selfChecker() : Unit = {
+    val latestMinClock = minClock
+    val minTimeStamp = new Date(latestMinClock)
     LOG.info(s"Application minClock tracking: $minTimeStamp")
+
+    val now = System.currentTimeMillis()
+    if (latestMinClock > selfCheckClock.minClock) {
+      selfCheckClock.minClock = latestMinClock
+      selfCheckClock.checkTime = now
+    } else if (now > selfCheckClock.checkTime + SELF_CHECK_INTERVAL_SECONDS) {
+      LOG.warn(s"Clock has not advanced for $SELF_CHECK_INTERVAL_SECONDS seconds..")
+      selfCheckClock.checkTime = now
+      //do diagnosis
+      var stallingLevel = Long.MaxValue
+      for (i <- 0 until levelMinClock.length) {
+        if (i < stallingLevel) {
+          val levelClock = levelMinClock(i)
+          if (levelClock == latestMinClock) {
+            stallingLevel = i
+          }
+        }
+      }
+
+      //find processor id by stallinglevel
+      processorIdToLevel.find(_._2 == stallingLevel).map(_._1)
+        .flatMap { processorId =>
+        //find processor task clocks
+        val processorClock = Option(processorClockLookup.get(processorId))
+        val taskClocks = processorClock.flatMap { processorClock => Option(processorClock.taskClocks) }
+        taskClocks.map { taskClocks =>
+          taskClocks.zipWithIndex.map { taskClockAndTaskIndex =>
+            val (taskClock, taskIndex) = taskClockAndTaskIndex
+            StallingTask(processorId, taskIndex, taskClock)
+          }
+        }
+      }.map{stallingClocks =>
+          LOG.warn("Stalling processor clocks: " + stallingClocks.mkString(","))
+      }
+    }
   }
+
   private def snapshotStartClock() : Unit = {
     store.put(START_CLOCK, minClock)
   }
@@ -165,6 +203,10 @@ object ClockService {
   case object ReportGlobalClock
   case object SnapshotStartClock
 
+  case class StallingTask(processorId: ProcessorId, taskId: Int, taskClock: TimeStamp)
+
   class ProcessorClock(var taskClocks : Array[TimeStamp] = null)
 
+  val SELF_CHECK_INTERVAL_SECONDS = 60 //seconds
+  class SelfCheckClock(var checkTime: TimeStamp, var minClock: TimeStamp)
 }

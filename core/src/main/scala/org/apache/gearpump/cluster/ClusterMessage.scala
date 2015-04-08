@@ -58,7 +58,7 @@ object ClientToMaster {
 
   case class QueryAppMasterConfig(appId: Int)
 
-  case class QueryHistoryMetrics(appId: Int, path: String)
+  case class QueryHistoryMetrics(appId: Int, path: String, readLatest: Boolean = false)
 }
 
 object MasterToClient {
