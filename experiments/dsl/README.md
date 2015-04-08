@@ -109,7 +109,7 @@ Run an example
 bin\local
 
 # start UI
-bin\services -master 127.0.0.1:3000
+bin\services
 
 # start example topology
 bin\gear org.apache.gearpump.streaming.dsl.example.WordCount

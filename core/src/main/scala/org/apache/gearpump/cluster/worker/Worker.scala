@@ -260,6 +260,8 @@ private[cluster] object Worker {
         }
 
         val options = ctx.jvmArguments ++ host ++ username ++ logArgs ++ remoteDebugConfig ++ configArgs
+
+        LOG.info(s"executor class path: ${classPath.mkString(File.pathSeparator)}")
         val process = Util.startProcess(options, classPath, ctx.mainClass, ctx.arguments)
 
         new ExecutorHandler {

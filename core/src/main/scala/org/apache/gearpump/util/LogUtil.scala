@@ -78,14 +78,15 @@ object LogUtil {
     new File(dir)
   }
 
+  private def setHostnameSystemProperty : Unit = {
+    val hostname = Try(InetAddress.getLocalHost.getHostName).getOrElse("local")
+    val jvmIdentity = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
+    //as log4j missing the HOSTNAME system property, add it to system property, just like logback does
+    System.setProperty("JVM_NAME", jvmIdentity)
+  }
+
   def applicationLogDir(config: Config): File = {
     val appLogDir = config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
     new File(appLogDir)
-  }
-
-  private def setHostnameSystemProperty : Unit = {
-    val hostname = Try(InetAddress.getLocalHost.getHostName).getOrElse("local")
-    //as log4j missing the HOSTNAME system property, add it to system property, just like logback does
-    System.setProperty("HOSTNAME", hostname)
   }
 }

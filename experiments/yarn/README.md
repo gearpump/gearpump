@@ -9,6 +9,6 @@ How to Start the Gearpump cluster on YARN
   ```
 5. On some machine in the cluster, start the UI server, and bind to the master port.
  ```bash
- bin/services -master ip:host
+ bin/services
  ```
 

@@ -54,7 +54,7 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
 
   private var startTime: TimeStamp = 0L
 
-  LOG.info(s"assigned ${offsetManagers.keySet}")
+  LOG.debug(s"assigned ${offsetManagers.keySet}")
 
   /**
    * fetchThread will start from beginning (the earliest offset)
