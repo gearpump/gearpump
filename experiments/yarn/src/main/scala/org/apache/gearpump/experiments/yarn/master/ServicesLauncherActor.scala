@@ -14,7 +14,7 @@ class ServicesLauncherActor(masters: Array[String], host: String, port: Int) ext
     System.setProperty("gearpump.services.http", port.toString)
     System.setProperty("akka.remote.netty.tcp.hostname", host)
 
-    System.setProperty(Constants.GEARPUMP_LOCAL_HOSTNAME, host)
+    System.setProperty(Constants.GEARPUMP_HOSTNAME, host)
     for (index <- 0 until masters.length) {
       val masterHostPort = masters(index)
        System.setProperty(s"${Constants.GEARPUMP_CLUSTER_MASTERS}.$index", masterHostPort)

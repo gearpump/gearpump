@@ -58,7 +58,10 @@ class ClientContext(config: Config) {
    * the target runtime classpath, and will not send it.
    */
   def submit(app : Application) : Int = {
-    submit(app.appDescription(system), System.getProperty(GEARPUMP_APP_JAR))
+    import app.{name, appMaster, userConfig}
+    val clusterConfig = ClusterConfig.load.applicationSubmissionConfig
+    val appDescription = AppDescription(name, appMaster.getName, userConfig, clusterConfig)
+    submit(appDescription, System.getProperty(GEARPUMP_APP_JAR))
   }
 
   private def submit(app : AppDescription, jarPath: String) : Int = {

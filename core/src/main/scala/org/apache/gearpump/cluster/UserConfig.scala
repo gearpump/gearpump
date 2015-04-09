@@ -84,7 +84,7 @@ import org.apache.gearpump.cluster.UserConfig._
    *
    * @see [[http://doc.akka.io/docs/akka/snapshot/scala/serialization.html#A_Word_About_Java_Serialization]]
    */
-  def withValue[T<: AnyRef with java.io.Serializable](key: String, value: T)(implicit system: ActorSystem): UserConfig = {
+  def withValue[T<: AnyRef](key: String, value: T)(implicit system: ActorSystem): UserConfig = {
 
     if (null == value) {
       this

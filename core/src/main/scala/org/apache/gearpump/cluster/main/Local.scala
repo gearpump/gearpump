@@ -57,10 +57,10 @@ object Local extends App with ArgumentsParser {
       System.setProperty("LOCAL", "true")
     }
     val masters = systemConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
-    val local = systemConfig.getString(Constants.GEARPUMP_LOCAL_HOSTNAME)
+    val local = systemConfig.getString(Constants.GEARPUMP_HOSTNAME)
 
     if(masters.size != 1 && masters.head.host != local) {
-      LOG.error(s"The ${Constants.GEARPUMP_CLUSTER_MASTERS} is not match with ${Constants.GEARPUMP_LOCAL_HOSTNAME}")
+      LOG.error(s"The ${Constants.GEARPUMP_CLUSTER_MASTERS} is not match with ${Constants.GEARPUMP_HOSTNAME}")
       System.exit(0)
     }
 

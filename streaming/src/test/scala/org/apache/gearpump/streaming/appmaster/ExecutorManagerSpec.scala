@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.testkit.TestProbe
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.TestProbeUtil
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
@@ -57,7 +58,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
       executor.ref ! StartExecutorActorPlease
       TestProbeUtil.toProps(executor)
     }
-    val executorManager = system.actorOf(Props(new ExecutorManager(userConfig, appMasterContext, executorFactory)))
+    val executorManager = system.actorOf(Props(new ExecutorManager(userConfig, appMasterContext, executorFactory, ConfigFactory.empty)))
 
     taskManager.send(executorManager, SetTaskManager(taskManager.ref))
     val resourceRequest = Array(ResourceRequest(Resource(1)))

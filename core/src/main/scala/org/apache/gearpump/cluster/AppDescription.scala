@@ -22,7 +22,7 @@ import akka.actor.{ActorSystem, Actor, ActorRef}
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.jarstore.JarFileContainer
-import com.typesafe.config.Config
+import com.typesafe.config.{ConfigFactory, Config}
 
 import scala.reflect.ClassTag
 
@@ -37,21 +37,26 @@ import scala.reflect.ClassTag
  *  use ClusterConfigSource(filePath) to construct the object, while filePath points to the .conf file.
  */
 
-case class AppDescription(val name : String, val appMaster : String, val userConfig: UserConfig, val clusterConfig: ClusterConfigSource = null)
+case class AppDescription(val name : String, val appMaster : String, val userConfig: UserConfig, val clusterConfig: Config = ConfigFactory.empty())
 
 trait Application {
-  def appDescription(implicit system: ActorSystem): AppDescription
+  def name: String
+  def userConfig(implicit system: ActorSystem): UserConfig
+  def appMaster: Class[_ <: ApplicationMaster]
 }
 
 object Application {
-  def apply[T <: ApplicationMaster](name: String, userConfig: UserConfig, clusterConfig: ClusterConfigSource = null)(implicit tag: ClassTag[T]): Application = {
-    new DefaultApplication(name, userConfig, clusterConfig, tag.runtimeClass.asInstanceOf[Class[_ <: ApplicationMaster]])
+  def apply[T <: ApplicationMaster](name: String, userConfig: UserConfig)(implicit tag: ClassTag[T]): Application = {
+    new DefaultApplication(name, userConfig, tag.runtimeClass.asInstanceOf[Class[_ <: ApplicationMaster]])
   }
 
-  class DefaultApplication(name: String, userConfig: UserConfig, clusterConfig: ClusterConfigSource, appMaster: Class[_ <: ApplicationMaster]) extends Application {
-    def appDescription(implicit system: ActorSystem): AppDescription = {
-      AppDescription(name, appMaster.getName, userConfig, clusterConfig)
-    }
+  class DefaultApplication(override val name: String, inputUserConfig: UserConfig, val appMaster: Class[_ <: ApplicationMaster]) extends Application {
+    override def userConfig(implicit system: ActorSystem): UserConfig = inputUserConfig
+  }
+
+  implicit def ApplicationToAppDescription(app: Application)(implicit system: ActorSystem): AppDescription = {
+    val clusterConfig = ClusterConfig.load.applicationSubmissionConfig
+    AppDescription(app.name, app.appMaster.getName, app.userConfig, clusterConfig)
   }
 }
 
@@ -111,4 +116,4 @@ case class ExecutorContext(executorId : Int, workerId: Int, appId : Int,
  * process
  *
  */
-case class ExecutorJVMConfig(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String], jar: Option[AppJar], username : String, executorAkkaConfig: Config = null)
+case class ExecutorJVMConfig(classPath : Array[String], jvmArguments : Array[String], mainClass : String, arguments : Array[String], jar: Option[AppJar], username : String, executorAkkaConfig: Config = ConfigFactory.empty())

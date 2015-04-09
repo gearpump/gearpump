@@ -128,7 +128,7 @@ trait MasterHarness {
 
   def getMasterListOption(): Array[String] = {
     Array(s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=$getHost:$getPort",
-    s"-D${Constants.GEARPUMP_LOCAL_HOSTNAME}=$getHost")
+    s"-D${Constants.GEARPUMP_HOSTNAME}=$getHost")
   }
 }
 
