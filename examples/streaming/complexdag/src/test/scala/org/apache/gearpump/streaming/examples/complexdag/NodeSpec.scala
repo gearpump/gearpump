@@ -33,7 +33,7 @@ class NodeSpec extends PropSpec with PropertyChecks with Matchers with BeforeAnd
 
   val node = new Node(context, UserConfig.empty)
 
-  property("Node should send a List[String](classOf[Node].getCanonicalName, classOf[Node].getCanonicalName"){
+  property("Node should send a Array[String](classOf[Node].getCanonicalName, classOf[Node].getCanonicalName"){
     val list = Array(classOf[Node].getCanonicalName)
     val expected = Array(classOf[Node].getCanonicalName,classOf[Node].getCanonicalName)
     node.onNext(Message(list))
