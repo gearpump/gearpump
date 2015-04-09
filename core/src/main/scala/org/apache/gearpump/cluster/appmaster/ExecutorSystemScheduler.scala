@@ -51,6 +51,7 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
   implicit val actorSystem = context.system
   var currentSystemId = 0
 
+
   var resourceAgents = Map.empty[ActorRef, ActorRef]
 
   def receive: Receive = clientCommands orElse resourceAllocationMessageHandler orElse executorSystemMessageHandler
@@ -155,11 +156,15 @@ object ExecutorSystemScheduler {
     private var unallocatedResource: Int = 0
     import context.dispatcher
 
+    import Constants._
+    val timeout = context.system.settings.config.getInt(GEARPUMP_RESOURCE_ALLOCATION_TIMEOUT)
+
+
     def receive: Receive = {
       case request: RequestResource =>
         unallocatedResource += request.request.resource.slots
         Option(timeOutClock).map(_.cancel)
-        timeOutClock = context.system.scheduler.scheduleOnce(15 seconds, self, ResourceAllocationTimeOut)
+        timeOutClock = context.system.scheduler.scheduleOnce(timeout seconds, self, ResourceAllocationTimeOut)
         resourceRequestor = sender
         master ! request
       case ResourceAllocated(allocations) =>

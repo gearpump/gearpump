@@ -51,7 +51,7 @@ class WebSocketWorker(val serverConnection: ActorRef, val master: ActorRef) exte
       LOG.info(s"Got BinaryFrame ${x.payload}")
 
     case metrics: MetricType =>
-      LOG.info("writing metrics")
+      LOG.debug("writing metrics")
       client ! TextFrame(write(metrics))
 
     case Push(msg) => send(TextFrame(msg))

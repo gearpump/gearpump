@@ -30,6 +30,7 @@ import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, AllocateResourceTimeOut}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
+import org.apache.gearpump.streaming.appmaster.TaskManager.{TaskList, GetTaskList}
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.util.ActorPathUtil
@@ -115,13 +116,16 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.debug(s"AppMaster got AppMasterDataDetailRequest for $appId ")
 
-      val executorsFuture = getExecutorList
+      val executorsFuture = getExecutorMap
       val clockFuture = getMinClock
+      val taskFuture = getTaskList
 
       val appMasterDataDetail = for {executors <- executorsFuture
-        clock <- clockFuture } yield {
+        clock <- clockFuture
+        tasks <- taskFuture
+      } yield {
         StreamingAppMasterDataDetail(appId, app.name, dag.processors,
-          Graph.vertexHierarchyLevelMap(dag.graph), dag.graph, address, clock, executors)
+          Graph.vertexHierarchyLevelMap(dag.graph), dag.graph, address, clock, executors, tasks.tasks)
       }
 
       val client = sender()
@@ -149,8 +153,14 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
   }
 
-  private def getExecutorList: Future[List[String]] = {
-    (executorManager ? GetExecutorPathList).asInstanceOf[Future[List[ActorPath]]].map(list => list.map(_.toString))
+  private def getExecutorMap = {
+    (executorManager ? GetExecutorPathList).asInstanceOf[Future[List[ActorPath]]].map{
+      list => list.map(path => (Integer.parseInt(path.name), path.toString)).toMap
+    }
+  }
+
+  private def getTaskList = {
+    (taskManager ? GetTaskList).asInstanceOf[Future[TaskList]]
   }
 }
 

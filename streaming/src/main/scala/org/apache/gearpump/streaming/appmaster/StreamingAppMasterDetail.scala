@@ -22,6 +22,7 @@ import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming._
+import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
 import upickle.{Js, Writer}
 
@@ -34,7 +35,8 @@ case class StreamingAppMasterDataDetail(
     dag: Graph[ProcessorId, Partitioner] = null,
     actorPath: String = null,
     clock: TimeStamp = 0,
-    executors: List[String] = null)
+    executors: Map[ExecutorId, String] = null,
+    tasks: Map[TaskId, ExecutorId] = null)
   extends AppMasterDataDetail {
 
   def toJson: String = {
@@ -52,10 +54,12 @@ object StreamingAppMasterDataDetail {
       val actorPath = Js.Str(app.actorPath)
       val clock = Js.Num(app.clock)
 
-      val executorsSeq = Some(app.executors).map{ executors =>
-        executors.map(Js.Str(_)).toSeq
-      }.map { seq =>
-        Js.Arr(seq: _*)
+      val executorsMap = Some(app.executors).map{ executors =>
+        upickle.writeJs(executors)
+      }
+
+      val taskMap = Some(app.tasks).map { tasks =>
+        upickle.writeJs(tasks)
       }
 
       // erase task configuration
@@ -82,7 +86,8 @@ object StreamingAppMasterDataDetail {
         ("appName", appName),
         ("actorPath", actorPath),
         ("clock", clock),
-        ("executors", executorsSeq.getOrElse(Js.Null)),
+        ("executors", executorsMap.getOrElse(Js.Null)),
+        ("tasks", taskMap.getOrElse(Js.Null)),
         ("processors", processors),
         ("processorLevels", upickle.writeJs(app.processorLevels)),
         ("dag", dag)

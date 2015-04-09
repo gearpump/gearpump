@@ -26,7 +26,7 @@ import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, ClusterConfigSource, ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
-import org.apache.gearpump.streaming.{StreamApplication}
+import org.apache.gearpump.streaming.{ExecutorId, StreamApplication}
 import org.apache.gearpump.streaming.executor.Executor
 import org.apache.gearpump.util.{Constants, LogUtil, Util}
 
@@ -54,7 +54,6 @@ private[appmaster] class ExecutorManager (
   import appContext.{appId, appJar, masterProxy, username}
 
   private var taskManager: ActorRef = null
-  private var currentExecutorId = 0
   implicit val actorSystem = context.system
   private val systemConfig = context.system.settings.config
 
@@ -70,14 +69,15 @@ private[appmaster] class ExecutorManager (
     case StartExecutors(resources) =>
       masterProxy ! StartExecutorSystems(resources, getExecutorJvmConfig)
     case ExecutorSystemStarted(executorSystem) =>
-      import executorSystem.{address, worker, resource => executorResource}
-      val executorContext = ExecutorContext(currentExecutorId, worker.workerId, appId, appMaster =  context.parent, executorResource)
+      import executorSystem.{executorSystemId, address, worker, resource => executorResource}
+
+      val executorId = executorSystemId
+      val executorContext = ExecutorContext(executorId, worker.workerId, appId, appMaster =  context.parent, executorResource)
 
       //start executor
-      val executor = context.actorOf(executorFactory(executorContext, userConfig, address, currentExecutorId),
-        currentExecutorId.toString)
+      val executor = context.actorOf(executorFactory(executorContext, userConfig, address, executorId),
+        executorId.toString)
       executorSystem.bindLifeCycleWith(executor)
-      currentExecutorId += 1
 
     case StartExecutorSystemTimeout =>
       taskManager ! StartExecutorsTimeOut
@@ -119,8 +119,6 @@ private[appmaster] object ExecutorManager {
   case class BroadCast(msg: Any)
 
   case object GetExecutorPathList
-
-  type ExecutorId = Int
 
   case class ExecutorStarted(executor: ActorRef, executorId: Int, resource: Resource, workerId: Int)
   case class ExecutorStopped(executorId: Int)
