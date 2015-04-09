@@ -5,63 +5,39 @@
 'use strict';
 angular.module('dashboard.apps.appmaster')
 
-  .controller('AppProcessorCtrl', ['$scope', function ($scope) {
-
-    function makeArray(size) {
-      var array = [];
-      for (var i = 0; i < size; ++i) {
-        array.push(Math.random(50, 100));
-      }
-      return array;
+  .controller('AppProcessorCtrl', ['$scope', '$interval', 'conf', function ($scope, $interval, conf) {
+    if ($scope.activeProcessorId === undefined) {
+      return;
     }
+    var activeProcessorId = Number($scope.activeProcessorId);
+    var processor = $scope.streamingDag.processors[activeProcessorId];
+    $scope.taskClass = processor.taskClass;
+    $scope.description = processor.description;
+    $scope.parallelism = processor.parallelism;
+    var connections = $scope.streamingDag.calculateProcessorConnections(activeProcessorId);
+    $scope.inputs = connections.inputs;
+    $scope.outputs = connections.outputs;
 
-    if ($scope.activeProcessorId) {
-      var activeProcessorId = Number($scope.activeProcessorId);
-      var processor = $scope.streamingDag.processors[activeProcessorId];
-      $scope.taskClass = processor.taskClass;
-      $scope.description = processor.description;
-      $scope.parallelism = processor.parallelism;
-      var connections = $scope.streamingDag.calculateProcessorConnections(activeProcessorId);
-      $scope.inputs = connections.inputs;
-      $scope.outputs = connections.outputs;
-
-      var xAxisDataNum = $scope.parallelism;
-      var skewData = $scope.streamingDag.getReceivedMessages(activeProcessorId).rate;
-
-      $scope.opt1 = {
-        inject: {
-          height: '110px',
-          xAxisDataNum: xAxisDataNum,
-          tooltip: false,
-          xAxis: [{boundaryGap: true}],
-          grid: {y: 50, x2: 5}
-        },
-        series: [
-          {name: 's1', data: skewData, type: 'bar', clickable: true}
-        ],
-        xAxisData: function() {
-          var array = [];
-          for (var i = 0; i < xAxisDataNum; ++i) {
-            array.push('t' + i);
-          }
-          return array;
-        }()
-      };
-    }
-  }])
-
-  .controller('AppTasksChartsCtrl', ['$scope', '$interval', 'conf', function ($scope, $interval, conf) {
-
-    function makeArray(size) {
-      var array = [];
-      for (var i = 0; i < size; ++i) {
-        array.push(Math.random(50, 100));
-      }
-      return array;
-    }
+    var skewData = angular.copy($scope.streamingDag.getReceivedMessages(activeProcessorId).rate);
+    var skewDataOption = {
+      inject: {
+        height: '110px',
+        xAxisDataNum: $scope.parallelism
+      },
+      series: [
+        {name: 's1', data: skewData, type: 'bar', clickable: true}
+      ],
+      xAxisData: function() {
+        var array = [];
+        for (var i = 0; i < $scope.parallelism; ++i) {
+          array.push('t' + i);
+        }
+        return array;
+      }()
+    };
 
     var xAxisDataNum = 25;
-    $scope.options2 = {
+    var lineChartOptionBase = {
       inject: {
         height: '108px',
         xAxisDataNum: xAxisDataNum,
@@ -69,7 +45,7 @@ angular.module('dashboard.apps.appmaster')
           formatter: function (params) {
             var s = params[0].name;
             angular.forEach(params, function (param) {
-              s += '<br/>' + param.seriesName + ': ' + Number(param.value).toFixed(0);
+              s += '<br/>' + param.seriesName + ': ' + Number(param.value).toFixed(3);
             });
             return s;
           }
@@ -82,46 +58,62 @@ angular.module('dashboard.apps.appmaster')
         }
         return array;
       }(),
-      xAxisData: [0]
+      xAxisData: [0],
+      stacked: true
     };
 
     $scope.chart = {
       receiveMessageRate: {
-        options: angular.copy($scope.options2)
+        options: angular.copy(lineChartOptionBase)
       },
       sendMessageRate: {
-        options: angular.copy($scope.options2)
+        options: angular.copy(lineChartOptionBase)
       },
       processingTime: {
-        options: angular.copy($scope.options2)
+        options: angular.copy(lineChartOptionBase)
       },
       receiveLatency: {
-        options: angular.copy($scope.options2)
+        options: angular.copy(lineChartOptionBase)
+      },
+      receiveSkew: {
+        options: skewDataOption
       }
     };
 
     var timeoutPromise = $interval(function () {
-      var taskId = 0;
-      if (!$scope.streamingDag.hasMetrics() || !$scope.activeProcessorId) {
+      if (!$scope.streamingDag.hasMetrics() || activeProcessorId === undefined) {
         return;
       }
       var xLabel = moment().format('HH:mm:ss');
+      var receivedMessages = $scope.streamingDag.getReceivedMessages(activeProcessorId);
+      var sentMessages = $scope.streamingDag.getSentMessages(activeProcessorId);
+      var processingTimes = $scope.streamingDag.getProcessingTime(activeProcessorId);
+      var receiveLatencies = $scope.streamingDag.getReceiveLatency(activeProcessorId);
+
       $scope.chart.receiveMessageRate.data = [{
         x: xLabel,
-        y: [$scope.streamingDag.getReceivedMessages($scope.activeProcessorId).rate]
+        y: receivedMessages.rate
       }];
       $scope.chart.sendMessageRate.data = [{
         x: xLabel,
-        y: [$scope.streamingDag.getSentMessages($scope.activeProcessorId).rate]
+        y: sentMessages.rate
       }];
       $scope.chart.processingTime.data = [{
         x: xLabel,
-        y: $scope.streamingDag.getProcessingTime($scope.activeProcessorId)
+        y: processingTimes
       }];
       $scope.chart.receiveLatency.data = [{
         x: xLabel,
-        y: $scope.streamingDag.getReceiveLatency($scope.activeProcessorId)
+        y: receiveLatencies
       }];
+      $scope.chart.receiveSkew.data = function() {
+        var skewData = receivedMessages.rate;
+        var array = [];
+        for (var i = 0; i < $scope.parallelism; ++i) {
+          array.push({x: 't' + i, y: skewData[i]});
+        }
+        return array;
+      }();
     }, conf.updateChartInterval);
 
     $scope.$on('$destroy', function () {

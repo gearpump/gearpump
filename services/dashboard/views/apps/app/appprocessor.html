@@ -31,14 +31,15 @@
         </table>
       </div>
       <div class="col-md-6">
-        <sparkline options="opt1" data="data1"/>
+        <h5>Receive Throughput Skew</h5>
+        <barchart options="chart.receiveSkew.options" data="chart.receiveSkew.data"/>
       </div>
     </div>
   </div>
   <!-- end of left half -->
 
   <!-- right half -->
-  <div class="col-md-6" ng-controller="AppTasksChartsCtrl">
+  <div class="col-md-6">
     <div class="panel panel-default">
       <div class="panel-heading">Receive Message Rate (message/s)</div>
       <div class="panel-body">
