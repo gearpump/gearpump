@@ -135,7 +135,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         context.become(waitForMasterConfirm(repeatActionUtil(30)(masterProxy ! RegisterWorker(id))))
       } else if (ActorUtil.isChildActorPath(self, actor)) {
         //one executor is down,
-        LOG.info(s"Worker[$id] Executor is down ${actor.path.name}")
+        LOG.info(s"Worker[$id] Executor is down ${getExecutorName(actor)}")
 
         val allocated = allocatedResource.get(actor)
         if (allocated.isDefined) {
@@ -145,6 +145,10 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
           sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         }
       }
+  }
+
+  private def getExecutorName(actorRef: ActorRef):  Option[String] = {
+    executorNameToActor.find(_._2 == actorRef).map(_._1)
   }
 
   import context.dispatcher

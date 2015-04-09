@@ -30,33 +30,44 @@ import org.apache.gearpump.util.LogUtil
  */
 class ClusterConfig private(all: Config, systemProperties : Config, gearpump : Config,
                 masterConfig : Config, workerConfig: Config,
-                applicationConfig: Config, uiConfig: Config, base: Config, remain: Config) {
+                applicationConfig: Config, uiConfig: Config, base: Config,
+                windows: Config, remain: Config) {
   def master : Config = {
     systemProperties.withFallback(gearpump)
-      .withFallback(masterConfig.getConfig(MASTER)).withFallback(base.getConfig(BASE)).withFallback(remain)
+      .withFallback(masterConfig.getConfig(MASTER)).
+      withFallback(baseConfig).withFallback(remain)
   }
 
   def worker : Config = {
     systemProperties.withFallback(gearpump)
-      .withFallback(workerConfig.getConfig(WORKER)).withFallback(base.getConfig(BASE)).withFallback(remain)
+      .withFallback(workerConfig.getConfig(WORKER)).
+      withFallback(baseConfig).withFallback(remain)
   }
 
   def application : Config = {
     systemProperties.withFallback(gearpump)
       .withFallback(applicationConfig.getConfig(APPLICATION))
-      .withFallback(base.getConfig(BASE)).withFallback(remain)
+      .withFallback(baseConfig).withFallback(remain)
   }
 
   def ui: Config = {
     systemProperties.withFallback(gearpump)
       .withFallback(uiConfig.getConfig(UI))
-      .withFallback(base.getConfig(BASE)).withFallback(remain)
+      .withFallback(baseConfig).withFallback(remain)
   }
 
   def applicationSubmissionConfig: Config = {
     val config = systemProperties.withFallback(gearpump)
       .withFallback(applicationConfig)
       config.withOnlyPath(GEARPUMP).withFallback(config.withOnlyPath(APPLICATION))
+  }
+
+  private def baseConfig: Config = {
+    if (akka.util.Helpers.isWindows) {
+      windows.getConfig(WINDOWS).withFallback(base.getConfig(BASE))
+    } else {
+      base.getConfig(BASE)
+    }
   }
 }
 
@@ -117,6 +128,7 @@ object ClusterConfig {
     val worker = all.withOnlyPath(WORKER)
     val application = all.withOnlyPath(APPLICATION)
     val ui = all.withOnlyPath(UI)
+    val windows = all.withOnlyPath(WINDOWS)
 
     val remain = all.withoutPath(GEARPUMP).withoutPath(MASTER).withoutPath(BASE).
       withoutPath(WORKER).withoutPath(APPLICATION).withoutPath(UI)
@@ -127,6 +139,7 @@ object ClusterConfig {
       applicationConfig = application,
       uiConfig = ui,
       base = base,
+      windows = windows,
       remain = remain)
   }
 
@@ -134,7 +147,7 @@ object ClusterConfig {
    * throw ConfigValidationException if fails
    */
   private def validateConfig(config: Config): Unit = {
-    val validSections = List(GEARPUMP, MASTER, WORKER, BASE, UI, APPLICATION)
+    val validSections = List(GEARPUMP, MASTER, WORKER, BASE, UI, APPLICATION, WINDOWS)
 
     import scala.collection.JavaConverters._
     config.root.entrySet().asScala.map(_.getKey).map {key =>

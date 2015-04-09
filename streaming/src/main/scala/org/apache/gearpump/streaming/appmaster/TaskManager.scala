@@ -30,7 +30,7 @@ import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTa
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.DAG
+import org.apache.gearpump.streaming.{TaskIndex, ExecutorId, DAG}
 import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
@@ -177,6 +177,16 @@ private[appmaster] class TaskManager(
         }
       }
       stay
+
+    case Event(GetTaskList, state@ TaskRegistrationState(register)) =>
+      val taskList = register.getTaskLocations.locations.flatMap { pair =>
+        val (hostPort, taskSet) = pair
+        taskSet.map{ taskId =>
+          (taskId, register.getExecutorId(taskId).getOrElse(-1))
+        }
+      }
+      sender ! TaskList(taskList)
+      stay
   }
 
   import org.apache.gearpump.TimeStamp
@@ -206,4 +216,8 @@ private [appmaster] object TaskManager {
 
   case class DagInit(dag: DAG)
   case object MessageLoss
+
+  case object GetTaskList
+
+  case class TaskList(tasks: Map[TaskId, ExecutorId])
 }

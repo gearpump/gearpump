@@ -28,6 +28,7 @@ object Constants {
   val MASTER = "master"
   val WORKER = "worker"
   val APPLICATION = "application"
+  val WINDOWS = "windows"
   val UI = "ui"
   val BASE = "base"
 
@@ -98,5 +99,9 @@ object Constants {
 
   // time interval between two recent data points.
   val GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS = "gearpump.metrics.retainRecentData.intervalMs"
+
+  // AppMaster will max wait this time until it declare the resource cannot be allocated,
+  // and shutdown itself
+  val GEARPUMP_RESOURCE_ALLOCATION_TIMEOUT = "gearpump.resource-allocation-timeout-seconds"
 
 }

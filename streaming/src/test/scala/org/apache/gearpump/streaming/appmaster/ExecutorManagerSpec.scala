@@ -26,6 +26,7 @@ import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.streaming.ExecutorId
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.ExecutorManagerSpec.StartExecutorActorPlease
