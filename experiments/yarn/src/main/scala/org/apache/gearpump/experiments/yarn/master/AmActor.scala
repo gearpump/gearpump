@@ -196,7 +196,7 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
       s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
       s"-D${Constants.GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
       s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
-      s"-D${Constants.GEARPUMP_LOCAL_HOSTNAME}=$workerHost")
+      s"-D${Constants.GEARPUMP_HOSTNAME}=$workerHost")
 
     val classPath = Array(s"pack/$version/conf", s"pack/$version/dashboard", s"pack/$version/lib/*")
 

@@ -53,11 +53,5 @@ class MetricsQueryServiceSpec extends FlatSpec with ScalatestRouteTest with Metr
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
     }
-
-    (Get(s"/api/$REST_VERSION/metrics/latest/app/0/processor") ~> metricQueryRoute).asInstanceOf[RouteResult] ~> check{
-      val responseBody = response.entity.asString
-      val config = Try(ConfigFactory.parseString(responseBody))
-      assert(config.isSuccess)
-    }
   }
 }

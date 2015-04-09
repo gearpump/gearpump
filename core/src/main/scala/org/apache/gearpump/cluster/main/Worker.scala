@@ -43,7 +43,7 @@ object Worker extends App{
 
   def start(): Unit = {
     val id = uuid
-    val hostName = workerConfig.getString(Constants.GEARPUMP_LOCAL_HOSTNAME)
+    val hostName = workerConfig.getString(Constants.GEARPUMP_HOSTNAME)
     workerConfig = workerConfig.
       withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(hostName))
 

@@ -55,7 +55,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, Partitioner]](StreamApplication.DAG).get)
 
   private val (taskManager, executorManager, clockService) = {
-    val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext),
+    val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext, app.clusterConfig),
       ActorPathUtil.executorManagerActorName)
 
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)

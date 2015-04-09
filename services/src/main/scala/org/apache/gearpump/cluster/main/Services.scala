@@ -39,8 +39,8 @@ object Services extends App {
 
   def start(): Unit = {
 
-    var config = ClusterConfig.load.application
-    val hostName = config.getString(Constants.GEARPUMP_LOCAL_HOSTNAME)
+    var config = ClusterConfig.load.ui
+    val hostName = config.getString(Constants.GEARPUMP_HOSTNAME)
     config = config.withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(hostName))
 
     import scala.collection.JavaConversions._

@@ -74,7 +74,7 @@ class DistServiceAppMaster(appContext : AppMasterContext, app : AppDescription) 
   }
 
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
-    val config: Config = Option(app.clusterConfig).map(_.getConfig).getOrElse(ConfigFactory.empty())
+    val config: Config = app.clusterConfig
     val jvmSetting = Util.resolveJvmSetting(config.withFallback(context.system.settings.config)).executor
     ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs,
       appJar, username, config)

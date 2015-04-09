@@ -20,15 +20,15 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.remote.RemoteScope
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
-import org.apache.gearpump.cluster.{AppMasterContext, ClusterConfigSource, ExecutorContext, UserConfig}
+import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, ClusterConfigSource, ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.{StreamApplication}
 import org.apache.gearpump.streaming.executor.Executor
-import org.apache.gearpump.util.{LogUtil, Util}
+import org.apache.gearpump.util.{Constants, LogUtil, Util}
 
 import scala.util.Try
 
@@ -45,7 +45,8 @@ import scala.util.Try
 private[appmaster] class ExecutorManager (
     userConfig: UserConfig,
     appContext: AppMasterContext,
-    executorFactory: (ExecutorContext, UserConfig, Address, ExecutorId) => Props)
+    executorFactory: (ExecutorContext, UserConfig, Address, ExecutorId) => Props,
+    clusterConfig: Config)
   extends Actor {
 
   private val LOG = LogUtil.getLogger(getClass)
@@ -105,9 +106,9 @@ private[appmaster] class ExecutorManager (
       }
   }
 
+  import Constants._
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
-    val executorClusterConfigSource = userConfig.getValue[ClusterConfigSource](StreamApplication.EXECUTOR_CLUSTER_CONFIG)
-    val executorAkkaConfig = executorClusterConfigSource.map(_.getConfig).getOrElse(ConfigFactory.empty)
+    val executorAkkaConfig = clusterConfig
     val jvmSetting = Util.resolveJvmSetting(executorAkkaConfig.withFallback(systemConfig)).executor
     ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs, appJar, username, executorAkkaConfig)
   }
@@ -128,7 +129,7 @@ private[appmaster] object ExecutorManager {
 
   case object StartExecutorsTimeOut
 
-  def props(userConfig: UserConfig, appContext: AppMasterContext): Props = {
+  def props(userConfig: UserConfig, appContext: AppMasterContext, clusterConfig: Config): Props = {
     val executorFactory =
         (executorContext: ExecutorContext,
          userConfig: UserConfig,
@@ -137,6 +138,6 @@ private[appmaster] object ExecutorManager {
       Props(classOf[Executor], executorContext, userConfig)
         .withDeploy(Deploy(scope = RemoteScope(address)))
 
-    Props(new ExecutorManager(userConfig, appContext, executorFactory))
+    Props(new ExecutorManager(userConfig, appContext, executorFactory, clusterConfig))
   }
 }

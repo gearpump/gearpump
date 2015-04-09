@@ -27,7 +27,7 @@ import org.apache.gearpump.cluster.AppMasterToMaster.{RegisterAppMaster, SaveApp
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{AppMasterContext, UserConfig}
+import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, UserConfig}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
@@ -49,7 +49,9 @@ object StreamingTestUtil {
     implicit val actorSystem = miniCluster.system
     val masterConf = AppMasterContext(appId, testUserName, Resource(1),  None,miniCluster.mockMaster,AppMasterRuntimeInfo(appId, appName = appId.toString))
 
-    val props = Props(new AppMaster(masterConf, StreamApplication("test", Graph.empty, UserConfig.empty)))
+    val app = StreamApplication("test", Graph.empty, UserConfig.empty)
+    val appDescription = AppDescription(app.name, app.appMaster.getName, app.userConfig)
+    val props = Props(new AppMaster(masterConf, appDescription))
     val appMaster = miniCluster.launchActor(props).asInstanceOf[TestActorRef[AppMaster]]
     val registerAppMaster = RegisterAppMaster(appMaster, masterConf.registerData)
     miniCluster.mockMaster.tell(registerAppMaster, appMaster)

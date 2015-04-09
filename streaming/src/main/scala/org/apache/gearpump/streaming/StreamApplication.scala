@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.ActorSystem
-import org.apache.gearpump.cluster.{Application, AppDescription, ClusterConfigSource, UserConfig}
+import org.apache.gearpump.cluster.{ApplicationMaster, ClusterConfig, Application, AppDescription, ClusterConfigSource, UserConfig}
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.task.Task
@@ -60,46 +60,19 @@ object Processor {
 
 case class ProcessorDescription(taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null) extends ReferenceEqual
 
-case class StreamApplication(name : String, userConfig: UserConfig, dag: Graph[ProcessorDescription, _ <: Partitioner], clusterConfig: ClusterConfigSource)
+case class StreamApplication(override val name : String,  inputUserConfig: UserConfig, dag: Graph[ProcessorDescription, _ <: Partitioner])
   extends Application {
-
-  override def appDescription(implicit system: ActorSystem): AppDescription = {
-    StreamApplication.StreamApplicationToAppDescription(this)
-  }
+  override def appMaster: Class[_ <: ApplicationMaster] = classOf[AppMaster]
+  override def userConfig(implicit system: ActorSystem): UserConfig = inputUserConfig.withValue(StreamApplication.DAG, dag)
 }
 
 object StreamApplication {
 
-  def apply (name : String, dag: Graph[_ <: Processor[Task], _ <: Partitioner], userConfig: UserConfig, clusterConfig: ClusterConfigSource = null): StreamApplication = {
+  def apply (name : String, dag: Graph[_ <: Processor[Task], _ <: Partitioner], userConfig: UserConfig): StreamApplication = {
     val graph = dag.mapVertex(Processor.ProcessorToProcessorDescription(_))
-    new StreamApplication(name, userConfig, graph, clusterConfig)
+    new StreamApplication(name, userConfig, graph)
   }
-
-
-  /**
-   * You need to provide a implicit val system: ActorSystem to do the conversion
-   */
-  implicit def StreamApplicationToAppDescription(app: StreamApplication)(implicit system: ActorSystem): AppDescription = {
-    import app._
-    AppDescription(name,  classOf[AppMaster].getName, userConfig.withValue(DAG, dag).withValue(EXECUTOR_CLUSTER_CONFIG, app.clusterConfig), app.clusterConfig)
-  }
-
-  implicit def AppDescriptionToStreamApplication(app: AppDescription)(implicit system: ActorSystem): StreamApplication = {
-    if (null == app) {
-      return null
-    }
-    val config = Option(app.userConfig)
-    val graph  = config match {
-      case Some(_config) =>
-        _config.getValue[Graph[ProcessorDescription, Partitioner]](StreamApplication.DAG).getOrElse(Graph.empty[ProcessorDescription, Partitioner])
-      case None =>
-        Graph.empty[ProcessorDescription,Partitioner]
-    }
-    StreamApplication(app.name,  app.userConfig, graph, app.clusterConfig)
-  }
-
 
   val DAG = "DAG"
-  val EXECUTOR_CLUSTER_CONFIG = "executorClusterConfig"
 }
 

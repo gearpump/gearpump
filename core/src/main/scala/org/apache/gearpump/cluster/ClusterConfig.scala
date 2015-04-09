@@ -28,21 +28,35 @@ import org.apache.gearpump.util.LogUtil
 /**
  * Please use ClusterConfig.load to construct this object
  */
-class ClusterConfig private(systemProperties : Config, gearpump : Config,
-                masterConfig : Config, workerConfig: Config, base: Config, remain: Config) {
+class ClusterConfig private(all: Config, systemProperties : Config, gearpump : Config,
+                masterConfig : Config, workerConfig: Config,
+                applicationConfig: Config, uiConfig: Config, base: Config, remain: Config) {
   def master : Config = {
     systemProperties.withFallback(gearpump)
-      .withFallback(masterConfig).withFallback(base).withFallback(remain)
+      .withFallback(masterConfig.getConfig(MASTER)).withFallback(base.getConfig(BASE)).withFallback(remain)
   }
 
   def worker : Config = {
     systemProperties.withFallback(gearpump)
-      .withFallback(workerConfig).withFallback(base).withFallback(remain)
+      .withFallback(workerConfig.getConfig(WORKER)).withFallback(base.getConfig(BASE)).withFallback(remain)
   }
 
   def application : Config = {
     systemProperties.withFallback(gearpump)
-      .withFallback(base).withFallback(remain)
+      .withFallback(applicationConfig.getConfig(APPLICATION))
+      .withFallback(base.getConfig(BASE)).withFallback(remain)
+  }
+
+  def ui: Config = {
+    systemProperties.withFallback(gearpump)
+      .withFallback(uiConfig.getConfig(UI))
+      .withFallback(base.getConfig(BASE)).withFallback(remain)
+  }
+
+  def applicationSubmissionConfig: Config = {
+    val config = systemProperties.withFallback(gearpump)
+      .withFallback(applicationConfig)
+      config.withOnlyPath(GEARPUMP).withFallback(config.withOnlyPath(APPLICATION))
   }
 }
 
@@ -98,20 +112,29 @@ object ClusterConfig {
     val all = ConfigFactory.load(config)
 
     val gearpump = all.withOnlyPath(GEARPUMP)
-    val master = all.getConfig(MASTER)
-    val base = all.getConfig(BASE)
-    val worker = all.getConfig(WORKER)
+    val master = all.withOnlyPath(MASTER)
+    val base = all.withOnlyPath(BASE)
+    val worker = all.withOnlyPath(WORKER)
+    val application = all.withOnlyPath(APPLICATION)
+    val ui = all.withOnlyPath(UI)
 
-    val remain = all.withoutPath(GEARPUMP).withoutPath(MASTER).withoutPath(BASE).withOnlyPath(WORKER)
+    val remain = all.withoutPath(GEARPUMP).withoutPath(MASTER).withoutPath(BASE).
+      withoutPath(WORKER).withoutPath(APPLICATION).withoutPath(UI)
 
-    new ClusterConfig(ConfigFactory.systemProperties(), gearpump, master, worker, base, remain)
+    new ClusterConfig(all = all, systemProperties = ConfigFactory.systemProperties(),
+      gearpump  = gearpump, masterConfig  = master,
+      workerConfig = worker,
+      applicationConfig = application,
+      uiConfig = ui,
+      base = base,
+      remain = remain)
   }
 
   /**
    * throw ConfigValidationException if fails
    */
   private def validateConfig(config: Config): Unit = {
-    val validSections = List(GEARPUMP, MASTER, WORKER, BASE)
+    val validSections = List(GEARPUMP, MASTER, WORKER, BASE, UI, APPLICATION)
 
     import scala.collection.JavaConverters._
     config.root.entrySet().asScala.map(_.getKey).map {key =>

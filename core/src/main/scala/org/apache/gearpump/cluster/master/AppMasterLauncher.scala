@@ -53,7 +53,8 @@ class AppMasterLauncher(
   val systemConfig = context.system.settings.config
   val TIMEOUT = Duration(15, TimeUnit.SECONDS)
 
-  val appMasterAkkaConfig: Config = Option(clusterConfig).map(_.getConfig).getOrElse(ConfigFactory.empty())
+  val appMasterAkkaConfig: Config = app.clusterConfig
+
   LOG.info(s"AppManager asking Master for resource for app $appId...")
   master ! RequestResource(appId, ResourceRequest(Resource(1)))
 
@@ -67,7 +68,7 @@ class AppMasterLauncher(
       val submissionTime = System.currentTimeMillis()
 
       val appMasterInfo = AppMasterRuntimeInfo(appId, app.name, worker, username,
-        submissionTime, config = appMasterAkkaConfig.withFallback(systemConfig).withOnlyPath(GEARPUMP))
+        submissionTime, config = appMasterAkkaConfig)
       val appMasterContext = AppMasterContext(appId, username, resource, jar, null, appMasterInfo)
 
       LOG.info(s"Try to launch a executor for app Master on ${worker} for app $appId")
