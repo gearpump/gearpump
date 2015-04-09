@@ -64,7 +64,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
         self ! flush
       } else {
         import context.dispatcher
-        context.system.scheduler.scheduleOnce(new FiniteDuration(5, TimeUnit.MILLISECONDS), self, flush)
+        context.system.scheduler.scheduleOnce(new FiniteDuration(conf.flushCheckInterval, TimeUnit.MILLISECONDS), self, flush)
       }
   }
 
