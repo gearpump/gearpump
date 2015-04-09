@@ -184,7 +184,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
           taskClocks.zipWithIndex.map { taskClockAndTaskIndex =>
             val (taskClock, taskIndex) = taskClockAndTaskIndex
             StallingTask(processorId, taskIndex, taskClock)
-          }
+          }.filter {_.taskClock == latestMinClock}
         }
       }.map{stallingClocks =>
           LOG.warn("Stalling processor clocks: " + stallingClocks.mkString(","))

@@ -126,6 +126,14 @@ private[appmaster] class TaskManager(
       register.registerTask(taskId, executorId, host)
       if (register.isAllTasksRegistered) {
         LOG.info(s"Sending Task locations to executors")
+        register.getTaskLocations.locations.toArray.foreach { pair =>
+          val (hostPort, taskSet) = pair
+          taskSet.foreach{ taskId =>
+            val executorId= register.getExecutorId(taskId)
+            LOG.info(s"TaskLocation: $hostPort task: $taskId, executor: $executorId")
+          }
+        }
+
         executorManager ! BroadCast(register.getTaskLocations)
         goto (ApplicationReady) using state
       } else {
