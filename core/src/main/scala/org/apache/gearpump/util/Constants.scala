@@ -59,7 +59,7 @@ object Constants {
   val NETTY_BASE_SLEEP_MS = "gearpump.netty.base-sleep-ms"
   val NETTY_MAX_SLEEP_MS = "gearpump.netty.max-sleep-ms"
   val NETTY_MESSAGE_BATCH_SIZE = "gearpump.netty.message-batch-size"
-  val NETTY_FLUSH_CHECK_INTERVAL = "gearpump.netty.fulsh-check-interval"
+  val NETTY_FLUSH_CHECK_INTERVAL = "gearpump.netty.flush-check-interval"
   val NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname"
 
   val GEARPUMP_USERNAME = "gearpump.username"
