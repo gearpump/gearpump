@@ -122,6 +122,37 @@ angular.module('directive.echarts', [])
     };
   }])
 
+/**
+ * Sparkline is an one data series line chart without axis labels.
+ */
+  .directive('barchart', [function () {
+    return {
+      restrict: 'E',
+      scope: {options: '=', data: '='},
+      controller: ['$scope', 'LookAndFeel', function ($scope, LookAndFeel) {
+        var use = $scope.options || {};
+        var colors = LookAndFeel.colorSet(0);
+        var options = {
+          tooltip: LookAndFeel.tooltip({color: colors.grid}),
+          dataZoom: {show: false},
+          grid: {borderWidth: 0, x: 5, y: 5, x2: 5, y2: 30},
+          xAxis: [{
+            axisLabel: {show: true},
+            axisLine: {show: false},
+            axisTick: {show: false},
+            splitLine: {show: false},
+            data: use.xAxisData
+          }],
+          yAxis: [{show: false}],
+          series: [LookAndFeel.makeDataSeries(
+            angular.merge({colors: colors}, use.series[0]))]
+        };
+        $scope.options = angular.merge(options, use.inject);
+      }],
+      template: '<div echart options="options" data="data"></div>'
+    };
+  }])
+
   .factory('LookAndFeel', function () {
     return {
       /** */
