@@ -60,7 +60,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     val appMaster = TestProbe()(getActorSystem)
     val worker = TestProbe()(getActorSystem)
 
-    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId = 0, "appName"))
+    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(0, "appName"))
     appMaster.send(appManager, register)
     appMaster.expectMsgType[AppMasterRegistered]
   }
@@ -114,7 +114,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
 
     haService.expectMsgType[UpdateMasterState]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId = appId, app.name)))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId, app.name)))
     appMaster.expectMsgType[AppMasterRegistered]
 
     client.send(appManager, submit)
@@ -133,7 +133,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
 
     haService.expectMsgType[UpdateMasterState]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId = appId, app.name)))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId, app.name)))
     appMaster.expectMsgType[AppMasterRegistered]
 
     client.send(appManager, ResolveAppId(appId))

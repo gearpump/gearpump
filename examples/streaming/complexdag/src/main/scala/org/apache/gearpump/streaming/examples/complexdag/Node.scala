@@ -29,6 +29,6 @@ class Node (taskContext : TaskContext, conf: UserConfig) extends Task(taskContex
 
   override def onNext(msg : Message) : Unit = {
     val list = msg.msg.asInstanceOf[List[String]]
-    output(new Message(list :+ getClass.getCanonicalName, System.currentTimeMillis()))
+    output(new Message((list :+ getClass.getCanonicalName).toArray, System.currentTimeMillis()))
   }
 }
