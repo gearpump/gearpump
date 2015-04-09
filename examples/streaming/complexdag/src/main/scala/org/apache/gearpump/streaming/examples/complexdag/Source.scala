@@ -22,6 +22,8 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
+import scala.collection.mutable.ListBuffer
+
 class Source(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.{output, self}
 
@@ -30,7 +32,7 @@ class Source(taskContext: TaskContext, conf: UserConfig) extends Task(taskContex
   }
 
   override def onNext(msg: Message): Unit = {
-    val list = List(getClass.getCanonicalName)
+    val list = Vector(getClass.getCanonicalName)
     output(new Message(list, System.currentTimeMillis))
     self ! Message("continue", System.currentTimeMillis())
   }

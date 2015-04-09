@@ -65,10 +65,12 @@ object Build extends sbt.Build {
           "bintray/non" at "http://dl.bintray.com/non/maven",
           "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
           "clockfly" at "http://dl.bintray.com/clockfly/maven"
-        )
+        ),
+        addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
     ) ++
     Seq(
       scalaVersion := scalaVersionNumber,
+      crossScalaVersions := Seq("2.10.5"),
       organization := "com.github.intel-hadoop",
       parallelExecution in Test := false,
       parallelExecution in ThisBuild := false,
@@ -118,7 +120,7 @@ object Build extends sbt.Build {
         </developer>
       </developers>
     }
-  ) 
+  )
 
   val coreDependencies = Seq(
         libraryDependencies ++= Seq(
@@ -142,7 +144,7 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-        "org.scala-lang" % "scala-compiler" % scalaVersionNumber,
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
         ("org.apache.hadoop" % "hadoop-common" % clouderaVersion).
@@ -164,6 +166,11 @@ object Build extends sbt.Build {
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
         "org.mockito" % "mockito-core" % mockitoVersion % "test",
         "junit" % "junit" % junitVersion % "test"
+      ),
+     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
+     libraryDependencies ++= (
+        if (scalaVersion.value.startsWith("2.10")) List("org.scalamacros" %% "quasiquotes" % "2.1.0-M5")
+        else Nil
       )
   )
 
@@ -350,7 +357,7 @@ object Build extends sbt.Build {
           "org.webjars" % "momentjs" % "2.9.0",
           "org.webjars" % "smart-table" % "2.0.1",
           "org.webjars" % "visjs" % "3.11.0"
-        )
+        ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
       )
   ) dependsOn(streaming % "test->test;compile->compile")
 

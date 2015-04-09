@@ -30,7 +30,7 @@ import org.scalatest.{Matchers, WordSpec}
 class SourceSpec extends WordSpec with Matchers {
 
   "Source" should {
-    "Source should send a msg of List[String](classOf[Source].getCanonicalName)" in {
+    "Source should send a msg of Vector[String](classOf[Source].getCanonicalName)" in {
       val system1 = ActorSystem("Source", TestUtil.DEFAULT_CONFIG)
 
       val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
@@ -40,7 +40,7 @@ class SourceSpec extends WordSpec with Matchers {
       val source = new Source(context, UserConfig.empty)
       source.onNext(Message("start"))
 
-      verify(context).output(argMatch[Message](List(classOf[Source].getCanonicalName) == _.msg))
+      verify(context).output(argMatch[Message](Vector(classOf[Source].getCanonicalName) == _.msg))
     }
   }
 }

@@ -44,7 +44,7 @@ class GearpumpNimbus(clientContext: ClientContext) extends Nimbus.Iface {
   }
 
   override def submitTopologyWithOpts(name: String, uploadedJarLocation: String, jsonConf: String, topology: StormTopology, options: SubmitOptions): Unit = {
-    import org.apache.gearpump.experiments.storm.util.StormUtil._
+    import org.apache.gearpump.experiments.storm.util.StormUtil.{LOG => _, _}
     topologies += name -> topology
     implicit val system = clientContext.system
     val graphBuilder = new GraphBuilder

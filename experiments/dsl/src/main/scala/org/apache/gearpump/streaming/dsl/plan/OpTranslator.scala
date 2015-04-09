@@ -47,7 +47,7 @@ class OpTranslator extends java.io.Serializable {
           case InMemoryCollectionSource(collection, parallism, description) =>
             Processor[SourceTask[Object, Object]](parallism,
               description = description + "." + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, collection))
+              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, collection.toArray))
           case groupby@ GroupByOp(_, parallism, description) =>
             Processor[GroupByTask[Object, Object, Object]](parallism,
               description = description + "." + func.description,
