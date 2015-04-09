@@ -89,7 +89,7 @@ private[appmaster] class ExecutorManager (
       taskManager ! ExecutorStarted(executor, executorId, resource, workerId)
 
     case BroadCast(msg) =>
-      LOG.info(s"broadcasting $msg")
+      LOG.info(s"broadcasting ${msg.getClass.getName}")
       context.children.foreach(_ ! msg)
 
     case GetExecutorPathList =>
