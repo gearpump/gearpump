@@ -61,9 +61,7 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
       val requestor = sender()
       val executorSystemConfig = start.executorSystemConfig
       val session  = Session(requestor, executorSystemConfig)
-      val agent = resourceAgents.get(requestor).getOrElse{
-        context.actorOf(Props(new ResourceAgent(masterProxy, session)))
-      }
+      val agent = resourceAgents.getOrElse(requestor, context.actorOf(Props(new ResourceAgent(masterProxy, session))))
       resourceAgents = resourceAgents + (sender -> agent)
 
       start.resources.foreach {resource =>

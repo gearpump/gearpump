@@ -54,17 +54,16 @@ class ExecutorSystemLauncher (appId: Int, session: Session) extends Actor {
     case LaunchExecutorSystem(worker, executorSystemId, resource) =>
       val launcherPath = ActorUtil.getFullPath(context.system, self.path)
       val jvmConfig = Option(session.executorSystemJvmConfig)
-        .map(getExecutorJvmConfig(_, s"app${appId}system${executorSystemId}", launcherPath))
-        .getOrElse(null)
+        .map(getExecutorJvmConfig(_, s"app${appId}system${executorSystemId}", launcherPath)).orNull
 
       val launch = LaunchExecutor(appId, executorSystemId, resource, jvmConfig)
       LOG.info(s"Launching Executor ...appId: $appId, executorSystemId: $executorSystemId, slots: ${resource.slots} on worker $worker")
 
       worker.ref ! launch
-      context.become(waitForActorSystemToStart(sender, launch, worker))
+      context.become(waitForActorSystemToStart(sender, launch, worker, executorSystemId))
   }
 
-  def waitForActorSystemToStart(replyTo: ActorRef, launch: LaunchExecutor, worker: WorkerInfo) : Receive = {
+  def waitForActorSystemToStart(replyTo: ActorRef, launch: LaunchExecutor, worker: WorkerInfo, executorSystemId: Int) : Receive = {
     case RegisterActorSystem(systemPath) =>
       import launch._
       timeout.cancel()
@@ -78,7 +77,7 @@ class ExecutorSystemLauncher (appId: Int, session: Session) extends Actor {
       replyTo ! LaunchExecutorSystemRejected(launch.resource, reason, session)
       context.stop(self)
     case timeout: LaunchExecutorSystemTimeout =>
-      LOG.error("The Executor ActorSystem has not been started in time, cannot start Executor" +
+      LOG.error(s"The Executor ActorSystem $executorSystemId has not been started in time, cannot start Executor" +
         "in it...")
       replyTo ! timeout
       context.stop(self)
