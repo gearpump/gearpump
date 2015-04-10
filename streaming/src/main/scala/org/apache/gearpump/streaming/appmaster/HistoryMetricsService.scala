@@ -73,8 +73,6 @@ class HistoryMetricsService(appId: Int, config: HistoryMetricsConfig) extends Ac
         } else {
           result.append(metricsStore(name).read: _*)
         }
-      } else {
-        LOG.error(s"metrics store $name doesn't match pattern $regex")
       }
     }
     result.toList
