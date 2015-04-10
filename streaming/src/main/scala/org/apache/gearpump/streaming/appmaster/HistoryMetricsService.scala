@@ -69,7 +69,7 @@ class HistoryMetricsService(appId: Int, config: HistoryMetricsConfig) extends Ac
     metricsStore.keys.foreach { name =>
       if (name.matches(regex)) {
         if (readLastest) {
-          result.append(metricsStore(name).readLast: _*)
+          result.append(metricsStore(name).readLatest: _*)
         } else {
           result.append(metricsStore(name).read: _*)
         }
@@ -119,7 +119,7 @@ object HistoryMetricsService {
      * read latest inserted records
      * @return
      */
-    def readLast: List[HistoryMetricsItem]
+    def readLatest: List[HistoryMetricsItem]
   }
 
   object MetricsStore {
@@ -160,10 +160,13 @@ object HistoryMetricsService {
     extends MetricsStore{
 
     val queue = new util.ArrayDeque[MinMaxMetrics]()
+    private var latest = List.empty[HistoryMetricsItem]
 
     def add(inputMetrics: MetricType): Unit = {
       val now = System.currentTimeMillis()
       val metrics = HistoryMetricsItem(now, inputMetrics)
+      latest = List(metrics)
+
       val head = queue.peek()
       if (head == null || now - head.startTimeMs > retainIntervalMs) {
         //insert new data point to head
@@ -196,13 +199,8 @@ object HistoryMetricsService {
       result.toList
     }
 
-    override def readLast: List[HistoryMetricsItem] = {
-      val result = new ListBuffer[HistoryMetricsItem]
-      Option(queue.peek()).map { pair =>
-        result.prepend(pair.max)
-        result.prepend(pair.min)
-      }
-      result.toList
+    override def readLatest: List[HistoryMetricsItem] = {
+      latest
     }
   }
 
@@ -215,20 +213,25 @@ object HistoryMetricsService {
    */
   class SingleValueMetricsStore (retainCount: Int, retainIntervalMs: Long) extends MetricsStore{
 
-    val queue =  new util.ArrayDeque[HistoryMetricsItem]()
+    private val queue =  new util.ArrayDeque[HistoryMetricsItem]()
+    private var latest = List.empty[HistoryMetricsItem]
 
     def add(inputMetrics: MetricType): Unit = {
       val now = System.currentTimeMillis()
       val head = queue.peek()
+      val metrics = HistoryMetricsItem(now, inputMetrics)
+      latest = List(metrics)
+
       if (head == null || now - head.time > retainIntervalMs) {
 
-        queue.addFirst(HistoryMetricsItem(now, inputMetrics))
+        queue.addFirst(metrics)
 
         // remove old data
         if (queue.size() > retainCount) {
           queue.removeLast()
         }
       }
+
     }
 
     def read: List[HistoryMetricsItem] = {
@@ -238,12 +241,8 @@ object HistoryMetricsService {
       result.toList
     }
 
-    override def readLast: List[HistoryMetricsItem] = {
-      val result = new ListBuffer[HistoryMetricsItem]
-      Option(queue.peek()).map { item =>
-        result.prepend(item)
-      }
-      result.toList
+    override def readLatest: List[HistoryMetricsItem] = {
+      latest
     }
   }
 
@@ -282,8 +281,8 @@ object HistoryMetricsService {
       history.read ++ recent.read
     }
 
-    override def readLast: List[HistoryMetricsItem] = {
-      recent.readLast
+    override def readLatest: List[HistoryMetricsItem] = {
+      recent.readLatest
     }
   }
 
@@ -309,8 +308,8 @@ object HistoryMetricsService {
       history.read ++ recent.read
     }
 
-    override def readLast: List[HistoryMetricsItem] = {
-      recent.readLast
+    override def readLatest: List[HistoryMetricsItem] = {
+      recent.readLatest
     }
   }
 
@@ -333,8 +332,8 @@ object HistoryMetricsService {
       history.read ++ recent.read
     }
 
-    override def readLast: List[HistoryMetricsItem] = {
-      recent.readLast
+    override def readLatest: List[HistoryMetricsItem] = {
+      recent.readLatest
     }
   }
 }
