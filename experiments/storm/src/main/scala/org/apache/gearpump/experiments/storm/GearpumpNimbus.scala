@@ -40,6 +40,7 @@ class GearpumpNimbus(clientContext: ClientContext) extends Nimbus.Iface {
   override def killTopologyWithOpts(name: String, options: KillOptions): Unit = {
     topologies -= name
     clientContext.shutdown(applications.getOrElse(name, throw new RuntimeException(s"topology $name not found")))
+    applications -= name
     LOG.info(s"Killed topology $name")
   }
 

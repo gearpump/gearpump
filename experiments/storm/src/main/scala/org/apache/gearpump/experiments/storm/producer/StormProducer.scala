@@ -18,13 +18,15 @@
 
 package org.apache.gearpump.experiments.storm.producer
 
-import backtype.storm.generated.{SpoutSpec, ComponentObject}
-import backtype.storm.spout.{ISpout, SpoutOutputCollector}
+import backtype.storm.generated.SpoutSpec
+import backtype.storm.spout.{ShellSpout, ISpout, SpoutOutputCollector}
 import backtype.storm.utils.Utils
+import java.util.{List => JList}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.util.GraphBuilder
+import org.apache.gearpump.experiments.storm.util.{StormTuple, GraphBuilder}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import scala.collection.JavaConversions._
 
 private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
@@ -39,10 +41,16 @@ private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
   private val spoutSpec = conf.getValue[SpoutSpec](GraphBuilder.COMPONENT_SPEC)
       .getOrElse(throw new RuntimeException(s"Storm spout spec not found for processor $pid"))
   private val spout = Utils.getSetComponentObject(spoutSpec.get_spout_object()).asInstanceOf[ISpout]
-  private val topologyContext = getTopologyContext(topology, stormConfig, Map(pid -> spoutId), pid)
+
+
 
   override def onStart(startTime: StartTime): Unit = {
-    val delegate = new StormSpoutOutputCollector(pid, spoutId, taskContext)
+    val topologyContext = getTopologyContext(topology, stormConfig, Map(pid -> spoutId), pid,
+      multiLang = spout.isInstanceOf[ShellSpout])
+    val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
+      taskContext.output(Message(StormTuple(tuple.toList, pid, spoutId, streamId)))
+    }
+    val delegate = new StormSpoutOutputCollector(outputFn)
     spout.open(stormConfig, topologyContext, new SpoutOutputCollector(delegate))
     self ! Message("start")
   }

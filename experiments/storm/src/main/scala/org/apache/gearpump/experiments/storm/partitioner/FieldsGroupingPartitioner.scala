@@ -22,13 +22,13 @@ import backtype.storm.tuple.Fields
 import org.apache.gearpump.Message
 import org.apache.gearpump.experiments.storm.util.StormTuple
 import org.apache.gearpump.partitioner.Partitioner
-import scala.collection.JavaConverters._
+import scala.collection.JavaConversions._
 
 
 private[storm] class FieldsGroupingPartitioner(outFields: Fields, groupFields: Fields) extends Partitioner {
   override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
-    val values = msg.msg.asInstanceOf[StormTuple].values
-    val hash = outFields.select(groupFields, values.asJava).hashCode()
+    val values = msg.msg.asInstanceOf[StormTuple].tuple
+    val hash = outFields.select(groupFields, values).hashCode()
     (hash & Integer.MAX_VALUE) % partitionNum
   }
 }

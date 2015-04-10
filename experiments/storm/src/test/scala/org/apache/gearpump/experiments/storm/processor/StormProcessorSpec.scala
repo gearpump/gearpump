@@ -31,16 +31,18 @@ import org.json.simple.JSONValue
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 import scala.collection.JavaConversions._
 
-class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers {
+class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
   import org.apache.gearpump.experiments.storm.util.StormUtil._
 
   property("StormProcessor should work") {
     implicit val system = ActorSystem("test")
     val topology = TopologyUtil.getTestTopology
+    val componentToStreamFields = getComponentToStreamFields(topology)
     val graphBuilder = new GraphBuilder()
     val processorGraph = graphBuilder.build(topology)
     val processors = DAG(processorGraph.mapVertex(Processor.ProcessorToProcessorDescription(_))).processors
@@ -50,9 +52,8 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers {
       .withValue(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
     val fieldGen = Gen.alphaStr
 
+    val bolts = topology.get_bolts()
     forAll(fieldGen) { (field: String) =>
-      val values: List[AnyRef] = List(field)
-      val bolts = topology.get_bolts()
       processors foreach { case (pid, procDesc) =>
         val conf = procDesc.taskConf
         val cid = conf.getString(COMPONENT_ID).getOrElse(
@@ -63,13 +64,15 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers {
             fail(s"bolt not found for processor $pid")
           )
           bolt shouldBe bolts.get(cid)
-          bolt.get_common().get_inputs() foreach { case (streamId, _) =>
-            val (sourceTaskId, sourceComponentId) = findSourceTaskId(processors, streamId, pid)
+          bolt.get_common().get_inputs() foreach { case (streamId, grouping) =>
+            val (spid, scid) = findSourceTaskId(processors, streamId, pid)
             val taskContext = MockUtil.mockTaskContext
             when(taskContext.taskId).thenReturn(TaskId(pid, 0))
             val stormProcessor = new StormProcessor(taskContext, procDesc.taskConf.withConfig(userConfig))
             stormProcessor.onStart(StartTime(0))
-            stormProcessor.onNext(Message(StormTuple(values, sourceTaskId, sourceComponentId, Utils.DEFAULT_STREAM_ID)))
+            val values = List.fill(componentToStreamFields.get(scid).size)(field)
+            val stormTuple = StormTuple(values, spid, scid, streamId.get_streamId())
+            stormProcessor.onNext(Message(stormTuple))
             verify(taskContext).output(anyObject())
           }
         }
