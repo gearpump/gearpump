@@ -43,7 +43,7 @@ trait MetricsQueryService extends HttpService  {
     implicit val timeout = Constants.FUTURE_TIMEOUT
     pathPrefix("api"/s"$REST_VERSION") {
       path("metrics" / "app" / IntNumber / RestPath ) { (appId, path) =>
-        parameter("readlatest" ? "false") { readLatestInput =>
+        parameter("readLatest" ? "false") { readLatestInput =>
           val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
           onComplete((master ? QueryHistoryMetrics(appId, path.head.toString, readLatest))
             .asInstanceOf[Future[HistoryMetrics]]) {
