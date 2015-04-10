@@ -18,7 +18,7 @@ gearpump {
   }
   
   master {
-    command = "$JAVA_HOME/bin/java"
+    command = "$JAVA_HOME/bin/java -Xmx256m"
     main = "org.apache.gearpump.cluster.main.Master"
     containers = "1"
     ip = ""
@@ -29,7 +29,7 @@ gearpump {
   }
   
   worker {
-    command = "$JAVA_HOME/bin/java"
+    command = "$JAVA_HOME/bin/java -Xmx256m"
     main = "org.apache.gearpump.cluster.main.Worker"    
     containers = "1"
     memory = "1024"
