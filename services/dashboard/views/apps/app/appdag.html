@@ -24,29 +24,29 @@
   <div class="row">
     <div class="col-md-12">
       <metrics-card
-        m-title="Total Input Messages"
+        m-title="Sink Processors Total Received Messages"
         m-explanation=""
         m-value="{{receivedMessages.total|humanize}}"
         m-unit="messages"/>
     </div>
     <div class="col-md-12">
       <metrics-card
-        m-title="Total Output Messages"
+        m-title="Source Processors Total Sent Messages"
         m-explanation=""
         m-value="{{sentMessages.total|humanize}}"
         m-unit="messages"/>
     </div>
     <div class="col-md-12">
       <metrics-card
-        m-title="Input Message Rate"
-        m-explanation="Input message receive rate"
+        m-title="Sink Processors Receive Throughput"
+        m-explanation="Message receive throughput of sink processors"
         m-value="{{receivedMessages.rate|number:0}}"
         m-unit="message/s"/>
     </div>
     <div class="col-md-12">
       <metrics-card
-        m-title="Output Message Rate"
-        m-explanation="Output message send rate"
+        m-title="Source Processors Send Throughput"
+        m-explanation="Message send throughput of source processors"
         m-value="{{sentMessages.rate|number:0}}"
         m-unit="message/s"/>
     </div>

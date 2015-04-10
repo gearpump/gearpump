@@ -28,11 +28,11 @@ angular
   }])
 
   .constant('conf', {
-    debug: false,
     updateChartInterval: 2000,
     updateVisDagInterval: 2000,
     restapiAutoRefreshInterval: 2000,
     restapiRoot: location.pathname + 'api/v1.0',
+    webSocketPreferred: false,
     webSocketSendTimeout: 500
   })
 

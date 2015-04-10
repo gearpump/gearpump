@@ -14,8 +14,8 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
       });
   }])
 
-  .controller('AppMasterCtrl', ['$scope', '$routeParams', 'breadcrumbs', 'restapi', 'StreamingService', 'StreamingDag',
-    function ($scope, $routeParams, breadcrumbs, restapi, StreamingService, StreamingDag) {
+  .controller('AppMasterCtrl', ['$scope', '$routeParams', 'breadcrumbs', 'restapi', 'StreamingService', 'conf', 'StreamingDag',
+    function ($scope, $routeParams, breadcrumbs, restapi, StreamingService, conf, StreamingDag) {
       $scope.tabs = [
         {heading: 'Status', templateUrl: 'views/apps/app/appstatus.html', controller: 'AppStatusCtrl'},
         {heading: 'DAG', templateUrl: 'views/apps/app/appdag.html', controller: 'AppDagCtrl'},
@@ -52,34 +52,31 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
               // in couple of seconds. This will cause some charts to be empty. For better user experience,
               // we will manually fetch metrics via restapi at least once, before websocket is ready.
               if (!$scope.streamingDag.hasMetrics()) {
-                restapi.repeatUntil('/metrics/app/' + $scope.app.id + '/app' + $scope.app.id +'?readLatest=true', $scope,
-                  function (data) {
-                    // TODO: Serde HistoryMetrics (#458)
-                    if (!$scope.streamingDag.hasMetrics() && data !== null) {
-                      $scope.streamingDag.updateMetricsArray(data.metrics);
-                      $scope.redrawVisGraph();
-                    }
-                    return $scope.streamingDag.hasMetrics();
-                  });
+                var url = '/metrics/app/' + $scope.app.id + '/app' + $scope.app.id +'?readLatest=true';
+                restapi.repeatUntil(url, $scope, function (data) {
+                  // TODO: Serde HistoryMetrics (#458)
+                  if (data !== null &&
+                    (!conf.webSocketPreferred || !$scope.streamingDag.hasMetrics())) {
+                    $scope.streamingDag.updateMetricsArray(data.metrics);
+                  }
+                  return conf.webSocketPreferred && $scope.streamingDag.hasMetrics();
+                });
               }
             }
-            $scope.redrawVisGraph();
           }
         });
 
-      /** Redraw VisGraph on demand */
-      $scope.redrawVisGraph = function () {
-      };
-
-      var request = JSON.stringify(
-        ["org.apache.gearpump.cluster.MasterToAppMaster.AppMasterMetricsRequest",
-          {appId: parseInt($scope.app.id)}
-        ]);
-      StreamingService.subscribe(request, $scope, function (event) {
-        // TODO: Serde Metrics (#458)
-        var obj = angular.fromJson(event.data);
-        $scope.streamingDag.updateMetrics(obj[0], obj[1]);
-      });
+      if (conf.webSocketPreferred) {
+        var request = JSON.stringify(
+          ["org.apache.gearpump.cluster.MasterToAppMaster.AppMasterMetricsRequest",
+            {appId: parseInt($scope.app.id)}
+          ]);
+        StreamingService.subscribe(request, $scope, function (event) {
+          // TODO: Serde Metrics (#458)
+          var obj = angular.fromJson(event.data);
+          $scope.streamingDag.updateMetrics(obj[0], obj[1]);
+        });
+      }
 
       $scope.switchToTaskTab = function (processorId) {
         $scope.activeProcessorId = processorId;

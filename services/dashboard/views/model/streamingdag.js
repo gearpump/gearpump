@@ -182,14 +182,14 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
           result.total.push(processorResult.total);
           result.rate.push(processorResult.rate);
         }, /* scope */ this);
-        return {total: d3.sum(result.total), rate: d3.mean(result.rate)};
+        return {total: d3.sum(result.total), rate: d3.sum(result.rate)};
       },
 
       _getProcessedMessagesByProcessor: function(metricsGroup, processorId, aggregated) {
         var taskCountArray = this._getAggregatedMetrics(metricsGroup, 'count', processorId);
         var taskRateArray = this._getAggregatedMetrics(metricsGroup, 'meanRate', processorId);
         return aggregated ?
-          {total: d3.sum(taskCountArray), rate: d3.mean(taskRateArray)} :
+          {total: d3.sum(taskCountArray), rate: d3.sum(taskRateArray)} :
           {total: taskCountArray, rate: taskRateArray};
       },
 
