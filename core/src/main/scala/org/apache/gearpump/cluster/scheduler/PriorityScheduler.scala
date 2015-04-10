@@ -88,7 +88,7 @@ class PriorityScheduler extends Scheduler{
 
   def resourceRequestHandler: Receive = {
     case RequestResource(appId, request) =>
-      LOG.info(s"Request resource: appId: $appId, slots: ${request.resource.slots}")
+      LOG.info(s"Request resource: appId: $appId, slots: ${request.resource.slots}, relaxation: ${request.relaxation}")
       val appMaster = sender()
       resourceRequests.enqueue(new PendingRequest(appId, appMaster, request, System.currentTimeMillis()))
       allocateResource()
