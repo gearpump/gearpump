@@ -25,7 +25,7 @@ import java.util.{HashMap => JHashMap, List => JList, Map => JMap}
 import akka.actor.ActorSystem
 import backtype.storm.generated.{ComponentCommon, StormTopology}
 import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.Fields
+import backtype.storm.tuple.{TupleImpl, Tuple, Fields}
 import backtype.storm.utils.Utils
 import clojure.lang.Atom
 import org.apache.commons.io.{FileUtils, IOUtils}
@@ -47,6 +47,8 @@ object StormUtil {
 
   private val stormConfig = Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
 
+
+
   def getTopology(config: UserConfig)(implicit system: ActorSystem) : StormTopology = {
     config.getValue[StormTopology](TOPOLOGY)
       .getOrElse(throw new RuntimeException("storm topology is not found"))
@@ -63,12 +65,24 @@ object StormUtil {
   def getTopologyContext(topology: StormTopology,
                          stormConf: JMap[_, _],
                          processorToComponent: Map[Int, String],
-                         taskId: Int): TopologyContext = {
+                         taskId: Int,
+                         multiLang: Boolean): TopologyContext = {
+    if (multiLang) {
+      getTopologyContext(topology, stormConf, processorToComponent, taskId, mkCodeDir, mkPidDir)
+    } else {
+      getTopologyContext(topology, stormConf, processorToComponent, taskId)
+    }
+  }
+
+  def getTopologyContext(topology: StormTopology,
+                         stormConf: JMap[_, _],
+                         processorToComponent: Map[Int, String],
+                         taskId: Int,
+                         codeDir: => String = null,
+                         pidDir: => String = null): TopologyContext = {
     val taskToComponent = getTaskToComponent(processorToComponent)
     val componentToSortedTasks = getComponentToSortedTasks(processorToComponent)
     val componentToStreamFields = getComponentToStreamFields(topology)
-    val codeDir = mkCodeDir
-    val pidDir = mkPidDir
     new TopologyContext(
       topology, stormConf, taskToComponent,
       componentToSortedTasks, componentToStreamFields, null,
@@ -76,7 +90,7 @@ object StormUtil {
   }
 
   // a workaround to support storm ShellBolt
-  def mkPidDir: String = {
+  private def mkPidDir: String = {
     val pidDir = FileUtils.getTempDirectoryPath + File.separator + "pid"
     try {
       FileUtils.forceMkdir(new File(pidDir))
@@ -88,7 +102,7 @@ object StormUtil {
   }
 
   // a workaround to support storm ShellBolt
-  def mkCodeDir: String = {
+  private def mkCodeDir: String = {
     val jarPath = System.getProperty("java.class.path").split(":").last
     val destDir = FileUtils.getTempDirectoryPath + File.separator + "storm"
 

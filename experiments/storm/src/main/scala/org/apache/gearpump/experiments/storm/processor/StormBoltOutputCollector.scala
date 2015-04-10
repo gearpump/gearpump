@@ -20,7 +20,7 @@ package org.apache.gearpump.experiments.storm.processor
 
 import java.util.{Collection => JCollection, List => JList}
 
-import backtype.storm.task.IOutputCollector
+import backtype.storm.task.{TopologyContext, IOutputCollector}
 import backtype.storm.tuple.Tuple
 import org.apache.gearpump.Message
 import org.apache.gearpump.experiments.storm.util.StormTuple
@@ -28,11 +28,10 @@ import org.apache.gearpump.streaming.task.TaskContext
 
 import scala.collection.JavaConversions._
 
-private[storm] class StormBoltOutputCollector(pid: Int, componentId: String, taskContext: TaskContext) extends IOutputCollector {
-  import taskContext.output
+private[storm] class StormBoltOutputCollector(outputFn: (String, JList[AnyRef]) => Unit) extends IOutputCollector {
 
   override def emit(streamId: String, anchors: JCollection[Tuple], tuple: JList[AnyRef]): JList[Integer] = {
-    output(Message(StormTuple(tuple.toList, pid, componentId, streamId)))
+    outputFn(streamId, tuple)
     null
   }
 

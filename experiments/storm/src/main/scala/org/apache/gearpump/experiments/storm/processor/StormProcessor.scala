@@ -22,16 +22,16 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
 import backtype.storm.generated.Bolt
-import backtype.storm.task.{IBolt, OutputCollector}
-import backtype.storm.tuple.TupleImpl
+import backtype.storm.task.{ShellBolt, IBolt, OutputCollector}
 import backtype.storm.utils.Utils
+import java.util.{List => JList}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.storm.util.{GraphBuilder, StormTuple}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
-import scala.collection.JavaConversions._
 
 import scala.concurrent.duration.FiniteDuration
+import scala.collection.JavaConversions._
 
 private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
@@ -53,9 +53,12 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
   private var scheduler : Cancellable = null
 
   override def onStart(startTime: StartTime): Unit = {
-    val delegate = new StormBoltOutputCollector(pid, boltId, taskContext)
     val topologyContext = getTopologyContext(topology, stormConfig,
-      Map(pid -> boltId), pid)
+      Map(pid -> boltId), pid, multiLang = bolt.isInstanceOf[ShellBolt])
+    val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
+      taskContext.output(Message(StormTuple(tuple.toList, pid, boltId, streamId)))
+    }
+    val delegate = new StormBoltOutputCollector(outputFn)
     bolt.prepare(stormConfig, topologyContext, new OutputCollector(delegate))
     scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
@@ -63,16 +66,7 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
 
   override def onNext(msg: Message): Unit = {
     val stormTuple = msg.msg.asInstanceOf[StormTuple]
-    val values = stormTuple.values
-    val sourceTaskId = stormTuple.sourceTaskId
-    val sourceComponentId = stormTuple.sourceComponentId
-    val streamId = stormTuple.streamId
-
-    val topologyContext = getTopologyContext(topology, stormConfig,
-      Map(pid -> boltId, sourceTaskId -> sourceComponentId), pid)
-
-    val tuple = new TupleImpl(topologyContext, values, sourceTaskId, streamId, null)
-    bolt.execute(tuple)
+    bolt.execute(stormTuple.toTuple(topology, stormConfig))
     count += 1
   }
 

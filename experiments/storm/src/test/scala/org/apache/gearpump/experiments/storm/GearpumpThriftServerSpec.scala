@@ -16,20 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.experiments.storm.util
+package org.apache.gearpump.experiments.storm
 
-import akka.actor.ActorSystem
-import backtype.storm.generated.StormTopology
-import org.apache.gearpump.cluster.UserConfig
-import org.scalatest.{Matchers, PropSpec}
+import org.apache.thrift7.server.TServer
+import org.mockito.Mockito._
+import org.scalatest.WordSpec
+import org.scalatest.mock.MockitoSugar
 
-class StormUtilSpec extends PropSpec with Matchers {
+class GearpumpThriftServerSpec extends WordSpec with MockitoSugar {
 
-  implicit val system = ActorSystem("test")
+  "GearpumpThriftServer" should {
+    "run TServer.serve" in {
+      val tServer = mock[TServer]
+      val thriftServer = new GearpumpThriftServer(tServer)
 
-  property("get storm topology through user config") {
-    val topology = TopologyUtil.getTestTopology
-    val config = UserConfig.empty.withValue[StormTopology](StormUtil.TOPOLOGY, topology)
-    StormUtil.getTopology(config) shouldBe topology
+      thriftServer.run()
+
+      verify(tServer).serve()
+    }
+
+    "stop TServer" in {
+      val tServer = mock[TServer]
+      val thriftServer = new GearpumpThriftServer(tServer)
+
+      thriftServer.close()
+
+      verify(tServer).stop()
+    }
   }
+
 }

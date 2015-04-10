@@ -21,18 +21,11 @@ package org.apache.gearpump.experiments.storm.producer
 import java.util.{List => JList}
 
 import backtype.storm.spout.ISpoutOutputCollector
-import org.apache.gearpump.Message
-import org.apache.gearpump.experiments.storm.util.StormTuple
-import org.apache.gearpump.streaming.task.TaskContext
 
-import scala.collection.JavaConverters._
-
-private[storm] class StormSpoutOutputCollector(pid: Int, componentId: String, taskContext: TaskContext) extends ISpoutOutputCollector {
-  import taskContext.output
+private[storm] class StormSpoutOutputCollector(outputFn: (String, JList[AnyRef]) => Unit) extends ISpoutOutputCollector {
 
   override def emit(streamId: String, values: JList[AnyRef], messageId: scala.Any): JList[Integer] = {
-    val message = Message(StormTuple(values.asScala.toList, pid, componentId, streamId))
-    output(message)
+    outputFn(streamId, values)
     null
   }
 

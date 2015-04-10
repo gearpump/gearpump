@@ -22,14 +22,15 @@ import backtype.storm.tuple.Fields
 import backtype.storm.utils.Utils
 import org.apache.gearpump.Message
 import org.apache.gearpump.experiments.storm.util.StormTuple
+import org.mockito.Mockito._
 import org.scalacheck.Gen
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
 import scala.collection.JavaConversions._
-import scala.collection.convert._
 
-class FieldsGroupingPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
+class FieldsGroupingPartitionerSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   property("FieldsGroupingPartitioner should get partition based on grouping fields' hashcode") {
     val outFieldsGen = Gen.listOf[String](Gen.alphaStr.suchThat(_.length > 0)).map(_.toSet.toList) suchThat (_.size > 0)
@@ -37,11 +38,12 @@ class FieldsGroupingPartitionerSpec extends PropSpec with PropertyChecks with Ma
     val sourceTaskIdGen = Gen.chooseNum[Int](0, 1000)
 
     forAll(outFieldsGen, partitionNumGen, sourceTaskIdGen) { (outFields: List[String], partitionNum: Int, sourceTaskId: Int) =>
+      val stormTuple = mock[StormTuple]
+      when(stormTuple.tuple).thenReturn(outFields)
       1.to(outFields.length).foreach { num =>
         val groupingFields = outFields.take(num)
         val partitioner = new FieldsGroupingPartitioner(new Fields(outFields), new Fields(groupingFields))
-        val hash = WrapAsJava.seqAsJavaList[String](groupingFields).hashCode
-        val actualPartition = partitioner.getPartition(Message(StormTuple(outFields, sourceTaskId, sourceTaskId.toString, Utils.DEFAULT_STREAM_ID)), partitionNum)
+        val actualPartition = partitioner.getPartition(Message(stormTuple), partitionNum)
         actualPartition should (be >= 0 and be < partitionNum)
       }
 

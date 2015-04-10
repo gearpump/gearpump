@@ -29,25 +29,24 @@ object GearpumpThriftServer {
   val THRIFT_THREADS = 64
   val THRIFT_MAX_BUFFER_SIZE = 1048576
 
-  def apply(clientContext: ClientContext): GearpumpThriftServer = new GearpumpThriftServer(clientContext)
-}
-
-class GearpumpThriftServer(clientContext: ClientContext) extends Thread {
-  import org.apache.gearpump.experiments.storm.GearpumpThriftServer._
-
-  private val server: TServer = createServer
-
-  override def run(): Unit = {
-    server.serve()
-  }
-
-  private def createServer: TServer = {
+  private def createServer(clientContext: ClientContext): TServer = {
     val serverTransport = new TNonblockingServerSocket(THRIFT_PORT)
     val args = new THsHaServer.Args(serverTransport)
     args.workerThreads(THRIFT_THREADS)
       .protocolFactory(new TBinaryProtocol.Factory(false, true, THRIFT_MAX_BUFFER_SIZE))
       .processor(new Nimbus.Processor[GearpumpNimbus](new GearpumpNimbus(clientContext)))
     new THsHaServer(args)
+  }
+
+  def apply(clientContext: ClientContext): GearpumpThriftServer = {
+    new GearpumpThriftServer(createServer(clientContext))
+  }
+}
+
+class GearpumpThriftServer(server: TServer) extends Thread {
+
+  override def run(): Unit = {
+    server.serve()
   }
 
   def close(): Unit = {
