@@ -22,13 +22,15 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
+import scala.collection.mutable
+
 class Node (taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.output
 
   override def onStart(startTime : StartTime) : Unit = {}
 
   override def onNext(msg : Message) : Unit = {
-    val list = msg.msg.asInstanceOf[List[String]]
-    output(new Message((list :+ getClass.getCanonicalName).toArray, System.currentTimeMillis()))
+    val list = msg.msg.asInstanceOf[Array[String]]
+    output(new Message(list, System.currentTimeMillis()))
   }
 }
