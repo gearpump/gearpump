@@ -66,7 +66,7 @@ object Util {
   }
 
   def randInt: Int = {
-    ThreadLocalRandom.current.nextInt()
+    Math.abs(ThreadLocalRandom.current.nextInt())
   }
 
   def findFreePort: Try[Int] = {

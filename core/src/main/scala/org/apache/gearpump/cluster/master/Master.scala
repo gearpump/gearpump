@@ -24,6 +24,7 @@ import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
+import org.apache.gearpump.cluster.MasterToClient.MasterConfig
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.master.Master._
@@ -172,6 +173,8 @@ private[cluster] class Master extends Actor with Stash {
     case query: QueryAppMasterConfig =>
       LOG.debug("Master received QueryAppMasterConfig")
       appManager forward query
+    case QueryMasterConfig =>
+      sender ! MasterConfig(systemConfig)
     case query: QueryHistoryMetrics =>
       LOG.debug("Master received QueryHistoryMetrics")
       appManager forward query
