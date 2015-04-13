@@ -34,6 +34,7 @@ angular.module('dashboard.cluster')
             aliveFor: worker.aliveFor,
             executors: worker.executors,
             homeDir: worker.homeDirectory,
+            hostname: extractHostname(worker.actorPath),
             id: worker.workerId,
             logDir: worker.logFile,
             slots: {
@@ -44,6 +45,13 @@ angular.module('dashboard.cluster')
             status: worker.state
           };
         });
+
+        function extractHostname(actorPath) {
+          var i = actorPath.indexOf('@');
+          var hostname = actorPath.substr(i + 1);
+          i = hostname.indexOf('/');
+          return hostname.substr(0, i);
+        }
       });
   }])
 ;

@@ -18,7 +18,9 @@ angular.module('dashboard.apps.appmaster')
               clazz: 'label label-' + (data.status === 'active' ? 'success':'default')},
             {name: 'Submission Time', value: util.stringToDateTime(data.submissionTime) || '-'},
             {name: 'Start Time', value: util.stringToDateTime(data.startTime) || '-'},
-            {name: 'Stop Time', value: util.stringToDateTime(data.finishTime) || '-'}
+            {name: 'Stop Time', value: util.stringToDateTime(data.finishTime) || '-'},
+            {name: 'Number of Tasks', value: !$scope.streamingDag || $scope.streamingDag.getNumOfTasks()},
+            {name: 'Number of Executors', value: !$scope.streamingDag || Object.keys($scope.streamingDag.executors).length}
           ];
         }
       });

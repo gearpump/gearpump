@@ -30,9 +30,26 @@
           </tbody>
         </table>
       </div>
-      <div class="col-md-6">
-        <h5>Receive Throughput Skew</h5>
+      <div class="col-md-6" ng-if="parallelism>1">
+        <h6>SKEW: RECEIVE THROUGHPUT</h6>
         <barchart options="chart.receiveSkew.options" data="chart.receiveSkew.data"/>
+      </div>
+      <div class="col-md-12">
+        <h6>EXECUTORS</h6>
+        <table class="table table-striped table-hover table-condensed table-xs">
+          <thead>
+          <tr>
+            <th class="text-right">ID</th>
+            <th>ActorPath</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr ng-repeat="(id, path) in streamingDag.executors">
+            <td class="text-right"><span ng-bind="id"></span></td>
+            <td><span ng-bind="path"></span></td>
+          </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

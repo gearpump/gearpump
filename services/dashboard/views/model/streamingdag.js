@@ -9,13 +9,14 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
   .service('StreamingDag', ['Metrics', function (Metrics) {
 
     /** The constructor */
-    function StreamingDag(appId, processors, levels, edges) {
+    function StreamingDag(appId, processors, levels, edges, executors) {
       this.appId = appId;
       this.processors = _flatMap(processors); // TODO: Try and convert to Scala (#458)
       this.processorHierarchyLevels = _flatMap(levels);
       this.edges = _flatMap(edges, function (item) {
         return [item[0] + '_' + item[2], {source: item[0], target: item[2], type: item[1]}];
       });
+      this.executors = _flatMap(executors);
       this.meter = {};
       this.histogram = {};
     }
@@ -56,6 +57,14 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
 
       hasMetrics: function () {
         return Object.keys(this.meter).length + Object.keys(this.histogram).length > 0;
+      },
+
+      getNumOfTasks: function() {
+        var count = 0;
+        angular.forEach(this.processors, function (processor) {
+          count += processor.parallelism;
+        }, this);
+        return count;
       },
 
       getProcessorsData: function () {
@@ -137,7 +146,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       _getAggregatedMetrics: function (metricsGroup, metricsType, processorId) {
         var values = [];
         if (metricsGroup) {
-          var ids = processorId ? [processorId] : d3.keys(this.processors);
+          var ids = processorId !== undefined ? [processorId] : d3.keys(this.processors);
           ids.map(function (processorId) {
             var processorValues = this._getProcessorMetrics(processorId, metricsGroup, metricsType);
             values = values.concat(processorValues);
