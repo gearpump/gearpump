@@ -46,7 +46,7 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
           if (data.hasOwnProperty('dag') && data.hasOwnProperty('processors')) {
             if (!$scope.streamingDag) {
               $scope.streamingDag = new StreamingDag($scope.app.id, data.processors,
-                data.processorLevels, data.dag.edges);
+                data.processorLevels, data.dag.edges, data.executors);
 
               // Usually metrics will be pushed by websocket. In worst case, metrics might be available
               // in couple of seconds. This will cause some charts to be empty. For better user experience,

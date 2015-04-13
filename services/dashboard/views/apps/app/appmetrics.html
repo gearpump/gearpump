@@ -6,7 +6,7 @@
     <tr>
       <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
       <th st-sort="taskClass">Task Class</th>
-      <th class="text-right" st-sort="taskId">Task ID</th>
+      <th class="text-right" st-sort="processorId * 1000000 + taskId">Task ID</th>
       <th class="text-right" st-sort="count">Count
         <span class="glyphicon glyphicon-question-sign metrics-explanation" title="Count for sampling points"></span></th>
       <th class="text-right" st-sort="meanRate">Mean Rate
@@ -42,7 +42,7 @@
     <tr>
       <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
       <th st-sort="taskClass">Task Class</th>
-      <th class="text-right" st-sort="taskId">Task ID</th>
+      <th class="text-right" st-sort="processorId * 1000000 + taskId">Task ID</th>
       <th class="text-right" st-sort="count">Count
         <span class="glyphicon glyphicon-question-sign metrics-explanation" title="Count for sampling points"></span></th>
       <th class="text-right" st-sort="meanRate">Mean Rate
@@ -78,7 +78,7 @@
     <tr>
       <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
       <th st-sort="taskClass">Task Class</th>
-      <th class="text-right" st-sort="taskId">Task ID</th>
+      <th class="text-right" st-sort="processorId * 1000000 + taskId">Task ID</th>
       <th class="text-right" st-sort="count">Count
         <span class="glyphicon glyphicon-question-sign metrics-explanation" title="Count for sampling points"></span></th>
       <th class="text-right" st-sort="minimum">Min
@@ -120,7 +120,7 @@
     <tr>
       <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
       <th st-sort="taskClass">Task Class</th>
-      <th class="text-right" st-sort="taskId">Task ID</th>
+      <th class="text-right" st-sort="processorId * 1000000 + taskId">Task ID</th>
       <th class="text-right" st-sort="count">Count
         <span class="glyphicon glyphicon-question-sign metrics-explanation" title="Count for sampling points"></span></th>
       <th class="text-right" st-sort="minimum">Min

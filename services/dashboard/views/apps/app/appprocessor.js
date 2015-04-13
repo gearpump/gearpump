@@ -18,7 +18,7 @@ angular.module('dashboard.apps.appmaster')
     $scope.inputs = connections.inputs;
     $scope.outputs = connections.outputs;
 
-    var skewData = angular.copy($scope.streamingDag.getReceivedMessages(activeProcessorId).rate);
+    var skewData = $scope.streamingDag.getReceivedMessages(activeProcessorId).rate;
     var skewDataOption = {
       inject: {
         height: '110px',

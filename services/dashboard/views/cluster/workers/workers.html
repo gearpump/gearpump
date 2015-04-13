@@ -15,7 +15,7 @@
 <table class="table table-striped table-hover">
   <caption></caption>
   <tbody>
-  <tr ng-repeat="worker in workers track by $index">
+  <tr ng-repeat="worker in workers track by $index|orderBy: 'hostname'">
     <td>
       <table class="table-complex-details">
         <tr>
