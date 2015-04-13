@@ -222,6 +222,8 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   }
 
   def minClock: TimeStamp = Math.min(upstreamMinClock, minClockAtCurrentTask)
+
+  def getUpstreamMinClock: TimeStamp = upstreamMinClock
 }
 
 object TaskActor {

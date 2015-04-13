@@ -32,6 +32,10 @@ import org.apache.gearpump.cluster.UserConfig._
     new UserConfig(_config + (key -> value.toString))
   }
 
+  def withLong(key: String, value: Long): UserConfig = {
+    new UserConfig(_config + (key -> value.toString))
+  }
+
   def withString(key: String, value: String): UserConfig = {
     if (null == value) {
       this
@@ -42,6 +46,10 @@ import org.apache.gearpump.cluster.UserConfig._
 
   def getInt(key : String) : Option[Int] = {
     _config.get(key).map(_.toInt)
+  }
+
+  def getLong(key: String): Option[Long] = {
+    _config.get(key).map(_.toLong)
   }
 
   def getString(key : String) : Option[String] = {

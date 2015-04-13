@@ -53,6 +53,7 @@ object Build extends sbt.Build {
   val mockitoVersion = "1.10.8"
   val bijectionVersion = "0.7.0"
   val scalazVersion = "7.1.1"
+  val upickleVersion = "0.2.8"
 
   val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
@@ -160,7 +161,7 @@ object Build extends sbt.Build {
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
-        "com.lihaoyi" %% "upickle" % "0.2.8",
+        "com.lihaoyi" %% "upickle" % upickleVersion,
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
@@ -194,7 +195,7 @@ object Build extends sbt.Build {
       )
   ).dependsOn(core, streaming, services, external_kafka)
    .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase, pack, pipeline)
+      transport, state, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase, pack, pipeline)
 
   lazy val pack = Project(
     id = "gearpump-pack",
@@ -223,7 +224,7 @@ object Build extends sbt.Build {
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard", "/etc/hadoop/conf"))
       )
-  ).dependsOn(core, streaming, services, external_kafka, yarn,storm,dsl,hbase)
+  ).dependsOn(core, streaming, services, external_kafka, yarn,storm,dsl,hbase, state)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -363,8 +364,9 @@ object Build extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings
-  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
+  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport, state)
   
+
   lazy val services = Project(
     id = "gearpump-services",
     base = file("services"),
@@ -564,4 +566,19 @@ object Build extends sbt.Build {
         )
       )
   ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase)
+
+  lazy val state = Project(
+    id = "gearpump-experiments-state",
+    base = file("experiments/state"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "com.lihaoyi" %% "upickle" % upickleVersion,
+          "com.twitter" %% "bijection-core" % bijectionVersion,
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        )
+      )
+  ) dependsOn(streaming % "test->test; provided")
 }
