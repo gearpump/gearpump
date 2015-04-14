@@ -186,7 +186,8 @@ object Build extends sbt.Build {
         }
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase, pack, pipeline)
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka,
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase, pack, pipeline)
 
   lazy val pack = Project(
     id = "gearpump-pack",
@@ -324,11 +325,25 @@ object Build extends sbt.Build {
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
 
+  lazy val transport = Project(
+    id = "gearpump-examples-transport",
+    base = file("examples/streaming/transport"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test",
+          "io.spray" %%  "spray-json"    % sprayJsonVersion
+        )
+      )
+  ) dependsOn (streaming % "test->test", streaming % "provided")
+
   lazy val examples = Project(
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ myAssemblySettings
-  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler)
+  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
   
   lazy val services = Project(
     id = "gearpump-services",

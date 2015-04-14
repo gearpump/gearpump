@@ -1,0 +1,96 @@
+.ui-datepicker {
+  font-size: 11px;
+  }
+.sidebar-label {
+  font-size:15px;
+  font-family: calibri, Arial, Helvetica, sans-serif;
+}
+          
+.help {
+  font-size:12px;
+  font-family: calibri, Arial, Helvetica, sans-serif;
+}
+          
+div.splitter {
+  margin: 12px 0px 7px 0px;
+  clear: both;
+  border-top: 1px solid #EBEBEB;
+}
+
+input.sidebar {
+  width:165px
+}
+
+select.sidebar {
+  width:198px
+}
+          
+table.dataintable {
+  font-family: calibri, Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  margin-top: 10px;
+  border-collapse: collapse;
+  border: 1px solid #888;
+}
+
+table.dataintable th {
+  vertical-align: baseline;
+  padding: 5px 15px 5px 5px;
+  background-color: #EEE;
+  border: 1px solid #888;
+  text-align: left;
+}
+
+table.dataintable td {
+  vertical-align: text-top;
+  padding: 5px 15px 5px 5px;
+  background-color: #FFFFFF;
+  border: 1px solid #AAA;
+}
+
+#search{
+  width:100px;
+  height:25px;
+  position:relative;
+  left:0px;
+  top:5px;
+}
+
+#mytable{
+  width:100%;
+  height:300;
+  float:left;
+}
+
+#mychart{
+  height:400px;
+  width:100%;
+}
+
+#Menu{
+  height:100%;
+  width:245px;
+  float:left;
+}
+
+#header{
+  height:115px;
+  background-image: url(header.png);
+}
+
+#body{
+  height:100%;
+  width:100%;
+  background-image: url(body.png);
+  background-size:100% 100%;
+}
+
+#footer{
+  color:white;
+  height:70px;
+  line-height:70px;
+  text-align:middle;
+  clear:both;
+  text-align:center;
+  background-image: url(foot.png);
+}
