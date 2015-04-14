@@ -66,9 +66,10 @@ class VelocityInspector(taskContext: TaskContext, conf: UserConfig) extends Task
         if(records.size > 0) {
           val velocity = getVelocity(passRecord, records.last)
           val formatted = "%.2f".format(velocity)
-          if(velocity > fakePlateThreshold) {
-            LOG.info(s"vehicle ${passRecord.vehicleId} maybe a fake plate, the speed is $formatted km/h")
-          } else if(velocity > overdriveThreshold) {
+          if(velocity > overdriveThreshold) {
+            if(velocity > fakePlateThreshold) {
+              LOG.info(s"vehicle ${passRecord.vehicleId} maybe a fake plate, the speed is $formatted km/h")
+            }
             if(queryServerActor != null) {
               queryServerActor ! OverSpeedReport(passRecord.vehicleId, formatted, passRecord.timeStamp, passRecord.locationId)
             }

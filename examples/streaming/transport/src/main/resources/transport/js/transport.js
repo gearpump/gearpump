@@ -3,7 +3,7 @@ var myChart = echarts.init(document.getElementById("mychart"))
 echarts.util.mapData.params.params.football = {
     getGeoJson: function (callback) {
         $.ajax({
-            url: "../svg/city.svg",
+            url: "../svg/beijing.svg",
             dataType: 'xml',
             success: function(xml) {
                 callback(xml)
@@ -51,9 +51,7 @@ function initChart(chartid, vehicleId) {
         var records = json.records;
         var timeLine = new Array(records.length);
         var markPoints = new Array(records.length);
-        var markLines = new Array(records.length - 1);
         var options_ = new Array(records.length - 2);
-        var lastPoint = null;
         for(var i = 0; i < records.length; i++) {
           var record = records[i];
           var vehicleId = record.vehicleId;
@@ -62,12 +60,8 @@ function initChart(chartid, vehicleId) {
           var column = location[2];
           var time = new Date(Number(record.timeStamp)).toLocaleTimeString().replace(/^\D*/,'');
           timeLine[i] = time;
-          var currentPonit = {name: row, value: column, geoCoord:[row * 20, column * 10]};
+          var currentPonit = {name: "", value: i, geoCoord:[row * 90, column * 90]};
           markPoints[i] = currentPonit;
-          if(i >= 1) {
-            markLines[i - 1] = [lastPoint, currentPonit];
-          }
-          lastPoint = currentPonit;
         }
         options_[0] =
           {
@@ -115,7 +109,7 @@ function initChart(chartid, vehicleId) {
                       }
                     }
                   },
-                  data: markPoints
+                  data: [markPoints[0]]
                 },
                 markLine : {
                   smooth:true,
@@ -127,28 +121,28 @@ function initChart(chartid, vehicleId) {
                   },
                   itemStyle : {
                     normal: {
-                      borderWidth:1,
-                      color: 'black',
+                      borderWidth:2,
+                      color: 'red',
                       lineStyle: {
                         type: 'solid'
                       }
                     }
                   },
-                  data: [markLines[0]]
+                  data: []
                 }
               }
             ]
           }
-        for(var i = 1; i < markLines.length; i++){
+        for(var i = 1; i < markPoints.length; i++){
           options_[i] =
           {
             series: [
             {
               markPoint : {
-                data: markPoints
+                data: [markPoints[i]]
               },
               markLine : {
-                data: [markLines[i]]
+                data: []
               }
             }
             ]

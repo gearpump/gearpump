@@ -51,7 +51,7 @@ class PassRecordGenerator(vehicleId: String, city: MockCity, overdriveThreshold:
 }
 
 object PassRecordGenerator {
-  final val FAKE_PLATE_RATE = 0F
+  final val FAKE_PLATE_RATE = 0.01F
   final val OVERDRIVE_RATE = 0.05F
   final val TWOMINUTES = 2 * 60 * 1000
   

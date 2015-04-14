@@ -96,7 +96,7 @@ object QueryServer {
     def actorRefFactory = context
     implicit val system = context.system
 
-    IO(Http) ! Http.Bind(self, interface = "localhost", port = 8080)
+    IO(Http) ! Http.Bind(self, interface = "0.0.0.0", port = 8080)
 
     override def receive: Receive = runRoute(webServer ~ staticRoute)
 
