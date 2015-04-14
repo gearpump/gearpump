@@ -132,6 +132,13 @@ trait TaskContext {
    * @return
    */
    def sender: ActorRef
+
+
+  /**
+   * retrieve minClock from TaskActor
+   * @return
+   */
+  def minClock: TimeStamp
 }
 
 /**

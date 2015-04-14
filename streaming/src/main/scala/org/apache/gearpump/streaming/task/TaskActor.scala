@@ -221,7 +221,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       onUnManagedMessage(other)
   }
 
-  private def minClock: TimeStamp = Math.min(upstreamMinClock, minClockAtCurrentTask)
+  def minClock: TimeStamp = Math.min(upstreamMinClock, minClockAtCurrentTask)
 }
 
 object TaskActor {
