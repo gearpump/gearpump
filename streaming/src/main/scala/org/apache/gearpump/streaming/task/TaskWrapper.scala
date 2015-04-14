@@ -96,6 +96,10 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
     task.flatMap(_.stateClock)
   }
 
+  override def minClock: TimeStamp = {
+    actor.minClock
+  }
+
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable = {
     val dispatcher = actor.context.system.dispatcher
     actor.context.system.scheduler.schedule(initialDelay, interval)(f)(dispatcher)
