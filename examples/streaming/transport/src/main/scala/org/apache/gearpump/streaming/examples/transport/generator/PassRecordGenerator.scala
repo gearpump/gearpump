@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.examples.transport.generator
+package org.apache.gearpump.streaming.examples.transport.generator
 
-import org.apache.gearpump.examples.transport.PassRecord
+import org.apache.gearpump.streaming.examples.transport.PassRecord
 import org.apache.gearpump.util.LogUtil
 
 import scala.util.Random
@@ -51,7 +51,7 @@ class PassRecordGenerator(vehicleId: String, city: MockCity, overdriveThreshold:
 }
 
 object PassRecordGenerator {
-  final val FAKE_PLATE_RATE = 0F
+  final val FAKE_PLATE_RATE = 0.01F
   final val OVERDRIVE_RATE = 0.05F
   final val TWOMINUTES = 2 * 60 * 1000
   

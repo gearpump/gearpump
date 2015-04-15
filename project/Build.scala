@@ -186,7 +186,7 @@ object Build extends sbt.Build {
         }
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka,
+   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
       transport, examples, distributedshell, distributeservice, storm, yarn, dsl, hbase, pack, pipeline)
 
   lazy val pack = Project(
@@ -263,86 +263,98 @@ object Build extends sbt.Build {
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
     base = file("examples/streaming/fsio"),
-    settings = commonSettings ++
+    settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        )
+        ),
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",
     base = file("examples/streaming/sol"),
-    settings = commonSettings ++
+    settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        )
+        ),
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.sol.SOL"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
     base = file("examples/streaming/wordcount"),
-    settings = commonSettings ++
+    settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        )
+        ),
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.wordcount.WordCount"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
 
   lazy val stockcrawler = Project(
     id = "gearpump-examples-stockcrawler",
     base = file("examples/streaming/stockcrawler"),
-    settings = commonSettings ++
+    settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
           "joda-time" % "joda-time" % "2.7",
           "io.spray" %%  "spray-json"    % sprayJsonVersion
-        )
+        ),
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.stock.main.Stock"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided")
 
   lazy val complexdag = Project(
     id = "gearpump-examples-complexdag",
     base = file("examples/streaming/complexdag"),
-    settings = commonSettings ++
+    settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        )
+        ),
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.complexdag.Dag"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
 
   lazy val transport = Project(
     id = "gearpump-examples-transport",
     base = file("examples/streaming/transport"),
-    settings = commonSettings ++
+    settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test",
           "io.spray" %%  "spray-json"    % sprayJsonVersion
-        )
+        ),
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.transport.Transport"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
 
   lazy val examples = Project(
     id = "gearpump-examples",
     base = file("examples"),
-    settings = commonSettings ++ myAssemblySettings
+    settings = commonSettings
   ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
   
   lazy val services = Project(

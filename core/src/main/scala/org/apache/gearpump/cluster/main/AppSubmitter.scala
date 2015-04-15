@@ -18,6 +18,7 @@
 package org.apache.gearpump.cluster.main
 
 import java.net.{URL, URLClassLoader}
+import java.util.jar.JarFile
 
 import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger
@@ -32,10 +33,6 @@ object AppSubmitter extends App with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "namePrefix" -> CLIOption[String]("<application name prefix>", required = false, defaultValue = Some("")),
     "jar" -> CLIOption("<application>.jar", required = true))
-
-  override val remainArgs = Array(
-    "mainClass <remain arguments>"
-  )
 
   def start : Unit = {
 
@@ -63,7 +60,12 @@ object AppSubmitter extends App with ArgumentsParser {
       //start main class
       Option(jarFile.exists()) match {
         case Some(true) =>
-          val main = config.remainArgs(0)
+          val mainClass = new JarFile(jarFile).getManifest.getMainAttributes.getValue("Main-Class")
+          val (main, arguments) = if(mainClass != null && !mainClass.equals("") && !mainClass.equals(config.remainArgs(0))) {
+            (mainClass, config.remainArgs)
+          } else {
+            (config.remainArgs(0), config.remainArgs.drop(1))
+          }
           val classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:" + jarFile.getAbsolutePath)),
             Thread.currentThread().getContextClassLoader())
 
@@ -71,7 +73,7 @@ object AppSubmitter extends App with ArgumentsParser {
           Thread.currentThread().setContextClassLoader(classLoader)
           val clazz = classLoader.loadClass(main)
           val mainMethod = clazz.getMethod("main", classOf[Array[String]])
-          mainMethod.invoke(null, config.remainArgs.drop(1))
+          mainMethod.invoke(null, arguments)
 
         case Some(false) =>
           LOG.info(s"jar $jar does not exist")

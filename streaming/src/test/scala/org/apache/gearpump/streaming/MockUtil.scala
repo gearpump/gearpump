@@ -17,10 +17,9 @@
  */
 package org.apache.gearpump.streaming
 
-import akka.actor.{ActorSystem, Actor, ActorRef, ScalaActorRef}
-import akka.testkit.TestActorRef
-import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.task.TaskContext
+import akka.actor.{ActorSystem, Actor}
+import akka.testkit.{TestProbe, TestActorRef}
+import org.apache.gearpump.streaming.task.{TaskId, TaskContext}
 import org.mockito.{Mockito, ArgumentMatcher}
 import org.mockito.Mockito
 import org.mockito.Matchers
@@ -33,6 +32,8 @@ object MockUtil {
     val context = Mockito.mock(classOf[TaskContext])
     Mockito.when(context.self).thenReturn(Mockito.mock(classOf[TestActorRef[Actor]]))
     Mockito.when(context.system).thenReturn(system)
+    Mockito.when(context.parallelism).thenReturn(1)
+    Mockito.when(context.taskId).thenReturn(TaskId(0, 0))
     context
   }
 
