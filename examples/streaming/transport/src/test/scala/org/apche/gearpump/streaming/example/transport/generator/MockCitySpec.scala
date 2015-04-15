@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apche.gearpump.example.transport.generator
+package org.apche.gearpump.streaming.example.transport.generator
 
-import org.apache.gearpump.examples.transport.generator.MockCity
+import org.apache.gearpump.streaming.examples.transport.generator.MockCity
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
 

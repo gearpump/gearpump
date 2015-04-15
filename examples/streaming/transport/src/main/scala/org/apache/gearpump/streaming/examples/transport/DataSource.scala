@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.examples.transport
+package org.apache.gearpump.streaming.examples.transport
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.examples.transport.generator.{PassRecordGenerator, MockCity}
+import org.apache.gearpump.streaming.examples.transport.generator.{MockCity, PassRecordGenerator}
 import org.apache.gearpump.streaming.task.{TaskId, StartTime, TaskContext, Task}
 import scala.concurrent.duration._
 

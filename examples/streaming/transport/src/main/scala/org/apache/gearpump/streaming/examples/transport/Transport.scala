@@ -15,15 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.examples.transport.main
+package org.apache.gearpump.streaming.examples.transport
 
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.cluster.main.{ParseResult, ArgumentsParser, CLIOption}
-import org.apache.gearpump.examples.transport.{VelocityInspector, QueryServer, DataSource}
-import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
+import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.task.Task
-import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
+import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 

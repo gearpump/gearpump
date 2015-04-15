@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.examples.transport
+package org.apache.gearpump.streaming.examples.transport
 
 import java.util.concurrent.TimeUnit
 
@@ -24,10 +24,10 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.examples.transport.generator.MockCity
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef}
+import org.apache.gearpump.streaming.examples.transport.generator.MockCity
 import org.apache.gearpump.streaming.task.{TaskId, StartTime, Task, TaskContext}
 import org.apache.gearpump.util.Graph
 

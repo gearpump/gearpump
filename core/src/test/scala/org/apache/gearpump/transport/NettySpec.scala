@@ -28,7 +28,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 import org.apache.gearpump.util.Util
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 class NettySpec  extends FlatSpec with Matchers with MockitoSugar {
 
@@ -52,7 +52,7 @@ class NettySpec  extends FlatSpec with Matchers with MockitoSugar {
     (new java.util.Random()).nextBytes(data)
     val msg = new TaskMessage(0, 1, 2, data)
     client ! msg
-    serverActor.expectMsg(msg)
+    serverActor.expectMsg(15 seconds, msg)
     
     context.close
     system.shutdown()

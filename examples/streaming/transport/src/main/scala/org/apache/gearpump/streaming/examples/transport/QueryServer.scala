@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.examples.transport
+package org.apache.gearpump.streaming.examples.transport
 
 import java.util.concurrent.TimeUnit
 
@@ -25,7 +25,7 @@ import akka.io.IO
 import akka.pattern.ask
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.examples.transport.QueryServer.{GetAllRecords, WebServer}
+import QueryServer.{GetAllRecords, WebServer}
 import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef}
