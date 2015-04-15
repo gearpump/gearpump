@@ -257,13 +257,14 @@ object Build extends sbt.Build {
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
     base = file("examples/streaming/kafka"),
-    settings = commonSettings ++
+    settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        )
+        ),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided")
 
@@ -391,7 +392,10 @@ object Build extends sbt.Build {
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
     base = file("examples/distributedshell"),
-    settings = commonSettings
+    settings = commonSettings ++ myAssemblySettings ++
+      Seq(
+        target in assembly := baseDirectory.value.getParentFile / "target" / scalaVersionMajor
+      )
   ) dependsOn(core % "test->test", core % "provided")
 
   lazy val distributeservice = Project(
