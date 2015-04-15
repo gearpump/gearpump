@@ -58,6 +58,10 @@ object ClientToMaster {
 
   case class QueryAppMasterConfig(appId: Int)
 
+  case class QueryWorkerConfig(workerId: Int)
+
+  case object QueryMasterConfig
+
   case class QueryHistoryMetrics(appId: Int, path: String, readLatest: Boolean = false)
 }
 
@@ -68,6 +72,10 @@ object MasterToClient {
   case class ResolveAppIdResult(appMaster: Try[ActorRef])
 
   case class AppMasterConfig(config: Config)
+
+  case class WorkerConfig(config: Config)
+
+  case class MasterConfig(config: Config)
 
   case class HistoryMetricsItem(time: TimeStamp, value: MetricType)
 

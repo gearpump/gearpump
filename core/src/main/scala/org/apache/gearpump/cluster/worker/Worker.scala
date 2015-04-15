@@ -24,10 +24,12 @@ import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor._
 import akka.pattern.pipe
-import com.typesafe.config.Config
+import com.typesafe.config.{ConfigFactory, Config}
 import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
 import org.apache.gearpump.cluster.AppMasterToWorker._
+import org.apache.gearpump.cluster.ClientToMaster.QueryWorkerConfig
 import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.cluster.MasterToClient.WorkerConfig
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
@@ -76,7 +78,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       context.watch(masterInfo.master)
       LOG.info(s"Worker[$id] Registered ....")
       sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
-      context.become(appMasterMsgHandler orElse terminationWatch(masterInfo.master) orElse ActorUtil.defaultMsgHandler(self))
+      context.become(appMasterMsgHandler orElse clientMessageHandler orElse terminationWatch(masterInfo.master) orElse ActorUtil.defaultMsgHandler(self))
   }
 
   private def updateResourceTimeOut(): Unit = {
@@ -125,6 +127,15 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       val userDir = System.getProperty("user.dir");
       sender ! WorkerData(Some(WorkerDescription(id, "active", address,
         aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir)))
+  }
+
+  def clientMessageHandler: Receive = {
+    case QueryWorkerConfig(workerId) =>
+      if (this.id == workerId) {
+        sender ! WorkerConfig(systemConfig)
+      } else {
+        sender ! WorkerConfig(ConfigFactory.empty)
+      }
   }
 
   def terminationWatch(master : ActorRef) : Receive = {

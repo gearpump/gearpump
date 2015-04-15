@@ -20,10 +20,12 @@ package org.apache.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.cluster.ClientToMaster.{QueryAppMasterConfig, ShutdownApplication}
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.MasterToClient.{AppMasterConfig, ShutdownApplicationResult}
+import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, AppMasterDataDetail}
+import org.apache.gearpump.cluster.ClientToMaster.{QueryMasterConfig, QueryWorkerConfig, QueryAppMasterConfig, ShutdownApplication}
+import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
+import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, WorkerConfig, AppMasterConfig, ShutdownApplicationResult}
+import org.apache.gearpump.cluster.worker.WorkerDescription
 import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.http.StatusCodes
 import spray.routing.HttpService
@@ -44,6 +46,35 @@ trait ConfigQueryService extends HttpService  {
       path("config" / "app" / IntNumber) { appId =>
         onComplete((master ? QueryAppMasterConfig(appId)).asInstanceOf[Future[AppMasterConfig]]) {
           case Success(value: AppMasterConfig) =>
+            val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+            complete(config)
+          case Failure(ex) =>
+            complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+        }
+      } ~
+      path("config" / "worker" / IntNumber) { workerId =>
+
+        def workerDataFuture(workerId: Int): Future[WorkerConfig] = {
+          (master ? GetWorkerData(workerId)).asInstanceOf[Future[WorkerData]].flatMap { workerData =>
+
+            workerData.workerDescription.map { workerDescription =>
+              system.actorSelection(workerDescription.actorPath)
+            }.map { workerActor =>
+              (workerActor ? QueryWorkerConfig(workerId)).asInstanceOf[Future[WorkerConfig]]
+            }.getOrElse(Future(WorkerConfig(ConfigFactory.empty)))
+          }
+        }
+        onComplete(workerDataFuture(workerId)) {
+          case Success(value: WorkerConfig) =>
+            val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+            complete(config)
+          case Failure(ex) =>
+            complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+        }
+      } ~
+      path("config" / "master") {
+        onComplete((master ? QueryMasterConfig).asInstanceOf[Future[MasterConfig]]) {
+          case Success(value: MasterConfig) =>
             val config = Option(value.config).map(_.root.render()).getOrElse("{}")
             complete(config)
           case Failure(ex) =>
