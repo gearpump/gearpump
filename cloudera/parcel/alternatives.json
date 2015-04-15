@@ -1,0 +1,15 @@
+{
+    "gearpump-conf": {
+      "destination": "/etc/gearpump/conf",
+      "source": "conf",
+      "priority": 10,
+      "isDirectory": true
+    },
+
+    "gear": {
+      "destination": "/usr/bin/gear",
+      "source": "bin/gear",
+      "priority": 10,
+      "isDirectory": false
+    }
+}

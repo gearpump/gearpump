@@ -218,7 +218,8 @@ object Build extends sbt.Build {
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
-        packExtraClasspath := new DefaultValueMap(Seq("${PROG_HOME}/conf", "${PROG_HOME}/dashboard", "/etc/hadoop/conf"))
+        packExtraClasspath := new DefaultValueMap(Seq("/etc/gearpump/conf", "${PROG_HOME}/conf",
+          "${PROG_HOME}/dashboard", "/etc/hadoop/conf", "/etc/hbase/conf"))
       )
   ).dependsOn(core, streaming, services, external_kafka, yarn,storm,dsl,pagerank,hbase)
 
