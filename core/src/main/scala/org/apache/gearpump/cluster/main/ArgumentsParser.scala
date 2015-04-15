@@ -90,6 +90,8 @@ object ArgumentsParser {
           if (!options.map(_._1).contains(fixedKey)) {
             if (!ignoreUnknownArgument) {
               throw new Exception(s"found unknown option $fixedKey")
+            } else {
+              remain ++= Array(key, value)
             }
           } else {
             config += fixedKey -> value
