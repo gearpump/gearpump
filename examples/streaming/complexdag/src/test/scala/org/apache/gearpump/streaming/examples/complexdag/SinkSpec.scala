@@ -29,9 +29,9 @@ class SinkSpec extends PropSpec with PropertyChecks with Matchers with BeforeAnd
 
   val sink = new Sink(context, UserConfig.empty)
 
-  property("Sink should send a List[String](classOf[Sink].getCanonicalName, classOf[Sink].getCanonicalName"){
-    val list = List(classOf[Sink].getCanonicalName)
-    val expected = collection.mutable.MutableList(classOf[Sink].getCanonicalName, classOf[Sink].getCanonicalName)
+  property("Sink should send a Vector[String](classOf[Sink].getCanonicalName, classOf[Sink].getCanonicalName"){
+    val list = Vector(classOf[Sink].getCanonicalName)
+    val expected = Vector(classOf[Sink].getCanonicalName, classOf[Sink].getCanonicalName)
     sink.onNext(Message(list))
 
     (0 until sink.list.size).map(i => {

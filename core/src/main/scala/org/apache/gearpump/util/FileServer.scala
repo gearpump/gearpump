@@ -80,7 +80,7 @@ class FileServer(rootDir: File, host: String, port : Int) extends Actor with Sta
           sender ! HttpResponse(entity = HttpEntity(data))
         case Failure(ex) =>
           LOG.error("failed to get file " + ex.getMessage)
-          sender ! HttpResponse(status = StatusCodes.InternalServerError, ex.getMessage)
+          sender ! HttpResponse(status = StatusCodes.InternalServerError, entity = ex.getMessage)
       }
     //save file to remote uri
     case post @ HttpRequest(POST, uri, _, _, _) =>
@@ -96,7 +96,7 @@ class FileServer(rootDir: File, host: String, port : Int) extends Actor with Sta
         case Success(message) => sender ! HttpResponse(entity = message)
         case Failure(ex) =>
           LOG.error("save file failed, ex")
-          sender ! HttpResponse(status = StatusCodes.InternalServerError, ex.getMessage)
+          sender ! HttpResponse(status = StatusCodes.InternalServerError, entity = ex.getMessage)
       }
   }
 }
