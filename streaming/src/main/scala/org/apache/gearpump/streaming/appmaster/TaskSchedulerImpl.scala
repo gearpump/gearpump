@@ -151,7 +151,6 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
   }
 
   def executorFailed(executorId: Int) : Array[ResourceRequest] = {
-
     val tasksForExecutor = executorToTaskIds.get(executorId)
     executorToTaskIds = executorToTaskIds - executorId
 
@@ -163,10 +162,10 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
           //add the failed task back
           scheduleTaskLater(task)
         }
-      case None => //skip
+        Array(ResourceRequest(Resource(taskIds.size), relaxation = ONEWORKER))
+      case None =>
+        Array.empty
     }
-
-    fetchResourceRequests(fromOneWorker = true)
   }
 
   private def scheduleTaskLater(taskLaunchData : TaskLaunchData, locality : Locality = NonLocality): Unit = {
