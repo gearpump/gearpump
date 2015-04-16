@@ -47,7 +47,7 @@ class OpTranslator extends java.io.Serializable {
           case InMemoryCollectionSource(collection, parallism, description) =>
             Processor[SourceTask[Object, Object]](parallism,
               description = description + "." + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, collection.toArray))
+              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, collection))
           case groupby@ GroupByOp(_, parallism, description) =>
             Processor[GroupByTask[Object, Object, Object]](parallism,
               description = description + "." + func.description,
@@ -167,7 +167,7 @@ object OpTranslator {
       val operator = groups(group)
 
       operator.process(msg.msg.asInstanceOf[IN]).foreach{msg =>
-        taskContext.output(new Message(msg.asInstanceOf[java.io.Serializable], time))
+        taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
       }
     }
   }
@@ -191,10 +191,10 @@ object OpTranslator {
         operator match {
           case Some(operator) =>
             operator.process(msg).foreach{ msg =>
-              taskContext.output(new Message(msg.asInstanceOf[java.io.Serializable], time))
+              taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
             }
           case None =>
-            taskContext.output(new Message(msg.asInstanceOf[java.io.Serializable], time))
+            taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
         }
       }
       self ! Message("next", System.currentTimeMillis())
@@ -216,7 +216,7 @@ object OpTranslator {
       operator match {
         case Some(operator) =>
           operator.process(msg.msg.asInstanceOf[IN]).foreach{ msg =>
-            taskContext.output(new Message(msg.asInstanceOf[java.io.Serializable], time))
+            taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
           }
         case None =>
           taskContext.output(new Message(msg.msg, time))

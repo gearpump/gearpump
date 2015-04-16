@@ -29,14 +29,14 @@ object WordCount extends App with ArgumentsParser{
     val context = ClientContext()
     val app = new StreamApp("dsl", context)
 
+   // import org.apache.gearpump.streaming.dsl.Stream._
+
     val data = "This is a good start, bingo!! bingo!!"
-    app.fromCollection(data.lines.toList).
-      // word => (word, count)
+    app.fromCollection(data.lines).
+      // word => (word, count = 1)
       flatMap(line => line.split("[\\s]+")).map((_, 1)).
       // (word, count1), (word, count2) => (word, count1 + count2)
-      groupBy(kv => kv._1).reduce((left, right) => (left._1, left._2 + right._2)).
-      // print the word count in log files
-      log()
+      groupByKey().sum.log
 
     val appId = context.submit(app)
     context.close()

@@ -119,6 +119,7 @@ class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val ed
     new Stream(dag, groupOp)
   }
 
+
   /**
    * connect with a low level Processor(TaskDescription)
    * @param processor
@@ -134,3 +135,41 @@ class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val ed
   }
 }
 
+class KVStream[K, V](stream: Stream[Tuple2[K, V]]){
+
+  /**
+   * Apply to Stream[Tuple2[K,V]]
+   * Group by the key of a KV tuple
+   * For (key, value) will groupby key
+   * @tparam T
+   * @return
+   */
+  import Stream._
+  def groupByKey(parallism: Int = 1): Stream[Tuple2[K, V]] = {
+    stream.groupBy(Stream.getTupleKey[K, V], parallism, "groupByKey")
+  }
+
+
+  /**
+   * Sum the value of the tuples
+   *
+   * Apply to Stream[Tuple2[K,V]], V must be of type Number
+   *
+   * For input (key, value1), (key, value2), will generate (key, value1 + value2)
+   *
+   * @return
+   */
+  def sum(implicit numeric: Numeric[V]) = {
+    stream.reduce(Stream.sumByValue[K, V](numeric), "sum")
+  }
+}
+
+object Stream {
+  def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
+
+  def sumByValue[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V]
+  = (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
+
+  implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = new KVStream(stream)
+
+}
