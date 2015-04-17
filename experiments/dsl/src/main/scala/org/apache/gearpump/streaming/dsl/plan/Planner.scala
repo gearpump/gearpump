@@ -71,7 +71,7 @@ class Planner {
     if (dag.outDegreeOf(node1) == 1 &&
       dag.inDegreeOf(node2) == 1 &&
       // for processor node, we don't allow it to merge with downstream operators
-      !node1.head.isInstanceOf[ProcessorOp]) {
+      !node1.head.isInstanceOf[ProcessorOp[_<:Task]]) {
       val (_, edge, _) = dag.outgoingEdgesOf(node1)(0)
       if (edge == Direct) {
         val opList = OpChain(node1.ops ++ node2.ops)

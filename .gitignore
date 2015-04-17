@@ -1,3 +1,7 @@
+# GearPump
+jarstore/
+logs/
+
 # Scala
 *.class
 *.log

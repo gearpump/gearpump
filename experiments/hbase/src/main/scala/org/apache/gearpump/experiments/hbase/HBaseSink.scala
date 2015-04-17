@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.experiments.hbase
 
+import akka.actor.ActorSystem
+import com.typesafe.config.Config
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client.{HTable, Put}
 import org.apache.hadoop.hbase.util.Bytes
@@ -47,6 +49,34 @@ class HBaseSink(tableName: String, hbaseConf: Configuration = new Configuration)
 }
 
 object HBaseSink {
+  val HBASESINK = "hbasesink"
   def apply(tableName: String): HBaseSink = new HBaseSink(tableName)
   def apply(tableName: String, hbaseConf: Configuration): HBaseSink = new HBaseSink(tableName, hbaseConf)
+}
+
+trait HBaseRepo extends java.io.Serializable {
+  def getHBase(table:String, conf: Configuration): HBaseSinkInterface
+}
+
+class HBaseConsumer(sys: ActorSystem, hbaseConfig: Option[Config]) {
+  protected implicit val system: ActorSystem = sys
+  val ZOOKEEPER = "hbase.zookeeper.connect"
+  val TABLE_NAME = "hbase.table.name"
+  val COLUMN_FAMILY = "hbase.table.column.family"
+  val COLUMN_NAME = "hbase.table.column.name"
+  val HBASE_ZOOKEEPER = "hbase.zookeeper.quorum"
+  val hbaseConf = new Configuration
+  val (zookeepers, (table, family, column)) = hbaseConfig.map(config => {
+    val zookeepers = config.getString(ZOOKEEPER)
+    val table = config.getString(TABLE_NAME)
+    val family = config.getString(COLUMN_FAMILY)
+    val column = config.getString(COLUMN_NAME)
+    (zookeepers, (table, family, column))
+  }).get
+  hbaseConf.set(HBASE_ZOOKEEPER, zookeepers)
+  def getHBase = scalaz.Reader((repo: HBaseRepo) => repo.getHBase(table, hbaseConf))
+}
+
+object HBaseConsumer {
+  def apply(sys: ActorSystem, conf: Option[Config]): HBaseConsumer = new HBaseConsumer(sys, conf)
 }

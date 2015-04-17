@@ -47,7 +47,8 @@ import org.apache.gearpump.{Message, TimeStamp}
  *   }
  *
  */
-trait TimeReplayableSource {
+trait TimeReplayableSource extends java.io.Serializable {
+  def startFromBeginning(): Unit
   def setStartTime(startTime: TimeStamp): Unit
   /**
    *  pull the num of messages from source
