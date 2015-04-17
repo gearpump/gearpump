@@ -17,6 +17,7 @@
  */
 package org.apache.gearpump.cluster.main
 
+import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 
@@ -60,12 +61,7 @@ object AppSubmitter extends App with ArgumentsParser {
       //start main class
       Option(jarFile.exists()) match {
         case Some(true) =>
-          val mainClass = new JarFile(jarFile).getManifest.getMainAttributes.getValue("Main-Class")
-          val (main, arguments) = if(mainClass != null && !mainClass.equals("") && !mainClass.equals(config.remainArgs(0))) {
-            (mainClass, config.remainArgs)
-          } else {
-            (config.remainArgs(0), config.remainArgs.drop(1))
-          }
+          val (main, arguments) = parseMain(jarFile, config.remainArgs)
           val classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:" + jarFile.getAbsolutePath)),
             Thread.currentThread().getContextClassLoader())
 
@@ -84,6 +80,19 @@ object AppSubmitter extends App with ArgumentsParser {
       val cause = Option(throwable.getCause).getOrElse(throwable)
       Console.println(cause.getMessage)
     })
+  }
+
+  private def parseMain(jar: File, remainArgs: Array[String]): (String, Array[String]) = {
+    val mainClass = Option(new JarFile(jar).getManifest.getMainAttributes.getValue("Main-Class")).getOrElse("")
+    if (mainClass.isEmpty) {
+      (remainArgs(0), remainArgs.drop(1))
+    } else {
+      if (remainArgs.length > 0 && remainArgs(0) == mainClass) {
+        (mainClass, remainArgs.drop(1))
+      } else {
+        (mainClass, remainArgs)
+      }
+    }
   }
 
   start

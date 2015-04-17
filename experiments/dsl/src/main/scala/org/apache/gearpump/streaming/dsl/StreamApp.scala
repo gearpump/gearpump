@@ -55,8 +55,8 @@ class StreamApp(val name: String, context: ClientContext) {
    * @tparam T
    * @return
    */
-  def fromCollection[T](collection: List[T], parallism: Int = 1, description: String = null): Stream[T] = {
-    val source = InMemoryCollectionSource(collection, parallism, Option(description).getOrElse("list"))
+  def fromCollection[T](collection: Iterator[T], parallism: Int = 1, description: String = null): Stream[T] = {
+    val source = InMemoryCollectionSource(collection.toList, parallism, Option(description).getOrElse("list"))
     graph.addVertex(source)
     new Stream[T](graph, source)
   }

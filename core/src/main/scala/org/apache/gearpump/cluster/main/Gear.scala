@@ -79,10 +79,7 @@ object Gear extends App {
     args.length match {
       case 0 =>
         usage(None)
-      case 1 =>
-        val command = args(0)
-        usage(Option(command))
-      case a if(a > 1) =>
+      case a if(a >= 1) =>
         val command = args(0)
         val commandArgs = args.drop(1)
         executeCommand(command, commandArgs)

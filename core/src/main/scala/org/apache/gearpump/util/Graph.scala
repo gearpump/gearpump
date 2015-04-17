@@ -30,7 +30,7 @@ import scala.language.implicitConversions
  * Application DAG
  */
 
-class Graph[N, E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) extends Serializable{
+class Graph[N , E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) extends Serializable{
   import org.apache.gearpump.util.Graph._
 
   def addVertex(vertex : N): Unit = {
@@ -222,6 +222,8 @@ object Graph {
 
   class Path[N, +E](path: List[Either[N, E]]) {
 
+
+
     def ~[Edge >: E](edge: Edge): Path[N, Edge] = {
       new Path(path :+ Right(edge))
     }
@@ -241,8 +243,8 @@ object Graph {
         either match {
           case Left(node) =>
             graph.addVertex(node)
-            if (lastNode.isDefined && lastEdge.isDefined) {
-              graph.addEdge(lastNode.get, lastEdge.get, node)
+            if (lastNode.isDefined) {
+              graph.addEdge(lastNode.get, lastEdge.getOrElse(null.asInstanceOf[Edge]), node)
             }
             (Some(node), None)
           case Right(edge) =>
@@ -256,10 +258,28 @@ object Graph {
     implicit def anyToPath[N, E](any: N): Path[N, E] = Node(any)
   }
 
-  implicit class Node[N, E](any: N) extends Path[N, E](List(Left(any))) {
+  implicit class Node[N, E](self: N) extends Path[N, E](List(Left(self))) {
     
     override def ~[Edge](edge: Edge): Path[N, Edge] = {
-      new Path(List(Left(any), Right(edge)))
+      new Path(List(Left(self), Right(edge)))
+    }
+
+    override def ~>[Node >: N](node: Node): Path[Node, E] = {
+      new NodeList(List(self, node))
+    }
+
+    override def to[Node >: N, Edge >: E](node: Node, edge: Edge): Path[Node, Edge] = {
+      this ~ edge ~> node
+    }
+  }
+
+  class NodeList[N, E](nodes: List[N]) extends Path[N, E](nodes.map(Left(_))) {
+    override def ~[Edge](edge: Edge): Path[N, Edge] = {
+      new Path(nodes.map(Left(_)) :+ Right(edge))
+    }
+
+    override def ~>[Node >: N](node: Node): Path[Node, E] = {
+      new NodeList(nodes :+ node)
     }
 
     override def to[Node >: N, Edge >: E](node: Node, edge: Edge): Path[Node, Edge] = {

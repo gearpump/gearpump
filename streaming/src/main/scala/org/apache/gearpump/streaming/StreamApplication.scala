@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.{ApplicationMaster, ClusterConfig, Application, AppDescription, ClusterConfigSource, UserConfig}
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.util.{Graph, ReferenceEqual}
@@ -60,10 +60,18 @@ object Processor {
 
 case class ProcessorDescription(taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null) extends ReferenceEqual
 
-case class StreamApplication(override val name : String,  inputUserConfig: UserConfig, dag: Graph[ProcessorDescription, _ <: Partitioner])
+class StreamApplication(override val name : String,  inputUserConfig: UserConfig, inputDag: Graph[ProcessorDescription, _ <: Partitioner])
   extends Application {
+
+  private val dagWithDefault = inputDag.mapEdge {(node1, edge, node2) =>
+    Option(edge).getOrElse(StreamApplication.defaultPartitioner)
+  }
+
+  def dag: Graph[ProcessorDescription, _ <: Partitioner] = dagWithDefault
   override def appMaster: Class[_ <: ApplicationMaster] = classOf[AppMaster]
-  override def userConfig(implicit system: ActorSystem): UserConfig = inputUserConfig.withValue(StreamApplication.DAG, dag)
+  override def userConfig(implicit system: ActorSystem): UserConfig = {
+    inputUserConfig.withValue(StreamApplication.DAG, dagWithDefault)
+  }
 }
 
 object StreamApplication {
@@ -74,5 +82,6 @@ object StreamApplication {
   }
 
   val DAG = "DAG"
-}
 
+  private val defaultPartitioner = new HashPartitioner()
+}

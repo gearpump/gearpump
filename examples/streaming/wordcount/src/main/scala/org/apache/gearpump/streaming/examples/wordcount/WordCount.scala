@@ -40,10 +40,11 @@ object WordCount extends App with ArgumentsParser {
   def application(config: ParseResult) : StreamApplication = {
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
-    val partitioner = new HashPartitioner()
     val split = Processor[Split](splitNum)
     val sum = Processor[Sum](sumNum)
-    val app = StreamApplication("wordCount", Graph(split ~ partitioner ~> sum), UserConfig.empty)
+
+    // We use default HashPartitioner to shuffle data between split and sum
+    val app = StreamApplication("wordCount", Graph(split ~> sum), UserConfig.empty)
     app
   }
 
