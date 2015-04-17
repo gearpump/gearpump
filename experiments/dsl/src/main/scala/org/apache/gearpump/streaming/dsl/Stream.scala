@@ -18,34 +18,38 @@
 
 package org.apache.gearpump.streaming.dsl
 
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.dsl.op.OpType.Closure
 import org.apache.gearpump.streaming.dsl.op._
-import org.apache.gearpump.streaming.task.Task
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
 import org.slf4j.LoggerFactory
 
-class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val edge: Option[OpEdge] = None) {
+import scala.reflect.ClassTag
+
+class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNode:Op, private val edge: Option[OpEdge] = None) {
 
   /**
    * convert a value[T] to a list of value[R]
-   * @param fun
+   * @param fun function
    * @param description the descripton message for this opeartion
-   * @tparam R
+   * @tparam R return type
    * @return
    */
-  def flatMap[R](fun: T => TraversableOnce[R], description: String = null): Stream[R] = {
+  def flatMap[R: ClassTag](fun: T => TraversableOnce[R], description: String = null): Stream[R] = {
     val flatMapOp = FlatMapOp(fun, Option(description).getOrElse("flatmap"))
-    dag.addVertex(flatMapOp )
-    dag.addEdge(thisNode, edge.getOrElse(Direct), flatMapOp)
-    new Stream(dag, flatMapOp)
+    graph.addVertex(flatMapOp )
+    graph.addEdge(thisNode, edge.getOrElse(Direct), flatMapOp)
+    new Stream[R](graph, flatMapOp)
   }
 
   /**
    * convert value[T] to value[R]
-   * @param fun
-   * @tparam R
+   * @param fun function
+   * @tparam R return type
    * @return
    */
-  def map[R](fun: T => R, description: String = null): Stream[R] = {
+  def map[R: ClassTag](fun: T => R, description: String = null): Stream[R] = {
     this.flatMap ({ data =>
       Option(fun(data))
     }, Option(description).getOrElse("map"))
@@ -70,9 +74,9 @@ class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val ed
    */
   def reduce(fun: (T, T) => T, description: String = null): Stream[T] = {
     val reduceOp = ReduceOp(fun, Option(description).getOrElse("reduce"))
-    dag.addVertex(reduceOp)
-    dag.addEdge(thisNode, edge.getOrElse(Direct), reduceOp)
-    new Stream(dag, reduceOp)
+    graph.addVertex(reduceOp)
+    graph.addEdge(thisNode, edge.getOrElse(Direct), reduceOp)
+    new Stream(graph, reduceOp)
   }
 
   /**
@@ -89,10 +93,10 @@ class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val ed
    */
   def merge(other: Stream[T], description: String = null): Stream[T] = {
     val mergeOp = MergeOp(thisNode, other.thisNode, Option(description).getOrElse("merge"))
-    dag.addVertex(mergeOp)
-    dag.addEdge(thisNode, edge.getOrElse(Direct), mergeOp)
-    dag.addEdge(other.thisNode, other.edge.getOrElse(Shuffle), mergeOp)
-    new Stream(dag, mergeOp)
+    graph.addVertex(mergeOp)
+    graph.addEdge(thisNode, edge.getOrElse(Direct), mergeOp)
+    graph.addEdge(other.thisNode, other.edge.getOrElse(Shuffle), mergeOp)
+    new Stream[T](graph, mergeOp)
   }
 
   /**
@@ -114,11 +118,10 @@ class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val ed
    */
   def groupBy[Group](fun: T => Group, parallism: Int = 1, description: String = null): Stream[T] = {
     val groupOp = GroupByOp(fun, parallism, Option(description).getOrElse("groupBy"))
-    dag.addVertex(groupOp)
-    dag.addEdge(thisNode, edge.getOrElse(Shuffle), groupOp)
-    new Stream(dag, groupOp)
+    graph.addVertex(groupOp)
+    graph.addEdge(thisNode, edge.getOrElse(Shuffle), groupOp)
+    new Stream[T](graph, groupOp)
   }
-
 
   /**
    * connect with a low level Processor(TaskDescription)
@@ -127,24 +130,22 @@ class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val ed
    * @tparam R
    * @return
    */
-  def process[R](processor: Class[_ <: Task], parallism: Int, description: String = null): Stream[R] = {
+  def process[R: ClassTag](processor: Class[_ <: Task], parallism: Int, description: String = null): Stream[R] = {
     val processorOp = ProcessorOp(processor, parallism, Option(description).getOrElse("process"))
-    dag.addVertex(processorOp)
-    dag.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
-    new Stream(dag, processorOp, Some(Shuffle))
+    graph.addVertex(processorOp)
+    graph.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
+    new Stream[R](graph, processorOp, Some(Shuffle))
   }
+
 }
 
 class KVStream[K, V](stream: Stream[Tuple2[K, V]]){
-
   /**
    * Apply to Stream[Tuple2[K,V]]
    * Group by the key of a KV tuple
    * For (key, value) will groupby key
-   * @tparam T
    * @return
    */
-  import Stream._
   def groupByKey(parallism: Int = 1): Stream[Tuple2[K, V]] = {
     stream.groupBy(Stream.getTupleKey[K, V], parallism, "groupByKey")
   }
@@ -165,11 +166,27 @@ class KVStream[K, V](stream: Stream[Tuple2[K, V]]){
 }
 
 object Stream {
+
+  def apply[T: ClassTag](graph: Graph[Op, OpEdge], node: Op, edge: Option[OpEdge]) = new Stream[T](graph, node, edge)
+
   def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
 
   def sumByValue[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V]
   = (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
 
   implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = new KVStream(stream)
+
+  implicit class Sink[T: ClassTag](stream: Stream[T]) {
+
+    def sink(closure: Closure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
+      val sinkOp = SinkOp(closure, parallelism, Option(description).getOrElse("sink"))
+      stream.graph.addVertex(sinkOp)
+      stream.graph.addEdge(stream.thisNode, stream.edge.getOrElse(Direct), sinkOp)
+      new Stream[T](stream.graph, sinkOp)
+    }
+    def writeToHBase(closure: Closure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
+      sink(closure, parallelism, description)
+    }
+  }
 
 }

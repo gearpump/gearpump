@@ -512,8 +512,13 @@ object Build extends sbt.Build {
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",
     base = file("experiments/dsl"),
-    settings = commonSettings
-  ) dependsOn(streaming % "test->test;compile->compile")
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.scalaz" %% "scalaz-core" % scalazVersion
+        )
+      )
+  ) dependsOn(streaming % "test->test;compile->compile", external_kafka % "test->test;compile->compile", hbase % "test->test;compile->compile")
   
   lazy val pagerank = Project(
     id = "gearpump-experiments-pagerank",
@@ -555,19 +560,15 @@ object Build extends sbt.Build {
             exclude("commons-lang", "commons-lang")
             exclude("commons-logging", "commons-logging")
             exclude("junit", "junit")
-            exclude("log4j", "log4j")
+            exclude("log4j", "log4j"),
+          "org.scalaz" %% "scalaz-core" % scalazVersion
         )
       )
-  )
+  ) dependsOn(core % "provided")
 
   lazy val pipeline = Project(
     id = "gearpump-experiments-kafka-hbase-pipeline",
     base = file("experiments/kafka-hbase-pipeline"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.scalaz" %% "scalaz-core" % scalazVersion
-        )
-      )
-  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase)
+    settings = commonSettings ++ myAssemblySettings 
+  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase, dsl)
 }

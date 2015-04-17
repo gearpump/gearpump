@@ -21,13 +21,15 @@ package org.apache.gearpump.experiments.pipeline
 import com.typesafe.config.Config
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.hbase.HBaseSinkInterface
+import org.apache.gearpump.experiments.hbase.HBaseSink._
+import org.apache.gearpump.experiments.hbase._
 import org.apache.gearpump.experiments.pipeline.Messages._
 import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource}
-import org.apache.hadoop.conf.Configuration
+import org.apache.gearpump.util.LogUtil
+import org.slf4j.Logger
 import upickle._
 
 import scala.language.implicitConversions
@@ -37,7 +39,6 @@ import scala.util.Try
 // See http://stackoverflow.com/questions/28630780/upickle-and-scalajs-sealed-trait-serialisation
 object Messages {
   val PIPELINE = "pipeline"
-  val HBASESINK = "hbasesink"
   val DEFAULT_INTERVAL = 2
   val CPU = "CPU"
   val CPU_INTERVAL = "pipeline.cpu.interval"
@@ -51,41 +52,39 @@ object Messages {
   case class Envelope(id: String, on: String, body: String)
 }
 
-case class PipelineConfig(config: Config) extends Serializable
+case class PipeLineConfig(config: Config) extends Serializable
 
-object PipelineConfig {
-  implicit def getConfig(pipelineConfig: PipelineConfig): Config = pipelineConfig.config
+object PipeLineConfig {
+  val SINK = "sink"
+  implicit def getConfig(pipelineConfig: PipeLineConfig): Config = pipelineConfig.config
 }
 
-
-trait Average {
-  this: Task =>
-  var averageMem: Double = 0
+class TAverage(interval: Int) extends java.io.Serializable {
+  val LOG: Logger = LogUtil.getLogger(getClass)
+  var averageCpu: Double = 0
   var totalCount: Long = 0
   var totalSum: Double = 0
   var timeStamp: TimeStamp = 0
-
-  def timeInterval: Int
-
-  def average(datum: Datum)(implicit timeStamp: TimeStamp): Option[Datum] = {
+  def timeInterval: Int = interval
+  def average(datum: Datum, ts: TimeStamp): Option[Datum] = {
     totalCount += 1
     totalSum += datum.value
-    averageMem = totalSum/totalCount
-    interval(datum)
+    averageCpu = totalSum/totalCount
+    interval(datum, ts)
   }
-
-  def elapsedInSec(implicit ts: Long): Long = ts - timeStamp
-
-  def interval(datum: Datum)(implicit ts: TimeStamp): Option[Datum] = {
+  def elapsedInSec(ts: Long): Long = ts - timeStamp
+  def interval(datum: Datum, ts: TimeStamp): Option[Datum] = {
     timeStamp match {
       case 0 =>
         timeStamp = ts
         None
       case _ =>
-        elapsedInSec match {
+        val elapsed = elapsedInSec(ts)
+        LOG.info(s"elapsed=$elapsed")
+        elapsed match {
           case delta if delta > timeInterval =>
             timeStamp = ts
-            Some(Datum(datum.dimension,datum.metric,averageMem))
+            Some(Datum(datum.dimension,datum.metric,averageCpu))
           case _ =>
             None
         }
@@ -93,63 +92,71 @@ trait Average {
   }
 }
 
-class CpuProcessor(taskContext: TaskContext, conf: UserConfig)
-  extends Task(taskContext, conf) with Average {
+object TAverage {
+  def apply(interval: Int): TAverage = new TAverage(interval)
+}
 
+abstract class MetricProcessor(taskContext: TaskContext, conf: UserConfig)
+  extends Task(taskContext, conf) {
+
+  val pipelineConfig = conf.getValue[PipeLineConfig](PIPELINE)
+  val timeInterval: Int
+  val average: TAverage = TAverage(timeInterval)
+
+  def average(datum: Datum, timeStamp: TimeStamp): Option[Datum] = {
+    average.average(datum, timeStamp: TimeStamp)
+  }
+
+  override def onStart(newStartTime: StartTime): Unit = {
+    LOG.info(s"starting timeInterval=$timeInterval")
+  }
+
+}
+
+class CpuProcessor(taskContext: TaskContext, conf: UserConfig)
+  extends MetricProcessor(taskContext, conf) {
   import taskContext.output
 
-  val pipelineConfig = conf.getValue[PipelineConfig](PIPELINE)
-
-  override def timeInterval = pipelineConfig.map(config => {
+  override val timeInterval = pipelineConfig.map(config => {
     config.getInt(CPU_INTERVAL)
   }).getOrElse(DEFAULT_INTERVAL)
 
-  override def onStart(newStartTime: StartTime): Unit = {
-    LOG.info("starting timeInterval=$timeInterval")
-  }
-
   override def onNext(msg: Message): Unit = {
     Try({
-      implicit val timeStamp = msg.timestamp
       val jsonData = msg.msg.asInstanceOf[String]
       val metrics = read[Array[Datum]](jsonData)
       val data = metrics.flatMap(datum => {
         datum.dimension match {
           case CPU =>
-            average(datum)
+            val results = average(datum, msg.timestamp)
+            LOG.info(s"returning $results")
+            results
           case _ =>
             None
         }
-      }).toSeq.toArray
+      }).toArray
       output(Message(write[Array[Datum]](data),msg.timestamp))
     }).failed.foreach(LOG.error("bad message", _))
   }
 }
 
 class MemoryProcessor(taskContext: TaskContext, conf: UserConfig)
-  extends Task(taskContext, conf) with Average {
+  extends MetricProcessor(taskContext, conf) {
 
   import taskContext.output
 
-  val pipelineConfig = conf.getValue[PipelineConfig](PIPELINE)
-
-  override def timeInterval = pipelineConfig.map(config => {
+  override val timeInterval = pipelineConfig.map(config => {
     config.getInt(MEM_INTERVAL)
   }).getOrElse(DEFAULT_INTERVAL)
 
-  override def onStart(newStartTime: StartTime): Unit = {
-    LOG.info("starting timeInterval=$timeInterval")
-  }
-
   override def onNext(msg: Message): Unit = {
     Try({
-      implicit val timeStamp = msg.timestamp
       val jsonData = msg.msg.asInstanceOf[String]
       val metrics = read[Array[Datum]](jsonData)
       val data = metrics.flatMap(datum => {
         datum.dimension match {
           case MEM =>
-            average(datum)
+            average(datum, msg.timestamp)
           case _ =>
             None
         }
@@ -160,11 +167,12 @@ class MemoryProcessor(taskContext: TaskContext, conf: UserConfig)
 }
 
 class CpuPersistor(taskContext : TaskContext, conf: UserConfig)
-  extends Task(taskContext, conf) with HBaseConsumer {
+  extends Task(taskContext, conf) {
 
   def userConf = conf
-
-  lazy val hbase = getHBase(table, hbaseConf)(userConf.getValue[HBaseRepo](HBASESINK).get)
+  val config: Config = userConf.getValue[PipeLineConfig](PIPELINE).get
+  val hbaseConsumer = HBaseConsumer(taskContext.system, Some(config))
+  lazy val hbase = hbaseConsumer.getHBase(userConf.getValue[HBaseRepo](HBASESINK).get)
 
   override def onStart(newStartTime: StartTime): Unit = {
     LOG.info("starting")
@@ -174,7 +182,7 @@ class CpuPersistor(taskContext : TaskContext, conf: UserConfig)
     Try({
       val cpus = read[Array[Datum]](msg.msg.asInstanceOf[String])
       cpus.foreach(cpu => {
-        hbase.insert(msg.timestamp.toString, family, column, write[Datum](cpu))
+        hbase.insert(msg.timestamp.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](cpu))
       })
     }).failed.foreach(LOG.error("bad message", _))
   }
@@ -182,11 +190,12 @@ class CpuPersistor(taskContext : TaskContext, conf: UserConfig)
 }
 
 class MemoryPersistor(taskContext : TaskContext, conf: UserConfig)
-  extends Task(taskContext, conf) with HBaseConsumer {
+  extends Task(taskContext, conf) {
 
   def userConf = conf
-
-  lazy val hbase = getHBase(table, hbaseConf)(userConf.getValue[HBaseRepo](HBASESINK).get)
+  val config: Config = userConf.getValue[PipeLineConfig](PIPELINE).get
+  val hbaseConsumer = HBaseConsumer(taskContext.system, Some(config))
+  lazy val hbase = hbaseConsumer.getHBase(userConf.getValue[HBaseRepo](HBASESINK).get)
 
   override def onStart(newStartTime: StartTime): Unit = {
     LOG.info("starting")
@@ -196,7 +205,7 @@ class MemoryPersistor(taskContext : TaskContext, conf: UserConfig)
     Try({
       val memories = read[Array[Datum]](msg.msg.asInstanceOf[String])
       memories.foreach(memory => {
-        hbase.insert(msg.timestamp.toString, family, column, write[Datum](memory))
+        hbase.insert(msg.timestamp.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](memory))
       })
     }).failed.foreach(LOG.error("bad message", _))
   }
@@ -214,14 +223,14 @@ class KafkaProducer(taskContext : TaskContext, conf: UserConfig)
 
   val taskParallelism = parallelism
 
-  private val source: TimeReplayableSource = new KafkaSource(taskContext.appName, taskId, taskParallelism,
-    kafkaConfig, msgDecoder)
+  private val source: TimeReplayableSource = new KafkaSource(taskContext.appName, taskId, taskParallelism, kafkaConfig, msgDecoder)
   private var startTime: TimeStamp = 0L
 
   override def onStart(newStartTime: StartTime): Unit = {
     Try({
       startTime = newStartTime.startTime
-      source.setStartTime(startTime)
+      //source.setStartTime(startTime)
+      source.startFromBeginning()
     }).failed.foreach(LOG.error("caught error", _))
     self ! Message("start", System.currentTimeMillis())
   }
@@ -245,33 +254,7 @@ class KafkaProducer(taskContext : TaskContext, conf: UserConfig)
   }
 }
 
-trait HBaseRepo extends java.io.Serializable {
-  def getHBase(table:String, conf: Configuration): HBaseSinkInterface
-}
 
-trait HBaseConsumer {
-  this: Task =>
-  val ZOOKEEPER = "hbase.zookeeper.connect"
-  val TABLE_NAME = "hbase.table.name"
-  val COLUMN_FAMILY = "hbase.table.column.family"
-  val COLUMN_NAME = "hbase.table.column.name"
-  val HBASE_ZOOKEEPER = "hbase.zookeeper.quorum"
-  val hbaseConf = new Configuration
-  val pipelineConfig = userConf.getValue[PipelineConfig](PIPELINE)
-  val (zookeepers, (table, family, column)) = pipelineConfig.map(config => {
-    val zookeepers = config.getString(ZOOKEEPER)
-    val table = config.getString(TABLE_NAME)
-    val family = config.getString(COLUMN_FAMILY)
-    val column = config.getString(COLUMN_NAME)
-    (zookeepers, (table, family, column))
-  }).get
-  hbaseConf.set(HBASE_ZOOKEEPER, zookeepers)
-
-  def userConf:UserConfig
-
-  def getHBase(table:String, conf: Configuration) = scalaz.Reader((repo: HBaseRepo) => repo.getHBase(table, conf))
-
-}
 
 
 

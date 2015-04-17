@@ -19,14 +19,17 @@
 package org.apache.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
-import org.apache.gearpump.Message
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
+import org.apache.gearpump.streaming.Processor
 import org.apache.gearpump.streaming.Processor.DefaultProcessor
-import org.apache.gearpump.streaming.{Processor, ProcessorDescription}
+import org.apache.gearpump.streaming.dsl.op.OpType.{Closure, TraverseType}
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.util.LogUtil
+import org.slf4j.Logger
 
 import scala.collection.TraversableOnce
 
@@ -34,6 +37,7 @@ import scala.collection.TraversableOnce
  * Translate a OP to a TaskDescription
  */
 class OpTranslator extends java.io.Serializable {
+  val LOG: Logger = LogUtil.getLogger(getClass)
   def translate(ops: OpChain)(implicit system: ActorSystem): Processor[_ <: Task] = {
     val head = ops.ops.head
 
@@ -44,10 +48,10 @@ class OpTranslator extends java.io.Serializable {
         val userConfig = UserConfig.empty.withValue(GEARPUMP_STREAMING_OPERATOR, func)
 
         op match {
-          case InMemoryCollectionSource(collection, parallism, description) =>
+          case TraversableSource(traversable, parallism, description) =>
             Processor[SourceTask[Object, Object]](parallism,
               description = description + "." + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, collection))
+              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, traversable))
           case groupby@ GroupByOp(_, parallism, description) =>
             Processor[GroupByTask[Object, Object, Object]](parallism,
               description = description + "." + func.description,
@@ -61,12 +65,20 @@ class OpTranslator extends java.io.Serializable {
               description = description + "." + func.description,
               taskConf = null, processor)
         }
-      case op: SlaveOp =>
+      case op: SlaveOp[_] =>
         val func = toFunction(ops.ops)
         val userConfig = UserConfig.empty.withValue(GEARPUMP_STREAMING_OPERATOR, func)
-        Processor[TransformTask[Object, Object]](1,
-          description = func.description,
-          taskConf = userConfig)
+
+        op match {
+          case sink: SinkOp[Object] =>
+            Processor[SinkTask[Object]](sink.parallelism,
+              description = func.description,
+              taskConf = userConfig)
+          case _ =>
+            Processor[TransformTask[Object, Object]](1,
+              description = func.description,
+              taskConf = userConfig)
+        }
     }
   }
 
@@ -77,6 +89,7 @@ class OpTranslator extends java.io.Serializable {
       val opFunction = op match {
         case flatmap: FlatMapOp[Object, Object] => new FlatMapFunction(flatmap.fun, flatmap.description)
         case reduce: ReduceOp[Object] => new ReduceFunction(reduce.fun, reduce.description)
+        case sink: SinkOp[Object] => new SinkFunction(sink.closure, sink.description)
       }
       fun.andThen(opFunction.asInstanceOf[SingleInputFunction[Object, Object]])
     }
@@ -119,7 +132,7 @@ object OpTranslator {
   }
 
   class FlatMapFunction[IN, OUT](fun: IN => TraversableOnce[OUT], descriptionMessage: String) extends SingleInputFunction[IN, OUT] {
-    def process(value: IN): TraversableOnce[OUT] = {
+    override def process(value: IN): TraversableOnce[OUT] = {
       fun(value)
     }
 
@@ -138,6 +151,14 @@ object OpTranslator {
         state = fun(state.asInstanceOf[T], value)
       }
       Some(state.asInstanceOf[T])
+    }
+
+    override def description: String = descriptionMessage
+  }
+
+  class SinkFunction[T](val closure: Closure[T], descriptionMessage: String) extends SingleInputFunction[T, T] {
+    override def process(value: T): TraversableOnce[T] = {
+      None
     }
 
     override def description: String = descriptionMessage
@@ -172,11 +193,11 @@ object OpTranslator {
     }
   }
 
-  class SourceTask[T, OUT](source: Seq[T], operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class SourceTask[T, OUT](source: TraverseType[T], operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
     def this(taskContext: TaskContext, userConf: UserConfig) = {
       this(
-        userConf.getValue[Seq[T]](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
+        userConf.getValue[TraverseType[T]](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
         userConf.getValue[SingleInputFunction[T, OUT]](GEARPUMP_STREAMING_OPERATOR)(taskContext.system),
         taskContext, userConf)
     }
@@ -187,16 +208,23 @@ object OpTranslator {
 
     override def onNext(msg: Message): Unit = {
       val time = System.currentTimeMillis()
-      source.foreach{msg =>
+      source.foreach(msg => {
+//        taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
         operator match {
           case Some(operator) =>
-            operator.process(msg).foreach{ msg =>
-              taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
+            operator match {
+              case bad: DummyInputFunction[T] =>
+                taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
+              case _ =>
+                operator.process(msg).foreach(msg => {
+                  taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
+                })
             }
           case None =>
             taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
         }
-      }
+
+      })
       self ! Message("next", System.currentTimeMillis())
     }
   }
@@ -223,4 +251,21 @@ object OpTranslator {
       }
     }
   }
+
+  class SinkTask[T](sinkFunction: Option[SinkFunction[T]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+    def this(taskContext: TaskContext, userConf: UserConfig) = {
+      this(
+        userConf.getValue[SinkFunction[T]](GEARPUMP_STREAMING_OPERATOR)(taskContext.system),
+        taskContext, userConf)
+    }
+    val process: T => Unit = sinkFunction.map(func => {
+      func.closure(taskContext, userConf)
+    }).get
+
+    override def onNext(msg: Message): Unit = {
+      process(msg.msg.asInstanceOf[T])
+    }
+
+  }
+
 }

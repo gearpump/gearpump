@@ -19,12 +19,15 @@
 package org.apache.gearpump.streaming.dsl
 
 import akka.actor.ActorSystem
-import org.apache.gearpump.cluster.{AppDescription, UserConfig}
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.streaming.{StreamApplication}
-import org.apache.gearpump.streaming.dsl.op.{Op, OpEdge, InMemoryCollectionSource}
+import org.apache.gearpump.streaming.StreamApplication
+import org.apache.gearpump.streaming.dsl.op.OpType.TraverseType
+import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.Planner
 import org.apache.gearpump.util.Graph
+
+import scala.reflect.ClassTag
 
 /**
  * Example:
@@ -40,40 +43,37 @@ import org.apache.gearpump.util.Graph
     val appId = context.submit(app)
     context.close()
  *
- * @param name
+ * @param name name of app
  */
-class StreamApp(val name: String, context: ClientContext) {
-
+class StreamApp(val name: String, context: ClientContext, userConfig: UserConfig) {
   val graph = Graph.empty[Op, OpEdge]
 
-  /**
-   * Create a new stream from a in-memory collection.
-   * This stream will repeat the source collection forever.
-   *
-   * @param collection
-   * @param parallism
-   * @tparam T
-   * @return
-   */
-  def fromCollection[T](collection: Iterator[T], parallism: Int = 1, description: String = null): Stream[T] = {
-    val source = InMemoryCollectionSource(collection.toList, parallism, Option(description).getOrElse("list"))
-    graph.addVertex(source)
-    new Stream[T](graph, source)
-  }
-
-  def plan: StreamApplication = {
+  def plan(): StreamApplication = {
     implicit val system = context.system
     val planner = new Planner
     val dag = planner.plan(graph)
-    StreamApplication(name, dag, UserConfig.empty)
+    StreamApplication(name, dag, userConfig)
   }
 
   private[StreamApp] def system: ActorSystem = context.system
 }
 
 object StreamApp {
+  def apply(name: String, context: ClientContext, userConfig: UserConfig = UserConfig.empty) = new StreamApp(name, context, userConfig)
 
   implicit def streamAppToApplication(streamApp: StreamApp): StreamApplication = {
     streamApp.plan
   }
+
+  implicit class Source(app:StreamApp) {
+    def source[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallism: Int, description: String = null): Stream[T] = {
+      implicit val source = TraversableSource(traversable, parallism, Some(description).getOrElse("traversable"))
+      app.graph.addVertex(source)
+      new Stream[T](app.graph, source)
+    }
+    def readFromKafka[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallism: Int, description: String = null): Stream[T] = {
+      source(traversable, parallism, description)
+    }
+  }
+
 }

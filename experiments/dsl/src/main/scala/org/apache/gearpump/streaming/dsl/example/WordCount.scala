@@ -20,6 +20,9 @@ package org.apache.gearpump.streaming.dsl.example
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.streaming.dsl.StreamApp
+import org.apache.gearpump.streaming.dsl.StreamApp._
+import org.apache.gearpump.streaming.dsl.op.{OpEdge, Op}
+import org.apache.gearpump.util.Graph
 
 object WordCount extends App with ArgumentsParser{
 
@@ -27,13 +30,10 @@ object WordCount extends App with ArgumentsParser{
 
   def submit(): Unit = {
     val context = ClientContext()
-    val app = new StreamApp("dsl", context)
-
-   // import org.apache.gearpump.streaming.dsl.Stream._
-
+    val app = StreamApp("dsl", context)
     val data = "This is a good start, bingo!! bingo!!"
-    app.fromCollection(data.lines).
-      // word => (word, count = 1)
+    app.source(data.lines.toList, 1).
+      // word => (word, count)
       flatMap(line => line.split("[\\s]+")).map((_, 1)).
       // (word, count1), (word, count2) => (word, count1 + count2)
       groupByKey().sum.log

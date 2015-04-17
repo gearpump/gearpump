@@ -22,6 +22,7 @@ import org.apache.gearpump.util.Graph.Edge
 import org.jgrapht.Graphs
 import org.jgrapht.graph.DefaultDirectedGraph
 import org.jgrapht.traverse.TopologicalOrderIterator
+import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
