@@ -18,9 +18,10 @@
 
 package org.apache.gearpump.streaming.dsl.op
 
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.dsl.op.OpType.{Closure, TraverseType}
-import org.apache.gearpump.streaming.task.{TaskContext, Task}
+import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseSinkInterface}
+import org.apache.gearpump.streaming.dsl.SinkConsumer
+import org.apache.gearpump.streaming.dsl.op.OpType.TraverseType
+import org.apache.gearpump.streaming.task.Task
 
 import scala.reflect.ClassTag
 
@@ -32,7 +33,7 @@ object OpType {
     def foreach[U](t: T => U): Unit
   }
 
-  type Closure[T] = (TaskContext, UserConfig) => (T => Unit)
+  type SinkClosure[T] = (HBaseSinkInterface,HBaseConsumer) => (T => Unit)
 
 }
 
@@ -54,8 +55,6 @@ case class FlatMapOp[T: ClassTag, R](fun: (T) => TraversableOnce[R], description
 
 case class ReduceOp[T: ClassTag](fun: (T, T) =>T, description: String) extends SlaveOp[T]
 
-case class SinkOp[T: ClassTag](closure: Closure[T], parallelism: Int, description: String) extends ParameterizedOp[T]
-
 trait MasterOp extends Op
 
 trait ParameterizedOp[T] extends MasterOp
@@ -67,6 +66,8 @@ case class GroupByOp[T: ClassTag, R](fun: T => R, parallism: Int, description: S
 case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int, description: String) extends ParameterizedOp[T]
 
 case class TraversableSource[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallelism: Int, description: String) extends ParameterizedOp[T]
+
+case class TraversableSink[M[_] <: SinkConsumer[_], T: ClassTag](sinkConsumer: M[T], parallelism: Int, description: String) extends ParameterizedOp[T]
 
 
 /**

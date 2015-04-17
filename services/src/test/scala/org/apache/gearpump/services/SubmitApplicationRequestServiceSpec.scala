@@ -156,13 +156,15 @@ class SubmitApplicationRequestServiceSpec(sys:ActorSystem) extends FlatSpec with
       val jsonValue = write(submitApplicationRequest)
       Post(s"/api/$REST_VERSION/application", HttpEntity(ContentTypes.`application/json`, jsonValue)) ~> applicationRequestRoute ~> check {
         val responseBody = response.entity.asString
-        val submitApplicationResult = read[SubmitApplicationResultValue](responseBody)
-        validate(submitApplicationResult.appId >= 0, "invalid appid")
-        resultAppId = submitApplicationResult.appId
+        val submitApplicationResultValue = read[SubmitApplicationResultValue](responseBody)
+        validate(submitApplicationResultValue.appId >= 0, "invalid appid")
+        resultAppId = submitApplicationResultValue.appId
+        LOG.info(s"submitApplicationResult.appId=${submitApplicationResultValue.appId} setting resultAppId=${resultAppId}")
       }
     }
 
   "SubmitApplicationRequestServiceSpec" should "return an AppMasterDataDetail dag that matches SubmitApplicationRequest dag" in {
+    LOG.info(s"resultAppId=${resultAppId}")
     Get(s"/api/$REST_VERSION/appmaster/$resultAppId?detail=true") ~> appMasterRoute ~> check {
       val responseBody = response.entity.asString
       val appMasterDataDetail = read[StreamingAppMasterDataDetail](responseBody)

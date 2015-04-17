@@ -35,7 +35,7 @@ import org.slf4j.Logger
 import scala.collection.JavaConversions._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 //TODO: add interface to query master here
 class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[ActorRef]) {
@@ -76,10 +76,13 @@ class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[Actor
         val appJar = loadFile(jarPath)
         client.submitApplication(updatedApp, Option(appJar))
       }
-    }).failed.foreach(throwable => {
-      LOG.error("Failed to submit", throwable)
-    })
-    -1
+    }) match {
+      case Success(appId) =>
+        appId
+      case Failure(ex) =>
+        LOG.error("Failed to submit", ex)
+        -1
+    }
   }
 
   def replayFromTimestampWindowTrailingEdge(appId : Int) = {

@@ -49,7 +49,9 @@ trait SubmitApplicationRequestService extends HttpService  {
             import submitApplicationRequest.{appJar, appName, dag, processors}
             val appId = ClientContext(system.settings.config, Some(system), Some(master)).submit(StreamApplication(appName, appJar, processors, dag))
             import upickle._
-            complete(write[SubmitApplicationResultValue](SubmitApplicationResultValue(appId)))
+            val submitApplicationResultValue = SubmitApplicationResultValue(appId)
+            val jsonData = write(submitApplicationResultValue)
+            complete(jsonData)
           }
         }
       }

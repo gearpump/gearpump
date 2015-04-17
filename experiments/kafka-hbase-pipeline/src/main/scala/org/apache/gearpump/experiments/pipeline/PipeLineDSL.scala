@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.experiments.pipeline
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
@@ -29,7 +29,6 @@ import org.apache.gearpump.experiments.pipeline.Messages._
 import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.streaming.dsl.StreamApp._
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.apache.hadoop.conf.Configuration
@@ -68,30 +67,6 @@ object PipeLineDSL extends App with ArgumentsParser {
   )
   val context = ClientContext()
   implicit val system = context.system
-/*
-  def toHBaseSink(taskContext: TaskContext, userConfig: UserConfig): Array[Datum] => Unit = {
-    val repo = new HBaseRepo {
-      def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
-    }
-    val pipeLineConfig: PipeLineConfig = userConfig.getValue[PipeLineConfig](PIPELINE).get
-    val hbaseConsumer = HBaseConsumer(taskContext.system, Some(pipeLineConfig.config))
-    val hbase = hbaseConsumer.getHBase(repo)
-    metrics: Array[Datum] => {
-      val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-      LOG.info("writing-to-HBase")
-      metrics.foreach(datum => {
-        hbase.insert(System.currentTimeMillis.toString, hbaseConsumer.table, hbaseConsumer.table, datum.value.toString)
-      })
-    }
-  }
-*/
-  def toHBaseSink(taskContext: TaskContext, userConfig: UserConfig): Array[Datum] => Unit = {
-    val pipeLineConfig: PipeLineConfig = userConfig.getValue[PipeLineConfig](PIPELINE).get
-    metrics: Array[Datum] => {
-      val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-      LOG.info("writing-to-HBase")
-    }
-  }
 
   def application(context: ClientContext, config: ParseResult): Unit = {
     val pipeLinePath = config.getString("conf")
@@ -104,14 +79,12 @@ object PipeLineDSL extends App with ArgumentsParser {
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
 
     val app = StreamApp("PipeLineDSL", context, appConfig)
-/*
     val producer = app.readFromKafka(kafkaConfig, msg => {
       val jsonData = msg.msg.asInstanceOf[String]
       val envelope = read[Envelope](jsonData)
       val body = read[Body](envelope.body)
       body.metrics
     }, 1, "time-replayable-producer")
-
     producer.flatMap(metrics => {
       Some(metrics.flatMap(datum => {
         datum.dimension match {
@@ -129,22 +102,68 @@ object PipeLineDSL extends App with ArgumentsParser {
           average.average(datum, now)
         })
       }
-    })()).writeToHBase(((config:Config) => {
-      (taskContext:TaskContext, userConfig:UserConfig) => {
-        val repo = new HBaseRepo {
-          def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
-        }
-        val hbaseConsumer = HBaseConsumer(taskContext.system, Some(config))
-        val hbase = hbaseConsumer.getHBase(repo)
-        metrics: Array[Datum] => {
-          val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-          LOG.info("writing-to-HBase")
-          metrics.foreach(datum => {
-            hbase.insert(System.currentTimeMillis.toString, hbaseConsumer.table, hbaseConsumer.table, datum.value.toString)
-          })
-        }
+    })()).writeToHBase(pipeLineConfig, (sinkInterface:HBaseSinkInterface, hbaseConsumer:HBaseConsumer) => {
+      metrics:Array[Datum] => {
+        metrics.foreach(datum => {
+          sinkInterface.insert(System.currentTimeMillis.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](datum))
+        })
       }
-    })(pipeLineConfig))
+    })
+    producer.flatMap(metrics => {
+      Some(metrics.flatMap(datum => {
+        datum.dimension match {
+          case MEM =>
+            Some(datum)
+          case _ =>
+            None
+        }
+      }))
+    }).map((() => {
+      val average = TAverage(pipeLineConfig.getInt(MEM_INTERVAL))
+      msg: Array[Datum] => {
+        val now = System.currentTimeMillis
+        msg.flatMap(datum => {
+          average.average(datum, now)
+        })
+      }
+    })()).writeToHBase(pipeLineConfig, (sinkInterface:HBaseSinkInterface, hbaseConsumer:HBaseConsumer) => {
+      metrics:Array[Datum] => {
+        metrics.foreach(datum => {
+          sinkInterface.insert(System.currentTimeMillis.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](datum))
+        })
+      }
+    })
+
+    /*
+    val producer = app.readFromTimeReplayableSource(new TimeReplayableSourceTest1, msg => {
+      val jsonData = msg.msg.asInstanceOf[String]
+      val envelope = read[Envelope](jsonData)
+      val body = read[Body](envelope.body)
+      body.metrics
+    }, 10, 1, "time-replayable-producer")
+    producer.flatMap(metrics => {
+      Some(metrics.flatMap(datum => {
+        datum.dimension match {
+          case CPU =>
+            Some(datum)
+          case _ =>
+            None
+        }
+      }))
+    }).map((() => {
+      val average = TAverage(pipeLineConfig.getInt(CPU_INTERVAL))
+      msg: Array[Datum] => {
+        val now = System.currentTimeMillis
+        msg.flatMap(datum => {
+          average.average(datum, now)
+        })
+      }
+    })()).writeToSink(pipeLineConfig, (sinkInterface: HBaseSinkInterface, table: String) => {
+      metrics: Array[Datum] => {
+        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
+        LOG.info("writing-to-Sink")
+      }
+    })
 
     producer.flatMap(metrics => {
       Some(metrics.flatMap(datum => {
@@ -163,104 +182,13 @@ object PipeLineDSL extends App with ArgumentsParser {
           average.average(datum, now)
         })
       }
-    })()).writeToHBase(((config:Config) => {
-      (taskContext:TaskContext, userConfig:UserConfig) => {
-        val repo = new HBaseRepo {
-          def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
-        }
-        val hbaseConsumer = HBaseConsumer(taskContext.system, Some(config))
-        val hbase = hbaseConsumer.getHBase(repo)
-        metrics: Array[Datum] => {
-          val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-          LOG.info("writing-to-HBase")
-          metrics.foreach(datum => {
-            hbase.insert(System.currentTimeMillis.toString, hbaseConsumer.table, hbaseConsumer.table, datum.value.toString)
-          })
-        }
+    })()).writeToSink(pipeLineConfig, (sinkInterface: HBaseSinkInterface, table: String) => {
+      metrics: Array[Datum] => {
+        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
+        LOG.info("writing-to-Sink")
       }
-    })(pipeLineConfig))
+    })
     */
-
-
-val producer = app.readFromTimeReplayableSource(new TimeReplayableSourceTest1, msg => {
-  val jsonData = msg.msg.asInstanceOf[String]
-  val envelope = read[Envelope](jsonData)
-  val body = read[Body](envelope.body)
-  body.metrics
-}, 10, 1, "time-replayable-producer")
-    producer.flatMap(metrics => {
-      Some(metrics.flatMap(datum => {
-        datum.dimension match {
-          case CPU =>
-            Some(datum)
-          case _ =>
-            None
-        }
-      }))
-    }).map((() => {
-      val average = TAverage(pipeLineConfig.getInt(CPU_INTERVAL))
-      msg: Array[Datum] => {
-        val now = System.currentTimeMillis
-        msg.flatMap(datum => {
-          average.average(datum, now)
-        })
-      }
-    })()).writeToHBase(((config:Config) => {
-      val ZOOKEEPER = "hbase.zookeeper.connect"
-      val TABLE_NAME = "hbase.table.name"
-      val COLUMN_FAMILY = "hbase.table.column.family"
-      val COLUMN_NAME = "hbase.table.column.name"
-      (taskContext:TaskContext, userConfig:UserConfig) => {
-        val LOG: Logger = LogUtil.getLogger(taskContext.getClass)
-        val (zookeepers, (table, family, column)) = Some(config).map(config => {
-          val zookeepers = config.getString(ZOOKEEPER)
-          val table = config.getString(TABLE_NAME)
-          val family = config.getString(COLUMN_FAMILY)
-          val column = config.getString(COLUMN_NAME)
-          (zookeepers, (table, family, column))
-        }).get
-        metrics: Array[Datum] => {
-          LOG.info(s"writing-to-HBase ${zookeepers} ${table} ${family} ${column}")
-        }
-      }
-    })(pipeLineConfig))
-
-    producer.flatMap(metrics => {
-      Some(metrics.flatMap(datum => {
-        datum.dimension match {
-          case MEM =>
-            Some(datum)
-          case _ =>
-            None
-        }
-      }))
-    }).map((() => {
-      val average = TAverage(pipeLineConfig.getInt(MEM_INTERVAL))
-      msg: Array[Datum] => {
-        val now = System.currentTimeMillis
-        msg.flatMap(datum => {
-          average.average(datum, now)
-        })
-      }
-    })()).writeToHBase(((config:Config) => {
-      val ZOOKEEPER = "hbase.zookeeper.connect"
-      val TABLE_NAME = "hbase.table.name"
-      val COLUMN_FAMILY = "hbase.table.column.family"
-      val COLUMN_NAME = "hbase.table.column.name"
-      (taskContext:TaskContext, userConfig:UserConfig) => {
-        val LOG: Logger = LogUtil.getLogger(taskContext.getClass)
-        val (zookeepers, (table, family, column)) = Some(config).map(config => {
-          val zookeepers = config.getString(ZOOKEEPER)
-          val table = config.getString(TABLE_NAME)
-          val family = config.getString(COLUMN_FAMILY)
-          val column = config.getString(COLUMN_NAME)
-          (zookeepers, (table, family, column))
-        }).get
-        metrics: Array[Datum] => {
-          LOG.info(s"writing-to-HBase ${zookeepers} ${table} ${family} ${column}")
-        }
-      }
-    })(pipeLineConfig))
 
     context.submit(app)
     context.close()
