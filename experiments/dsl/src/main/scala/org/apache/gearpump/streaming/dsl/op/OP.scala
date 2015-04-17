@@ -18,7 +18,23 @@
 
 package org.apache.gearpump.streaming.dsl.op
 
-import org.apache.gearpump.streaming.task.Task
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.dsl.op.OpType.{Closure, TraverseType}
+import org.apache.gearpump.streaming.task.{TaskContext, Task}
+
+import scala.reflect.ClassTag
+
+object OpType {
+  type TraverseType[T] = {
+    def foreach[U](t: T => U): Unit
+  }
+  trait Traverse[T] extends java.io.Serializable {
+    def foreach[U](t: T => U): Unit
+  }
+
+  type Closure[T] = (TaskContext, UserConfig) => (T => Unit)
+
+}
 
 /**
  * Operators for the DSL
@@ -32,28 +48,33 @@ sealed trait Op {
  * "Attach" means running in same Actor.
  *
  */
-trait SlaveOp extends Op
+trait SlaveOp[T] extends Op
 
-case class FlatMapOp[T, R](fun: (T) => TraversableOnce[R], description: String) extends SlaveOp
+case class FlatMapOp[T: ClassTag, R](fun: (T) => TraversableOnce[R], description: String) extends SlaveOp[T]
 
-case class ReduceOp[T](fun: (T, T) =>T, description: String) extends SlaveOp
+case class ReduceOp[T: ClassTag](fun: (T, T) =>T, description: String) extends SlaveOp[T]
+
+case class SinkOp[T: ClassTag](closure: Closure[T], parallelism: Int, description: String) extends ParameterizedOp[T]
 
 trait MasterOp extends Op
 
+trait ParameterizedOp[T] extends MasterOp
+
 case class MergeOp(source: Op, target: Op, description: String) extends MasterOp
 
-case class GroupByOp[T, R](fun: T => R, parallism: Int, description: String) extends MasterOp
+case class GroupByOp[T: ClassTag, R](fun: T => R, parallism: Int, description: String) extends ParameterizedOp[T]
 
-case class ProcessorOp(processor: Class[_ <: Task], parallism: Int, description: String) extends MasterOp
+case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int, description: String) extends ParameterizedOp[T]
 
-case class InMemoryCollectionSource[T](collection: List[T], parallism: Int, description: String) extends MasterOp
+case class TraversableSource[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallelism: Int, description: String) extends ParameterizedOp[T]
+
 
 /**
  * Contains operators which can be chained to single one.
  *
  * For example, flatmap().map().reduce() can be chained to single operator as
  * no data shuffling is required.
- * @param ops
+ * @param ops list of operations
  */
 case class OpChain(ops: List[Op]) extends Op {
   def head: Op = ops.head
