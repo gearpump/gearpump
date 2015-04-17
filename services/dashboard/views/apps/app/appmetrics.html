@@ -1,12 +1,12 @@
 <div class="col-md-12">
+
   <h4>Receive Throughput</h4>
   <table class="table table-striped table-hover table-condensed table-xs"
          st-table="ng2" st-safe-src="receiveThroughputMetrics">
     <thead>
     <tr>
-      <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
       <th st-sort="taskClass">Task Class</th>
-      <th class="text-right" st-sort="processorId * 1000000 + taskId">Task ID</th>
+      <th class="text-right" st-sort="processorId + '.' + taskId" st-sort-default="true">Task ID</th>
       <th class="text-right" st-sort="count">Count
         <span class="glyphicon glyphicon-question-sign metrics-explanation" title="Count for sampling points"></span></th>
       <th class="text-right" st-sort="meanRate">Mean Rate
@@ -21,9 +21,8 @@
     </thead>
     <tbody>
     <tr ng-repeat="m in ng2">
-      <td class="text-right"><span ng-bind="m.processorId"></span></td>
       <td><span ng-bind="m.taskClass|lpart"></span></td>
-      <td class="text-right"><span ng-bind="m.taskId"></span></td>
+      <td class="text-right"><span ng-bind="'processor'+m.processorId + '.task' + m.taskId"></span></td>
       <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
       <td class="text-right"><span ng-bind="m.meanRate|number:0"></span></td>
       <td class="text-right"><span ng-bind="m.movingAverage1m|number:0"></span></td>
@@ -31,6 +30,14 @@
       <td class="text-right"><span ng-bind="m.movingAverage15m|number:0"></span></td>
     </tr>
     </tbody>
+    <tfoot>
+    <tr>
+      <td colspan="7" class="text-center">
+        <div st-pagination="" st-items-by-page="itemsByPage"
+             st-template="shared/directives/smarttable-pagination.html"></div>
+      </td>
+    </tr>
+    </tfoot>
   </table>
 </div>
 
@@ -40,9 +47,8 @@
          st-table="ng" st-safe-src="sendThroughputMetrics">
     <thead>
     <tr>
-      <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
       <th st-sort="taskClass">Task Class</th>
-      <th class="text-right" st-sort="processorId * 1000000 + taskId">Task ID</th>
+      <th class="text-right" st-sort="processorId + '.' + taskId" st-sort-default="true">Task ID</th>
       <th class="text-right" st-sort="count">Count
         <span class="glyphicon glyphicon-question-sign metrics-explanation" title="Count for sampling points"></span></th>
       <th class="text-right" st-sort="meanRate">Mean Rate
@@ -57,9 +63,8 @@
     </thead>
     <tbody>
     <tr ng-repeat="m in ng">
-      <td class="text-right"><span ng-bind="m.processorId"></span></td>
       <td><span ng-bind="m.taskClass|lpart"></span></td>
-      <td class="text-right"><span ng-bind="m.taskId"></span></td>
+      <td class="text-right"><span ng-bind="'processor'+m.processorId + '.task' + m.taskId"></span></td>
       <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
       <td class="text-right"><span ng-bind="m.meanRate|number:0"></span></td>
       <td class="text-right"><span ng-bind="m.movingAverage1m|number:0"></span></td>
@@ -67,6 +72,14 @@
       <td class="text-right"><span ng-bind="m.movingAverage15m|number:0"></span></td>
     </tr>
     </tbody>
+    <tfoot>
+    <tr>
+      <td colspan="7" class="text-center">
+        <div st-pagination="" st-items-by-page="itemsByPage"
+             st-template="shared/directives/smarttable-pagination.html"></div>
+      </td>
+    </tr>
+    </tfoot>
   </table>
 </div>
 
@@ -76,9 +89,8 @@
          st-table="ng3" st-safe-src="processTimeMetrics">
     <thead>
     <tr>
-      <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
       <th st-sort="taskClass">Task Class</th>
-      <th class="text-right" st-sort="processorId * 1000000 + taskId">Task ID</th>
+      <th class="text-right" st-sort="processorId + '.' + taskId" st-sort-default="true">Task ID</th>
       <th class="text-right" st-sort="count">Count
         <span class="glyphicon glyphicon-question-sign metrics-explanation" title="Count for sampling points"></span></th>
       <th class="text-right" st-sort="minimum">Min
@@ -97,9 +109,8 @@
     </thead>
     <tbody>
     <tr ng-repeat="m in ng3">
-      <td class="text-right"><span ng-bind="m.processorId"></span></td>
       <td><span ng-bind="m.taskClass|lpart"></span></td>
-      <td class="text-right"><span ng-bind="m.taskId"></span></td>
+      <td class="text-right"><span ng-bind="'processor'+m.processorId + '.task' + m.taskId"></span></td>
       <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
       <td class="text-right"><span ng-bind="m.minimum|number:2"></span></td>
       <td class="text-right"><span ng-bind="m.maximum|number:2"></span></td>
@@ -109,6 +120,14 @@
       <td class="text-right"><span ng-bind="m.p95|number:2"></span></td>
     </tr>
     </tbody>
+    <tfoot>
+    <tr>
+      <td colspan="9" class="text-center">
+        <div st-pagination="" st-items-by-page="itemsByPage"
+             st-template="shared/directives/smarttable-pagination.html"></div>
+      </td>
+    </tr>
+    </tfoot>
   </table>
 </div>
 
@@ -118,9 +137,8 @@
          st-table="ng4" st-safe-src="receiveLatencyMetrics">
     <thead>
     <tr>
-      <th class="text-right" st-sort="processorId" st-sort-default="true">ID</th>
       <th st-sort="taskClass">Task Class</th>
-      <th class="text-right" st-sort="processorId * 1000000 + taskId">Task ID</th>
+      <th class="text-right" st-sort="processorId + '.' + taskId" st-sort-default="true">Task ID</th>
       <th class="text-right" st-sort="count">Count
         <span class="glyphicon glyphicon-question-sign metrics-explanation" title="Count for sampling points"></span></th>
       <th class="text-right" st-sort="minimum">Min
@@ -139,9 +157,8 @@
     </thead>
     <tbody>
     <tr ng-repeat="m in ng4">
-      <td class="text-right"><span ng-bind="m.processorId"></span></td>
       <td><span ng-bind="m.taskClass|lpart"></span></td>
-      <td class="text-right"><span ng-bind="m.taskId"></span></td>
+      <td class="text-right"><span ng-bind="'processor'+m.processorId + '.task' + m.taskId"></span></td>
       <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
       <td class="text-right"><span ng-bind="m.minimum|number:2"></span></td>
       <td class="text-right"><span ng-bind="m.maximum|number:2"></span></td>
@@ -151,5 +168,14 @@
       <td class="text-right"><span ng-bind="m.p95|number:2"></span></td>
     </tr>
     </tbody>
+    <tfoot>
+    <tr>
+      <td colspan="9" class="text-center">
+        <div st-pagination="" st-items-by-page="itemsByPage"
+             st-template="shared/directives/smarttable-pagination.html"></div>
+      </td>
+    </tr>
+    </tfoot>
   </table>
+
 </div>

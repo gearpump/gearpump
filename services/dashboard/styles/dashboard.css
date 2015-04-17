@@ -201,3 +201,10 @@ th.st-sort-descent:after {
 div.metrics {
   padding-bottom: 10px;
 }
+
+/*
+ * pagination
+ */
+.pagination a:hover {
+  cursor: pointer;
+}

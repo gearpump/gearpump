@@ -6,6 +6,7 @@
 angular.module('dashboard.apps.appmaster')
 
   .controller('AppMetricsCtrl', ['$scope', function ($scope) {
+    $scope.itemsByPage = 20;
     $scope.$watchCollection('streamingDag.meter.sendThroughput', function(array) {
       $scope.sendThroughputMetrics = d3.values(array);
     });
