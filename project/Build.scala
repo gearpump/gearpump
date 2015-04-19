@@ -380,6 +380,7 @@ object Build extends sbt.Build {
           "org.json4s" %% "json4s-native"   % json4sVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.webjars" % "angularjs" % "1.3.15",
+          "org.webjars" % "angular-ui-select" % "0.11.2",
           "org.webjars" % "bootstrap" % "3.3.4",
           "org.webjars" % "d3js" % "3.5.3",
           "org.webjars" % "momentjs" % "2.9.0",

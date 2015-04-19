@@ -133,7 +133,7 @@ angular.module('directive.echarts', [])
         var use = $scope.options || {};
         var colors = LookAndFeel.colorSet(0);
         var options = {
-          tooltip: LookAndFeel.tooltip({color: colors.grid}),
+          tooltip: LookAndFeel.tooltip({color: colors.grid, trigger: 'item'}),
           dataZoom: {show: false},
           grid: {borderWidth: 0, x: 5, y: 5, x2: 5, y2: 30},
           xAxis: [{
@@ -145,7 +145,7 @@ angular.module('directive.echarts', [])
           }],
           yAxis: [{show: false}],
           series: [LookAndFeel.makeDataSeries(
-            angular.merge({colors: colors}, use.series[0]))]
+            angular.merge({colors: colors, type: 'bar'}, use.series[0]))]
         };
         $scope.options = angular.merge(options, use.inject);
       }],
@@ -158,12 +158,10 @@ angular.module('directive.echarts', [])
       /** */
       tooltip: function (args) {
         var result = {
-          trigger: 'axis',
+          trigger: args.trigger || 'axis',
           textStyle: {fontSize: 13},
           axisPointer: {type: 'none'},
           borderRadius: 2,
-          showDelay: 0,
-          transitionDuration: 0,
           formatter: args.formatter
         };
         if (args.color) {

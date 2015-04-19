@@ -8,6 +8,7 @@ angular
   .module('dashboard', [
     'ngRoute',
     'ng-breadcrumbs',
+    'ui.select',
     'smart-table',
     'directive.echartfactory',
     'directive.echarts',
