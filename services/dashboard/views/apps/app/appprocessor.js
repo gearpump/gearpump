@@ -130,21 +130,32 @@ angular.module('dashboard.apps.appmaster')
         var processingTimes = $scope.streamingDag.getProcessingTime(activeProcessorId);
         var receiveLatencies = $scope.streamingDag.getReceiveLatency(activeProcessorId);
 
+        function filterUnselectedTasks(array) {
+          var result = [];
+          var selectedTasks = $scope.tasks.selected;
+          for (var i in selectedTasks) {
+            var task = selectedTasks[i];
+            var id = Number(task.substr(1));
+            result.push(array[id]);
+          }
+          return result;
+        }
+
         $scope.receiveMessageRateChart.data = [{
           x: xLabel,
-          y: receivedMessages.rate
+          y: filterUnselectedTasks(receivedMessages.rate)
         }];
         $scope.sendMessageRateChart.data = [{
           x: xLabel,
-          y: sentMessages.rate
+          y: filterUnselectedTasks(sentMessages.rate)
         }];
         $scope.processingTimeChart.data = [{
           x: xLabel,
-          y: processingTimes
+          y: filterUnselectedTasks(processingTimes)
         }];
         $scope.receiveLatencyChart.data = [{
           x: xLabel,
-          y: receiveLatencies
+          y: filterUnselectedTasks(receiveLatencies)
         }];
       }, conf.updateChartInterval);
 

@@ -57,7 +57,7 @@
 
   <!-- right half -->
   <div class="col-md-6">
-    <h4>Task Selector</h4>
+    <h5>Task Selector</h5>
     <ui-select multiple ng-model="tasks.selected" ng-disabled="disabled">
       <ui-select-match placeholder="Select tasks...">{{$item}}</ui-select-match>
       <ui-select-choices repeat="task in tasks.available | filter:$select.search">
