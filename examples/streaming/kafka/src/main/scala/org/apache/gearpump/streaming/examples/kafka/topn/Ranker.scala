@@ -32,9 +32,9 @@ class Ranker(taskContext : TaskContext, conf: UserConfig) extends Task(taskConte
   private var lastEmitTime = 0L
   protected val rankings: Rankings[String] = new Rankings[String]
 
-  def onStart(time: StartTime): Unit = {}
+  override def onStart(time: StartTime): Unit = {}
 
-  def onNext(msg: Message): Unit = {
+  override def onNext(msg: Message): Unit = {
     updateRankingsWithMessage(msg)
     val timestamp = msg.timestamp
     if (timestamp - lastEmitTime > emitFrequencyMS) {

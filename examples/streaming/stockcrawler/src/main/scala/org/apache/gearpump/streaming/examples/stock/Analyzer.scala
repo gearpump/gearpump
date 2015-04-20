@@ -46,11 +46,11 @@ class Analyzer (taskContext: TaskContext, conf: UserConfig) extends Task(taskCon
   private val historicalStates = new HistoricalStates()
   private var latestTimeStamp: Long = 0L
 
-  def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: StartTime): Unit = {
     LOG.info("analyzer is started")
   }
 
-  def onNext(msg: Message): Unit = {
+  override def onNext(msg: Message): Unit = {
     msg.msg match {
       case stock: StockPrice =>
         latestTimeStamp = stock.timestamp

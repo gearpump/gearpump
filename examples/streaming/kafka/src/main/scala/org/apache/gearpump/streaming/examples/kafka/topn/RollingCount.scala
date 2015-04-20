@@ -34,9 +34,9 @@ class RollingCount(taskContext : TaskContext, conf: UserConfig) extends Task(tas
 
   private val counter: SlidingWindowCounter[String] = new SlidingWindowCounter[String](windowLengthMS / emitFrequencyMS)
 
-  def onStart(time: StartTime): Unit = {}
+  override def onStart(time: StartTime): Unit = {}
 
-  def onNext(msg: Message): Unit = {
+  override def onNext(msg: Message): Unit = {
     val timestamp = msg.timestamp
     if (timestamp - lastEmitTime >= emitFrequencyMS) {
       counter.getCountsThenAdvanceWindow.foreach {
