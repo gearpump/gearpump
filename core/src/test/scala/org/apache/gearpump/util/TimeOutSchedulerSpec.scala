@@ -19,6 +19,7 @@ package org.apache.gearpump.util
 
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import org.apache.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import org.slf4j.Logger
 import scala.concurrent.duration._
@@ -26,7 +27,7 @@ import scala.concurrent.duration._
 class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
 
-  def this() = this(ActorSystem("WorkerSpec"))
+  def this() = this(ActorSystem("WorkerSpec", TestUtil.DEFAULT_CONFIG))
   val mockActor = TestProbe()
 
   override def afterAll {

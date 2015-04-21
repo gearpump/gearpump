@@ -37,7 +37,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
   implicit var system: ActorSystem = null
 
   override def beforeAll = {
-    system = ActorSystem("test")
+    system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
   }
 
   override def afterAll = {

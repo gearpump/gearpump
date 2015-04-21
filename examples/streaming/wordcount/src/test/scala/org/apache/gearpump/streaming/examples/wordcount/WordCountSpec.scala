@@ -61,10 +61,14 @@ class WordCountSpec extends PropSpec with PropertyChecks with Matchers with Befo
 
       val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(WordCount), args)
-      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-      masterReceiver.reply(SubmitApplicationResult(Success(0)))
 
-      process.destroy()
+      try {
+
+        masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+        masterReceiver.reply(SubmitApplicationResult(Success(0)))
+      } finally {
+        process.destroy()
+      }
     }
   }
 

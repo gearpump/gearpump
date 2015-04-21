@@ -19,6 +19,7 @@ package org.apache.gearpump.streaming
 
 import akka.actor.{ActorSystem, Actor}
 import akka.testkit.{TestProbe, TestActorRef}
+import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.streaming.task.{TaskId, TaskContext}
 import org.mockito.{Mockito, ArgumentMatcher}
 import org.mockito.Mockito
@@ -26,7 +27,7 @@ import org.mockito.Matchers
 
 object MockUtil {
 
-  lazy val system: ActorSystem = ActorSystem("mockUtil")
+  lazy val system: ActorSystem = ActorSystem("mockUtil", TestUtil.DEFAULT_CONFIG)
 
   def mockTaskContext: TaskContext = {
     val context = Mockito.mock(classOf[TaskContext])

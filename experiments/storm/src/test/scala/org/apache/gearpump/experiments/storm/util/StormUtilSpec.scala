@@ -20,12 +20,12 @@ package org.apache.gearpump.experiments.storm.util
 
 import akka.actor.ActorSystem
 import backtype.storm.generated.StormTopology
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.scalatest.{Matchers, PropSpec}
 
 class StormUtilSpec extends PropSpec with Matchers {
 
-  implicit val system = ActorSystem("test")
+  implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
 
   property("get storm topology through user config") {
     val topology = TopologyUtil.getTestTopology

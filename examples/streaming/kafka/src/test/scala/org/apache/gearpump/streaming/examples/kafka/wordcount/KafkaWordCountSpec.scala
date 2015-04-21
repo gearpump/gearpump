@@ -63,9 +63,14 @@ class KafkaWordCountSpec extends PropSpec with PropertyChecks with Matchers with
 
       val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(KafkaWordCount), args)
-      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-      masterReceiver.reply(SubmitApplicationResult(Success(0)))
-      process.destroy()
+
+      try {
+
+        masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+        masterReceiver.reply(SubmitApplicationResult(Success(0)))
+      } finally {
+        process.destroy()
+      }
     }
   }
 }

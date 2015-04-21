@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.WorkerToMaster.RegisterNewWorker
 import org.apache.gearpump.cluster.master.{MasterProxy, AppMasterRuntimeInfo}
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.{Constants, Util}
+import org.apache.gearpump.util.{LogUtil, Constants, Util}
 import org.scalatest._
 
 import scala.concurrent.duration.Duration
@@ -38,7 +38,9 @@ import org.apache.gearpump.util.Constants._
 
 class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
-  override def config = TestUtil.MASTER_CONFIG
+  private val LOG = LogUtil.getLogger(getClass)
+
+  override def config = TestUtil.DEFAULT_CONFIG
 
   override def beforeEach() = {
     startActorSystem()
@@ -54,37 +56,46 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
 
     val tempTestConf = convertTestConf(getHost, getPort)
 
+
     val worker = Util.startProcess(Array(s"-D$GEARPUMP_CUSTOM_CONFIG_FILE=${tempTestConf.toString}") ++ getMasterListOption(),
       getContextClassPath,
       getMainClassName(org.apache.gearpump.cluster.main.Worker),
       Array.empty)
 
-    masterReceiver.expectMsg(PROCESS_BOOT_TIME, RegisterNewWorker)
 
-    tempTestConf.delete()
-    worker.destroy()
+    try {
+      masterReceiver.expectMsg(PROCESS_BOOT_TIME, RegisterNewWorker)
+
+      tempTestConf.delete()
+    } finally {
+      worker.destroy()
+    }
   }
 
   "Master" should "accept worker RegisterNewWorker when started" in {
     val worker = TestProbe()(getActorSystem)
 
     val port = Util.findFreePort.get
-    val tempTestConf = convertTestConf("127.0.0.1", port)
 
-    val masterProcess = Util.startProcess(Array(s"-D$GEARPUMP_CUSTOM_CONFIG_FILE=${tempTestConf.toString}"),
+    val masterConfig =  Array(s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=127.0.0.1:$port",
+      s"-D${Constants.GEARPUMP_HOSTNAME}=127.0.0.1")
+
+    val masterProcess = Util.startProcess(masterConfig,
       getContextClassPath,
       getMainClassName(org.apache.gearpump.cluster.main.Master),
       Array("-ip", "127.0.0.1", "-port", port.toString))
 
     //wait for master process to be started
 
-    val masterProxy = getActorSystem.actorOf(MasterProxy.props(List(HostPort("127.0.0.1", port))), "mainSpec")
+    try {
 
-    worker.send(masterProxy, RegisterNewWorker)
-    worker.expectMsgType[WorkerRegistered](PROCESS_BOOT_TIME)
+      val masterProxy = getActorSystem.actorOf(MasterProxy.props(List(HostPort("127.0.0.1", port))), "mainSpec")
 
-    tempTestConf.delete()
-    masterProcess.destroy()
+      worker.send(masterProxy, RegisterNewWorker)
+      worker.expectMsgType[WorkerRegistered](PROCESS_BOOT_TIME)
+    } finally {
+      masterProcess.destroy()
+    }
   }
 
   "Info" should "be started without exception" in {
@@ -96,10 +107,14 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
       getMainClassName(org.apache.gearpump.cluster.main.Info),
       Array.empty)
 
-    masterReceiver.expectMsg(PROCESS_BOOT_TIME, AppMastersDataRequest)
-    masterReceiver.reply(AppMastersData(List(AppMasterData(AppMasterActive, 0, "appName"))))
+    try {
 
-    info.destroy()
+      masterReceiver.expectMsg(PROCESS_BOOT_TIME, AppMastersDataRequest)
+      masterReceiver.reply(AppMastersData(List(AppMasterData(AppMasterActive, 0, "appName"))))
+
+    } finally {
+      info.destroy()
+    }
   }
 
   "Kill" should "be started without exception" in {
@@ -111,10 +126,15 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
       getMainClassName(org.apache.gearpump.cluster.main.Kill),
       Array("-appid", "0"))
 
-    masterReceiver.expectMsg(PROCESS_BOOT_TIME, ShutdownApplication(0))
-    masterReceiver.reply(ShutdownApplicationResult(Success(0)))
 
-    kill.destroy()
+    try {
+
+      masterReceiver.expectMsg(PROCESS_BOOT_TIME, ShutdownApplication(0))
+      masterReceiver.reply(ShutdownApplicationResult(Success(0)))
+
+    } finally {
+      kill.destroy()
+    }
   }
 
   "Replay" should "be started without exception" in {
@@ -126,10 +146,13 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
       getMainClassName(org.apache.gearpump.cluster.main.Replay),
       Array("-appid", "0"))
 
-    masterReceiver.expectMsgType[ReplayFromTimestampWindowTrailingEdge](PROCESS_BOOT_TIME)
-    masterReceiver.reply(ReplayApplicationResult(Success(0)))
+    try {
 
-    replay.destroy()
+      masterReceiver.expectMsgType[ReplayFromTimestampWindowTrailingEdge](PROCESS_BOOT_TIME)
+      masterReceiver.reply(ReplayApplicationResult(Success(0)))
+    } finally {
+      replay.destroy()
+    }
   }
 
   "Local" should "be started without exception" in {
@@ -142,18 +165,24 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
       getMainClassName(org.apache.gearpump.cluster.main.Local),
       Array.empty)
 
-    def retry(seconds: Int)(fn: => Boolean): Boolean = {
+    def retry(times: Int)(fn: => Boolean): Boolean = {
+
+      LOG.info(s"Local Test: Checking whether local port is available, remain times $times ..")
+
       val result = fn
-      if (result) {
+      if (result || times <= 0) {
         result
-      } else {
+      } else  {
         Thread.sleep(1000)
-        retry(seconds - 1)(fn)
+        retry(times - 1)(fn)
       }
     }
 
-    assert(retry(10)(isPortUsed("127.0.0.1", port)), "local is not started successfully, as port is not used " + port)
-    local.destroy()
+    try {
+      assert(retry(10)(isPortUsed("127.0.0.1", port)), "local is not started successfully, as port is not used " + port)
+    } finally {
+      local.destroy()
+    }
   }
 
   "Gear" should "support app|info|kill|shell|replay" in {
@@ -183,13 +212,15 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
       getMainClassName(org.apache.gearpump.cluster.main.Shell),
       Array("-master", s"$getHost:$getPort"))
 
+    try {
 
-    val scalaHome = Option(System.getenv("SCALA_HOME")).map { _ =>
-      // Only test this when SCALA_HOME env is set
-      masterReceiver.expectMsg(Duration(15, TimeUnit.SECONDS), AppMastersDataRequest)
+      val scalaHome = Option(System.getenv("SCALA_HOME")).map { _ =>
+        // Only test this when SCALA_HOME env is set
+        masterReceiver.expectMsg(Duration(15, TimeUnit.SECONDS), AppMastersDataRequest)
+      }
+    } finally {
+      shell.destroy()
     }
-
-    shell.destroy()
   }
 }
 

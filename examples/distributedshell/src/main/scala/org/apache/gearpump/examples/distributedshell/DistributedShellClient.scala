@@ -40,8 +40,9 @@ object DistributedShellClient extends App with ArgumentsParser  {
   val appid = config.getInt("appid")
   val command = config.getString("command")
   val appMaster = context.resolveAppID(appid)
-  (appMaster ? ShellCommand(command)).map { reslut =>
-    LOG.info(s"Result: $reslut")
+  LOG.info(s"Resolved appMaster $appid address ${appMaster.path.toString}, sending command $command")
+  (appMaster ? ShellCommand(command)).map { result =>
+    LOG.info(s"Result: $result")
     context.close()
   }
 }

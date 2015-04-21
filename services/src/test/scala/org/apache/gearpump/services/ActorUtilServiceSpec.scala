@@ -30,22 +30,12 @@ import spray.testkit.ScalatestRouteTest
 import scala.concurrent.duration._
 
 class ActorUtilServiceSpec extends FlatSpec with ScalatestRouteTest
-with ActorUtilService with Matchers with BeforeAndAfterAll {
+with ActorUtilService with Matchers  {
   import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
 
-  var miniCluster:MiniCluster = null
-  def master = miniCluster.mockMaster
-
-  override def beforeAll: Unit = {
-    miniCluster = TestUtil.startMiniCluster
-    StreamingTestUtil.startAppMaster(miniCluster, 0)
-  }
-
-  override def afterAll: Unit = {
-    miniCluster.shutDown()
-  }
+  def master = TestCluster.master
 
   "ActorUtilService" should "deliver message to target actor path" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)

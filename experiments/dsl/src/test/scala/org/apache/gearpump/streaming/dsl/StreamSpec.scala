@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.dsl
 
 import akka.actor._
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner}
 import org.apache.gearpump.streaming.dsl.StreamSpec.Join
@@ -29,17 +29,18 @@ import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
+import org.mockito.Mockito.when
 import org.scalatest._
+import org.scalatest.mock.MockitoSugar
 
 import scala.util.{Either, Left, Right}
 
-class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
+class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with MockitoSugar {
 
   implicit var system: ActorSystem = null
-  implicit var context = ClientContext()
 
   override def beforeAll: Unit = {
-    system = ActorSystem("test")
+    system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
   }
 
   override def afterAll: Unit = {
@@ -47,6 +48,9 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
   }
 
   it should "translate the DSL to a DAG" in {
+    val context: ClientContext = mock[ClientContext]
+    when(context.system).thenReturn(system)
+
     val app = new StreamApp("dsl", context)
 
     val data  =

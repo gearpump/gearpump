@@ -30,21 +30,11 @@ import spray.testkit.ScalatestRouteTest
 import scala.concurrent.duration._
 import scala.util.Try
 
-class MetricsQueryServiceSpec extends FlatSpec with ScalatestRouteTest with MetricsQueryService with Matchers with BeforeAndAfterAll {
+class MetricsQueryServiceSpec extends FlatSpec with ScalatestRouteTest with MetricsQueryService with Matchers  {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
 
-  var miniCluster:MiniCluster = null
-  def master = miniCluster.mockMaster
-
-  override def beforeAll: Unit = {
-    miniCluster = TestUtil.startMiniCluster
-    StreamingTestUtil.startAppMaster(miniCluster, 0)
-  }
-
-  override def afterAll: Unit = {
-    miniCluster.shutDown()
-  }
+  def master = TestCluster.master
 
   "MetricsQueryService" should "return history metrics" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)

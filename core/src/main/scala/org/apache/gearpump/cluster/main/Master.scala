@@ -76,6 +76,7 @@ object Master extends App with ArgumentsParser {
       withValue("akka.cluster.seed-nodes", ConfigValueFactory.fromAnyRef(masterList)).
       withValue(s"akka.cluster.role.${MASTER}.min-nr-of-members", ConfigValueFactory.fromAnyRef(quorum))
 
+    LOG.info(s"Starting Master Actor system $ip:$port, master list: ${masters.mkString(";")}")
     val system = ActorSystem(MASTER, masterConfig)
 
     val replicator = DataReplication(system).replicator

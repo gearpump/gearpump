@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
@@ -91,7 +91,7 @@ class OpTranslatorSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
       left + right
     }, "concat")
 
-    implicit val system = ActorSystem("test")
+    implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
     val config = UserConfig.empty.withValue[SingleInputFunction[String, String]](GEARPUMP_STREAMING_OPERATOR, concat)
 
     val taskContext = MockUtil.mockTaskContext

@@ -39,7 +39,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
   var appLauncher: TestProbe = null
   var appManager : ActorRef = null
 
-  override def config = TestUtil.MASTER_CONFIG
+  override def config = TestUtil.DEFAULT_CONFIG
 
   override def beforeEach() = {
     startActorSystem()

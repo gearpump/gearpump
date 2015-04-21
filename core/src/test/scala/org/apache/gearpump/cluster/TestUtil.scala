@@ -33,7 +33,6 @@ object TestUtil {
   val rawConfig = ClusterConfig.load("test.conf")
   val DEFAULT_CONFIG = rawConfig.default
   val MASTER_CONFIG = rawConfig.master
-  val WORKER_CONFIG = rawConfig.worker
 
   def startMiniCluster = new MiniCluster
 
