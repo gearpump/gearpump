@@ -135,10 +135,10 @@ trait TaskContext {
 
 
   /**
-   * retrieve minClock from TaskActor
+   * retrieve upstream min clock from TaskActor
    * @return
    */
-  def minClock: TimeStamp
+  def upstreamMinClock: TimeStamp
 }
 
 /**
