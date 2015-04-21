@@ -105,8 +105,8 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
     task.flatMap(_.stateClock)
   }
 
-  override def minClock: TimeStamp = {
-    actor.minClock
+  override def upstreamMinClock: TimeStamp = {
+    actor.getUpstreamMinClock
   }
 
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable = {
