@@ -24,10 +24,8 @@ object Constants {
   val MASTER_WATCHER = "masterwatcher"
   val SINGLETON_MANAGER = "singleton"
 
-  val GEARPUMP = "gearpump"
   val MASTER = "master"
   val WORKER = "worker"
-  val APPLICATION = "application"
   val WINDOWS = "windows"
   val UI = "ui"
   val BASE = "base"

@@ -60,11 +60,11 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
 
     assert(raw.master.getString("conf") == "master", "master > base")
     assert(raw.worker.getString("conf") == "worker", "worker > base")
-    assert(raw.application.getString("conf") == "base", "application > base")
+    assert(raw.default.getString("conf") == "base", "application > base")
 
     assert(raw.master.getString("gearpump.gear") == "gearpump", "gearpump override others")
     assert(raw.worker.getString("gearpump.gear") == "gearpump", "gearpump override others")
-    assert(raw.application.getString("gearpump.gear") == "gearpump", "gearpump override others")
+    assert(raw.default.getString("gearpump.gear") == "gearpump", "gearpump override others")
 
     file.delete()
   }

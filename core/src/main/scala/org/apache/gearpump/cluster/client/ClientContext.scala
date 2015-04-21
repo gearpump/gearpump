@@ -130,7 +130,7 @@ class ClientContext(config: Config) {
 }
 
 object ClientContext {
-  def apply() = new ClientContext(ClusterConfig.load.application)
+  def apply() = new ClientContext(ClusterConfig.load.default)
 
   def apply(config: Config) = new ClientContext(config)
 }

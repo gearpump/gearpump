@@ -77,9 +77,6 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   task.setTaskActor(this)
 
   def onStart(startTime : StartTime) : Unit = {
-    val dispatcher = context.dispatcher.asInstanceOf[akka.dispatch.Dispatcher]
-
-    //LOG.info(s"Dispatcher class ${Tool.getBoxType(dispatcher)}")
     task.onStart(startTime)
   }
 
