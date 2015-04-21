@@ -34,7 +34,7 @@ class TaskLocatorSpec extends WordSpec with Matchers {
   val taskDescription2 = ProcessorDescription("org.apache.gearpump.streaming.appmaster.TestTask2", 2)
   val taskDescription3 = ProcessorDescription("org.apache.gearpump.streaming.appmaster.TestTask3", 2)
 
-  val config = ClusterConfig.load.application
+  val config = ClusterConfig.load.default
 
   "TaskLocator" should {
     "locate task properly according user's configuration" in {
