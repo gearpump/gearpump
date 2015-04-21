@@ -195,9 +195,9 @@ abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends Ta
    */
   protected def sender: ActorRef = taskContext.sender
 
-  def onStart(startTime : StartTime) : Unit
+  def onStart(startTime : StartTime) : Unit = {}
 
-  def onNext(msg : Message) : Unit
+  def onNext(msg : Message) : Unit = {}
 
   def onStop() : Unit = {}
 

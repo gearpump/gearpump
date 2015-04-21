@@ -48,11 +48,11 @@ class Crawler(taskContext: TaskContext, conf: UserConfig) extends Task(taskConte
 
   val stockMarket = conf.getValue[StockMarket](classOf[StockMarket].getName).get
 
-  def onStart(startTime : StartTime) : Unit = {
+  override def onStart(startTime : StartTime) : Unit = {
     //nothing
   }
 
-  def onNext(msg : Message) : Unit = {
+  override def onNext(msg : Message) : Unit = {
     stockMarket.getPrice(stocks).foreach {price =>
       output(new Message(price, price.timestamp))
     }

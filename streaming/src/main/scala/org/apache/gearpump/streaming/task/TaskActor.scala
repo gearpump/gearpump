@@ -76,7 +76,12 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
   task.setTaskActor(this)
 
-  def onStart(startTime : StartTime) : Unit = task.onStart(startTime)
+  def onStart(startTime : StartTime) : Unit = {
+    val dispatcher = context.dispatcher.asInstanceOf[akka.dispatch.Dispatcher]
+
+    //LOG.info(s"Dispatcher class ${Tool.getBoxType(dispatcher)}")
+    task.onStart(startTime)
+  }
 
   def onNext(msg : Message) : Unit = task.onNext(msg)
 
@@ -142,6 +147,9 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
           case m : Message =>
             count += 1
             onNext(m)
+          case other =>
+            // un-managed message
+            onUnManagedMessage(other)
         }
       } else {
         done = true
@@ -171,6 +179,9 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
       context.system.scheduler.schedule(
         LATENCY_PROBE_INTERVAL, LATENCY_PROBE_INTERVAL, self, SendMessageProbe)
+
+      // clean up history message in the queue
+      doHandleMessage()
 
       context.become(handleMessages(doHandleMessage))
   }
@@ -217,8 +228,8 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       LOG.info("received SendMessageLoss")
       throw new MsgLostException
     case other =>
-      // un-managed message
-      onUnManagedMessage(other)
+      queue.add(other)
+      handler()
   }
 
   def minClock: TimeStamp = Math.min(upstreamMinClock, minClockAtCurrentTask)
