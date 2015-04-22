@@ -26,7 +26,7 @@ import kafka.consumer.SimpleConsumer
 import kafka.server.{KafkaConfig => KafkaServerConfig}
 import kafka.utils.{TestUtils => TestKafkaUtils, TestZKUtils, Utils}
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.kafka.util.KafkaServerHarness
@@ -50,7 +50,7 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
 
   override def beforeEach: Unit = {
     super.setUp()
-    system = ActorSystem("test")
+    system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
   }
 
   override def afterEach: Unit = {

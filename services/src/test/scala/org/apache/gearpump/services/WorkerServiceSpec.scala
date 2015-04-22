@@ -29,22 +29,13 @@ import spray.testkit.ScalatestRouteTest
 import scala.concurrent.duration._
 
 class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest with WorkersService with WorkerService
-with Matchers with BeforeAndAfterAll {
+with Matchers {
 
   import upickle._
 
   def actorRefFactory = system
 
-  var miniCluster:MiniCluster = null
-  def master = miniCluster.mockMaster
-
-  override def beforeAll: Unit = {
-    miniCluster = TestUtil.startMiniCluster
-  }
-
-  override def afterAll: Unit = {
-    miniCluster.shutDown()
-  }
+  def master = TestCluster.master
 
   "WorkerService" should "return a json structure of worker data for GET request" in {
     implicit val customTimeout = RouteTestTimeout(25.seconds)

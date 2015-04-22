@@ -25,20 +25,9 @@ import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 
-class WebSocketServiceSpec extends FlatSpec with ScalatestRouteTest with WebSocketService with Matchers with BeforeAndAfterAll {
+class WebSocketServiceSpec extends FlatSpec with ScalatestRouteTest with WebSocketService with Matchers  {
   import upickle._
   def actorRefFactory = system
-
-  var miniCluster:MiniCluster = null
-  def master = miniCluster.mockMaster
-
-  override def beforeAll: Unit = {
-    miniCluster = TestUtil.startMiniCluster
-  }
-
-  override def afterAll: Unit = {
-    miniCluster.shutDown()
-  }
 
   "WebSocketService" should "return a json structure of WebSocket url" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)

@@ -29,22 +29,12 @@ import spray.testkit.{ScalatestRouteTest}
 
 import scala.concurrent.duration._
 
-class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterAll {
+class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers  {
   import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
 
-  var miniCluster:MiniCluster = null
-  def master = miniCluster.mockMaster
-
-  override def beforeAll: Unit = {
-    miniCluster = TestUtil.startMiniCluster
-    StreamingTestUtil.startAppMaster(miniCluster, 0)
-  }
-
-  override def afterAll: Unit = {
-    miniCluster.shutDown()
-  }
+  def master = TestCluster.master
 
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)

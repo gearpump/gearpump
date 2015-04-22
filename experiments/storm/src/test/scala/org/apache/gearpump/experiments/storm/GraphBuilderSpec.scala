@@ -21,6 +21,7 @@ package org.apache.gearpump.experiments.storm
 import akka.actor.ActorSystem
 import backtype.storm.generated.{Bolt, SpoutSpec, ComponentCommon}
 import backtype.storm.utils.Utils
+import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.experiments.storm.util.{TopologyUtil, GraphBuilder}
 import org.apache.gearpump.experiments.storm.util.GraphBuilder._
 import org.apache.gearpump.streaming.{Processor, ProcessorId, DAG, ProcessorDescription}
@@ -34,7 +35,7 @@ class GraphBuilderSpec extends WordSpec with Matchers {
     val bolts = topology.get_bolts()
 
     "build Graph from Storm topology" in {
-      implicit val system = ActorSystem("test")
+      implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
       val graphBuilder = new GraphBuilder()
       val processorGraph = graphBuilder.build(topology)
       processorGraph.vertices.size shouldBe 4

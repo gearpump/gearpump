@@ -26,7 +26,6 @@ import scala.concurrent.ExecutionContext
 
 trait WebSocketService extends HttpService{
   import upickle._
-  def master:ActorRef
   implicit val system: ActorSystem
 
   def webSocketRoute = {

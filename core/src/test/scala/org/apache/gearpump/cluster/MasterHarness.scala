@@ -19,7 +19,7 @@
 package org.apache.gearpump.cluster
 
 import java.io.File
-import java.net.{InetSocketAddress, ServerSocket, URLClassLoader}
+import java.net.{UnknownHostException, SocketTimeoutException, Socket, InetSocketAddress, ServerSocket, URLClassLoader}
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorSystem, Address, Props}
@@ -66,14 +66,6 @@ trait MasterHarness {
     LOG.info(s"Actor system is stopped, $host, $port")
   }
 
-  def startMasterProcess(host: String, port: Int): Process ={
-    val tempTestConf = convertTestConf(host, port)
-    Util.startProcess(Array(s"-D$GEARPUMP_CUSTOM_CONFIG_FILE=${tempTestConf.toString}"),
-      getContextClassPath,
-      getMainClassName(org.apache.gearpump.cluster.main.Master),
-      Array("-ip", host, "-port", port.toString))
-  }
-
   def convertTestConf(host : String, port : Int) : File = {
     val test = ConfigFactory.parseResourcesAnySyntax("test.conf",
       ConfigParseOptions.defaults.setAllowMissing(true))
@@ -94,13 +86,25 @@ trait MasterHarness {
   }
 
   def isPortUsed(host : String, port : Int) : Boolean = {
-    val takePort = Try {
-      val socket = new ServerSocket()
+
+    var isPortUsed = true
+    val socket = new Socket()
+    try {
       socket.setReuseAddress(true)
-      socket.bind(new InetSocketAddress(host, port))
-      socket.close
+      socket.connect(new InetSocketAddress(host, port), 1000)
+      socket.isConnected
+    } catch {
+      case ex: SocketTimeoutException  =>
+        isPortUsed = false
+      case ex: UnknownHostException =>
+        isPortUsed = false
+      case ex: Throwable =>
+        // for other case, we think the port is listened
+        isPortUsed = true
+    } finally {
+      socket.close()
     }
-    takePort.isFailure
+    isPortUsed
   }
 
   def getContextClassPath : Array[String] = {

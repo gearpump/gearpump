@@ -18,28 +18,19 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.AppMasterToMaster.MasterData
+import akka.actor.ActorRef
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import spray.testkit.ScalatestRouteTest
+import org.apache.gearpump.streaming.StreamingTestUtil
+import org.apache.gearpump.util.LogUtil
 
-import scala.concurrent.duration._
+object TestCluster {
+  private val LOG = LogUtil.getLogger(getClass)
 
-class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers {
-
-  import upickle._
-
-  def actorRefFactory = system
-
-  def master = TestCluster.master
-
-  it should "return master info when asked" in {
-    implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/master") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
-      // check the type
-      val content = response.entity.asString
-      read[MasterData](content)
-    }
+  lazy val cluster: MiniCluster = TestUtil.startMiniCluster
+  lazy val master: ActorRef = {
+    LOG.info("Accessing master of TestCluster...")
+    StreamingTestUtil.startAppMaster(cluster, 0)
+    cluster.mockMaster
   }
 }

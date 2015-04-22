@@ -30,24 +30,12 @@ import com.typesafe.config.{ConfigFactory}
 import scala.concurrent.duration._
 import scala.util.Try
 
-class ConfigQueryServiceSpec extends FlatSpec with ScalatestRouteTest with ConfigQueryService with Matchers with BeforeAndAfterAll {
+class ConfigQueryServiceSpec extends FlatSpec with ScalatestRouteTest with ConfigQueryService with Matchers  {
   import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
 
-  var miniCluster:MiniCluster = null
-  def master = miniCluster.mockMaster
-
-  override def beforeAll: Unit = {
-    miniCluster = TestUtil.startMiniCluster
-    StreamingTestUtil.startAppMaster(miniCluster, 0)
-
-    Thread.sleep(1000)
-  }
-
-  override def afterAll: Unit = {
-    miniCluster.shutDown()
-  }
+  def master = TestCluster.master
 
   "ConfigQueryService" should "return config for application" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)

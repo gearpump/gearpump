@@ -22,12 +22,14 @@ import org.apache.gearpump.cluster.ClientToMaster.ResolveAppId
 import org.apache.gearpump.cluster.MasterToClient.ResolveAppIdResult
 import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
-import org.apache.gearpump.util.{Constants, Util}
+import org.apache.gearpump.util.{LogUtil, Constants, Util}
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 import scala.util.{Try, Success}
 
 class DistributedShellClientSpec extends PropSpec with Matchers with BeforeAndAfter with MasterHarness {
+
+  private val LOG = LogUtil.getLogger(getClass)
 
   before {
     startActorSystem()
@@ -48,11 +50,16 @@ class DistributedShellClientSpec extends PropSpec with Matchers with BeforeAndAf
 
     val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(DistributedShellClient), requiredArgs)
-    masterReceiver.expectMsg(PROCESS_BOOT_TIME, ResolveAppId(0))
-    val mockAppMaster = TestProbe()(getActorSystem)
-    masterReceiver.reply(ResolveAppIdResult(Success(mockAppMaster.ref)))
-    mockAppMaster.expectMsg(PROCESS_BOOT_TIME, ShellCommand(command))
-    mockAppMaster.reply("result")
-    process.destroy()
+
+    try {
+      masterReceiver.expectMsg(PROCESS_BOOT_TIME, ResolveAppId(0))
+      val mockAppMaster = TestProbe()(getActorSystem)
+      masterReceiver.reply(ResolveAppIdResult(Success(mockAppMaster.ref)))
+      LOG.info(s"Reply back ResolveAppIdResult, current actorRef: ${mockAppMaster.ref.path.toString}")
+      mockAppMaster.expectMsg(PROCESS_BOOT_TIME, ShellCommand(command))
+      mockAppMaster.reply("result")
+    } finally {
+      process.destroy()
+    }
   }
 }

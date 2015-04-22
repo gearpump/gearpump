@@ -19,18 +19,18 @@
 package org.apache.gearpump.streaming.dsl
 
 import akka.actor.ActorSystem
+import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
+import org.mockito.Mockito.when
 import org.scalatest._
-
-class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
+import org.scalatest.mock.MockitoSugar
+class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with MockitoSugar {
 
   implicit var system: ActorSystem = null
-  implicit var context: ClientContext = null
 
   override def beforeAll: Unit = {
-    system = ActorSystem("test")
-    context = ClientContext()
+    system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
   }
 
   override def afterAll: Unit = {
@@ -39,6 +39,9 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
 
 
   it should "be able to generate multiple new streams" in {
+    val context: ClientContext = mock[ClientContext]
+    when(context.system).thenReturn(system)
+
     val app = new StreamApp("dsl", context)
     app.fromCollection(List("A").iterator, 1)
     app.fromCollection(List("B").iterator, 1)
@@ -47,6 +50,9 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
   }
 
   it should "plan the dsl to Processsor(TaskDescription) DAG" in {
+    val context: ClientContext = mock[ClientContext]
+    when(context.system).thenReturn(system)
+
     val app = new StreamApp("dsl", context)
     val parallism = 3
     app.fromCollection(List("A").iterator, parallism)

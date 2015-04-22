@@ -22,7 +22,7 @@ import akka.actor.ActorSystem
 import backtype.storm.generated.{GlobalStreamId, Bolt}
 import backtype.storm.utils.Utils
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.experiments.storm.util.{TopologyUtil, StormTuple, GraphBuilder}
 import org.apache.gearpump.experiments.storm.util.GraphBuilder._
 import org.apache.gearpump.streaming._
@@ -40,7 +40,7 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
   import org.apache.gearpump.experiments.storm.util.StormUtil._
 
   property("StormProcessor should work") {
-    implicit val system = ActorSystem("test")
+    implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
     val topology = TopologyUtil.getTestTopology
     val componentToStreamFields = getComponentToStreamFields(topology)
     val graphBuilder = new GraphBuilder()

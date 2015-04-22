@@ -22,6 +22,7 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
+import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
@@ -33,7 +34,7 @@ import scala.language.postfixOps
 class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll{
 
-  def this() = this(ActorSystem("PrioritySchedulerSpec"))
+  def this() = this(ActorSystem("PrioritySchedulerSpec",  TestUtil.DEFAULT_CONFIG))
   val appId = 0
   val workerId1 = 1
   val workerId2 = 2

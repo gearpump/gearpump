@@ -61,10 +61,14 @@ class RollingTopWordsSpec extends PropSpec with PropertyChecks with Matchers wit
 
       val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(RollingTopWords), args)
-      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-      masterReceiver.reply(SubmitApplicationResult(Success(0)))
 
-      process.destroy()
+      try {
+
+        masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+        masterReceiver.reply(SubmitApplicationResult(Success(0)))
+      } finally {
+        process.destroy()
+      }
     }
   }
 

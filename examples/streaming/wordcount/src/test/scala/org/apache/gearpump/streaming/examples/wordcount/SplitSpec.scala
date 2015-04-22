@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.examples.wordcount
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.task.StartTime
 import org.mockito.Matchers._
@@ -36,7 +36,7 @@ class SplitSpec extends WordSpec with Matchers {
 
       val taskContext = MockUtil.mockTaskContext
 
-      implicit val system = ActorSystem("test")
+      implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
 
       val mockTaskActor = TestProbe()
 

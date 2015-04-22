@@ -23,7 +23,7 @@ import akka.testkit.TestProbe
 import backtype.storm.generated.{SpoutSpec}
 import backtype.storm.utils.Utils
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.experiments.storm.util.GraphBuilder._
 import org.apache.gearpump.experiments.storm.util.{TopologyUtil, GraphBuilder}
 import org.apache.gearpump.streaming.{DAG, Processor, MockUtil}
@@ -39,7 +39,7 @@ class StormProducerSpec extends PropSpec with PropertyChecks with Matchers {
   import org.apache.gearpump.experiments.storm.util.StormUtil._
 
   property("StormProducer should work") {
-    implicit val system = ActorSystem("test")
+    implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
     val topology = TopologyUtil.getTestTopology
     val graphBuilder = new GraphBuilder
     val processorGraph = graphBuilder.build(topology)

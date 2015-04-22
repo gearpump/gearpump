@@ -19,6 +19,7 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
+import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.appmaster.ClockServiceSpec.Store
 import org.apache.gearpump.streaming.storage.AppDataStore
@@ -33,7 +34,7 @@ import scala.concurrent.{Future, Promise}
 class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll{
 
-  def this() = this(ActorSystem("ClockServiceSpec"))
+  def this() = this(ActorSystem("ClockServiceSpec", TestUtil.DEFAULT_CONFIG))
 
   val task1 = ProcessorDescription(classOf[TaskActor].getName, 1)
   val task2 = ProcessorDescription(classOf[TaskActor].getName, 1)

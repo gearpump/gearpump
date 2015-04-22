@@ -30,22 +30,12 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 
-class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers with BeforeAndAfterAll {
+class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers  {
   import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
 
-
-  var miniCluster:MiniCluster = null
-  def master = miniCluster.mockMaster
-
-  override def beforeAll: Unit = {
-    miniCluster = TestUtil.startMiniCluster
-  }
-
-  override def afterAll: Unit = {
-    miniCluster.shutDown()
-  }
+  def master = TestCluster.master
 
   "AppMastersService" should "return a json structure of appMastersData for GET request" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)

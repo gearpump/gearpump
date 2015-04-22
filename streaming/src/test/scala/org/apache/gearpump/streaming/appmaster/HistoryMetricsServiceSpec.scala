@@ -22,6 +22,7 @@ import akka.actor.{Props, ActorSystem}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
 import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
+import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.metrics.Metrics.{Histogram, Meter, Counter}
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService._
 import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
@@ -138,7 +139,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
   }
 
   "HistoryMetricsService" should "retain lastest metrics data and allow user to query metrics by path" in {
-    implicit val system = ActorSystem("test")
+    implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
     val appId = 0
     val service = system.actorOf(Props(new HistoryMetricsService(0, config)))
     service ! Counter("metric.counter", 0)

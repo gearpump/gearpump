@@ -72,8 +72,6 @@ object Build extends sbt.Build {
       scalaVersion := scalaVersionNumber,
       crossScalaVersions := Seq("2.10.5"),
       organization := "com.github.intel-hadoop",
-      parallelExecution in Test := false,
-      parallelExecution in ThisBuild := false,
       useGpg := false,
       pgpSecretRing := file("./secring.asc"),
       pgpPublicRing := file("./pubring.asc"),
@@ -184,7 +182,6 @@ object Build extends sbt.Build {
     base = file("."),
     settings = commonSettings ++
       Seq(
-        parallelExecution in ThisBuild := false,
         travis_deploy := {
           val packagePath = s"output/target/gearpump-pack-${version.value}.tar.gz"
           val target = s"target/binary.gearpump.tar.gz"

@@ -60,9 +60,14 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
       val args = requiredArgs ++ optionalArgs
       val process = Util.startProcess(getMasterListOption(), getContextClassPath,
         getMainClassName(SequenceFileIO), args)
-      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-      masterReceiver.reply(SubmitApplicationResult(Success(0)))
-      process.destroy()
+
+      try {
+
+        masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+        masterReceiver.reply(SubmitApplicationResult(Success(0)))
+      } finally {
+        process.destroy()
+      }
     }
 
     val invalidArgs = {
