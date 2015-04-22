@@ -77,6 +77,8 @@ object Local extends App with ArgumentsParser {
     0.until(workerCount).foreach { id =>
       system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)
     }
+
+    system.awaitTermination()
   }
 
   start()

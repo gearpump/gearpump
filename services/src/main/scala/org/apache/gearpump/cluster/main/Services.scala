@@ -51,6 +51,8 @@ object Services extends App {
 
     WebSocketServices(master)
     RestServices(master)
+
+    system.awaitTermination()
   }
   start ()
 }
