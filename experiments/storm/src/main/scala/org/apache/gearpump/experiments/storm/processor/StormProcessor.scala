@@ -27,7 +27,7 @@ import backtype.storm.utils.Utils
 import java.util.{List => JList}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.util.{GraphBuilder, StormTuple}
+import org.apache.gearpump.experiments.storm.util.{TopologyContextBuilder, GraphBuilder, StormTuple}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 import scala.concurrent.duration.FiniteDuration
@@ -45,7 +45,8 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
   private val boltSpec = conf.getValue[Bolt](GraphBuilder.COMPONENT_SPEC).getOrElse(
     throw new RuntimeException(s"Storm bolt spec not found for processor $pid"))
   private val bolt = Utils.getSetComponentObject(boltSpec.get_bolt_object()).asInstanceOf[IBolt]
-
+  private val topologyContextBuilder = TopologyContextBuilder(topology, stormConfig,
+    multiLang = bolt.isInstanceOf[ShellBolt])
   private var count = 0
   private var snapShotTime : Long = System.currentTimeMillis()
   private var snapShotWordCount : Long = 0
@@ -53,8 +54,7 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
   private var scheduler : Cancellable = null
 
   override def onStart(startTime: StartTime): Unit = {
-    val topologyContext = getTopologyContext(topology, stormConfig,
-      Map(pid -> boltId), pid, multiLang = bolt.isInstanceOf[ShellBolt])
+    val topologyContext = topologyContextBuilder.buildContext(pid, boltId)
     val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
       taskContext.output(Message(StormTuple(tuple.toList, pid, boltId, streamId)))
     }
@@ -66,7 +66,7 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
 
   override def onNext(msg: Message): Unit = {
     val stormTuple = msg.msg.asInstanceOf[StormTuple]
-    bolt.execute(stormTuple.toTuple(topology, stormConfig))
+    bolt.execute(stormTuple.toTuple(topologyContextBuilder))
     count += 1
   }
 

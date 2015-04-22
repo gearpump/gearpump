@@ -18,16 +18,13 @@
 
 package org.apache.gearpump.experiments.storm.util
 
-import java.util.{Map => JMap}
-
-import backtype.storm.generated.StormTopology
 import backtype.storm.tuple.{TupleImpl, Tuple}
 import scala.collection.JavaConversions._
 
 
 private[storm] case class StormTuple(tuple: List[AnyRef], taskId: Int,  componentId: String, streamId: String) {
-  def toTuple(topology: StormTopology, config: JMap[_, _]): Tuple = {
-    new TupleImpl(StormUtil.getTopologyContext(topology, config, Map(taskId -> componentId), taskId),
+  def toTuple(topologyContextBuilder: TopologyContextBuilder): Tuple = {
+    new TupleImpl(topologyContextBuilder.buildContext(taskId, componentId),
       tuple, taskId, streamId, null)
   }
 }
