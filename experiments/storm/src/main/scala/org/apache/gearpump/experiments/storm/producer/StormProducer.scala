@@ -24,7 +24,7 @@ import backtype.storm.utils.Utils
 import java.util.{List => JList}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.util.{StormTuple, GraphBuilder}
+import org.apache.gearpump.experiments.storm.util.{TopologyContextBuilder, StormTuple, GraphBuilder}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import scala.collection.JavaConversions._
 
@@ -41,12 +41,10 @@ private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
   private val spoutSpec = conf.getValue[SpoutSpec](GraphBuilder.COMPONENT_SPEC)
       .getOrElse(throw new RuntimeException(s"Storm spout spec not found for processor $pid"))
   private val spout = Utils.getSetComponentObject(spoutSpec.get_spout_object()).asInstanceOf[ISpout]
-
-
+  private val topologyContextBuilder = TopologyContextBuilder(topology, stormConfig, multiLang = spout.isInstanceOf[ShellSpout])
 
   override def onStart(startTime: StartTime): Unit = {
-    val topologyContext = getTopologyContext(topology, stormConfig, Map(pid -> spoutId), pid,
-      multiLang = spout.isInstanceOf[ShellSpout])
+    val topologyContext = topologyContextBuilder.buildContext(pid, spoutId)
     val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
       taskContext.output(Message(StormTuple(tuple.toList, pid, spoutId, streamId)))
     }

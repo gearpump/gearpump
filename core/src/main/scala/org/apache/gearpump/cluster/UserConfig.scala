@@ -28,7 +28,23 @@ import com.google.common.io.BaseEncoding
 final class UserConfig(private val _config: Map[String, String])  extends Serializable{
 import org.apache.gearpump.cluster.UserConfig._
 
+  def withBoolean(key: String, value: Boolean): UserConfig = {
+    new UserConfig(_config + (key -> value.toString))
+  }
+
+  def withDouble(key: String, value: Double): UserConfig = {
+    new UserConfig(_config + (key -> value.toString))
+  }
+
+  def withFloat(key: String, value: Float): UserConfig = {
+    new UserConfig(_config + (key -> value.toString))
+  }
+
   def withInt(key: String, value: Int) : UserConfig = {
+    new UserConfig(_config + (key -> value.toString))
+  }
+
+  def withLong(key: String, value: Long): UserConfig = {
     new UserConfig(_config + (key -> value.toString))
   }
 
@@ -40,8 +56,24 @@ import org.apache.gearpump.cluster.UserConfig._
     }
   }
 
+  def getBoolean(key: String): Option[Boolean] = {
+    _config.get(key).map(_.toBoolean)
+  }
+
+  def getDouble(key: String): Option[Double] = {
+    _config.get(key).map(_.toDouble)
+  }
+
+  def getFloat(key: String): Option[Float] = {
+    _config.get(key).map(_.toFloat)
+  }
+
   def getInt(key : String) : Option[Int] = {
     _config.get(key).map(_.toInt)
+  }
+
+  def getLong(key: String): Option[Long] = {
+    _config.get(key).map(_.toLong)
   }
 
   def getString(key : String) : Option[String] = {

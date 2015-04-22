@@ -56,6 +56,15 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
 
   override def output(msg: Message): Unit = actor.output(msg)
 
+  /**
+   * Use with caution, output unmanaged message to target tasks
+   * @param msg
+   * @param tasks
+   */
+  def outputUnManaged(msg: AnyRef, tasks: TaskId *): Unit = {
+    actor.transport(msg, tasks: _*)
+  }
+
   override def self: ActorRef = actor.context.self
 
   override def sender: ActorRef = actor.context.sender()
@@ -96,8 +105,8 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
     task.flatMap(_.stateClock)
   }
 
-  override def minClock: TimeStamp = {
-    actor.minClock
+  override def upstreamMinClock: TimeStamp = {
+    actor.getUpstreamMinClock
   }
 
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable = {

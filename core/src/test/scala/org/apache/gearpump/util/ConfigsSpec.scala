@@ -60,11 +60,11 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
 
     assert(raw.master.getString("conf") == "master", "master > base")
     assert(raw.worker.getString("conf") == "worker", "worker > base")
-    assert(raw.application.getString("conf") == "base", "application > base")
+    assert(raw.default.getString("conf") == "base", "application > base")
 
     assert(raw.master.getString("gearpump.gear") == "gearpump", "gearpump override others")
     assert(raw.worker.getString("gearpump.gear") == "gearpump", "gearpump override others")
-    assert(raw.application.getString("gearpump.gear") == "gearpump", "gearpump override others")
+    assert(raw.default.getString("gearpump.gear") == "gearpump", "gearpump override others")
 
     file.delete()
   }
@@ -77,9 +77,17 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
     val map = Map[String,String]("key1"->"1", "key2"->"value2")
 
     val user = UserConfig(map)
+      .withLong("key3", 2L)
+      .withBoolean("key4", value = true)
+      .withFloat("key5", 3.14F)
+      .withDouble("key6", 2.718)
 
     assert(user.getInt("key1").get == 1)
     assert(user.getString("key1").get == "1")
+    assert(user.getLong("key3").get == 2L)
+    assert(user.getBoolean("key4").get == true)
+    assert(user.getFloat("key5").get == 3.14F)
+    assert(user.getDouble("key6").get == 2.718)
 
     val data = new ConfigsSpec.Data(3)
     assert(data == user.withValue("data", data).getValue[ConfigsSpec.Data]("data").get)

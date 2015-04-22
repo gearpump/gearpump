@@ -160,8 +160,8 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     if (latestMinClock > selfCheckClock.minClock) {
       selfCheckClock.minClock = latestMinClock
       selfCheckClock.checkTime = now
-    } else if (now > selfCheckClock.checkTime + SELF_CHECK_INTERVAL_SECONDS) {
-      LOG.warn(s"Clock has not advanced for $SELF_CHECK_INTERVAL_SECONDS seconds..")
+    } else if (now > selfCheckClock.checkTime + SELF_CHECK_INTERVAL_MILLIS) {
+      LOG.warn(s"Clock has not advanced for ${SELF_CHECK_INTERVAL_MILLIS/1000} seconds..")
       selfCheckClock.checkTime = now
       //do diagnosis
       var stallingLevel = Long.MaxValue
@@ -207,6 +207,6 @@ object ClockService {
 
   class ProcessorClock(var taskClocks : Array[TimeStamp] = null)
 
-  val SELF_CHECK_INTERVAL_SECONDS = 60 //seconds
+  val SELF_CHECK_INTERVAL_MILLIS = 60 * 1000 // 60 seconds
   class SelfCheckClock(var checkTime: TimeStamp, var minClock: TimeStamp)
 }

@@ -15,18 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.experiments.pagerank.example
 
-package org.apache.gearpump.experiments.storm.util
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.experiments.pagerank.PageRankApplication
+import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.Graph.Node
 
-import backtype.storm.tuple.{TupleImpl, Tuple}
-import scala.collection.JavaConversions._
+object PageRankExample extends App {
 
+  val a = "a"
+  val b = "b"
+  val c = "c"
+  val d = "d"
 
-private[storm] case class StormTuple(tuple: List[AnyRef], taskId: Int,  componentId: String, streamId: String) {
-  def toTuple(topologyContextBuilder: TopologyContextBuilder): Tuple = {
-    new TupleImpl(topologyContextBuilder.buildContext(taskId, componentId),
-      tuple, taskId, streamId, null)
-  }
+  val pageRankGraph = Graph(a ~> b, a~>c, a~>d, b~>a, b~>d, d~>b, d~>c, c~>b)
+  
+  val app = new PageRankApplication("pagerank", iteration = 100, delta = 0.001, pageRankGraph)
+
+  val context = ClientContext()
+
+  val appId = context.submit(app)
+
+  context.close()
 }
-
-

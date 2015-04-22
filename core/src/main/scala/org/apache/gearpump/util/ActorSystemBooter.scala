@@ -52,7 +52,7 @@ object ActorSystemBooter  {
   def main (args: Array[String]) {
     val name = args(0)
     val reportBack = args(1)
-    val config = ClusterConfig.load.application
+    val config = ClusterConfig.load.default
 
     LogUtil.loadConfiguration(config, ProcessType.APPLICATION)
 

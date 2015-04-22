@@ -36,7 +36,7 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
   val resource = getClass.getClassLoader.getResource("tasklocation.conf").getPath
   System.setProperty(GEARPUMP_CUSTOM_CONFIG_FILE, resource)
 
-  val config = ClusterConfig.load.application
+  val config = ClusterConfig.load.default
 
   "TaskScheduler" should {
     "schedule tasks on different workers properly according user's configuration" in {

@@ -29,8 +29,8 @@ angular.module('dashboard.apps.appmaster')
   .controller('AppSummaryChartsCtrl', ['$scope', '$interval', 'conf', function ($scope, $interval, conf) {
     var options = {height: '108px'};
     $scope.charts = [
-      {title: 'Sink Processors Receive Throughput (unit: message/s)', options: options, data: []},
-      {title: 'Source Processors Send Throughput (unit: message/s)', options: options, data: []},
+      {title: 'Sink Processors Receive Throughput (unit: msg/s)', options: options, data: []},
+      {title: 'Source Processors Send Throughput (unit: msg/s)', options: options, data: []},
       {title: 'Average Processing Time per Task (Unit: ms)', options: options, data: []},
       {title: 'Average Receive Latency per Task (Unit: ms)', options: options, data: []}
     ];

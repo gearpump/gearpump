@@ -40,8 +40,8 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   it should "be able to generate multiple new streams" in {
     val app = new StreamApp("dsl", context)
-    app.fromCollection(List("A"), 1)
-    app.fromCollection(List("B"), 1)
+    app.fromCollection(List("A").iterator, 1)
+    app.fromCollection(List("B").iterator, 1)
 
     assert(app.graph.vertices.size == 2)
   }
@@ -49,7 +49,7 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
   it should "plan the dsl to Processsor(TaskDescription) DAG" in {
     val app = new StreamApp("dsl", context)
     val parallism = 3
-    app.fromCollection(List("A"), parallism)
+    app.fromCollection(List("A").iterator, parallism)
     val task = app.plan.dag.vertices.iterator.next()
     assert(task.taskClass == classOf[SourceTask[_, _]].getName)
     assert(task.parallelism == parallism)

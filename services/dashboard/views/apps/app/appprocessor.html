@@ -32,7 +32,7 @@
       </div>
       <div class="col-md-6" ng-if="parallelism>1">
         <h6>SKEW: RECEIVE THROUGHPUT</h6>
-        <barchart options="chart.receiveSkew.options" data="chart.receiveSkew.data"/>
+        <barchart options="receiveSkewChart.options" data="receiveSkewChart.data"/>
       </div>
       <div class="col-md-12">
         <h6>EXECUTORS</h6>
@@ -57,33 +57,18 @@
 
   <!-- right half -->
   <div class="col-md-6">
-    <div class="panel panel-default">
-      <div class="panel-heading">Receive Message Rate (message/s)</div>
-      <div class="panel-body">
-        <linechart1 options="chart.receiveMessageRate.options" data="chart.receiveMessageRate.data"/>
-      </div>
-    </div>
+    <h5>Task Selector</h5>
+    <ui-select multiple ng-model="tasks.selected" ng-disabled="disabled">
+      <ui-select-match placeholder="Select tasks...">{{$item}}</ui-select-match>
+      <ui-select-choices repeat="task in tasks.available | filter:$select.search">
+        {{task}}
+      </ui-select-choices>
+    </ui-select>
 
-    <div class="panel panel-default">
-      <div class="panel-heading">Send Message Rate (message/s)</div>
-      <div class="panel-body">
-        <linechart1 options="chart.sendMessageRate.options" data="chart.sendMessageRate.data"/>
-      </div>
-    </div>
-
-    <div class="panel panel-default">
-      <div class="panel-heading">Average Processing Time (ms)
-        <i></i></div>
-      <div class="panel-body">
-        <linechart1 options="chart.processingTime.options" data="chart.processingTime.data"/>
-      </div>
-    </div>
-
-    <div class="panel panel-default">
-      <div class="panel-heading">Average Receive Latency (ms)</div>
-      <div class="panel-body">
-        <linechart1 options="chart.receiveLatency.options" data="chart.receiveLatency.data"/>
-      </div>
+    <div ng-if="tasks.selected.length>0">
+      <br/>
+      <div ng-include src="'views/apps/app/appprocessorcharts.html?'+tasks.selected.length"
+           ng-controller="AppProcessorChartsCtrl"></div>
     </div>
   </div>
   <!-- end of right half -->

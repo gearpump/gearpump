@@ -57,14 +57,14 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
         five  four
         five
       """
-    val stream = app.fromCollection(data.lines.toList, 1).
+    val stream = app.fromCollection(data.lines, 1).
       flatMap(line => line.split("[\\s]+")).filter(_.nonEmpty).
       map(word => (word, 1)).
       groupBy(_._1, parallism = 2).
       reduce((left, right) => (left._1, left._2 + right._2)).
       map[Either[(String, Int), String]](Left(_))
 
-    val query = app.fromCollection(List("two"), 1).map[Either[(String, Int), String]](Right(_))
+    val query = app.fromCollection(List("two").iterator, 1).map[Either[(String, Int), String]](Right(_))
     stream.merge(query).process[(String, Int)](classOf[Join], 1)
 
     val appDescription = app.plan
