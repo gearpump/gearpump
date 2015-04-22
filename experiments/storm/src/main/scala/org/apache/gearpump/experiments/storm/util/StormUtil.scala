@@ -62,107 +62,21 @@ object StormUtil {
     stormConfig
   }
 
-  def getTopologyContext(topology: StormTopology,
-                         stormConf: JMap[_, _],
-                         processorToComponent: Map[Int, String],
-                         taskId: Int,
-                         multiLang: Boolean): TopologyContext = {
-    if (multiLang) {
-      getTopologyContext(topology, stormConf, processorToComponent, taskId, mkCodeDir, mkPidDir)
-    } else {
-      getTopologyContext(topology, stormConf, processorToComponent, taskId)
-    }
-  }
-
-  def getTopologyContext(topology: StormTopology,
-                         stormConf: JMap[_, _],
-                         processorToComponent: Map[Int, String],
-                         taskId: Int,
-                         codeDir: => String = null,
-                         pidDir: => String = null): TopologyContext = {
-    val taskToComponent = getTaskToComponent(processorToComponent)
-    val componentToSortedTasks = getComponentToSortedTasks(processorToComponent)
-    val componentToStreamFields = getComponentToStreamFields(topology)
-    new TopologyContext(
-      topology, stormConf, taskToComponent,
-      componentToSortedTasks, componentToStreamFields, null,
-      codeDir, pidDir, taskId, null, null, null, null, null, new JHashMap[AnyRef, AnyRef], new Atom(false))
-  }
-
-  // a workaround to support storm ShellBolt
-  private def mkPidDir: String = {
-    val pidDir = FileUtils.getTempDirectoryPath + File.separator + "pid"
-    try {
-      FileUtils.forceMkdir(new File(pidDir))
-    } catch {
-      case ex: IOException =>
-        LOG.error(s"failed to create pid directory $pidDir")
-    }
-    pidDir
-  }
-
-  // a workaround to support storm ShellBolt
-  private def mkCodeDir: String = {
-    val jarPath = System.getProperty("java.class.path").split(":").last
-    val destDir = FileUtils.getTempDirectoryPath + File.separator + "storm"
-
-    try {
-      FileUtils.forceMkdir(new File(destDir))
-
-      val jar = new JarFile(jarPath)
-      val enumEntries = jar.entries()
-      enumEntries.foreach { entry =>
-        val file = new File(destDir + File.separator + entry.getName)
-        if (!entry.isDirectory) {
-          file.getParentFile.mkdirs()
-
-          val is = jar.getInputStream(entry)
-          val fos = new FileOutputStream(file)
-          try {
-            IOUtils.copy(is, fos)
-          } catch {
-            case ex: IOException =>
-              LOG.error(s"failed to copy data from ${entry.getName} to ${file.getName}")
-          } finally {
-            fos.close()
-            is.close()
-          }
-        }
-      }
-    } catch {
-      case ex: IOException =>
-        LOG.error(s"could not extract $destDir from $jarPath")
-    }
-
-    destDir + File.separator + "resources"
-  }
-
-  def getTaskToComponent(processorToComponent: Map[Int, String]): JMap[Integer, String] = {
-    processorToComponent.map { case (pid, cid) =>
-      (pid.asInstanceOf[Integer], cid)
-    }.asJava
-  }
-
-  def getComponentToSortedTasks(processorToComponent: Map[Int, String]): JMap[String, JList[Integer]] = {
-    processorToComponent.map { case (pid, cid) =>
-      (cid, List(pid.asInstanceOf[Integer]).asJava)
-    }.asJava
-  }
-
-  def getComponentToStreamFields(topology: StormTopology) = {
+  def getComponentToStreamFields(topology: StormTopology): JMap[String, JMap[String, Fields]] = {
     val spouts = topology.get_spouts()
     val bolts = topology.get_bolts()
 
-    def getComponentToFields(common: ComponentCommon) = {
-         common.get_streams.map { case (sid, stream) =>
-          sid -> new Fields(stream.get_output_fields())
-        }.toMap
-    }
     (spouts.map{ case (id, component) =>
-      id -> getComponentToFields(component.get_common()).asJava
+      id -> getComponentToFields(component.get_common())
     } ++
       bolts.map { case (id, component) =>
-        id -> getComponentToFields(component.get_common()).asJava
+        id -> getComponentToFields(component.get_common())
       }).toMap.asJava
+  }
+
+  def getComponentToFields(common: ComponentCommon): JMap[String, Fields] = {
+    common.get_streams.map { case (sid, stream) =>
+      sid -> new Fields(stream.get_output_fields())
+    }.toMap.asJava
   }
 }
