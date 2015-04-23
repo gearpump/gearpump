@@ -37,7 +37,7 @@ object Build extends sbt.Build {
   val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
   val json4sVersion = "3.2.10"
-  val junitVersion = "3.8.1"
+  val junitVersion = "4.12"
   val kafkaVersion = "0.8.2.1"
   val stormVersion = "0.9.3"
   val sigarVersion = "1.6.4"
@@ -50,7 +50,7 @@ object Build extends sbt.Build {
   val sprayWebSocketsVersion = "0.1.4"
   val scalaTestVersion = "2.2.0"
   val scalaCheckVersion = "1.11.3"
-  val mockitoVersion = "1.10.8"
+  val mockitoVersion = "1.10.17"
   val bijectionVersion = "0.7.0"
   val scalazVersion = "7.1.1"
 
@@ -259,7 +259,8 @@ object Build extends sbt.Build {
         libraryDependencies ++= Seq(
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+          "org.mockito" % "mockito-core" % mockitoVersion % "test",
+          "junit" % "junit" % junitVersion % "test"
         ),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )

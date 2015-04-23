@@ -25,19 +25,20 @@ import kafka.server.{KafkaConfig => KafkaServerConfig}
 import kafka.utils.{TestUtils => TestKafkaUtils, TestZKUtils}
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.MockUtil.{argMatch, mockTaskContext}
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory
 import org.apache.gearpump.streaming.kafka.util.KafkaServerHarness
-import org.apache.gearpump.streaming.task.{TaskId, StartTime}
+import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeStampFilter}
 import org.apache.gearpump.{Message, TimeStamp}
+import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterEach, Matchers, PropSpec}
 
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
-import MockUtil.{mockTaskContext, argMatch}
 
 class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfterEach with KafkaServerHarness {
   val numServers = 1
@@ -87,7 +88,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
       producer.onNext(Message("next"))
 
       var expectedMessage = messages
-      verify(context).output(argMatch[Message](msg => {
+      verify(context, Mockito.timeout(3000)).output(argMatch[Message](msg => {
         val compareResult = expectedMessage.head == msg
         expectedMessage = expectedMessage.take(1)
         compareResult
