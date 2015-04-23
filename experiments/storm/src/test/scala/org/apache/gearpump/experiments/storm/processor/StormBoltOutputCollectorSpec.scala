@@ -18,10 +18,10 @@
 
 package org.apache.gearpump.experiments.storm.processor
 
+import backtype.storm.tuple.Tuple
 import backtype.storm.utils.Utils
 import java.util.{List => JList}
 import org.apache.gearpump.Message
-import org.apache.gearpump.experiments.storm.util.StormTuple
 import org.apache.gearpump.streaming.MockUtil
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -29,24 +29,23 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 class StormBoltOutputCollectorSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   property("StormBoltOutputCollector should output messages as list") {
     val valGen = Gen.oneOf(Gen.alphaStr, Gen.alphaChar, Gen.chooseNum[Int](0, 1000))
     val valuesGen = Gen.listOf[AnyRef](valGen)
-    val stormTuple = mock[StormTuple]
 
     forAll(valuesGen) { (values: List[AnyRef]) =>
       val taskContext = MockUtil.mockTaskContext
       val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
-        taskContext.output(Message(stormTuple))
+        taskContext.output(Message(tuple))
       }
       val collector = new StormBoltOutputCollector(outputFn)
-      collector.emit(Utils.DEFAULT_STREAM_ID, null, values)
+      collector.emit(Utils.DEFAULT_STREAM_ID, null, values.asJava)
       verify(taskContext).output(MockUtil.argMatch[Message] { msg =>
-        msg.msg.asInstanceOf[StormTuple] == stormTuple
+        msg.msg.asInstanceOf[JList[AnyRef]].asScala == values
       })
     }
   }

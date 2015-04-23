@@ -18,10 +18,8 @@
 
 package org.apache.gearpump.experiments.storm.partitioner
 
-import backtype.storm.tuple.Fields
-import backtype.storm.utils.Utils
+import backtype.storm.tuple.{Tuple, Fields}
 import org.apache.gearpump.Message
-import org.apache.gearpump.experiments.storm.util.StormTuple
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
@@ -38,12 +36,12 @@ class FieldsGroupingPartitionerSpec extends PropSpec with PropertyChecks with Ma
     val sourceTaskIdGen = Gen.chooseNum[Int](0, 1000)
 
     forAll(outFieldsGen, partitionNumGen, sourceTaskIdGen) { (outFields: List[String], partitionNum: Int, sourceTaskId: Int) =>
-      val stormTuple = mock[StormTuple]
-      when(stormTuple.tuple).thenReturn(outFields)
+      val tuple = mock[Tuple]
+      when(tuple.getValues).thenReturn(outFields)
       1.to(outFields.length).foreach { num =>
         val groupingFields = outFields.take(num)
         val partitioner = new FieldsGroupingPartitioner(new Fields(outFields), new Fields(groupingFields))
-        val actualPartition = partitioner.getPartition(Message(stormTuple), partitionNum)
+        val actualPartition = partitioner.getPartition(Message(tuple), partitionNum)
         actualPartition should (be >= 0 and be < partitionNum)
       }
 

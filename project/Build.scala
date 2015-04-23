@@ -64,7 +64,8 @@ object Build extends sbt.Build {
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
           "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
-          "clockfly" at "http://dl.bintray.com/clockfly/maven"
+          "clockfly" at "http://dl.bintray.com/clockfly/maven",
+          "clojars" at "https://clojars.org/repo"
         ),
         addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
     ) ++
@@ -420,8 +421,6 @@ object Build extends sbt.Build {
             exclude("com.esotericsoftware.minlog", "minlog")
             exclude("com.esotericsoftware.reflectasm", "reflectasm")
             exclude("com.googlecode.disruptor", "disruptor")
-            exclude("com.twitter", "carbonite")
-            exclude("com.twitter", "chill-java")
             exclude("commons-codec", "commons-codec")
             exclude("commons-fileupload", "commons-fileupload")
             exclude("commons-io", "commons-io")

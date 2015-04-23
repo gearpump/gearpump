@@ -23,15 +23,15 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Cancellable
 import backtype.storm.generated.Bolt
 import backtype.storm.task.{ShellBolt, IBolt, OutputCollector}
+import backtype.storm.tuple.Tuple
 import backtype.storm.utils.Utils
 import java.util.{List => JList}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.util.{TopologyContextBuilder, GraphBuilder, StormTuple}
+import org.apache.gearpump.experiments.storm.util.{TopologyContextBuilder, GraphBuilder}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 import scala.concurrent.duration.FiniteDuration
-import scala.collection.JavaConversions._
 
 private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
@@ -55,8 +55,9 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
 
   override def onStart(startTime: StartTime): Unit = {
     val topologyContext = topologyContextBuilder.buildContext(pid, boltId)
-    val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
-      taskContext.output(Message(StormTuple(tuple.toList, pid, boltId, streamId)))
+    val outputFn = (streamId: String, values: JList[AnyRef]) => {
+      val tuple = topologyContextBuilder.buildTuple(values, topologyContext, pid, boltId, streamId)
+      taskContext.output(Message(tuple))
     }
     val delegate = new StormBoltOutputCollector(outputFn)
     bolt.prepare(stormConfig, topologyContext, new OutputCollector(delegate))
@@ -65,8 +66,8 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
   }
 
   override def onNext(msg: Message): Unit = {
-    val stormTuple = msg.msg.asInstanceOf[StormTuple]
-    bolt.execute(stormTuple.toTuple(topologyContextBuilder))
+    val tuple = msg.msg.asInstanceOf[Tuple]
+    bolt.execute(tuple)
     count += 1
   }
 
