@@ -31,10 +31,13 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.ExecutorManagerSpec.StartExecutorActorPlease
 import org.apache.gearpump.util.ActorSystemBooter.BindLifeCycle
+import org.apache.gearpump.util.LogUtil
 import org.scalatest._
 
 class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
+
+  private val LOG = LogUtil.getLogger(getClass)
 
   override def beforeAll = {
     system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
@@ -114,6 +117,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     taskManager.send(executorManager, BroadCast(hello))
     executor.expectMsg(hello)
 
+    LOG.info("Shutting down executor, and wait taskManager to get notified")
     //watch for executor termination
     system.stop(executor.ref)
     taskManager.expectMsg(ExecutorStopped(executorId))
