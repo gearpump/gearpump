@@ -18,10 +18,10 @@
 
 package org.apache.gearpump.experiments.storm.producer
 
+import backtype.storm.tuple.Tuple
 import backtype.storm.utils.Utils
 import java.util.{List => JList}
 import org.apache.gearpump.Message
-import org.apache.gearpump.experiments.storm.util.StormTuple
 import org.apache.gearpump.streaming.MockUtil
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -29,6 +29,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
+import scala.collection.JavaConverters._
 import scala.collection.JavaConversions._
 
 class StormSpoutOutputCollectorSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
@@ -40,14 +41,13 @@ class StormSpoutOutputCollectorSpec extends PropSpec with PropertyChecks with Ma
 
     forAll(valuesGen, pidGen) { (values: List[AnyRef], pid: Int) =>
       val taskContext = MockUtil.mockTaskContext
-      val stormTuple = mock[StormTuple]
       val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
-        taskContext.output(Message(stormTuple))
+        taskContext.output(Message(tuple))
       }
       val collector = new StormSpoutOutputCollector(outputFn)
       collector.emit(Utils.DEFAULT_STREAM_ID, values, null)
       verify(taskContext).output(MockUtil.argMatch[Message] { msg =>
-        msg.msg.asInstanceOf[StormTuple] == stormTuple
+        msg.msg.asInstanceOf[JList[AnyRef]].asScala == values
       })
     }
   }

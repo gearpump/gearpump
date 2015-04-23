@@ -20,13 +20,8 @@ package org.apache.gearpump.experiments.storm.processor
 
 import java.util.{Collection => JCollection, List => JList}
 
-import backtype.storm.task.{TopologyContext, IOutputCollector}
+import backtype.storm.task.IOutputCollector
 import backtype.storm.tuple.Tuple
-import org.apache.gearpump.Message
-import org.apache.gearpump.experiments.storm.util.StormTuple
-import org.apache.gearpump.streaming.task.TaskContext
-
-import scala.collection.JavaConversions._
 
 private[storm] class StormBoltOutputCollector(outputFn: (String, JList[AnyRef]) => Unit) extends IOutputCollector {
 

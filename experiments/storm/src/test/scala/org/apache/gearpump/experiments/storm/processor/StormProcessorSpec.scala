@@ -20,21 +20,22 @@ package org.apache.gearpump.experiments.storm.processor
 
 import akka.actor.ActorSystem
 import backtype.storm.generated.{GlobalStreamId, Bolt}
+import backtype.storm.tuple.Tuple
 import backtype.storm.utils.Utils
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.experiments.storm.util.{TopologyUtil, StormTuple, GraphBuilder}
+import org.apache.gearpump.experiments.storm.util.{TopologyContextBuilder, TopologyUtil, GraphBuilder}
 import org.apache.gearpump.experiments.storm.util.GraphBuilder._
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.json.simple.JSONValue
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
   import org.apache.gearpump.experiments.storm.util.StormUtil._
@@ -51,6 +52,7 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
       .withValue(TOPOLOGY, topology)
       .withValue(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
     val fieldGen = Gen.alphaStr
+    val topologyContextBuilder = new TopologyContextBuilder(topology, stormConfig)
 
     val bolts = topology.get_bolts()
     forAll(fieldGen) { (field: String) =>
@@ -70,10 +72,11 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
             when(taskContext.taskId).thenReturn(TaskId(pid, 0))
             val stormProcessor = new StormProcessor(taskContext, procDesc.taskConf.withConfig(userConfig))
             stormProcessor.onStart(StartTime(0))
-            val values = List.fill(componentToStreamFields.get(scid).size)(field)
-            val stormTuple = StormTuple(values, spid, scid, streamId.get_streamId())
-            stormProcessor.onNext(Message(stormTuple))
-            verify(taskContext).output(anyObject())
+            val values: List[AnyRef] = List.fill(componentToStreamFields.get(scid).size)(field)
+            val topologyContext = topologyContextBuilder.buildContext(spid, scid)
+            val tuple = topologyContextBuilder.buildTuple(values.asJava, topologyContext, spid, scid, streamId.get_streamId())
+            stormProcessor.onNext(Message(tuple))
+            verify(taskContext).output(MockUtil.argMatch[Message](msg => msg.msg.isInstanceOf[Tuple]))
           }
         }
       }

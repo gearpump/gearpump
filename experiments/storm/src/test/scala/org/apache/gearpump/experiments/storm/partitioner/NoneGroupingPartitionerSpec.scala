@@ -16,17 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.experiments.storm.util
+package org.apache.gearpump.experiments.storm.partitioner
 
-import backtype.storm.tuple.{TupleImpl, Tuple}
-import scala.collection.JavaConversions._
+import org.apache.gearpump.Message
+import org.scalacheck.Gen
+import org.scalatest.{PropSpec, Matchers}
+import org.scalatest.prop.PropertyChecks
 
+class NoneGroupingPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
 
-private[storm] case class StormTuple(tuple: List[AnyRef], taskId: Int,  componentId: String, streamId: String) {
-  def toTuple(topologyContextBuilder: TopologyContextBuilder): Tuple = {
-    new TupleImpl(topologyContextBuilder.buildContext(taskId, componentId),
-      tuple, taskId, streamId, null)
+  property("NoneGroupingPartitioner should get partition in [0, partitionNum)") {
+    val messageGen = Gen.alphaStr.map(Message(_))
+    val partitionNumGen = Gen.chooseNum[Int](1, 1000)
+    val partitioner = new NoneGroupingPartitioner
+    forAll(messageGen, partitionNumGen) { (message: Message, partitionNum: Int) =>
+      partitioner.getPartition(message, partitionNum, 0) should (be < partitionNum and be >= 0)
+    }
   }
 }
-
-

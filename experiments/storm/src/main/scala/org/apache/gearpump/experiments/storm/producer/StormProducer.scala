@@ -24,9 +24,8 @@ import backtype.storm.utils.Utils
 import java.util.{List => JList}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.util.{TopologyContextBuilder, StormTuple, GraphBuilder}
+import org.apache.gearpump.experiments.storm.util.{TopologyContextBuilder, GraphBuilder}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
-import scala.collection.JavaConversions._
 
 private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
@@ -45,8 +44,9 @@ private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
 
   override def onStart(startTime: StartTime): Unit = {
     val topologyContext = topologyContextBuilder.buildContext(pid, spoutId)
-    val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
-      taskContext.output(Message(StormTuple(tuple.toList, pid, spoutId, streamId)))
+    val outputFn = (streamId: String, values: JList[AnyRef]) => {
+      val tuple = topologyContextBuilder.buildTuple(values, topologyContext, pid, spoutId, streamId)
+      taskContext.output(Message(tuple))
     }
     val delegate = new StormSpoutOutputCollector(outputFn)
     spout.open(stormConfig, topologyContext, new SpoutOutputCollector(delegate))

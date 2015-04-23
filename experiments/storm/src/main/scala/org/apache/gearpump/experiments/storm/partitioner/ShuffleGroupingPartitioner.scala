@@ -18,14 +18,30 @@
 
 package org.apache.gearpump.experiments.storm.partitioner
 
+import java.util.Collections
+
+import backtype.storm.utils.MutableInt
 import org.apache.gearpump.Message
 import org.apache.gearpump.partitioner.Partitioner
 
 import scala.util.Random
 
+
 class ShuffleGroupingPartitioner extends Partitioner {
+  private val random = new Random
+  private var index = -1
+  private var partitions = List.empty[Int]
+
   override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
-    val random = new Random
-    random.shuffle(0.until(partitionNum).toList).head
+    index += 1
+    if (partitions.isEmpty) {
+      partitions = 0.until(partitionNum).toList
+      partitions = random.shuffle(partitions)
+    } else if (index >= partitionNum) {
+      index = 0
+      partitions = random.shuffle(partitions)
+    }
+    partitions(index)
   }
+
 }

@@ -24,7 +24,7 @@ import java.util.{List => JList, LinkedList => JLinkedList, Map => JMap, HashMap
 
 import backtype.storm.generated.{ComponentCommon, StormTopology}
 import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.Fields
+import backtype.storm.tuple.{MessageId, Tuple, TupleImpl, Fields}
 import clojure.lang.Atom
 import org.apache.commons.io.{IOUtils, FileUtils}
 import org.apache.gearpump.util.LogUtil
@@ -110,6 +110,11 @@ class TopologyContextBuilder(topology: StormTopology,
       componentToStreamFields, null, codeDir, pidDir, taskId, null, null, null, null, null,
       new JHashMap[AnyRef, AnyRef], new Atom(false)
     )
+  }
+
+  def buildTuple(tuple: JList[AnyRef], topologyContext: TopologyContext, taskId: Int,
+                 componentId: String, streamId: String): Tuple = {
+    new TupleImpl(topologyContext, tuple, taskId, streamId, MessageId.makeUnanchored())
   }
 
 
