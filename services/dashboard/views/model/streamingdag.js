@@ -82,11 +82,8 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
 
       /** Weight of a processor equals the sum of its send throughput and receive throughput. */
       _calculateProcessorWeight: function (processorId) {
-        var weight = 0;
-        //var connections = this._calculateProcessorConnections(processorId);
         return Math.max(d3.sum(this._getProcessorMetrics(processorId, this.meter.sendThroughput, 'meanRate')),
           d3.sum(this._getProcessorMetrics(processorId, this.meter.receiveThroughput, 'meanRate')));
-        //return weight;
       },
 
       getEdgesData: function () {
@@ -118,9 +115,9 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       calculateProcessorConnections: function (processorId) {
         var result = {inputs: 0, outputs: 0};
         angular.forEach(this.edges, function (edge) {
-          if (edge.source === processorId) {
+          if (edge.source == processorId) {
             result.outputs++;
-          } else if (edge.target === processorId) {
+          } else if (edge.target == processorId) {
             result.inputs++;
           }
         }, /* scope */ this);
@@ -164,7 +161,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         } else {
           return this._getProcessedMessages(
             this.meter.receiveThroughput,
-            this._getFilteredProcessorsId({hasOutputs: false})
+            this._getProcessorIdsByType('sink')
           );
         }
       },
@@ -178,7 +175,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         } else {
           return this._getProcessedMessages(
             this.meter.sendThroughput,
-            this._getFilteredProcessorsId({hasOutputs: false})
+            this._getProcessorIdsByType('source')
           );
         }
       },
@@ -202,13 +199,14 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
           {total: taskCountArray, rate: taskRateArray};
       },
 
-      _getFilteredProcessorsId: function(filter) {
+      _getProcessorIdsByType: function(type) {
         var ids = [];
         d3.keys(this.processors).map(function(processorId) {
-          var connections = this.calculateProcessorConnections(processorId);
-          if (filter.hasOutputs && connections.outputs > 0) { return; }
-          if (filter.hasInputs && connections.inputs > 0) { return; }
-          ids.push(processorId);
+          var conn = this.calculateProcessorConnections(processorId);
+          if ((type === 'source' && conn.inputs === 0 && conn.outputs > 0) ||
+            (type === 'sink' && conn.inputs > 0 && conn.outputs === 0)) {
+            ids.push(processorId);
+          }
         }, /* scope */ this);
         return ids;
       },
