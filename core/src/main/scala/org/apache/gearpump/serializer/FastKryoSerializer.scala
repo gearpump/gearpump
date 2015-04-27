@@ -19,69 +19,60 @@
 package org.apache.gearpump.serializer
 
 import akka.actor.{ExtendedActorSystem}
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.util.DefaultClassResolver
-import com.esotericsoftware.kryo.{Registration, Kryo}
 import com.romix.akka.serialization.kryo.{KryoSerializer}
-import org.apache.gearpump.serializer.FastKryoSerializer.SerializerType
+import org.apache.gearpump.serializer.FastKryoSerializer.KryoSerializationException
+import org.apache.gearpump.util.LogUtil
 import scala.util.{Try}
-import FastKryoSerializer._
 class FastKryoSerializer(system: ExtendedActorSystem) {
-  val config = system.settings.config
 
-  private val serializer = new KryoSerializer(system).serializer
-  private val kryo = serializer.kryo
-  private val resolver = kryo.getClassResolver
-  new GearpumpSerialization(config).customize(kryo)
+  private val LOG = LogUtil.getLogger(getClass)
+  private val config = system.settings.config
+
+  private val kryoSerializer = new KryoSerializer(system).serializer
+  private val kryo = kryoSerializer.kryo
+  private val kryoClazz = new GearpumpSerialization(config).customize(kryo)
+
 
   def serialize(message: AnyRef) : Array[Byte] = {
+    try {
+      kryoSerializer.toBinary(message)
+    } catch {
+      case ex: java.lang.IllegalArgumentException =>
+        val clazz = message.getClass
+        val error = s"""
+          | ${ex.getMessage}
+          |You can also register the class by providing a configuration with serializer
+          |defined,
+          |
+          |gearpump{
+          |  serializers {
+          |    ## Follow this format when adding new serializer for new message types
+          |    #    "yourpackage.YourClass" = "yourpackage.YourSerializerForThisClass"
+          |
+          |    ## If you intend to use default serializer for this class, then you can write this
+          |    #    "yourpackage.YourClass" = ""
+          |  }
+          |}
+          |
+          |If you want to register the serializer globally, you need to change
+          |gear.conf on every worker in the cluster; if you only want to register
+          |the serializer for a single streaming application, you need to create
+          |a file under conf/ named application.conf, and add the above configuration
+          |into application.conf. To verify whether the configuration is effective,
+          |you can browser your UI http://{UI Server Host}:8090/api/v1.0/config/app/{appId},
+          |and check whether your custom serializer is added.
+        """.stripMargin
 
-    // If we have registered the serializer before, will register it with ID DefaultClassResolver.NAME
-    // This means we will write full class name when serializing this object to binary
-    val clazz = message.getClass
-    val serializerType: SerializerType = {
-      if (null == resolver.getRegistration(clazz)) {
-        DynamicRegistered
-      } else {
-        PreRegistered
-      }
+        LOG.error(error, ex)
+        throw new KryoSerializationException(error, ex)
     }
-
-    // Add a flag about how we are going to deserialize this object
-    serializer.buf.writeByte(serializerType)
-
-    if (serializerType == DynamicRegistered) {
-      // The receiver don't have informaiton of this class type, so the sender need to also
-      // serialize the full className.
-      serializer.buf.writeString(clazz.getName)
-    }
-
-    serializer.toBinary(message)
   }
 
   def deserialize(msg : Array[Byte]): AnyRef = {
-    val input = new Input(msg)
-    val serializerType = input.readByte()
-    if (serializerType == PreRegistered) {
-      kryo.readClassAndObject(input).asInstanceOf[AnyRef]
-    } else {
-      val clazz = input.readString()
-      kryo.readObject(input, Class.forName(clazz)).asInstanceOf[AnyRef]
-    }
+      kryoSerializer.fromBinary(msg)
   }
 }
 
 object FastKryoSerializer {
-
-  type SerializerType = Byte
-
-  /**
-   * This means we have called kryo.register(className) for this class type
-   */
-  val PreRegistered : Byte = 0x0
-
-  /**
-   * This means we have NOT called kryo.register(className) for this class type
-   */
-  val DynamicRegistered: Byte = 0x01
+  class KryoSerializationException(msg: String, ex: Throwable = null) extends Exception(msg, ex)
 }

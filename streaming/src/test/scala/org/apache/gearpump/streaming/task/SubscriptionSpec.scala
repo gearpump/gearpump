@@ -25,7 +25,6 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.MockUtil.argMatch
 import org.apache.gearpump.streaming.ProcessorDescription
-import org.apache.gearpump.streaming.task.LatencyProbe
 import org.apache.gearpump.streaming.task.SubscriptionSpec.NextTask
 import org.scalatest.{Matchers, FlatSpec}
 

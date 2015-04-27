@@ -46,6 +46,9 @@ class GearpumpSerialization(config: Config) {
       }
     }
     kryo.setReferences(false)
+
+    // require the user to register the class first before using
+    kryo.setRegistrationRequired(true)
   }
 
   private final def configToMap(config : Config, path: String) = {
