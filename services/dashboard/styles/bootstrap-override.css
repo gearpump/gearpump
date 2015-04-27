@@ -13,3 +13,7 @@ body, .tooltip, .popover {
 .navbar-fixed-bottom > * {
   background-color: #eee;
 }
+
+.glyphicon {
+  top: 2px;
+}

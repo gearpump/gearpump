@@ -41,9 +41,10 @@
       return dst;
     };
 
-    angular.merge = function (dst) {
+    /** Returns a merged object */
+    angular.merge = function (obj) {
       var slice = [].slice;
-      return baseExtend(dst, slice.call(arguments, 1), true);
+      return baseExtend(angular.copy(obj), slice.call(arguments, 1), true);
     };
   }
 }());

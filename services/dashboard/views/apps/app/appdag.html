@@ -1,9 +1,9 @@
 <div class="col-md-12" style="padding-bottom:12px">
   <metrics-card
-    m-title="Application clock"
-    m-explanation=""
-    m-value="{{app.clock|date:'HH:mm:ss'}}"
-    m-unit="{{app.clock|date:'yyyy/MM/dd'}}"/>
+    heading="Application clock"
+    explanation=""
+    value="{{app.clock|date:'HH:mm:ss'}}"
+    unit="{{app.clock|date:'yyyy/MM/dd'}}"/>
 </div>
 
 <!-- left half -->
@@ -24,45 +24,45 @@
   <div class="row">
     <div class="col-md-12">
       <metrics-card
-        m-title="Sink Processors Total Received Messages"
-        m-explanation=""
-        m-value="{{receivedMessages.total|humanize}}"
-        m-unit="messages"/>
+        heading="Sink Processors Total Received Messages"
+        explanation=""
+        value="{{receivedMessages.total|humanize}}"
+        unit="messages"/>
     </div>
     <div class="col-md-12">
       <metrics-card
-        m-title="Source Processors Total Sent Messages"
-        m-explanation=""
-        m-value="{{sentMessages.total|humanize}}"
-        m-unit="messages"/>
+        heading="Source Processors Total Sent Messages"
+        explanation=""
+        value="{{sentMessages.total|humanize}}"
+        unit="messages"/>
     </div>
     <div class="col-md-12">
       <metrics-card
-        m-title="Sink Processors Receive Throughput"
-        m-explanation="Message receive throughput of sink processors"
-        m-value="{{receivedMessages.rate|number:0}}"
-        m-unit="message/s"/>
+        heading="Sink Processors Receive Throughput"
+        explanation="Message receive throughput of sink processors"
+        value="{{receivedMessages.rate|number:0}}"
+        unit="message/s"/>
     </div>
     <div class="col-md-12">
       <metrics-card
-        m-title="Source Processors Send Throughput"
-        m-explanation="Message send throughput of source processors"
-        m-value="{{sentMessages.rate|number:0}}"
-        m-unit="message/s"/>
+        heading="Source Processors Send Throughput"
+        explanation="Message send throughput of source processors"
+        value="{{sentMessages.rate|number:0}}"
+        unit="message/s"/>
     </div>
     <div class="col-md-12">
       <metrics-card
-        m-title="Avg. Processing Time per Task"
-        m-explanation="Average message processing time per task"
-        m-value="{{processingTime|number:2}}"
-        m-unit="ms"/>
+        heading="Avg. Processing Time per Task"
+        explanation="Average message processing time per task"
+        value="{{processingTime|number:2}}"
+        unit="ms"/>
     </div>
     <div class="col-md-12">
       <metrics-card
-        m-title="Avg. Receive Latency per Task"
-        m-explanation="Average message receive latency per task"
-        m-value="{{receiveLatency|number:2}}"
-        m-unit="ms"/>
+        heading="Avg. Receive Latency per Task"
+        explanation="Average message receive latency per task"
+        value="{{receiveLatency|number:2}}"
+        unit="ms"/>
     </div>
   </div>
 </div>
