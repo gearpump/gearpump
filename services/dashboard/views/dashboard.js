@@ -13,6 +13,7 @@ angular
     'directive.echartfactory',
     'directive.echarts',
     'directive.tabset',
+    'directive.explanationicon',
     'directive.metricscard',
     'filter.readable',
     'dashboard.restapi',

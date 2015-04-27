@@ -380,7 +380,7 @@ object Build extends sbt.Build {
           "org.webjars" % "angularjs" % "1.3.15",
           "org.webjars" % "angular-ui-select" % "0.11.2",
           "org.webjars" % "bootstrap" % "3.3.4",
-          "org.webjars" % "d3js" % "3.5.3",
+          "org.webjars" % "d3js" % "3.5.5",
           "org.webjars" % "momentjs" % "2.9.0",
           "org.webjars" % "smart-table" % "2.0.1",
           "org.webjars" % "visjs" % "3.11.0"

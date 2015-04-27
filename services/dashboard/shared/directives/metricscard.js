@@ -4,39 +4,32 @@
  */
 'use strict';
 
-angular.module('directive.metricscard', [])
+angular.module('directive.metricscard', ['directive.explanationicon'])
 
 /**
- * The angular directive represents metrics info in a card.
+ * This widget shows metrics values in a card.
  */
   .directive('metricsCard', [function () {
     return {
       restrict: 'E',
       scope: true,
       link: function (scope, elems, attrs) {
-        scope.title = attrs.mTitle;
-        scope.explanation = attrs.mExplanation;
-        scope.value = attrs.mValue;
-        scope.unit = attrs.mUnit;
-
-        attrs.$observe('mTitle', function (value) {
-          scope.title = value;
+        attrs.$observe('heading', function (value) {
+          scope.heading = value;
         });
-        attrs.$observe('mExplanation', function (value) {
+        attrs.$observe('explanation', function (value) {
           scope.explanation = value;
         });
-        attrs.$observe('mValue', function (value) {
+        attrs.$observe('value', function (value) {
           scope.value = value;
         });
-        attrs.$observe('mUnit', function (value) {
+        attrs.$observe('unit', function (value) {
           scope.unit = value;
         });
       },
-      template: '<div class="">' +
-      '<h6 class="metrics-title">{{title}}' +
-      '<span ng-if="explanation" class="glyphicon glyphicon-question-sign metrics-explanation" title="{{explanation}}"></span></h6>' +
-      '<h3 class="metrics-value">{{value}} <small>{{unit}}</small></h3>' +
-      '</div>'
+      template: '<h6 class="metrics-title">{{heading}}' +
+      '<explanation-icon ng-if="explanation" value="{{explanation}}"/></h6>' +
+      '<h3 class="metrics-value">{{value}} <small>{{unit}}</small></h3>'
     };
   }])
 
