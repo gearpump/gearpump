@@ -161,7 +161,6 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
   def waitForStartClock : Receive = {
     case start@ StartClock(clock) =>
-      onStart(new StartTime(clock))
 
       LOG.info(s"received $start")
 
@@ -177,10 +176,15 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       context.system.scheduler.schedule(
         LATENCY_PROBE_INTERVAL, LATENCY_PROBE_INTERVAL, self, SendMessageProbe)
 
+      context.become(handleMessages(doHandleMessage))
+
+      // Put this as the last step so that the subscription is already initialized.
+      // Message sending in current Task before onStart will not be delivered to
+      // target
+      onStart(new StartTime(clock))
+
       // clean up history message in the queue
       doHandleMessage()
-
-      context.become(handleMessages(doHandleMessage))
   }
 
   def stashMessages: Receive = handleMessages(() => Unit)
