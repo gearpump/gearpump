@@ -5,7 +5,18 @@
 'use strict';
 angular.module('dashboard.apps.appmaster')
 
-  .controller('AppDagCtrl', ['$scope', '$timeout', '$filter', 'conf', 'dagStyle', function ($scope, $timeout, $filter, conf, dagStyle) {
+  .controller('AppDagCtrl', ['$scope', '$timeout', '$interval', '$filter', 'conf', 'dagStyle', function ($scope, $timeout, $interval, $filter, conf, dagStyle) {
+    var previousClock = moment();
+    $scope.displayClock = $scope.app.clock;
+    var updateClockPromise = $interval(function() {
+      var localClock = $scope.displayClock + moment() - previousClock;
+      $scope.displayClock = Math.min(localClock, $scope.app.clock);
+      previousClock = moment();
+    }, 1000);
+    $scope.$on('$destroy', function() {
+      $interval.cancel(updateClockPromise);
+    });
+
     $scope.visgraph = {
       options: dagStyle.newOptions({depth: $scope.streamingDag.hierarchyDepth()}),
       data: dagStyle.newData(),
