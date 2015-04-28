@@ -37,7 +37,7 @@ angular.module('dashboard.apps.appmaster')
         tooltip: {
           formatter: function (params) {
             return '<strong>' + params.name + '</strong><br/>' +
-              Number(params.data).toFixed(2) + ' msg/s';
+              Number(params.data).toFixed(0) + ' msgs/s';
           }
         }
       },
@@ -46,6 +46,11 @@ angular.module('dashboard.apps.appmaster')
       ],
       xAxisData: $scope.tasks.available
     };
+
+    if ($scope.parallelism > 20) {
+      skewDataOption.inject.dataZoom = {show: true, realtime: true, y: 0, height: 20};
+      skewDataOption.inject.grid = {y: 35};
+    }
 
     $scope.receiveSkewChart = {
       options: skewDataOption
@@ -75,7 +80,7 @@ angular.module('dashboard.apps.appmaster')
     function ($scope, $interval, conf) {
       $scope.$watchCollection('tasks', function(tasks) {
         if (tasks.selected) {
-          var xAxisDataNum = 5;
+          var xAxisDataNum = 15;
           var lineChartOptionBase = {
             inject: {
               height: '108px',
@@ -84,7 +89,7 @@ angular.module('dashboard.apps.appmaster')
                 formatter: function (params) {
                   var s = params[0].name;
                   angular.forEach(params, function (param) {
-                    s += '<br/>' + param.seriesName + ': ' + Number(param.value).toFixed(3);
+                    s += '<br/>' + param.seriesName + ': ' + Number(param.value).toFixed(2);
                   });
                   return s;
                 }

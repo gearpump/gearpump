@@ -21,7 +21,16 @@ angular.module('directive.echartfactory', [])
           tooltip: {
             trigger: 'axis',
             textStyle: {fontSize: 12},
-            axisPointer: {type: 'none'}
+            axisPointer: {type: 'none'},
+            formatter: function (params) {
+              var s = params[0].name;
+              angular.forEach(params, function (param) {
+                var value = Number(param.value);
+                s += '<br/>' + param.seriesName + ': ' +
+                value.toFixed(Math.abs(value) > 10 ? 0 : Math.abs(value) > 1 ? 1 : 2);
+              });
+              return s;
+            }
           },
           dataZoom: {show: false},
           grid: {borderWidth: 0, y: 10, x2: 30, y2: 24},
