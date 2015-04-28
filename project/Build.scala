@@ -142,6 +142,7 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+        "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
@@ -373,7 +374,8 @@ object Build extends sbt.Build {
           "io.spray" %%  "spray-httpx"     % sprayVersion,
           "io.spray" %%  "spray-client"    % sprayVersion,
           "io.spray" %%  "spray-json"    % sprayJsonVersion,
-          "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion,
+          "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
+            exclude("com.typesafe.akka", "akka-actor_2.11"),
           "org.json4s" %% "json4s-jackson" % json4sVersion,
           "org.json4s" %% "json4s-native"   % json4sVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
