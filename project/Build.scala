@@ -383,7 +383,8 @@ object Build extends sbt.Build {
           "org.webjars" % "d3js" % "3.5.5",
           "org.webjars" % "momentjs" % "2.9.0",
           "org.webjars" % "smart-table" % "2.0.1",
-          "org.webjars" % "visjs" % "3.11.0"
+          "org.webjars" % "visjs" % "3.11.0",
+          "org.webjars.bower" % "angular-tooltips" % "0.1.9"
         ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
       )
   ) dependsOn(streaming % "test->test;compile->compile")

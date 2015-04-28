@@ -61,6 +61,7 @@ angular.module('directive.echarts', [])
           dataZoom: {show: false},
           grid: {borderWidth: 0, x: 5, y: 5, x2: 5, y2: 0},
           xAxis: [{
+            boundaryGap: false,
             axisLabel: false,
             splitLine: false,
             data: use.xAxisData
@@ -90,6 +91,7 @@ angular.module('directive.echarts', [])
           dataZoom: {show: false},
           grid: {borderWidth: 0, y: 10, x2: 30, y2: 20},
           xAxis: [{
+            boundaryGap: false,
             axisLabel: {show: true},
             axisLine: borderLineStyle,
             axisTick: borderLineStyle,
@@ -106,7 +108,7 @@ angular.module('directive.echarts', [])
         angular.forEach(use.series, function (series, i) {
           options.series.push(
             LookAndFeel.makeDataSeries(
-              angular.merge({colors: LookAndFeel.colorSet(i)}, use.series[i])
+              angular.merge({colors: LookAndFeel.colorSet(i), stack: '1'}, use.series[i])
             ));
         });
         if (options.series.length > 1) {
@@ -159,7 +161,7 @@ angular.module('directive.echarts', [])
       tooltip: function (args) {
         var result = {
           trigger: args.trigger || 'axis',
-          textStyle: {fontSize: 13},
+          textStyle: {fontSize: 12},
           axisPointer: {type: 'none'},
           borderRadius: 2,
           formatter: args.formatter
@@ -176,6 +178,7 @@ angular.module('directive.echarts', [])
       makeDataSeries: function (args) {
         args.type = args.type || 'line';
         return angular.merge(args, {
+          stack: args.stack,
           smooth: true,
           itemStyle: {
             normal: {
