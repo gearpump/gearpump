@@ -6,12 +6,16 @@
 angular.module('dashboard.apps.appmaster')
 
   .controller('AppDagCtrl', ['$scope', '$timeout', '$interval', '$filter', 'conf', 'dagStyle', function ($scope, $timeout, $interval, $filter, conf, dagStyle) {
-    var previousClock = moment();
     $scope.displayClock = $scope.app.clock;
+    var localClock = moment();
     var updateClockPromise = $interval(function() {
-      var localClock = $scope.displayClock + moment() - previousClock;
-      $scope.displayClock = Math.min(localClock, $scope.app.clock);
-      previousClock = moment();
+      if (localClock.seconds() % 10 === 0) {
+        // synchronize application clock every 10 second
+        $scope.displayClock = $scope.app.clock;
+      } else {
+        $scope.displayClock += moment() - localClock;
+      }
+      localClock = moment();
     }, 1000);
     $scope.$on('$destroy', function() {
       $interval.cancel(updateClockPromise);
