@@ -49,6 +49,21 @@ angular.module('dashboard.restapi', [])
       killApp: function(appId) {
         var url = conf.restapiRoot + '/appmaster/' + appId;
         return $http.delete(url);
+      },
+
+      /** Return the config link of an application */
+      appConfigLink: function(appId) {
+        return conf.restapiRoot + '/config/app/' + appId;
+      },
+
+      /** Return the config link of a worker */
+      workerConfigLink: function(workerId) {
+        return conf.restapiRoot + '/config/worker/' + workerId;
+      },
+
+      /** Return the config link of the master */
+      masterConfigLink: function() {
+        return conf.restapiRoot + '/config/master';
       }
     };
   }])

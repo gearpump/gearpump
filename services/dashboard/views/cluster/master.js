@@ -30,6 +30,7 @@ angular.module('dashboard.cluster', [])
           clusters: desc.cluster.map(function (item) {
             return item.join(':');
           }),
+          configLink: restapi.masterConfigLink(),
           homeDir: desc.homeDirectory,
           leader: desc.leader.join(':'),
           logDir: desc.logFile,

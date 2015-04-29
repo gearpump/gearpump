@@ -58,6 +58,10 @@ body {
   padding-top: 60px; /*equals navbar height*/
 }
 
+a, a:hover, a:active, a:visited {
+  text-decoration: none !important;
+}
+
 .table-two-column td:first-child {
   text-align: right;
   font-size: 0.85em;

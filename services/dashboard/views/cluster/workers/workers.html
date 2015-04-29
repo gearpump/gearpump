@@ -66,15 +66,16 @@
           </td>
         </tr>
         <tr>
-          <td>Home Dir.</td>
+          <td>Directories</td>
           <td>
-            <span class="small" ng-bind="worker.homeDir"></span>
+            <span class="label label-default" tooltips tooltip-title="{{worker.homeDir}}" tooltip-size="small">Home Dir</span>
+            <span class="label label-default" tooltips tooltip-title="{{worker.logDir}}" tooltip-size="small">Log Dir</span>
           </td>
         </tr>
         <tr>
-          <td>Log Dir.</td>
+          <td>Quick Links</td>
           <td>
-            <span class="small" ng-bind="worker.logDir"></span>
+            <a href="{{worker.configLink}}" target="_blank">Configuration</a>
           </td>
         </tr>
       </table>

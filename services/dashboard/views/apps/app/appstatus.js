@@ -22,6 +22,9 @@ angular.module('dashboard.apps.appmaster')
             {name: 'Number of Tasks', value: !$scope.streamingDag || $scope.streamingDag.getNumOfTasks()},
             {name: 'Number of Executors', value: !$scope.streamingDag || Object.keys($scope.streamingDag.executors).length}
           ];
+          $scope.link = {
+            config: restapi.appConfigLink(data.appId)
+          }
         }
       });
   }])
