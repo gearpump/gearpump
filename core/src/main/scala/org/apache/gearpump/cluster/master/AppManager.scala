@@ -235,6 +235,13 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
           _appMaster forward query
         case None =>
       }
+    case getStalling @ GetStallingTasks(appId) =>
+      val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
+      Option(appMaster) match {
+        case Some(_appMaster) =>
+          _appMaster forward getStalling
+        case None =>
+      }
   }
 
   def workerMessage: Receive = {

@@ -19,18 +19,10 @@
 package org.apache.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.pattern.ask
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.MasterToClient.ShutdownApplicationResult
 import org.apache.gearpump.util.{Constants, LogUtil}
-import spray.http.StatusCodes
 import spray.routing.HttpService
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-
+import scala.concurrent.ExecutionContext
 
 /**
  * A fast util to send some message to specifial actor in the cluster

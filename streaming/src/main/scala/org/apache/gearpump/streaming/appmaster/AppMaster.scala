@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import org.apache.gearpump._
-import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, ShutdownApplication}
+import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.metrics.Metrics.MetricType
@@ -138,6 +138,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       actorSystem.eventStream.subscribe(client, classOf[MetricType])
     case query: QueryHistoryMetrics =>
       historyMetricsService forward query
+    case getStalling: GetStallingTasks =>
+      clockService forward getStalling
   }
 
   def recover: Receive = {

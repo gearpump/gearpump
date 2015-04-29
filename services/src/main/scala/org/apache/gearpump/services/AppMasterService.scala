@@ -22,16 +22,17 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
+import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, ShutdownApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.cluster.MasterToClient.ShutdownApplicationResult
 import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
 
 import org.apache.gearpump.streaming.appmaster.AppMaster
-import org.apache.gearpump.streaming.{ ProcessorDescription}
+import org.apache.gearpump.streaming.{ProcessorDescription}
 import org.apache.gearpump.util.{Constants, Graph, LogUtil}
 import org.apache.gearpump.streaming.appmaster.{StreamingAppMasterDataDetail, AppMaster}
-import org.apache.gearpump.streaming.{ ProcessorDescription, DAG}
+import org.apache.gearpump.streaming.{ProcessorDescription, DAG}
 import org.apache.gearpump.util.{Graph, Constants}
 import spray.http.StatusCodes
 import spray.routing.HttpService
@@ -40,16 +41,17 @@ import upickle.{Js, Writer}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-trait AppMasterService extends HttpService  {
+trait AppMasterService extends HttpService {
   import upickle._
-  def master:ActorRef
+  def master: ActorRef
+
   implicit val system: ActorSystem
   private val LOG = LogUtil.getLogger(getClass)
 
   def appMasterRoute = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    pathPrefix("api"/s"$REST_VERSION") {
+    pathPrefix("api" / s"$REST_VERSION") {
       path("appmaster" / IntNumber) { appId =>
         get {
           parameter("detail" ? "false") { detail =>
@@ -78,7 +80,14 @@ trait AppMasterService extends HttpService  {
               case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
             }
           }
-      }
+      } ~
+        path("appmaster" / IntNumber / "stallingtasks") { appId =>
+          onComplete((master ? GetStallingTasks(appId)).asInstanceOf[Future[StallingTasks]]) {
+            case Success(value: StallingTasks) =>
+              complete(write(value))
+            case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+          }
+        }
     }
   }
 }
