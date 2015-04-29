@@ -32,6 +32,7 @@ angular.module('dashboard.cluster')
           return {
             actorPath: worker.actorPath,
             aliveFor: worker.aliveFor,
+            configLink: restapi.workerConfigLink(worker.workerId),
             executors: worker.executors,
             homeDir: worker.homeDirectory,
             hostname: extractHostname(worker.actorPath),
