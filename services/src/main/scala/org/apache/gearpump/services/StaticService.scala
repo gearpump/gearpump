@@ -21,7 +21,15 @@ package org.apache.gearpump.services
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
+import java.util.jar.Manifest
+
 trait StaticService extends HttpService {
+
+  val version = {
+    val url = getClass.getClassLoader.getResource("META-INF/MANIFEST.MF")
+    val manifest = new Manifest(url.openStream())
+    manifest.getMainAttributes.getValue("Implementation-Version")
+  }
 
   val staticRoute =
     pathEndOrSingleSlash {
@@ -36,6 +44,13 @@ trait StaticService extends HttpService {
     pathPrefix("webjars") {
       get {
         getFromResourceDirectory("META-INF/resources/webjars")
+      }
+    } ~
+    pathPrefix("api"/s"$REST_VERSION") {
+      path("version") {
+        get {
+          complete(version)
+        }
       }
     }
 
