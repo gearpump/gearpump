@@ -40,3 +40,7 @@ object ExecutorToAppMaster {
 
   case class RegisterTask(taskId: TaskId, executorId : Int, task: HostPort)
 }
+
+object AppMasterToMaster {
+  case class StallingTasks(tasks: List[TaskId])
+}

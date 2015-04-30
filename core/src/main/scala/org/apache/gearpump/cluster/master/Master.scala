@@ -178,6 +178,9 @@ private[cluster] class Master extends Actor with Stash {
     case query: QueryHistoryMetrics =>
       LOG.debug("Master received QueryHistoryMetrics")
       appManager forward query
+    case getstalling: GetStallingTasks =>
+      LOG.debug("Master received GetStallingTasks")
+      appManager forward getstalling
   }
 
   def disassociated : Receive = {
