@@ -23,10 +23,10 @@ import backtype.storm.generated.{ComponentCommon, Grouping, StormTopology}
 import backtype.storm.tuple.Fields
 import backtype.storm.utils.ThriftTopologyUtils
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.partitioner.{NoneGroupingPartitioner, ShuffleGroupingPartitioner, FieldsGroupingPartitioner, GlobalGroupingPartitioner}
+import org.apache.gearpump.experiments.storm.partitioner.{NoneGroupingPartitioner, FieldsGroupingPartitioner, GlobalGroupingPartitioner}
 import org.apache.gearpump.experiments.storm.processor.StormProcessor
 import org.apache.gearpump.experiments.storm.producer.StormProducer
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{ShuffleGroupingPartitioner, Partitioner}
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.streaming.{Processor, ProcessorDescription}
 import org.apache.gearpump.util.Graph

@@ -21,8 +21,7 @@ package org.apache.gearpump.streaming.examples.sol
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.{Partitioner, ShufflePartitioner}
-import org.apache.gearpump.streaming.task.Task
+import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
