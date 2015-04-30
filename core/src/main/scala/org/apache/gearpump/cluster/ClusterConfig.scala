@@ -20,10 +20,10 @@ package org.apache.gearpump.cluster
 
 import java.io.File
 
-import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions}
+import com.typesafe.config.{ConfigValueFactory, Config, ConfigFactory, ConfigParseOptions}
 import org.apache.commons.io.FileUtils
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{Constants, LogUtil}
 
 /**
  * Please use ClusterConfig.load to construct this object
@@ -33,26 +33,34 @@ class ClusterConfig private(systemProperties : Config, custom : Config,
                 uiConfig: Config, base: Config,
                 windows: Config, all: Config) {
   def master : Config = {
-    systemProperties.withFallback(custom)
+
+    val config = systemProperties.withFallback(custom)
       .withFallback(masterConfig.getConfig(MASTER)).
       withFallback(baseConfig).withFallback(all)
+    convert(config)
   }
 
   def worker : Config = {
-    systemProperties.withFallback(custom)
+    val config = systemProperties.withFallback(custom)
       .withFallback(workerConfig.getConfig(WORKER)).
       withFallback(baseConfig).withFallback(all)
+
+    convert(config)
   }
 
   def default : Config = {
-    systemProperties.withFallback(custom)
+    val config = systemProperties.withFallback(custom)
       .withFallback(baseConfig).withFallback(all)
+
+    convert(config)
   }
 
   def ui: Config = {
-    systemProperties.withFallback(custom)
+    val config = systemProperties.withFallback(custom)
       .withFallback(uiConfig.getConfig(UI))
       .withFallback(baseConfig).withFallback(all)
+
+    convert(config)
   }
 
   def applicationSubmissionConfig: Config = {
@@ -65,6 +73,11 @@ class ClusterConfig private(systemProperties : Config, custom : Config,
     } else {
       base.getConfig(BASE)
     }
+  }
+
+  private def convert(config: Config): Config = {
+    val hostName = config.getString(Constants.GEARPUMP_HOSTNAME)
+    config.withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(hostName))
   }
 }
 

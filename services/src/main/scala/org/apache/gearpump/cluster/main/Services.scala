@@ -40,8 +40,6 @@ object Services extends App {
   def start(): Unit = {
 
     var config = ClusterConfig.load.ui
-    val hostName = config.getString(Constants.GEARPUMP_HOSTNAME)
-    config = config.withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(hostName))
 
     import scala.collection.JavaConversions._
     val masterCluster = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)

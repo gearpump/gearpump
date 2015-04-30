@@ -66,8 +66,7 @@ object Local extends App with ArgumentsParser {
 
     val hostPort = masters.head
     implicit val system = ActorSystem(MASTER, systemConfig.
-      withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port)).
-      withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(hostPort.host))
+      withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port))
     )
 
     val master = system.actorOf(Props[MasterActor], MASTER)

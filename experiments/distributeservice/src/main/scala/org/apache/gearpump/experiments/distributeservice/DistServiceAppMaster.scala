@@ -41,7 +41,7 @@ class DistServiceAppMaster(appContext : AppMasterContext, app : AppDescription) 
   private var fileServerPort = -1
 
   val rootDirectory = new File("/")
-  val host = context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)
+  val host = context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)
   val server = context.actorOf(Props(classOf[FileServer], rootDirectory, host , 0))
 
   override def preStart(): Unit = {

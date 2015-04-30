@@ -32,7 +32,7 @@ import org.slf4j.Logger
 class DFSJarStore(rootDir : String) extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  val host = context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)
+  val host = context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)
 
   val rootPath = new Path(rootDir)
   val fs = rootPath.getFileSystem(new Configuration())
