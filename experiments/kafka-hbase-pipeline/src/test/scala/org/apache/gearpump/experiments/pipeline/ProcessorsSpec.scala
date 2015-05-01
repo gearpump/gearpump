@@ -20,7 +20,8 @@ package org.apache.gearpump.experiments.pipeline
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.hbase.HBaseSinkInterface
+import org.apache.gearpump.experiments.hbase.HBaseSink._
+import org.apache.gearpump.experiments.hbase.{HBaseRepo, HBaseSinkInterface}
 import org.apache.gearpump.experiments.pipeline.Messages.{Body, Datum, Envelope, _}
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.task.StartTime
@@ -42,7 +43,7 @@ object Processors {
     """
       |pipeline {
       |  cpu.interval = 50
-      |  memory.interval = 100
+      |  memory.interval = 20
       |  processors = 1
       |  persistors = 1
       |}
@@ -58,8 +59,6 @@ object Processors {
       |}
     """.
       stripMargin
-
-
   val hbaseCPU = Mockito.mock(classOf[HBaseSinkInterface])
   val hbaseMEM = Mockito.mock(classOf[HBaseSinkInterface])
   val repoCPU = new HBaseRepo {
@@ -68,7 +67,7 @@ object Processors {
   val repoMEM = new HBaseRepo {
     def getHBase(table:String, conf:Configuration): HBaseSinkInterface = hbaseMEM
   }
-  val pipelineConfig = PipelineConfig(ConfigFactory.parseString(pipelineConfigText))
+  val pipelineConfig = PipeLineConfig(ConfigFactory.parseString(pipelineConfigText))
   val userConfig = UserConfig.empty.withValue(PIPELINE, pipelineConfig)
   val cpuConfig = userConfig.withValue(HBASESINK,repoCPU)
   val memoryConfig = userConfig.withValue(HBASESINK,repoMEM)
@@ -87,7 +86,7 @@ object Processors {
   )
 
   val timeStamp = 1428004406134L
-  val timeStamps = Array[Long](timeStamp, timeStamp + 101)
+  val timeStamps = Array[Long](timeStamp, timeStamp + 30)
 
   def getMetrics(data: String): Array[Datum] = {
     val envelope = read[Envelope](data)

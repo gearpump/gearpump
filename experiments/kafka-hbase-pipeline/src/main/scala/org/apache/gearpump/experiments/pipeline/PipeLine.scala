@@ -22,11 +22,11 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.experiments.hbase.{HBaseSink, HBaseSinkInterface}
-import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
+import org.apache.gearpump.experiments.hbase.HBaseSink._
+import org.apache.gearpump.experiments.hbase.{HBaseRepo, HBaseSink, HBaseSinkInterface}
+import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.Task
-import org.apache.gearpump.streaming.{StreamApplication, Processor, ProcessorDescription}
+import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.apache.hadoop.conf.Configuration
@@ -43,12 +43,11 @@ object PipeLine extends App with ArgumentsParser {
 
   def application(config: ParseResult): StreamApplication = {
     import Messages._
-    import PipelineConfig._
     val pipeLinePath = config.getString("conf")
-    val pipelineConfig = PipelineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
-    val processors = pipelineConfig.getInt(PROCESSORS)
-    val persistors = pipelineConfig.getInt(PERSISTORS)
-    val kafkaConfig = KafkaConfig(pipelineConfig)
+    val pipelineConfig = PipeLineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
+    val processors = pipelineConfig.config.getInt(PROCESSORS)
+    val persistors = pipelineConfig.config.getInt(PERSISTORS)
+    val kafkaConfig = KafkaConfig(pipelineConfig.config)
     val repo = new HBaseRepo {
       def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
     }

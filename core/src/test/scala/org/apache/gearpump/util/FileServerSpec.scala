@@ -48,12 +48,12 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
   }
 
   "The file server" should {
-    "server the data previously stored" in {
+    "serve the data previously stored" in {
 
       val rootDir = Files.createTempDir()
 
       val server = system.actorOf(Props(classOf[FileServer], rootDir, host, 0))
-      val port = Await.result((server ? GetPort).asInstanceOf[Future[Port]], Duration(15, TimeUnit.SECONDS))
+      val port = Await.result((server ? GetPort).asInstanceOf[Future[Port]], Duration(25, TimeUnit.SECONDS))
 
       val sizes = List(1, 100, 1000000, 50000000)
 

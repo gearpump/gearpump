@@ -1,6 +1,13 @@
+gearpump {
+  serializers {
+    "org.apache.gearpump.experiments.pipeline.Messages$Datum" = ""
+    "[Lorg.apache.gearpump.experiments.pipeline.Messages$Datum;" = ""
+  }
+}
+
 pipeline {
-  cpu.interval = 50
-  memory.interval = 100
+  cpu.interval = 10
+  memory.interval = 20
   processors = 1
   persistors = 1
 }

@@ -19,12 +19,24 @@
 package org.apache.gearpump.streaming.dsl
 
 import akka.actor.ActorSystem
-import org.apache.gearpump.cluster.{AppDescription, UserConfig}
+import com.typesafe.config.Config
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.streaming.{StreamApplication}
-import org.apache.gearpump.streaming.dsl.op.{Op, OpEdge, InMemoryCollectionSource}
+import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseSink, HBaseSinkInterface, HBaseRepo}
+import org.apache.gearpump.streaming.StreamApplication
+import org.apache.gearpump.streaming.dsl.op.OpType.{Traverse, TraverseType}
+import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.Planner
+import org.apache.gearpump.streaming.kafka.KafkaSource
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.streaming.transaction.api.{TimeReplayableSource, MessageDecoder}
 import org.apache.gearpump.util.Graph
+import org.apache.hadoop.conf.Configuration
+import upickle._
+
+import scala.reflect.ClassTag
 
 /**
  * Example:
@@ -40,40 +52,81 @@ import org.apache.gearpump.util.Graph
     val appId = context.submit(app)
     context.close()
  *
- * @param name
+ * @param name name of app
  */
-class StreamApp(val name: String, context: ClientContext) {
-
+class StreamApp(val name: String, context: ClientContext, userConfig: UserConfig) {
   val graph = Graph.empty[Op, OpEdge]
 
-  /**
-   * Create a new stream from a in-memory collection.
-   * This stream will repeat the source collection forever.
-   *
-   * @param collection
-   * @param parallism
-   * @tparam T
-   * @return
-   */
-  def fromCollection[T](collection: Iterator[T], parallism: Int = 1, description: String = null): Stream[T] = {
-    val source = InMemoryCollectionSource(collection.toList, parallism, Option(description).getOrElse("list"))
-    graph.addVertex(source)
-    new Stream[T](graph, source)
-  }
-
-  def plan: StreamApplication = {
+  def plan(): StreamApplication = {
     implicit val system = context.system
     val planner = new Planner
     val dag = planner.plan(graph)
-    StreamApplication(name, dag, UserConfig.empty)
+    StreamApplication(name, dag, userConfig)
   }
 
   private[StreamApp] def system: ActorSystem = context.system
 }
 
 object StreamApp {
+  def apply(name: String, context: ClientContext, userConfig: UserConfig = UserConfig.empty) = new StreamApp(name, context, userConfig)
 
   implicit def streamAppToApplication(streamApp: StreamApp): StreamApplication = {
     streamApp.plan
   }
+
+  implicit class Source(app: StreamApp) extends java.io.Serializable {
+    def source[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallism: Int, description: String = null): Stream[T] = {
+      implicit val source = TraversableSource(traversable, parallism, Some(description).getOrElse("traversable"))
+      app.graph.addVertex(source)
+      new Stream[T](app.graph, source)
+    }
+    def readFromTimeReplayableSource[T: ClassTag](timeReplayableSource: TimeReplayableSource, converter: Message => T, batchSize: Int, parallism: Int, description: String = null): Stream[T] = {
+      this.source(new TimeReplayableProducer(timeReplayableSource, converter, batchSize), parallism, description)
+    }
+    def readFromKafka[T: ClassTag](kafkaConfig: KafkaConfig, converter: Message => T, parallism: Int, description: String = null): Stream[T] = {
+      this.source(new KafkaProducer(kafkaConfig, converter), parallism, description)
+    }
+  }
 }
+
+class TimeReplayableProducer[T:ClassTag](timeReplayableSource: TimeReplayableSource, converter: Message => T, batchSize: Int) extends Traverse[T] {
+  val source = timeReplayableSource
+  override def foreach[U](fun: T => U): Unit = {
+    val list = source.pull(batchSize)
+    list.foreach(msg => {
+      val metrics = converter(msg)
+      fun(metrics)
+    })
+  }
+}
+
+class KafkaProducer[T:ClassTag](kafkaConfig: KafkaConfig, converter: Message => T) extends Traverse[T] {
+  val batchSize = kafkaConfig.getConsumerEmitBatchSize
+  val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
+  lazy val source = new KafkaSource(kafkaConfig.getClientId, TaskId(0, 0), 1, kafkaConfig, msgDecoder)
+
+  override def foreach[U](fun: T => U): Unit = {
+    val list = source.pull(batchSize)
+    list.foreach(msg => {
+      val metrics = converter(msg)
+      fun(metrics)
+    })
+  }
+}
+
+class HBaseConsumer[T:ClassTag](config: Config, converter: Message => T) extends Traverse[T] {
+  val repo = new HBaseRepo {
+    def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
+  }
+  //val hbaseConsumer = HBaseConsumer(taskContext.system, Some(config))
+  //val hbase = hbaseConsumer.getHBase(repo)
+  override def foreach[U](fun: T => U): Unit = {
+//    val list = source.pull(batchSize)
+//    list.foreach(msg => {
+//      val metrics = converter(msg)
+//      fun(metrics)
+//    })
+  }
+}
+
+

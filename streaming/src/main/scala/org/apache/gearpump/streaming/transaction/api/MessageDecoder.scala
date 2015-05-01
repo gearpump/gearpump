@@ -37,6 +37,6 @@ object MessageDecoder {
  * It is usually written by end user and
  * passed into TimeReplayableSource
  */
-trait MessageDecoder {
+trait MessageDecoder extends java.io.Serializable {
   def fromBytes(bytes: Array[Byte]): Message
 }
