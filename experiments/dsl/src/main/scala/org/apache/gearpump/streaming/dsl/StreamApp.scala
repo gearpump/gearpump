@@ -25,12 +25,12 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseSink, HBaseSinkInterface, HBaseRepo}
 import org.apache.gearpump.streaming.StreamApplication
-import org.apache.gearpump.streaming.dsl.op.OpType.{Traverse, TraverseType}
+import org.apache.gearpump.streaming.dsl.op.OpType.{SinkClosure, Traverse, TraverseType}
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.Planner
 import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{TimeReplayableSource, MessageDecoder}
 import org.apache.gearpump.util.Graph
 import org.apache.hadoop.conf.Configuration
@@ -103,7 +103,10 @@ class TimeReplayableProducer[T:ClassTag](timeReplayableSource: TimeReplayableSou
 class KafkaProducer[T:ClassTag](kafkaConfig: KafkaConfig, converter: Message => T) extends Traverse[T] {
   val batchSize = kafkaConfig.getConsumerEmitBatchSize
   val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
-  lazy val source = new KafkaSource(kafkaConfig.getClientId, TaskId(0, 0), 1, kafkaConfig, msgDecoder)
+  lazy val source = Some(new KafkaSource(kafkaConfig.getClientId, TaskId(0, 0), 1, kafkaConfig, msgDecoder)).map(kafkaSource => {
+    kafkaSource.startFromBeginning
+    kafkaSource
+  }).get
 
   override def foreach[U](fun: T => U): Unit = {
     val list = source.pull(batchSize)
@@ -113,20 +116,4 @@ class KafkaProducer[T:ClassTag](kafkaConfig: KafkaConfig, converter: Message => 
     })
   }
 }
-
-class HBaseConsumer[T:ClassTag](config: Config, converter: Message => T) extends Traverse[T] {
-  val repo = new HBaseRepo {
-    def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
-  }
-  //val hbaseConsumer = HBaseConsumer(taskContext.system, Some(config))
-  //val hbase = hbaseConsumer.getHBase(repo)
-  override def foreach[U](fun: T => U): Unit = {
-//    val list = source.pull(batchSize)
-//    list.foreach(msg => {
-//      val metrics = converter(msg)
-//      fun(metrics)
-//    })
-  }
-}
-
 

@@ -18,14 +18,18 @@
 
 package org.apache.gearpump.streaming.dsl
 
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.dsl.op.OpType.Closure
+import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseRepo, HBaseSink, HBaseSinkInterface}
+import org.apache.gearpump.streaming.dsl.op.OpType._
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
-import org.apache.gearpump.util.Graph
-import org.slf4j.LoggerFactory
+import org.apache.gearpump.util.{Graph, LogUtil}
+import org.apache.hadoop.conf.Configuration
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNode:Op, private val edge: Option[OpEdge] = None) {
 
@@ -177,16 +181,54 @@ object Stream {
   implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = new KVStream(stream)
 
   implicit class Sink[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
-
-    def sink(closure: Closure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
-      val sinkOp = SinkOp(closure, parallelism, Option(description).getOrElse("sink"))
-      stream.graph.addVertex(sinkOp)
-      stream.graph.addEdge(stream.thisNode, Shuffle, sinkOp)
-      new Stream[T](stream.graph, sinkOp)
+    def sink[M[_] <: SinkConsumer[_], T: ClassTag](sinkConsumer: M[T], parallism: Int, description: String = null): Stream[T] = {
+      implicit val sink = TraversableSink(sinkConsumer, parallism, Some(description).getOrElse("traversable"))
+      stream.graph.addVertex(sink)
+      stream.graph.addEdge(stream.thisNode, Shuffle, sink)
+      new Stream[T](stream.graph, sink)
     }
-    def writeToHBase(closure: Closure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
-      sink(closure, parallelism, description)
+
+    def writeToSink(config: Config, sinkClosure: SinkClosure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
+      this.sink(new SinkConsumer(config, sinkClosure), parallelism, description)
+    }
+
+    def writeToHBase(config: Config, sinkClosure: SinkClosure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
+      this.sink(new HBaseSinkConsumer(config, sinkClosure), parallelism, description)
     }
   }
-
 }
+
+class SinkConsumer[T:ClassTag](config: Config, sinkClosure: SinkClosure[T]) extends java.io.Serializable {
+  val LOG: Logger = LogUtil.getLogger(getClass)
+  def process(taskContext: TaskContext, userConfig: UserConfig): T => Unit = {
+    Try({
+      sinkClosure(null, null)
+    }) match {
+      case Success(success) =>
+        success
+      case Failure(ex) =>
+        LOG.error("Failed to call sink closure", ex)
+        dummy: T => {}
+    }
+  }
+}
+
+class HBaseSinkConsumer[T: ClassTag](config: Config, sinkClosure: SinkClosure[T]) extends SinkConsumer[T](config, sinkClosure) {
+  val repo = new HBaseRepo {
+    def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
+  }
+  override def process(taskContext: TaskContext, userConfig: UserConfig): T => Unit = {
+    Try({
+      val hbaseConsumer = HBaseConsumer(taskContext.system, Some(config))
+      val hbase = hbaseConsumer.getHBase(repo)
+      sinkClosure(hbase, hbaseConsumer)
+    }) match {
+      case Success(success) =>
+        success
+      case Failure(ex) =>
+        LOG.error("Failed to call sink closure", ex)
+        dummy: T => {}
+    }
+  }
+}
+

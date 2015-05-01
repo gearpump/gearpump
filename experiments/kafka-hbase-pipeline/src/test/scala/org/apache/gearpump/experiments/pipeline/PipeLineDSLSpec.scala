@@ -21,16 +21,15 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.experiments.hbase.HBaseSinkInterface
+import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseSinkInterface}
 import org.apache.gearpump.experiments.pipeline.Messages._
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.streaming.dsl.op.OpType._
-import org.apache.gearpump.streaming.dsl.op.SinkOp
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator.SinkTask
+import org.apache.gearpump.streaming.dsl.{SinkConsumer, StreamApp}
 import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskContext, TaskId}
+import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.scalatest.prop.PropertyChecks
@@ -82,11 +81,13 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
   val PROCESSORS = "pipeline.processors"
   val PERSISTORS = "pipeline.persistors"
   val pipeLinePath = "conf/pipeline.conf.template"
-  val pipeLineConfig = PipeLineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
+  val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
+  val kafkaConfig = KafkaConfig(pipeLineConfig)
+
 
   property("StreamApp should allow UserConfig and ClusterConfig") {
-    val persistors = pipeLineConfig.config.getInt(PERSISTORS)
-    val kafkaConfig = KafkaConfig(pipeLineConfig.config)
+    val persistors = pipeLineConfig.getInt(PERSISTORS)
+    val kafkaConfig = KafkaConfig(pipeLineConfig)
     val context = ClientContext()
     implicit val system = context.system
     val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig)
@@ -118,27 +119,17 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
           average.average(datum, now)
         })
       }
-    })()).sink((taskContext, userConfig) => {
-      val LOG: Logger = LogUtil.getLogger(taskContext.getClass)
-      val hbase = new HBaseSinkInterface {
-        def insert(rowKey: Array[Byte], columnGroup: Array[Byte], columnName: Array[Byte], value: Array[Byte]): Unit = {}
-        def insert(rowKey: String, columnGroup: String, columnName: String, value: String): Unit = {
-          LOG.info(s"value=$value")
-        }
-        def close(): Unit = {}
+    })()).writeToHBase(pipeLineConfig, (sinkInterface: HBaseSinkInterface, hbaseConsumer: HBaseConsumer) => {
+      metrics: Array[Datum] => {
+        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
+        LOG.info("writing-to-HBase")
       }
-      def hbaseSink(hbase: HBaseSinkInterface)(metrics: Array[Datum]): Unit = {
-        metrics.foreach(datum => {
-          hbase.insert(System.currentTimeMillis.toString, "pipeline", "pipeline", datum.value.toString)
-        })
-      }
-      hbaseSink(hbase)
     })
     val graphVertices = List(
       "org.apache.gearpump.streaming.dsl.op.TraversableSource",
       "org.apache.gearpump.streaming.dsl.op.FlatMapOp",
       "org.apache.gearpump.streaming.dsl.op.ReduceOp",
-      "org.apache.gearpump.streaming.dsl.op.SinkOp"
+      "org.apache.gearpump.streaming.dsl.op.TraversableSink"
     )
     var i = 0
     app.graph.vertices.foreach(op => {
@@ -155,18 +146,19 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
     val data = Array[Datum](Datum("CPU", "total", 1.401257775E7))
     val expected = Message(data)
     var called = false
-    val closure: Closure[Array[Datum]] = (taskContext: TaskContext, userConfig: UserConfig) => {
+    val sinkClosure: SinkClosure[Array[Datum]] = (sinkInterface: HBaseSinkInterface, hbaseConsumer: HBaseConsumer) => {
       metrics: Array[Datum] => {
+        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
+        LOG.info("writing-to-HBase")
         called = true
       }
     }
-    val sinkOp = SinkOp(closure, 1, "sink")
+    val sinkOp = new SinkConsumer(pipeLineConfig, sinkClosure)
     val task = new SinkTask(Some(sinkOp), taskContext, conf)
     task.onStart(StartTime(0))
     task.onNext(expected)
     taskContext.output(expected)
     assert(called)
-
   }
   property("StreamApp should readFromReplayableSource -> flatMap -> map -> sink") {
     val context = ClientContext()
@@ -188,7 +180,7 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
         }
       }))
     }).map((() => {
-      val average = TAverage(pipeLineConfig.config.getInt(CPU_INTERVAL))
+      val average = TAverage(pipeLineConfig.getInt(CPU_INTERVAL))
       val LOG: Logger = LogUtil.getLogger(average.getClass)
       msg: Array[Datum] => {
         val now = System.currentTimeMillis
@@ -201,10 +193,10 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
           data
         })
       }
-    })()).sink((taskContext, userConfig) => {
+    })()).writeToHBase(pipeLineConfig, (sinkInterface: HBaseSinkInterface, hbaseConsumer: HBaseConsumer) => {
       metrics: Array[Datum] => {
         val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-        LOG.info("CPU Point 1")
+        LOG.info("writing-to-HBase")
       }
     })
 
@@ -218,7 +210,7 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
         }
       }))
     }).map((() => {
-      val average = TAverage(pipeLineConfig.config.getInt(MEM_INTERVAL))
+      val average = TAverage(pipeLineConfig.getInt(MEM_INTERVAL))
       val LOG: Logger = LogUtil.getLogger(average.getClass)
       msg: Array[Datum] => {
         val now = System.currentTimeMillis
@@ -232,18 +224,14 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
           data
         })
       }
-    })()).sink((taskContext, userConfig) => {
+    })()).writeToHBase(pipeLineConfig, (sinkInterface: HBaseSinkInterface, hbaseConsumer: HBaseConsumer) => {
       metrics: Array[Datum] => {
         val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-        LOG.info("MEM Point 1")
+        LOG.info("writing-to-HBase")
       }
     })
   }
   property("StreamApp should readFromKafka") {
-    val pipeLinePath = "conf/pipeline.conf.template"
-    val pipelineConfig = PipeLineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
-    val kafkaConfig = KafkaConfig(pipelineConfig.config)
-
     val context = ClientContext()
     val app = StreamApp("PipeLineDSL", context)
     val producer = app.readFromKafka(kafkaConfig, msg => {
@@ -261,34 +249,24 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
         }
       }))
     }).reduce((() => {
-      val average = TAverage(pipelineConfig.config.getInt(CPU_INTERVAL))
+      val average = TAverage(pipeLineConfig.getInt(CPU_INTERVAL))
       (msg1: Array[Datum], msg2: Array[Datum]) => {
         val now = System.currentTimeMillis
         msg2.flatMap(datum => {
           average.average(datum, now)
         })
       }
-    })()).sink((taskContext, userConfig) => {
-      val LOG: Logger = LogUtil.getLogger(taskContext.getClass)
-      val hbase = new HBaseSinkInterface {
-        def insert(rowKey: Array[Byte], columnGroup: Array[Byte], columnName: Array[Byte], value: Array[Byte]): Unit = {}
-        def insert(rowKey: String, columnGroup: String, columnName: String, value: String): Unit = {
-          LOG.info(s"value=$value")
-        }
-        def close(): Unit = {}
+    })()).writeToHBase(pipeLineConfig, (sinkInterface: HBaseSinkInterface, hbaseConsumer: HBaseConsumer) => {
+      metrics: Array[Datum] => {
+        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
+        LOG.info("writing-to-HBase")
       }
-      def hbaseSink(hbase: HBaseSinkInterface)(metrics: Array[Datum]): Unit = {
-        metrics.foreach(datum => {
-          hbase.insert(System.currentTimeMillis.toString, "pipeline", "pipeline", datum.value.toString)
-        })
-      }
-      hbaseSink(hbase)
     })
     val graphVertices = List(
       "org.apache.gearpump.streaming.dsl.op.TraversableSource",
       "org.apache.gearpump.streaming.dsl.op.FlatMapOp",
       "org.apache.gearpump.streaming.dsl.op.ReduceOp",
-      "org.apache.gearpump.streaming.dsl.op.SinkOp"
+      "org.apache.gearpump.streaming.dsl.op.TraversableSink"
     )
     var i = 0
     app.graph.vertices.foreach(op => {

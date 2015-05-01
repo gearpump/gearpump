@@ -58,7 +58,7 @@ trait HBaseRepo extends java.io.Serializable {
   def getHBase(table:String, conf: Configuration): HBaseSinkInterface
 }
 
-class HBaseConsumer(sys: ActorSystem, hbaseConfig: Option[Config]) {
+class HBaseConsumer(sys: ActorSystem, hbaseConfig: Option[Config]) extends java.io.Serializable {
   protected implicit val system: ActorSystem = sys
   val ZOOKEEPER = "hbase.zookeeper.connect"
   val TABLE_NAME = "hbase.table.name"
