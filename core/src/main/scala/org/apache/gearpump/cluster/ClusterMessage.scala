@@ -28,7 +28,7 @@ import org.apache.gearpump.metrics.Metrics._
 import upickle._
 
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{Success, Try}
 
 /**
  * Cluster Bootup Flow
@@ -69,6 +69,7 @@ object ClientToMaster {
 
 object MasterToClient {
   case class SubmitApplicationResult(appId : Try[Int])
+  case class SubmitApplicationResultValue(appId: Int)
   case class ShutdownApplicationResult(appId : Try[Int])
   case class ReplayApplicationResult(appId: Try[Int])
   case class ResolveAppIdResult(appMaster: Try[ActorRef])

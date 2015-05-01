@@ -19,12 +19,12 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.ActorSystem
-import org.apache.gearpump.cluster.{ApplicationMaster, ClusterConfig, Application, AppDescription, ClusterConfigSource, UserConfig}
+import org.apache.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.task.Task
+import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Graph, ReferenceEqual}
-import upickle.{Writer, Js}
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -41,9 +41,9 @@ trait Processor[+T <: Task] {
 }
 
 object Processor {
-  implicit def ProcessorToProcessorDescription[T <: Task](processor: Processor[T]): ProcessorDescription = {
-    import processor.{_}
-    ProcessorDescription(processor.taskClass.getName, parallelism, description, taskConf)
+  implicit def ProcessorToProcessorDescription(processor: Processor[_ <: Task]): ProcessorDescription = {
+    import processor._
+    ProcessorDescription(taskClass.getName, parallelism, description, taskConf)
   }
 
   def apply[T<: Task](parallelism : Int, description: String = "", taskConf: UserConfig = UserConfig.empty)(implicit classtag: ClassTag[T]): DefaultProcessor[T] = {
@@ -77,8 +77,26 @@ class StreamApplication(override val name : String,  inputUserConfig: UserConfig
 object StreamApplication {
 
   def apply (name : String, dag: Graph[_ <: Processor[Task], _ <: Partitioner], userConfig: UserConfig): StreamApplication = {
-    val graph = dag.mapVertex(Processor.ProcessorToProcessorDescription(_))
+    import Processor._
+    val graph = dag.mapVertex(ProcessorToProcessorDescription)
     new StreamApplication(name, userConfig, graph)
+  }
+
+  def apply (name : String, jarName: String, processors: Map[ProcessorId, ProcessorDescription], dag: Graph[Int, String]): StreamApplication = {
+    val graph = Graph.empty[ProcessorDescription, Partitioner]
+    dag.vertices.foreach(vertex => {
+      graph.addVertex(processors(vertex))
+    })
+    dag.edges.foreach(triple => {
+      val (p1, ptype, p2) = triple
+      graph.addEdge(processors(p1), Class.forName(ptype).newInstance.asInstanceOf[Partitioner], processors(p2))
+    })
+    Option(jarName) match {
+      case Some(jar) =>
+        System.setProperty(GEARPUMP_APP_JAR, jarName)
+      case None =>
+    }
+    new StreamApplication(name, UserConfig.empty, graph)
   }
 
   val DAG = "DAG"
