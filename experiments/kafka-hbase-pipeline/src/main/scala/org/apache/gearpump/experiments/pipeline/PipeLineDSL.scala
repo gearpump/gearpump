@@ -23,7 +23,6 @@ import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.experiments.hbase.HBaseSink._
 import org.apache.gearpump.experiments.hbase._
 import org.apache.gearpump.experiments.pipeline.Messages._
 import org.apache.gearpump.streaming.dsl.StreamApp
@@ -31,7 +30,6 @@ import org.apache.gearpump.streaming.dsl.StreamApp._
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
 import org.apache.gearpump.util.{Constants, LogUtil}
-import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 import upickle._
 
@@ -68,14 +66,28 @@ object PipeLineDSL extends App with ArgumentsParser {
   val context = ClientContext()
   implicit val system = context.system
 
+  //Override of Stream.Map[T].map[U]
+  import org.apache.gearpump.streaming.dsl.Stream
+  implicit class Map(stream: Stream[Array[Datum]]) extends java.io.Serializable {
+    def map(avg: TAverage, description: String = null): Stream[Array[Datum]] = {
+      val closure = (average: TAverage) => {
+        msg: Array[Datum] => {
+          val now = System.currentTimeMillis
+          Option(msg.flatMap(datum => {
+            average.average(datum, now)
+          }))
+        }
+      }
+      val result = closure(avg)
+      stream.flatMap(result(_) , Option(description).getOrElse("map"))
+    }
+  }
+
   def application(context: ClientContext, config: ParseResult): Unit = {
     val pipeLinePath = config.getString("conf")
     val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
     val kafkaConfig = KafkaConfig(pipeLineConfig)
-    val repo = new HBaseRepo {
-      def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
-    }
-    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig).withValue(HBASESINK, repo)
+    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig)
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
 
     val app = StreamApp("PipeLineDSL", context, appConfig)
@@ -94,21 +106,18 @@ object PipeLineDSL extends App with ArgumentsParser {
             None
         }
       }))
-    }).map((() => {
-      val average = TAverage(pipeLineConfig.getInt(CPU_INTERVAL))
-      msg: Array[Datum] => {
-        val now = System.currentTimeMillis
-        msg.flatMap(datum => {
-          average.average(datum, now)
-        })
-      }
-    })()).writeToHBase(pipeLineConfig, (sinkInterface:HBaseSinkInterface, hbaseConsumer:HBaseConsumer) => {
+    }).map(
+      TAverage(pipeLineConfig.getInt(CPU_INTERVAL))
+    ).writeToHBase(pipeLineConfig, (hbaseConsumer:HBaseConsumer) => {
       metrics:Array[Datum] => {
+        val now = System.currentTimeMillis.toString
+        val repo = HBaseRepo(hbaseConsumer.table,hbaseConsumer.hbaseConf)
         metrics.foreach(datum => {
-          sinkInterface.insert(System.currentTimeMillis.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](datum))
+          hbaseConsumer.getHBase(repo).insert(now, hbaseConsumer.family, hbaseConsumer.column, write[Datum](datum))
         })
       }
     })
+
     producer.flatMap(metrics => {
       Some(metrics.flatMap(datum => {
         datum.dimension match {
@@ -118,18 +127,14 @@ object PipeLineDSL extends App with ArgumentsParser {
             None
         }
       }))
-    }).map((() => {
-      val average = TAverage(pipeLineConfig.getInt(MEM_INTERVAL))
-      msg: Array[Datum] => {
-        val now = System.currentTimeMillis
-        msg.flatMap(datum => {
-          average.average(datum, now)
-        })
-      }
-    })()).writeToHBase(pipeLineConfig, (sinkInterface:HBaseSinkInterface, hbaseConsumer:HBaseConsumer) => {
+    }).map(
+      TAverage(pipeLineConfig.getInt(MEM_INTERVAL))
+    ).writeToHBase(pipeLineConfig, (hbaseConsumer:HBaseConsumer) => {
       metrics:Array[Datum] => {
+        val now = System.currentTimeMillis.toString
+        val repo = HBaseRepo(hbaseConsumer.table,hbaseConsumer.hbaseConf)
         metrics.foreach(datum => {
-          sinkInterface.insert(System.currentTimeMillis.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](datum))
+          hbaseConsumer.getHBase(repo).insert(now, hbaseConsumer.family, hbaseConsumer.column, write[Datum](datum))
         })
       }
     })

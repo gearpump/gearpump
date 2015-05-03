@@ -19,22 +19,18 @@
 package org.apache.gearpump.streaming.dsl
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseSink, HBaseSinkInterface, HBaseRepo}
 import org.apache.gearpump.streaming.StreamApplication
-import org.apache.gearpump.streaming.dsl.op.OpType.{SinkClosure, Traverse, TraverseType}
+import org.apache.gearpump.streaming.dsl.op.OpType.{Traverse, TraverseType}
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.Planner
 import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
-import org.apache.gearpump.streaming.transaction.api.{TimeReplayableSource, MessageDecoder}
+import org.apache.gearpump.streaming.task.TaskId
+import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource}
 import org.apache.gearpump.util.Graph
-import org.apache.hadoop.conf.Configuration
-import upickle._
 
 import scala.reflect.ClassTag
 
@@ -75,16 +71,16 @@ object StreamApp {
   }
 
   implicit class Source(app: StreamApp) extends java.io.Serializable {
-    def source[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallism: Int, description: String = null): Stream[T] = {
-      implicit val source = TraversableSource(traversable, parallism, Some(description).getOrElse("traversable"))
+    def source[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallelism: Int, description: String = null): Stream[T] = {
+      implicit val source = TraversableSource(traversable, parallelism, Some(description).getOrElse("traversable"))
       app.graph.addVertex(source)
       new Stream[T](app.graph, source)
     }
-    def readFromTimeReplayableSource[T: ClassTag](timeReplayableSource: TimeReplayableSource, converter: Message => T, batchSize: Int, parallism: Int, description: String = null): Stream[T] = {
-      this.source(new TimeReplayableProducer(timeReplayableSource, converter, batchSize), parallism, description)
+    def readFromTimeReplayableSource[T: ClassTag](timeReplayableSource: TimeReplayableSource, converter: Message => T, batchSize: Int, parallelism: Int, description: String = null): Stream[T] = {
+      this.source(new TimeReplayableProducer(timeReplayableSource, converter, batchSize), parallelism, description)
     }
-    def readFromKafka[T: ClassTag](kafkaConfig: KafkaConfig, converter: Message => T, parallism: Int, description: String = null): Stream[T] = {
-      this.source(new KafkaProducer(kafkaConfig, converter), parallism, description)
+    def readFromKafka[T: ClassTag](kafkaConfig: KafkaConfig, converter: Message => T, parallelism: Int, description: String = null): Stream[T] = {
+      this.source(new KafkaProducer(kafkaConfig, converter), parallelism, description)
     }
   }
 }

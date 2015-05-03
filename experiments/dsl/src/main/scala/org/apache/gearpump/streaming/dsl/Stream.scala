@@ -20,126 +20,167 @@ package org.apache.gearpump.streaming.dsl
 
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseRepo, HBaseSink, HBaseSinkInterface}
+import org.apache.gearpump.experiments.hbase.HBaseConsumer
 import org.apache.gearpump.streaming.dsl.op.OpType._
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.{Graph, LogUtil}
-import org.apache.hadoop.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
-class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNode:Op, private val edge: Option[OpEdge] = None) {
+case class Stream[+T:ClassTag](graph: Graph[Op,OpEdge], thisNode:Op, edge: Option[OpEdge] = None)
 
-  /**
-   * convert a value[T] to a list of value[R]
-   * @param fun function
-   * @param description the descripton message for this opeartion
-   * @tparam R return type
-   * @return
-   */
-  def flatMap[R: ClassTag](fun: T => TraversableOnce[R], description: String = null): Stream[R] = {
-    val flatMapOp = FlatMapOp(fun, Option(description).getOrElse("flatmap"))
-    graph.addVertex(flatMapOp )
-    graph.addEdge(thisNode, edge.getOrElse(Direct), flatMapOp)
-    new Stream[R](graph, flatMapOp)
+object Stream {
+
+  implicit class Filter[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
+    /**
+     * reserve records when fun(T) == true
+     * @param fun T => Boolean
+     * @return
+     */
+    def filter(fun: T => Boolean, description: String = null): Stream[T] = {
+      stream.flatMap({ data =>
+        if (fun(data)) Option(data) else None
+      }, Option(description).getOrElse("filter"))
+    }
   }
 
-  /**
-   * convert value[T] to value[R]
-   * @param fun function
-   * @tparam R return type
-   * @return
-   */
-  def map[R: ClassTag](fun: T => R, description: String = null): Stream[R] = {
-    this.flatMap ({ data =>
-      Option(fun(data))
-    }, Option(description).getOrElse("map"))
+  implicit class FlatMap[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
+    /**
+     * convert a value[T] to a list of value[R]
+     * @param fun T => TraversableOnce[R]
+     * @param description the descripton message for this opeartion
+     * @tparam R return type
+     * @return
+     */
+    def flatMap[R: ClassTag](fun: T => TraversableOnce[R], description: String = null): Stream[R] = {
+      val flatMapOp = FlatMapOp(fun, Option(description).getOrElse("flatmap"))
+      stream.graph.addVertex(flatMapOp)
+      stream.graph.addEdge(stream.thisNode, stream.edge.getOrElse(Direct), flatMapOp)
+      Stream[R](stream.graph, flatMapOp)
+    }
   }
 
-  /**
-   * reserve records when fun(T) == true
-   * @param fun
-   * @return
-   */
-  def filter(fun: T => Boolean, description: String = null): Stream[T] = {
-    this.flatMap ({ data =>
-      if (fun(data)) Option(data) else None
-    }, Option(description).getOrElse("filter"))
+  implicit class GroupBy[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
+    /**
+     * Group by fun(T)
+     *
+     * For example, we have T type, People(name: String, gender: String, age: Int)
+     * groupBy[People](_.gender) will group the people by gender.
+     *
+     * You can append other combinators after groupBy
+     *
+     * For example,
+     *
+     * Stream[People].groupBy(_.gender).flatmap(..).filter.(..).reduce(..)
+     *
+     * @param fun T => Group
+     * @param parallelism default 1
+     * @tparam Group group
+     * @return
+     */
+    def groupBy[Group](fun: T => Group, parallelism: Int = 1, description: String = null): Stream[T] = {
+      val groupOp = GroupByOp(fun, parallelism, Option(description).getOrElse("groupBy"))
+      stream.graph.addVertex(groupOp)
+      stream.graph.addEdge(stream.thisNode, stream.edge.getOrElse(Shuffle), groupOp)
+      Stream[T](stream.graph, groupOp)
+    }
   }
 
-  /**
-   * Reduce opeartion
-   * @param fun
-   * @param description description message for this operator
-   * @return
-   */
-  def reduce(fun: (T, T) => T, description: String = null): Stream[T] = {
-    val reduceOp = ReduceOp(fun, Option(description).getOrElse("reduce"))
-    graph.addVertex(reduceOp)
-    graph.addEdge(thisNode, edge.getOrElse(Direct), reduceOp)
-    new Stream(graph, reduceOp)
+  implicit class Log[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
+    /**
+     * Log to task log file
+     */
+    def log(): Unit = {
+      stream.map(msg => LoggerFactory.getLogger("dsl").info(msg.toString), "log")
+    }
   }
 
-  /**
-   * Log to task log file
-   */
-  def log(): Unit = {
-    this.map(msg => LoggerFactory.getLogger("dsl").info(msg.toString), "log")
+  implicit class Map[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
+    /**
+     * convert value[T] to value[R]
+     * @param fun function
+     * @tparam R return type
+     * @return
+     */
+    def map[R: ClassTag](fun: T => R, description: String = null): Stream[R] = {
+      stream.flatMap({ data =>
+        Option(fun(data))
+      }, Option(description).getOrElse("map"))
+    }
   }
 
-  /**
-   * Merge data from two stream into one
-   * @param other
-   * @return
-   */
-  def merge(other: Stream[T], description: String = null): Stream[T] = {
-    val mergeOp = MergeOp(thisNode, other.thisNode, Option(description).getOrElse("merge"))
-    graph.addVertex(mergeOp)
-    graph.addEdge(thisNode, edge.getOrElse(Direct), mergeOp)
-    graph.addEdge(other.thisNode, other.edge.getOrElse(Shuffle), mergeOp)
-    new Stream[T](graph, mergeOp)
+  implicit class Merge[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
+    /**
+     * Merge data from two stream into one
+     * @param other Stream[T]
+     * @return
+     */
+    def merge(other: Stream[T], description: String = null): Stream[T] = {
+      val mergeOp = MergeOp(stream.thisNode, other.thisNode, Option(description).getOrElse("merge"))
+      stream.graph.addVertex(mergeOp)
+      stream.graph.addEdge(stream.thisNode, stream.edge.getOrElse(Direct), mergeOp)
+      stream.graph.addEdge(other.thisNode, other.edge.getOrElse(Shuffle), mergeOp)
+      Stream[T](stream.graph, mergeOp)
+    }
   }
 
-  /**
-   * Group by fun(T)
-   *
-   * For example, we have T type, People(name: String, gender: String, age: Int)
-   * groupBy[People](_.gender) will group the people by gender.
-   *
-   * You can append other combinators after groupBy
-   *
-   * For example,
-   *
-   * Stream[People].groupBy(_.gender).flatmap(..).filter.(..).reduce(..)
-   *
-   * @param fun
-   * @param parallism
-   * @tparam Group
-   * @return
-   */
-  def groupBy[Group](fun: T => Group, parallism: Int = 1, description: String = null): Stream[T] = {
-    val groupOp = GroupByOp(fun, parallism, Option(description).getOrElse("groupBy"))
-    graph.addVertex(groupOp)
-    graph.addEdge(thisNode, edge.getOrElse(Shuffle), groupOp)
-    new Stream[T](graph, groupOp)
+  implicit class Process[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
+    /**
+     * connect with a low level Processor(TaskDescription)
+     * @param processor subclass of Task
+     * @param parallelism concurrent Tasks
+     * @tparam R new type
+     * @return
+     */
+    def process[R: ClassTag](processor: Class[_ <: Task], parallelism: Int, description: String = null): Stream[R] = {
+      val processorOp = ProcessorOp(processor, parallelism, Option(description).getOrElse("process"))
+      stream.graph.addVertex(processorOp)
+      stream.graph.addEdge(stream.thisNode, stream.edge.getOrElse(Shuffle), processorOp)
+      Stream[R](stream.graph, processorOp, Some(Shuffle))
+    }
   }
 
-  /**
-   * connect with a low level Processor(TaskDescription)
-   * @param processor
-   * @param parallism
-   * @tparam R
-   * @return
-   */
-  def process[R: ClassTag](processor: Class[_ <: Task], parallism: Int, description: String = null): Stream[R] = {
-    val processorOp = ProcessorOp(processor, parallism, Option(description).getOrElse("process"))
-    graph.addVertex(processorOp)
-    graph.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
-    new Stream[R](graph, processorOp, Some(Shuffle))
+  implicit class Reduce[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
+    /**
+     * Reduce opeartion
+     * @param fun input function
+     * @param description description message for this operator
+     * @return
+     */
+    def reduce(fun: (T, T) => T, description: String = null): Stream[T] = {
+      val reduceOp = ReduceOp(fun, Option(description).getOrElse("reduce"))
+      stream.graph.addVertex(reduceOp)
+      stream.graph.addEdge(stream.thisNode, stream.edge.getOrElse(Direct), reduceOp)
+      Stream(stream.graph, reduceOp)
+    }
   }
+
+  implicit class Sink[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
+    def sink[M[_] <: SinkConsumer[_]](sinkConsumer: M[T], parallelism: Int, description: String = null): Stream[T] = {
+      implicit val sink = TraversableSink(sinkConsumer, parallelism, Some(description).getOrElse("traversable"))
+      stream.graph.addVertex(sink)
+      stream.graph.addEdge(stream.thisNode, Shuffle, sink)
+      Stream[T](stream.graph, sink)
+    }
+
+    def writeToSink(config: Config, sinkClosure: SinkClosure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
+      this.sink(new SinkConsumer(config, sinkClosure), parallelism, description)
+    }
+
+    def writeToHBase(config: Config, sinkClosure: SinkClosure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
+      this.sink(new HBaseSinkConsumer(config, sinkClosure), parallelism, description)
+    }
+  }
+
+  def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
+
+  def sumByValue[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V]
+  = (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
+
+  implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = new KVStream(stream)
 
 }
 
@@ -150,8 +191,8 @@ class KVStream[K, V](stream: Stream[Tuple2[K, V]]){
    * For (key, value) will groupby key
    * @return
    */
-  def groupByKey(parallism: Int = 1): Stream[Tuple2[K, V]] = {
-    stream.groupBy(Stream.getTupleKey[K, V], parallism, "groupByKey")
+  def groupByKey(parallelism: Int = 1): Stream[Tuple2[K, V]] = {
+    stream.groupBy(Stream.getTupleKey[K, V], parallelism, "groupByKey")
   }
 
 
@@ -169,40 +210,12 @@ class KVStream[K, V](stream: Stream[Tuple2[K, V]]){
   }
 }
 
-object Stream {
-
-  def apply[T: ClassTag](graph: Graph[Op, OpEdge], node: Op, edge: Option[OpEdge]) = new Stream[T](graph, node, edge)
-
-  def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
-
-  def sumByValue[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V]
-  = (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
-
-  implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = new KVStream(stream)
-
-  implicit class Sink[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
-    def sink[M[_] <: SinkConsumer[_], T: ClassTag](sinkConsumer: M[T], parallism: Int, description: String = null): Stream[T] = {
-      implicit val sink = TraversableSink(sinkConsumer, parallism, Some(description).getOrElse("traversable"))
-      stream.graph.addVertex(sink)
-      stream.graph.addEdge(stream.thisNode, Shuffle, sink)
-      new Stream[T](stream.graph, sink)
-    }
-
-    def writeToSink(config: Config, sinkClosure: SinkClosure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
-      this.sink(new SinkConsumer(config, sinkClosure), parallelism, description)
-    }
-
-    def writeToHBase(config: Config, sinkClosure: SinkClosure[T], parallelism: Int = 1, description: String = null): Stream[T] = {
-      this.sink(new HBaseSinkConsumer(config, sinkClosure), parallelism, description)
-    }
-  }
-}
 
 class SinkConsumer[T:ClassTag](config: Config, sinkClosure: SinkClosure[T]) extends java.io.Serializable {
   val LOG: Logger = LogUtil.getLogger(getClass)
   def process(taskContext: TaskContext, userConfig: UserConfig): T => Unit = {
     Try({
-      sinkClosure(null, null)
+      sinkClosure(null)
     }) match {
       case Success(success) =>
         success
@@ -214,14 +227,9 @@ class SinkConsumer[T:ClassTag](config: Config, sinkClosure: SinkClosure[T]) exte
 }
 
 class HBaseSinkConsumer[T: ClassTag](config: Config, sinkClosure: SinkClosure[T]) extends SinkConsumer[T](config, sinkClosure) {
-  val repo = new HBaseRepo {
-    def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
-  }
   override def process(taskContext: TaskContext, userConfig: UserConfig): T => Unit = {
     Try({
-      val hbaseConsumer = HBaseConsumer(taskContext.system, Some(config))
-      val hbase = hbaseConsumer.getHBase(repo)
-      sinkClosure(hbase, hbaseConsumer)
+      sinkClosure(HBaseConsumer(Some(config)))
     }) match {
       case Success(success) =>
         success

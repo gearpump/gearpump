@@ -22,6 +22,7 @@ import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.streaming.dsl.StreamApp._
 
+
 object WordCount extends App with ArgumentsParser{
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty

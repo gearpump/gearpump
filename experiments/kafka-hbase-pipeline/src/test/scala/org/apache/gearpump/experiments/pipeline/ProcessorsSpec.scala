@@ -61,16 +61,8 @@ object Processors {
       stripMargin
   val hbaseCPU = Mockito.mock(classOf[HBaseSinkInterface])
   val hbaseMEM = Mockito.mock(classOf[HBaseSinkInterface])
-  val repoCPU = new HBaseRepo {
-    def getHBase(table:String, conf:Configuration): HBaseSinkInterface = hbaseCPU
-  }
-  val repoMEM = new HBaseRepo {
-    def getHBase(table:String, conf:Configuration): HBaseSinkInterface = hbaseMEM
-  }
   val pipelineConfig = PipeLineConfig(ConfigFactory.parseString(pipelineConfigText))
   val userConfig = UserConfig.empty.withValue(PIPELINE, pipelineConfig)
-  val cpuConfig = userConfig.withValue(HBASESINK,repoCPU)
-  val memoryConfig = userConfig.withValue(HBASESINK,repoMEM)
 
   val data = Array[String](
     """
@@ -154,7 +146,7 @@ class CpuPersistorSpec extends PropSpec with PropertyChecks with Matchers with B
   import Processors._
 
   val context = MockUtil.mockTaskContext
-  val cpuPersistor = new CpuPersistor(context, cpuConfig)
+  val cpuPersistor = new CpuPersistor(context, userConfig, Some(hbaseCPU))
 
   property("CpuPersistor should call HBaseSinkInterface.insert(\"1428004406134\", \"metrics\", \"average\", \"{\"dimension\":\"CPU\",\"metric\":\"total\",\"value\":27993997}\"") {
     val metrics = getMetrics(data(0))
@@ -174,7 +166,7 @@ class MemoryPersistorSpec extends PropSpec with PropertyChecks with Matchers wit
   import Processors._
 
   val context = MockUtil.mockTaskContext
-  val memoryPersistor = new MemoryPersistor(context, memoryConfig)
+  val memoryPersistor = new MemoryPersistor(context, userConfig, Some(hbaseMEM))
 
   property("MemoryPersistor should call HBaseSinkInterface.insert(\"1428004406134\", \"metrics\", \"average\", \"{\"dimension\":\"CPU\",\"metric\":\"total\",\"value\":27993997}\"") {
     val metrics = getMetrics(data(0))

@@ -65,7 +65,7 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with Mo
     val stream = app.source(data.lines.toList, 1).
       flatMap(line => line.split("[\\s]+")).filter(_.nonEmpty).
       map(word => (word, 1)).
-      groupBy(_._1, parallism = 2).
+      groupBy(_._1, parallelism = 2).
       reduce((left, right) => (left._1, left._2 + right._2)).
       map[Either[(String, Int), String]](Left(_))
 

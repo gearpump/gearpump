@@ -50,20 +50,20 @@ class OpTranslator extends java.io.Serializable {
         val userConfig = UserConfig.empty.withValue(GEARPUMP_STREAMING_OPERATOR, func)
 
         op match {
-          case TraversableSource(traversable, parallism, description) =>
-            Processor[SourceTask[Object, Object]](parallism,
+          case TraversableSource(traversable, parallelism, description) =>
+            Processor[SourceTask[Object, Object]](parallelism,
               description = description + "." + func.description,
               taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, traversable))
-          case groupby@ GroupByOp(_, parallism, description) =>
-            Processor[GroupByTask[Object, Object, Object]](parallism,
+          case groupby@ GroupByOp(_, parallelism, description) =>
+            Processor[GroupByTask[Object, Object, Object]](parallelism,
               description = description + "." + func.description,
               taskConf = userConfig.withValue(GEARPUMP_STREAMING_GROUPBY_FUNCTION, groupby))
           case merge: MergeOp =>
             Processor[TransformTask[Object, Object]](1,
               description = op.description + "." + func.description,
               taskConf = userConfig)
-          case ProcessorOp(processor, parallism, description) =>
-            DefaultProcessor(parallism,
+          case ProcessorOp(processor, parallelism, description) =>
+            DefaultProcessor(parallelism,
               description = description + "." + func.description,
               taskConf = null, processor)
           case TraversableSink(sinkConsumer, parallelism, description) =>
