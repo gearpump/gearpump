@@ -33,7 +33,7 @@ object OpType {
     def foreach[U](t: T => U): Unit
   }
 
-  type SinkClosure[T] = (HBaseSinkInterface,HBaseConsumer) => (T => Unit)
+  type SinkClosure[T] = HBaseConsumer => (T => Unit)
 
 }
 
@@ -61,9 +61,9 @@ trait ParameterizedOp[T] extends MasterOp
 
 case class MergeOp(source: Op, target: Op, description: String) extends MasterOp
 
-case class GroupByOp[T: ClassTag, R](fun: T => R, parallism: Int, description: String) extends ParameterizedOp[T]
+case class GroupByOp[T: ClassTag, R](fun: T => R, parallelism: Int, description: String) extends ParameterizedOp[T]
 
-case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int, description: String) extends ParameterizedOp[T]
+case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallelism: Int, description: String) extends ParameterizedOp[T]
 
 case class TraversableSource[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallelism: Int, description: String) extends ParameterizedOp[T]
 

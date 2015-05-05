@@ -21,7 +21,6 @@ package org.apache.gearpump.experiments.pipeline
 import com.typesafe.config.Config
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.hbase.HBaseSink._
 import org.apache.gearpump.experiments.hbase._
 import org.apache.gearpump.experiments.pipeline.Messages._
 import org.apache.gearpump.streaming.kafka.KafkaSource
@@ -161,13 +160,16 @@ class MemoryProcessor(taskContext: TaskContext, conf: UserConfig)
   }
 }
 
-class CpuPersistor(taskContext : TaskContext, conf: UserConfig)
+class CpuPersistor(taskContext : TaskContext, conf: UserConfig, hbaseSink: Option[HBaseSinkInterface])
   extends Task(taskContext, conf) {
+
+  def this(taskContext : TaskContext, conf: UserConfig) = {
+    this(taskContext, conf, None)
+  }
 
   def userConf = conf
   val pipeLineConfig: PipeLineConfig = userConf.getValue[PipeLineConfig](PIPELINE).get
-  val hbaseConsumer = HBaseConsumer(taskContext.system, Some(pipeLineConfig.config))
-  lazy val hbase = hbaseConsumer.getHBase(userConf.getValue[HBaseRepo](HBASESINK).get)
+  val hbaseConsumer = HBaseConsumer(Some(pipeLineConfig.config))
 
   override def onStart(newStartTime: StartTime): Unit = {
     LOG.info("starting")
@@ -176,21 +178,25 @@ class CpuPersistor(taskContext : TaskContext, conf: UserConfig)
   override def onNext(msg: Message): Unit = {
     Try({
       val cpus = read[Array[Datum]](msg.msg.asInstanceOf[String])
+      val repo = HBaseRepo(hbaseConsumer.table, hbaseConsumer.hbaseConf, hbaseSink)
       cpus.foreach(cpu => {
-        hbase.insert(msg.timestamp.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](cpu))
+        hbaseConsumer.getHBase(repo).insert(msg.timestamp.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](cpu))
       })
     }).failed.foreach(LOG.error("bad message", _))
   }
 
 }
 
-class MemoryPersistor(taskContext : TaskContext, conf: UserConfig)
+class MemoryPersistor(taskContext : TaskContext, conf: UserConfig, hbaseSink: Option[HBaseSinkInterface])
   extends Task(taskContext, conf) {
+
+  def this(taskContext : TaskContext, conf: UserConfig) = {
+    this(taskContext, conf, None)
+  }
 
   def userConf = conf
   val pipeLineConfig: PipeLineConfig = userConf.getValue[PipeLineConfig](PIPELINE).get
-  val hbaseConsumer = HBaseConsumer(taskContext.system, Some(pipeLineConfig.config))
-  lazy val hbase = hbaseConsumer.getHBase(userConf.getValue[HBaseRepo](HBASESINK).get)
+  val hbaseConsumer = HBaseConsumer(Some(pipeLineConfig.config))
 
   override def onStart(newStartTime: StartTime): Unit = {
     LOG.info("starting")
@@ -199,8 +205,9 @@ class MemoryPersistor(taskContext : TaskContext, conf: UserConfig)
   override def onNext(msg: Message): Unit = {
     Try({
       val memories = read[Array[Datum]](msg.msg.asInstanceOf[String])
+      val repo = HBaseRepo(hbaseConsumer.table, hbaseConsumer.hbaseConf, hbaseSink)
       memories.foreach(memory => {
-        hbase.insert(msg.timestamp.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](memory))
+        hbaseConsumer.getHBase(repo).insert(msg.timestamp.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](memory))
       })
     }).failed.foreach(LOG.error("bad message", _))
   }

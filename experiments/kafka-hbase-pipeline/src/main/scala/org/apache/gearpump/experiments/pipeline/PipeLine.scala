@@ -48,10 +48,7 @@ object PipeLine extends App with ArgumentsParser {
     val processors = pipelineConfig.config.getInt(PROCESSORS)
     val persistors = pipelineConfig.config.getInt(PERSISTORS)
     val kafkaConfig = KafkaConfig(pipelineConfig.config)
-    val repo = new HBaseRepo {
-      def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
-    }
-    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipelineConfig).withValue(HBASESINK, repo)
+    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipelineConfig)
     val partitioner = new HashPartitioner
     val kafka = Processor[KafkaProducer](1, "KafkaProducer")
     val cpuProcessor = Processor[CpuProcessor](processors, "CpuProcessor")

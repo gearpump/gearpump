@@ -17,7 +17,6 @@
  */
 package org.apache.gearpump.experiments.hbase
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client.{HTable, Put}
@@ -49,22 +48,42 @@ class HBaseSink(tableName: String, hbaseConf: Configuration = new Configuration)
 }
 
 object HBaseSink {
-  val HBASESINK = "hbasesink"
-  def apply(tableName: String): HBaseSink = new HBaseSink(tableName)
-  def apply(tableName: String, hbaseConf: Configuration): HBaseSink = new HBaseSink(tableName, hbaseConf)
-}
-
-trait HBaseRepo extends java.io.Serializable {
-  def getHBase(table:String, conf: Configuration): HBaseSinkInterface
-}
-
-class HBaseConsumer(sys: ActorSystem, hbaseConfig: Option[Config]) extends java.io.Serializable {
-  protected implicit val system: ActorSystem = sys
   val ZOOKEEPER = "hbase.zookeeper.connect"
   val TABLE_NAME = "hbase.table.name"
   val COLUMN_FAMILY = "hbase.table.column.family"
   val COLUMN_NAME = "hbase.table.column.name"
   val HBASE_ZOOKEEPER = "hbase.zookeeper.quorum"
+  def apply(tableName: String): HBaseSinkInterface = new HBaseSink(tableName)
+  def apply(tableName: String, hbaseConf: Configuration, test: Boolean = false): HBaseSinkInterface = {
+     test match {
+      case true =>
+        new HBaseSinkInterface() {
+          def insert(rowKey: Array[Byte], columnGroup: Array[Byte], columnName: Array[Byte], value: Array[Byte]): Unit = {}
+          def insert(rowKey: String, columnGroup: String, columnName: String, value: String): Unit = {}
+          def close(): Unit = {}
+        }
+      case false =>
+        new HBaseSink(tableName, hbaseConf)
+     }
+  }
+
+}
+
+class HBaseRepo(table: String, conf:Configuration, hbaseSink: Option[HBaseSinkInterface]) extends java.io.Serializable {
+  val hbase: HBaseSinkInterface = hbaseSink match {
+    case Some(hbaseSink) =>
+      hbaseSink
+    case None =>
+      HBaseSink(table, conf)
+  }
+}
+
+object HBaseRepo {
+  def apply(table:String, conf:Configuration, hbaseSink: Option[HBaseSinkInterface] = None) = new HBaseRepo(table, conf, hbaseSink)
+}
+
+class HBaseConsumer(hbaseConfig: Option[Config]) extends java.io.Serializable {
+  import HBaseSink._
   val hbaseConf = new Configuration
   val (zookeepers, (table, family, column)) = hbaseConfig.map(config => {
     val zookeepers = config.getString(ZOOKEEPER)
@@ -74,9 +93,9 @@ class HBaseConsumer(sys: ActorSystem, hbaseConfig: Option[Config]) extends java.
     (zookeepers, (table, family, column))
   }).get
   hbaseConf.set(HBASE_ZOOKEEPER, zookeepers)
-  def getHBase = scalaz.Reader((repo: HBaseRepo) => repo.getHBase(table, hbaseConf))
+  def getHBase = scalaz.Reader((repo: HBaseRepo) => repo.hbase)
 }
 
 object HBaseConsumer {
-  def apply(sys: ActorSystem, conf: Option[Config]): HBaseConsumer = new HBaseConsumer(sys, conf)
+  def apply(conf: Option[Config]): HBaseConsumer = new HBaseConsumer(conf)
 }

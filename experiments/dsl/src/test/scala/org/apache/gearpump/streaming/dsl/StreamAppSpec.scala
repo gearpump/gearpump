@@ -55,11 +55,11 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with
     when(context.system).thenReturn(system)
 
     val app = StreamApp("dsl", context)
-    val parallism = 3
-    app.source(List("A","B","C"), parallism).flatMap(Array(_)).reduce(_+_)
+    val parallelism = 3
+    app.source(List("A","B","C"), parallelism).flatMap(Array(_)).reduce(_+_)
     val task = app.plan.dag.vertices.iterator.next()
     assert(task.taskClass == classOf[SourceTask[_, _]].getName)
-    assert(task.parallelism == parallism)
+    assert(task.parallelism == parallelism)
   }
 
   it should "produce 3 messages" in {
