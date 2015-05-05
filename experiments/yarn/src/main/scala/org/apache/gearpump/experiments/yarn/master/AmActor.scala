@@ -18,69 +18,113 @@
 
 package org.apache.gearpump.experiments.yarn.master
 
-import java.io.File
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
+import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props, actorRef2Scala}
+import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import org.apache.gearpump.experiments.yarn.Actions.{AMStatusMessage, AllRequestedContainersCompleted, ContainerInfo, ContainerRequestMessage, Failed, LaunchContainers, RMHandlerDone, RegisterAMMessage, ShutdownRequest, _}
 import org.apache.gearpump.experiments.yarn.CmdLineVars.{APPMASTER_IP, APPMASTER_PORT}
 import org.apache.gearpump.experiments.yarn.Constants._
-import org.apache.gearpump.experiments.yarn.{AppConfig, NodeManagerCallbackHandler, ResourceManagerClientActor}
+import org.apache.gearpump.experiments.yarn._
+import org.apache.gearpump.experiments.yarn.master.AmActor.{RMCallbackHandlerActorProps, RMClientActorProps}
+import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.net.NetUtils
-import org.apache.hadoop.yarn.api.ApplicationConstants
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse
 import org.apache.hadoop.yarn.api.records.{Container, ContainerId, FinalApplicationStatus}
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync
-import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.slf4j.Logger
-import com.typesafe.config.{ConfigParseOptions, ConfigFactory}
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.PoisonPill
-import akka.actor.Props
-import akka.actor.actorRef2Scala
-import akka.util.Timeout
-import org.apache.gearpump.experiments.yarn.Actions._
-import org.apache.gearpump.transport.HostPort
 
-import org.apache.gearpump.util.Constants
+import scala.util.{Failure, Success, Try}
+
+object AmActor {
+  case class RMCallbackHandlerActorProps(props: Props)
+  case class RMClientActorProps(props: Props)
+
+  def getRMCallbackHandlerActorProps(appConfig: AppConfig) : RMCallbackHandlerActorProps =  RMCallbackHandlerActorProps(Props(classOf[RMCallbackHandlerActor], appConfig))
+  def getRMClientActorProps(yarnConfiguration: YarnConfiguration) : RMClientActorProps =  RMClientActorProps(Props(classOf[ResourceManagerClientActor], yarnConfiguration))
+}
+
+object AmStates {
+  sealed trait Reason
+  case class Failed(throwable: Throwable) extends Reason
+  case object ShutdownRequest extends Reason
+  case object AllRequestedContainersCompleted extends Reason
+}
+
+object AmActorProtocol {
+  import AmStates._
+
+  sealed trait YarnApplicationMasterData
+  case class AMRMClientAsyncStartup(status:Try[Boolean])
+  case class LaunchContainers(containers: List[Container]) extends YarnApplicationMasterData
+  case class LaunchWorkerContainers(containers: List[Container])
+  case class LaunchServiceContainer(containers: List[Container])
+  case class ContainerRequestMessage(memory: Int, vCores: Int)
+  case class RMHandlerDone(reason: Reason, rMHandlerContainerStats: RMHandlerContainerStats)
+  case class RMHandlerContainerStats(allocated: Int, completed: Int, failed: Int)
+  case class RegisterAMMessage(appHostName: String, appHostPort: Int, appTrackingUrl: String)
+  case class RegisterAppMasterResponse(response: RegisterApplicationMasterResponse)
+  case class AMStatusMessage(appStatus: FinalApplicationStatus, appMessage: String, appTrackingUrl: String)
+  case class ContainerStarted(containerId: ContainerId)
+}
 
 
-/**
- * Yarn ApplicationMaster.
- */
-class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
+class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration,
+              rmCallbackHandlerActorProps: RMCallbackHandlerActorProps,
+              rmClientActorProps: RMClientActorProps,
+              nmClientAsyncFactory: NMClientAsyncFactory,
+              nodeManagerCallbackHandlerFactory: NodeManagerCallbackHandlerFactory,
+              containerLaunchContextFactory: ContainerLaunchContextFactory) extends Actor {
+  import AmActorProtocol._
+  import AmStates._
+
   val LOG: Logger = LogUtil.getLogger(getClass)
-  val nodeManagerCallbackHandler = createNodeManagerCallbackHandler
-  val nodeManagerClient: NMClientAsync = createNMClient(nodeManagerCallbackHandler)
-  val rmCallbackHandler = context.actorOf(Props(classOf[RMCallbackHandlerActor], appConfig, self), "rmCallbackHandler")
-  val amRMClient = context.actorOf(Props(classOf[ResourceManagerClientActor], yarnConf, self), "amRMClient")
-  val containersStatus = collection.mutable.Map[Long, ContainerInfo]()
+  val nodeManagerCallbackHandler = nodeManagerCallbackHandlerFactory.newInstance(self)
+  val nodeManagerClient: NMClientAsync = nmClientAsyncFactory.newInstance(nodeManagerCallbackHandler, yarnConf)
+  val rmCallbackHandlerActor = context.actorOf(rmCallbackHandlerActorProps.props, "rmCallbackHandler")
+  val rmClientActor = context.actorOf(rmClientActorProps.props, "rmClient")
+
   var masterContainers = Map.empty[ContainerId, (String, Int)]
-  var servicesActor:Option[ActorRef] = None
   val host = InetAddress.getLocalHost.getHostName
   val servicesPort = appConfig.getEnv(SERVICES_PORT).toInt
   val trackingURL = "http://"+host+":"+servicesPort
-
-  var masterAddr:HostPort = _ 
+  var masterAddr: Option[HostPort] = None
   var masterContainersStarted = 0
   var workerContainersStarted = 0
   var workerContainersRequested = 0
-
   val version = appConfig.getEnv("version")
-  
+
+  var servicesActor: Option[ActorRef] = None
+
   override def receive: Receive = {
+
+    case AMRMClientAsyncStartup(status) =>
+      status match {
+        case Success(true) =>
+          LOG.error("received AMRMClientAsyncStartup")
+          val port = appConfig.getEnv(YARNAPPMASTER_PORT).toInt
+          val target = host + ":" + port
+          val addr = NetUtils.createSocketAddr(target)
+          rmClientActor ! RegisterAMMessage(addr.getHostName, port, trackingURL)
+        case Success(false) =>
+          LOG.error("Failed to start AMRMClientAsync")
+        case Failure(ex) =>
+          LOG.error("Failed to start AMRMClientAsync", ex)
+        case _ =>
+          LOG.error("Unknown status for AMRMClientAysncStartup")
+      }
+
     case containerStarted: ContainerStarted =>
       LOG.info(s"Started container : ${containerStarted.containerId}")
       if (needMoreMasterContainersState) {
         masterContainersStarted += 1
         LOG.info(s"Currently master containers started : $masterContainersStarted/${appConfig.getEnv(GEARPUMPMASTER_CONTAINERS).toInt}")
-        requestWorkerContainersIfNeeded()
+          requestWorkerContainersIfNeeded()
       } else {
         workerContainersStarted += 1
         LOG.info(s"Currently worker containers started : $workerContainersStarted/${appConfig.getEnv(WORKER_CONTAINERS).toInt}")
@@ -97,19 +141,15 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
       
     case containerRequest: ContainerRequestMessage =>
       LOG.info("AM: Received ContainerRequestMessage")
-      amRMClient ! containerRequest
+      rmClientActor ! containerRequest
     
     case rmCallbackHandler: ResourceManagerCallbackHandler =>
       LOG.info("Received RMCallbackHandler")
-      amRMClient forward rmCallbackHandler
-      val port = appConfig.getEnv(YARNAPPMASTER_PORT).toInt
-      val target = host + ":" + port
-      val addr = NetUtils.createSocketAddr(target)
-      amRMClient ! RegisterAMMessage(addr.getHostName, port, trackingURL)
-    
-    case amResponse: RegisterApplicationMasterResponse =>
-      LOG.info("Received RegisterApplicationMasterResponse")
-      requestMasterContainers(amResponse)
+      rmClientActor forward rmCallbackHandler
+
+    case amResponse: RegisterAppMasterResponse =>
+      LOG.info("Received RegisterAppMasterResponse")
+      requestMasterContainers(amResponse.response)
 
     case containers: LaunchContainers =>
       LOG.info("Received LaunchContainers")
@@ -120,7 +160,7 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
       } else if(needMoreWorkerContainersState){ 
         LOG.info(s"Launching more workers : ${containers.containers.size}")
         workerContainersRequested += containers.containers.size
-        launchWorkerContainers(containers.containers, masterAddr)
+        launchWorkerContainers(containers.containers)
       } else {
         LOG.info("No more needed")
       }
@@ -128,128 +168,85 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
     case done: RMHandlerDone =>
       LOG.info("Got RMHandlerDone")
       cleanUp(done)
-  
+
+    case unknown =>
+      LOG.info(s"Unknown message ${unknown.getClass.getName}")
+
   }
 
-  private[this] def setMasterAddrIfNeeded(containers: List[Container]) {
-    if(masterAddr == null)
-    masterAddr = HostPort(containers.head.getNodeId.getHost, appConfig.getEnv(GEARPUMPMASTER_PORT).toInt) 
+  private def setMasterAddrIfNeeded(containers: List[Container]) {
+    masterAddr match {
+      case None =>
+        masterAddr = Some(HostPort(containers.head.getNodeId.getHost, appConfig.getEnv(GEARPUMPMASTER_PORT).toInt))
+      case _ =>
+    }
+
   }
 
-  private[this] def needMoreMasterContainersState:Boolean = {
+  private def needMoreMasterContainersState:Boolean = {
     masterContainersStarted < appConfig.getEnv(GEARPUMPMASTER_CONTAINERS).toInt
   }
 
-  private[this] def needMoreWorkerContainersState:Boolean = {
+  private def needMoreWorkerContainersState:Boolean = {
     workerContainersStarted < appConfig.getEnv(WORKER_CONTAINERS).toInt
   }
 
-  private[this] def requestWorkerContainersIfNeeded(): Unit = {
+  private def requestWorkerContainersIfNeeded(): Unit = {
     if(masterContainersStarted == appConfig.getEnv(GEARPUMPMASTER_CONTAINERS).toInt) {
       LOG.info("Requesting worker containers")
       requestWorkerContainers()
     }
   }
 
-  private[this] def launchMasterContainers(containers: List[Container]) {
+  private def launchMasterContainers(containers: List[Container]) {
+    LOG.info(s"Containers size ${containers.size}")
     containers.foreach(container => {
       val port = appConfig.getEnv(GEARPUMPMASTER_PORT).toInt
-      launchCommand(container, getMasterCommand(container.getNodeId.getHost, port))
+      val masterCommand = MasterContainerCommand(appConfig, masterAddr.get)
+      launchCommand(container, masterCommand.getCommand)
       masterContainers += container.getId -> (container.getNodeId.getHost, port)
     })
   }
 
-  private[this] def launchWorkerContainers(containers: List[Container], masterAddr: HostPort) {
+  private def launchWorkerContainers(containers: List[Container]) {
     containers.foreach(container => {
-      val masterHost = masterAddr.host
-      val masterPort = masterAddr.port
       val workerHost = container.getNodeId.getHost
-      launchCommand(container, getWorkerCommand(masterHost, masterPort, workerHost))
+      val workerCommand = WorkerContainerCommand(appConfig, masterAddr.get, workerHost).getCommand
+      launchCommand(container, workerCommand)
     })
   }
 
-  private[this] def launchCommand(container: Container, command:String) {
+  private def launchCommand(container: Container, command:String) {
       LOG.info(s"Launching containter: containerId :  ${container.getId}, host ip : ${container.getNodeId.getHost}")
       LOG.info("Launching command : " + command)
-      context.actorOf(Props(classOf[ContainerLauncherActor], container, nodeManagerClient, yarnConf, command, appConfig))
+      val containerContext = containerLaunchContextFactory.newInstance(command)
+      LOG.info(s"NodeManagerClient : $nodeManagerClient, container : $container, containerContext $containerContext")
+      nodeManagerClient.startContainerAsync(container, containerContext)
   }
 
-  private[this] def getMasterCommand(masterHost: String, masterPort: Int): String = {
-    val masterArguments = s"-ip $masterHost -port $masterPort"
-
-    val properties = Array(
-      s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
-      s"-D${Constants.GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
-      s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
-
-    val classPath = Array(
-      s"pack/$version/conf",
-      s"pack/$version/dashboard",
-      s"pack/$version/lib/*")
-
-    getCommand(GEARPUMPMASTER_COMMAND, classPath, properties, GEARPUMPMASTER_MAIN,
-      masterArguments, GEARPUMPMASTER_LOG)
-  }
-
-  private[this] def getWorkerCommand(masterHost: String, masterPort: Int, workerHost: String): String = {
-    val properties = Array(
-      s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${masterHost}:${masterPort}",
-      s"-D${Constants.GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
-      s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
-      s"-D${Constants.GEARPUMP_HOSTNAME}=$workerHost")
-
-    val classPath = Array(s"pack/$version/conf", s"pack/$version/dashboard", s"pack/$version/lib/*")
-
-    getCommand(WORKER_COMMAND, classPath, properties,  WORKER_MAIN, "", WORKER_LOG)
-  }
-  
-  private[this] def getCommand(java: String, classPath: Array[String], properties: Array[String], mainProp: String, cliOpts: String, lognameProp: String):String = {
-    val exe = appConfig.getEnv(java)
-    val main = appConfig.getEnv(mainProp)
-    val logname = appConfig.getEnv(lognameProp)
-    s"$exe -cp ${classPath.mkString(File.pathSeparator)}${File.pathSeparator}" +
-      "$CLASSPATH " + properties.mkString(" ") +
-      s"  $main $cliOpts 2>&1 | /usr/bin/tee -a ${ApplicationConstants.LOG_DIR_EXPANSION_VAR}/$logname"
-  }
-  
-
-  private[this] def createNMClient(containerListener: NodeManagerCallbackHandler): NMClientAsync = {
-    LOG.info("Creating NMClientAsync")
-    val nmClient = new NMClientAsyncImpl(containerListener)
-    LOG.info("Yarn config : " + yarnConf.get("yarn.resourcemanager.hostname"))
-    nmClient.init(yarnConf)
-    nmClient.start()
-    
-    nmClient
-  }
-
-  private[this] def createNodeManagerCallbackHandler: NodeManagerCallbackHandler = {
-    LOG.info("Creating NMCallbackHandler")
-    new NodeManagerCallbackHandler(self)
-  }
-
-
-  private[this] def requestWorkerContainers(): Unit = {
+  private def requestWorkerContainers(): Unit = {
     (1 to appConfig.getEnv(WORKER_CONTAINERS).toInt).foreach(requestId => {
-      amRMClient ! ContainerRequestMessage(appConfig.getEnv(WORKER_MEMORY).toInt, appConfig.getEnv(WORKER_VCORES).toInt)
+      rmClientActor ! ContainerRequestMessage(appConfig.getEnv(WORKER_MEMORY).toInt, appConfig.getEnv(WORKER_VCORES).toInt)
     })
   }
 
-  private[this] def requestMasterContainers(registrationResponse: RegisterApplicationMasterResponse) = {
+  private def requestMasterContainers(registrationResponse: RegisterApplicationMasterResponse) = {
+    //TODO remove that or do something more with that
     val previousContainersCount = registrationResponse.getContainersFromPreviousAttempts.size
     
     LOG.info(s"Previous container count : $previousContainersCount")
     if(previousContainersCount > 0) {
       LOG.warn("Previous container count > 0, can't do anything with it")
     }
-    
+
+    LOG.info(s"GEARPUMPMASTER_CONTAINERS ${appConfig.getEnv(GEARPUMPMASTER_CONTAINERS).toInt}")
     (1 to appConfig.getEnv(GEARPUMPMASTER_CONTAINERS).toInt).foreach(requestId => {
-      amRMClient ! ContainerRequestMessage(appConfig.getEnv(GEARPUMPMASTER_MEMORY).toInt, appConfig.getEnv(GEARPUMPMASTER_VCORES).toInt)
+      rmClientActor ! ContainerRequestMessage(appConfig.getEnv(GEARPUMPMASTER_MEMORY).toInt, appConfig.getEnv(GEARPUMPMASTER_VCORES).toInt)
     })
 
   }
 
-  private[this] def cleanUp(done: RMHandlerDone): Boolean = {
+  private def cleanUp(done: RMHandlerDone): Boolean = {
     LOG.info("Application completed. Stopping running containers")
     nodeManagerClient.stop()
     var success = true
@@ -258,36 +255,37 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration) extends Actor {
     done.reason match {
       case failed: Failed =>
         val message = s"Failed. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-        amRMClient ! AMStatusMessage(FinalApplicationStatus.FAILED, message, null)
+        rmClientActor ! AMStatusMessage(FinalApplicationStatus.FAILED, message, null)
         success = false
       case ShutdownRequest =>
         if (stats.failed == 0 && stats.completed == appConfig.getEnv(WORKER_CONTAINERS).toInt) {
           val message = s"ShutdownRequest. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-          amRMClient ! AMStatusMessage(FinalApplicationStatus.KILLED, message, null)
+          rmClientActor ! AMStatusMessage(FinalApplicationStatus.KILLED, message, null)
           success = false
         } else {
           val message = s"ShutdownRequest. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-          amRMClient ! AMStatusMessage(FinalApplicationStatus.FAILED, message, null)
+          rmClientActor ! AMStatusMessage(FinalApplicationStatus.FAILED, message, null)
           success = false
         }
        case AllRequestedContainersCompleted =>
         val message = s"Diagnostics. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-        amRMClient ! AMStatusMessage(FinalApplicationStatus.SUCCEEDED, message, null)
+        rmClientActor ! AMStatusMessage(FinalApplicationStatus.SUCCEEDED, message, null)
         success = true
     }
 
-    amRMClient ! PoisonPill
+    rmClientActor ! PoisonPill
     success
     }
+
 }
- 
-class RMCallbackHandlerActor(appConfig: AppConfig, yarnAM: ActorRef) extends Actor {
+
+class RMCallbackHandlerActor(appConfig: AppConfig) extends Actor {
   val LOG: Logger = LogUtil.getLogger(getClass)
-  val rmCallbackHandler = new ResourceManagerCallbackHandler(appConfig, yarnAM)
+  val rmCallbackHandler = new ResourceManagerCallbackHandler(appConfig, context.parent)
 
   override def preStart(): Unit = {
-    LOG.info("Sending RMCallbackHandler to YarnAM")
-    yarnAM ! rmCallbackHandler
+    LOG.info("Sending RMCallbackHandler to parent (YarnAM)")
+    context.parent ! rmCallbackHandler
   }
 
   override def receive: Receive = {
@@ -312,7 +310,7 @@ object YarnApplicationMaster extends App with ArgumentsParser {
    * For yet unknown reason this is needed for my local pseudo distributed cluster.   
    * 
    */
-  def getForcedDefaultYarnConf:Configuration = {
+  def getForcedDefaultYarnConf:YarnConfiguration = {
       val hadoopConf  = new Configuration(true)
       val configDir = System.getenv("HADOOP_CONF_DIR")
       Configuration.addDefaultResource(configDir + "/core-site.xml")
@@ -331,7 +329,15 @@ object YarnApplicationMaster extends App with ArgumentsParser {
       LOG.info("HADOOP_CONF_DIR: " + System.getenv("HADOOP_CONF_DIR"))
       LOG.info("Yarn config (yarn.resourcemanager.hostname): " + yarnConfiguration.get("yarn.resourcemanager.hostname"))
       LOG.info("Creating AMActor v1.5")
-      system.actorOf(Props(classOf[AmActor], appConfig, yarnConfiguration), "GearPumpAMActor")
+      val amActorProps = Props(
+        new AmActor(appConfig,
+                    yarnConfiguration,
+                    AmActor.getRMCallbackHandlerActorProps(appConfig),
+                    AmActor.getRMClientActorProps(yarnConfiguration),
+                    NMClientAsyncFactory(),
+                    NodeManagerCallbackHandlerFactory(),
+                    DefaultContainerLaunchContextFactory(yarnConfiguration, appConfig)))
+      system.actorOf(amActorProps, "GearPumpAMActor")
       system.awaitTermination()
       LOG.info("Shutting down")
       system.shutdown()

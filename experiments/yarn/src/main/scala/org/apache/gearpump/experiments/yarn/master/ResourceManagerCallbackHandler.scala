@@ -1,21 +1,21 @@
 package org.apache.gearpump.experiments.yarn.master
 
-import akka.actor.ActorRef
-import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync
-import org.apache.hadoop.yarn.api.records.ContainerStatus
-import org.apache.gearpump.util.LogUtil
-import org.apache.hadoop.yarn.api.records.NodeReport
 import java.util.concurrent.atomic.AtomicInteger
-import org.slf4j.Logger
-import org.apache.hadoop.yarn.api.records.Container
-import org.apache.gearpump.experiments.yarn.Actions._
-import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
-import org.apache.hadoop.yarn.api.records.ContainerExitStatus
-import org.apache.gearpump.experiments.yarn.Constants._
+
+import akka.actor.ActorRef
 import org.apache.gearpump.experiments.yarn.AppConfig
+import org.apache.gearpump.experiments.yarn.Constants._
+import org.apache.gearpump.util.LogUtil
+import org.apache.hadoop.yarn.api.records.{Container, ContainerExitStatus, ContainerStatus, NodeReport}
+import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync
+import org.slf4j.Logger
+
+import scala.collection.JavaConverters._
 
 class ResourceManagerCallbackHandler(appConfig: AppConfig, am: ActorRef) extends AMRMClientAsync.CallbackHandler {
+  import AmActorProtocol._
+  import AmStates._
+
   val LOG: Logger = LogUtil.getLogger(getClass)
   val completedContainersCount = new AtomicInteger(0)
   val failedContainersCount = new AtomicInteger(0)

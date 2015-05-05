@@ -36,27 +36,27 @@ import java.nio.ByteBuffer
 
 import org.apache.gearpump.experiments.yarn.Constants._
 
-object YarnContainerUtil {
-  val LOG: Logger = LogUtil.getLogger(getClass)
-  
-  def getFs(yarnConf: YarnConfiguration) = FileSystem.get(yarnConf)
+trait ContainerLaunchContextFactory {
+  def newInstance(command: String): ContainerLaunchContext
+}
 
-  def getAppEnv(yarnConf: YarnConfiguration): Map[String, String] = {
-    val appMasterEnv = new java.util.HashMap[String,String]
-    for (
-      c <- yarnConf.getStrings(
-        YarnConfiguration.YARN_APPLICATION_CLASSPATH,
-        YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH.mkString(File.pathSeparator))
-    ) {
-      Apps.addToEnvironment(appMasterEnv, Environment.CLASSPATH.name(),
-        c.trim(), File.pathSeparator)
-    }
-    Apps.addToEnvironment(appMasterEnv, Environment.CLASSPATH.name(),
-      Environment.PWD.$()+File.separator+"*", File.pathSeparator)
-    appMasterEnv.toMap
+case class DefaultContainerLaunchContextFactory(yarnConf: YarnConfiguration, appConfig: AppConfig) extends ContainerLaunchContextFactory {
+  val LOG: Logger = LogUtil.getLogger(getClass)
+
+  private def getFs(yarnConf: YarnConfiguration) = FileSystem.get(yarnConf)
+
+  private def getAppEnv(yarnConf: YarnConfiguration): Map[String, String] = {
+    val classPaths = yarnConf.getStrings(
+      YarnConfiguration.YARN_APPLICATION_CLASSPATH,
+      YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH.mkString(File.pathSeparator))
+    val allPaths = classPaths :+ Environment.PWD.$()+File.separator+"*"+File.pathSeparator
+
+    Map(Environment.CLASSPATH.name -> allPaths.reduceLeft((a,b) => {
+      a + File.pathSeparator + b
+    }))
   }
 
-  def getAMLocalResourcesMap(yarnConf: YarnConfiguration, appConfig: AppConfig): Map[String, LocalResource] = {
+  private def getAMLocalResourcesMap: Map[String, LocalResource] = {
     val fs = getFs(yarnConf)
     val version = appConfig.getEnv("version")
     val hdfsRoot = appConfig.getEnv(HDFS_ROOT)
@@ -68,7 +68,7 @@ object YarnContainerUtil {
   }
 
   private def newYarnAppResource(fs: FileSystem, path: Path,
-      resourceType: LocalResourceType, vis: LocalResourceVisibility): LocalResource = {
+                                 resourceType: LocalResourceType, vis: LocalResourceVisibility): LocalResource = {
     val qualified = fs.makeQualified(path)
     val status = fs.getFileStatus(qualified)
     val resource = Records.newRecord(classOf[LocalResource])
@@ -80,26 +80,34 @@ object YarnContainerUtil {
     resource
   }
 
-  def getContainerContext(yarnConf: YarnConfiguration, command:String): ContainerLaunchContext = {
-    val ctx = Records.newRecord(classOf[ContainerLaunchContext])
-    ctx.setCommands(Seq(command)) 
-    ctx.setEnvironment(getAppEnv(yarnConf))
-    ctx.setTokens(getToken)
-    ctx
-  }
 
-  def getToken():ByteBuffer = {
+  private def getToken():ByteBuffer = {
     val credentials = UserGroupInformation.getCurrentUser.getCredentials
     val dob = new DataOutputBuffer
     credentials.writeTokenStorageToStream(dob)
     ByteBuffer.wrap(dob.getData)
   }
-  
+
   private def logEnvironmentVars(environment: Map[String, String]) {
     environment.foreach(pair => {
-    val (key, value) = pair
-    LOG.info(s"getAppEnv key=$key value=$value")
-  })
- 
+      val (key, value) = pair
+      LOG.info(s"getAppEnv key=$key value=$value")
+    })
   }
+
+  private def getContainerContext(command: String): ContainerLaunchContext = {
+    val ctx = Records.newRecord(classOf[ContainerLaunchContext])
+    ctx.setCommands(Seq(command))
+    ctx.setEnvironment(getAppEnv(yarnConf))
+    ctx.setTokens(getToken)
+    ctx
+  }
+
+  override def newInstance(command: String): ContainerLaunchContext = {
+    val context = getContainerContext(command)
+    context.setLocalResources(getAMLocalResourcesMap)
+    context
+  }
+
 }
+
