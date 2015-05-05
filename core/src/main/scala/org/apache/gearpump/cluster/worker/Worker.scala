@@ -255,9 +255,8 @@ private[cluster] object Worker {
 
         // pass hostname as a JVM parameter, so that child actorsystem can read it
         // in priority
-        val host = Try(context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)).map(
-          host => List(s"-D${Constants.NETTY_TCP_HOSTNAME}=${host}",
-            s"-D${Constants.GEARPUMP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
+        val host = Try(context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)).map(
+          host => List(s"-D${Constants.GEARPUMP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
 
         val username = List(s"-D${Constants.GEARPUMP_USERNAME}=${ctx.username}")
 

@@ -33,7 +33,7 @@ import scala.concurrent.Future
 class LocalJarStore(rootDirPath : String) extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  val host = context.system.settings.config.getString(Constants.NETTY_TCP_HOSTNAME)
+  val host = context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)
   val rootDirectory = new File(rootDirPath)
 
   FileUtils.forceMkdir(rootDirectory)
