@@ -15,27 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.util
 
-import java.util.concurrent.TimeUnit
+package org.apache.gearpump.experiments.yarn.master
 
-import akka.actor.{Actor, ActorRef}
-import akka.pattern.ask
+import akka.testkit.TestKit
+import org.scalatest.{BeforeAndAfterAll, Suite}
 
-import scala.concurrent.duration._
+trait StopSystemAfterAll extends BeforeAndAfterAll {
 
-trait TimeOutScheduler {
-  this: Actor =>
-  import context.dispatcher
-
-  def sendMsgWithTimeOutCallBack(target: ActorRef, msg: AnyRef, seconds: Int, timeOutHandler: => Unit): Unit = {
-    val result = target.ask(msg)(FiniteDuration(seconds, TimeUnit.SECONDS))
-    result onSuccess {
-      case msg =>
-        self ! msg
-    }
-    result onFailure {
-      case _ => timeOutHandler
-    }
+  this: TestKit with Suite =>
+  override protected def afterAll () {
+    super.afterAll ()
+    system.shutdown ()
   }
 }

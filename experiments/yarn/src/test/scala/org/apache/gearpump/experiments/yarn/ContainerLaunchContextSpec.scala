@@ -15,27 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.util
 
-import java.util.concurrent.TimeUnit
+package org.apache.gearpump.experiments.yarn
 
-import akka.actor.{Actor, ActorRef}
-import akka.pattern.ask
+import org.apache.hadoop.yarn.conf.YarnConfiguration
+import org.scalatest.FlatSpecLike
+import org.scalatest.Matchers._
+import org.specs2.mock.Mockito
 
-import scala.concurrent.duration._
 
-trait TimeOutScheduler {
-  this: Actor =>
-  import context.dispatcher
+class ContainerLaunchContextSpec extends FlatSpecLike
+with Mockito {
 
-  def sendMsgWithTimeOutCallBack(target: ActorRef, msg: AnyRef, seconds: Int, timeOutHandler: => Unit): Unit = {
-    val result = target.ask(msg)(FiniteDuration(seconds, TimeUnit.SECONDS))
-    result onSuccess {
-      case msg =>
-        self ! msg
-    }
-    result onFailure {
-      case _ => timeOutHandler
-    }
+  "A ContainerLaunchContext object" should "create new ContainerLaunchContext" in {
+    val command = "foo"
+    ContainerLaunchContext(mock[YarnConfiguration], mock[AppConfig])(command) should not be theSameInstanceAs(ContainerLaunchContext(mock[YarnConfiguration], mock[AppConfig])(command))
   }
 }
