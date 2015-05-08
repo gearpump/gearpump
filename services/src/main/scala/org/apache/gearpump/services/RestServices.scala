@@ -20,18 +20,17 @@ package org.apache.gearpump.services
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
-import org.apache.gearpump.services.WebSocketServices._
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.can._
 import spray.routing.RoutingSettings
 
 trait RestServices extends AppMastersService
     with AppMasterService with WorkerService with WorkersService with MasterService with SubmitApplicationRequestService
-    with ConfigQueryService with MetricsQueryService with WebSocketService with StaticService with ActorUtilService {
+    with ConfigQueryService with MetricsQueryService with WebSocketService with StaticService with ActorUtilService with InterMediateService {
   implicit def executionContext = actorRefFactory.dispatcher
 
   lazy val routes = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ applicationRequestRoute ~
-    masterRoute ~  configQueryRoute ~ metricQueryRoute ~ webSocketRoute ~ staticRoute ~ actorUtilRoute
+    masterRoute ~  configQueryRoute ~ metricQueryRoute ~ webSocketRoute ~ staticRoute ~ actorUtilRoute ~ interMediateRoute
 }
 
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
@@ -50,8 +49,8 @@ object RestServices {
     implicit val executionContext = system.dispatcher
     val services = system.actorOf(Props(classOf[RestServicesActor], master, system), "rest-services")
     val config = system.settings.config
-    val port = config.getInt("gearpump.services.http")
-    val host = config.getString("gearpump.services.host")
+    val port = config.getInt(Constants.GEARPUMP_SERVICE_HTTP)
+    val host = config.getString(Constants.GEARPUMP_SERVICE_HOST)
     IO(Http) ! Http.Bind(services, interface = host, port = port)
 
     LOG.info(s"Please browse to http://$host:$port to see the web UI")

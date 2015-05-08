@@ -102,4 +102,7 @@ object Constants {
   // and shutdown itself
   val GEARPUMP_RESOURCE_ALLOCATION_TIMEOUT = "gearpump.resource-allocation-timeout-seconds"
 
+  //Service related
+  val GEARPUMP_SERVICE_HTTP = "gearpump.services.http"
+  val GEARPUMP_SERVICE_HOST = "gearpump.services.host"
 }
