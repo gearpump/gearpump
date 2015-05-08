@@ -1,7 +1,7 @@
 gearpump {
   serializers {
-    "org.apache.gearpump.experiments.pipeline.Messages$Datum" = ""
-    "[Lorg.apache.gearpump.experiments.pipeline.Messages$Datum;" = ""
+    "gearpump.experiments.pipeline.Messages$Datum" = ""
+    "[Lgearpump.experiments.pipeline.Messages$Datum;" = ""
   }
 }
 
@@ -41,11 +41,11 @@ kafka {
   
     storage.replicas = 2
   
-    grouper.factory.class = "org.apache.gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory"
+    grouper.factory.class = "gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory"
   
     task {
-      message.decoder.class = "org.apache.gearpump.streaming.kafka.lib.KafkaDecoder"
-      timestamp.filter.class = "org.apache.gearpump.streaming.kafka.lib.KafkaFilter"
+      message.decoder.class = "gearpump.streaming.kafka.lib.KafkaDecoder"
+      timestamp.filter.class = "gearpump.streaming.kafka.lib.KafkaFilter"
     }
 }
 

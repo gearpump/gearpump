@@ -68,7 +68,7 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
 
       if (conf.webSocketPreferred) {
         var request = JSON.stringify(
-          ["org.apache.gearpump.cluster.MasterToAppMaster.AppMasterMetricsRequest",
+          ["gearpump.cluster.MasterToAppMaster.AppMasterMetricsRequest",
             {appId: parseInt($scope.app.id)}
           ]);
         StreamingService.subscribe(request, $scope, function (event) {

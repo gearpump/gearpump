@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import org.apache.gearpump.cluster.client.ClientContext
+import gearpump.cluster.client.ClientContext
 
 Console.out.println("Gear Shell is started...")
 

@@ -34,10 +34,10 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       /** Update (or add) specified metrics */
       updateMetrics: function (name, data) {
         switch (name) {
-          case 'org.apache.gearpump.metrics.Metrics.Meter':
+          case 'gearpump.metrics.Metrics.Meter':
             _update(Metrics.decodeMeter, this.meter, this);
             break;
-          case 'org.apache.gearpump.metrics.Metrics.Histogram':
+          case 'gearpump.metrics.Metrics.Histogram':
             _update(Metrics.decodeHistogram, this.histogram, this);
             break;
         }
