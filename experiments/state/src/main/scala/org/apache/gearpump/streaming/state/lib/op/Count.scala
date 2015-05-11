@@ -16,14 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.lib.op
 
-import kafka.common.TopicAndPartition
+import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.state.api.{StateSerializer, State, StateOp}
+import com.twitter.algebird.Monoid._
+import org.apache.gearpump.streaming.state.lib.serializer.LongSerializer
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+class Count extends StateOp[Long] {
+  val aggregate = (left: Long, right: Long) => {
+    longMonoid.plus(left, right)
+  }
+
+  override def serializer: StateSerializer[Long] = new LongSerializer
+
+  override def update(state: State[Long], message: Message): Unit = {
+    state.update(message.timestamp, 1L, aggregate)
+  }
 }
-

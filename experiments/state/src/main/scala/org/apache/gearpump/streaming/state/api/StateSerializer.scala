@@ -16,14 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.api
 
-import kafka.common.TopicAndPartition
-
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+trait StateSerializer[T]  {
+  def serialize(t: T): Array[Byte]
+  def deserialize(bytes: Array[Byte]): T
 }
-

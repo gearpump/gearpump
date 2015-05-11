@@ -16,14 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.lib.serializer
 
-import kafka.common.TopicAndPartition
+import com.twitter.algebird.AveragedValue
+import com.twitter.bijection.Injection
+import org.apache.gearpump.streaming.state.api.StateSerializer
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+class AveragedValueSerializer extends StateSerializer[AveragedValue] {
+  override def serialize(av: AveragedValue): Array[Byte] = {
+    Injection[Long, Array[Byte]](av.count) ++ Injection[Double, Array[Byte]](av.value)
+  }
+
+  override def deserialize(bytes: Array[Byte]): AveragedValue = {
+    Injection.invert[Long, Array[Byte]](bytes.take(8)).flatMap(count =>
+      Injection.invert[Double, Array[Byte]](bytes.drop(8)).map(average =>
+        AveragedValue(count, average)))
+      .getOrElse(throw new RuntimeException("deserialization failed"))
+  }
 }
-

@@ -49,7 +49,7 @@ object KafkaConsumer {
   }
 }
 
-private[kafka] class KafkaConsumer(consumer: SimpleConsumer,
+class KafkaConsumer(consumer: SimpleConsumer,
                                    topic: String,
                                    partition: Int,
                                    getIterator: (Long) => Iterator[MessageAndOffset]) {

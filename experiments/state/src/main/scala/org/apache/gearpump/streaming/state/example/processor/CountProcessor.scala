@@ -16,14 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.example.processor
 
-import kafka.common.TopicAndPartition
+import org.apache.gearpump.streaming.state.api.StatefulTask
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.state.lib.op.Count
+import org.apache.gearpump.streaming.task.TaskContext
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
-}
-
+class CountProcessor(taskContext: TaskContext, conf: UserConfig)
+  extends StatefulTask[Long](new Count, taskContext, conf)

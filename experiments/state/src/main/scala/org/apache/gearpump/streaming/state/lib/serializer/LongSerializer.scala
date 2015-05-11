@@ -16,14 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.lib.serializer
 
-import kafka.common.TopicAndPartition
+import com.twitter.bijection.Injection
+import org.apache.gearpump.streaming.state.api.StateSerializer
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+class LongSerializer extends StateSerializer[Long] {
+  override def serialize(l: Long): Array[Byte] = {
+    Injection[Long, Array[Byte]](l)
+  }
+
+  override def deserialize(bytes: Array[Byte]): Long = {
+    Injection.invert[Long, Array[Byte]](bytes).getOrElse(
+      throw new RuntimeException("deserialization failed"))
+  }
 }
-

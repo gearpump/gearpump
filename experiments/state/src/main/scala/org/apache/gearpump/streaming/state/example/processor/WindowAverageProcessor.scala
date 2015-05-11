@@ -16,14 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.example.processor
 
-import kafka.common.TopicAndPartition
+import com.twitter.algebird.{AveragedValue, AveragedGroup}
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.state.api.StatefulTask
+import org.apache.gearpump.streaming.state.lib.op.Average
+import org.apache.gearpump.streaming.task.{StartTime, TaskContext}
+import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.Message
+import org.slf4j.Logger
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+object WindowAverageProcessor {
+  val LOG: Logger = LogUtil.getLogger(classOf[WindowAverageProcessor])
 }
 
+class WindowAverageProcessor(taskContext : TaskContext, conf: UserConfig)
+  extends StatefulTask[AveragedValue](new Average, taskContext, conf)

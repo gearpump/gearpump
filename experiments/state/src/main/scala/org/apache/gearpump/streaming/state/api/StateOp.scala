@@ -16,14 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.api
 
-import kafka.common.TopicAndPartition
+import org.apache.gearpump._
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+/**
+ * Users extend this to manipulate state with State API
+ */
+trait StateOp[T] {
+  /**
+   *  users should provide a state serializer such that
+   *  state could be serialized to / deserialized from
+   *  checkpoint store
+   */
+  def serializer: StateSerializer[T]
+
+  /**
+   * Users should define how a message is decoded into raw T
+   * and pass it to state.update. Besides, users could call state.get
+   * to unwrap the current state or checkpoint to do checkpointing
+   * explicitly
+   * @param state
+   * @param message
+   */
+  def update(state: State[T], message: Message): Unit
 }
-
