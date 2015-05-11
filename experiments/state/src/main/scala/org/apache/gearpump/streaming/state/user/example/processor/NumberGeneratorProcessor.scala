@@ -16,14 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.user.example.processor
 
-import kafka.common.TopicAndPartition
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+class NumberGeneratorProcessor(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+  import taskContext.output
+
+  private var num = 0L
+  override def onStart(startTime: StartTime): Unit = {
+    num = startTime.startTime
+    self ! Message("start")
+  }
+
+  override def onNext(msg: Message): Unit = {
+    output(Message(num + "", num))
+    num += 1
+
+    import scala.concurrent.duration._
+    taskContext.scheduleOnce(Duration(1, MILLISECONDS))(self ! Message("next"))
+  }
 }
-

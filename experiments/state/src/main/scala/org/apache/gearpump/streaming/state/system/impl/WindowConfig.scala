@@ -16,14 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.system.impl
 
-import kafka.common.TopicAndPartition
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+object WindowConfig {
+  val NAME = "window_config"
 }
 
+case class WindowConfig(windowSize: Long, windowStep: Long)

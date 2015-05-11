@@ -16,14 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.system.api
 
-import kafka.common.TopicAndPartition
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.TaskContext
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+/**
+ * CheckpointStore persistently stores mapping of timestamp to checkpoint
+ * it's possible that two checkpoints have the same timestamp
+ * CheckpointStore needs to handle this either during write or read
+ */
+trait CheckpointStore {
+
+  def write(timeStamp: TimeStamp, checkpoint: Array[Byte]): Unit
+
+  def read(timestamp: TimeStamp): Option[Array[Byte]]
+
+  def close(): Unit
+}
+
+trait CheckpointStoreFactory {
+  def getCheckpointStore(conf: UserConfig,
+                         taskContext: TaskContext): CheckpointStore
 }
 
