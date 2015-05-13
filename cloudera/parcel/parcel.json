@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "name": "gearpump",
+  "version": "{version}",
+  "setActiveSymlink": true,
+
+  "depends": "",
+  "replaces": "",
+  "conflicts": "",
+
+  "provides": ["gearpump" ],
+
+  "scripts": {
+    "defines": "gearpump_env.sh"
+  },
+
+  "packages": [],
+
+  "components": [
+    { "name"       : "gearpump",
+      "version"    : "{version}",
+      "pkg_version": "{version}"
+    }
+  ],
+
+  "users": {
+    "gearpump": {
+      "longname"    : "Gearpump User",
+      "home"        : "/var/lib/gearpump",
+      "shell"       : "/bin/bash",
+      "extra_groups": [ "gearpump" ]
+    }
+  },
+
+  "groups": [
+    "gearpump"
+  ]
+}
