@@ -65,10 +65,11 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     assert(result.size == count)
 
     //the oldest value is expired
-    assert(result.head.value.asInstanceOf[Counter].value == 3L)
+    val oldestVal = result.head.value.asInstanceOf[Counter].value
+    assert( oldestVal >= 3L && oldestVal <= 5L)
 
     //the newest value is inserted
-    assert(result.last.value.asInstanceOf[Counter].value == 5L)
+    assert(result.last.value.asInstanceOf[Counter].value >= 5L)
   }
 
   val meterTemplate = Meter("meter", 0, 0, 0, 0, 0, "s")
