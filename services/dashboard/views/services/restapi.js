@@ -5,24 +5,32 @@
 'use strict';
 angular.module('dashboard.restapi', [])
 
-  .factory('restapi', ['$http', '$timeout', 'conf', function ($http, $timeout, conf) {
+  .factory('restapi', ['$http', '$timeout', '$modal', 'conf', '$modal', function ($http, $timeout, $modal, conf) {
+
+    var noticeWindow = $modal({
+      template: "views/services/serverproblemnotice.html",
+      backdrop: 'static',
+      show: false
+    });
+
     return {
       /** Get data from server periodically before a scope is destroyed. */
-      subscribe: function (url, scope, onSuccess, onError) {
+      subscribe: function (url, scope, onData) {
         // TODO: convert to websocket push model
         var timeoutPromise;
         scope.$on('$destroy', function () {
           $timeout.cancel(timeoutPromise);
         });
+
         var fn = function () {
           var cancel = false;
           $http.get(conf.restapiRoot + url)
             .success(function (data) {
-              cancel = !onSuccess || onSuccess(data);
+              noticeWindow.$promise.then(noticeWindow.hide);
+              cancel = !onData || onData(data);
             })
             .error(function (reason, code) {
-              // TODO: show error dialog or notification when server is disconnected (#602)
-              cancel = !onError || onError(reason, code);
+              noticeWindow.$promise.then(noticeWindow.show);
             })
             .finally(function () {
               if (!cancel) {
@@ -39,9 +47,6 @@ angular.module('dashboard.restapi', [])
         this.subscribe(url, scope,
           function (data) {
             return !onData || onData(data);
-          },
-          function (reason, code) {
-            return !onData || onData(null);
           });
       },
 

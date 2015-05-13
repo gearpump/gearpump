@@ -27,7 +27,7 @@ angular.module('directive.metricscard', ['directive.explanationicon'])
           scope.unit = value;
         });
       },
-      template: '<h6 class="metrics-title">{{heading}}' +
+      template: '<h6><span class="metrics-title" ng-bind="heading"></span>' +
       '<explanation-icon ng-if="explanation" value="{{explanation}}"/></h6>' +
       '<h3 class="metrics-value">{{value}} <small>{{unit}}</small></h3>'
     };
