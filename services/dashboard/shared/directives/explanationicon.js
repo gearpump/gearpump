@@ -4,7 +4,7 @@
  */
 'use strict';
 
-angular.module('directive.explanationicon', ['720kb.tooltips'])
+angular.module('directive.explanationicon', ['mgcrea.ngStrap.tooltip'])
 
 /**
  * This widget is rendered as an icon. When user mouse over it, it will show an explanation text.
@@ -12,13 +12,11 @@ angular.module('directive.explanationicon', ['720kb.tooltips'])
   .directive('explanationIcon', [function () {
     return {
       restrict: 'E',
-      link: {
-        pre: function (scope, elems, attrs) {
-          scope.value = attrs.value;
-        }
+      link: function (scope, elems, attrs) {
+        scope.value = attrs.value;
       },
       template: '<span class="glyphicon glyphicon-question-sign metrics-explanation" ' +
-      ' tooltips tooltip-title="{{value}}" tooltip-size="small"></span>'
+      ' bs-tooltip="value"></span>'
     };
   }])
 ;

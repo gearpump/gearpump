@@ -17,3 +17,13 @@ body, .tooltip, .popover {
 .glyphicon {
   top: 2px;
 }
+
+.tooltip-inner {
+  max-width: unset;
+  font-size: 12px;
+  padding: 4.5px 10px 5px;
+}
+
+*[bs-tooltip] {
+  cursor: pointer;
+}

@@ -6,8 +6,10 @@
 
 angular
   .module('dashboard', [
+    'ngAnimate',
     'ngRoute',
     'ng-breadcrumbs',
+    'mgcrea.ngStrap',
     'ui.select',
     'smart-table',
     'directive.echartfactory',

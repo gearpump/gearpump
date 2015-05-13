@@ -37,9 +37,6 @@ angular.module('dashboard.cluster', [])
           jarStore: desc.jarStore,
           status: desc.masterStatus
         };
-      }, function (reason, code) {
-        $scope.master = $scope.master || {};
-        $scope.master.status = 'unexpected';
       }
     );
   }])
