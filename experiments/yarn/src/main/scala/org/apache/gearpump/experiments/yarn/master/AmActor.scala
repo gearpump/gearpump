@@ -239,7 +239,7 @@ class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration,
       LOG.warn("Previous container count > 0, can't do anything with it")
     }
 
-    LOG.info(s"GEARPUMPMASTER_CONTAINERS ${appConfig.getEnv(GEARPUMPMASTER_CONTAINERS).toInt}")
+    LOG.info(s"GEARPUMPMASTER_CONTAINERS: ${appConfig.getEnv(GEARPUMPMASTER_CONTAINERS).toInt}")
     (1 to appConfig.getEnv(GEARPUMPMASTER_CONTAINERS).toInt).foreach(requestId => {
       rmClientActor ! ContainerRequestMessage(appConfig.getEnv(GEARPUMPMASTER_MEMORY).toInt, appConfig.getEnv(GEARPUMPMASTER_VCORES).toInt)
     })

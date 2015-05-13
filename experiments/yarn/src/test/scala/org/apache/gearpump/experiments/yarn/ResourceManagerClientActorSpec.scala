@@ -20,69 +20,108 @@ package org.apache.gearpump.experiments.yarn
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
-import org.apache.gearpump.experiments.yarn.master.AmActorProtocol.{AMRMClientAsyncStartup, ContainerRequestMessage}
+import org.apache.gearpump.experiments.yarn.master.AmActorProtocol._
 import org.apache.gearpump.experiments.yarn.master.{ResourceManagerCallbackHandler, StopSystemAfterAll}
+import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse
+import org.apache.hadoop.yarn.api.records.FinalApplicationStatus
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync
 import org.apache.hadoop.yarn.conf.YarnConfiguration
+import org.mockito.ArgumentCaptor
 import org.scalatest.Matchers._
-import org.scalatest.{BeforeAndAfter, FlatSpecLike}
+import org.scalatest.{Assertions, BeforeAndAfter, FlatSpecLike}
 import org.specs2.mock.Mockito
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 class ResourceManagerClientActorSpec extends TestKit(ActorSystem("testsystem"))
 with FlatSpecLike
 with StopSystemAfterAll
 with BeforeAndAfter
 with ImplicitSender
-with Mockito {
+with Mockito
+with Assertions
+with TestConfiguration {
 
-  val yarnConf = new YarnConfiguration
   var probe: TestProbe = _
-  var clientActor: TestActorRef[ResourceManagerClientActor] = _
+
   before {
     probe = TestProbe()
-    clientActor = getResourceManagerClientActor(yarnConf)
-
   }
 
-  private def getResourceManagerClientActor(yarnConf: YarnConfiguration): TestActorRef[ResourceManagerClientActor] = {
-    val actorProps = Props(new ResourceManagerClientActor(yarnConf))
+  private def getResourceManagerClientActor(yarnConf: YarnConfiguration, clientFactory: AMRMClientAsyncFactory[ContainerRequest]): TestActorRef[ResourceManagerClientActor] = {
+    val actorProps = Props(new ResourceManagerClientActor(yarnConfiguration, clientFactory))
     TestActorRef[ResourceManagerClientActor](actorProps)
   }
 
+  private def getMockedClientFactory(mockedClient: AMRMClientAsync[ContainerRequest]): AMRMClientAsyncFactory[ContainerRequest] = {
+    new AMRMClientAsyncFactory[ContainerRequest] {
+      override def newIntance(intervalMs: Int, callbackHandler: AMRMClientAsync.CallbackHandler): AMRMClientAsync[ContainerRequest] = {
+        mockedClient
+      }
+    }
+  }
+  private def getEmptyClientFactory: AMRMClientAsyncFactory[ContainerRequest] = mock[AMRMClientAsyncFactory[ContainerRequest]]
 
   "A ResourceManagerClientActor" should "start AMRMClientAsync and respond with AMRMClientAsyncStartup(Try(true)) to sender when receiving ResourceManagerCallbackHandler" in {
+    val mockedClient = mock[AMRMClientAsync[ContainerRequest]]
+    val clientActor = getResourceManagerClientActor(yarnConfiguration, getMockedClientFactory(mockedClient))
     clientActor ! mock[ResourceManagerCallbackHandler]
     clientActor.underlyingActor.client shouldBe an [AMRMClientAsync[ContainerRequest]]
+    one(mockedClient).start()
     expectMsg(AMRMClientAsyncStartup(Try(true)))
     expectNoMsg()
   }
 
   "A ResourceManagerClientActor" should "respond with AMRMClientAsyncStartup(Failure(throwable)) to sender when receiving ResourceManagerCallbackHandler and AMRMClientAsync cannot be started" in {
-    val badInitializedActor = getResourceManagerClientActor(null)
+    val erroneousClient = mock[AMRMClientAsync[ContainerRequest]]
+    val clientException = new RuntimeException
+    erroneousClient.start() throws clientException
+    val badInitializedActor = getResourceManagerClientActor(yarnConfiguration, getMockedClientFactory(erroneousClient))
     badInitializedActor ! mock[ResourceManagerCallbackHandler]
-    //expectMsg(AMRMClientAsyncStartup(anyObject))
-    //expectNoMsg()
+    expectMsg(AMRMClientAsyncStartup(Failure(clientException)))
+    expectNoMsg()
   }
 
-
   "A ResourceManagerClientActor" should "call AMRMClientAsync.addContainerRequest when receiving ContainerRequestMessage" in {
+    val clientActor = getResourceManagerClientActor(yarnConfiguration, getEmptyClientFactory)
     val req = ContainerRequestMessage(1024, 1)
     val clientSpy = mock[AMRMClientAsync[ContainerRequest]]
     val containerRequest = clientActor.underlyingActor.createContainerRequest(req)
     clientActor.underlyingActor.client = clientSpy
     clientActor ! req
-    //todo:  containerRequest doesn't seems to override equals :/ need to do it some other way (like using toString())
-    //one(clientSpy).addContainerRequest(containerRequest)
+    val captor = ArgumentCaptor.forClass(classOf[ContainerRequest])
+    one(clientSpy).addContainerRequest(captor.capture())
+
+    withClue("ResourceManagerClientActor generated unexpected ContainerMessage : ") {
+      captor.getValue.toString shouldBe containerRequest.toString
+    }
   }
 
   "A ResourceManagerClientActor" should "call AMRMClientAsync.registerApplicationMaster and respond with RegisterAppMasterResponse when receiving RegisterAMMessage" in {
+    val mockedClient = mock[AMRMClientAsync[ContainerRequest]]
+    val expectedResponse = mock[RegisterApplicationMasterResponse]
+    val masterUrl = "masterUrl"
+    val clientActor = getResourceManagerClientActor(yarnConfiguration, getEmptyClientFactory)
+    mockedClient.registerApplicationMaster(TEST_MASTER_HOSTNAME, TEST_MASTER_PORT.toInt, masterUrl) returns expectedResponse
+    clientActor.underlyingActor.client = mockedClient
+    clientActor ! RegisterAMMessage(TEST_MASTER_HOSTNAME, TEST_MASTER_PORT.toInt, masterUrl)
+    one(mockedClient).registerApplicationMaster(TEST_MASTER_HOSTNAME, TEST_MASTER_PORT.toInt, masterUrl)
+    expectMsg(RegisterAppMasterResponse(expectedResponse))
+    expectNoMsg()
   }
 
   "A ResourceManagerClientActor" should "call AMRMClientAsync.unregisterApplicationMaster when receiving AMStatusMessage" in {
+    val mockedClient = mock[AMRMClientAsync[ContainerRequest]]
+    val clientActor = getResourceManagerClientActor(yarnConfiguration, getEmptyClientFactory)
+    clientActor.underlyingActor.client = mockedClient
+    val statusMsg = mock[AMStatusMessage]
+    val appMessage = "appMessage"
+    val appTrackingTool = "appTrackingTool"
+    statusMsg.appStatus returns FinalApplicationStatus.SUCCEEDED
+    statusMsg.appMessage returns appMessage
+    statusMsg.appTrackingUrl returns appTrackingTool
+    clientActor ! statusMsg
+    one(mockedClient).unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, appMessage, appTrackingTool)
   }
-
-
 }
