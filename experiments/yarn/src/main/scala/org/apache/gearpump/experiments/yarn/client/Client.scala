@@ -18,8 +18,10 @@
 package org.apache.gearpump.experiments.yarn.client
 
 import java.io._
+
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import org.apache.gearpump.cluster.main.{ParseResult, ArgumentsParser, CLIOption}
+import org.apache.gearpump.experiments.yarn.{AppConfig, DefaultContainerLaunchContextFactory}
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.yarn.api.ApplicationConstants
@@ -29,9 +31,9 @@ import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.util.{Apps, Records}
 import org.slf4j.Logger
+
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
-import org.apache.gearpump.experiments.yarn.{DefaultContainerLaunchContextFactory, AppConfig, ContainerLaunchContextFactory}
 
 
 /**
@@ -55,8 +57,8 @@ trait ClientAPI {
 }
 
 class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: YarnClient) extends ClientAPI {
-  import org.apache.gearpump.experiments.yarn.client.Client._
   import org.apache.gearpump.experiments.yarn.Constants._
+  import org.apache.gearpump.experiments.yarn.client.Client._
 
   val LOG: Logger = LogUtil.getLogger(getClass)
   def getConfiguration = configuration
@@ -179,7 +181,7 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
         " at " + appReport.getFinishTime)
   }
 
-  def deploy() = {
+  def deploy(): Unit = {
     LOG.info("Starting AM")
     //uploadAMResourcesToHDFS()
     uploadConfigToHDFS()
@@ -197,7 +199,6 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     monitorAM(appContext)
   }
 
-  deploy()
 }
 
 object Client extends App with ArgumentsParser {
@@ -212,8 +213,13 @@ object Client extends App with ArgumentsParser {
     "monitor" -> CLIOption[Boolean]("<monitor AppMaster state>", required = false, defaultValue = Some(false))
   )
 
-  val parseResult = parse(args)
+  val parseResult: ParseResult = parse(args)
   val config = ConfigFactory.parseFile(new File(parseResult.getString("config")))
-  
-  new Client(new AppConfig(parseResult, config), new YarnConfiguration, YarnClient.createYarnClient)
+
+  def apply(appConfig: AppConfig = new AppConfig(parseResult, config), conf: YarnConfiguration = new YarnConfiguration,
+            client: YarnClient = YarnClient.createYarnClient) = {
+    new Client(appConfig, conf, client).deploy()
+  }
+
+  apply()
 }
