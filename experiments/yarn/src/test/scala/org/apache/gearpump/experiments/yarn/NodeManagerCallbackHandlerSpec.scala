@@ -23,7 +23,7 @@ import java.nio.ByteBuffer
 import akka.actor.ActorSystem
 import akka.testkit.{TestKit, TestProbe}
 import org.apache.gearpump.experiments.yarn.master.AmActorProtocol.ContainerStarted
-import org.apache.gearpump.experiments.yarn.master.StopSystemAfterAll
+import org.apache.gearpump.experiments.yarn.master.{AmActor, StopSystemAfterAll}
 import org.apache.hadoop.yarn.api.records.{ApplicationAttemptId, ApplicationId, ContainerId}
 import org.scalatest.FlatSpecLike
 import org.scalatest.Matchers._
@@ -37,7 +37,7 @@ with StopSystemAfterAll
 
   "A NodeManagerCallbackHandler" should "send ContainerStarted to AmMaster when onContainersStarted is called on it" in {
     val probe = TestProbe()
-    val handler = NodeManagerCallbackHandlerFactory().newInstance(probe.ref)
+    val handler = AmActor.createNodeManagerCallbackHandler(probe.ref)
     val containerId = ContainerId.newInstance(ApplicationAttemptId.newInstance(ApplicationId.newInstance(1, 1), 1), 1)
     handler.onContainerStarted(containerId, Map.empty[String, ByteBuffer].asJava)
     probe.expectMsg(ContainerStarted(containerId))
@@ -45,6 +45,6 @@ with StopSystemAfterAll
   }
 
   "A NodeManagerCallbackHandlerFactory" should "create new NodeManagerCallbackHandler object when newInstance is called on it" in {
-    NodeManagerCallbackHandlerFactory().newInstance(testActor) should not be theSameInstanceAs(NodeManagerCallbackHandlerFactory().newInstance(testActor))
+    AmActor.createNodeManagerCallbackHandler(testActor) should not be theSameInstanceAs(AmActor.createNodeManagerCallbackHandler(testActor))
   }
 }

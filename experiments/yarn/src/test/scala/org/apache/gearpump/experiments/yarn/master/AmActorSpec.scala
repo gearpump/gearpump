@@ -18,15 +18,12 @@
 
 package org.apache.gearpump.experiments.yarn.master
 
-import java.io.File
 import java.net.InetAddress
 
 import akka.actor._
 import akka.testkit.{TestActorRef, TestKit, TestProbe}
-import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.main.ParseResult
 import org.apache.gearpump.experiments.yarn.Constants._
-import org.apache.gearpump.experiments.yarn.{AppConfig, ContainerLaunchContextFactory, NodeManagerCallbackHandlerFactory}
+import org.apache.gearpump.experiments.yarn.{NodeManagerCallbackHandler, ContainerLaunchContextFactory, TestConfiguration}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.net.NetUtils
@@ -53,18 +50,10 @@ class AmActorSpec extends TestKit(ActorSystem("testsystem"))
 with FlatSpecLike
 with StopSystemAfterAll
 with BeforeAndAfter
-with Mockito {
+with Mockito
+with TestConfiguration {
   import AmActorProtocol._
 
-  val YARN_TEST_CONFIG = "/gearpump_on_yarn.conf"
-  val TEST_HOSTNAME = "junit"
-  val TEST_MASTER_PORT = "3001"
-  val MASTER_CONTAINERS_COUNT = 2
-  val WORKER_CONTAINERS_COUNT = 3
-  val resource = getClass.getResource(YARN_TEST_CONFIG)
-  val config = ConfigFactory.parseFileAnySyntax(new File(resource.getPath))
-  val appConfig = new AppConfig(new ParseResult(Map("version" -> "1.0", GEARPUMPMASTER_CONTAINERS -> MASTER_CONTAINERS_COUNT.toString, WORKER_CONTAINERS -> WORKER_CONTAINERS_COUNT.toString, GEARPUMPMASTER_PORT -> TEST_MASTER_PORT), Array.empty), config)
-  val yarnConfiguration = new YarnConfiguration
   //warning : one for all tests
   val containerLaunchContextMock = mock[ContainerLaunchContext]
   var probe: TestProbe = _
@@ -80,14 +69,20 @@ with Mockito {
     new RegisterAMMessage(addr.getHostName, port, trackingURL)
   }
 
+  private def createNMClient(cb: NodeManagerCallbackHandler, config: YarnConfiguration): NMClientAsync = {
+    nmClientAsyncMock
+  }
+
+  private def createNodeManagerCallbackHandler(am: ActorRef): NodeManagerCallbackHandler = mock[NodeManagerCallbackHandler]
+
   private[this] def createAmActor(probe: TestProbe): TestActorRef[AmActor] = {
 
     val amActorProps = Props(new AmActor(appConfig,
       yarnConfiguration,
       AmActor.RMCallbackHandlerActorProps(Props(classOf[MockedChild], probe.ref)),
       AmActor.RMClientActorProps(Props(classOf[MockedChild], probe.ref)),
-      getNMClientAsyncFactoryMock,
-      mock[NodeManagerCallbackHandlerFactory],
+      createNMClient _,
+      createNodeManagerCallbackHandler _,
       getContainerContextFactoryMock
     ))
     TestActorRef[AmActor](amActorProps)
@@ -97,16 +92,12 @@ with Mockito {
     mock[ContainerLaunchContextFactory].newInstance(anyString) returns containerLaunchContextMock
   }
 
-  private def getNMClientAsyncFactoryMock: NMClientAsyncFactory = {
-    mock[NMClientAsyncFactory].newInstance(any, any) returns nmClientAsyncMock
-  }
-
   private def getContainerId():ContainerId = {
     ContainerId.newInstance(ApplicationAttemptId.newInstance(ApplicationId.newInstance(1, 1), 1), 1)
   }
 
   private def getContainer: Container = {
-    getContainer(NodeId.newInstance(TEST_HOSTNAME, 50000))
+    getContainer(NodeId.newInstance(TEST_MASTER_HOSTNAME, 50000))
   }
   private def getContainer(nodeId: NodeId):Container = {
     val token = Token.newInstance(Array[Byte](), "kind",  Array[Byte](), "service")
@@ -125,7 +116,7 @@ with Mockito {
 
   }
 
-  "An AmActor" should "resend ResourceManagerCallbackHandler to ResourceManagerClientActor" in {
+  "An AmActor" should "resend ResourceManagerCallbackHandler message to ResourceManagerClientActor" in {
     val msg = new ResourceManagerCallbackHandler(appConfig, probe.ref)
     amActor ! msg
     probe.expectMsg(msg)
@@ -160,32 +151,6 @@ with Mockito {
     probe.expectMsgAllOf(ContainerRequestMessage(appConfig.getEnv(GEARPUMPMASTER_MEMORY).toInt, appConfig.getEnv(GEARPUMPMASTER_VCORES).toInt),
       ContainerRequestMessage(appConfig.getEnv(GEARPUMPMASTER_MEMORY).toInt, appConfig.getEnv(GEARPUMPMASTER_VCORES).toInt))
     probe.expectNoMsg
-  }
-
-
-  "An AmActor with 0 masters started" should "set masterAddr and start container(s) for master(s) using nodeManagerClient when receiving LanuchContainers" in {
-    amActor.underlyingActor.masterContainersStarted = 0
-    amActor.underlyingActor.masterAddr = None
-    val container1 = getContainer(NodeId.newInstance("host1", 3001))
-    val container2 = getContainer(NodeId.newInstance("host2", 3002))
-    amActor ! LaunchContainers(List(container1, container2))
-    amActor.underlyingActor.masterAddr.get shouldBe HostPort("host1:3001")
-    one(nmClientAsyncMock).startContainerAsync(container1, containerLaunchContextMock)
-    one(nmClientAsyncMock).startContainerAsync(container2, containerLaunchContextMock)
-    noMoreCallsTo(nmClientAsyncMock)
-    // TODO this should show assertion error but it doesn't work (probably some traits related problem)
-    // there was one(nmClientAsyncMock).startContainerAsync(container2, containerLaunchContextMock)
-  }
-
-  "An AmActor with enough masters started" should "inc workerContainerRequested and start container(s) for workers(s) using nodeManagerClient when receiving LanuchContainers" in {
-    amActor.underlyingActor.masterContainersStarted = MASTER_CONTAINERS_COUNT
-    amActor.underlyingActor.workerContainersStarted = 0
-    amActor.underlyingActor.workerContainersRequested = 0
-    amActor.underlyingActor.masterAddr = Some(HostPort(s"$TEST_HOSTNAME:$TEST_MASTER_PORT"))
-    amActor ! LaunchContainers(List(getContainer, getContainer, getContainer))
-    amActor.underlyingActor.workerContainersRequested shouldBe 3
-    3.times(nmClientAsyncMock).startContainerAsync(getContainer, containerLaunchContextMock)
-    noMoreCallsTo(nmClientAsyncMock)
   }
 
   "An AmActor" should "stop nodeManagerClient, send AMStatusMessage to RMClientActor with Succeed status and stop it when receiving RMHandlerDone with AllRequestedContainersCompleted reason" in {
@@ -237,6 +202,32 @@ with Mockito {
     probe.expectMsg(ContainerRequestMessage(1024, 1))
   }
 
+  "An AmActor with 0 masters started" should "set masterAddr and start container(s) for master(s) using nodeManagerClient when receiving LanuchContainers" in {
+    amActor.underlyingActor.masterContainersStarted = 0
+    amActor.underlyingActor.masterAddr = None
+    val container1 = getContainer(NodeId.newInstance("host1", 3001))
+    val container2 = getContainer(NodeId.newInstance("host2", 3002))
+    amActor ! LaunchContainers(List(container1, container2))
+    amActor.underlyingActor.masterAddr.get shouldBe HostPort("host1:3001")
+    one(nmClientAsyncMock).startContainerAsync(container1, containerLaunchContextMock)
+    one(nmClientAsyncMock).startContainerAsync(container2, containerLaunchContextMock)
+    noMoreCallsTo(nmClientAsyncMock)
+    // TODO this should show assertion error but it doesn't work (probably some traits related problem)
+    // there was one(nmClientAsyncMock).startContainerAsync(container2, containerLaunchContextMock)
+  }
+
+  "An AmActor with enough masters started" should "inc workerContainerRequested and start container(s) for workers(s) using nodeManagerClient when receiving LanuchContainers" in {
+    amActor.underlyingActor.masterContainersStarted = TEST_MASTER_CONTAINERS
+    amActor.underlyingActor.workerContainersStarted = 0
+    amActor.underlyingActor.workerContainersRequested = 0
+    amActor.underlyingActor.masterAddr = Some(HostPort(s"$TEST_MASTER_HOSTNAME:$TEST_MASTER_PORT"))
+    amActor ! LaunchContainers(List(getContainer, getContainer, getContainer))
+    amActor.underlyingActor.workerContainersRequested shouldBe 3
+    3.times(nmClientAsyncMock).startContainerAsync(getContainer, containerLaunchContextMock)
+    noMoreCallsTo(nmClientAsyncMock)
+  }
+
+
   "An AmActor without enough masters started" should "only increment started masters counter when ContainerStarted is send to it" in {
     amActor.underlyingActor.masterContainersStarted = 0
     amActor ! ContainerStarted(getContainerId())
@@ -245,10 +236,10 @@ with Mockito {
   }
 
   "An AmActor that just started enough masters" should "increment started masters counter and request all worker containers when ContainerStarted is send to it" in {
-    amActor.underlyingActor.masterContainersStarted = MASTER_CONTAINERS_COUNT - 1
+    amActor.underlyingActor.masterContainersStarted = TEST_MASTER_CONTAINERS - 1
     amActor.underlyingActor.workerContainersStarted = 0
     amActor ! ContainerStarted(getContainerId())
-    amActor.underlyingActor.masterContainersStarted shouldBe MASTER_CONTAINERS_COUNT
+    amActor.underlyingActor.masterContainersStarted shouldBe TEST_MASTER_CONTAINERS
     //TODO: Number of ContainerRequestMessage should depends on WORKER_CONTAINER_COUNT
     probe.expectMsgAllOf(ContainerRequestMessage(appConfig.getEnv(WORKER_MEMORY).toInt, appConfig.getEnv(WORKER_VCORES).toInt),
       ContainerRequestMessage(appConfig.getEnv(WORKER_MEMORY).toInt, appConfig.getEnv(WORKER_VCORES).toInt),
@@ -257,10 +248,10 @@ with Mockito {
   }
 
   "An AmActor that started enough masters but not enough workers" should "only increment started worker counter when ContainerStarted is send to it" in {
-    amActor.underlyingActor.masterContainersStarted = MASTER_CONTAINERS_COUNT
-    amActor.underlyingActor.workerContainersStarted = WORKER_CONTAINERS_COUNT - 2
+    amActor.underlyingActor.masterContainersStarted = TEST_MASTER_CONTAINERS
+    amActor.underlyingActor.workerContainersStarted = TEST_WORKER_CONTAINERS - 2
     amActor ! ContainerStarted(getContainerId())
-    amActor.underlyingActor.masterContainersStarted shouldBe MASTER_CONTAINERS_COUNT
+    amActor.underlyingActor.masterContainersStarted shouldBe TEST_MASTER_CONTAINERS
     probe.expectNoMsg()
   }
 
