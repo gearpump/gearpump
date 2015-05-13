@@ -2,7 +2,7 @@
 
 After compile,
 ```scala
-bin\gear org.apache.gearpump.experiments.pagerank.example.PageRankExample
+bin\gear gearpump.experiments.pagerank.example.PageRankExample
 ```
 
 ### Syntax

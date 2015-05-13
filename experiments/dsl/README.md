@@ -112,5 +112,5 @@ bin\local
 bin\services
 
 # start example topology
-bin\gear org.apache.gearpump.streaming.dsl.example.WordCount
+bin\gear gearpump.streaming.dsl.example.WordCount
 ```

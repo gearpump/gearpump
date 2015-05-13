@@ -200,12 +200,12 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       packSettings ++
       Seq(
-        packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
-          "local" -> "org.apache.gearpump.cluster.main.Local",
-          "master" -> "org.apache.gearpump.cluster.main.Master",
-          "worker" -> "org.apache.gearpump.cluster.main.Worker",
-          "services" -> "org.apache.gearpump.cluster.main.Services",
-          "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
+        packMain := Map("gear" -> "gearpump.cluster.main.Gear",
+          "local" -> "gearpump.cluster.main.Local",
+          "master" -> "gearpump.cluster.main.Master",
+          "worker" -> "gearpump.cluster.main.Worker",
+          "services" -> "gearpump.cluster.main.Services",
+          "yarnclient" -> "gearpump.experiments.yarn.client.Client"
         ),
         packJvmOpts := Map("local" -> Seq("-server", "-DlogFilename=local"),
           "master" -> Seq("-server", "-DlogFilename=master"),
@@ -277,7 +277,7 @@ object Build extends sbt.Build {
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
+        mainClass in (Compile, packageBin) := Some("gearpump.streaming.examples.fsio.SequenceFileIO"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
@@ -292,7 +292,7 @@ object Build extends sbt.Build {
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.sol.SOL"),
+        mainClass in (Compile, packageBin) := Some("gearpump.streaming.examples.sol.SOL"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
@@ -307,7 +307,7 @@ object Build extends sbt.Build {
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.wordcount.WordCount"),
+        mainClass in (Compile, packageBin) := Some("gearpump.streaming.examples.wordcount.WordCount"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
@@ -322,7 +322,7 @@ object Build extends sbt.Build {
           "joda-time" % "joda-time" % "2.7",
           "io.spray" %%  "spray-json"    % sprayJsonVersion
         ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.stock.main.Stock"),
+        mainClass in (Compile, packageBin) := Some("gearpump.streaming.examples.stock.main.Stock"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided")
@@ -337,7 +337,7 @@ object Build extends sbt.Build {
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.complexdag.Dag"),
+        mainClass in (Compile, packageBin) := Some("gearpump.streaming.examples.complexdag.Dag"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
@@ -353,7 +353,7 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test",
           "io.spray" %%  "spray-json"    % sprayJsonVersion
         ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.transport.Transport"),
+        mainClass in (Compile, packageBin) := Some("gearpump.streaming.examples.transport.Transport"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")

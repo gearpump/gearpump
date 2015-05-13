@@ -13,7 +13,7 @@ on Gearpump. This documentation illustrates how to do so in a local Gearpump clu
   2. submit a topology from storm-starter
 
   ```bash
-    ./target/pack/bin/gear app -jar storm-starter-${STORM_VERSION}.jar org.apache.gearpump.experiments.storm.StormRunner -storm_topology storm.starter.ExclamationTopology -storm_args exclamation
+    ./target/pack/bin/gear app -jar storm-starter-${STORM_VERSION}.jar gearpump.experiments.storm.StormRunner -storm_topology storm.starter.ExclamationTopology -storm_args exclamation
   
   ```
   
