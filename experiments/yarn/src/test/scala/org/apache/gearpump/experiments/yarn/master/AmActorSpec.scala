@@ -29,6 +29,7 @@ import org.apache.hadoop.net.NetUtils
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse
 import org.apache.hadoop.yarn.api.records._
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync
+import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.scalatest.Matchers._
 import org.scalatest.{BeforeAndAfter, FlatSpecLike}
 import org.slf4j.Logger
