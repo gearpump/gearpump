@@ -6,19 +6,30 @@
 angular.module('dashboard.apps.appmaster')
 
   .controller('AppDagCtrl', ['$scope', '$timeout', '$interval', '$filter', 'conf', 'dagStyle', function ($scope, $timeout, $interval, $filter, conf, dagStyle) {
-    $scope.displayClock = $scope.app.clock;
-    var localClock = moment();
-    var updateClockPromise = $interval(function() {
-      if (localClock.seconds() % 10 === 0) {
-        // synchronize application clock every 10 second
-        $scope.displayClock = $scope.app.clock;
-      } else {
-        $scope.displayClock += moment() - localClock;
-      }
-      localClock = moment();
-    }, 1000);
+    var updateClockPromise = null;
     $scope.$on('$destroy', function() {
       $interval.cancel(updateClockPromise);
+    });
+
+    var detectPeriod = 15;
+    var previousDetectPoint = {appClock: $scope.app.clock, local: moment()};
+    var appClockRate = 0;
+    $scope.$watch('app.clock', function(nowAppClock) {
+      var nowLocal = moment();
+      if (nowLocal - previousDetectPoint.local > detectPeriod * 1000) {
+        $interval.cancel(updateClockPromise);
+        if (nowAppClock - previousDetectPoint.appClock > 0) {
+          var clockDelta = nowAppClock - $scope.displayClock;
+          appClockRate = 1000 * (nowLocal - previousDetectPoint.local) /
+            (nowAppClock  - previousDetectPoint.appClock + clockDelta);
+          updateClockPromise = $interval(function () {
+            $scope.displayClock += 1000;
+          }, appClockRate);
+        }
+        previousDetectPoint = {appClock: nowAppClock, local: nowLocal};
+      } else if (updateClockPromise === null) {
+        $scope.displayClock = $scope.app.clock;
+      }
     });
 
     $scope.visgraph = {
