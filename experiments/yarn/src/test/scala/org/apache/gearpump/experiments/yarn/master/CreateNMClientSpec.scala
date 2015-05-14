@@ -25,12 +25,12 @@ import org.scalatest.Matchers._
 import org.specs2.mock.Mockito
 
 
-class NMClientAsyncFactorySpec extends FlatSpecLike
+class CreateNMClientSpec extends FlatSpecLike
 with Mockito {
 
-  "A NMClientAsyncFactory" should "create new NMClientAsync object when newInstance is called on it" in {
+  "A AmActor.createNMClient" should "create unique NMClientAsync object each time" in {
     val callbackHandler = mock[NodeManagerCallbackHandler]
     val yarnConf = mock[YarnConfiguration]
-    NMClientAsyncFactory().newInstance(callbackHandler, yarnConf) should not be theSameInstanceAs(NMClientAsyncFactory().newInstance(callbackHandler, yarnConf))
+    AmActor.createNMClient(callbackHandler, yarnConf) should not be theSameInstanceAs(AmActor.createNMClient(callbackHandler, yarnConf))
   }
 }

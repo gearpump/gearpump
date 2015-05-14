@@ -35,7 +35,9 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.net.NetUtils
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse
 import org.apache.hadoop.yarn.api.records.{Container, ContainerId, FinalApplicationStatus}
-import org.apache.hadoop.yarn.client.api.async.NMClientAsync
+import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest
+import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl
+import org.apache.hadoop.yarn.client.api.async.{AMRMClientAsync, NMClientAsync}
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.slf4j.Logger
 
@@ -45,8 +47,21 @@ object AmActor {
   case class RMCallbackHandlerActorProps(props: Props)
   case class RMClientActorProps(props: Props)
 
+  def createAMRMClient(intervalMs: Int, callbackHandler: AMRMClientAsync.CallbackHandler): AMRMClientAsync[ContainerRequest] = {
+    AMRMClientAsync.createAMRMClientAsync(intervalMs, callbackHandler)
+  }
+
+  def createNodeManagerCallbackHandler(am: ActorRef): NodeManagerCallbackHandler = new NodeManagerCallbackHandler(am)
+
+  def createNMClient(containerListener: NodeManagerCallbackHandler, yarnConf: YarnConfiguration): NMClientAsync = {
+    val nmClient = new NMClientAsyncImpl(containerListener)
+    nmClient.init(yarnConf)
+    nmClient.start()
+    nmClient
+  }
+
   def getRMCallbackHandlerActorProps(appConfig: AppConfig) : RMCallbackHandlerActorProps =  RMCallbackHandlerActorProps(Props(classOf[RMCallbackHandlerActor], appConfig))
-  def getRMClientActorProps(yarnConfiguration: YarnConfiguration) : RMClientActorProps =  RMClientActorProps(Props(classOf[ResourceManagerClientActor], yarnConfiguration))
+  def getRMClientActorProps(yarnConfiguration: YarnConfiguration) : RMClientActorProps =  RMClientActorProps(Props(classOf[ResourceManagerClient], yarnConfiguration, createAMRMClient _))
 }
 
 object AmStates {
@@ -77,15 +92,15 @@ object AmActorProtocol {
 class AmActor(appConfig: AppConfig, yarnConf: YarnConfiguration,
               rmCallbackHandlerActorProps: RMCallbackHandlerActorProps,
               rmClientActorProps: RMClientActorProps,
-              nmClientAsyncFactory: NMClientAsyncFactory,
-              nodeManagerCallbackHandlerFactory: NodeManagerCallbackHandlerFactory,
+              createNMClient: (NodeManagerCallbackHandler, YarnConfiguration) => NMClientAsync,
+              createNodeManagerCallbackHandler: (ActorRef) => NodeManagerCallbackHandler,
               containerLaunchContextFactory: ContainerLaunchContextFactory) extends Actor {
   import AmActorProtocol._
   import AmStates._
 
   val LOG: Logger = LogUtil.getLogger(getClass)
-  val nodeManagerCallbackHandler = nodeManagerCallbackHandlerFactory.newInstance(self)
-  val nodeManagerClient: NMClientAsync = nmClientAsyncFactory.newInstance(nodeManagerCallbackHandler, yarnConf)
+  val nodeManagerCallbackHandler = createNodeManagerCallbackHandler(self)
+  val nodeManagerClient: NMClientAsync = createNMClient(nodeManagerCallbackHandler, yarnConf)
   val rmCallbackHandlerActor = context.actorOf(rmCallbackHandlerActorProps.props, "rmCallbackHandler")
   val rmClientActor = context.actorOf(rmClientActorProps.props, "rmClient")
 
@@ -329,13 +344,14 @@ object YarnApplicationMaster extends App with ArgumentsParser {
       LOG.info("HADOOP_CONF_DIR: " + System.getenv("HADOOP_CONF_DIR"))
       LOG.info("Yarn config (yarn.resourcemanager.hostname): " + yarnConfiguration.get("yarn.resourcemanager.hostname"))
       LOG.info("Creating AMActor v1.5")
+      import AmActor._
       val amActorProps = Props(
         new AmActor(appConfig,
                     yarnConfiguration,
-                    AmActor.getRMCallbackHandlerActorProps(appConfig),
-                    AmActor.getRMClientActorProps(yarnConfiguration),
-                    NMClientAsyncFactory(),
-                    NodeManagerCallbackHandlerFactory(),
+                    getRMCallbackHandlerActorProps(appConfig),
+                    getRMClientActorProps(yarnConfiguration),
+                    createNMClient _,
+                    createNodeManagerCallbackHandler _,
                     DefaultContainerLaunchContextFactory(yarnConfiguration, appConfig)))
       system.actorOf(amActorProps, "GearPumpAMActor")
       system.awaitTermination()

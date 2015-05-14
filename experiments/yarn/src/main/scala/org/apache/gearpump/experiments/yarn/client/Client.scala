@@ -20,8 +20,8 @@ package org.apache.gearpump.experiments.yarn.client
 import java.io._
 
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.main.{ParseResult, ArgumentsParser, CLIOption}
-import org.apache.gearpump.experiments.yarn.{AppConfig, DefaultContainerLaunchContextFactory}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
+import org.apache.gearpump.experiments.yarn.{ContainerLaunchContextFactory, AppConfig, DefaultContainerLaunchContextFactory}
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.yarn.api.ApplicationConstants
@@ -52,11 +52,14 @@ trait ClientAPI {
   def getYarnConf: YarnConfiguration
   def getAppEnv: Map[String, String]
   def getAMCapability: Resource
-  def monitorAM(appContext: ApplicationSubmissionContext): Unit
-  def uploadAMResourcesToHDFS(): Unit
+  def monitor(appId: ApplicationId): Unit
+  def upload(): Boolean
+  def start(): Boolean
+  def submit(): Try[ApplicationId]
 }
 
-class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: YarnClient) extends ClientAPI {
+class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: YarnClient,
+             containerLaunchContextFactory: ContainerLaunchContextFactory, fileSystem: FileSystem) extends ClientAPI {
   import org.apache.gearpump.experiments.yarn.Constants._
   import org.apache.gearpump.experiments.yarn.client.Client._
 
@@ -64,11 +67,11 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
   def getConfiguration = configuration
   def getEnv = getConfiguration.getEnv _
   def getYarnConf = yarnConf
-  def getFs = FileSystem.get(getYarnConf)  
+  def getFs = fileSystem
   def jarPath = new Path(getFs.getHomeDirectory, getEnv(HDFS_ROOT) + "/jars/" )
 
   val version = configuration.getEnv("version")
-  private val confOnYarn = getEnv(HDFS_ROOT) + "/conf/" + YARN_CONFIG
+  val confOnYarn = getEnv(HDFS_ROOT) + "/conf/"
 
   private[this] def getMemory(envVar: String): Int = {
     try {
@@ -135,10 +138,12 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
   def uploadConfigToHDFS(): Unit = {
     val localConfigPath = getEnv("config")
     val configDir = new Path(confOnYarn)
-    if(!getFs.exists(configDir.getParent)){
-      getFs.mkdirs(configDir.getParent)
-    }
-    Try(getFs.copyFromLocalFile(false, true, new Path(localConfigPath), configDir)) match {
+    Try({
+      if(!getFs.exists(configDir.getParent)){
+        getFs.mkdirs(configDir.getParent)
+      }
+      getFs.copyFromLocalFile(false, true, new Path(localConfigPath), configDir)
+    }) match {
       case Success(a) =>
         LOG.info(s"$localConfigPath uploaded to HDFS")
       case Failure(error) =>
@@ -163,40 +168,118 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     })
   }
 
-  def monitorAM(appContext: ApplicationSubmissionContext): Unit = {
-    val appId = appContext.getApplicationId
+  def delay(appId: ApplicationId): (ApplicationReport, YarnApplicationState) = {
+    Thread.sleep(1000)
+    val appReport = yarnClient.getApplicationReport(appId)
+    val appState = appReport.getYarnApplicationState
+    (appReport, appState)
+  }
+
+  def monitor(appId: ApplicationId): Unit = {
     var appReport = yarnClient.getApplicationReport(appId)
     var appState = appReport.getYarnApplicationState
-    while (appState != YarnApplicationState.FINISHED &&
-      appState != YarnApplicationState.KILLED &&
-      appState != YarnApplicationState.FAILED) {
-      Thread.sleep(1000)
-      appReport = yarnClient.getApplicationReport(appId)
-      appState = appReport.getYarnApplicationState
-    }
+    val monitor = getEnv("monitor").toBoolean
+    var watch = true
 
-    LOG.info(
-      "Application " + appId + " finished with" +
-        " state " + appState +
-        " at " + appReport.getFinishTime)
+    while(watch) {
+      appState match {
+        case YarnApplicationState.FINISHED =>
+          LOG.info(s"Application $appId finished with state $appState at ${appReport.getFinishTime}")
+          watch = false
+        case YarnApplicationState.KILLED =>
+          LOG.info(s"Application $appId finished with state $appState at ${appReport.getFinishTime}")
+          watch = false
+        case YarnApplicationState.FAILED =>
+          LOG.info(s"Application $appId finished with state $appState at ${appReport.getFinishTime}")
+          watch = false
+        case YarnApplicationState.SUBMITTED =>
+          LOG.info(s"Application $appId is $appState")
+          val (ar, as) = delay(appId)
+          appReport = ar
+          appState = as
+        case YarnApplicationState.ACCEPTED =>
+          LOG.info(s"Application $appId is $appState")
+          val (ar, as) = delay(appId)
+          appReport = ar
+          appState = as
+        case YarnApplicationState.RUNNING =>
+          monitor match {
+            case true =>
+              LOG.info(s"Application $appId is $appState")
+              val (ar, as) = delay(appId)
+              appReport = ar
+              appState = as
+            case false =>
+              LOG.info(s"Application $appId is $appState")
+              watch = false
+          }
+        case unknown: YarnApplicationState =>
+          LOG.info(s"Application $appId is $appState")
+          val (ar, as) = delay(appId)
+          appReport = ar
+          appState = as
+      }
+    }
+  }
+
+  def upload(): Boolean = {
+    Try({
+      uploadConfigToHDFS()
+      true
+    }) match {
+      case Success(success) =>
+        success
+      case Failure(throwable) =>
+        LOG.error("Failed to upload", throwable)
+        false
+    }
+  }
+
+  def start(): Boolean = {
+    Try({
+      yarnClient.init(yarnConf)
+      yarnClient.start()
+      true
+    }) match {
+      case Success(success) =>
+        success
+      case Failure(throwable) =>
+        LOG.error("Failed to start", throwable)
+        false
+    }
+  }
+
+  def submit(): Try[ApplicationId] = {
+    Try({
+      val appContext = yarnClient.createApplication.getApplicationSubmissionContext
+      appContext.setApplicationName(getEnv(YARNAPPMASTER_NAME))
+
+      val containerContext = containerLaunchContextFactory.newInstance(getCommand)
+      appContext.setAMContainerSpec(containerContext)
+      appContext.setResource(getAMCapability)
+      appContext.setQueue(getEnv(YARNAPPMASTER_QUEUE))
+
+      yarnClient.submitApplication(appContext)
+      appContext.getApplicationId
+    })
   }
 
   def deploy(): Unit = {
     LOG.info("Starting AM")
-    //uploadAMResourcesToHDFS()
-    uploadConfigToHDFS()
-    yarnClient.init(yarnConf)
-    yarnClient.start()
-    val appContext = yarnClient.createApplication.getApplicationSubmissionContext
-    appContext.setApplicationName(getEnv(YARNAPPMASTER_NAME))
-
-    val containerContext = DefaultContainerLaunchContextFactory(yarnConf, getConfiguration).newInstance(getCommand)
-    appContext.setAMContainerSpec(containerContext)
-    appContext.setResource(getAMCapability)
-    appContext.setQueue(getEnv(YARNAPPMASTER_QUEUE))
-    
-    yarnClient.submitApplication(appContext)
-    monitorAM(appContext)
+    Try({
+      start() match {
+        case true =>
+          submit() match {
+            case Success(appId) =>
+              monitor(appId)
+            case Failure(throwable) =>
+              LOG.error("Failed to submit", throwable)
+          }
+        case false =>
+      }
+    }).failed.map(throwable => {
+      LOG.error("Failed to deploy", throwable)
+    })
   }
 
 }
@@ -216,9 +299,14 @@ object Client extends App with ArgumentsParser {
   val parseResult: ParseResult = parse(args)
   val config = ConfigFactory.parseFile(new File(parseResult.getString("config")))
 
-  def apply(appConfig: AppConfig = new AppConfig(parseResult, config), conf: YarnConfiguration = new YarnConfiguration,
-            client: YarnClient = YarnClient.createYarnClient) = {
-    new Client(appConfig, conf, client).deploy()
+  def apply(appConfig: AppConfig  = new AppConfig(parseResult, config), conf: YarnConfiguration  = new YarnConfiguration,
+            client: YarnClient  = YarnClient.createYarnClient) = {
+    new Client(appConfig, conf, client, DefaultContainerLaunchContextFactory(conf, appConfig), FileSystem.get(conf)).deploy()
+  }
+
+  def apply(appConfig: AppConfig, conf: YarnConfiguration, client: YarnClient,
+            containerLaunchContextFactory: ContainerLaunchContextFactory, fileSystem: FileSystem) = {
+    new Client(appConfig, conf, client, containerLaunchContextFactory, fileSystem).deploy()
   }
 
   apply()

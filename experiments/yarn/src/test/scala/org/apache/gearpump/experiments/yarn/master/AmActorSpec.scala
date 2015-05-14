@@ -22,13 +22,14 @@ import java.net.InetAddress
 import akka.actor._
 import akka.testkit.{TestActorRef, TestKit, TestProbe}
 import org.apache.gearpump.experiments.yarn.Constants._
-import org.apache.gearpump.experiments.yarn.{ContainerLaunchContextFactory, NodeManagerCallbackHandlerFactory, TestConfiguration}
+import org.apache.gearpump.experiments.yarn.{NodeManagerCallbackHandler, ContainerLaunchContextFactory, TestConfiguration}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.net.NetUtils
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse
 import org.apache.hadoop.yarn.api.records._
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync
+import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.scalatest.Matchers._
 import org.scalatest.{BeforeAndAfter, FlatSpecLike}
 import org.slf4j.Logger
@@ -66,14 +67,20 @@ with TestConfiguration {
     new RegisterAMMessage(addr.getHostName, port, trackingURL)
   }
 
+  private def createNMClient(cb: NodeManagerCallbackHandler, config: YarnConfiguration): NMClientAsync = {
+    nmClientAsyncMock
+  }
+
+  private def createNodeManagerCallbackHandler(am: ActorRef): NodeManagerCallbackHandler = mock[NodeManagerCallbackHandler]
+
   private[this] def createAmActor(probe: TestProbe): TestActorRef[AmActor] = {
 
     val amActorProps = Props(new AmActor(appConfig,
       yarnConfiguration,
       AmActor.RMCallbackHandlerActorProps(Props(classOf[MockedChild], probe.ref)),
       AmActor.RMClientActorProps(Props(classOf[MockedChild], probe.ref)),
-      getNMClientAsyncFactoryMock,
-      mock[NodeManagerCallbackHandlerFactory],
+      createNMClient _,
+      createNodeManagerCallbackHandler _,
       getContainerContextFactoryMock
     ))
     TestActorRef[AmActor](amActorProps)
@@ -81,10 +88,6 @@ with TestConfiguration {
 
   private def getContainerContextFactoryMock: ContainerLaunchContextFactory = {
     mock[ContainerLaunchContextFactory].newInstance(anyString) returns containerLaunchContextMock
-  }
-
-  private def getNMClientAsyncFactoryMock: NMClientAsyncFactory = {
-    mock[NMClientAsyncFactory].newInstance(any, any) returns nmClientAsyncMock
   }
 
   private def getContainerId():ContainerId = {
