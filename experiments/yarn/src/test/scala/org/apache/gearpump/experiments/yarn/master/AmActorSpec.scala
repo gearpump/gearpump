@@ -19,7 +19,6 @@
 package org.apache.gearpump.experiments.yarn.master
 
 import java.net.InetAddress
-
 import akka.actor._
 import akka.testkit.{TestActorRef, TestKit, TestProbe}
 import org.apache.gearpump.experiments.yarn.Constants._
@@ -30,12 +29,10 @@ import org.apache.hadoop.net.NetUtils
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse
 import org.apache.hadoop.yarn.api.records._
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync
-import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.scalatest.Matchers._
 import org.scalatest.{BeforeAndAfter, FlatSpecLike}
 import org.slf4j.Logger
 import org.specs2.mock.Mockito
-
 import scala.util.{Failure, Success}
 
 class MockedChild(probe: ActorRef) extends Actor {
