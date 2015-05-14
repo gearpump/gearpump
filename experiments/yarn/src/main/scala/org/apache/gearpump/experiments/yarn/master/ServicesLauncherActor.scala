@@ -10,8 +10,8 @@ class ServicesLauncherActor(masters: Array[String], host: String, port: Int) ext
   override def preStart(): Unit = {
     val mastersArg = masters.mkString(",")
     LOG.info(s"Launching services -master $mastersArg")
-    System.setProperty("gearpump.services.host", host)
-    System.setProperty("gearpump.services.http", port.toString)
+    System.setProperty(Constants.GEARPUMP_SERVICE_HOST, host)
+    System.setProperty(Constants.GEARPUMP_SERVICE_HTTP, port.toString)
     System.setProperty("akka.remote.netty.tcp.hostname", host)
 
     System.setProperty(Constants.GEARPUMP_HOSTNAME, host)
