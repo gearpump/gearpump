@@ -27,11 +27,14 @@ import scala.concurrent.duration._
 trait TimeOutScheduler {
   this: Actor =>
   import context.dispatcher
+  private val log = LogUtil.getLogger(getClass)
 
   def sendMsgWithTimeOutCallBack(target: ActorRef, msg: AnyRef, seconds: Int, timeOutHandler: => Unit): Unit = {
     val result = target.ask(msg)(FiniteDuration(seconds, TimeUnit.SECONDS))
     result onSuccess {
-      case msg => self ! msg
+      case msg =>
+        log.info(s"sending $msg to ${self.path.toString}")
+        self ! msg
     }
     result onFailure {
       case _ => timeOutHandler
