@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.util.{Constants, LogUtil}
 
 class ServicesLauncherActor(masters: Array[String], host: String, port: Int) extends Actor {
-  val LOG = LogUtil.getLogger(getClass)  
+  private val LOG = LogUtil.getLogger(getClass)
   
   override def preStart(): Unit = {
     val mastersArg = masters.mkString(",")

@@ -20,6 +20,7 @@ package org.apache.gearpump.experiments.yarn
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import org.apache.gearpump.experiments.yarn.Constants._
 import org.apache.gearpump.experiments.yarn.master.AmActorProtocol._
 import org.apache.gearpump.experiments.yarn.master.{ResourceManagerCallbackHandler, StopSystemAfterAll}
 import org.apache.hadoop.yarn.api.protocolrecords.RegisterApplicationMasterResponse
@@ -98,7 +99,7 @@ with TestConfiguration {
       ContainerRequestEqualityArgumentMatcher(client.underlyingActor.createContainerRequest(req))))
   }
 
-  "A ResourceManagerClientActor" should "call AMRMClientAsync.registerApplicationMaster and respond with RegisterAppMasterResponse when receiving RegisterAMMessage" in {
+  "A ResourceManagerClient" should "call AMRMClientAsync.registerApplicationMaster and respond with RegisterAppMasterResponse when receiving RegisterAMMessage" in {
     val probe = TestProbe()
     val mockedClient = mock[AMRMClientAsync[ContainerRequest]]
     val expectedResponse = mock[RegisterApplicationMasterResponse]
@@ -111,19 +112,18 @@ with TestConfiguration {
     expectMsg(RegisterAppMasterResponse(expectedResponse))
   }
 
-  "A ResourceManagerClientActor" should "call AMRMClientAsync.unregisterApplicationMaster when receiving AMStatusMessage" in {
+  "A ResourceManagerClient" should "call AMRMClientAsync.unregisterApplicationMaster when receiving RMError" in {
     val probe = TestProbe()
     val mockedClient = mock[AMRMClientAsync[ContainerRequest]]
     val callBackHandler = new ResourceManagerCallbackHandler(appConfig, probe.ref)
     val client = getResourceManagerClient(yarnConfiguration, appConfig, (_, _) => callBackHandler, (_) => mockedClient)
-    val statusMsg = mock[AMStatusMessage]
-    val appMessage = "appMessage"
-    val appTrackingTool = "appTrackingTool"
-    statusMsg.appStatus returns FinalApplicationStatus.SUCCEEDED
-    statusMsg.appMessage returns appMessage
-    statusMsg.appTrackingUrl returns appTrackingTool
-    client ! statusMsg
-    one(mockedClient).unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, appMessage, appTrackingTool)
+    val stats = ContainerStats(3, 2, 1)
+    val rmError = mock[RMError]
+    rmError.throwable returns new RuntimeException
+    rmError.containerStats returns stats
+    val message = s"Failed. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
+    client ! rmError
+    one(mockedClient).unregisterApplicationMaster(FinalApplicationStatus.FAILED, message, null)
   }
 
 }

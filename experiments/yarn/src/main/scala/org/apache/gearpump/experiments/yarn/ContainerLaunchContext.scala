@@ -37,9 +37,9 @@ import scala.util.{Failure, Success, Try}
 
 
 object ContainerLaunchContext {
-  val LOG: Logger = LogUtil.getLogger(getClass)
-  var yarnConf: YarnConfiguration = _
-  var appConfig: AppConfig = _
+  private val LOG: Logger = LogUtil.getLogger(getClass)
+  private var yarnConf: YarnConfiguration = _
+  private var appConfig: AppConfig = _
 
   private def getFs(yarnConf: YarnConfiguration) = FileSystem.get(yarnConf)
 

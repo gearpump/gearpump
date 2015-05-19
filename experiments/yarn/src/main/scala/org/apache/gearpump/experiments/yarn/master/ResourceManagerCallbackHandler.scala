@@ -33,11 +33,11 @@ import scala.collection.JavaConverters._
 class ResourceManagerCallbackHandler(appConfig: AppConfig, val resourceManagerClient: ActorRef) extends AMRMClientAsync.CallbackHandler {
   import AmActorProtocol._
 
-  val LOG: Logger = LogUtil.getLogger(getClass)
-  val completedContainersCount = new AtomicInteger(0)
-  val failedContainersCount = new AtomicInteger(0)
-  val allocatedContainersCount = new AtomicInteger(0)
-  val requestedContainersCount = new AtomicInteger(0)
+  private val LOG: Logger = LogUtil.getLogger(getClass)
+  private val completedContainersCount = new AtomicInteger(0)
+  private val failedContainersCount = new AtomicInteger(0)
+  private val allocatedContainersCount = new AtomicInteger(0)
+  private val requestedContainersCount = new AtomicInteger(0)
 
   def getProgress: Float = completedContainersCount.get / appConfig.getEnv(WORKER_CONTAINERS).toInt
 

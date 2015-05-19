@@ -49,7 +49,6 @@ object AmActorProtocol {
   case class RMAllRequestedContainersCompleted(containerStats: ContainerStats) extends RMTerminalState
 
   //protocol
-  case class AMStatusMessage(appStatus: FinalApplicationStatus, appMessage: String, appTrackingUrl: String)
   case class AdditionalContainersRequest(count: Int)
   case class LaunchWorkerContainers(containers: List[Container])
   case class LaunchServiceContainer(containers: List[Container])
@@ -71,24 +70,28 @@ class YarnApplicationMaster(appConfig: AppConfig, yarnConf: YarnConfiguration,
 
   import AmActorProtocol._
 
-  val LOG: Logger = LogUtil.getLogger(getClass)
-  val nodeManagerClient: NMClientAsync = createNMClient(yarnConf, self)
-  val resourceManagerClient = context.actorOf(propsRMClient, "resourceManagerClient")
+  private val LOG: Logger = LogUtil.getLogger(getClass)
+  private val nodeManagerClient: NMClientAsync = createNMClient(yarnConf, self)
+  private val servicesPort = appConfig.getEnv(SERVICES_PORT).toInt
+  private[master] val resourceManagerClient = context.actorOf(propsRMClient, "resourceManagerClient")
+  private[master] val host = InetAddress.getLocalHost.getHostName
+  private[master] val trackingURL = "http://" + host + ":" + servicesPort
+  private val version = appConfig.getEnv("version")
 
-  var masterContainers = Map.empty[ContainerId, (String, Int)]
-  val host = InetAddress.getLocalHost.getHostName
-  val servicesPort = appConfig.getEnv(SERVICES_PORT).toInt
-  val trackingURL = "http://" + host + ":" + servicesPort
-  var masterAddr: Option[HostPort] = None
-  var masterContainersStarted = 0
-  var workerContainersStarted = 0
-  var workerContainersRequested = 0
-  val version = appConfig.getEnv("version")
+  private var masterContainers = Map.empty[ContainerId, (String, Int)]
+  private[master] var masterAddr: Option[HostPort] = None
+  private[master] var masterContainersStarted = 0
+  private[master] var workerContainersStarted = 0
+  private[master] var workerContainersRequested = 0
+  private var servicesActor: Option[ActorRef] = None
 
-  var servicesActor: Option[ActorRef] = None
+  override def receive: Receive = connectionHandler orElse
+    containerHandler orElse
+    registerHandler orElse
+    terminalStateHandler orElse
+    unknownHandler
 
-  override def receive: Receive = {
-
+  def connectionHandler: Receive = {
     case RMConnected =>
       LOG.info("received RMConnected")
       val port = appConfig.getEnv(YARNAPPMASTER_PORT).toInt
@@ -98,6 +101,12 @@ class YarnApplicationMaster(appConfig: AppConfig, yarnConf: YarnConfiguration,
 
     case RMConnectionFailed(throwable) =>
       LOG.info("Failed to connect to Resource Manager", throwable.getMessage)
+  }
+
+  def containerHandler: Receive = {
+    case AdditionalContainersRequest(count) =>
+      LOG.info("AM: Received AdditionalContainersRequest($count)")
+      requestMoreContainers(count)
 
     case ContainersAllocated(containers) =>
       LOG.info("Received LaunchContainers")
@@ -133,25 +142,26 @@ class YarnApplicationMaster(appConfig: AppConfig, yarnConf: YarnConfiguration,
         }
       }
 
-    case AdditionalContainersRequest(count) =>
-      LOG.info("AM: Received AdditionalContainersRequest($count)")
-      requestMoreContainers(count)
-
     case containerRequest: ContainersRequest =>
       LOG.info("AM: Received ContainerRequestMessage")
       resourceManagerClient ! containerRequest
+  }
 
+  def registerHandler: Receive = {
     case RegisterAppMasterResponse(response) =>
       LOG.info("Received RegisterAppMasterResponse")
       requestMasterContainers(response)
+  }
 
+  def terminalStateHandler: Receive = {
     case state: RMTerminalState =>
       LOG.info("Got Terminal State")
-      cleanUp(state)
+      cleanUp()
+  }
 
+  def unknownHandler: Receive = {
     case unknown =>
       LOG.info(s"Unknown message ${unknown.getClass.getName}")
-
   }
 
   private def setMasterAddrIfNeeded(containers: List[Container]) {
@@ -229,30 +239,9 @@ class YarnApplicationMaster(appConfig: AppConfig, yarnConf: YarnConfiguration,
 
   }
 
-  private def cleanUp(state: RMTerminalState): Unit = {
+  private def cleanUp(): Unit = {
     LOG.info("Application completed. Stopping running containers")
     nodeManagerClient.stop()
-
-    state match {
-      case RMError(throwable, stats) =>
-        LOG.info("Failed", throwable.getMessage)
-        val message = s"Failed. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-        resourceManagerClient ! AMStatusMessage(FinalApplicationStatus.FAILED, message, null)
-        
-      case RMShutdownRequest(stats) =>
-        if (stats.failed == 0 && stats.completed == appConfig.getEnv(WORKER_CONTAINERS).toInt) {
-          val message = s"ShutdownRequest. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-          resourceManagerClient ! AMStatusMessage(FinalApplicationStatus.KILLED, message, null)
-        } else {
-          val message = s"ShutdownRequest. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-          resourceManagerClient ! AMStatusMessage(FinalApplicationStatus.FAILED, message, null)
-        }
-
-      case RMAllRequestedContainersCompleted(stats) =>
-        val message = s"Diagnostics. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-        resourceManagerClient ! AMStatusMessage(FinalApplicationStatus.SUCCEEDED, message, null)
-    }
-
     resourceManagerClient ! PoisonPill
   }
 }

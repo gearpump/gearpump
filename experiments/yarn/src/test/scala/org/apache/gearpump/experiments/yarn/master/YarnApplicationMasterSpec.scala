@@ -121,8 +121,6 @@ with TestConfiguration {
     val amActor = createAmActor(probe)
     amActor ! RMAllRequestedContainersCompleted(stats)
     one(nmClientAsyncMock).stop()
-    val message = s"Diagnostics. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-    probe.expectMsg(AMStatusMessage(FinalApplicationStatus.SUCCEEDED, message, null))
     noMoreCallsTo(nmClientAsyncMock)
     expectTermination(probe, amActor.underlyingActor.resourceManagerClient)
   }
@@ -133,8 +131,6 @@ with TestConfiguration {
     val amActor = createAmActor(probe)
     amActor ! RMError(new RuntimeException, stats)
     one(nmClientAsyncMock).stop()
-    val message = s"Failed. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-    probe.expectMsg(AMStatusMessage(FinalApplicationStatus.FAILED, message, null))
     noMoreCallsTo(nmClientAsyncMock)
     expectTermination(probe, amActor.underlyingActor.resourceManagerClient)
   }
@@ -145,8 +141,6 @@ with TestConfiguration {
     val amActor = createAmActor(probe)
     amActor ! RMShutdownRequest(stats)
     one(nmClientAsyncMock).stop()
-    val message = s"ShutdownRequest. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-    probe.expectMsg(AMStatusMessage(FinalApplicationStatus.KILLED, message, null))
     noMoreCallsTo(nmClientAsyncMock)
     expectTermination(probe, amActor.underlyingActor.resourceManagerClient)
   }
@@ -157,8 +151,6 @@ with TestConfiguration {
     val amActor = createAmActor(probe)
     amActor ! RMShutdownRequest(stats)
     one(nmClientAsyncMock).stop()
-    val message = s"ShutdownRequest. total=${appConfig.getEnv(WORKER_CONTAINERS).toInt}, completed=${stats.completed}, allocated=${stats.allocated}, failed=${stats.failed}"
-    probe.expectMsg(AMStatusMessage(FinalApplicationStatus.FAILED, message, null))
     noMoreCallsTo(nmClientAsyncMock)
     expectTermination(probe, amActor.underlyingActor.resourceManagerClient)
   }

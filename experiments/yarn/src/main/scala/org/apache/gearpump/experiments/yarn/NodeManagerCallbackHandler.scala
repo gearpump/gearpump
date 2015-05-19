@@ -33,7 +33,7 @@ import akka.actor.ActorRef
 class NodeManagerCallbackHandler(am: ActorRef) extends NMClientAsync.CallbackHandler {
   import AmActorProtocol.ContainerStarted
 
-  val LOG = LogUtil.getLogger(getClass)
+  private val LOG = LogUtil.getLogger(getClass)
   def onContainerStarted(containerId: ContainerId, allServiceResponse: java.util.Map[String, ByteBuffer]) {
     LOG.info(s"Container started : $containerId, " + allServiceResponse)
       am ! ContainerStarted(containerId)
