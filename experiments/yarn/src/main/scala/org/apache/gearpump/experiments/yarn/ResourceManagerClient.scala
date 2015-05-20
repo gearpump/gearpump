@@ -1,8 +1,9 @@
 package org.apache.gearpump.experiments.yarn
 
-import akka.actor.{Actor, ActorRef, actorRef2Scala}
+import akka.actor._
+import org.apache.gearpump.experiments.yarn.AppConfig
 import org.apache.gearpump.experiments.yarn.Constants._
-import org.apache.gearpump.experiments.yarn.master.{AmActorProtocol, ResourceManagerCallbackHandler, YarnApplicationMaster}
+import org.apache.gearpump.experiments.yarn.master.{ResourceManagerCallbackHandler, AmActorProtocol, YarnApplicationMaster}
 import org.apache.gearpump.util.LogUtil
 import org.apache.hadoop.yarn.api.records.{FinalApplicationStatus, Priority, Resource}
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest
@@ -13,25 +14,15 @@ import org.apache.hadoop.yarn.util.Records
 import scala.util.{Failure, Success, Try}
 
 class ResourceManagerClient(yarnConf: YarnConfiguration, appConfig: AppConfig,
-                            createHandler: Option[(AppConfig, ActorRef) => ResourceManagerCallbackHandler],
-                            startClient: Option[(ResourceManagerCallbackHandler) =>  AMRMClientAsync[ContainerRequest]]) extends Actor {
+                            createHandler: (AppConfig, ActorRef) => ResourceManagerCallbackHandler,
+                            startClient: (ResourceManagerCallbackHandler) =>  AMRMClientAsync[ContainerRequest]) extends Actor {
   import AmActorProtocol._
 
   private val LOG = LogUtil.getLogger(getClass)
-  private val callbackHandler: ResourceManagerCallbackHandler = createHandler match {
-    case Some(create) =>
-      create(appConfig, self)
-    case None =>
-      new ResourceManagerCallbackHandler(appConfig, self)
-  }
+  private val callbackHandler = createHandler(appConfig, self)
   private val applicationMaster: ActorRef = context.parent
   private val client: Option[AMRMClientAsync[ContainerRequest]] = Try({
-    startClient match {
-      case Some(start) =>
-        start(callbackHandler)
-      case None =>
-        start(callbackHandler)
-    }
+    startClient(callbackHandler)
   }) match {
     case Success(asyncClient) =>
       callbackHandler.resourceManagerClient ! RMConnected
@@ -106,11 +97,28 @@ class ResourceManagerClient(yarnConf: YarnConfiguration, appConfig: AppConfig,
     new ContainerRequest(capability, null, null, priority)
   }
 
-  private def start(rmCallbackHandler: ResourceManagerCallbackHandler): AMRMClientAsync[ContainerRequest] = {
-    LOG.info("starting AMRMClientAsync")
-    val amrmClient = AMRMClientAsync.createAMRMClientAsync[ContainerRequest](YarnApplicationMaster.TIME_INTERVAL, rmCallbackHandler)
-    amrmClient.init(yarnConf)
-    amrmClient.start()
-    amrmClient
+
+}
+
+object ResourceManagerClient {
+  def props(yarnConf: YarnConfiguration, appConfig: AppConfig): Props = {
+
+    def startAMRMClient(rmCallbackHandler: ResourceManagerCallbackHandler): AMRMClientAsync[ContainerRequest] = {
+      val amrmClient = AMRMClientAsync.createAMRMClientAsync[ContainerRequest](YarnApplicationMaster.TIME_INTERVAL, rmCallbackHandler)
+      amrmClient.init(yarnConf)
+      amrmClient.start()
+      amrmClient
+    }
+
+    Props(new ResourceManagerClient(yarnConf, appConfig,
+      (appConfig: AppConfig, actorRef:ActorRef) => new ResourceManagerCallbackHandler(appConfig, actorRef),
+      (rmCallbackHandler: ResourceManagerCallbackHandler) => startAMRMClient(rmCallbackHandler)
+    ))
   }
+
+  def props(yarnConf: YarnConfiguration, appConfig: AppConfig,
+            createHandler: (AppConfig, ActorRef) => ResourceManagerCallbackHandler,
+            startClient: (ResourceManagerCallbackHandler) =>  AMRMClientAsync[ContainerRequest]): Props =
+  Props(new ResourceManagerClient(yarnConf, appConfig, createHandler, startClient))
+
 }

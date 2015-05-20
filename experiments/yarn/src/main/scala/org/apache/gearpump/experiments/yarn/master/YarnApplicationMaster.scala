@@ -281,7 +281,7 @@ object YarnApplicationMaster extends App with ArgumentsParser {
       val amActorProps = Props(
         new YarnApplicationMaster(appConfig,
           yarnConfiguration,
-          Props(classOf[ResourceManagerClient], yarnConfiguration, appConfig),
+          ResourceManagerClient.props(yarnConfiguration, appConfig),
           (yarnConf, am) => {
             val nmClient = new NMClientAsyncImpl(new NodeManagerCallbackHandler(am))
             nmClient.init(yarnConf)
