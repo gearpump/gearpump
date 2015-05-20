@@ -123,9 +123,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   }
 
   private def allowSendingMoreMessages(): Boolean = {
-    this.subscriptions.foldLeft(true) {
-      (status, subscrption) => status && subscrption._2.allowSendingMoreMessages()
-    }
+    subscriptions.values.forall(_.allowSendingMoreMessages())
   }
 
   private def doHandleMessage(): Unit = {
@@ -168,7 +166,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
       subscriptions = subscribers.map { subscriber =>
         subscriber.processorId ->
-          (new Subscription(appId, executorId, taskId, subscriber, sessionId,  this))
+          new Subscription(appId, executorId, taskId, subscriber, sessionId, this)
       }.toMap
 
       subscriptions.foreach(_._2.start)
