@@ -16,24 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.experiments.yarn.master
+package org.apache.gearpump.experiments.yarn
 
-import org.apache.gearpump.util.LogUtil
-import akka.actor._
-import org.apache.gearpump.experiments.yarn.AppConfig
+import org.apache.hadoop.yarn.conf.YarnConfiguration
+import org.scalatest.FlatSpecLike
+import org.scalatest.Matchers._
+import org.specs2.mock.Mockito
 
-class ResourceManagerCallbackHandlerActor(appConfig: AppConfig, yarnAM: ActorRef) extends Actor {
-  val LOG = LogUtil.getLogger(getClass)
-  val rmCallbackHandler = new ResourceManagerCallbackHandler(appConfig, yarnAM)
 
-  override def preStart(): Unit = {
-    LOG.info("Sending RMCallbackHandler to YarnAM")
-    yarnAM ! rmCallbackHandler
+class DefaultContainerLaunchContextFactorySpec extends FlatSpecLike
+with Mockito {
+
+  "A DefaultContainerLaunchContextFactory" should "create new ContainerLaunchContext object when newInstance is called on it" in {
+    DefaultContainerLaunchContextFactory(mock[YarnConfiguration], mock[AppConfig]) should not be theSameInstanceAs(DefaultContainerLaunchContextFactory(mock[YarnConfiguration], mock[AppConfig]))
   }
-
-  override def receive: Receive = {
-    case _ =>
-      LOG.error(s"Unknown message received")
-  }
-
 }

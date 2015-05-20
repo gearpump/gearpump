@@ -18,22 +18,19 @@
 
 package org.apache.gearpump.experiments.yarn.master
 
-import org.apache.gearpump.util.LogUtil
-import akka.actor._
-import org.apache.gearpump.experiments.yarn.AppConfig
+import org.apache.gearpump.experiments.yarn.NodeManagerCallbackHandler
+import org.apache.hadoop.yarn.conf.YarnConfiguration
+import org.scalatest.FlatSpecLike
+import org.scalatest.Matchers._
+import org.specs2.mock.Mockito
 
-class ResourceManagerCallbackHandlerActor(appConfig: AppConfig, yarnAM: ActorRef) extends Actor {
-  val LOG = LogUtil.getLogger(getClass)
-  val rmCallbackHandler = new ResourceManagerCallbackHandler(appConfig, yarnAM)
 
-  override def preStart(): Unit = {
-    LOG.info("Sending RMCallbackHandler to YarnAM")
-    yarnAM ! rmCallbackHandler
+class CreateNMClientSpec extends FlatSpecLike
+with Mockito {
+
+  "A AmActor.createNMClient" should "create unique NMClientAsync object each time" in {
+    val callbackHandler = mock[NodeManagerCallbackHandler]
+    val yarnConf = mock[YarnConfiguration]
+    AmActor.createNMClient(callbackHandler, yarnConf) should not be theSameInstanceAs(AmActor.createNMClient(callbackHandler, yarnConf))
   }
-
-  override def receive: Receive = {
-    case _ =>
-      LOG.error(s"Unknown message received")
-  }
-
 }

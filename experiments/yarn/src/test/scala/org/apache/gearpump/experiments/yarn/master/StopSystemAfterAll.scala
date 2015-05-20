@@ -18,22 +18,14 @@
 
 package org.apache.gearpump.experiments.yarn.master
 
-import org.apache.gearpump.util.LogUtil
-import akka.actor._
-import org.apache.gearpump.experiments.yarn.AppConfig
+import akka.testkit.TestKit
+import org.scalatest.{BeforeAndAfterAll, Suite}
 
-class ResourceManagerCallbackHandlerActor(appConfig: AppConfig, yarnAM: ActorRef) extends Actor {
-  val LOG = LogUtil.getLogger(getClass)
-  val rmCallbackHandler = new ResourceManagerCallbackHandler(appConfig, yarnAM)
+trait StopSystemAfterAll extends BeforeAndAfterAll {
 
-  override def preStart(): Unit = {
-    LOG.info("Sending RMCallbackHandler to YarnAM")
-    yarnAM ! rmCallbackHandler
+  this: TestKit with Suite =>
+  override protected def afterAll () {
+    super.afterAll ()
+    system.shutdown ()
   }
-
-  override def receive: Receive = {
-    case _ =>
-      LOG.error(s"Unknown message received")
-  }
-
 }
