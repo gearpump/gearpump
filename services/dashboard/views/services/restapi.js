@@ -5,7 +5,7 @@
 'use strict';
 angular.module('dashboard.restapi', [])
 
-  .factory('restapi', ['$http', '$timeout', '$modal', 'conf', '$modal', function ($http, $timeout, $modal, conf) {
+  .factory('restapi', ['$http', '$timeout', '$modal', 'conf', function ($http, $timeout, $modal, conf) {
 
     var noticeWindow = $modal({
       template: "views/services/serverproblemnotice.html",
@@ -18,22 +18,26 @@ angular.module('dashboard.restapi', [])
       subscribe: function (url, scope, onData) {
         // TODO: convert to websocket push model
         var timeoutPromise;
+        var shouldCancel = false;
         scope.$on('$destroy', function () {
+          shouldCancel = true;
           $timeout.cancel(timeoutPromise);
         });
 
         var fn = function () {
-          var cancel = false;
           $http.get(conf.restapiRoot + url)
-            .success(function (data) {
-              noticeWindow.$promise.then(noticeWindow.hide);
-              cancel = !onData || onData(data);
-            })
-            .error(function (reason, code) {
-              noticeWindow.$promise.then(noticeWindow.show);
+            .then(function (response) {
+              if (!shouldCancel) {
+                noticeWindow.$promise.then(noticeWindow.hide);
+                shouldCancel = !onData || onData(response.data);
+              }
+            }, function (response) {
+              if (!shouldCancel) {
+                noticeWindow.$promise.then(noticeWindow.show);
+              }
             })
             .finally(function () {
-              if (!cancel) {
+              if (!shouldCancel) {
                 timeoutPromise = $timeout(fn, conf.restapiAutoRefreshInterval);
               }
             });
