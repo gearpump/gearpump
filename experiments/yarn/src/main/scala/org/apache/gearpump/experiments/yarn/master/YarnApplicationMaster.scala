@@ -256,26 +256,13 @@ object YarnApplicationMaster extends App with ArgumentsParser {
     "version" -> CLIOption[String]("<Gearpump version>", required = true)
   )
 
-  /**
-   * For yet unknown reason this is needed for my local pseudo distributed cluster.   
-   *
-   */
-  private[this]   def loadYarnConfUsingHadoopConfEnv: YarnConfiguration = {
-    val hadoopConf = new Configuration(true)
-    val configDir = System.getenv("HADOOP_CONF_DIR")
-    Configuration.addDefaultResource(configDir + "/core-site.xml")
-    Configuration.addDefaultResource(configDir + "/hdfs-site")
-    Configuration.addDefaultResource(configDir + "/yarn-site.xml")
-    new YarnConfiguration(hadoopConf)
-  }
-
   def apply(args: Array[String]) = {
     try {
       implicit val timeout = Timeout(5, TimeUnit.SECONDS)
       val config = ConfigFactory.parseResourcesAnySyntax(YARN_CONFIG)
       implicit val system = ActorSystem("GearPumpAM", config)
       val appConfig = new AppConfig(parse(args), config)
-      val yarnConfiguration = loadYarnConfUsingHadoopConfEnv
+      val yarnConfiguration = new YarnConfiguration(new Configuration(true))
       LOG.info("HADOOP_CONF_DIR: " + System.getenv("HADOOP_CONF_DIR"))
       LOG.info("Yarn config (yarn.resourcemanager.hostname): " + yarnConfiguration.get("yarn.resourcemanager.hostname"))
       val amActorProps = Props(
