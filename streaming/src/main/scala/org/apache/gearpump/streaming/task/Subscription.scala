@@ -18,8 +18,7 @@
 
 package org.apache.gearpump.streaming.task
 
-import java.util
-
+import com.google.common.primitives.Longs
 import org.apache.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import org.apache.gearpump.streaming.task.Subscription._
 import org.apache.gearpump.util.LogUtil
@@ -52,6 +51,8 @@ class Subscription(
   private var candidateMinClockSince: Array[Long] = null
   private var candidateMinClock: Array[TimeStamp] = null
 
+  private var allowSendingMsg = true
+
   def start: Unit = {
     minClockValue = Array.fill(processor.parallelism)(Long.MaxValue)
 
@@ -76,6 +77,7 @@ class Subscription(
 
     messageCount(partition) += 1
     pendingMessageCount(partition) += 1
+    updateAllowSendingFlag()
 
     if (messageCount(partition) % ONE_ACKREQUEST_PER_MESSAGE_COUNT == 0) {
       val ackRequest = AckRequest(taskId, messageCount(partition), sessionId)
@@ -110,6 +112,7 @@ class Subscription(
         }
 
         pendingMessageCount(ack.taskId.index) = messageCount(ack.taskId.index) - ack.seq
+        updateAllowSendingFlag()
       } else {
         LOG.error(s"Failed! Some messages sent from actor ${taskId} to ${taskId} are lost, try to replay...")
         throw new MsgLostException
@@ -122,11 +125,11 @@ class Subscription(
   }
 
   def allowSendingMoreMessages() : Boolean = {
-    if (pendingMessageCount.max < MAX_PENDING_MESSAGE_COUNT) {
-      true
-    } else {
-      false
-    }
+    allowSendingMsg
+  }
+
+  private def updateAllowSendingFlag() : Unit = {
+    allowSendingMsg = Longs.max(pendingMessageCount: _*) < MAX_PENDING_MESSAGE_COUNT
   }
 }
 
