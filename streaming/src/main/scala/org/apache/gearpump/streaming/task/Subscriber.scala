@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.task
 
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.{ProcessorDescription, DAG}
 
 /**
@@ -31,7 +31,7 @@ import org.apache.gearpump.streaming.{ProcessorDescription, DAG}
  * @param partitioner subscriber partitioner
  * @param processor subscriber processor definition
  */
-case class Subscriber(processorId: Int, partitioner: Partitioner, processor: ProcessorDescription)
+case class Subscriber(processorId: Int, partitioner: PartitionerDescription, processor: ProcessorDescription)
 
 object Subscriber {
 

@@ -41,7 +41,14 @@ class GraphBuilderSpec extends WordSpec with Matchers {
       processorGraph.vertices.size shouldBe 4
       processorGraph.edges.length shouldBe 3
 
-      val processors = DAG(processorGraph.mapVertex(Processor.ProcessorToProcessorDescription(_))).processors
+      var processorIdIndex = 0
+      val processorDescriptionGraph = processorGraph.mapVertex { processor =>
+        val description = Processor.ProcessorToProcessorDescription(processorIdIndex, processor)
+        processorIdIndex += 1
+        description
+      }
+      val dag: DAG = processorDescriptionGraph
+      val processors = dag.processors
 
       processors foreach { case (pid, procDesc) =>
         val conf = procDesc.taskConf

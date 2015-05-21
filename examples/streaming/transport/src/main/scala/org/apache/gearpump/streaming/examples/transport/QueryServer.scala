@@ -26,7 +26,7 @@ import akka.pattern.ask
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import QueryServer.{GetAllRecords, WebServer}
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef}
 import org.apache.gearpump.streaming.task.{TaskId, StartTime, Task, TaskContext}
@@ -49,7 +49,7 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
   private var overSpeedRecords = List.empty[OverSpeedReport]
 
   override def onStart(startTime: StartTime): Unit = {
-    val dag = DAG(conf.getValue[Graph[ProcessorDescription, Partitioner]](StreamApplication.DAG).get)
+    val dag = DAG(conf.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
     inspector = dag.processors.find { kv =>
       val (_, processor) = kv
       processor.taskClass == classOf[VelocityInspector].getName

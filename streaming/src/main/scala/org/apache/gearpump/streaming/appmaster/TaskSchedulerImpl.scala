@@ -66,7 +66,7 @@ trait TaskScheduler {
   def executorFailed(executorId: Int) : Array[ResourceRequest]
 }
 
-class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
+class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends TaskScheduler {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
   private var tasks = Map.empty[TaskId, TaskLaunchData]
@@ -75,7 +75,7 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
   private var tasksToBeScheduled = Map.empty[Locality, mutable.Queue[TaskLaunchData]]
 
   // find the locality of the tasks
-  private val taskLocator = new TaskLocator(config)
+  private val taskLocator = new TaskLocator(appName, config)
 
   private var executorToTaskIds = Map.empty[Int, Set[TaskId]]
 
@@ -86,7 +86,7 @@ class TaskSchedulerImpl(appId : Int, config: Config)  extends TaskScheduler {
       val subscriptions = Subscriber.of(processorId, dag)
       0.until(taskDescription.parallelism).map((taskIndex: Int) => {
         val taskId = TaskId(processorId, taskIndex)
-        val locality = taskLocator.locateTask(taskDescription)
+        val locality = taskLocator.locateTask(taskId)
         val taskLaunchData = TaskLaunchData(taskId, taskDescription,
           subscriptions)
         tasks += (taskId -> taskLaunchData)

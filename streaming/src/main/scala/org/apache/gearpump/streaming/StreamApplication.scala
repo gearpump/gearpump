@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
-import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
+import org.apache.gearpump.partitioner.{PartitionerDescription, HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.util.Constants._
@@ -41,9 +41,9 @@ trait Processor[+T <: Task] {
 }
 
 object Processor {
-  implicit def ProcessorToProcessorDescription(processor: Processor[_ <: Task]): ProcessorDescription = {
+  def ProcessorToProcessorDescription(id: ProcessorId, processor: Processor[_ <: Task]): ProcessorDescription = {
     import processor._
-    ProcessorDescription(taskClass.getName, parallelism, description, taskConf)
+    ProcessorDescription(id, taskClass.getName, parallelism, description, taskConf)
   }
 
   def apply[T<: Task](parallelism : Int, description: String = "", taskConf: UserConfig = UserConfig.empty)(implicit classtag: ClassTag[T]): DefaultProcessor[T] = {
@@ -58,16 +58,16 @@ object Processor {
 
 }
 
-case class ProcessorDescription(taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null) extends ReferenceEqual
+case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null) extends ReferenceEqual
 
-class StreamApplication(override val name : String,  inputUserConfig: UserConfig, inputDag: Graph[ProcessorDescription, _ <: Partitioner])
+class StreamApplication(override val name : String,  inputUserConfig: UserConfig, inputDag: Graph[ProcessorDescription, PartitionerDescription])
   extends Application {
 
   private val dagWithDefault = inputDag.mapEdge {(node1, edge, node2) =>
-    Option(edge).getOrElse(StreamApplication.defaultPartitioner)
+    Option(edge).getOrElse(PartitionerDescription(StreamApplication.defaultPartitioner))
   }
 
-  def dag: Graph[ProcessorDescription, _ <: Partitioner] = dagWithDefault
+  def dag: Graph[ProcessorDescription, PartitionerDescription] = dagWithDefault
   override def appMaster: Class[_ <: ApplicationMaster] = classOf[AppMaster]
   override def userConfig(implicit system: ActorSystem): UserConfig = {
     inputUserConfig.withValue(StreamApplication.DAG, dagWithDefault)
@@ -78,25 +78,16 @@ object StreamApplication {
 
   def apply (name : String, dag: Graph[_ <: Processor[Task], _ <: Partitioner], userConfig: UserConfig): StreamApplication = {
     import Processor._
-    val graph = dag.mapVertex(ProcessorToProcessorDescription)
-    new StreamApplication(name, userConfig, graph)
-  }
 
-  def apply (name : String, jarName: String, processors: Map[ProcessorId, ProcessorDescription], dag: Graph[Int, String]): StreamApplication = {
-    val graph = Graph.empty[ProcessorDescription, Partitioner]
-    dag.vertices.foreach(vertex => {
-      graph.addVertex(processors(vertex))
-    })
-    dag.edges.foreach(triple => {
-      val (p1, ptype, p2) = triple
-      graph.addEdge(processors(p1), Class.forName(ptype).newInstance.asInstanceOf[Partitioner], processors(p2))
-    })
-    Option(jarName) match {
-      case Some(jar) =>
-        System.setProperty(GEARPUMP_APP_JAR, jarName)
-      case None =>
+    var processorIndex = 0
+    val graph = dag.mapVertex {processor =>
+      val updatedProcessor = ProcessorToProcessorDescription(processorIndex, processor)
+      processorIndex += 1
+      updatedProcessor
+    }.mapEdge{(node1, edge, node2) =>
+      PartitionerDescription(edge)
     }
-    new StreamApplication(name, UserConfig.empty, graph)
+    new StreamApplication(name, userConfig, graph)
   }
 
   val DAG = "DAG"

@@ -37,6 +37,13 @@ trait Partitioner extends Serializable {
   }
 }
 
+/**
+ * @param partitioner
+ * @param startTime we will accept message since startTime
+ * @param endTime we will stop receiving message after endTime
+ */
+case class PartitionerDescription(partitioner: Partitioner, startTime: Long = Long.MinValue, endTime: Long = Long.MaxValue)
+
 object Partitioner {
   val UNKNOWN_PARTITION_ID = -1
 }

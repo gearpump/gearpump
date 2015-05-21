@@ -56,7 +56,9 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
     val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProcessor.OUTPUT_PATH, outputDirectory)).withHadoopConf(new Configuration())
     val context = MockUtil.mockTaskContext
 
-    val processorDescription: ProcessorDescription = Processor[SeqFileStreamProcessor](1)
+    val processorDescription =
+      Processor.ProcessorToProcessorDescription(id = 0, Processor[SeqFileStreamProcessor](1))
+
     val dag = DAG(Map(0 -> processorDescription), null)
     val taskId = TaskId(0, 0)
     when(context.taskId).thenReturn(taskId)

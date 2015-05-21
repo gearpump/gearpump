@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.{AppJar, AppDescription}
 import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterDataDetailRequest
 import org.apache.gearpump.cluster.MasterToClient.{SubmitApplicationResult, SubmitApplicationResultValue}
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.appmaster.{StreamingAppMasterDataDetail, SubmitApplicationRequest}
 import org.apache.gearpump.streaming.{ProcessorDescription, ProcessorId}
 import org.apache.gearpump.util.{Constants, Graph, LogUtil}
@@ -41,18 +41,18 @@ class SubmitApplicationRequestServiceSpec(sys:ActorSystem) extends FlatSpec with
   def this() = this(ActorSystem("MySpec"))
   override implicit val system:ActorSystem = sys
   val _processors = Map(
-    0 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Source_0", 1),
-    5 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Sink_2", 1),
-    10 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Node_3", 1),
-    1 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Source_1", 1),
-    6 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Sink_1", 1),
-    9 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Node_4", 1),
-    2 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Node_1", 1),
-    7 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Node_0", 1),
-    3 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Sink_0", 1),
-    11 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Sink_3", 1),
-    8 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Sink_4", 1),
-    4 -> ProcessorDescription("org.apache.gearpump.streaming.examples.complexdag.Node_2", 1)
+    0 -> ProcessorDescription(0, "org.apache.gearpump.streaming.examples.complexdag.Source_0", 1),
+    5 -> ProcessorDescription(5, "org.apache.gearpump.streaming.examples.complexdag.Sink_2", 1),
+    10 -> ProcessorDescription(10, "org.apache.gearpump.streaming.examples.complexdag.Node_3", 1),
+    1 -> ProcessorDescription(1, "org.apache.gearpump.streaming.examples.complexdag.Source_1", 1),
+    6 -> ProcessorDescription(6, "org.apache.gearpump.streaming.examples.complexdag.Sink_1", 1),
+    9 -> ProcessorDescription(9, "org.apache.gearpump.streaming.examples.complexdag.Node_4", 1),
+    2 -> ProcessorDescription(2, "org.apache.gearpump.streaming.examples.complexdag.Node_1", 1),
+    7 -> ProcessorDescription(7, "org.apache.gearpump.streaming.examples.complexdag.Node_0", 1),
+    3 -> ProcessorDescription(3, "org.apache.gearpump.streaming.examples.complexdag.Sink_0", 1),
+    11 -> ProcessorDescription(11, "org.apache.gearpump.streaming.examples.complexdag.Sink_3", 1),
+    8 -> ProcessorDescription(8, "org.apache.gearpump.streaming.examples.complexdag.Sink_4", 1),
+    4 -> ProcessorDescription(4, "org.apache.gearpump.streaming.examples.complexdag.Node_2", 1)
   )
   val dag = Graph.empty[Int, String]
   List(0, 2, 9, 5, 8, 1, 4, 11, 6, 10, 3, 7).foreach(dag.addVertex)
@@ -105,18 +105,18 @@ class SubmitApplicationRequestServiceSpec(sys:ActorSystem) extends FlatSpec with
             |[{"processorId":1,"index":0},1],
             |[{"processorId":7,"index":0},0]],
             |"processors":[
-            |[0,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Source_0","parallelism":1}],
-            |[5,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_1","parallelism":1}],
-            |[10,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_3","parallelism":1}],
-            |[1,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Source_1","parallelism":1}],
-            |[6,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_2","parallelism":1}],
-            |[9,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_4","parallelism":1}],
-            |[2,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_1","parallelism":1}],
-            |[7,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_4","parallelism":1}],
-            |[3,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_2","parallelism":1}],
-            |[11,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_3","parallelism":1}],
-            |[8,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_0","parallelism":1}],
-            |[4,{"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_0","parallelism":1}]],
+            |[0,{"id":0, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Source_0","parallelism":1}],
+            |[5,{"id":5, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_1","parallelism":1}],
+            |[10,{"id":10, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_3","parallelism":1}],
+            |[1,{"id":1, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Source_1","parallelism":1}],
+            |[6,{"id":6, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_2","parallelism":1}],
+            |[9,{"id":9, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_4","parallelism":1}],
+            |[2,{"id":2, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_1","parallelism":1}],
+            |[7,{"id":7, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_4","parallelism":1}],
+            |[3,{"id":3, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_2","parallelism":1}],
+            |[11,{"id":11, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_3","parallelism":1}],
+            |[8,{"id":8, "taskClass":"org.apache.gearpump.streaming.examples.complexdag.Node_0","parallelism":1}],
+            |[4,{"id":4,"taskClass":"org.apache.gearpump.streaming.examples.complexdag.Sink_0","parallelism":1}]],
             |"processorLevels":[[0,0],[5,1],[10,2],[1,0],[6,1],[9,2],[2,1],[7,1],[3,1],[11,3],[8,1],[4,1]],
             |"dag":{"vertices":[0,2,9,5,8,1,4,11,6,10,3,7],
             |"edges":[
@@ -168,7 +168,7 @@ class SubmitApplicationRequestServiceSpec(sys:ActorSystem) extends FlatSpec with
     Get(s"/api/$REST_VERSION/appmaster/$resultAppId?detail=true") ~> appMasterRoute ~> check {
       val responseBody = response.entity.asString
       val appMasterDataDetail = read[StreamingAppMasterDataDetail](responseBody)
-      def validateDag(dag: Graph[Int, Partitioner]): Unit = {
+      def validateDag(dag: Graph[Int, PartitionerDescription]): Unit = {
         val vertices = dag.vertices.toIndexedSeq
         val mapping = submitApplicationRequest.dag.vertices.filterNot(vertex => {
           vertices.isDefinedAt(vertex)

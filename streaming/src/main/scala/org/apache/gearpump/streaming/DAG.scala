@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming
 
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
 import upickle._
@@ -26,23 +26,7 @@ import upickle._
 import scala.collection.JavaConversions._
 
 
-case class DAG(processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, Partitioner]) extends Serializable {
-
-  def subGraph(processorId : Int): DAG = {
-    val newGraph = Graph.empty[ProcessorId, Partitioner]
-    newGraph.addVertex(processorId)
-    graph.edgesOf(processorId).foreach { edge =>
-      val (node1, partitioner, node2) = edge
-      newGraph.addEdge(node1, partitioner, node2)
-    }
-    val newMap = newGraph.vertices.foldLeft(Map.empty[ProcessorId, ProcessorDescription]){ (map, vertex) =>
-      val task = processors.get(vertex).get
-
-      //clean out other in-degree and out-degree processors' data except the task parallelism
-      map + (vertex -> task.copy(null, task.parallelism))
-    }
-    new DAG(newMap, newGraph)
-  }
+case class DAG(processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, PartitionerDescription]) extends Serializable {
 
   def taskCount: Int = {
     processors.foldLeft(0) { (count, task) =>
@@ -54,33 +38,21 @@ case class DAG(processors : Map[ProcessorId, ProcessorDescription], graph : Grap
 object DAG {
 
   implicit def graphToDAG(graph: Graph[ProcessorDescription, _ <: Partitioner]): DAG = {
-    apply(graph)
-  }
-
-  def apply (graph : Graph[ProcessorDescription, _ <: Partitioner]) : DAG = {
-    val topologicalOrderIterator = graph.topologicalOrderIterator
-
-    val outputGraph = Graph.empty[ProcessorId, Partitioner]
-    val (_, processors) = topologicalOrderIterator.foldLeft((0, Map.empty[ProcessorId, ProcessorDescription])) { (first, processor) =>
-      val (processorId, processors) = first
-      outputGraph.addVertex(processorId)
-      (processorId + 1, processors + (processorId -> processor))
+    val updatedGraph = graph.mapEdge { (node1, edge, node2) =>
+      PartitionerDescription(edge)
     }
+    apply(updatedGraph)
+  }
 
-    graph.edges.foreach { edge =>
-      val (node1, partitioner, node2) = edge
-      outputGraph.addEdge(getProcessorId(processors, node1), partitioner, getProcessorId(processors, node2))
+  def apply (graph : Graph[ProcessorDescription, PartitionerDescription]) : DAG = {
+    val processors = graph.vertices.map{processorDescription =>
+      (processorDescription.id, processorDescription)
+    }.toMap
+    val dag = graph.mapVertex{ processor =>
+      processor.id
     }
-
-    new DAG(processors, outputGraph)
+    new DAG(processors, dag)
   }
 
-  def empty() = apply(Graph.empty)
-
-  private def getProcessorId(processors : Map[ProcessorId, ProcessorDescription], node : ProcessorDescription) = {
-    processors.find { task =>
-      val (_, taskDescription) = task
-      taskDescription.equals(node)
-    }.get._1
-  }
+  def empty() = apply(Graph.empty[ProcessorDescription, PartitionerDescription])
 }
