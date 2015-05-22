@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, QueryHistor
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.metrics.Metrics.MetricType
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, AllocateResourceTimeOut}
@@ -53,7 +53,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
 
-  val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, Partitioner]](StreamApplication.DAG).get)
+  val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
 
   private val (taskManager, executorManager, clockService) = {
     val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext, app.clusterConfig),
@@ -62,7 +62,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
     val clockService = context.actorOf(Props(new ClockService(dag, store)))
 
-    val taskScheduler: TaskScheduler = new TaskSchedulerImpl(appId, context.system.settings.config)
+    val taskScheduler: TaskScheduler = new TaskSchedulerImpl(appId, app.name, context.system.settings.config)
     val taskManager = context.actorOf(Props(new TaskManager(appContext.appId, dag,
       taskScheduler, executorManager, clockService, self, app.name)))
     (taskManager, executorManager, clockService)

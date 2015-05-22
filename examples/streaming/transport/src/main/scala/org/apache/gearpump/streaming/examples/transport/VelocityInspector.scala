@@ -24,7 +24,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef}
 import org.apache.gearpump.streaming.examples.transport.generator.MockCity
@@ -47,7 +47,7 @@ class VelocityInspector(taskContext: TaskContext, conf: UserConfig) extends Task
   private var queryServerActor: ActorRef = null
 
   override def onStart(startTime: StartTime): Unit = {
-    val dag = DAG(conf.getValue[Graph[ProcessorDescription, Partitioner]](StreamApplication.DAG).get)
+    val dag = DAG(conf.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
     val queryServer = dag.processors.find { kv =>
       val (_, processor) = kv
       processor.taskClass == classOf[QueryServer].getName

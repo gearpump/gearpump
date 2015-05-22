@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
@@ -32,7 +32,7 @@ case class StreamingAppMasterDataDetail(
     processors: Map[ProcessorId, ProcessorDescription],
     // hiearachy level for each processor
     processorLevels: Map[ProcessorId, Int],
-    dag: Graph[ProcessorId, Partitioner] = null,
+    dag: Graph[ProcessorId, PartitionerDescription] = null,
     actorPath: String = null,
     clock: TimeStamp = 0,
     executors: Map[ExecutorId, String] = null,
@@ -74,7 +74,7 @@ object StreamingAppMasterDataDetail {
 
         val edges = dag.edges.map(f => {
           var (node1, edge, node2) = f
-          Js.Arr(Js.Num(node1), Js.Str(edge.getClass.getName), Js.Num(node2))
+          Js.Arr(Js.Num(node1), Js.Str(edge.partitioner.getClass.getName), Js.Num(node2))
         })
 
         Js.Obj(
@@ -119,12 +119,12 @@ object StreamingAppMasterDataDetail {
             streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(processorLevels=upickle.readJs[Map[ProcessorId, Int]](value))
           case "dag" =>
             val inputdag = upickle.readJs[Graph[ProcessorId, String]](value)
-            val converteddag = Graph.empty[ProcessorId, Partitioner]
+            val converteddag = Graph.empty[ProcessorId, PartitionerDescription]
             inputdag.vertices.foreach(converteddag.addVertex(_))
             inputdag.edges.foreach(edge => {
               val (id1, partitionerClassName, id2) = edge
               val partitioner = Class.forName(partitionerClassName).newInstance.asInstanceOf[Partitioner]
-              converteddag.addEdge(id1, partitioner, id2)
+              converteddag.addEdge(id1, PartitionerDescription(partitioner), id2)
             })
             streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(dag=converteddag)
         }

@@ -23,9 +23,12 @@ import akka.pattern.ask
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterDataDetailRequest
 import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResultValue
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.StreamApplication
 import org.apache.gearpump.streaming.appmaster.SubmitApplicationRequest
+import org.apache.gearpump.util.Constants.GEARPUMP_APP_JAR
 import org.apache.gearpump.util.{LogUtil, Constants}
 import org.slf4j.Logger
 import spray.http.StatusCodes
@@ -47,7 +50,23 @@ trait SubmitApplicationRequestService extends HttpService  {
           import SubmitApplicationRequest._
           entity(as[SubmitApplicationRequest]) { submitApplicationRequest =>
             import submitApplicationRequest.{appJar, appName, dag, processors}
-            val appId = ClientContext(system.settings.config, Some(system), Some(master)).submit(StreamApplication(appName, appJar, processors, dag))
+
+            Option(appJar) match {
+              case Some(jar) =>
+                System.setProperty(GEARPUMP_APP_JAR, appJar)
+              case None =>
+            }
+
+            val context = ClientContext(system.settings.config, Some(system), Some(master))
+
+            val graph = dag.mapVertex {processorId =>
+              processors(processorId)
+            }.mapEdge { (node1, edge, node2) =>
+              val partitioner = Class.forName(edge).newInstance.asInstanceOf[Partitioner]
+              PartitionerDescription(partitioner)
+            }
+
+            val appId = context.submit(new StreamApplication(appName, UserConfig.empty, graph))
             import upickle._
             val submitApplicationResultValue = SubmitApplicationResultValue(appId)
             val jsonData = write(submitApplicationResultValue)

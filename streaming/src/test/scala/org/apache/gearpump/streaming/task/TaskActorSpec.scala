@@ -42,9 +42,9 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     withFallback(TestUtil.DEFAULT_CONFIG)
 
   val appId = 0
-  val task1 = ProcessorDescription(classOf[TestTask].getName, 1)
-  val task2 = ProcessorDescription(classOf[TestTask].getName, 1)
-  val dag = DAG(Graph(task1 ~ new HashPartitioner() ~> task2))
+  val task1 = ProcessorDescription(id = 0, classOf[TestTask].getName, 1)
+  val task2 = ProcessorDescription(id = 1, classOf[TestTask].getName, 1)
+  val dag: DAG = Graph(task1 ~ new HashPartitioner() ~> task2)
   val taskId1 = TaskId(0, 0)
   val taskId2 = TaskId(1, 0)
   val executorId1 = 1

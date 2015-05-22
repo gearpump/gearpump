@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.streaming.task
 
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.partitioner.{PartitionerDescription, HashPartitioner}
 import org.apache.gearpump.streaming.task.SubscriberSpec.TestTask
 
 import org.apache.gearpump.streaming.{ProcessorDescription, DAG}
@@ -27,18 +27,20 @@ import org.apache.gearpump.util.Graph._
 
 class SubscriberSpec  extends FlatSpec with Matchers {
   "Subscriber.of" should "return all subscriber for a processor" in {
-    val task1 = ProcessorDescription(classOf[TestTask].getName, 1)
-    val task2 = ProcessorDescription(classOf[TestTask].getName, 1)
-    val task3 = ProcessorDescription(classOf[TestTask].getName, 1)
-    val partitioner = new HashPartitioner()
-    val dag = DAG(Graph(task1 ~ partitioner ~> task2, task1 ~ partitioner ~> task3, task2 ~ partitioner ~> task3))
 
     val sourceProcessorId = 0
+    val task1 = ProcessorDescription(id = sourceProcessorId, classOf[TestTask].getName, 1)
+    val task2 = ProcessorDescription(id = 1, classOf[TestTask].getName, 1)
+    val task3 = ProcessorDescription(id = 2, classOf[TestTask].getName, 1)
+    val partitioner = new HashPartitioner()
+    val dag: DAG = Graph(task1 ~ partitioner ~> task2, task1 ~ partitioner ~> task3, task2 ~ partitioner ~> task3)
+
+
     val subscribers = Subscriber.of(sourceProcessorId, dag)
     assert(subscribers.size == 2)
 
     assert(subscribers.toSet ==
-      Set(Subscriber(1, partitioner, task2), Subscriber(2, partitioner, task3)))
+      Set(Subscriber(1, PartitionerDescription(partitioner), task2), Subscriber(2, PartitionerDescription(partitioner), task3)))
   }
 }
 

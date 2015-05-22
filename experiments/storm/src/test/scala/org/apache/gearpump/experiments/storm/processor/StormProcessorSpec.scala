@@ -45,7 +45,16 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
     val componentToStreamFields = getComponentToStreamFields(topology)
     val graphBuilder = new GraphBuilder()
     val processorGraph = graphBuilder.build(topology)
-    val processors = DAG(processorGraph.mapVertex(Processor.ProcessorToProcessorDescription(_))).processors
+
+    var processorIdIndex = 0
+    val processorDescriptionGraph = processorGraph.mapVertex { processor =>
+      val description = Processor.ProcessorToProcessorDescription(processorIdIndex, processor)
+      processorIdIndex += 1
+      description
+    }
+    val dag: DAG = processorDescriptionGraph
+
+    val processors = dag.processors
     val stormConfig = Utils.readStormConfig()
     val userConfig = UserConfig.empty
       .withValue(TOPOLOGY, topology)

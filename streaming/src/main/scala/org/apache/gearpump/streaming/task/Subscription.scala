@@ -67,7 +67,7 @@ class Subscription(
 
   def sendMessage(msg: Message): Unit = {
 
-    val partition = partitioner.getPartition(msg, processor.parallelism, taskId.index)
+    val partition = partitioner.partitioner.getPartition(msg, processor.parallelism, taskId.index)
     val targetTask = TaskId(processorId, partition)
     transport.transport(msg, targetTask)
 

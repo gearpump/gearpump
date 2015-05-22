@@ -20,70 +20,55 @@ package org.apache.gearpump.streaming.appmaster
 import java.util
 
 import akka.actor.Actor
-import com.typesafe.config.Config
+import com.typesafe.config.{ConfigRenderOptions, Config}
 import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.streaming.ProcessorDescription
-import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, NonLocality, Locality}
-import org.apache.gearpump.streaming.task.{Task, TaskUtil}
+import org.apache.gearpump.streaming.{ProcessorId, ProcessorDescription}
+import org.apache.gearpump.streaming.appmaster.TaskLocator.{Localities, WorkerLocality, NonLocality, Locality}
+import org.apache.gearpump.streaming.task.{TaskId, Task, TaskUtil}
 import org.apache.gearpump.util.{ActorUtil, Constants}
 
 import scala.collection.mutable
+import scala.util.Try
 
-class TaskLocator(config: Config) {
-  private var userScheduledTask = Map.empty[Class[_ <: Task], mutable.Queue[Locality]]
+class TaskLocator(appName: String, config: Config) {
+  private var taskLocalities: Map[TaskId, Locality] = loadTaskLocalities(config)
 
-  initTasks()
-
-  def initTasks() : Unit = {
-    val taskLocations : Array[(ProcessorDescription, Locality)] = loadUserAllocation(config)
-    for(taskLocation <- taskLocations){
-      val (taskDescription, locality) = taskLocation
-      val localityQueue = userScheduledTask.getOrElse(TaskUtil.loadClass(taskDescription.taskClass), mutable.Queue.empty[Locality])
-      0.until(taskDescription.parallelism).foreach(_ => localityQueue.enqueue(locality))
-      userScheduledTask += (TaskUtil.loadClass(taskDescription.taskClass) -> localityQueue)
-    }
-  }
-
-  def locateTask(taskDescription : ProcessorDescription) : Locality = {
-    if(userScheduledTask.contains(TaskUtil.loadClass(taskDescription.taskClass))){
-      val localityQueue = userScheduledTask.get(TaskUtil.loadClass(taskDescription.taskClass)).get
-      if(localityQueue.size > 0){
-        return localityQueue.dequeue()
-      }
-    }
-    NonLocality
+  def locateTask(taskId: TaskId) : Locality = {
+    taskLocalities.getOrElse(taskId, NonLocality)
   }
 
   /*
 The task resource requests format:
 gearpump {
-  scheduling {
-    requests {
-      worker1 {
-        "task1" = 2   //parallelism
-        "task2" = 4
+  streaming {
+    localities {
+      app1: {
+        workerId: [
+          TaskId(0,0), TaskId(0,1)
+        ]
       }
-      worker2 {
-        "task1" = 2
+      app2: {
+        workerId: [
+          TaskId(1,0), TaskId(1,1)
+        ]
       }
     }
   }
 }
  */
-  def loadUserAllocation(config: Config) : Array[(ProcessorDescription, Locality)] ={
-    import scala.collection.JavaConverters._
-    var result = new Array[(ProcessorDescription, Locality)](0)
-    if(!config.hasPath(Constants.GEARPUMP_SCHEDULING_REQUEST))
-      return result
-    val requests = config.getObject(Constants.GEARPUMP_SCHEDULING_REQUEST)
-    for(workerId <- requests.keySet().asScala.toSet[String]){
-      val taskDescriptions = requests.get(workerId).unwrapped().asInstanceOf[util.HashMap[String, Int]].asScala
-      for(taskDescription <- taskDescriptions){
-        val (taskClass, parallism) = taskDescription
-        result = result :+ (ProcessorDescription(taskClass, parallism), WorkerLocality(workerId.toInt))
-      }
-    }
-    result
+  def loadTaskLocalities(config: Config) : Map[TaskId, Locality] = {
+    import org.apache.gearpump.streaming.Constants.GEARPUMP_STREAMING_LOCALITIES
+    Try(config.getConfig(s"$GEARPUMP_STREAMING_LOCALITIES.$appName")).map {appConfig =>
+      val json = appConfig.root().render(ConfigRenderOptions.concise)
+      import upickle._
+      upickle.read[Localities](json)
+    }.map { localityConfig =>
+      import localityConfig.localities
+      localities.keySet.flatMap {workerId =>
+        val tasks = localities(workerId)
+        tasks.map((_, WorkerLocality(workerId)))
+      }.toArray.toMap
+    }.getOrElse(Map.empty[TaskId, Locality])
   }
 }
 
@@ -95,5 +80,7 @@ object TaskLocator {
 
   object NonLocality extends Locality
 
-}
+  type WorkerId = Int
 
+  case class Localities(localities: Map[WorkerId, Array[TaskId]])
+}
