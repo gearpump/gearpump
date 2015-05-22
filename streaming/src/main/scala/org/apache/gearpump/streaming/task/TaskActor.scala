@@ -62,7 +62,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
   private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
 
-  private var subscriptions = Map.empty[Int, Subscription]
+  private var subscriptions = List.empty[(Int, Subscription)]
 
   // securityChecker will be responsible of dropping messages from
   // unknown sources
@@ -88,7 +88,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
 
   def output(msg : Message) : Unit = {
     this.subscriptions.foreach(_._2.sendMessage(msg))
-    sendThroughput.mark(subscriptions.keySet.size)
+    sendThroughput.mark(subscriptions.size)
   }
 
   def sendLatencyProbeMessage: Unit = {
@@ -123,7 +123,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   }
 
   private def allowSendingMoreMessages(): Boolean = {
-    subscriptions.values.forall(_.allowSendingMoreMessages())
+    subscriptions.forall(_._2.allowSendingMoreMessages())
   }
 
   private def doHandleMessage(): Unit = {
@@ -165,9 +165,9 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       this.upstreamMinClock = clock
 
       subscriptions = subscribers.map { subscriber =>
-        subscriber.processorId ->
-          new Subscription(appId, executorId, taskId, subscriber, sessionId, this)
-      }.toMap
+        (subscriber.processorId ,
+          new Subscription(appId, executorId, taskId, subscriber, sessionId, this))
+      }
 
       subscriptions.foreach(_._2.start)
 
@@ -195,7 +195,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
         queue.add(SendAck(ackResponse, ackRequest.taskId))
       }
     case ack: Ack =>
-      subscriptions.get(ack.taskId.processorId).foreach(_.receiveAck(ack))
+      subscriptions.find(_._1 == ack.taskId.processorId).foreach(_._2.receiveAck(ack))
       handler()
     case inputMessage: Message =>
       val messageAfterCheck = securityChecker.checkMessage(inputMessage, sender)
