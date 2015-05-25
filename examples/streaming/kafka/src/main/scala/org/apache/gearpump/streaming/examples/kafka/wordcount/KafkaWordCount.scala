@@ -22,7 +22,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.examples.kafka.{KafkaStreamProcessor, KafkaStreamProducer}
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
@@ -49,12 +49,12 @@ object KafkaWordCount extends App with ArgumentsParser {
     val kafkaConfig = KafkaConfig(ConfigFactory.parseResources("kafka.conf"))
     val appConfig = UserConfig.empty
       .withValue(KafkaConfig.NAME, kafkaConfig)
-    val partitioner = new HashPartitioner()
+
     val kafkaStreamProducer = Processor[KafkaStreamProducer](kafkaStreamProducerNum)
     val split = Processor[Split](splitNum)
     val sum = Processor[Sum](sumNum)
     val kafkaStreamProcessor = Processor[KafkaStreamProcessor](kafkaStreamProcessorNum)
-    val computation = kafkaStreamProducer ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> kafkaStreamProcessor
+    val computation = kafkaStreamProducer ~> split ~> sum ~> kafkaStreamProcessor
     val app = StreamApplication("KafkaWordCount", Graph(computation), appConfig)
     app
   }

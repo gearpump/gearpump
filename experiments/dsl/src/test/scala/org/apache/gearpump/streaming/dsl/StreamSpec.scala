@@ -74,7 +74,7 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with Mo
 
     val appDescription = app.plan
 
-    val dagTopology = appDescription.dag.mapVertex(_.taskClass).mapEdge((node1, edge, node2) => edge.partitioner.getClass.getName)
+    val dagTopology = appDescription.dag.mapVertex(_.taskClass).mapEdge((node1, edge, node2) => edge.partitionerFactory.partitioner.getClass.getName)
     val expectedDagTopology = getExpectedDagTopology
 
     assert(dagTopology.vertices.toSet.equals(expectedDagTopology.vertices.toSet))

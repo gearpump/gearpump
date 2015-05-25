@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
+import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
@@ -74,7 +74,7 @@ object StreamingAppMasterDataDetail {
 
         val edges = dag.edges.map(f => {
           var (node1, edge, node2) = f
-          Js.Arr(Js.Num(node1), Js.Str(edge.partitioner.getClass.getName), Js.Num(node2))
+          Js.Arr(Js.Num(node1), Js.Str(edge.partitionerFactory.partitioner.getClass.getName), Js.Num(node2))
         })
 
         Js.Obj(
@@ -123,8 +123,7 @@ object StreamingAppMasterDataDetail {
             inputdag.vertices.foreach(converteddag.addVertex(_))
             inputdag.edges.foreach(edge => {
               val (id1, partitionerClassName, id2) = edge
-              val partitioner = Class.forName(partitionerClassName).newInstance.asInstanceOf[Partitioner]
-              converteddag.addEdge(id1, PartitionerDescription(partitioner), id2)
+              converteddag.addEdge(id1, PartitionerDescription(PartitionerByClassName(partitionerClassName)), id2)
             })
             streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(dag=converteddag)
         }

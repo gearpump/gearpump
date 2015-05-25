@@ -26,7 +26,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.storm.partitioner.{NoneGroupingPartitioner, FieldsGroupingPartitioner, GlobalGroupingPartitioner}
 import org.apache.gearpump.experiments.storm.processor.StormProcessor
 import org.apache.gearpump.experiments.storm.producer.StormProducer
-import org.apache.gearpump.partitioner.{ShuffleGroupingPartitioner, Partitioner}
+import org.apache.gearpump.partitioner.{PartitionerObject, PartitionerDescription, ShuffleGroupingPartitioner, Partitioner}
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.streaming.{Processor, ProcessorDescription}
 import org.apache.gearpump.util.Graph
@@ -41,8 +41,8 @@ object GraphBuilder {
 private[storm] class GraphBuilder {
   import org.apache.gearpump.experiments.storm.util.GraphBuilder._
 
-  def build(topology: StormTopology)(implicit system: ActorSystem): Graph[Processor[_ <: Task], Partitioner] = {
-    val processorGraph = Graph.empty[Processor[_ <: Task], Partitioner]
+  def build(topology: StormTopology)(implicit system: ActorSystem): Graph[Processor[_ <: Task], _ <: Partitioner] = {
+    val processorGraph = Graph.empty[Processor[Task], Partitioner]
 
     val spouts = topology.get_spouts()
     val spoutTasks = spouts.map { case (id, spec) =>
@@ -113,8 +113,11 @@ private[storm] class GraphBuilder {
   def groupingToPartitioner(outFields: Fields, grouping: Grouping): Partitioner = {
     grouping.getSetField match {
       case Grouping._Fields.FIELDS =>
-        if (isGlobalGrouping(grouping)) new GlobalGroupingPartitioner
-        else new FieldsGroupingPartitioner(outFields, new Fields(grouping.get_fields()))
+        if (isGlobalGrouping(grouping)) {
+          new GlobalGroupingPartitioner
+        } else {
+          new FieldsGroupingPartitioner(outFields, new Fields(grouping.get_fields()))
+        }
       case Grouping._Fields.SHUFFLE =>
         new ShuffleGroupingPartitioner
       case Grouping._Fields.ALL =>

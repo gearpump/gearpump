@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
-import org.apache.gearpump.partitioner.{PartitionerDescription, HashPartitioner, Partitioner}
+import org.apache.gearpump.partitioner.{PartitionerObject, LifeTime, PartitionerDescription, HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.util.Constants._
@@ -58,13 +58,13 @@ object Processor {
 
 }
 
-case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null) extends ReferenceEqual
+case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null, life: LifeTime = LifeTime.Immortal) extends ReferenceEqual
 
 class StreamApplication(override val name : String,  inputUserConfig: UserConfig, inputDag: Graph[ProcessorDescription, PartitionerDescription])
   extends Application {
 
   private val dagWithDefault = inputDag.mapEdge {(node1, edge, node2) =>
-    Option(edge).getOrElse(PartitionerDescription(StreamApplication.defaultPartitioner))
+    Option(edge).getOrElse(PartitionerDescription(PartitionerObject(StreamApplication.hashPartitioner)))
   }
 
   def dag: Graph[ProcessorDescription, PartitionerDescription] = dagWithDefault
@@ -76,7 +76,9 @@ class StreamApplication(override val name : String,  inputUserConfig: UserConfig
 
 object StreamApplication {
 
-  def apply (name : String, dag: Graph[_ <: Processor[Task], _ <: Partitioner], userConfig: UserConfig): StreamApplication = {
+  private val hashPartitioner = new HashPartitioner()
+
+  def apply[T <: Processor[Task], P <: Partitioner] (name : String, dag: Graph[T, P], userConfig: UserConfig): StreamApplication = {
     import Processor._
 
     var processorIndex = 0
@@ -84,13 +86,11 @@ object StreamApplication {
       val updatedProcessor = ProcessorToProcessorDescription(processorIndex, processor)
       processorIndex += 1
       updatedProcessor
-    }.mapEdge{(node1, edge, node2) =>
-      PartitionerDescription(edge)
+    }.mapEdge { (node1, edge, node2) =>
+      PartitionerDescription(PartitionerObject(edge))
     }
     new StreamApplication(name, userConfig, graph)
   }
 
   val DAG = "DAG"
-
-  private val defaultPartitioner = new HashPartitioner()
 }

@@ -24,6 +24,7 @@ import backtype.storm.utils.Utils
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.experiments.storm.util.{TopologyUtil, GraphBuilder}
 import org.apache.gearpump.experiments.storm.util.GraphBuilder._
+import org.apache.gearpump.partitioner.{PartitionerObject, PartitionerDescription}
 import org.apache.gearpump.streaming.{Processor, ProcessorId, DAG, ProcessorDescription}
 import org.scalatest.{Matchers, WordSpec}
 
@@ -46,8 +47,11 @@ class GraphBuilderSpec extends WordSpec with Matchers {
         val description = Processor.ProcessorToProcessorDescription(processorIdIndex, processor)
         processorIdIndex += 1
         description
+      }.mapEdge { (node1, edge, node2) =>
+        PartitionerDescription(PartitionerObject(edge))
       }
-      val dag: DAG = processorDescriptionGraph
+
+      val dag: DAG = DAG(processorDescriptionGraph)
       val processors = dag.processors
 
       processors foreach { case (pid, procDesc) =>

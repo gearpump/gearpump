@@ -22,7 +22,7 @@ import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{ExecutorContext, MasterHarness, UserConfig, TestUtil}
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{MsgLostException, RestartException, StartClock}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
 import org.apache.gearpump.streaming.task.TaskActor.RestartTask
@@ -44,7 +44,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   val appId = 0
   val task1 = ProcessorDescription(id = 0, classOf[TestTask].getName, 1)
   val task2 = ProcessorDescription(id = 1, classOf[TestTask].getName, 1)
-  val dag: DAG = Graph(task1 ~ new HashPartitioner() ~> task2)
+  val dag: DAG = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
   val taskId1 = TaskId(0, 0)
   val taskId2 = TaskId(1, 0)
   val executorId1 = 1

@@ -52,15 +52,15 @@ object PipeLine extends App with ArgumentsParser {
       def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
     }
     val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipelineConfig).withValue(HBASESINK, repo)
-    val partitioner = new HashPartitioner
+
     val kafka = Processor[KafkaProducer](1, "KafkaProducer")
     val cpuProcessor = Processor[CpuProcessor](processors, "CpuProcessor")
     val memoryProcessor = Processor[MemoryProcessor](processors, "MemoryProcessor")
     val cpuPersistor = Processor[CpuPersistor](persistors, "CpuPersistor")
     val memoryPersistor = Processor[MemoryPersistor](persistors, "MemoryPersistor")
     val app = StreamApplication("PipeLine", Graph(
-      kafka ~ partitioner ~> cpuProcessor ~ partitioner ~> cpuPersistor,
-      kafka ~ partitioner ~> memoryProcessor ~ partitioner ~> memoryPersistor
+      kafka ~> cpuProcessor ~> cpuPersistor,
+      kafka ~> memoryProcessor ~> memoryPersistor
     ), appConfig)
     app
   }
