@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterDataDetailRequest
 import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResultValue
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
+import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.StreamApplication
 import org.apache.gearpump.streaming.appmaster.SubmitApplicationRequest
 import org.apache.gearpump.util.Constants.GEARPUMP_APP_JAR
@@ -62,8 +62,7 @@ trait SubmitApplicationRequestService extends HttpService  {
             val graph = dag.mapVertex {processorId =>
               processors(processorId)
             }.mapEdge { (node1, edge, node2) =>
-              val partitioner = Class.forName(edge).newInstance.asInstanceOf[Partitioner]
-              PartitionerDescription(partitioner)
+              PartitionerDescription(PartitionerByClassName(edge))
             }
 
             val appId = context.submit(new StreamApplication(appName, UserConfig.empty, graph))

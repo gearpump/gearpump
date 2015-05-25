@@ -19,6 +19,9 @@
 package org.apache.gearpump.partitioner
 
 import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
+
+import scala.reflect.ClassTag
 
 trait Partitioner extends Serializable {
 
@@ -37,14 +40,33 @@ trait Partitioner extends Serializable {
   }
 }
 
+sealed trait PartitionerFactory {
+  def partitioner: Partitioner
+}
+
+case class PartitionerObject(partitioner: Partitioner) extends PartitionerFactory
+
+case class PartitionerByClassName(partitionerClass: String) extends PartitionerFactory {
+  def partitioner: Partitioner = Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
+}
+
+case class LifeTime(birth: Long, die: Long)
+
+object LifeTime {
+  val Immortal = LifeTime(0L, Long.MaxValue)
+}
+
 /**
- * @param partitioner
- * @param startTime we will accept message since startTime
- * @param endTime we will stop receiving message after endTime
+ * @param partitionerFactory
  */
-case class PartitionerDescription(partitioner: Partitioner, startTime: Long = Long.MinValue, endTime: Long = Long.MaxValue)
+case class PartitionerDescription(partitionerFactory: PartitionerFactory, life: LifeTime = LifeTime.Immortal)
+
 
 object Partitioner {
   val UNKNOWN_PARTITION_ID = -1
+
+  def apply[T <: Partitioner](implicit clazz: ClassTag[T]): PartitionerDescription = {
+    PartitionerDescription(PartitionerByClassName(clazz.runtimeClass.getName))
+  }
 }
 

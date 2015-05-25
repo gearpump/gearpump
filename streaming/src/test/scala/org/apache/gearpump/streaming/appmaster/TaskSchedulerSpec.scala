@@ -21,7 +21,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{UserConfig, ClusterConfig}
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.appmaster.TaskLocator.Localities
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerSpec.{TestTask2, TestTask1}
 import org.apache.gearpump.streaming.task.{TaskId, StartTime, TaskContext, Task}
@@ -36,8 +36,8 @@ import scala.collection.mutable.ArrayBuffer
 class TaskSchedulerSpec extends WordSpec with Matchers {
   val task1 = ProcessorDescription(id = 0, classOf[TestTask1].getName, 4)
   val task2 = ProcessorDescription(id = 1, classOf[TestTask2].getName, 2)
-  val partitioner = new HashPartitioner()
-  val dag: DAG = Graph(task1 ~ partitioner ~> task2)
+
+  val dag = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
 
   val config = ClusterConfig.load.default
 

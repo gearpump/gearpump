@@ -22,7 +22,7 @@ import java.util.Random
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.partitioner.{PartitionerDescription, HashPartitioner}
+import org.apache.gearpump.partitioner.{Partitioner, PartitionerDescription, HashPartitioner}
 import org.apache.gearpump.streaming.MockUtil.argMatch
 import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.task.SubscriptionSpec.NextTask
@@ -42,11 +42,11 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
   val session = new Random().nextInt()
 
   val downstreamProcessorId = 1
-  val partitioner = new HashPartitioner()
+  val partitioner = Partitioner[HashPartitioner]
 
   val parallism = 2
   val downstreamProcessor = ProcessorDescription(downstreamProcessorId, classOf[NextTask].getName, parallism)
-  val subscriber = Subscriber(downstreamProcessorId, PartitionerDescription(partitioner), downstreamProcessor)
+  val subscriber = Subscriber(downstreamProcessorId, partitioner, downstreamProcessor)
 
   private def prepare: (Subscription, ExpressTransport) = {
     val transport = mock[ExpressTransport]

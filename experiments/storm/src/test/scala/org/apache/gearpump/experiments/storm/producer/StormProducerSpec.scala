@@ -26,6 +26,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.experiments.storm.util.GraphBuilder._
 import org.apache.gearpump.experiments.storm.util.{TopologyUtil, GraphBuilder}
+import org.apache.gearpump.partitioner.{PartitionerObject, PartitionerDescription}
 import org.apache.gearpump.streaming.{DAG, Processor, MockUtil}
 import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.json.simple.JSONValue
@@ -50,8 +51,11 @@ class StormProducerSpec extends PropSpec with PropertyChecks with Matchers {
       val description = Processor.ProcessorToProcessorDescription(processorIdIndex, processor)
       processorIdIndex += 1
       description
+    }.mapEdge { (node1, edge, node2) =>
+      PartitionerDescription(PartitionerObject(edge))
     }
-    val dag: DAG = processorDescriptionGraph
+
+    val dag = DAG(processorDescriptionGraph)
 
     val processors = dag.processors
 

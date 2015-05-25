@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming
 
-import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
+import org.apache.gearpump.partitioner.{PartitionerObject, PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
 import upickle._
@@ -36,13 +36,6 @@ case class DAG(processors : Map[ProcessorId, ProcessorDescription], graph : Grap
 }
 
 object DAG {
-
-  implicit def graphToDAG(graph: Graph[ProcessorDescription, _ <: Partitioner]): DAG = {
-    val updatedGraph = graph.mapEdge { (node1, edge, node2) =>
-      PartitionerDescription(edge)
-    }
-    apply(updatedGraph)
-  }
 
   def apply (graph : Graph[ProcessorDescription, PartitionerDescription]) : DAG = {
     val processors = graph.vertices.map{processorDescription =>

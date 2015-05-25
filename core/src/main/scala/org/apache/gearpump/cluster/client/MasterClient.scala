@@ -61,7 +61,7 @@ class MasterClient(master : ActorRef) {
     }
   }
 
-  def listApplications = {
+  def listApplications: AppMastersData = {
     val result = Await.result((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]], Duration.Inf)
     result
   }
@@ -69,7 +69,7 @@ class MasterClient(master : ActorRef) {
   /**
    * Internal API, will be removed in future
    */
-  def replayFromTimestampWindowTrailingEdge(appId : Int) = {
+  def replayFromTimestampWindowTrailingEdge(appId : Int): ReplayApplicationResult = {
     val result = Await.result((master ? ReplayFromTimestampWindowTrailingEdge(appId)).asInstanceOf[Future[ReplayApplicationResult]], Duration.Inf)
     result
   }

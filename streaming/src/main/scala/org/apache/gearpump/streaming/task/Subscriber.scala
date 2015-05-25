@@ -28,10 +28,10 @@ import org.apache.gearpump.streaming.{ProcessorDescription, DAG}
  * pushed to processor A.
  *
  * @param processorId subscriber processor Id
- * @param partitioner subscriber partitioner
+ * @param partitionerDescription subscriber partitioner
  * @param processor subscriber processor definition
  */
-case class Subscriber(processorId: Int, partitioner: PartitionerDescription, processor: ProcessorDescription)
+case class Subscriber(processorId: Int, partitionerDescription: PartitionerDescription, processor: ProcessorDescription)
 
 object Subscriber {
 

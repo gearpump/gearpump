@@ -69,7 +69,7 @@ object Dag extends App with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
   def application(config: ParseResult) : StreamApplication = {
-    val partitioner = new HashPartitioner()
+    
     val source_0 = Processor[Source_0](1)
     val source_1 = Processor[Source_1](1)
     val node_0 = Processor[Node_0](1)
@@ -83,21 +83,21 @@ object Dag extends App with ArgumentsParser {
     val sink_3 = Processor[Sink_3](1)
     val sink_4 = Processor[Sink_4](1)
     val app = StreamApplication("dag", Graph(
-      source_0 ~ partitioner ~> sink_1,
-      source_0 ~ partitioner ~> sink_2,
-      source_0 ~ partitioner ~> node_2,
-      source_0 ~ partitioner ~> node_3,
-      source_0 ~ partitioner ~> node_1,
-      source_0 ~ partitioner ~> sink_0,
-      node_2 ~ partitioner ~> node_3,
-      node_1 ~ partitioner ~> node_3,
-      node_1 ~ partitioner ~> sink_3,
-      node_1 ~ partitioner ~> node_4,
-      source_1 ~ partitioner ~> sink_4,
-      source_1 ~ partitioner ~> node_0,
-      node_3 ~ partitioner ~> sink_3,
-      node_4 ~ partitioner ~> sink_3,
-      node_0 ~ partitioner ~> sink_3
+      source_0  ~> sink_1,
+      source_0  ~> sink_2,
+      source_0  ~> node_2,
+      source_0  ~> node_3,
+      source_0  ~> node_1,
+      source_0  ~> sink_0,
+      node_2  ~> node_3,
+      node_1  ~> node_3,
+      node_1  ~> sink_3,
+      node_1  ~> node_4,
+      source_1  ~> sink_4,
+      source_1  ~> node_0,
+      node_3  ~> sink_3,
+      node_4  ~> sink_3,
+      node_0  ~> sink_3
     ), UserConfig.empty)
     app
   }

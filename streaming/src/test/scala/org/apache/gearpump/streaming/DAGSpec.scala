@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming
 
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph.Node
 import org.scalacheck.Gen
@@ -32,8 +32,8 @@ class DAGSpec extends PropSpec with PropertyChecks with Matchers {
   property("DAG should be built correctly for a single task") {
     forAll(parallelismGen) { (parallelism: Int) =>
       val task = ProcessorDescription(id = 0, "task", parallelism)
-      val graph = Graph[ProcessorDescription, Partitioner](task)
-      val dag: DAG = graph
+      val graph = Graph[ProcessorDescription, PartitionerDescription](task)
+      val dag = DAG(graph)
       dag.processors.size shouldBe 1
       dag.graph.edges shouldBe empty
     }

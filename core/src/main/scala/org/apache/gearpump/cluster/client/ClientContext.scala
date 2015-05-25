@@ -25,6 +25,8 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
+import org.apache.gearpump.cluster.MasterToClient.ReplayApplicationResult
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.jarstore.JarFileContainer
@@ -85,12 +87,12 @@ class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[Actor
     }
   }
 
-  def replayFromTimestampWindowTrailingEdge(appId : Int) = {
+  def replayFromTimestampWindowTrailingEdge(appId : Int): ReplayApplicationResult = {
     val client = new MasterClient(master)
     client.replayFromTimestampWindowTrailingEdge(appId)
   }
 
-  def listApps = {
+  def listApps: AppMastersData = {
     val client = new MasterClient(master)
     client.listApplications
   }
@@ -139,10 +141,11 @@ class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[Actor
 }
 
 object ClientContext {
-  def apply() = new ClientContext(ClusterConfig.load.default, None, None)
+  def apply(): ClientContext = new ClientContext(ClusterConfig.load.default, None, None)
 
-  def apply(config: Config) = new ClientContext(config, None, None)
+  def apply(config: Config): ClientContext = new ClientContext(config, None, None)
 
-  def apply(config: Config, system: Option[ActorSystem], master: Option[ActorRef]) = new ClientContext(config, system, master)
+  def apply(config: Config, system: Option[ActorSystem], master: Option[ActorRef]): ClientContext
+    = new ClientContext(config, system, master)
 
 }

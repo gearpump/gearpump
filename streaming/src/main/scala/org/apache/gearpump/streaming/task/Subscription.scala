@@ -19,6 +19,9 @@
 package org.apache.gearpump.streaming.task
 
 import com.google.common.primitives.Longs
+import java.util
+
+import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import org.apache.gearpump.streaming.task.Subscription._
 import org.apache.gearpump.util.LogUtil
@@ -42,7 +45,7 @@ class Subscription(
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
-  import subscriber.{partitioner, processorId, processor}
+  import subscriber.{partitionerDescription, processorId, processor}
 
   private var messageCount: Array[Long] = null
   private var pendingMessageCount: Array[Long] = null
@@ -52,6 +55,7 @@ class Subscription(
   private var candidateMinClock: Array[TimeStamp] = null
 
   private var allowSendingMsg = true
+  val partitioner = partitionerDescription.partitionerFactory.partitioner
 
   def start: Unit = {
     minClockValue = Array.fill(processor.parallelism)(Long.MaxValue)
@@ -67,7 +71,7 @@ class Subscription(
 
   def sendMessage(msg: Message): Unit = {
 
-    val partition = partitioner.partitioner.getPartition(msg, processor.parallelism, taskId.index)
+    val partition = partitioner.getPartition(msg, processor.parallelism, taskId.index)
     val targetTask = TaskId(processorId, partition)
     transport.transport(msg, targetTask)
 

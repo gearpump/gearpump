@@ -46,7 +46,6 @@ object Stock extends App with ArgumentsParser {
     val crawler = Processor[Crawler](config.getInt("crawler"))
     val analyzer = Processor[Analyzer](config.getInt("analyzer"))
     val queryServer = Processor[QueryServer](1)
-    val partitioner = new HashPartitioner
 
     val proxySetting = config.getString("proxy")
     val proxy = if (proxySetting.isEmpty) {null } else HostPort(proxySetting)
@@ -58,7 +57,7 @@ object Stock extends App with ArgumentsParser {
     val userConfig = UserConfig.empty.withValue("StockId", stocks).withValue[StockMarket](classOf[StockMarket].getName, stockMarket)
 
     val app = StreamApplication("stock_direct_analyzer",
-      Graph(crawler ~ partitioner ~> analyzer, queryServer), userConfig
+      Graph(crawler ~> analyzer, queryServer), userConfig
       )
     app
   }

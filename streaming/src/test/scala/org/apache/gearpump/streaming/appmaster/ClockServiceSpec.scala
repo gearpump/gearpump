@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.appmaster.ClockServiceSpec.Store
 import org.apache.gearpump.streaming.storage.AppDataStore
 import org.apache.gearpump.streaming.task._
@@ -38,7 +38,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
   val task1 = ProcessorDescription(id = 0, classOf[TaskActor].getName, 1)
   val task2 = ProcessorDescription(id = 1, classOf[TaskActor].getName, 1)
-  val dag: DAG = Graph(task1 ~ new HashPartitioner() ~> task2)
+  val dag = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)
