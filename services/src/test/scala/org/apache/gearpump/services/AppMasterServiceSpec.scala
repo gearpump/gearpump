@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.services
 
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.apache.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
@@ -25,6 +26,7 @@ import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
+import scala.util.Try
 
 class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterAll {
   import upickle._
@@ -39,6 +41,15 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
     Get(s"/api/$REST_VERSION/appmaster/0?detail=false") ~> appMasterRoute ~> check{
       val responseBody = response.entity.asString
       read[AppMasterData](responseBody)
+    }
+  }
+
+  "MetricsQueryService" should "return history metrics" in {
+    implicit val customTimeout = RouteTestTimeout(15.seconds)
+    (Get(s"/api/$REST_VERSION/appmaster/0/metrics/processor") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check {
+      val responseBody = response.entity.asString
+      val config = Try(ConfigFactory.parseString(responseBody))
+      assert(config.isSuccess)
     }
   }
 

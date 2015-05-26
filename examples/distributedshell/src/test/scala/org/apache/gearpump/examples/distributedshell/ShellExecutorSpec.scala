@@ -19,6 +19,7 @@ package org.apache.gearpump.examples.distributedshell
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
 import org.apache.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
@@ -37,7 +38,9 @@ class ShellExecutorSpec extends WordSpec with Matchers {
       val resource = Resource(1)
       val system = ActorSystem("ShellExecutor", TestUtil.DEFAULT_CONFIG)
       val mockMaster = TestProbe()(system)
-      val executorContext = ExecutorContext(executorId, workerId, appId, mockMaster.ref, resource)
+      val worker = TestProbe()
+      val workerInfo = WorkerInfo(workerId, worker.ref)
+      val executorContext = ExecutorContext(executorId, workerInfo, appId, mockMaster.ref, resource)
       val executor = system.actorOf(Props(classOf[ShellExecutor], executorContext, UserConfig.empty))
 
       val process = Try(s"ls /" !!)

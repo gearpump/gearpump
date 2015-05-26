@@ -24,10 +24,8 @@ import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, ResolveAppId, SubmitApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{SubmitApplicationResult, ShutdownApplicationResult, ReplayApplicationResult, ResolveAppIdResult}
-import org.apache.gearpump.cluster.TestUtil.{DummyAppMaster}
 import org.apache.gearpump.cluster.master.InMemoryKVService.{PutKVSuccess, GetKVSuccess, GetKV, PutKV}
 import org.apache.gearpump.cluster.master.MasterHAService._
-import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
@@ -92,9 +90,6 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     mockClient.send(appManager, ShutdownApplication(1))
     assert(mockClient.receiveN(1).head.asInstanceOf[ShutdownApplicationResult].appId.isFailure)
 
-    mockClient.send(appManager, ReplayFromTimestampWindowTrailingEdge(1))
-    assert(mockClient.receiveN(1).head.asInstanceOf[ReplayApplicationResult].appId.isFailure)
-
     mockClient.send(appManager, ResolveAppId(1))
     assert(mockClient.receiveN(1).head.asInstanceOf[ResolveAppIdResult].appMaster.isFailure)
 
@@ -145,10 +140,6 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     client.send(appManager, AppMasterDataRequest(appId, false))
     client.expectMsgType[AppMasterData]
 
-    client.send(appManager, ReplayFromTimestampWindowTrailingEdge(appId))
-    appMaster.expectMsgType[ReplayFromTimestampWindowTrailingEdge]
-    client.expectMsg(ReplayApplicationResult(Success(appId)))
-
     if (!withRecover) {
       client.send(appManager, ShutdownApplication(appId))
       client.expectMsg(ShutdownApplicationResult(Success(appId)))
@@ -161,8 +152,6 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
       appLauncher.expectMsg(LauncherStarted(appId))
     }
   }
-
-
 }
 
 class DummyAppMasterLauncherFactory(test: TestProbe) extends AppMasterLauncherFactory {

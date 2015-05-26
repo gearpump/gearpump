@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.task
 import com.google.common.primitives.Longs
 import java.util
 
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{LifeTime, Partitioner}
 import org.apache.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import org.apache.gearpump.streaming.task.Subscription._
 import org.apache.gearpump.util.LogUtil
@@ -45,7 +45,7 @@ class Subscription(
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
-  import subscriber.{partitionerDescription, processorId, processor}
+  import subscriber.{partitionerDescription, processorId, parallelism}
 
   private var messageCount: Array[Long] = null
   private var pendingMessageCount: Array[Long] = null
@@ -55,37 +55,66 @@ class Subscription(
   private var candidateMinClock: Array[TimeStamp] = null
 
   private var allowSendingMsg = true
+
+  private var life = subscriber.lifeTime
+
   val partitioner = partitionerDescription.partitionerFactory.partitioner
 
+  def changeLife(life: LifeTime): Unit = {
+    this.life = life
+  }
+
   def start: Unit = {
-    minClockValue = Array.fill(processor.parallelism)(Long.MaxValue)
+    minClockValue = Array.fill(parallelism)(Long.MaxValue)
 
-    candidateMinClock = Array.fill(processor.parallelism)(Long.MaxValue)
-    candidateMinClockSince = Array.fill(processor.parallelism)(0)
+    candidateMinClock = Array.fill(parallelism)(Long.MaxValue)
+    candidateMinClockSince = Array.fill(parallelism)(0)
 
-    messageCount = Array.fill(processor.parallelism)(0)
-    pendingMessageCount = Array.fill(processor.parallelism)(0)
+    messageCount = Array.fill(parallelism)(0)
+    pendingMessageCount = Array.fill(parallelism)(0)
     val ackRequest = AckRequest(taskId, 0, sessionId)
     transport.transport(ackRequest, allTasks: _*)
   }
 
   def sendMessage(msg: Message): Unit = {
 
-    val partition = partitioner.getPartition(msg, processor.parallelism, taskId.index)
-    val targetTask = TaskId(processorId, partition)
-    transport.transport(msg, targetTask)
+    // only send message whose timestamp matches the lifeTime
+    if (life.contains(msg.timestamp)) {
 
-    this.minClockValue(partition) = Math.min(this.minClockValue(partition), msg.timestamp)
+      val partition = partitioner.getPartition(msg, parallelism, taskId.index)
+      val targetTask = TaskId(processorId, partition)
+      transport.transport(msg, targetTask)
 
-    this.candidateMinClock(partition) = Math.min(this.candidateMinClock(partition), msg.timestamp)
+      this.minClockValue(partition) = Math.min(this.minClockValue(partition), msg.timestamp)
 
-    messageCount(partition) += 1
-    pendingMessageCount(partition) += 1
-    updateAllowSendingFlag()
+      this.candidateMinClock(partition) = Math.min(this.candidateMinClock(partition), msg.timestamp)
 
-    if (messageCount(partition) % ONE_ACKREQUEST_PER_MESSAGE_COUNT == 0) {
-      val ackRequest = AckRequest(taskId, messageCount(partition), sessionId)
-      transport.transport(ackRequest, targetTask)
+      messageCount(partition) += 1
+      pendingMessageCount(partition) += 1
+      updateAllowSendingFlag()
+
+      if (messageCount(partition) % ONE_ACKREQUEST_PER_MESSAGE_COUNT == 0) {
+        val ackRequest = AckRequest(taskId, messageCount(partition), sessionId)
+        transport.transport(ackRequest, targetTask)
+      }
+    } else {
+      if (needFlush) {
+        flush
+      }
+    }
+  }
+
+  private var lastFlushTime: Long = 0L
+  private val FLUSH_INTERVAL = 5 * 1000 // ms
+  private def needFlush: Boolean = {
+    System.currentTimeMillis() - lastFlushTime > FLUSH_INTERVAL && Longs.max(pendingMessageCount: _*) > 0
+  }
+
+  private def flush: Unit = {
+    lastFlushTime = System.currentTimeMillis()
+    allTasks.foreach { targetTaskId =>
+      val ackRequest = AckRequest(taskId, messageCount(targetTaskId.index), sessionId)
+      transport.transport(ackRequest, targetTaskId)
     }
   }
 
@@ -94,7 +123,7 @@ class Subscription(
   }
 
   private def allTasks: scala.collection.Seq[TaskId] = {
-    (0 until processor.parallelism).map {taskIndex =>
+    (0 until parallelism).map {taskIndex =>
       TaskId(processorId, taskIndex)
     }
   }
@@ -110,7 +139,12 @@ class Subscription(
     if (ack.sessionId == sessionId) {
       if (ack.actualReceivedNum == ack.seq) {
         if (ack.seq >= candidateMinClockSince(index)) {
-          minClockValue(index) = candidateMinClock(index)
+          if (ack.seq == messageCount(index)) {
+            // all messages have been acked.
+            minClockValue(index) = Long.MaxValue
+          } else {
+            minClockValue(index) = candidateMinClock(index)
+          }
           candidateMinClock(index) = Long.MaxValue
           candidateMinClockSince(index) = messageCount(index)
         }

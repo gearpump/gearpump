@@ -19,6 +19,13 @@
 package org.apache.gearpump.streaming.task
 
 import akka.actor.ActorRef
+import org.apache.gearpump.partitioner.LifeTime
 
-case class TaskContextData(taskId : TaskId, executorId : Int, appId : Int,
-                      appName: String, appMaster : ActorRef, parallelism: Int, subscribers: List[Subscriber])
+case class TaskContextData(
+    executorId : Int,
+    appId : Int,
+    appName: String,
+    appMaster : ActorRef,
+    parallelism: Int,
+    life: LifeTime,
+    subscribers: List[Subscriber])

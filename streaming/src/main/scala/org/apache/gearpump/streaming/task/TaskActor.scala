@@ -25,15 +25,16 @@ import akka.actor._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.metrics.Metrics.MetricType
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{LifeTime, Partitioner}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
+import org.apache.gearpump.streaming.ProcessorId
 import org.apache.gearpump.streaming.executor.Executor.TaskLocationReady
 import org.apache.gearpump.util.{ActorUtil, LogUtil, TimeOutScheduler, Util}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
-class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, val task: TaskWrapper) extends Actor with ExpressTransport  with TimeOutScheduler{
+class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userConf : UserConfig, val task: TaskWrapper) extends Actor with ExpressTransport  with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
 
 
@@ -48,6 +49,8 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   private val processTime = Metrics(context.system).histogram(s"$metricName.processTime")
   private val sendThroughput = Metrics(context.system).meter(s"$metricName.sendThroughput")
   private val receiveThroughput = Metrics(context.system).meter(s"$metricName.receiveThroughput")
+
+  private var life = taskContextData.life
 
   //latency probe
   import scala.concurrent.duration._
@@ -158,6 +161,9 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   }
 
   def waitForStartClock : Receive = {
+    case TaskRejected =>
+      LOG.info(s"Task $taskId is rejected by AppMaster, shutting down myself...")
+      context.stop(self)
     case start@ StartClock(clock) =>
 
       LOG.info(s"received $start")
@@ -193,6 +199,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       val ackResponse = securityChecker.generateAckResponse(ackRequest, sender)
       if (null != ackResponse) {
         queue.add(SendAck(ackResponse, ackRequest.taskId))
+        handler()
       }
     case ack: Ack =>
       subscriptions.find(_._1 == ack.taskId.processorId).foreach(_._2.receiveAck(ack))
@@ -217,7 +224,25 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       throw new RestartException
     case TaskLocationReady =>
       sendLater.sendAllPendingMsgs()
-      appMaster ! UpdateClock(taskId, minClock)
+      LOG.info("TaskLocationReady, sending GetUpstreamMinClock to AppMaster ")
+      appMaster ! GetUpstreamMinClock(taskId)
+
+
+    case ChangeTask(dagVersion, life, subscribers) =>
+      this.life = life
+      subscribers.foreach { subscriber =>
+        val processorId = subscriber.processorId
+        val subscription = getSubscription(processorId)
+        subscription match {
+          case Some(subscription) =>
+            subscription.changeLife(subscriber.lifeTime)
+          case None =>
+            val subscription = new Subscription(appId, executorId, taskId, subscriber, sessionId, this)
+            subscription.start
+            subscriptions :+= (subscriber.processorId, subscription)
+        }
+      }
+      sender ! TaskChanged(taskId, dagVersion)
 
     case SendMessageProbe =>
       sendLatencyProbeMessage
@@ -231,9 +256,15 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       handler()
   }
 
-  def minClock: TimeStamp = Math.min(upstreamMinClock, minClockAtCurrentTask)
+  def minClock: TimeStamp = {
+    Math.max(life.birth, Math.min(upstreamMinClock, minClockAtCurrentTask))
+  }
 
   def getUpstreamMinClock: TimeStamp = upstreamMinClock
+
+  private def getSubscription(processorId: ProcessorId): Option[Subscription] = {
+    subscriptions.find(_._1 == processorId).map(_._2)
+  }
 }
 
 object TaskActor {

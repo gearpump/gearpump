@@ -32,7 +32,7 @@ import scala.concurrent.duration.FiniteDuration
  * @param context context class
  * @param userConf user config
  */
-class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userConf: UserConfig) extends TaskContext with TaskInterface {
+class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: TaskContextData, userConf: UserConfig) extends TaskContext with TaskInterface {
 
   private val LOG = LogUtil.getLogger(getClass)
 
@@ -41,8 +41,6 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
   private var task: Option[Task] = None
 
   def setTaskActor(actor: TaskActor): Unit = this.actor = actor
-
-  override def taskId: TaskId = context.taskId
 
   override def appId: Int = context.appId
 

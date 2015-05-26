@@ -193,7 +193,7 @@ object Build extends sbt.Build {
       )
   ).dependsOn(core, streaming, services, external_kafka)
    .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, pack, pipeline, state)
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, pack, state)
 
   lazy val pack = Project(
     id = "gearpump-pack",

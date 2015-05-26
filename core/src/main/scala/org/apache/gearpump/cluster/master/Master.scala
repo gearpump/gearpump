@@ -151,19 +151,9 @@ private[cluster] class Master extends Actor with Stash {
       LOG.debug(s"Receive from client, Shutting down Application ${app.appId}")
       scheduler ! ApplicationFinished(app.appId)
       appManager.forward(app)
-    case app : ReplayFromTimestampWindowTrailingEdge =>
-      LOG.debug(s"Receive from client, Replaying Application ${app.appId} from timestamp window trailing edge")
-      appManager.forward(app)
     case app : ResolveAppId =>
       LOG.debug(s"Receive from client, resolving appId ${app.appId} to ActorRef")
       appManager.forward(app)
-    case app : AppMasterDataDetailRequest =>
-      LOG.debug(s"Receive from client, forwarding to AppManager")
-      appManager.forward(app)
-    case app : AppMasterMetricsRequest =>
-      LOG.debug(s"AppMasterMetricsRequestFromActor Receive from client, forwarding to AppManager")
-      appManager.forward(app)
-
     case AppMastersDataRequest =>
       LOG.debug("Master received AppMastersDataRequest")
       appManager forward AppMastersDataRequest
@@ -175,12 +165,6 @@ private[cluster] class Master extends Actor with Stash {
       appManager forward query
     case QueryMasterConfig =>
       sender ! MasterConfig(systemConfig)
-    case query: QueryHistoryMetrics =>
-      LOG.debug("Master received QueryHistoryMetrics")
-      appManager forward query
-    case getstalling: GetStallingTasks =>
-      LOG.debug("Master received GetStallingTasks")
-      appManager forward getstalling
   }
 
   def disassociated : Receive = {

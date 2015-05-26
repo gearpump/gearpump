@@ -21,7 +21,9 @@ package org.apache.gearpump.streaming.appmaster
 import akka.actor._
 import akka.remote.RemoteScope
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
+import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, ClusterConfigSource, ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
@@ -57,6 +59,8 @@ private[appmaster] class ExecutorManager (
   implicit val actorSystem = context.system
   private val systemConfig = context.system.settings.config
 
+  private var executors =  Map.empty[Int, ExecutorInfo]
+
   def receive: Receive = waitForTaskManager
 
   def waitForTaskManager: Receive = {
@@ -72,7 +76,7 @@ private[appmaster] class ExecutorManager (
       import executorSystem.{executorSystemId, address, worker, resource => executorResource}
 
       val executorId = executorSystemId
-      val executorContext = ExecutorContext(executorId, worker.workerId, appId, appMaster =  context.parent, executorResource)
+      val executorContext = ExecutorContext(executorId, worker, appId, appMaster =  context.parent, executorResource)
 
       //start executor
       val executor = context.actorOf(executorFactory(executorContext, userConfig, address, executorId),
@@ -82,18 +86,33 @@ private[appmaster] class ExecutorManager (
     case StartExecutorSystemTimeout =>
       taskManager ! StartExecutorsTimeOut
 
-    case RegisterExecutor(executor, executorId, resource, workerId) =>
+    case RegisterExecutor(executor, executorId, resource, worker) =>
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
-      taskManager ! ExecutorStarted(executor, executorId, resource, workerId)
+      executors += executorId -> ExecutorInfo(executorId, executor, worker)
+      taskManager ! ExecutorStarted(executorId, resource, worker.workerId)
 
     case BroadCast(msg) =>
-      LOG.info(s"broadcasting ${msg.getClass.getName}")
-      context.children.foreach(_ ! msg)
+      LOG.info(s"broadcasting ${msg.getClass.getSimpleName} to all executors")
+      context.children.foreach(_ forward  msg)
+
+    case UniCast(executorId, msg) =>
+      LOG.info(s"unicasting ${msg.getClass.getSimpleName} to executor $executorId")
+      val executor = executors.get(executorId)
+      executor.foreach(_.executor forward msg)
 
     case GetExecutorPathList =>
       sender ! context.children.map(_.path).toList
+
+    case ExecutorResourceUsageSummary(resources) =>
+      executors.foreach { pair =>
+        val (executorId, executor) = pair
+        val resource = resources.get(executorId)
+        val worker = executor.worker.ref
+        // notify the worker the actual resource used by this application.
+        resource.foreach(worker ! ChangeExecutorResource(appId, executorId, _))
+      }
     }
 
   def terminationWatch : Receive = {
@@ -118,9 +137,11 @@ private[appmaster] object ExecutorManager {
   case class StartExecutors(resources: Array[ResourceRequest])
   case class BroadCast(msg: Any)
 
+  case class UniCast(executorId: Int, msg: Any)
+
   case object GetExecutorPathList
 
-  case class ExecutorStarted(executor: ActorRef, executorId: Int, resource: Resource, workerId: Int)
+  case class ExecutorStarted(executorId: Int, resource: Resource, workerId: Int)
   case class ExecutorStopped(executorId: Int)
 
   case class SetTaskManager(taskManager: ActorRef)
@@ -138,4 +159,8 @@ private[appmaster] object ExecutorManager {
 
     Props(new ExecutorManager(userConfig, appContext, executorFactory, clusterConfig))
   }
+
+  case class ExecutorResourceUsageSummary(resources: Map[ExecutorId, Resource])
+
+  case class ExecutorInfo(executorId: ExecutorId, executor: ActorRef, worker: WorkerInfo)
 }

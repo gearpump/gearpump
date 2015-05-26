@@ -121,30 +121,12 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
           LOG.error(errorMsg)
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
-
-    case replay @ReplayFromTimestampWindowTrailingEdge(appId) =>
-      LOG.info(s"App Manager Replaying application $appId")
-      val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(ref) =>
-          LOG.info(s"Replaying application: $appId")
-          ref forward replay
-          sender ! ReplayApplicationResult(Success(appId))
-        case None =>
-          val errorMsg = s"Can not find regisration information for appId: $appId"
-          LOG.error(errorMsg)
-          sender ! ReplayApplicationResult(Failure(new Exception(errorMsg)))
-      }
-
     case ResolveAppId(appId) =>
-      LOG.info(s"App Manager Resolving appId $appId to ActorRef")
       val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
       if (null != appMaster) {
         sender ! ResolveAppIdResult(Success(appMaster))
       } else {
-        val errorMsg = s"Can not find regisration information for appId: $appId"
-        LOG.error(errorMsg)
-        sender ! ResolveAppIdResult(Failure(new Exception(errorMsg)))
+        sender ! ResolveAppIdResult(Failure(new Exception(s"Can not find Application: $appId")))
       }
     case AppMastersDataRequest =>
       var appMastersData = collection.mutable.ListBuffer[AppMasterData]()
@@ -208,39 +190,6 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
 
         case AppMasterNonExist =>
           sender ! AppMasterData(AppMasterNonExist)
-      }
-
-    case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
-      val appId = appMasterDataDetailRequest.appId
-      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(_appMaster) =>
-          _appMaster forward appMasterDataDetailRequest
-        case None =>
-          sender ! GeneralAppMasterDataDetail(appId)
-      }
-    case appMasterMetricsRequest: AppMasterMetricsRequest =>
-      val appId = appMasterMetricsRequest.appId
-      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(_appMaster) =>
-          _appMaster forward appMasterMetricsRequest
-        case None =>
-      }
-
-    case query@ QueryHistoryMetrics(appId, _, _) =>
-      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(_appMaster) =>
-          _appMaster forward query
-        case None =>
-      }
-    case getStalling @ GetStallingTasks(appId) =>
-      val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(_appMaster) =>
-          _appMaster forward getStalling
-        case None =>
       }
   }
 

@@ -58,7 +58,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
-  private var allocatedResource = Map[ActorRef, Resource]()
+  private var allocatedResources = Map[ActorRef, Resource]()
   private var executorsInfo = Map[ActorRef, ExecutorInfo]()
   private var id = -1
   private val createdTime = System.currentTimeMillis()
@@ -70,6 +70,12 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   override def receive : Receive = null
   val LOG : Logger = LogUtil.getLogger(getClass)
 
+  def service: Receive =
+    appMasterMsgHandler orElse
+      clientMessageHandler orElse
+      terminationWatch(masterInfo.master) orElse
+      ActorUtil.defaultMsgHandler(self)
+
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
     case WorkerRegistered(id, masterInfo) =>
       this.id = id
@@ -78,7 +84,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       context.watch(masterInfo.master)
       LOG.info(s"Worker[$id] Registered ....")
       sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
-      context.become(appMasterMsgHandler orElse clientMessageHandler orElse terminationWatch(masterInfo.master) orElse ActorUtil.defaultMsgHandler(self))
+      context.become(service)
   }
 
   private def updateResourceTimeOut(): Unit = {
@@ -109,10 +115,9 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         executorNameToActor += actorName ->executor
 
         resource = resource - launch.resource
-        allocatedResource = allocatedResource + (executor -> launch.resource)
+        allocatedResources = allocatedResources + (executor -> launch.resource)
 
-        sendMsgWithTimeOutCallBack(masterInfo.master,
-          ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+        reportResourceToMaster
         executorsInfo += executor -> ExecutorInfo(launch.appId, launch.executorId, launch.resource.slots)
         context.watch(executor)
       }
@@ -127,6 +132,30 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       val userDir = System.getProperty("user.dir");
       sender ! WorkerData(Some(WorkerDescription(id, "active", address,
         aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir)))
+
+    case ChangeExecutorResource(appId, executorId, usedResource) =>
+      val executorOption = executorActorRef(appId, executorId)
+      executorOption.foreach { executor =>
+        val allocatedResource = allocatedResources(executor)
+        allocatedResources += executor -> usedResource
+        resource = resource + allocatedResource - usedResource
+        reportResourceToMaster
+
+        if (usedResource == Resource(0)) {
+          // stop executor if there is no resource binded to it.
+          executor ! ShutdownExecutor(appId, executorId, "Shutdown executor because the resource used is zero")
+        }
+      }
+  }
+
+  private def reportResourceToMaster: Unit = {
+    sendMsgWithTimeOutCallBack(masterInfo.master,
+      ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+  }
+
+  private def executorActorRef(appId: Int, executorId: Int): Option[ActorRef] = {
+    val actorName = ActorUtil.actorNameForExecutor(appId, executorId)
+    executorNameToActor.get(actorName)
   }
 
   def clientMessageHandler: Receive = {
@@ -148,11 +177,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         //one executor is down,
         LOG.info(s"Worker[$id] Executor is down ${getExecutorName(actor)}")
 
-        val allocated = allocatedResource.get(actor)
+        val allocated = allocatedResources.get(actor)
         if (allocated.isDefined) {
           resource = resource + allocated.get
           executorsInfo -= actor
-          allocatedResource = allocatedResource - actor
+          allocatedResources = allocatedResources - actor
           sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         }
       }
@@ -198,7 +227,6 @@ private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
   case class ExecutorInfo(appId: Int, executorId: Int, slots: Int)
-
 
   class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo) extends Actor {
 
@@ -264,7 +292,6 @@ private[cluster] object Worker {
         val remoteDebugFlag = config.getBoolean(Constants.GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM)
         val remoteDebugConfig = if (remoteDebugFlag) {
           val availablePort = Util.findFreePort.get
-          LOG.info(s"Remote debug executor enabled, listening on $availablePort")
           List(
             "-Xdebug",
             s"-Xrunjdwp:server=y,transport=dt_socket,address=${availablePort},suspend=n",

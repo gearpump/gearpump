@@ -50,7 +50,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     val context = new Context(system, conf)
     val serverPort = context.bind("netty-server", this)
     val localHost = HostPort(system.provider.getDefaultAddress.host.get, serverPort)
-    LOG.info(s"bining to netty server $localHost")
+    LOG.info(s"binding to netty server $localHost")
 
     system.registerOnTermination(new Runnable {
       override def run = context.close

@@ -82,7 +82,6 @@ class HistoryMetricsService(appId: Int, config: HistoryMetricsConfig) extends Ac
 
     //path accept syntax ? *, ? will match one char, * will match at least one char
     case QueryHistoryMetrics(appId, inputPath, readLatest) =>
-      LOG.info(s"Query History Metrics $inputPath")
       sender ! HistoryMetrics(appId, inputPath, fetchMetricsHistory(inputPath, readLatest))
    }
 }

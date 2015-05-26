@@ -98,8 +98,9 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val executorSystemDaemon = TestProbe()
     val worker = TestProbe()
     val workerId = 0
+    val workerInfo = WorkerInfo(workerId, worker.ref)
     val executorSystem = ExecutorSystem(0, null, executorSystemDaemon.ref,
-      Resource(1), WorkerInfo(workerId, worker.ref))
+      Resource(1), workerInfo)
     master.reply(ExecutorSystemStarted(executorSystem))
     import scala.concurrent.duration._
     val bindLifeWith = executorSystemDaemon.receiveOne(3 seconds).asInstanceOf[BindLifeCycle]
@@ -109,7 +110,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val executorId = 0
 
     //register executor
-    executor.send(executorManager, RegisterExecutor(proxyExecutor, executorId, Resource(1), workerId))
+    executor.send(executorManager, RegisterExecutor(proxyExecutor, executorId, Resource(1), workerInfo))
     taskManager.expectMsgType[ExecutorStarted]
 
     //broad message to childs

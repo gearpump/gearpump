@@ -32,7 +32,7 @@ trait ExpressTransport {
   implicit val system = context.system.asInstanceOf[ExtendedActorSystem]
   final val serializer = new FastKryoSerializer(system)
   final def local = express.localHost
-  lazy val sourceId = TaskId.toLong(taskContextData.taskId)
+  lazy val sourceId = TaskId.toLong(taskId)
 
   val sendLater = new SendLater(express, serializer, self)
 

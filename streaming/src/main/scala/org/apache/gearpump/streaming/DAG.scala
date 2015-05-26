@@ -21,30 +21,47 @@ package org.apache.gearpump.streaming
 import org.apache.gearpump.partitioner.{PartitionerObject, PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
-import upickle._
 
-import scala.collection.JavaConversions._
-
-
-case class DAG(processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, PartitionerDescription]) extends Serializable {
+case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, PartitionerDescription]) extends Serializable {
 
   def taskCount: Int = {
     processors.foldLeft(0) { (count, task) =>
       count + task._2.parallelism
     }
   }
+
+  def tasks: List[TaskId] = {
+    processors.flatMap { pair =>
+      val (processorId, processor) = pair
+      (0 until processor.parallelism).map(TaskId(processorId, _))
+    }.toList
+  }
+
+  def intersect(timestamp: Long): DAG = {
+    val newProcessors = processors.filter { pair =>
+      val (processorId, processor) = pair
+      processor.life.contains(timestamp)
+    }
+
+    val newGraph = graph.copy
+    val removedProcessors = processors.keySet -- newProcessors.keySet
+    for (item <- removedProcessors) {
+      newGraph.removeVertex(item)
+    }
+
+    new DAG(version, newProcessors, newGraph)
+  }
 }
 
 object DAG {
-
-  def apply (graph : Graph[ProcessorDescription, PartitionerDescription]) : DAG = {
+  def apply (graph : Graph[ProcessorDescription, PartitionerDescription], version: Int = 0) : DAG = {
     val processors = graph.vertices.map{processorDescription =>
       (processorDescription.id, processorDescription)
     }.toMap
     val dag = graph.mapVertex{ processor =>
       processor.id
     }
-    new DAG(processors, dag)
+    new DAG(version, processors, dag)
   }
 
   def empty() = apply(Graph.empty[ProcessorDescription, PartitionerDescription])

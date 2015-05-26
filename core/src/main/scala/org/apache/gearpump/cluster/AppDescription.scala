@@ -20,6 +20,7 @@ package org.apache.gearpump.cluster
 
 import akka.actor.{ActorSystem, Actor, ActorRef}
 import org.apache.gearpump._
+import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.jarstore.JarFileContainer
 import com.typesafe.config.{ConfigFactory, Config}
@@ -94,7 +95,7 @@ case class AppJar(name: String, container: JarFileContainer)
  * TODO: ExecutorContext doesn't belong here.
  * Need to move to other places
  */
-case class ExecutorContext(executorId : Int, workerId: Int, appId : Int,
+case class ExecutorContext(executorId : Int, worker: WorkerInfo, appId : Int,
                            appMaster : ActorRef, resource : Resource)
 
 

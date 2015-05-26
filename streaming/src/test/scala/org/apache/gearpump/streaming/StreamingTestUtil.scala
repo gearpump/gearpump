@@ -17,28 +17,15 @@
  */
 package org.apache.gearpump.streaming
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor._
-import akka.dispatch.Dispatcher
-import akka.testkit.{TestProbe, TestActorRef}
-import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.AppMasterToMaster.{RegisterAppMaster, SaveAppData}
+import akka.testkit.TestActorRef
+import org.apache.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, UserConfig}
-import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
-import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster
-import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.transport.Express
 import org.apache.gearpump.util.Graph
-import org.apache.gearpump.util.Graph._
-
-import scala.concurrent.{Future, Await}
-import scala.concurrent.duration._
 
 object StreamingTestUtil {
   private var executorId = 0

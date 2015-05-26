@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster.{AppJar, AppDescription}
-import org.apache.gearpump.util.Constants
+import org.apache.gearpump.util.{ActorUtil, Constants}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -70,7 +70,8 @@ class MasterClient(master : ActorRef) {
    * Internal API, will be removed in future
    */
   def replayFromTimestampWindowTrailingEdge(appId : Int): ReplayApplicationResult = {
-    val result = Await.result((master ? ReplayFromTimestampWindowTrailingEdge(appId)).asInstanceOf[Future[ReplayApplicationResult]], Duration.Inf)
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val result = Await.result(ActorUtil.sendMessageToAppMaster[ReplayApplicationResult](master, appId,ReplayFromTimestampWindowTrailingEdge(appId)), Duration.Inf)
     result
   }
 }

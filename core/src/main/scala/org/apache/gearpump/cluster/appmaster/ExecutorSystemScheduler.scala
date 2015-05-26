@@ -77,10 +77,10 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
     case ResourceAllocatedForSession(allocations, session) =>
 
       if (isSessionAlive(session)) {
-        val groupedResource = allocations.groupBy(_.worker).mapValues(
+        val groupedResource = allocations.groupBy(_.worker).mapValues {
           _.reduce((resourceA, resourceB) =>
-              resourceA.copy(resource = (resourceA.resource + resourceB.resource))))
-          .toArray
+            resourceA.copy(resource = (resourceA.resource + resourceB.resource)))
+        }.toArray
 
         groupedResource.map((workerAndResources) => {
           val ResourceAllocation(resource, worker, workerId) = workerAndResources._2

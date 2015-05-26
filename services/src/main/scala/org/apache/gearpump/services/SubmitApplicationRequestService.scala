@@ -44,7 +44,7 @@ trait SubmitApplicationRequestService extends HttpService  {
   def applicationRequestRoute = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    pathPrefix("api"/s"$REST_VERSION") {
+    pathPrefix("api"/s"$REST_VERSION")({
       path("application") {
         post {
           import SubmitApplicationRequest._
@@ -66,6 +66,7 @@ trait SubmitApplicationRequestService extends HttpService  {
             }
 
             val appId = context.submit(new StreamApplication(appName, UserConfig.empty, graph))
+
             import upickle._
             val submitApplicationResultValue = SubmitApplicationResultValue(appId)
             val jsonData = write(submitApplicationResultValue)
@@ -73,6 +74,6 @@ trait SubmitApplicationRequestService extends HttpService  {
           }
         }
       }
-    }
+    })
   }
 }

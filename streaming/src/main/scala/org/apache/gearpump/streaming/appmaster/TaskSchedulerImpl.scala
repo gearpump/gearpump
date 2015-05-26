@@ -20,9 +20,9 @@ package org.apache.gearpump.streaming.appmaster
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, NonLocality, Locality}
-import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
-import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
-import org.apache.gearpump.streaming.task.{Subscriber, Subscriber$, TaskId}
+import org.apache.gearpump.streaming.appmaster.TaskScheduler.{ Location, TaskStatus}
+import org.apache.gearpump.streaming.{ProcessorId, DAG, ProcessorDescription}
+import org.apache.gearpump.streaming.task.{Subscriber, TaskId}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -37,7 +37,7 @@ trait TaskScheduler {
    * This notify the scheduler that the task DAG is created.
    * @param dag task dag
    */
-  def setTaskDAG(dag: DAG): Unit
+  def setDAG(dag: DAG): Unit
 
   /**
    * Get the resource requirements for all unscheduled tasks.
@@ -54,7 +54,7 @@ trait TaskScheduler {
    * @param executorId which executorId this resource belongs to.
    * @return
    */
-  def resourceAllocated(workerId : Int, executorId: Int) : Option[TaskLaunchData]
+  def resourceAllocated(workerId : Int, executorId: Int, resource: Resource) : List[TaskId]
 
   /**
    * This notify the scheduler that {executorId} is failed, and expect a set of
@@ -66,115 +66,105 @@ trait TaskScheduler {
   def executorFailed(executorId: Int) : Array[ResourceRequest]
 }
 
+object TaskScheduler {
+  case class Location(workerId: Int, executorId: Int)
+
+  class TaskStatus(val taskId: TaskId, val preferLocality: Locality, var allocation: Location)
+}
+
 class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends TaskScheduler {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
-  private var tasks = Map.empty[TaskId, TaskLaunchData]
-
-  // maintain a list to tasks to be scheduled
-  private var tasksToBeScheduled = Map.empty[Locality, mutable.Queue[TaskLaunchData]]
+  private var tasks = List.empty[TaskStatus]
 
   // find the locality of the tasks
   private val taskLocator = new TaskLocator(appName, config)
 
-  private var executorToTaskIds = Map.empty[Int, Set[TaskId]]
 
-  def setTaskDAG(dag: DAG): Unit = {
-    dag.processors.foreach { params =>
-      val (processorId, taskDescription) = params
+  override def setDAG(dag: DAG): Unit = {
 
-      val subscriptions = Subscriber.of(processorId, dag)
-      0.until(taskDescription.parallelism).map((taskIndex: Int) => {
-        val taskId = TaskId(processorId, taskIndex)
-        val locality = taskLocator.locateTask(taskId)
-        val taskLaunchData = TaskLaunchData(taskId, taskDescription,
-          subscriptions)
-        tasks += (taskId -> taskLaunchData)
-        scheduleTaskLater(taskLaunchData, locality)
-      })
+    val taskMap = tasks.map(_.taskId).zip(tasks).toMap
+
+    tasks = dag.tasks.map { taskId =>
+      val locality = taskLocator.locateTask(taskId)
+      taskMap.getOrElse(taskId, new TaskStatus(taskId, locality, allocation = null))
     }
-    val nonLocalityQueue = tasksToBeScheduled.getOrElse(NonLocality, mutable.Queue.empty[TaskLaunchData])
-    //reorder the tasks to distributing fairly on workers
-    val taskQueue = nonLocalityQueue.sortBy(_.taskId.index)
-    tasksToBeScheduled += (NonLocality -> taskQueue)
   }
 
   def getResourceRequests(): Array[ResourceRequest] ={
     fetchResourceRequests(fromOneWorker = false)
   }
 
+  val WORKER_NO_PREFERENCE = 0
+
   import Relaxation._
   private def fetchResourceRequests(fromOneWorker: Boolean = false): Array[ResourceRequest] ={
-    var resourceRequests = Array.empty[ResourceRequest]
-    tasksToBeScheduled.foreach(taskWithLocality => {
-      val (locality, tasks) = taskWithLocality
-      LOG.debug(s"locality : $locality, task queue size : ${tasks.size}")
+    var workersResourceRequest = Map.empty[Int, Resource]
 
-      if (tasks.size > 0) {
-        locality match {
-          case locality: WorkerLocality =>
-            resourceRequests = resourceRequests :+
-              ResourceRequest(Resource(tasks.size), locality.workerId, relaxation = SPECIFICWORKER)
-          case _ if fromOneWorker =>
-              resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size), relaxation = ONEWORKER)
-          case _ =>
-              resourceRequests = resourceRequests :+ ResourceRequest(Resource(tasks.size))
-        }
+    tasks.filter(_.allocation == null).foreach{task =>
+
+      task.preferLocality match {
+        case WorkerLocality(workerId) =>
+          val current = workersResourceRequest.getOrElse(workerId, Resource.empty)
+          workersResourceRequest += workerId -> (current + Resource(1))
+        case _ =>
+          val workerId = WORKER_NO_PREFERENCE
+          val current = workersResourceRequest.getOrElse(workerId, Resource.empty)
+          workersResourceRequest += workerId -> (current + Resource(1))
       }
-    })
-    resourceRequests
-  }
+    }
 
-  def resourceAllocated(workerId : Int, executorId: Int) : Option[TaskLaunchData] = {
-    val locality = WorkerLocality(workerId)
-
-    // first try to schedule with worker locality. If not found, search tasks without locality
-    val task = scheduleTaskWithLocality(locality).orElse(scheduleTaskWithLocality(NonLocality))
-    task.map(task => addTaskToExecutor(executorId, task.taskId))
-    task
-  }
-
-  private def addTaskToExecutor(executorId: Int, task: TaskId): Unit = {
-    var taskSetForExecutorId = executorToTaskIds.getOrElse(executorId, Set.empty[TaskId])
-    taskSetForExecutorId += task
-    executorToTaskIds += executorId -> taskSetForExecutorId
-  }
-
-  private def scheduleTaskWithLocality(locality: Locality): Option[TaskLaunchData] = {
-    tasksToBeScheduled.get(locality).flatMap { queue =>
-      if (queue.isEmpty) {
-        None
+    workersResourceRequest.map {workerIdAndResource =>
+      val (workerId, resource) = workerIdAndResource
+      if (workerId == WORKER_NO_PREFERENCE) {
+        ResourceRequest(resource)
       } else {
-        Some(queue.dequeue())
+        ResourceRequest(resource, workerId, relaxation = SPECIFICWORKER)
       }
+    }.toArray
+  }
+
+  override def resourceAllocated(workerId : Int, executorId: Int, resource: Resource) : List[TaskId] = {
+
+    var scheduledTasks = List.empty[TaskId]
+
+    val location = Location(workerId, executorId)
+    // schedule tasks for specific worker
+    scheduledTasks ++= scheduleTasksForLocality(resource, location,
+      (locality) => locality == WorkerLocality(workerId))
+
+    // schedule tasks without specific location preference
+    scheduledTasks ++= scheduleTasksForLocality(resource - Resource(scheduledTasks.length), location, (locality) => true)
+
+    scheduledTasks
+  }
+
+  private def scheduleTasksForLocality(resource: Resource, resourceLocation: Location, matcher: (Locality) => Boolean): List[TaskId] = {
+
+    var scheduledTasks = List.empty[TaskId]
+    var index = 0
+    var remain = resource.slots
+    while(index < tasks.length && remain > 0) {
+      val taskStatus = tasks(index)
+      if (taskStatus.allocation == null && matcher(taskStatus.preferLocality)) {
+        taskStatus.allocation = resourceLocation
+        scheduledTasks +:= taskStatus.taskId
+        remain -= 1
+      }
+      index += 1
     }
+    scheduledTasks
   }
 
-  def executorFailed(executorId: Int) : Array[ResourceRequest] = {
-    val tasksForExecutor = executorToTaskIds.get(executorId)
-    executorToTaskIds = executorToTaskIds - executorId
+  override def executorFailed(executorId: Int) : Array[ResourceRequest] = {
 
-    tasksForExecutor match {
-      case Some(taskIds) =>
-        taskIds.foreach { taskId =>
-          val task = tasks(taskId)
-
-          //add the failed task back
-          scheduleTaskLater(task)
-        }
-        Array(ResourceRequest(Resource(taskIds.size), relaxation = ONEWORKER))
-      case None =>
-        Array.empty
+    val failedTasks = tasks.filter { status =>
+      status.allocation != null && status.allocation.executorId == executorId
     }
-  }
 
-  private def scheduleTaskLater(taskLaunchData : TaskLaunchData, locality : Locality = NonLocality): Unit = {
-    val taskQueue = tasksToBeScheduled.getOrElse(locality, mutable.Queue.empty[TaskLaunchData])
-    taskQueue.enqueue(taskLaunchData)
-    tasksToBeScheduled += (locality -> taskQueue)
-  }
-}
+    // clean the location of failed tasks
+    failedTasks.foreach(_.allocation = null)
 
-object TaskSchedulerImpl {
-  case class TaskLaunchData(taskId: TaskId, taskDescription : ProcessorDescription, subscriptions: List[Subscriber])
+    Array(ResourceRequest(Resource(failedTasks.length), relaxation = ONEWORKER))
+  }
 }
