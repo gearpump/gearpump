@@ -11,25 +11,28 @@ angular.module('dashboard.apps.appmaster')
       $interval.cancel(updateClockPromise);
     });
 
-    var detectPeriod = 15;
-    var previousDetectPoint = {appClock: $scope.app.clock, local: moment()};
+    var windowSize = 10;
+    var detectPoint = {appClock: $scope.app.clock, local: moment()};
+    var clockPoint = new Array();
+    for (var i=0; i<windowSize; i++) {
+      detectPoint.local -= i * 1000;
+      clockPoint.unshift(detectPoint);
+    }
     var appClockRate = 0;
     $scope.$watch('app.clock', function(nowAppClock) {
+      $scope.displayClock = $scope.app.clock;
       var nowLocal = moment();
-      if (nowLocal - previousDetectPoint.local > detectPeriod * 1000) {
+      var previousDetectPoint = clockPoint.shift();
+      if (nowAppClock - previousDetectPoint.appClock > 0) {
         $interval.cancel(updateClockPromise);
-        if (nowAppClock - previousDetectPoint.appClock > 0) {
-          var clockDelta = nowAppClock - $scope.displayClock;
-          appClockRate = 1000 * (nowLocal - previousDetectPoint.local) /
-            (nowAppClock  - previousDetectPoint.appClock + clockDelta);
-          updateClockPromise = $interval(function () {
-            $scope.displayClock += 1000;
-          }, appClockRate);
-        }
-        previousDetectPoint = {appClock: nowAppClock, local: nowLocal};
-      } else if (updateClockPromise === null) {
-        $scope.displayClock = $scope.app.clock;
+        appClockRate = 1000 * (nowLocal - previousDetectPoint.local) /
+          (nowAppClock  - previousDetectPoint.appClock);
+        updateClockPromise = $interval(function () {
+          $scope.displayClock += 1000;
+        }, appClockRate);
       }
+      var nowClock = {appClock: nowAppClock, local: nowLocal};
+      clockPoint.push(nowClock);
     });
 
     $scope.visgraph = {
