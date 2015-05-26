@@ -83,7 +83,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   actorSystem.eventStream.subscribe(historyMetricsService, classOf[MetricType])
 
   override def receive : Receive =
-    taskMessageHandler orElse
+      taskMessageHandler orElse
       executorMessageHandler orElse
       recover orElse
       appMasterInfoService orElse
@@ -92,6 +92,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   def taskMessageHandler: Receive = {
     case clock: UpdateClock =>
       taskManager forward clock
+    case clock: GetUpstreamMinClock =>
+      taskManager forward clock
     case GetLatestMinClock =>
       taskManager forward GetLatestMinClock
     case register: RegisterTask =>
@@ -99,7 +101,6 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case replay: ReplayFromTimestampWindowTrailingEdge =>
       taskManager forward replay
     case metrics: MetricType =>
-
       actorSystem.eventStream.publish(metrics)
     case lookupTask: LookupTaskActorRef =>
       taskManager forward lookupTask

@@ -146,6 +146,9 @@ private[appmaster] class TaskManager(
       clockService forward clock
       stay
 
+    case Event(clock: GetUpstreamMinClock, _) =>
+      clockService forward clock
+      stay
     case Event(GetLatestMinClock, _)=>
       clockService forward GetLatestMinClock
       stay
@@ -205,6 +208,7 @@ private [appmaster] object TaskManager {
   case object Uninitialized extends State
   case object StartApplication extends State
   case object Recovery extends State
+  case object DynamicDAG extends State
   case object ApplicationReady extends State
 
   /**

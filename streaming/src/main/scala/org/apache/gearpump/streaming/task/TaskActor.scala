@@ -217,7 +217,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       throw new RestartException
     case TaskLocationReady =>
       sendLater.sendAllPendingMsgs()
-      appMaster ! UpdateClock(taskId, minClock)
+      appMaster ! GetUpstreamMinClock(taskId)
 
     case SendMessageProbe =>
       sendLatencyProbeMessage
