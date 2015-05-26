@@ -25,6 +25,7 @@ import org.apache.gearpump.transport.netty.{Context, TaskMessage}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
+import scala.collection.immutable.LongMap
 import scala.concurrent._
 
 trait ActorLookupById {
@@ -35,7 +36,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   import org.apache.gearpump.transport.Express._
   import system.dispatcher
-  val localActorMap = Agent(Map.empty[Long, ActorRef])
+  val localActorMap = Agent(LongMap.empty[ActorRef])
   val remoteAddressMap = Agent(Map.empty[Long, HostPort])
 
   val remoteClientMap = Agent(Map.empty[HostPort, ActorRef])

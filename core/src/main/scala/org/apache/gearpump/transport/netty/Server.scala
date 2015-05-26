@@ -29,6 +29,7 @@ import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
+import scala.collection.immutable.LongMap
 import scala.concurrent.Future
 
 class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, deserializeFlag : Boolean) extends Actor {
@@ -58,7 +59,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
 
   def msgHandler : Receive = {
     case MsgBatch(msgs) =>
-      msgs.groupBy(_.targetTask()).map { taskBatch =>
+      msgs.groupBy(_.targetTask()).foreach { taskBatch =>
         val (taskId, taskMessages) = taskBatch
         val actor = lookupActor.lookupLocalActor(taskId)
 
@@ -90,7 +91,7 @@ object Server {
   // use a helper object to bypass this deprecation warning.
   @deprecated("", "")
   private def fakeActorRefForTask(context: ActorContext, taskId: Long, sessonId : Int): ActorRef = {
-    context.system.actorFor(s"/tasks/doNotUseFakeActorRef/${sessonId}${taskId}")
+    context.system.actorFor(s"/tasks/doNotUseFakeActorRef/${taskId}#${sessonId}")
   }
   object FakeActorRefForTaskHelper {
     @deprecated("", "")
@@ -131,7 +132,7 @@ object Server {
   }
 
   class TaskIdActorRefTranslation(context: ActorContext) {
-    private var taskIdtoActorRef = Map.empty[Long, ActorRef]
+    private var taskIdtoActorRef = LongMap.empty[ActorRef]
 
     def translateToActorRef(taskId: Long, sessionId : Int): ActorRef = {
       if(!taskIdtoActorRef.contains(taskId)){
