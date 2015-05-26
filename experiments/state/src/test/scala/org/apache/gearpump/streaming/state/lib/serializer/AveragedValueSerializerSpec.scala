@@ -16,14 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.lib.serializer
 
-import kafka.common.TopicAndPartition
+import com.twitter.algebird.AveragedValue
+import org.scalacheck.Gen
+import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.prop.PropertyChecks
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+class AveragedValueSerializerSpec extends PropSpec with PropertyChecks with Matchers {
+
+  property("AveragedValueSerializer should serialize and deserialize averaged values") {
+
+    val longGen = Gen.chooseNum[Long](Long.MinValue, Long.MaxValue)
+    forAll(longGen, longGen) { (count: Long, value: Long) =>
+      val serializer = new AveragedValueSerializer
+      val av = AveragedValue(count, value)
+      serializer.deserialize(serializer.serialize(av)) shouldBe av
+    }
+  }
+
 }
-

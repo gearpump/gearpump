@@ -16,14 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.lib.serializer
 
-import kafka.common.TopicAndPartition
+import org.scalacheck.Gen
+import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.prop.PropertyChecks
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+class LongSerializerSpec extends PropSpec with PropertyChecks with Matchers {
+
+  property("LongSerializer should serialize and deserialize long values") {
+    forAll(Gen.chooseNum[Long](Long.MinValue, Long.MaxValue)) { (l: Long) =>
+      val serializer = new LongSerializer
+      serializer.deserialize(serializer.serialize(l)) shouldBe l
+    }
+  }
+
 }
-
