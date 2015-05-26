@@ -60,17 +60,12 @@ object Processor {
 
 case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null, life: LifeTime = LifeTime.Immortal) extends ReferenceEqual
 
-class StreamApplication(override val name : String,  inputUserConfig: UserConfig, inputDag: Graph[ProcessorDescription, PartitionerDescription])
+class StreamApplication(override val name : String,  inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, PartitionerDescription])
   extends Application {
 
-  private val dagWithDefault = inputDag.mapEdge {(node1, edge, node2) =>
-    Option(edge).getOrElse(PartitionerDescription(PartitionerObject(StreamApplication.hashPartitioner)))
-  }
-
-  def dag: Graph[ProcessorDescription, PartitionerDescription] = dagWithDefault
   override def appMaster: Class[_ <: ApplicationMaster] = classOf[AppMaster]
   override def userConfig(implicit system: ActorSystem): UserConfig = {
-    inputUserConfig.withValue(StreamApplication.DAG, dagWithDefault)
+    inputUserConfig.withValue(StreamApplication.DAG, dag)
   }
 }
 
@@ -87,7 +82,7 @@ object StreamApplication {
       processorIndex += 1
       updatedProcessor
     }.mapEdge { (node1, edge, node2) =>
-      PartitionerDescription(PartitionerObject(edge))
+      PartitionerDescription(PartitionerObject(Option(edge).getOrElse(StreamApplication.hashPartitioner)))
     }
     new StreamApplication(name, userConfig, graph)
   }

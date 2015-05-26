@@ -47,7 +47,7 @@ sealed trait PartitionerFactory {
 case class PartitionerObject(partitioner: Partitioner) extends PartitionerFactory
 
 case class PartitionerByClassName(partitionerClass: String) extends PartitionerFactory {
-  def partitioner: Partitioner = Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
+  override def partitioner: Partitioner = Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
 }
 
 case class LifeTime(birth: Long, die: Long)
