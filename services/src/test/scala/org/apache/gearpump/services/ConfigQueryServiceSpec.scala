@@ -18,20 +18,21 @@
 
 package org.apache.gearpump.services
 
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
-import com.typesafe.config.{ConfigFactory}
+
 import scala.concurrent.duration._
 import scala.util.Try
 
-class ConfigQueryServiceSpec extends FlatSpec with ScalatestRouteTest with ConfigQueryService with Matchers  {
-  import upickle._
+class ConfigQueryServiceSpec extends FlatSpec with ScalatestRouteTest with ConfigQueryService with Matchers with BeforeAndAfterAll  {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
+  val testCluster = TestCluster(system)
 
-  def master = TestCluster.master
+  def master = testCluster.master
 
   "ConfigQueryService" should "return config for application" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
@@ -58,6 +59,10 @@ class ConfigQueryServiceSpec extends FlatSpec with ScalatestRouteTest with Confi
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
     }
+  }
+
+  override def afterAll {
+    testCluster.shutDown
   }
 
 }

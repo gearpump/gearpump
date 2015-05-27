@@ -18,15 +18,14 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.{Props, Actor, ActorSystem}
-import akka.testkit.{TestKitBase, TestActorRef, TestKit}
-import org.apache.gearpump.cluster.{AppJar, AppDescription}
+import akka.actor.{Actor, ActorSystem, Props}
+import akka.testkit.TestKit
 import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterDataDetailRequest
 import org.apache.gearpump.cluster.MasterToClient.{SubmitApplicationResult, SubmitApplicationResultValue}
-import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
+import org.apache.gearpump.partitioner.PartitionerDescription
+import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.appmaster.{StreamingAppMasterDataDetail, SubmitApplicationRequest}
-import org.apache.gearpump.streaming.{ProcessorDescription, ProcessorId}
 import org.apache.gearpump.util.{Constants, Graph, LogUtil}
 import org.scalatest._
 import org.slf4j.Logger
@@ -36,7 +35,8 @@ import upickle._
 
 import scala.util.Success
 
-class SubmitApplicationRequestServiceSpec(sys:ActorSystem) extends FlatSpec with ScalatestRouteTest with SubmitApplicationRequestService with AppMasterService with Matchers with BeforeAndAfterAll {
+class SubmitApplicationRequestServiceSpec(sys:ActorSystem) extends FlatSpec
+with ScalatestRouteTest with SubmitApplicationRequestService with AppMasterService with Matchers with BeforeAndAfterAll {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def this() = this(ActorSystem("MySpec"))
   override implicit val system:ActorSystem = sys

@@ -17,12 +17,12 @@
  */
 package org.apache.gearpump.services
 
-import akka.actor.{ActorRef, Props, Actor, ActorSystem}
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.io.IO
 import org.apache.gearpump.util.Constants
-import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import spray.can.Http
-import spray.routing.{RoutingSettings, HttpService}
+import spray.routing.{HttpService, RoutingSettings}
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.ExecutionContext
@@ -31,8 +31,9 @@ import scala.concurrent.duration._
 class InterMediateServiceSpec extends FlatSpec with ScalatestRouteTest
   with InterMediateService with Matchers with BeforeAndAfterAll {
   def actorRefFactory = system
+  val testCluster = TestCluster(system)
 
-  def master = TestCluster.master
+  def master = testCluster.master
 
   InterMediateServiceSpec.startMockRestService(system)
 
@@ -47,6 +48,10 @@ class InterMediateServiceSpec extends FlatSpec with ScalatestRouteTest
       val responseBody = response.entity.asString
       assert(responseBody == "put succeed")
     }
+  }
+
+  override def afterAll {
+    testCluster.shutDown
   }
 }
 

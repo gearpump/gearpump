@@ -19,9 +19,6 @@
 package org.apache.gearpump.services
 
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.cluster.TestUtil.MiniCluster
-import org.apache.gearpump.streaming.StreamingTestUtil
 import org.apache.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
@@ -30,11 +27,12 @@ import spray.testkit.ScalatestRouteTest
 import scala.concurrent.duration._
 import scala.util.Try
 
-class MetricsQueryServiceSpec extends FlatSpec with ScalatestRouteTest with MetricsQueryService with Matchers  {
+class MetricsQueryServiceSpec extends FlatSpec with ScalatestRouteTest with MetricsQueryService with Matchers with BeforeAndAfterAll  {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
+  val testCluster = TestCluster(system)
 
-  def master = TestCluster.master
+  def master = testCluster.master
 
   "MetricsQueryService" should "return history metrics" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
@@ -43,5 +41,9 @@ class MetricsQueryServiceSpec extends FlatSpec with ScalatestRouteTest with Metr
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
     }
+  }
+
+  override def afterAll {
+    testCluster.shutDown
   }
 }
