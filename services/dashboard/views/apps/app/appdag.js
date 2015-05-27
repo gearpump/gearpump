@@ -11,28 +11,33 @@ angular.module('dashboard.apps.appmaster')
       $interval.cancel(updateClockPromise);
     });
 
-    var windowSize = 10;
+    var windowSize = 5;
     var detectPoint = {appClock: $scope.app.clock, local: moment()};
-    var clockPoint = new Array();
+    //clockPoints store the time of app and local in an array from small to large
+    var clockPoints = new Array();
     for (var i=0; i<windowSize; i++) {
       detectPoint.local -= i * 1000;
-      clockPoint.unshift(detectPoint);
+      clockPoints.unshift(detectPoint);
     }
     var appClockRate = 0;
     $scope.$watch('app.clock', function(nowAppClock) {
       $scope.displayClock = $scope.app.clock;
       var nowLocal = moment();
-      var previousDetectPoint = clockPoint.shift();
-      if (nowAppClock - previousDetectPoint.appClock > 0) {
-        $interval.cancel(updateClockPromise);
-        appClockRate = 1000 * (nowLocal - previousDetectPoint.local) /
+      var previousDetectPoint = clockPoints.shift();
+      var lastClockPoint = clockPoints[clockPoints.length-1];
+      if ((lastClockPoint.local * lastClockPoint.appClock > 0)
+          && (nowAppClock - lastClockPoint.appClock > 0)) {
+        appClockRate = (nowLocal - previousDetectPoint.local) /
           (nowAppClock  - previousDetectPoint.appClock);
-        updateClockPromise = $interval(function () {
-          $scope.displayClock += 1000;
-        }, appClockRate);
+        //localClockInterval calculate the time interval between the local clock changes
+        var localClockInterval = nowLocal - lastClockPoint.local;
+        //update the display clock only once in the middle of the interval
+        updateClockPromise = $timeout(function () {
+          $scope.displayClock += (localClockInterval/2) / appClockRate;
+        }, localClockInterval/2);
       }
       var nowClock = {appClock: nowAppClock, local: nowLocal};
-      clockPoint.push(nowClock);
+      clockPoints.push(nowClock);
     });
 
     $scope.visgraph = {
