@@ -18,28 +18,26 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.cluster.worker.WorkerDescription
-
-import org.apache.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, FlatSpec}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 
-class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest with WorkersService with WorkerService
-with Matchers {
+class WorkerServiceSpec extends FlatSpec
+with ScalatestRouteTest with WorkersService with WorkerService
+with Matchers with BeforeAndAfterAll {
 
   import upickle._
 
   def actorRefFactory = system
+  val testCluster = TestCluster(system)
 
-  def master = TestCluster.master
+  def master = testCluster.master
 
   "WorkerService" should "return a json structure of worker data for GET request" in {
     implicit val customTimeout = RouteTestTimeout(25.seconds)
-    (Get(s"/api/$REST_VERSION/workers") ~> workersRoute).asInstanceOf[RouteResult] ~> check {
+    Get(s"/api/$REST_VERSION/workers") ~> workersRoute ~> check {
       //check the type
       val workerListJson = response.entity.asString
       val workers = read[List[WorkerDescription]](workerListJson)
@@ -48,5 +46,9 @@ with Matchers {
         worker.state shouldBe "active"
       }
     }
+  }
+
+  override def afterAll {
+    testCluster.shutDown
   }
 }

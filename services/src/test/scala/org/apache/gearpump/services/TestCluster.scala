@@ -18,19 +18,31 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.ActorRef
+import akka.actor.{ActorSystem, ActorRef}
+import akka.testkit.TestKit
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.streaming.StreamingTestUtil
 import org.apache.gearpump.util.LogUtil
 
-object TestCluster {
-  private val LOG = LogUtil.getLogger(getClass)
+class TestCluster(system: ActorSystem) {
+  import TestCluster._
+  val cluster: MiniCluster = TestUtil.startMiniCluster
 
-  lazy val cluster: MiniCluster = TestUtil.startMiniCluster
-  lazy val master: ActorRef = {
+  def master: ActorRef = {
     LOG.info("Accessing master of TestCluster...")
     StreamingTestUtil.startAppMaster(cluster, 0)
     cluster.mockMaster
   }
+
+  def shutDown: Unit = {
+    TestKit.shutdownActorSystem(system)
+    cluster.shutDown()
+  }
+}
+
+object TestCluster {
+  private val LOG = LogUtil.getLogger(getClass)
+
+  def apply(system: ActorSystem): TestCluster = new TestCluster(system)
 }

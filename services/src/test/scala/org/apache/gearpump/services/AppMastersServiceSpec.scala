@@ -19,23 +19,21 @@ package org.apache.gearpump.services
 
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
-import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.apache.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest._
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 
-class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers  {
+class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMastersService with Matchers with BeforeAndAfterAll  {
   import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
+  val testCluster = TestCluster(system)
 
-  def master = TestCluster.master
+  def master = testCluster.master
 
   "AppMastersService" should "return a json structure of appMastersData for GET request" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
@@ -43,5 +41,9 @@ class AppMastersServiceSpec extends FlatSpec with ScalatestRouteTest with AppMas
       //check the type
       read[AppMastersData](response.entity.asString)
     }
+  }
+
+  override def afterAll {
+    testCluster.shutDown
   }
 }

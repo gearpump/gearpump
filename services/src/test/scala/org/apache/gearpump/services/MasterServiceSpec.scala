@@ -19,20 +19,19 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.AppMasterToMaster.MasterData
-import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.cluster.TestUtil.MiniCluster
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 
-class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers {
+class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers with BeforeAndAfterAll {
 
   import upickle._
 
   def actorRefFactory = system
+  val testCluster = TestCluster(system)
 
-  def master = TestCluster.master
+  def master = testCluster.master
 
   it should "return master info when asked" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
@@ -41,5 +40,9 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
       val content = response.entity.asString
       read[MasterData](content)
     }
+  }
+
+  override def afterAll {
+    testCluster.shutDown
   }
 }

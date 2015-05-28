@@ -17,23 +17,27 @@
  */
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.cluster.TestUtil.MiniCluster
+import akka.testkit.TestKit
 import org.apache.gearpump.services.WebSocketService.WebSocketUrl
-import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 
-class WebSocketServiceSpec extends FlatSpec with ScalatestRouteTest with WebSocketService with Matchers  {
+class WebSocketServiceSpec extends FlatSpec
+with ScalatestRouteTest with WebSocketService with Matchers with BeforeAndAfterAll  {
   import upickle._
   def actorRefFactory = system
 
   "WebSocketService" should "return a json structure of WebSocket url" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/websocket/url") ~> webSocketRoute).asInstanceOf[RouteResult] ~> check {
+    Get(s"/api/$REST_VERSION/websocket/url") ~> webSocketRoute ~> check {
       //check the type
       read[WebSocketUrl](response.entity.asString)
     }
+  }
+
+  override def afterAll {
+    TestKit.shutdownActorSystem(system)
   }
 }

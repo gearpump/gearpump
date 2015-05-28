@@ -20,30 +20,29 @@ package org.apache.gearpump.services
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.apache.gearpump.util.LogUtil
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 
-class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers  {
+class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterAll {
   import upickle._
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
+  val testCluster = TestCluster(system)
 
-  def master = TestCluster.master
+  def master = testCluster.master
 
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmaster/0?detail=false") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
+    Get(s"/api/$REST_VERSION/appmaster/0?detail=false") ~> appMasterRoute ~> check{
       val responseBody = response.entity.asString
       read[AppMasterData](responseBody)
     }
+  }
 
-    //TODO: fix this UT
-//    (Get("/appmaster/streaming/0?detail=true") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
-//      val responseBody = response.entity.asString
-//      read[StreamingAppMasterDataDetail](responseBody)
-//    }
+  override def afterAll {
+    testCluster.shutDown
   }
 }

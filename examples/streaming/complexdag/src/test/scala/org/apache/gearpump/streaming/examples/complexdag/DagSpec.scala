@@ -18,22 +18,21 @@
 
 package org.apache.gearpump.streaming.examples.complexdag
 
-import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, SubmitApplication}
-import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
-import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
+import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
+import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
+import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.util.Util
+import org.scalatest._
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+import scala.util.Success
 
-import scala.util.{Success, Try}
+class DagSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
 
-class DagSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
-
-  before {
+  override def beforeAll {
     startActorSystem()
   }
 
-  after {
+  override def afterAll {
     shutdownActorSystem()
   }
 

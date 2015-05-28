@@ -19,27 +19,30 @@
 package org.apache.gearpump.services
 
 import org.apache.gearpump.util.LogUtil
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 
 class ActorUtilServiceSpec extends FlatSpec with ScalatestRouteTest
-with ActorUtilService with Matchers  {
-  import upickle._
+with ActorUtilService with Matchers with BeforeAndAfterAll {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
+  val testCluster = TestCluster(system)
 
-  def master = TestCluster.master
+  def master = testCluster.master
 
   "ActorUtilService" should "deliver message to target actor path" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/internal/actorutil?" +
-      "class=org.apache.gearpump.streaming.task.SendMessageLoss&actor=/test/path")
-      ~> actorUtilRoute).asInstanceOf[RouteResult] ~> check{
-
+    Get(s"/api/$REST_VERSION/internal/actorutil?" +
+      "class=org.apache.gearpump.streaming.task.SendMessageLoss&actor=/test/path") ~> actorUtilRoute ~> check{
       assert(response.status.isSuccess)
     }
   }
+
+  override def afterAll {
+    testCluster.shutDown
+  }
+
 }
