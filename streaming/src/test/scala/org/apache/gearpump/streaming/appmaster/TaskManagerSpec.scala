@@ -26,7 +26,7 @@ import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTask}
 import org.apache.gearpump.streaming.executor.Executor
-import Executor.RestartExecutor
+import Executor.RestartTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
@@ -97,7 +97,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // when one executor stop, it will also trigger the recovery by restart
     // existing executors
-    executorManager.expectMsg(BroadCast(RestartExecutor))
+    executorManager.expectMsg(BroadCast(RestartTasks))
 
     // ask for new executors
     val returned = executorManager.expectMsg(StartExecutors(resourceRequest))
@@ -114,7 +114,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     taskManager ! MessageLoss
 
     // Restart the executors so that we can replay from minClock
-    executorManager.expectMsg(BroadCast(RestartExecutor))
+    executorManager.expectMsg(BroadCast(RestartTasks))
   }
 
   private def bootUp: Env = {

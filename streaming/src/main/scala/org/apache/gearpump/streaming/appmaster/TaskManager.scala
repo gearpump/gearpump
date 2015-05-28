@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTr
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, StartClock}
 import org.apache.gearpump.streaming.executor.{ExecutorRestartPolicy, Executor}
-import Executor.RestartExecutor
+import Executor.RestartTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef, AllocateResourceTimeOut}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
@@ -70,7 +70,7 @@ private[appmaster] class TaskManager(
         LOG.info(s"Current min Clock is $clock, sending request resource to master...")
         executorManager ! StartExecutors(resourceRequests)
       }
-      goto (StartApplication) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
+      goto (StartApplication) using TaskRegistrationState(new TaskRegistration(appId, taskScheduler.status.totalTaskCount))
   }
 
   when(StartApplication)(startTasksAndHandleExecutorLoss)
@@ -155,14 +155,14 @@ private[appmaster] class TaskManager(
 
     case Event(executorStopped @ ExecutorStopped(executorId), _) =>
       //restart all tasks
-      executorManager ! BroadCast(RestartExecutor)
+      executorManager ! BroadCast(RestartTasks)
       self ! executorStopped
-      goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
+      goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, taskScheduler.status.totalTaskCount))
     case Event(MessageLoss, _) =>
       //restart all tasks
       LOG.info("We have detected MessageLoss, going to restart the whole topology")
-      executorManager ! BroadCast(RestartExecutor)
-      goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
+      executorManager ! BroadCast(RestartTasks)
+      goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, taskScheduler.status.totalTaskCount))
 
     case Event(reply: ReplayFromTimestampWindowTrailingEdge, _) =>
 
