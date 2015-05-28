@@ -54,21 +54,20 @@ import scala.reflect.ClassTag
  *
  * @param name name of app
  */
-class StreamApp(val name: String, context: ClientContext, userConfig: UserConfig) {
+class StreamApp(val name: String, system: ActorSystem, userConfig: UserConfig) {
+
   val graph = Graph.empty[Op, OpEdge]
 
   def plan(): StreamApplication = {
-    implicit val system = context.system
+    implicit val actorSystem = system
     val planner = new Planner
     val dag = planner.plan(graph)
     StreamApplication(name, dag, userConfig)
   }
-
-  private[StreamApp] def system: ActorSystem = context.system
 }
 
 object StreamApp {
-  def apply(name: String, context: ClientContext, userConfig: UserConfig = UserConfig.empty) = new StreamApp(name, context, userConfig)
+  def apply(name: String, context: ClientContext, userConfig: UserConfig = UserConfig.empty) = new StreamApp(name, context.system, userConfig)
 
   implicit def streamAppToApplication(streamApp: StreamApp): StreamApplication = {
     streamApp.plan

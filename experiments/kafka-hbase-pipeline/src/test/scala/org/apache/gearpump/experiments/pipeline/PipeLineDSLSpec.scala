@@ -17,10 +17,10 @@
  */
 package org.apache.gearpump.experiments.pipeline
 
+import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseSinkInterface}
 import org.apache.gearpump.experiments.pipeline.Messages._
 import org.apache.gearpump.streaming.MockUtil
@@ -33,7 +33,7 @@ import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, Matchers, PropSpec}
 import org.slf4j.Logger
 import upickle._
 
@@ -76,27 +76,33 @@ class KafkaSourceTest(kafkaConfig: KafkaConfig) extends Traverse[Array[Datum]] {
   }
 }
 
-class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll {
   val LOG: Logger = LogUtil.getLogger(getClass)
   val PROCESSORS = "pipeline.processors"
   val PERSISTORS = "pipeline.persistors"
   val pipeLinePath = "conf/pipeline.conf.template"
   val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
   val kafkaConfig = KafkaConfig(pipeLineConfig)
+  implicit var system: ActorSystem = null
 
+  override def beforeAll: Unit = {
+    system = ActorSystem("PipeLineDSLSpec")
+  }
+
+  override def afterAll: Unit = {
+    system.shutdown()
+  }
 
   property("StreamApp should allow UserConfig and ClusterConfig") {
     val persistors = pipeLineConfig.getInt(PERSISTORS)
     val kafkaConfig = KafkaConfig(pipeLineConfig)
-    val context = ClientContext()
-    implicit val system = context.system
+
     val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig)
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
-
   }
   property("StreamApp should readFromTimeReplayableSource") {
-    val context = ClientContext()
-    val app = StreamApp("PipeLineDSL", context)
+
+    val app = new StreamApp("PipeLineDSL", system, UserConfig.empty)
     val producer = app.readFromTimeReplayableSource(new TimeReplayableSourceTest, msg => {
       val jsonData = msg.msg.asInstanceOf[String]
       val envelope = read[Envelope](jsonData)
@@ -139,6 +145,7 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
     app.plan.dag.vertices.foreach(desc => {
       LOG.info(s"taskClass=${desc.taskClass}")
     })
+
   }
   property("SinkTask should call the passed in closure") {
     val taskContext = MockUtil.mockTaskContext
@@ -161,8 +168,7 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
     assert(called)
   }
   property("StreamApp should readFromReplayableSource -> flatMap -> map -> sink") {
-    val context = ClientContext()
-    val app = StreamApp("PipeLineDSL", context)
+    val app = new StreamApp("PipeLineDSL", system, UserConfig.empty)
     val producer = app.readFromTimeReplayableSource(new TimeReplayableSourceTest, msg => {
       val jsonData = msg.msg.asInstanceOf[String]
       val envelope = read[Envelope](jsonData)
@@ -232,8 +238,7 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
     })
   }
   property("StreamApp should readFromKafka") {
-    val context = ClientContext()
-    val app = StreamApp("PipeLineDSL", context)
+    val app = new StreamApp("PipeLineDSL", system, UserConfig.empty)
     val producer = app.readFromKafka(kafkaConfig, msg => {
       val jsonData = msg.msg.asInstanceOf[String]
       val envelope = read[Envelope](jsonData)
@@ -277,6 +282,7 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
     app.plan.dag.vertices.foreach(desc => {
       LOG.info(s"taskClass=${desc.taskClass}")
     })
+
   }
 }
 

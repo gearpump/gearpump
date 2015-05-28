@@ -56,7 +56,7 @@ trait MasterHarness {
     systemAddress = ActorUtil.getSystemAddress(system)
     host = systemAddress.host.get
     port = systemAddress.port.get
-    System.setProperty(s"${Constants.GEARPUMP_CLUSTER_MASTERS}.0", s"$host:$port")
+
     LOG.info(s"Actor system is started, $host, $port")
   }
 

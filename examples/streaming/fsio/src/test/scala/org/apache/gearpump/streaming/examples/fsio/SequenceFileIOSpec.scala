@@ -50,8 +50,6 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
     val validArgs = {
       Table(
         ("requiredArgs", "optionalArgs"),
-        (requiredArgs, optionalArgs.take(0)),
-        (requiredArgs, optionalArgs.take(2)),
         (requiredArgs, optionalArgs)
       )
     }

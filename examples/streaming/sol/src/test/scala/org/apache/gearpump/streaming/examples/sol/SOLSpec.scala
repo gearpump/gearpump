@@ -49,10 +49,6 @@ class SOLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
     val args = {
       Table(
         ("requiredArgs", "optionalArgs"),
-        (requiredArgs, optionalArgs.take(0)),
-        (requiredArgs, optionalArgs.take(2)),
-        (requiredArgs, optionalArgs.take(4)),
-        (requiredArgs, optionalArgs.take(6)),
         (requiredArgs, optionalArgs)
       )
     }

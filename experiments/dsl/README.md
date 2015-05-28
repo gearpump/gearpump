@@ -86,7 +86,7 @@ WordCount:
 
 ```scala
 val context = ClientContext(master)
-    val app = new StreamApp("dsl", context)
+    val app = StreamApp("dsl", context)
 
     val data = "This is a good start, bingo!! bingo!!"
     app.fromCollection(data.lines.toList).
