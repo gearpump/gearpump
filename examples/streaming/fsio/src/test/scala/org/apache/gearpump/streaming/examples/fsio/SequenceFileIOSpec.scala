@@ -18,21 +18,21 @@
 
 package org.apache.gearpump.streaming.examples.fsio
 
-import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, SubmitApplication}
-import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
+import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
-import org.apache.gearpump.util.{Constants, Util}
+import org.apache.gearpump.util.Util
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 
 import scala.util.{Success, Try}
 
-class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
-  before {
+class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
+  override def beforeAll {
     startActorSystem()
   }
 
-  after {
+  override def afterAll {
     shutdownActorSystem()
   }
 

@@ -23,16 +23,16 @@ import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, Su
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
 import org.apache.gearpump.util.Util
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, Matchers, PropSpec}
 
 import scala.util.{Success, Try}
 
-class SOLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
-  before {
+class SOLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
+  override def beforeAll {
     startActorSystem()
   }
 
-  after {
+  override def afterAll {
     shutdownActorSystem()
   }
 

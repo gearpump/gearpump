@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apche.gearpump.streaming.example.transport
+package org.apche.gearpump.streaming.examples.transport
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig

@@ -15,24 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apche.gearpump.streaming.example.transport
+package org.apche.gearpump.streaming.examples.transport
 
 import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
 import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.streaming.examples.transport.Transport
 import org.apache.gearpump.util.Util
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
 
 import scala.util.Success
 
-class TransportSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
-  before {
+class TransportSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
+  override def beforeAll {
     startActorSystem()
   }
 
-  after {
+  override def afterAll {
     shutdownActorSystem()
   }
 
