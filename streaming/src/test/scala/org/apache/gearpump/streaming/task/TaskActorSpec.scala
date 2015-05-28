@@ -52,22 +52,19 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
   var mockMaster: TestProbe = null
   var taskContext1: TaskContextData = null
-  var taskContext2: TaskContextData = null
 
   override def beforeEach() = {
     startActorSystem()
     mockMaster = TestProbe()(getActorSystem)
-    taskContext1 = TaskContextData(taskId1, executorId1, appId,
+    taskContext1 = TaskContextData(executorId1, appId,
       "appName", mockMaster.ref, 1, Subscriber.of(processorId = 0, dag))
-    taskContext2 = TaskContextData(taskId2, executorId2, appId,
-      "appName", mockMaster.ref, 1, Subscriber.of(processorId = 1, dag))
   }
 
   "TaskActor" should {
     "register itself to AppMaster when started" in {
 
       val mockTask = mock(classOf[TaskWrapper])
-      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskContext1, UserConfig.empty, mockTask))(getActorSystem)
+      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
       val express1 = Express(getActorSystem)
       val testActorHost = express1.localHost
       mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
@@ -84,7 +81,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       implicit val system = getActorSystem
       val mockTask = mock(classOf[TaskWrapper])
       EventFilter[RestartException](occurrences = 1) intercept {
-        TestActorRef[TaskActor](Props(classOf[TaskActor], taskContext1, UserConfig.empty, mockTask))(getActorSystem)
+        TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
       }
     }
 
@@ -92,7 +89,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       val mockTask = mock(classOf[TaskWrapper])
       val msg = Message("test")
 
-      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskContext1, UserConfig.empty, mockTask))(getActorSystem)
+      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
 
       testActor.tell(StartClock(0), mockMaster.ref)
 

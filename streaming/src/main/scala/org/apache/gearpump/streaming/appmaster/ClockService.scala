@@ -144,8 +144,10 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
 
     case HealthCheck =>
       selfChecker()
+
     case SnapshotStartClock =>
       snapshotStartClock()
+
     case getStalling: GetStallingTasks =>
       val tasks = stallingTasks.getOrElse(List.empty)
         .map(stallingTask => TaskId(stallingTask.processorId, stallingTask.taskId))

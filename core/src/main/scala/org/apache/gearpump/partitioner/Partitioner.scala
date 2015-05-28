@@ -59,7 +59,7 @@ object LifeTime {
 /**
  * @param partitionerFactory
  */
-case class PartitionerDescription(partitionerFactory: PartitionerFactory, life: LifeTime = LifeTime.Immortal)
+case class PartitionerDescription(partitionerFactory: PartitionerFactory)
 
 
 object Partitioner {

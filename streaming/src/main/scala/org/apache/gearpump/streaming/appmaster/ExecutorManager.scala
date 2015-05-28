@@ -57,6 +57,8 @@ private[appmaster] class ExecutorManager (
   implicit val actorSystem = context.system
   private val systemConfig = context.system.settings.config
 
+  private var executors =  Map.empty[Int, ActorRef]
+
   def receive: Receive = waitForTaskManager
 
   def waitForTaskManager: Receive = {
@@ -86,11 +88,17 @@ private[appmaster] class ExecutorManager (
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
-      taskManager ! ExecutorStarted(executor, executorId, resource, workerId)
+      executors += executorId -> executor
+      taskManager ! ExecutorStarted(executorId, resource, workerId)
 
     case BroadCast(msg) =>
       LOG.info(s"broadcasting ${msg.getClass.getName}")
-      context.children.foreach(_ ! msg)
+      context.children.foreach(_ forward  msg)
+
+    case UniCast(executorId, msg) =>
+      LOG.info(s"unicasting ${msg.getClass.getName} to executor $executorId")
+      val executor = executors.get(executorId)
+      executor.foreach(_ forward msg)
 
     case GetExecutorPathList =>
       sender ! context.children.map(_.path).toList
@@ -118,9 +126,11 @@ private[appmaster] object ExecutorManager {
   case class StartExecutors(resources: Array[ResourceRequest])
   case class BroadCast(msg: Any)
 
+  case class UniCast(executorId: Int, msg: Any)
+
   case object GetExecutorPathList
 
-  case class ExecutorStarted(executor: ActorRef, executorId: Int, resource: Resource, workerId: Int)
+  case class ExecutorStarted(executorId: Int, resource: Resource, workerId: Int)
   case class ExecutorStopped(executorId: Int)
 
   case class SetTaskManager(taskManager: ActorRef)

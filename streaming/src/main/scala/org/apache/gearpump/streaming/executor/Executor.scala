@@ -24,9 +24,9 @@ import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTr
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.executor.Executor.{RestartExecutor, TaskLocationReady}
+import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskLocationReady}
 import org.apache.gearpump.streaming.task.TaskActor.RestartTask
-import org.apache.gearpump.streaming.task.{TaskId, TaskLocations, TaskWrapper}
+import org.apache.gearpump.streaming.task.{TaskActor, TaskUtil, Subscriber, TaskContextData, TaskId, TaskLocations, TaskWrapper}
 import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.transport.{Express, HostPort}
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil}
@@ -50,6 +50,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
   appMaster ! RegisterExecutor(self, executorId, resource, workerId)
   context.watch(appMaster)
 
+  private var tasks = Map.empty[TaskId, ActorRef]
+
   val express = Express(context.system)
 
   def receive : Receive = appMasterMsgHandler orElse terminationWatch
@@ -66,14 +68,30 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
     }
 
   def appMasterMsgHandler : Receive = {
-    case LaunchTask(taskId, taskContext, taskClass, taskActorClass, taskConfig) => {
-      LOG.info(s"Launching Task $taskId for app: ${appId}, $taskClass")
+    case LaunchTasks(taskIds, processorDescription, subscribers: List[Subscriber]) => {
+      LOG.info(s"Launching Task $taskIds for app: ${appId}")
 
-      val taskConf = userConf.withConfig(taskConfig)
+      val taskConf = userConf.withConfig(processorDescription.taskConf)
 
-      val task = new TaskWrapper(taskClass, taskContext, taskConf)
-      val taskActor = context.actorOf(Props(taskActorClass, taskContext, userConf, task).withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), ActorPathUtil.taskActorName(taskId))
+      val taskContext = TaskContextData(executorId, appId, "appName", appMaster, processorDescription.parallelism, subscribers)
+      val taskClass = TaskUtil.loadClass(processorDescription.taskClass)
+      val taskActorClass = classOf[TaskActor]
+
+      taskIds.foreach { taskId =>
+        val task = new TaskWrapper(taskId, taskClass, taskContext, taskConf)
+        val taskActor = context.actorOf(Props(taskActorClass, taskId, taskContext, userConf, task).
+          withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), ActorPathUtil.taskActorName(taskId))
+        tasks += taskId -> taskActor
+      }
     }
+
+    case ChangeTasks(taskIds, life, subscribers) =>
+      //TODO: Chang existing tasks.
+      taskIds.foreach { taskId =>
+        val taskActor = tasks.get(taskId)
+        taskActor.foreach(_ forward ChangeTask(life, subscribers))
+      }
+
     case TaskLocations(locations) =>
       val result = locations.flatMap { kv =>
         val (host, taskIdList) = kv
@@ -83,7 +101,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
         express.remoteAddressMap.send(result)
         express.remoteAddressMap.future().map(result => context.children.foreach(_ ! TaskLocationReady))
       }
-    case RestartExecutor =>
+    case RestartTasks =>
+      //TODO: Support versioned DAG. Stop then start, instead of using exception.
+      //In this case, we allow user to change the construction parameters.
       LOG.info(s"Executor received restart tasks")
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
       context.children.foreach(_ ! RestartTask)
@@ -102,7 +122,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
 }
 
 object Executor {
-  case object RestartExecutor
+  case object RestartTasks
 
   case object TaskLocationReady
 }

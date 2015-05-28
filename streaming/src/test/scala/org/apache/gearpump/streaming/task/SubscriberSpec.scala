@@ -40,7 +40,7 @@ class SubscriberSpec  extends FlatSpec with Matchers {
     assert(subscribers.size == 2)
 
     assert(subscribers.toSet ==
-      Set(Subscriber(1, partitioner, task2), Subscriber(2, partitioner, task3)))
+      Set(Subscriber(1, partitioner, task2.parallelism, task2.life), Subscriber(2, partitioner, task3.parallelism, task3.life)))
   }
 }
 

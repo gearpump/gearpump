@@ -25,15 +25,16 @@ import akka.actor._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.metrics.Metrics.MetricType
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.partitioner.{LifeTime, Partitioner}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
+import org.apache.gearpump.streaming.ProcessorId
 import org.apache.gearpump.streaming.executor.Executor.TaskLocationReady
 import org.apache.gearpump.util.{ActorUtil, LogUtil, TimeOutScheduler, Util}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
-class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, val task: TaskWrapper) extends Actor with ExpressTransport  with TimeOutScheduler{
+class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userConf : UserConfig, val task: TaskWrapper) extends Actor with ExpressTransport  with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
 
 
@@ -48,6 +49,8 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   private val processTime = Metrics(context.system).histogram(s"$metricName.processTime")
   private val sendThroughput = Metrics(context.system).meter(s"$metricName.sendThroughput")
   private val receiveThroughput = Metrics(context.system).meter(s"$metricName.receiveThroughput")
+
+  private var life = LifeTime.Immortal
 
   //latency probe
   import scala.concurrent.duration._
@@ -219,6 +222,21 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
       sendLater.sendAllPendingMsgs()
       appMaster ! GetUpstreamMinClock(taskId)
 
+
+    case ChangeTask(life, subscribers) =>
+      this.life = life
+      subscribers.foreach { subscriber =>
+        val processorId = subscriber.processorId
+        val subscription = getSubscription(processorId)
+        subscription match {
+          case Some(subscription) =>
+            subscription.changeLifeTime(subscriber.lifeTime)
+          case None =>
+            subscriptions ::= (subscriber.processorId, new Subscription(appId, executorId, taskId, subscriber, sessionId, this))
+        }
+      }
+      sender ! TaskChanged(taskId)
+
     case SendMessageProbe =>
       sendLatencyProbeMessage
     case LatencyProbe(timeStamp) =>
@@ -234,6 +252,15 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   def minClock: TimeStamp = Math.min(upstreamMinClock, minClockAtCurrentTask)
 
   def getUpstreamMinClock: TimeStamp = upstreamMinClock
+
+  private def getSubscription(processorId: ProcessorId): Option[Subscription] = {
+    val filtered = subscriptions.filter(_._1 == processorId)
+    if (filtered.isEmpty) {
+      None
+    } else {
+      Some(filtered(0)._2)
+    }
+  }
 }
 
 object TaskActor {

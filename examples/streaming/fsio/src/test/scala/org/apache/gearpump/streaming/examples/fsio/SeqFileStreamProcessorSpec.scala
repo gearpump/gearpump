@@ -59,7 +59,6 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
     val processorDescription =
       Processor.ProcessorToProcessorDescription(id = 0, Processor[SeqFileStreamProcessor](1))
 
-    val dag = DAG(Map(0 -> processorDescription), null)
     val taskId = TaskId(0, 0)
     when(context.taskId).thenReturn(taskId)
 
