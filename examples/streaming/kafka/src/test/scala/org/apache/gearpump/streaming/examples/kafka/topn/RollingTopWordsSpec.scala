@@ -49,9 +49,6 @@ class RollingTopWordsSpec extends PropSpec with PropertyChecks with Matchers wit
     val args = {
       Table(
         ("requiredArgs", "optionalArgs"),
-        (requiredArgs, optionalArgs.take(0)),
-        (requiredArgs, optionalArgs.take(2)),
-        (requiredArgs, optionalArgs.take(4)),
         (requiredArgs, optionalArgs)
       )
     }

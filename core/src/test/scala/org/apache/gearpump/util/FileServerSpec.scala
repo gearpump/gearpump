@@ -34,7 +34,7 @@ import scala.util.Success
 
 class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
-  implicit val timeout = akka.util.Timeout(10, TimeUnit.SECONDS)
+  implicit val timeout = akka.util.Timeout(25, TimeUnit.SECONDS)
   val host = "localhost"
 
   var system: ActorSystem = null

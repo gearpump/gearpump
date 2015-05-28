@@ -50,11 +50,6 @@ class TransportSpec extends PropSpec with PropertyChecks with Matchers with Befo
     val args = {
       Table(
         ("requiredArgs", "optionalArgs"),
-        (requiredArgs, optionalArgs.take(0)),
-        (requiredArgs, optionalArgs.take(2)),
-        (requiredArgs, optionalArgs.take(4)),
-        (requiredArgs, optionalArgs.take(6)),
-        (requiredArgs, optionalArgs.take(8)),
         (requiredArgs, optionalArgs)
       )
     }
