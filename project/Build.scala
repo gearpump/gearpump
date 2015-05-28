@@ -371,7 +371,6 @@ object Build extends sbt.Build {
     settings = commonSettings
   ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
 
-  
   lazy val copySharedResources = Def.task {
     ConsoleLogger().info("copying shared resources")
     val sharedMessages = "src/main/scala/org/apache/gearpump/shared/Messages.scala"
