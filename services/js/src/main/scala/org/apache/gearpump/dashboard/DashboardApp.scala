@@ -16,29 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.services
+package org.apache.gearpump.dashboard
+
+import com.greencatsoft.angularjs.Angular
+import org.apache.gearpump.dashboard.controllers.{DashboardRoutingConfig, DashboardCtrl}
+import org.apache.gearpump.dashboard.services.RestApiServiceFactory
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
-
-import com.greencatsoft.angularjs.Angular
-
 
 @JSExport
 object DashboardApp extends JSApp {
   override def main(): Unit = {
     println("In DashboardApp")
 
-    val module = Angular.module("gearpump")
+    val module = Angular.module("gearpump", Seq("ngAnimate",
+      "ngRoute",
+      "ng-breadcrumbs",
+      "mgcrea.ngStrap",
+      "ui.select",
+      "smart-table"))
+
+    module.config(DashboardRoutingConfig)
     module.controller[DashboardCtrl]
+    module.factory[RestApiServiceFactory]
 
-    /*
-        module.directiveOf[TodoItemDirective]
-        module.directiveOf[TodoEscapeDirective]
-        module.directiveOf[TodoFocusDirective]
-
-        module.serviceOf[TaskService]
-    */
 
   }
 }
+
+
