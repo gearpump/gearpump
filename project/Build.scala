@@ -1,9 +1,6 @@
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
-import org.scalajs.sbtplugin._
-import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
-
 import sbt.Keys._
 import sbt._
 import sbtassembly.Plugin.AssemblyKeys._
@@ -370,55 +367,54 @@ object Build extends sbt.Build {
     settings = commonSettings
   ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
   
-  val servicesjsOutputDir = Def.settingKey[File]("Directory for Javascript files output by ScalaJS")
+  lazy val services = Project(id = "gearpump-services", base = file("services")).
+    settings(commonSettings: _*).aggregate(servicesjs, servicesjvm).dependsOn(streaming % "test->test;compile->compile")
 
-  lazy val services = Project(id = "gearpump-services", base = file("services/jvm")).
-    settings(commonSettings: _*).
-    settings(servicesjvmSettings: _*).
-    aggregate(servicesjs).dependsOn(streaming % "test->test;compile->compile")
-
-  lazy val servicesjs = Project(id = "gearpump-services-js", base = file("services/js")).
-    enablePlugins(ScalaJSPlugin).
-    settings(commonSettings: _*).
-    settings(
-      libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "upickle" % "0.2.8",
-      "com.greencatsoft" %%% "scalajs-angular" % "0.5-SNAPSHOT"
-      )
-    ).
-    settings(
-      relativeSourceMaps := true
-    )
-
-  lazy val servicesjvmSettings = Seq(
-      servicesjsOutputDir := (crossTarget in Compile).value / "classes" / "public" / "javascripts",
-      compile in Compile <<= (compile in Compile) dependsOn (fastOptJS in (servicesjs, Compile)),
-      libraryDependencies ++= Seq(
-          "io.spray" %%  "spray-testkit"   % sprayVersion % "test",
-          "io.spray" %%  "spray-httpx"     % sprayVersion,
-          "io.spray" %%  "spray-client"    % sprayVersion,
-          "io.spray" %%  "spray-json"    % sprayJsonVersion,
-          "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
-            exclude("com.typesafe.akka", "akka-actor_2.11"),
-          "org.json4s" %% "json4s-jackson" % json4sVersion,
-          "org.json4s" %% "json4s-native"   % json4sVersion,
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.webjars" % "jquery" % "2.1.3",
-          "org.webjars" % "angularjs" % "1.3.15",
-          "org.webjars" % "angular-motion" % "0.3.3",
-          "org.webjars" % "angular-strap" % "2.2.1",
-          "org.webjars" % "angular-ui-select" % "0.11.2",
-          "org.webjars" % "bootstrap" % "3.3.4",
-          "org.webjars" % "d3js" % "3.5.5",
-          "org.webjars" % "momentjs" % "2.10.2",
-          "org.webjars" % "smart-table" % "2.0.1",
-          "org.webjars" % "visjs" % "3.12.0"
-      )
-  ) ++ (
-      Seq(packageScalaJSLauncher, fastOptJS, fullOptJS) map { packageJSKey =>
-        crossTarget in (servicesjs, Compile, packageJSKey) := servicesjsOutputDir.value
-      }
+  val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(
+    "io.spray" %% "spray-testkit" % sprayVersion % "test",
+    "io.spray" %% "spray-httpx" % sprayVersion,
+    "io.spray" %% "spray-client" % sprayVersion,
+    "io.spray" %% "spray-json" % sprayJsonVersion,
+    "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
+      exclude("com.typesafe.akka", "akka-actor_2.11"),
+    "org.json4s" %% "json4s-jackson" % json4sVersion,
+    "org.json4s" %% "json4s-native" % json4sVersion,
+    "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+    "org.webjars" % "jquery" % "2.1.3",
+    "org.webjars" % "angularjs" % "1.3.15",
+    "org.webjars" % "angular-motion" % "0.3.3",
+    "org.webjars" % "angular-strap" % "2.2.1",
+    "org.webjars" % "angular-ui-select" % "0.11.2",
+    "org.webjars" % "bootstrap" % "3.3.4",
+    "org.webjars" % "d3js" % "3.5.5",
+    "org.webjars" % "momentjs" % "2.10.2",
+    "org.webjars" % "smart-table" % "2.0.1",
+    "org.webjars" % "visjs" % "3.12.0"
+    ),
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
   )
+
+  val jsSettings = Seq(libraryDependencies ++= Seq(
+    "com.lihaoyi" %%% "upickle" % "0.2.8",
+    "com.greencatsoft" %%% "scalajs-angular" % "0.5-SNAPSHOT"
+  ),
+    jsDependencies += "org.webjars" % "angularjs" % "1.3.15" / "angular.js",
+    relativeSourceMaps := true)
+
+  lazy val `gearpump-services-` = crossProject.in(file("services")).
+    settings(
+      commonSettings: _*
+    ).
+    jvmSettings(
+      jvmSettings: _*
+    ).
+    jsSettings(
+      jsSettings: _*
+    )
+  
+  lazy val servicesjvm = `gearpump-services-`.jvm.dependsOn(streaming % "test->test;compile->compile")
+
+  lazy val servicesjs = `gearpump-services-`.js
 
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
@@ -538,7 +534,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         )
       )
-  ) dependsOn(services % "test->test;compile->compile", core % "provided", services % "provided")
+  ) dependsOn(services % "test->test;compile->compile", core % "provided", servicesjvm % "provided")
 
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",
