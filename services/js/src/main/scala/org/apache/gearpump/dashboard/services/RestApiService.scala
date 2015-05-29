@@ -16,22 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.services
+package org.apache.gearpump.dashboard.services
 
+import com.greencatsoft.angularjs.core.{HttpService, Scope}
+import com.greencatsoft.angularjs.{Factory, injectable}
 
-import scala.scalajs.js.annotation.JSExport
+import scala.concurrent.Future
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
 import scala.scalajs.js
+import scala.scalajs.js.JSON
 
-import com.greencatsoft.angularjs.Angular
-import com.greencatsoft.angularjs.injectable
-import com.greencatsoft.angularjs.{ inject, injectable }
-import com.greencatsoft.angularjs.AbstractController
-import com.greencatsoft.angularjs.core.{ Location, Scope }
 
-@JSExport
-@injectable("dashboardCtrl")
-class DashboardCtrl(scope: DashboardScope, location: Location, breadcrumbs: js.Array[String])
-  extends AbstractController[DashboardScope](scope) {
+@injectable("restApiService")
+class RestApiService(http: HttpService) {
+  require(http != null, "Missing argument 'http'.")
+
+  def subscribe(url: String, scope: Scope): Future[js.Any] = {
+    val future: Future[js.Any] = http.get(url)
+    future.map(JSON.stringify(_))
+  }
+}
+
+@injectable("restApiService")
+class RestApiServiceFactory(http: HttpService) extends Factory[RestApiService] {
+  override def apply() = new RestApiService(http)
 }
 
