@@ -1,3 +1,25 @@
+gearpump-0.3.6
+=====================
+Change list
+------------------
+ - #977, speedup the UT by avoiding creating multiple sub process JVMs.
+ - #974, Remove unnecessary MasterProxy creation in unit test
+ - #969 Tests for examples create a test harness per test
+ - #968, update Codecov upload method
+ - #960, Services Specs do not terminate ClockService 
+ - #959, LOG in TimeoutScheduler causes JVM exit 
+ - #935 improve the application clock 
+ - #659, remove kafka integration test 
+ - #947 optimize checkMessage performance in TashActor 
+ - #945, [NPE regression] Partitioner is null 
+ - #941, allow user to define custom partitioner by REST 
+ - #890: add cloudera manager integration support for gearpump 
+ - #928 continue to improve the performance of taskActor.allowSendingMoreMessages 
+ - #936 bumping up version of sbt-scoverage plugin 
+ - #934, allow user to define uid for edge partitioner. 
+ - #928 improve the allowSendingMsg performance 
+ - #926: previous restcall should be dropped if the page is destroyed
+
 gearpump-0.3.5
 =====================
 Change list
