@@ -1,9 +1,6 @@
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
-import org.scalajs.sbtplugin._
-import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
-
 import sbt.Keys._
 import sbt._
 import sbtassembly.Plugin.AssemblyKeys._
@@ -511,7 +508,7 @@ object Build extends sbt.Build {
         crossTarget in (servicesjs, Compile, packageJSKey) := servicesjsOutputDir.value
       }
   )
-
+  
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
     base = file("examples/distributedshell"),
@@ -630,7 +627,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         )
       )
-  ) dependsOn(services % "test->test;compile->compile", core % "provided", services % "provided")
+  ) dependsOn(services % "test->test;compile->compile", core % "provided", servicesjvm % "provided")
 
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",
