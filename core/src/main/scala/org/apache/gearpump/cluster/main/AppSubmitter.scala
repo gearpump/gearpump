@@ -78,7 +78,12 @@ object AppSubmitter extends App with ArgumentsParser {
       }
     }).failed.foreach(throwable => {
       val cause = Option(throwable.getCause).getOrElse(throwable)
-      Console.println(cause.getMessage)
+      cause match {
+        case e: ClassNotFoundException =>
+          Console.println(s"class not found: ${e.getMessage}")
+        case c =>
+          Console.println(c.getMessage)
+      }
     })
   }
 
