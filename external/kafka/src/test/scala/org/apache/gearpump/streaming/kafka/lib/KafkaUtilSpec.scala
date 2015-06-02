@@ -61,11 +61,11 @@ class KafkaUtilSpec extends PropSpec with PropertyChecks with BeforeAndAfterEach
     forAll(args) {
       (topic: String, partitions: Int, replicas: Int) =>
         if (topic.nonEmpty && partitions > 0 && replicas > 0 && replicas <= numServers) {
-          createTopic(newZkClient, topic, partitions, replicas) shouldBe false
-          createTopic(newZkClient, topic, partitions, replicas) shouldBe true
+          createTopic(connectZk(), topic, partitions, replicas) shouldBe false
+          createTopic(connectZk(), topic, partitions, replicas) shouldBe true
         } else {
           intercept[RuntimeException] {
-            createTopic(newZkClient, topic, partitions, replicas)
+            createTopic(connectZk(), topic, partitions, replicas)
           }
         }
     }
@@ -77,12 +77,12 @@ class KafkaUtilSpec extends PropSpec with PropertyChecks with BeforeAndAfterEach
     val replicas = numServers
     val topic = TestUtils.tempTopic()
     intercept[RuntimeException] {
-      getBroker(newZkClient, topic, partitions)
+      getBroker(connectZk(), topic, partitions)
     }
     val partitionsToBrokers = createTopicUntilLeaderIsElected(topic, partitions, replicas)
     0.until(partitions).foreach { part =>
       val hostPorts = brokerList(partitionsToBrokers(part).get).split(":")
-      val broker = getBroker(newZkClient, topic, part)
+      val broker = getBroker(connectZk(), topic, part)
 
       broker.host shouldBe hostPorts(0)
       broker.port.toString shouldBe hostPorts(1)
@@ -96,7 +96,7 @@ class KafkaUtilSpec extends PropSpec with PropertyChecks with BeforeAndAfterEach
     val topicNum = 3
     val topics = List.fill(topicNum)(TestUtils.tempTopic())
     topics.foreach(t => createTopicUntilLeaderIsElected(t, partitions = 1, replicas = 1))
-    KafkaUtil.getTopicAndPartitions(newZkClient, grouper, topics).toSet shouldBe topics.map(t => TopicAndPartition(t, 0)).toSet
+    KafkaUtil.getTopicAndPartitions(connectZk(), grouper, topics).toSet shouldBe topics.map(t => TopicAndPartition(t, 0)).toSet
   }
 
 }

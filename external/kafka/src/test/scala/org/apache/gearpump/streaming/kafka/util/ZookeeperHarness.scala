@@ -29,9 +29,8 @@ trait ZookeeperHarness {
   private var zookeeper: EmbeddedZookeeper = null
 
   def getZookeeper: EmbeddedZookeeper = zookeeper
-  def newZkClient: ZkClient = {
-    new ZkClient(zkConnect, zkSessionTimeout, zkConnectionTimeout, ZKStringSerializer)
-  }
+  def connectZk = () => new ZkClient(zkConnect, zkSessionTimeout, zkConnectionTimeout, ZKStringSerializer)
+
 
   def setUp() {
     zookeeper = new EmbeddedZookeeper(zkConnect)
