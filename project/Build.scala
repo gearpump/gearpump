@@ -95,7 +95,6 @@ object Build extends sbt.Build {
       },
 
       publishArtifact in Test := true,
-      parallelExecution in Test := false,
 
       pomExtra := {
       <url>https://github.com/intel-hadoop/gearpump</url>

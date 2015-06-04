@@ -1,4 +1,5 @@
-parallelExecution in (ThisBuild, Test) := false
+//parallelExecution in (ThisBuild, Test) := false
+fork in (ThisBuild, Test) := true
 
 
 
