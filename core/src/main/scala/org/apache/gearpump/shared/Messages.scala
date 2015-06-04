@@ -1,4 +1,4 @@
-package org.apache.gearpump.cluster
+package org.apache.gearpump.shared
 
 import scala.reflect.ClassTag
 
@@ -90,4 +90,18 @@ object Messages {
                                            clock: TimeStamp = 0,
                                            executors: Map[ExecutorId, String] = null,
                                            tasks: Map[TaskId, ExecutorId] = null) extends AppMasterDataDetail
+
+  object MasterStatus {
+    type Type = String
+    val Synced = "synced"
+    val UnSynced = "unsynced"
+  }
+
+  case class MasterDescription(leader: (String, Int), cluster: List[(String, Int)], aliveFor: Long,
+                               logFile: String, jarStore: String,
+                               masterStatus: MasterStatus.Type,
+                               homeDirectory: String)
+
+  case class MasterData(masterDescription: MasterDescription)
+
 }

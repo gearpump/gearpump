@@ -18,27 +18,43 @@
 
 package org.apache.gearpump.dashboard.services
 
-import com.greencatsoft.angularjs.core.{HttpService, Scope}
-import com.greencatsoft.angularjs.{Factory, injectable}
+import com.greencatsoft.angularjs.core.{HttpPromise, HttpService, Scope, Timeout}
+import com.greencatsoft.angularjs.{Factory, Service, injectable}
 
 import scala.concurrent.Future
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
 import scala.scalajs.js
 import scala.scalajs.js.JSON
+import scala.scalajs.js.annotation.JSExport
 
-
-@injectable("restApiService")
-class RestApiService(http: HttpService) {
+@JSExport
+@injectable("RestApiService")
+class RestApiService(http: HttpService, timeout: Timeout, options: OptionsService) extends Service {
   require(http != null, "Missing argument 'http'.")
 
-  def subscribe(url: String, scope: Scope): Future[js.Any] = {
-    val future: Future[js.Any] = http.get(url)
+  println("RestApiService")
+
+  def subscribe(url: String, scope: Scope): Future[String] = {
+    val future: Future[js.Any] = http.get(options.conf.restapiRoot + url)
     future.map(JSON.stringify(_))
   }
+
+  def killApp(appId: String): HttpPromise = {
+    val url = options.conf.restapiRoot + "/appmaster/" + appId
+    http.delete(url)
+  }
+
 }
 
-@injectable("restApiService")
-class RestApiServiceFactory(http: HttpService) extends Factory[RestApiService] {
-  override def apply() = new RestApiService(http)
+@JSExport
+@injectable("RestApiService")
+class RestApiServiceFactory(http: HttpService, timeout: Timeout, options: OptionsService)
+  extends Factory[RestApiService] {
+
+  println("RestApiServiceFactory")
+
+  override def apply() = {
+    new RestApiService(http, timeout, options)
+  }
 }
 

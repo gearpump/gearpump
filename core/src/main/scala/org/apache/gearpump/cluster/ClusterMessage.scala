@@ -21,14 +21,12 @@ package org.apache.gearpump.cluster
 import akka.actor.ActorRef
 import com.typesafe.config.Config
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.master.Master.{MasterInfo, MasterDescription}
+import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerDescription
 import org.apache.gearpump.metrics.Metrics._
-import upickle._
 
-import scala.reflect.ClassTag
-import scala.util.{Success, Try}
+import scala.util.Try
 
 /**
  * Cluster Bootup Flow
@@ -124,7 +122,7 @@ object AppMasterToMaster {
   case class WorkerData(workerDescription: Option[WorkerDescription])
 
   case object GetMasterData
-  case class MasterData(masterDescription: MasterDescription)
+  //case class MasterData(masterDescription: MasterDescription)
 }
 
 object MasterToAppMaster {

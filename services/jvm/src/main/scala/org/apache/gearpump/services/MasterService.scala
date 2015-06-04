@@ -1,15 +1,16 @@
 package org.apache.gearpump.services
 
 import akka.actor.ActorRef
-import org.apache.gearpump.cluster.AppMasterToMaster.{MasterData, GetMasterData}
-import org.apache.gearpump.util.{Constants}
+import akka.pattern.ask
+import org.apache.gearpump.cluster.AppMasterToMaster.GetMasterData
+import org.apache.gearpump.shared.Messages.MasterData
+import org.apache.gearpump.util.Constants
 import spray.http.StatusCodes
 import spray.routing
 import spray.routing.HttpService
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-import akka.pattern.ask
 
 trait MasterService extends HttpService {
   import upickle._

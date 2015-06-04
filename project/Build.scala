@@ -1,5 +1,6 @@
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
+import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import sbt.Keys._
 import sbt._
@@ -216,6 +217,8 @@ object Build extends sbt.Build {
         ),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "target" / scalaVersionMajor -> "dashboard"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "src" -> "dashboard" / "src"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
 
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
@@ -367,10 +370,25 @@ object Build extends sbt.Build {
     settings = commonSettings
   ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
   
-  lazy val services = Project(id = "gearpump-services", base = file("services")).
-    settings(commonSettings: _*).aggregate(servicesjs, servicesjvm).dependsOn(streaming % "test->test;compile->compile")
+  val copySharedResources = taskKey[Unit]("Copy shared resources")
 
-  val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(
+  lazy val services = Project(id = "gearpump-services", base = file("services")).
+    settings(commonSettings: _*).settings(
+      copySharedResources := {
+        IO.copyFile(baseDirectory.value / "core" / "src" / "main" / "scala" / "org" / "apache" / "gearpump" / "shared" / "Messages.scala", baseDirectory.value / "services" / "js" / "src" / "main" / "scala" / "org" / "apache" / "gearpump" / "shared")
+      },
+      copySharedResources <<= copySharedResources
+    ).aggregate(servicesjs, servicesjvm).dependsOn(streaming % "test->test;compile->compile")
+
+  lazy val servicesjvm = Project(id = "gearpump-services-jvm", base = file("services/jvm")).
+    settings(jvmSettings : _*).dependsOn(streaming % "test->test;compile->compile")
+
+  lazy val servicesjs = Project(id = "gearpump-services-js", base = file("services/js")).
+    enablePlugins(ScalaJSPlugin).
+    settings(commonSettings: _*).
+    settings(jsSettings : _*)
+
+  lazy val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(
     "io.spray" %% "spray-testkit" % sprayVersion % "test",
     "io.spray" %% "spray-httpx" % sprayVersion,
     "io.spray" %% "spray-client" % sprayVersion,
@@ -391,30 +409,21 @@ object Build extends sbt.Build {
     "org.webjars" % "smart-table" % "2.0.1",
     "org.webjars" % "visjs" % "3.12.0"
     ),
+    compile in Compile <<=
+      (compile in Compile) dependsOn (fastOptJS in (servicesjs, Compile)),
     ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
   )
 
-  val jsSettings = Seq(libraryDependencies ++= Seq(
+  lazy val jsSettings = Seq(libraryDependencies ++= Seq(
     "com.lihaoyi" %%% "upickle" % "0.2.8",
     "com.greencatsoft" %%% "scalajs-angular" % "0.5-SNAPSHOT"
-  ),
+    ),
+    scalaVersion := scalaVersionNumber,
+    persistLauncher in Compile := true,
+    persistLauncher in Test := false,
+    skip in packageJSDependencies := false,
     jsDependencies += "org.webjars" % "angularjs" % "1.3.15" / "angular.js",
     relativeSourceMaps := true)
-
-  lazy val `gearpump-services-` = crossProject.in(file("services")).
-    settings(
-      commonSettings: _*
-    ).
-    jvmSettings(
-      jvmSettings: _*
-    ).
-    jsSettings(
-      jsSettings: _*
-    )
-  
-  lazy val servicesjvm = `gearpump-services-`.jvm.dependsOn(streaming % "test->test;compile->compile")
-
-  lazy val servicesjs = `gearpump-services-`.js
 
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
