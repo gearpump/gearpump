@@ -13,39 +13,41 @@ angular.module('dashboard.apps.appmaster')
         var verticalMargin = 30;
         var levelDistance = 85;
         return {
-          hover: true,
+          autoResize: true, // The network will automatically detect size changes and redraw itself accordingly
+          interaction: {
+            hover: true
+          },
           width: '100%',
           height: (maxNodeRadius * (flags.depth + 1) + levelDistance * flags.depth + verticalMargin * 2) + 'px',
-          hierarchicalLayout: {
-            layout: 'direction',
-            direction: 'UD',
-            levelSeparation: levelDistance
+          layout: {
+            hierarchical: {
+              sortMethod: 'directed',
+              direction: 'UD',
+              levelSeparation: levelDistance
+            }
           },
-          stabilize: true /* stabilize positions before displaying */,
-          freezeForStabilization: true,
           nodes: {
             shape: 'dot',
-            fontSize: 13,
-            fontFace: fontFace,
-            fontStrokeColor: '#fff',
-            fontStrokeWidth: 5
+            font: {
+              size: 13,
+              face: fontFace,
+              strokeColor: '#fff',
+              strokeWidth: 5
+            }
           },
           edges: {
-            style: 'arrow',
-            labelAlignment: 'line-center',
-            fontSize: 11,
-            fontFace: fontFace,
-            widthSelectionMultiplier: 1,
-            opacity: 0.75
-          },
-          tooltip: {
-            fontSize: 12,
-            fontFace: fontFace,
-            fontColor: "#000",
+            arrows: {
+              to: true
+            },
+            font: {
+              size: 11,
+              face: fontFace,
+              align: 'middle'
+            },
             color: {
-              border: "#eee",
-              background: "#fff"
-            }
+              opacity: 0.75
+            },
+            smooth: true
           }
         };
       },

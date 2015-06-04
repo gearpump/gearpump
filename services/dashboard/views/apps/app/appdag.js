@@ -61,20 +61,18 @@ angular.module('dashboard.apps.appmaster')
 
       angular.forEach(data.processors, function (processor, key) {
         var processorId = parseInt(key);
-
-        var label = '[' + processorId + '] ';
-        label += processor.description ? processor.description : $filter('lastPart')(processor.taskClass);
-
+        var label = '[' + processorId + '] ' + (processor.description ?
+          processor.description : $filter('lastPart')(processor.taskClass));
         var weight = parseInt(data.weights[processorId]);
         var hierarchyLevels = data.hierarchyLevels[processorId];
         var visNode = visNodes.get(processorId);
         var newVisRadius = d3.round(suggestRadius(weight), 1);
-        if (!visNode || visNode.label !== label || visNode.radius !== newVisRadius) {
+        if (!visNode || visNode.label !== label || visNode.size !== newVisRadius) {
           diff.push({
             id: processorId,
             label: label,
             level: hierarchyLevels,
-            radius: newVisRadius
+            size: newVisRadius
           });
         }
       });
@@ -98,10 +96,17 @@ angular.module('dashboard.apps.appmaster')
           diff.push({
             id: edgeId, from: edge.source, to: edge.target,
             width: newVisWidth,
-            hoverWidth: newVisWidth,
-            arrowScaleFactor: d3.round(suggestArrowSize(bandwidth), 1),
-            opacity: d3.round(suggestOpacity(bandwidth), 1),
-            color: dagStyle.edgeColorSet(bandwidth > 0)
+            hoverWidth: 0/*delta*/,
+            selectionWidth: 0/*delta*/,
+            arrows: {
+              to: {
+                scaleFactor: d3.round(suggestArrowSize(bandwidth), 1)
+              }
+            },
+            color: {
+              opacity: d3.round(suggestOpacity(bandwidth), 1),
+              color: dagStyle.edgeColorSet(bandwidth > 0)
+            }
           });
         }
       });
