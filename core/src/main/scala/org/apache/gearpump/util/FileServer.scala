@@ -95,7 +95,7 @@ class FileServer(rootDir: File, host: String, port : Int) extends Actor with Sta
       status match {
         case Success(message) => sender ! HttpResponse(entity = message)
         case Failure(ex) =>
-          LOG.error("save file failed, ex")
+          LOG.error("save file failed " + ex.getMessage)
           sender ! HttpResponse(status = StatusCodes.InternalServerError, entity = ex.getMessage)
       }
   }

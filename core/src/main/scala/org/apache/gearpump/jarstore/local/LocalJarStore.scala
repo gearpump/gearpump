@@ -61,15 +61,18 @@ class LocalJarStore(rootDirPath : String) extends Actor with Stash {
 }
 
 class LocalJarFileContainer(url : String) extends JarFileContainer {
+  private def LOG: Logger = LogUtil.getLogger(getClass)
   def copyFromLocal(localFile : File) : Unit = {
+    LOG.info(s"Copying from local file: ${localFile.getAbsolutePath} to $url")
     val bytes = FileUtils.readFileToByteArray(localFile)
     val client = FileServer.newClient
     client.save(url, bytes)
   }
 
-  def copyToLocalFile(localPath : File) : Unit = {
+  def copyToLocalFile(localFile : File) : Unit = {
+    LOG.info(s"Copying to local file: ${localFile.getAbsolutePath} from $url")
     val client = FileServer.newClient
     val bytes = client.get(url).get
-    FileUtils.writeByteArrayToFile(localPath, bytes)
+    FileUtils.writeByteArrayToFile(localFile, bytes)
   }
 }
