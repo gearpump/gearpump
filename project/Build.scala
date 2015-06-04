@@ -1,3 +1,4 @@
+import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import sbt.Keys._
 import sbt._
@@ -5,8 +6,6 @@ import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin._
 import xerial.sbt.Pack._
 import xerial.sbt.Sonatype._
-import com.typesafe.sbt.SbtPgp.autoImport._
-import sbtrelease._
 
 import scala.collection.immutable.Map.WithDefault
 
