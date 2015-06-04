@@ -1,5 +1,6 @@
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
+import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import sbt.Keys._
 import sbt._
@@ -217,6 +218,8 @@ object Build extends sbt.Build {
         ),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "target" / scalaVersionMajor -> "dashboard"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "src" -> "dashboard" / "src"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
 
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
@@ -377,7 +380,7 @@ object Build extends sbt.Build {
   lazy val services = Project(id = "gearpump-services", base = file("services")).
     settings(commonSettings: _*).
     aggregate(servicesjs, servicesjvm).dependsOn(streaming % "test->test;compile->compile")
-
+  
   lazy val servicesjvm = Project(id = "gearpump-services-jvm", base = file("services/jvm")).
     settings(jvmSettings : _*).dependsOn(streaming % "test->test;compile->compile")
 
@@ -478,37 +481,6 @@ object Build extends sbt.Build {
       (compile in Compile) dependsOn copySharedResources,
     relativeSourceMaps := true)
 
-  lazy val servicesjvmSettings = Seq(
-      servicesjsOutputDir := (crossTarget in Compile).value / "classes" / "public" / "javascripts",
-      compile in Compile <<= (compile in Compile) dependsOn (fastOptJS in (servicesjs, Compile)),
-      libraryDependencies ++= Seq(
-          "io.spray" %%  "spray-testkit"   % sprayVersion % "test",
-          "io.spray" %%  "spray-httpx"     % sprayVersion,
-          "io.spray" %%  "spray-client"    % sprayVersion,
-          "io.spray" %%  "spray-json"    % sprayJsonVersion,
-          "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
-            exclude("com.typesafe.akka", "akka-actor_2.11"),
-          "org.json4s" %% "json4s-jackson" % json4sVersion,
-          "org.json4s" %% "json4s-native"   % json4sVersion,
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.webjars" % "angularjs" % "1.4.0",
-          "org.webjars" % "jquery" % "2.1.3",
-          "org.webjars" % "angular-motion" % "0.3.3",
-          "org.webjars" % "angular-strap" % "2.2.3",
-          "org.webjars" % "angular-ui-select" % "0.11.2",
-          "org.webjars" % "bootstrap" % "3.3.4",
-          "org.webjars" % "d3js" % "3.5.5",
-          "org.webjars" % "momentjs" % "2.10.3",
-          "org.webjars" % "smart-table" % "2.0.3",
-          "org.webjars.bower" % "vis" % "4.2.0"
-        ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
-      )
-  ) ++ (
-      Seq(packageScalaJSLauncher, fastOptJS, fullOptJS) map { packageJSKey =>
-        crossTarget in (servicesjs, Compile, packageJSKey) := servicesjsOutputDir.value
-      }
-  )
-  
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
     base = file("examples/distributedshell"),
