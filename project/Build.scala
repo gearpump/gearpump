@@ -1,3 +1,4 @@
+import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import sbt.Keys._
 import sbt._
@@ -5,8 +6,6 @@ import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin._
 import xerial.sbt.Pack._
 import xerial.sbt.Sonatype._
-import com.typesafe.sbt.SbtPgp.autoImport._
-import sbtrelease._
 
 import scala.collection.immutable.Map.WithDefault
 
@@ -96,6 +95,7 @@ object Build extends sbt.Build {
       },
 
       publishArtifact in Test := true,
+      parallelExecution in Test := false,
 
       pomExtra := {
       <url>https://github.com/intel-hadoop/gearpump</url>
