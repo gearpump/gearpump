@@ -108,8 +108,8 @@ object ArgumentsParser {
           doParse(rest)
 
         case value :: rest =>
-          remain ++= value :: rest
-          doParse(Nil)
+          remain :+= value
+          doParse(rest)
       }
     }
     doParse(args.toList)
