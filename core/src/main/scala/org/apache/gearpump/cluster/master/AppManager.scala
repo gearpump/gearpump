@@ -25,13 +25,14 @@ import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
-import InMemoryKVService._
-import MasterHAService._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.master.InMemoryKVService._
+import org.apache.gearpump.cluster.master.MasterHAService._
+import org.apache.gearpump.shared.Messages.{AppMastersData, AppMasterData}
+import org.apache.gearpump.shared.Messages.{AppMasterActive, AppMasterInActive, AppMasterNonExist}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.Logger

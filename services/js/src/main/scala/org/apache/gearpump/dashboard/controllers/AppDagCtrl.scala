@@ -9,8 +9,8 @@ import scala.scalajs.js.annotation.JSExport
 
 
 trait AppDagScope extends Scope {
-  var app: StreamingAppMasterDataDetail
-  var displayClock: TimeStamp
+  var app: StreamingAppMasterDataDetail = js.native
+  var displayClock: TimeStamp = js.native
 }
 case class DetectPoint(appClock: TimeStamp, local: TimeStamp)
 

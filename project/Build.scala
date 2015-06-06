@@ -162,6 +162,7 @@ object Build extends sbt.Build {
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
+        "org.scala-js" %% "scalajs-library" % "0.6.3",
         "com.lihaoyi" %% "upickle" % "0.2.8",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
@@ -218,7 +219,7 @@ object Build extends sbt.Build {
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "target" / scalaVersionMajor -> "dashboard"),
-        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "src" -> "dashboard" / "src"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "src" -> "dashboard/src"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
 
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
@@ -388,6 +389,13 @@ object Build extends sbt.Build {
     settings(commonSettings: _*).
     settings(jsSettings : _*)
 
+  val sharedMessages = "src/main/scala/org/apache/gearpump/shared/Messages.scala"
+
+  lazy val copySourceMapsTask = Def.task {
+    IO.copyFile(core.base / sharedMessages, file("services/js") / sharedMessages)
+    IO.copyDirectory(file("services/js"), file("output") / "target" / "pack" / "dashboard")
+  }
+
   lazy val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(
     "io.spray" %% "spray-testkit" % sprayVersion % "test",
     "io.spray" %% "spray-httpx" % sprayVersion,
@@ -423,6 +431,8 @@ object Build extends sbt.Build {
     persistLauncher in Test := false,
     skip in packageJSDependencies := false,
     jsDependencies += "org.webjars" % "angularjs" % "1.3.15" / "angular.js",
+    compile in Compile <<=
+      (compile in Compile) dependsOn copySourceMapsTask,
     relativeSourceMaps := true)
 
   lazy val distributedshell = Project(

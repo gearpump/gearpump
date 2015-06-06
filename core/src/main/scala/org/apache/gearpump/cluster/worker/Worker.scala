@@ -24,8 +24,8 @@ import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor._
 import akka.pattern.pipe
-import com.typesafe.config.{ConfigFactory, Config}
-import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
+import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.gearpump.cluster.AppMasterToMaster.GetWorkerData
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster.QueryWorkerConfig
 import org.apache.gearpump.cluster.ClusterConfig
@@ -35,7 +35,7 @@ import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.worker.Worker.ExecutorInfo
+import org.apache.gearpump.shared.Messages.{WorkerDescription, WorkerData, ExecutorInfo}
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -43,10 +43,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-case class WorkerDescription(workerId: Int, state: String, actorPath: String,
-                             aliveFor: Long, logFile: String,
-                             executors: Array[ExecutorInfo], totalSlots: Int, availableSlots: Int,
-                             homeDirectory: String)
 /**
  * masterProxy is used to resolve the master
  */
@@ -124,7 +120,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     case GetWorkerData(workerId) =>
       val aliveFor = System.currentTimeMillis() - createdTime
       val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
-      val userDir = System.getProperty("user.dir");
+      val userDir = System.getProperty("user.dir")
       sender ! WorkerData(Some(WorkerDescription(id, "active", address,
         aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir)))
   }
@@ -175,7 +171,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
     val cancelSend = context.system.scheduler.schedule(Duration.Zero, Duration(2, TimeUnit.SECONDS))(action)
     val cancelSuicide = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
-    return new Cancellable {
+    new Cancellable {
       def cancel(): Boolean = {
         val result1 = cancelSend.cancel()
         val result2 = cancelSuicide.cancel()
@@ -197,7 +193,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
-  case class ExecutorInfo(appId: Int, executorId: Int, slots: Int)
 
 
   class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo) extends Actor {
@@ -248,7 +243,7 @@ private[cluster] object Worker {
           s"-D${Constants.GEARPUMP_APPLICATION_ID}=${launch.appId}",
           s"-D${Constants.GEARPUMP_EXECUTOR_ID}=${launch.executorId}",
           s"-D${Constants.GEARPUMP_MASTER_STARTTIME}=${getFormatedTime(masterInfo.startTime)}",
-          s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${appLogDir}")
+          s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=$appLogDir")
         val configArgs = configFile.map(confFilePath =>
           List(s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=$confFilePath")
           ).getOrElse(List.empty[String])
@@ -256,7 +251,7 @@ private[cluster] object Worker {
         // pass hostname as a JVM parameter, so that child actorsystem can read it
         // in priority
         val host = Try(context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)).map(
-          host => List(s"-D${Constants.GEARPUMP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
+          host => List(s"-D${Constants.GEARPUMP_HOSTNAME}=$host")).getOrElse(List.empty[String])
 
         val username = List(s"-D${Constants.GEARPUMP_USERNAME}=${ctx.username}")
 
@@ -267,7 +262,7 @@ private[cluster] object Worker {
           LOG.info(s"Remote debug executor enabled, listening on $availablePort")
           List(
             "-Xdebug",
-            s"-Xrunjdwp:server=y,transport=dt_socket,address=${availablePort},suspend=n",
+            s"-Xrunjdwp:server=y,transport=dt_socket,address=$availablePort,suspend=n",
             s"-D${Constants.GEARPUMP_REMOTE_DEBUG_PORT}=$availablePort"
             )
         } else {

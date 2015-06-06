@@ -21,7 +21,7 @@
         <tr>
           <td>Status</td>
           <td>
-            <span ng-class="'label-'+statusClass(worker.status,'success','default')"
+            <span ng-class="'label-'+statusClass(worker.status||'')",'success','default')"
                   class="label" ng-bind="worker.status"></span>
           </td>
         </tr>

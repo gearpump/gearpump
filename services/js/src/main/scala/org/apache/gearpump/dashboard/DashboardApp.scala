@@ -40,9 +40,11 @@ object DashboardApp extends JSApp {
     val restapi = Angular.module("dashboard.restapi", Array("dashboard.options"))
     restapi.factory[RestApiServiceFactory]
 
-    val cluster = Angular.module("dashboard.cluster", Array.empty[String])
-    cluster.config[MasterConfig]
+    val cluster = Angular.module("dashboard.cluster", Array("ngRoute"))
     cluster.controller[MasterCtrl]
+    cluster.controller[WorkersCtrl]
+    cluster.config[MasterConfig]
+    cluster.config[WorkersConfig]
 
     val apps = Angular.module("dashboard.apps", Array.empty[String])
     apps.config[AppsConfig]

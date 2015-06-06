@@ -21,10 +21,10 @@ package org.apache.gearpump.services
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest}
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersDataRequest
+import org.apache.gearpump.shared.Messages.AppMastersData
 import org.apache.gearpump.util.Constants
 import spray.http.StatusCodes
-import spray.json.DefaultJsonProtocol
 import spray.routing.HttpService
 
 import scala.concurrent.{ExecutionContext, Future}

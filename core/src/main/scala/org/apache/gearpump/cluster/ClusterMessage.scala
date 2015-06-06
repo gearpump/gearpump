@@ -23,7 +23,6 @@ import com.typesafe.config.Config
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
-import org.apache.gearpump.cluster.worker.WorkerDescription
 import org.apache.gearpump.metrics.Metrics._
 
 import scala.util.Try
@@ -119,10 +118,8 @@ object AppMasterToMaster {
 
   case object GetAllWorkers
   case class GetWorkerData(workerId: Int)
-  case class WorkerData(workerDescription: Option[WorkerDescription])
 
   case object GetMasterData
-  //case class MasterData(masterDescription: MasterDescription)
 }
 
 object MasterToAppMaster {
@@ -139,16 +136,9 @@ object MasterToAppMaster {
   case class AppMasterRegistered(appId: Int)
   case object ShutdownAppMaster
 
-  type AppMasterStatus = String
-  val AppMasterActive: AppMasterStatus = "active"
-  val AppMasterInActive: AppMasterStatus = "inactive"
-  val AppMasterNonExist: AppMasterStatus = "nonexist"
-
   sealed trait StreamingType
-  case class AppMasterData(status: AppMasterStatus, appId: Int = 0, appName: String = null, appMasterPath: String = null, workerPath: String = null, submissionTime: TimeStamp = 0, startTime: TimeStamp = 0, finishTime: TimeStamp = 0, user: String = null)
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
 
-  case class AppMastersData(appMasters: List[AppMasterData])
   case object AppMastersDataRequest
   case class AppMasterDataDetailRequest(appId: Int)
   case class AppMasterMetricsRequest(appId: Int) extends StreamingType
