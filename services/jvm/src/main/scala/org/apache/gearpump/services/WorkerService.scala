@@ -20,7 +20,8 @@ package org.apache.gearpump.services
 
 import akka.actor.ActorRef
 import akka.pattern._
-import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, AppMasterDataDetail}
+import org.apache.gearpump.cluster.AppMasterToMaster.GetWorkerData
+import org.apache.gearpump.shared.Messages.WorkerData
 import org.apache.gearpump.util.Constants
 import spray.http.StatusCodes
 import spray.routing.HttpService

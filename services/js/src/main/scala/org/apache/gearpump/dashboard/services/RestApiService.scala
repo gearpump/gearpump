@@ -34,7 +34,7 @@ class RestApiService(http: HttpService, timeout: Timeout, options: OptionsServic
 
   println("RestApiService")
 
-  def subscribe(url: String, scope: Scope): Future[String] = {
+  def subscribe(url: String): Future[String] = {
     val future: Future[js.Any] = http.get(options.conf.restapiRoot + url)
     future.map(JSON.stringify(_))
   }

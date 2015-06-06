@@ -21,20 +21,18 @@ package org.apache.gearpump.services
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, AppMasterDataDetail}
-import org.apache.gearpump.cluster.ClientToMaster.{QueryMasterConfig, QueryWorkerConfig, QueryAppMasterConfig, ShutdownApplication}
-import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, WorkerConfig, AppMasterConfig, ShutdownApplicationResult}
-import org.apache.gearpump.cluster.worker.WorkerDescription
+import org.apache.gearpump.cluster.AppMasterToMaster.GetWorkerData
+import org.apache.gearpump.cluster.ClientToMaster.{QueryAppMasterConfig, QueryMasterConfig, QueryWorkerConfig}
+import org.apache.gearpump.cluster.MasterToClient.{AppMasterConfig, MasterConfig, WorkerConfig}
+import org.apache.gearpump.shared.Messages.WorkerData
 import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 trait ConfigQueryService extends HttpService  {
-  import upickle._
   def master:ActorRef
   implicit val system: ActorSystem
   private val LOG = LogUtil.getLogger(getClass)

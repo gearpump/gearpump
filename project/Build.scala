@@ -163,6 +163,7 @@ object Build extends sbt.Build {
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
+        "org.scala-js" %% "scalajs-library" % "0.6.3",
         "com.lihaoyi" %% "upickle" % "0.2.8",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
@@ -219,7 +220,7 @@ object Build extends sbt.Build {
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "target" / scalaVersionMajor -> "dashboard"),
-        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "src" -> "dashboard" / "src"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "src" -> "dashboard/src"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
 
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.

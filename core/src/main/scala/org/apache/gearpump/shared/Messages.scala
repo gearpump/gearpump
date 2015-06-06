@@ -1,6 +1,7 @@
 package org.apache.gearpump.shared
 
 import scala.reflect.ClassTag
+import scala.scalajs.js.annotation.{JSExportAll, JSExport}
 
 // These types must all be easily serde by upickle
 object Messages {
@@ -71,6 +72,25 @@ object Messages {
 
   case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null, life: LifeTime = LifeTime.Immortal) extends ReferenceEqual
 
+  case class ExecutorInfo(appId: Int, executorId: Int, slots: Int)
+
+  case class WorkerDescription(workerId: Int, state: String, actorPath: String,
+                               aliveFor: Long, logFile: String,
+                               executors: Array[ExecutorInfo], totalSlots: Int, availableSlots: Int,
+                               homeDirectory: String)
+  @JSExportAll
+  case class WorkerData(workerDescription: Option[WorkerDescription])
+
+  type AppMasterStatus = String
+  val AppMasterActive: AppMasterStatus = "active"
+  val AppMasterInActive: AppMasterStatus = "inactive"
+  val AppMasterNonExist: AppMasterStatus = "nonexist"
+
+  case class AppMasterData(status: AppMasterStatus, appId: Int = 0, appName: String = null, appMasterPath: String = null, workerPath: String = null, submissionTime: TimeStamp = 0, startTime: TimeStamp = 0, finishTime: TimeStamp = 0, user: String = null)
+
+  @JSExportAll
+  case class AppMastersData(appMasters: List[AppMasterData])
+
 
   trait AppMasterDataDetail {
     def appId: Int
@@ -97,11 +117,12 @@ object Messages {
     val UnSynced = "unsynced"
   }
 
+  @JSExportAll
   case class MasterDescription(leader: (String, Int), cluster: List[(String, Int)], aliveFor: Long,
                                logFile: String, jarStore: String,
                                masterStatus: MasterStatus.Type,
                                homeDirectory: String)
-
+  @JSExportAll
   case class MasterData(masterDescription: MasterDescription)
 
 }
