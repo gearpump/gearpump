@@ -19,6 +19,7 @@
 package org.apache.gearpump.dashboard.services
 
 import com.greencatsoft.angularjs.core.{HttpPromise, HttpService, Scope, Timeout}
+import com.greencatsoft.angularjs.extensions.{ModalOptions, ModalService, ModalInstance}
 import com.greencatsoft.angularjs.{Factory, Service, injectable}
 
 import scala.concurrent.Future
@@ -44,14 +45,32 @@ class RestApiService(http: HttpService, timeout: Timeout, options: OptionsServic
     http.delete(url)
   }
 
+  def appConfigLink(appId: String): String = {
+    return options.conf.restapiRoot + "/config/app/" + appId
+  }
+
+  def workerConfigLink(workerId: String): String = {
+    return options.conf.restapiRoot + "/config/worker/" + workerId
+  }
+
+  def masterConfigLink: String = {
+    return options.conf.restapiRoot + "/config/master"
+  }
 }
 
 @JSExport
 @injectable("RestApiService")
-class RestApiServiceFactory(http: HttpService, timeout: Timeout, options: OptionsService)
+class RestApiServiceFactory(http: HttpService, timeout: Timeout, modal: ModalService, options: OptionsService)
   extends Factory[RestApiService] {
 
   println("RestApiServiceFactory")
+
+  def openModal: ModalInstance = {
+    val options = ModalOptions()
+    options.templateUrl = "views/services/serverproblemnotice.html"
+    options.backdrop = false
+    modal.open(options)
+  }
 
   override def apply() = {
     new RestApiService(http, timeout, options)

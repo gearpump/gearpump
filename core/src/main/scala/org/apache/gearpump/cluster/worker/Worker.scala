@@ -122,7 +122,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
       val userDir = System.getProperty("user.dir")
       sender ! WorkerData(Some(WorkerDescription(id, "active", address,
-        aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir)))
+        aliveFor, logDir, executorsInfo.values.toSeq, totalSlots, resource.slots, userDir)))
   }
 
   def clientMessageHandler: Receive = {

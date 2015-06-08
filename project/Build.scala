@@ -45,7 +45,7 @@ object Build extends sbt.Build {
   val slf4jVersion = "1.7.7"
   
   val scalaVersionMajor = "scala-2.11"
-  val scalaVersionNumber = "2.11.5"
+  val scalaVersionNumber = "2.11.6"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
   val sprayWebSocketsVersion = "0.1.4"
@@ -396,6 +396,23 @@ object Build extends sbt.Build {
     IO.copyDirectory(file("services/js"), file("output") / "target" / "pack" / "dashboard")
   }
 
+  def copyJSArtifactsToOutput: Unit = {
+    val in = file("services/js/target/scala-2.11/gearpump-services-js-fastopt.js.map")
+    val out = file("output/target/pack/dashboard/gearpump-services-js-fastopt.js.map")
+    val input = IO.read(in)
+    val data = input.replaceAll("../../src","src")
+    IO.write(out, data)
+    IO.copyFile(
+      file("services/js/target/scala-2.11/gearpump-services-js-fastopt.js"),
+      file("output/target/pack/dashboard/gearpump-services-js-fastopt.js")
+    )
+    IO.copyDirectory(
+      file("services/js/src"),
+      file("output/target/pack/dashboard"),
+      true
+    )
+  }
+
   lazy val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(
     "io.spray" %% "spray-testkit" % sprayVersion % "test",
     "io.spray" %% "spray-httpx" % sprayVersion,
@@ -431,6 +448,11 @@ object Build extends sbt.Build {
     persistLauncher in Test := false,
     skip in packageJSDependencies := false,
     jsDependencies += "org.webjars" % "angularjs" % "1.3.15" / "angular.js",
+    fastOptJS in Compile := {
+      val originalResult = (fastOptJS in Compile).value
+      copyJSArtifactsToOutput
+      originalResult
+    },
     compile in Compile <<=
       (compile in Compile) dependsOn copySourceMapsTask,
     relativeSourceMaps := true)

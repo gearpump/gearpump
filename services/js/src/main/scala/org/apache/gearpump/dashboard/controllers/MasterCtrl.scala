@@ -22,6 +22,7 @@ class MasterConfig(routeProvider: RouteProvider) extends Config {
 trait MasterScope extends Scope {
   var master: MasterDescription = js.native
   var statusClass: js.Function3[js.UndefOr[js.Any],String,String,String] = js.native
+  var clusters: js.Function1[List[(String,Int)],js.Array[String]] = js.native
 }
 
 @JSExport
@@ -43,14 +44,22 @@ class MasterCtrl(scope: MasterScope, restApi: RestApiService)
     }
   }
 
-  scope.master = MasterDescription(leader = ("127.0.0.1", 0),cluster=List.empty[(String,Int)], aliveFor=0, logFile="", masterStatus=MasterStatus.UnSynced, jarStore="", homeDirectory = "")
+  def clusters(clusters: List[(String,Int)]): js.Array[String] = {
+    clusters.map(hostport => {
+      val (host, port) = hostport
+      val joined = host + ":" + port
+      joined
+    }).to[js.Array]
+  }
+
+  scope.master = MasterDescription(leader = ("127.0.0.1", 0), cluster=List.empty[(String,Int)], aliveFor=0, logFile="", masterStatus=MasterStatus.UnSynced, jarStore="", homeDirectory = "")
   scope.statusClass = statusClass _
+  scope.clusters = clusters _
 
   restApi.subscribe("/master") onComplete {
     case Success(value) =>
       val data = upickle.read[MasterData](value)
       scope.master = data.masterDescription
-      println(s"leader=${scope.master.leader}")
     case Failure(t) =>
       println(s"Failed to get master ${t.getMessage}")
   }

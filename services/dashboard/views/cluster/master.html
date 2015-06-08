@@ -20,7 +20,7 @@
   </tr>
   <tr>
     <td>Cluster Members</td>
-    <td><div ng-repeat="cluster in master.clusters track by $index" ng-bind="cluster"></div>
+    <td><div ng-repeat="cluster in clusters(master.cluster) track by $index" ng-bind="cluster"></div>
     </td>
   </tr>
   <tr>
@@ -40,11 +40,11 @@
   </tr>
   <tr>
     <td>Home Dir.</td>
-    <td><span class="small" ng-bind="master.homeDir"></span></td>
+    <td><span class="small" ng-bind="master.homeDirectory"></span></td>
   </tr>
   <tr>
     <td>Log Dir.</td>
-    <td><span class="small" ng-bind="master.logDir"></span></td>
+    <td><span class="small" ng-bind="master.logFile"></span></td>
   </tr>
   <tr>
     <td>JAR Store Dir.</td>
