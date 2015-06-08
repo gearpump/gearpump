@@ -3,7 +3,7 @@ package org.apache.gearpump.dashboard.services
 import com.greencatsoft.angularjs.{injectable, Factory}
 
 import scala.scalajs.js
-import scala.scalajs.js.annotation.JSName
+import scala.scalajs.js.annotation.{JSExport, JSName}
 
 case class Flags(depth: Int)
 case class ColorStyle(border: String, background: String)
@@ -38,6 +38,7 @@ class DagStyleService() {
 
 }
 
+@JSExport
 @injectable("DagStyleService")
 object DagStyleServiceFactory extends Factory[DagStyleService] {
   val fontFace:String = "lato,'helvetica neue','segoe ui',arial,helvetica,sans-serif"

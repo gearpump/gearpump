@@ -54,7 +54,6 @@ class DashboardCtrl(scope: DashboardScope, location: Location)
   def navClass(url: String): Boolean = {
     val path = url.substring(1)
     val active = location.path().indexOf(path) == 0
-    println(s"url=$url location=${location.path()} active=$active")
     active
   }
 

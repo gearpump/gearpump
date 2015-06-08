@@ -45,7 +45,7 @@ object Build extends sbt.Build {
   val slf4jVersion = "1.7.7"
   
   val scalaVersionMajor = "scala-2.11"
-  val scalaVersionNumber = "2.11.5"
+  val scalaVersionNumber = "2.11.6"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
   val sprayWebSocketsVersion = "0.1.4"
@@ -432,6 +432,23 @@ object Build extends sbt.Build {
       val target = "output/target/pack" + htmlFile.getPath.replaceFirst("services/", "/")
       IO.copyFile(file(source), file(target))
     })
+  }
+
+  def copyJSArtifactsToOutput: Unit = {
+    val in = file("services/js/target/scala-2.11/gearpump-services-js-fastopt.js.map")
+    val out = file("output/target/pack/dashboard/gearpump-services-js-fastopt.js.map")
+    val input = IO.read(in)
+    val data = input.replaceAll("../../src","src")
+    IO.write(out, data)
+    IO.copyFile(
+      file("services/js/target/scala-2.11/gearpump-services-js-fastopt.js"),
+      file("output/target/pack/dashboard/gearpump-services-js-fastopt.js")
+    )
+    IO.copyDirectory(
+      file("services/js/src"),
+      file("output/target/pack/dashboard"),
+      true
+    )
   }
 
   lazy val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(

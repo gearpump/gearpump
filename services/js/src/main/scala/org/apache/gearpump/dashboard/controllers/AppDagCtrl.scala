@@ -5,13 +5,15 @@ import com.greencatsoft.angularjs.{AbstractController, Filter, injectable}
 import org.apache.gearpump.shared.Messages.{StreamingAppMasterDataDetail, TimeStamp}
 
 import scala.scalajs.js
-import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.annotation.{JSExportAll, JSExport}
 
 
 trait AppDagScope extends Scope {
   var app: StreamingAppMasterDataDetail = js.native
   var displayClock: TimeStamp = js.native
 }
+
+@JSExportAll
 case class DetectPoint(appClock: TimeStamp, local: TimeStamp)
 
 @JSExport

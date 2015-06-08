@@ -29,7 +29,7 @@ import scala.scalajs.js.annotation.JSExport
 @JSExport
 object DashboardApp extends JSApp {
   override def main(): Unit = {
-    println("DashboardApp.main")
+    println("DashboardApp")
 
     val options = Angular.module("dashboard.options", Array.empty[String])
     options.factory[OptionsServiceFactory]
@@ -41,10 +41,10 @@ object DashboardApp extends JSApp {
     restapi.factory[RestApiServiceFactory]
 
     val cluster = Angular.module("dashboard.cluster", Array("ngRoute"))
-    cluster.controller[MasterCtrl]
-    cluster.controller[WorkersCtrl]
     cluster.config[MasterConfig]
+    cluster.controller[MasterCtrl]
     cluster.config[WorkersConfig]
+    cluster.controller[WorkersCtrl]
 
     val apps = Angular.module("dashboard.apps", Array.empty[String])
     apps.config[AppsConfig]

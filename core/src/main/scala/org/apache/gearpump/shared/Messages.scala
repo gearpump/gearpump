@@ -1,7 +1,7 @@
 package org.apache.gearpump.shared
 
 import scala.reflect.ClassTag
-import scala.scalajs.js.annotation.{JSExportAll, JSExport}
+import scala.scalajs.js.annotation.JSExportAll
 
 // These types must all be easily serde by upickle
 object Messages {
@@ -72,11 +72,13 @@ object Messages {
 
   case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null, life: LifeTime = LifeTime.Immortal) extends ReferenceEqual
 
+  @JSExportAll
   case class ExecutorInfo(appId: Int, executorId: Int, slots: Int)
 
+  @JSExportAll
   case class WorkerDescription(workerId: Int, state: String, actorPath: String,
                                aliveFor: Long, logFile: String,
-                               executors: Array[ExecutorInfo], totalSlots: Int, availableSlots: Int,
+                               executors: Seq[ExecutorInfo], totalSlots: Int, availableSlots: Int,
                                homeDirectory: String)
   @JSExportAll
   case class WorkerData(workerDescription: Option[WorkerDescription])
@@ -86,11 +88,11 @@ object Messages {
   val AppMasterInActive: AppMasterStatus = "inactive"
   val AppMasterNonExist: AppMasterStatus = "nonexist"
 
+  @JSExportAll
   case class AppMasterData(status: AppMasterStatus, appId: Int = 0, appName: String = null, appMasterPath: String = null, workerPath: String = null, submissionTime: TimeStamp = 0, startTime: TimeStamp = 0, finishTime: TimeStamp = 0, user: String = null)
 
   @JSExportAll
   case class AppMastersData(appMasters: List[AppMasterData])
-
 
   trait AppMasterDataDetail {
     def appId: Int
@@ -99,9 +101,11 @@ object Messages {
     def executors: Map[Int, String]
   }
 
+  @JSExportAll
   case class GeneralAppMasterDataDetail(appId: Int, appName: String = null, actorPath: String = null,
                                         executors: Map[Int, String] = Map.empty[Int, String]) extends AppMasterDataDetail
 
+  @JSExportAll
   case class StreamingAppMasterDataDetail(appId: Int, appName: String = null, processors: Map[ProcessorId, ProcessorDescription],
                                            // hierarchy level for each processor
                                            processorLevels: Map[ProcessorId, Int],
