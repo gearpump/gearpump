@@ -27,8 +27,8 @@ import kafka.utils.Utils
 
 object KafkaConsumer {
   def apply(topic: String, partition: Int, config: KafkaConfig): KafkaConsumer = {
-    val zkClient = KafkaUtil.connectZookeeper(config)
-    val broker = KafkaUtil.getBroker(zkClient, topic, partition)
+    val connectZk = KafkaUtil.connectZookeeper(config)
+    val broker = KafkaUtil.getBroker(connectZk(), topic, partition)
     val soTimeout = config.getSocketTimeoutMS
     val soBufferSize = config.getSocketReceiveBufferBytes
     val fetchSize = config.getFetchMessageMaxBytes

@@ -21,7 +21,6 @@ package org.apache.gearpump.streaming.kafka.lib
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump._
-import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.apache.gearpump.streaming.transaction.api.{OffsetManager, OffsetStorage}
 import org.apache.gearpump.util.LogUtil
@@ -34,8 +33,8 @@ object KafkaOffsetManager {
   def apply(appName: String, config: KafkaConfig, topicAndPartition: TopicAndPartition): KafkaOffsetManager = {
     val storageTopic = s"app${appName}_${topicAndPartition.topic}_${topicAndPartition.partition}"
     val replicas = config.getStorageReplicas
-    val zkClient = KafkaUtil.connectZookeeper(config)
-    val topicExists = KafkaUtil.createTopic(zkClient, storageTopic, partitions = 1, replicas)
+    val connectZk = KafkaUtil.connectZookeeper(config)
+    val topicExists = KafkaUtil.createTopic(connectZk(), storageTopic, partitions = 1, replicas)
     new KafkaOffsetManager(KafkaStorage(config, storageTopic, topicExists, topicAndPartition))
   }
 }

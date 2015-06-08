@@ -32,7 +32,8 @@ import org.slf4j.Logger
 object KafkaUtil {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  def getBroker(zkClient: ZkClient, topic: String, partition: Int): Broker = {
+  def getBroker(connectZk: => ZkClient, topic: String, partition: Int): Broker = {
+    val zkClient = connectZk
     try {
       val leader = ZkUtils.getLeaderForPartition(zkClient, topic, partition)
         .getOrElse(throw new RuntimeException(s"leader not available for TopicAndPartition($topic, $partition)"))
@@ -47,7 +48,8 @@ object KafkaUtil {
     }
   }
 
-  def getTopicAndPartitions(zkClient: ZkClient, grouper: KafkaGrouper, consumerTopics: List[String]): Array[TopicAndPartition] = {
+  def getTopicAndPartitions(connectZk: => ZkClient, grouper: KafkaGrouper, consumerTopics: List[String]): Array[TopicAndPartition] = {
+    val zkClient = connectZk
     try {
       val tps = grouper.group(
         ZkUtils.getPartitionsForTopics(zkClient, consumerTopics)
@@ -68,7 +70,8 @@ object KafkaUtil {
    *  create a new kafka topic
    *  return true if topic already exists, and false otherwise
    */
-  def createTopic(zkClient: ZkClient, topic: String, partitions: Int, replicas: Int): Boolean = {
+  def createTopic(connectZk: => ZkClient, topic: String, partitions: Int, replicas: Int): Boolean = {
+    val zkClient = connectZk
     try {
       if (AdminUtils.topicExists(zkClient, topic)) {
         LOG.info(s"topic $topic exists")
@@ -87,6 +90,18 @@ object KafkaUtil {
     }
   }
 
+  def deleteTopic(connectZk: => ZkClient, topic: String): Unit = {
+    val zkClient = connectZk
+    try {
+      AdminUtils.deleteTopic(zkClient, topic)
+    } catch {
+      case e: Exception =>
+        LOG.error(e.getMessage)
+    } finally {
+      zkClient.close()
+    }
+  }
+
 
   def buildProducerConfig(config: KafkaConfig): Properties = {
     val props = new Properties()
@@ -100,10 +115,10 @@ object KafkaUtil {
     props
   }
 
-  def connectZookeeper(config: KafkaConfig): ZkClient = {
+  def connectZookeeper(config: KafkaConfig): () => ZkClient = {
     val zookeeperConnect = config.getZookeeperConnect
     val sessionTimeout = config.getSocketTimeoutMS
     val connectionTimeout = config.getSocketTimeoutMS
-    new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
+    () => new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
   }
 }

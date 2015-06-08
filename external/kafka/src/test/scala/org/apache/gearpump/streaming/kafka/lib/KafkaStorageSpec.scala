@@ -22,8 +22,9 @@ import java.nio.ByteBuffer
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
+import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
-import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -31,7 +32,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
   val minTimeGen = Gen.choose[Long](1L, 500L)
@@ -41,9 +42,9 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
     forAll { (time: Long, topic: String) =>
       val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val getConsumer = () => mock[KafkaConsumer]
-      val storage = new KafkaStorage(topic, topicExists = false, producer, getConsumer())
+      val connectZk = () => mock[ZkClient]
+      val storage = new KafkaStorage(topic, topicExists = false, producer, getConsumer(), connectZk())
       storage.lookUp(time) shouldBe Failure(StorageEmpty)
-      storage.close()
     }
   }
 
@@ -63,12 +64,13 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
       val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val consumer = mock[KafkaConsumer]
       val getConsumer = () => consumer
+      val connectZk = () => mock[ZkClient]
 
       val hasNexts = List.fill(data.tail.size)(true) :+ false
       when(consumer.hasNext).thenReturn(true, hasNexts:_*)
       when(consumer.next).thenReturn(data.head, data.tail:_*)
 
-      val storage = new KafkaStorage(topic, topicExists = true, producer, getConsumer())
+      val storage = new KafkaStorage(topic, topicExists = true, producer, getConsumer(), connectZk())
       forAll(Gen.choose[Long](minTime, maxTime)) {
         time =>
           storage.lookUp(time) match {
@@ -94,7 +96,6 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
             case Success(_) => fail("time larger than max should return Overflow failure")
           }
       }
-      storage.close()
     }
   }
 
@@ -103,11 +104,11 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
       (time: Long, offset: Long, topic: String, topicExists: Boolean) =>
       val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val getConsumer = () => mock[KafkaConsumer]
-      val storage = new KafkaStorage(topic, topicExists, producer, getConsumer())
+      val connectZk = () => mock[ZkClient]
+      val storage = new KafkaStorage(topic, topicExists, producer, getConsumer(), connectZk())
       val offsetBytes = Injection[Long, Array[Byte]](offset)
       storage.append(time, offsetBytes)
       verify(producer).send(anyObject[ProducerRecord[Array[Byte], Array[Byte]]]())
-      storage.close()
     }
   }
 
@@ -129,7 +130,8 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
         val producer=  mock[KafkaProducer[Array[Byte], Array[Byte]]]
         val consumer = mock[KafkaConsumer]
         val getConsumer = () => consumer
-        val kafkaStorage = new KafkaStorage(topicAndPartition.topic, topicExists = true, producer, getConsumer())
+        val connectZk = () => mock[ZkClient]
+        val kafkaStorage = new KafkaStorage(topicAndPartition.topic, topicExists = true, producer, getConsumer(), connectZk())
           msgList match {
             case Nil =>
               when(consumer.hasNext).thenReturn(false)
@@ -142,15 +144,15 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
               when(consumer.next).thenReturn(kafkaMsgList.head, kafkaMsgList.tail: _*)
           }
           kafkaStorage.load(consumer) shouldBe msgList
-        kafkaStorage.close()
     }
   }
 
-  property("KafkaStorage should get consumer when topic doesn't exist") {
+  property("KafkaStorage should not get consumer when topic doesn't exist") {
     forAll(Gen.alphaStr) { (topic: String) =>
       val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val getConsumer = mock[() => KafkaConsumer]
-      val kafkaStorage = new KafkaStorage(topic, topicExists = false, producer, getConsumer())
+      val connectZk = () => mock[ZkClient]
+      val kafkaStorage = new KafkaStorage(topic, topicExists = false, producer, getConsumer(), connectZk())
       verify(getConsumer, never()).apply()
       kafkaStorage.close()
     }
@@ -167,20 +169,23 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
       val consumer = mock[KafkaConsumer]
       val getConsumer = () => consumer
       val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
+      val connectZk = () => mock[ZkClient]
       val kafkaStorage = new KafkaStorage(invalidKafkaMsg.topicAndPartition.topic, topicExists = true,
-        producer, getConsumer())
+        producer, getConsumer(), connectZk())
       when(consumer.hasNext).thenReturn(true, false)
       when(consumer.next).thenReturn(invalidKafkaMsg, invalidKafkaMsg)
       Try(kafkaStorage.load(consumer)).isFailure shouldBe true
-      kafkaStorage.close()
     }
   }
 
-  property("KafkaStorage close should close kafka producer") {
+  property("KafkaStorage close should close kafka producer and delete topic") {
     val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
-    val getConsumer = mock[() => KafkaConsumer]
-    val kafkaStorage = new KafkaStorage("topic", false, producer, getConsumer())
+    val getConsumer = () => mock[KafkaConsumer]
+    val zkClient = mock[ZkClient]
+    val connectZk = () => zkClient
+    val kafkaStorage = new KafkaStorage("topic", false, producer, getConsumer(), connectZk())
     kafkaStorage.close()
     verify(producer).close()
+    verify(zkClient).createPersistent(anyString(), anyString())
   }
 }

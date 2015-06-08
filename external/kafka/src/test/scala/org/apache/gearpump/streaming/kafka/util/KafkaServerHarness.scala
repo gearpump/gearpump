@@ -45,7 +45,7 @@ trait KafkaServerHarness extends ZookeeperHarness {
   }
 
   def createTopicUntilLeaderIsElected(topic: String, partitions: Int, replicas: Int) = {
-    val zkClient = newZkClient
+    val zkClient = connectZk()
     try {
       TestUtils.createTopic(zkClient, topic, partitions, replicas, servers)
     } catch {

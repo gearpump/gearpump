@@ -20,16 +20,17 @@ package org.apache.gearpump.streaming.kafka.lib
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
+import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.apache.gearpump.util.LogUtil
-import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.slf4j.Logger
 
 import scala.collection.mutable
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object KafkaStorage {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaStorage])
@@ -38,14 +39,16 @@ object KafkaStorage {
     val getConsumer = () => KafkaConsumer(topic, 0, config)
     val producer = new KafkaProducer[Array[Byte], Array[Byte]](
       KafkaUtil.buildProducerConfig(config), new ByteArraySerializer, new ByteArraySerializer)
-    new KafkaStorage(topic, topicExists, producer, getConsumer())
+    val connectZk = KafkaUtil.connectZookeeper(config)
+    new KafkaStorage(topic, topicExists, producer, getConsumer(), connectZk())
   }
 }
 
 private[kafka] class KafkaStorage(topic: String,
                                   topicExists: Boolean,
                                   producer: KafkaProducer[Array[Byte], Array[Byte]],
-                                  getConsumer: => KafkaConsumer) extends OffsetStorage {
+                                  getConsumer: => KafkaConsumer,
+                                  connectZk: => ZkClient) extends OffsetStorage {
   private val dataByTime: List[(TimeStamp, Array[Byte])] = {
     if (topicExists){
       load(getConsumer)
@@ -85,6 +88,7 @@ private[kafka] class KafkaStorage(topic: String,
 
   override def close(): Unit = {
     producer.close()
+    KafkaUtil.deleteTopic(connectZk, topic)
   }
 
   private[kafka] def load(consumer: KafkaConsumer): List[(TimeStamp, Array[Byte])] = {
