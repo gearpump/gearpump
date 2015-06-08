@@ -1,0 +1,57 @@
+Change list
+------------------
+ - #729 remove argument '-master' in YARN service and documents.
+ - #759, fix storm connector bug due to unstable topology sort of DAG
+ - #775, fix netty config
+ - #778, log improvements
+ - #781 when launching lots of tasks, the application failed to transfer message across hosts 
+ - #782, a) add wildcard match to return metrics(support glob char … and *), b) add diagnosis message if the clock stop advancing
+ - #786, Read user config from classpath, the appmaster/executor wil use the dynamic user config
+ - #773: skew chart will show relative skew
+ - #790, 1) return detail task data in appmaster REST. 2) bind executor id with executor system id
+ - #795 TaskScheduleImpl'bug when executor failed
+ - #799 Getting 2.10 cross build working
+ - #802 add process id and host name in executor log file
+ - #803: (1) websocket is by default not preferred (2) throughput should be added as sum not mean (3) changed input/output message to sink/source processor receive/send throughput
+ - #805, metrics rest service should return latest metrics received
+ - #684 - setting -Xmx for master and worker when running on Yarn This will prevent JVMs from growing above limits and get killed by Yarn
+ - #796: (1) added executor info (2) fixed skew chart issue for the first node
+ - #801, add config service for master and worker.
+ - #741 add a example transport use case
+ - #814, expose TaskActor.minClock through TaskContext
+ - #741 refine example
+ - #817 split examples jar into multiple jars
+ - #824, allow to use default partitioner when defining a DAG
+ - #829, add some handly operator like groupByKey, sum, for KV Stream
+ - #831: uses pagination control to speedup table rendering
+ - #816: use multi-select control to select tasks
+ - #840: task charts data were incorrect
+ - #844, expose upstream minclock
+ - #204, page rank demo code
+ - #846, support more anyVals in user config
+ - #843, Can't put custom user config in application.conf
+ - #849, set default hostname to 127.0.0.1 in UT
+ - #851, JVM not exited when there is exception due to akka create non-daemon threads
+ - #854， fix storm connector performance
+ - #856， Service launch failed
+ - #853, fix resource leak(thread not closed, process not killed in UT. Also increase the PermGen size to avoid Permgen OOM.
+ - #859, random UT fail due to akka bug, "akka cluster deadlock when initializing"
+ - #865, Change the default timeout setting in akka test expectMsg
+ - #871, Add explicit error log for kryo serialization exception
+ - #877: source node and sink node were not calculated correctly.
+ - #874, [TaskActor] task onStart should be called after the network transport layer is ready
+ - #879: split metrics into different views and changed tooltip control
+ - #881: diverse issues of skew charts and made tooltip nice
+ - #876: clock is updated every second-
+ - #885: wrong application clock in some case
+ - #53, rest interface to submit a dag by JSON representation
+ - #887, add a rest to get stalling tasks
+ - #801: added download links for configurations-
+ - #742 add a rest to get Gearpump version
+ - #898, Downgrade akka version from 2.3.9 to 2.3.6
+ - #900, Use gearpump.hostname by default=
+ - #719 add Kafka Source and HBase Sink for dsl
+ - #905: Upgrade sbt-pack from 0.6.8 to 0.6.9
+ - #602: dashboard will freeze when server is unreachable
+ - #907: calculate application clock update frequence for a 30 second time frame
+ - #919: vis.js's version was not updated

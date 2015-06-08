@@ -1,0 +1,6 @@
+Quick fix to solve the UI sever hang issue on Windows.
+
+Change List
+-------------------------
+#768, Serious performance degration of ui server on windows
+#765, improve the graph type inference so we don't need to set template argument type explicitly
