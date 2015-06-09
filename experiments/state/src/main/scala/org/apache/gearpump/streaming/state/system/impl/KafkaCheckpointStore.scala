@@ -96,8 +96,8 @@ class KafkaCheckpointStoreFactory extends CheckpointStoreFactory {
     val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME)
       .getOrElse(throw new RuntimeException("kafka config not provided"))
     val replicas = kafkaConfig.getStorageReplicas
-    val zkClient = KafkaUtil.connectZookeeper(kafkaConfig)
-    val topicExists = KafkaUtil.createTopic(zkClient, topic, partitions = 1, replicas)
+    val connectZk = KafkaUtil.connectZookeeper(kafkaConfig)
+    val topicExists = KafkaUtil.createTopic(connectZk(), topic, partitions = 1, replicas)
     KafkaCheckpointStore(kafkaConfig, topic, topicExists)
   }
 }
