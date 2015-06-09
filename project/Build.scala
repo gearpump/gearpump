@@ -1,3 +1,4 @@
+import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import sbt.Keys._
 import sbt._
@@ -5,8 +6,6 @@ import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin._
 import xerial.sbt.Pack._
 import xerial.sbt.Sonatype._
-import com.typesafe.sbt.SbtPgp.autoImport._
-import sbtrelease._
 
 import scala.collection.immutable.Map.WithDefault
 
@@ -53,6 +52,8 @@ object Build extends sbt.Build {
   val mockitoVersion = "1.10.17"
   val bijectionVersion = "0.7.0"
   val scalazVersion = "7.1.1"
+  val algebirdVersion = "0.9.0"
+  val chillVersion = "0.6.0"
 
   val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
@@ -192,7 +193,7 @@ object Build extends sbt.Build {
       )
   ).dependsOn(core, streaming, services, external_kafka)
    .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, pack, pipeline)
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, pack, pipeline, state)
 
   lazy val pack = Project(
     id = "gearpump-pack",
@@ -222,7 +223,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("/etc/gearpump/conf", "${PROG_HOME}/conf",
           "${PROG_HOME}/dashboard", "/etc/hadoop/conf", "/etc/hbase/conf"))
       )
-  ).dependsOn(core, streaming, services, external_kafka, yarn,storm,dsl,pagerank,hbase)
+  ).dependsOn(core, streaming, services, external_kafka, yarn,storm,dsl,pagerank,hbase, state)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -575,4 +576,20 @@ object Build extends sbt.Build {
     base = file("experiments/kafka-hbase-pipeline"),
     settings = commonSettings ++ myAssemblySettings 
   ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase, dsl)
+
+  lazy val state = Project(
+    id = "gearpump-experiments-state",
+    base = file("experiments/state"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "com.twitter" %% "bijection-core" % bijectionVersion,
+          "com.twitter" %% "algebird-core" % algebirdVersion,
+          "com.twitter" %% "chill-bijection" % chillVersion,
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        )
+      )
+  ) dependsOn(streaming % "test->test; provided", external_kafka % "test->test; provided")
 }

@@ -16,14 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.state.system.impl
 
-import kafka.common.TopicAndPartition
+import com.twitter.chill.KryoInjection
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+import scala.util.Try
+
+object StateSerializer  {
+  def serialize[T](t: T): Array[Byte] = {
+    KryoInjection(t)
+  }
+
+  def deserialize[T](b: Array[Byte]): Try[T] = {
+    KryoInjection.invert(b).map(_.asInstanceOf[T])
+  }
 }
 
