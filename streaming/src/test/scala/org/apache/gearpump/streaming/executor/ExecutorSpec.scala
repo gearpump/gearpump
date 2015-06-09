@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTr
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{ExecutorContext, MasterHarness, TestUtil, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
-import Executor.{TaskLocationReady, RestartExecutor}
+import Executor.{TaskLocationReady, RestartTasks}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.executor.ExecutorSpec.{MockTask, MockTaskActor, MockTaskStarted, MsgLost}
 import org.apache.gearpump.streaming.task.TaskActor.RestartTask
@@ -79,7 +79,7 @@ class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with M
       executor.tell(locations, watcher.ref)
       task.expectMsg(TaskLocationReady)
 
-      executor.tell(RestartExecutor, watcher.ref)
+      executor.tell(RestartTasks, watcher.ref)
       task.expectMsg(RestartTask)
     }
 

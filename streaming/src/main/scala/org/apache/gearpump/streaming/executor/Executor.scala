@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTr
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.executor.Executor.{RestartExecutor, TaskLocationReady}
+import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskLocationReady}
 import org.apache.gearpump.streaming.task.TaskActor.RestartTask
 import org.apache.gearpump.streaming.task.{TaskId, TaskLocations, TaskWrapper}
 import org.apache.gearpump.streaming.util.ActorPathUtil
@@ -83,7 +83,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
         express.remoteAddressMap.send(result)
         express.remoteAddressMap.future().map(result => context.children.foreach(_ ! TaskLocationReady))
       }
-    case RestartExecutor =>
+    case RestartTasks =>
       LOG.info(s"Executor received restart tasks")
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
       context.children.foreach(_ ! RestartTask)
@@ -102,7 +102,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends
 }
 
 object Executor {
-  case object RestartExecutor
+  case object RestartTasks
 
   case object TaskLocationReady
 }
