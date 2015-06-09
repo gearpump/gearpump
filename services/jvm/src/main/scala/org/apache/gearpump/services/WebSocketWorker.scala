@@ -20,7 +20,7 @@ package org.apache.gearpump.services
 
 import akka.actor._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterMetricsRequest, StreamingType}
-import org.apache.gearpump.metrics.Metrics._
+import org.apache.gearpump.shared.Messages.MetricType
 import org.apache.gearpump.util.LogUtil
 import spray.can.websocket
 import spray.can.websocket.FrameCommandFailed
@@ -52,7 +52,7 @@ class WebSocketWorker(val serverConnection: ActorRef, val master: ActorRef) exte
 
     case metrics: MetricType =>
       LOG.debug("writing metrics")
-      client ! TextFrame(write(metrics))
+      client ! TextFrame(write(metrics.json))
 
     case Push(msg) => send(TextFrame(msg))
 

@@ -1,3 +1,6 @@
+import java.nio.file.Files
+import java.util.regex.Pattern
+
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import org.scalajs.sbtplugin.ScalaJSPlugin
@@ -371,15 +374,15 @@ object Build extends sbt.Build {
     settings = commonSettings
   ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
   
-  val copySharedResources = taskKey[Unit]("Copy shared resources")
+  lazy val copySharedResources = Def.task {
+    ConsoleLogger().info("copying shared resources")
+    val sharedMessages = "src/main/scala/org/apache/gearpump/shared/Messages.scala"
+    IO.copyFile(core.base / sharedMessages, file("services/js") / sharedMessages)
+  }
 
   lazy val services = Project(id = "gearpump-services", base = file("services")).
-    settings(commonSettings: _*).settings(
-      copySharedResources := {
-        IO.copyFile(baseDirectory.value / "core" / "src" / "main" / "scala" / "org" / "apache" / "gearpump" / "shared" / "Messages.scala", baseDirectory.value / "services" / "js" / "src" / "main" / "scala" / "org" / "apache" / "gearpump" / "shared")
-      },
-      copySharedResources <<= copySharedResources
-    ).aggregate(servicesjs, servicesjvm).dependsOn(streaming % "test->test;compile->compile")
+    settings(commonSettings: _*).
+    aggregate(servicesjs, servicesjvm).dependsOn(streaming % "test->test;compile->compile")
 
   lazy val servicesjvm = Project(id = "gearpump-services-jvm", base = file("services/jvm")).
     settings(jvmSettings : _*).dependsOn(streaming % "test->test;compile->compile")
@@ -389,14 +392,23 @@ object Build extends sbt.Build {
     settings(commonSettings: _*).
     settings(jsSettings : _*)
 
-  val sharedMessages = "src/main/scala/org/apache/gearpump/shared/Messages.scala"
+  def findDirs(currentDir: String): Array[File] = {
+    val dirs = IO.listFiles(file(currentDir),  DirectoryFilter)
+    dirs ++ dirs.flatMap(dir => {
+      val childDir = currentDir + "/" + dir.getName
+      findDirs(file(childDir).getPath)
+    })
+  }
 
-  lazy val copySourceMapsTask = Def.task {
-    IO.copyFile(core.base / sharedMessages, file("services/js") / sharedMessages)
-    IO.copyDirectory(file("services/js"), file("output") / "target" / "pack" / "dashboard")
+  def findFiles(dir: File, pattern: PatternFilter): Array[File] = {
+    val dirs = findDirs(dir.getPath)
+    IO.listFiles(dir, pattern) ++ dirs.flatMap(dir => {
+      IO.listFiles(dir, pattern)
+    })
   }
 
   def copyJSArtifactsToOutput: Unit = {
+    ConsoleLogger().info("copying JS artifacts")
     val in = file("services/js/target/scala-2.11/gearpump-services-js-fastopt.js.map")
     val out = file("output/target/pack/dashboard/gearpump-services-js-fastopt.js.map")
     val input = IO.read(in)
@@ -411,6 +423,17 @@ object Build extends sbt.Build {
       file("output/target/pack/dashboard"),
       true
     )
+    IO.copyDirectory(
+      file("services/js"), 
+      file("output") / "target" / "pack" / "dashboard",
+      true
+    )
+    val htmlFiles = findFiles(file("services/dashboard"), new PatternFilter(Pattern.compile("^.*.html$")))
+    htmlFiles.foreach(htmlFile => {
+      val source = htmlFile.getPath
+      val target = "output/target/pack" + htmlFile.getPath.replaceFirst("services/", "/")
+      IO.copyFile(file(source), file(target))
+    })
   }
 
   lazy val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(
@@ -454,7 +477,7 @@ object Build extends sbt.Build {
       originalResult
     },
     compile in Compile <<=
-      (compile in Compile) dependsOn copySourceMapsTask,
+      (compile in Compile) dependsOn copySharedResources,
     relativeSourceMaps := true)
 
   lazy val distributedshell = Project(

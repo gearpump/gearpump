@@ -21,7 +21,9 @@ package org.apache.gearpump.metrics
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import com.codahale.metrics._
+import com.codahale.metrics.{ScheduledReporter, MetricFilter, MetricRegistry}
+import org.apache.gearpump.shared.Messages.{Counter=>_Counter, Histogram=>_Histogram, Gauge=>_Guage}
+import org.apache.gearpump.shared.Messages.{Meter=>_Meter, Timer=>_Timer}
 import org.slf4j.Marker
 ;
 
@@ -38,25 +40,22 @@ class AkkaReporter(system: ActorSystem, registry: MetricRegistry, marker: Marker
 
       val sgauges = collection.SortedMap(gauges.toSeq: _*)
       sgauges.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
         val (key, value) = pair
-        system.eventStream.publish(Gauge(key, value))
+        system.eventStream.publish(_Guage(key, value))
       })
 
       val scounters = collection.SortedMap(counters.toSeq: _*)
       scounters.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
         val (key, value: com.codahale.metrics.Counter) = pair
-        system.eventStream.publish(Counter(key, value.getCount))
+        system.eventStream.publish(_Counter(key, value.getCount))
       })
 
       val shistograms = collection.SortedMap(histograms.toSeq: _*)
       shistograms.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
         val (key, value: com.codahale.metrics.Histogram) = pair
         val s = value.getSnapshot
         system.eventStream.publish(
-          Histogram(
+          _Histogram(
             key, value.getCount, s.getMin, s.getMax, s.getMean,
             s.getStdDev, s.getMedian, s.get75thPercentile,
             s.get95thPercentile, s.get98thPercentile,
@@ -65,18 +64,16 @@ class AkkaReporter(system: ActorSystem, registry: MetricRegistry, marker: Marker
 
       val smeters = collection.SortedMap(meters.toSeq: _*)
       smeters.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
         val (key, value: com.codahale.metrics.Meter) = pair
-        system.eventStream.publish(Meter(key, value.getCount, convertRate(value.getMeanRate), convertRate(value.getOneMinuteRate), convertRate(value.getFiveMinuteRate),
+        system.eventStream.publish(_Meter(key, value.getCount, convertRate(value.getMeanRate), convertRate(value.getOneMinuteRate), convertRate(value.getFiveMinuteRate),
           convertRate(value.getFifteenMinuteRate), getRateUnit))
       })
 
       val stimers = collection.SortedMap(timers.toSeq: _*)
       stimers.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
         val (key, value: com.codahale.metrics.Timer) = pair
         val s = value.getSnapshot
-        system.eventStream.publish(Timer(key, value.getCount, convertDuration(s.getMin), convertDuration(s.getMax), convertDuration(s.getMean),
+        system.eventStream.publish(_Timer(key, value.getCount, convertDuration(s.getMin), convertDuration(s.getMax), convertDuration(s.getMean),
         convertDuration(s.getStdDev), convertDuration(s.getMedian), convertDuration(s.get75thPercentile), convertDuration(s.get95thPercentile), convertDuration(s.get98thPercentile),
           convertDuration(s.get99thPercentile), convertDuration(s.get999thPercentile), convertRate(value.getMeanRate), convertRate(value.getOneMinuteRate),
           convertRate(value.getFiveMinuteRate), convertRate(value.getFifteenMinuteRate), getRateUnit, getDurationUnit))

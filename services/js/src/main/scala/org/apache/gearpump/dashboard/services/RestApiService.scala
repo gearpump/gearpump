@@ -30,7 +30,7 @@ import scala.scalajs.js.annotation.JSExport
 
 @JSExport
 @injectable("RestApiService")
-class RestApiService(http: HttpService, timeout: Timeout, options: OptionsService) extends Service {
+class RestApiService(http: HttpService, timeout: Timeout, options: ConfService) extends Service {
   require(http != null, "Missing argument 'http'.")
 
   println("RestApiService")
@@ -60,7 +60,7 @@ class RestApiService(http: HttpService, timeout: Timeout, options: OptionsServic
 
 @JSExport
 @injectable("RestApiService")
-class RestApiServiceFactory(http: HttpService, timeout: Timeout, modal: ModalService, options: OptionsService)
+class RestApiServiceFactory(http: HttpService, timeout: Timeout, modal: ModalService, options: ConfService)
   extends Factory[RestApiService] {
 
   println("RestApiServiceFactory")
