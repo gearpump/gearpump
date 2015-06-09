@@ -14,5 +14,4 @@ class ExplanationIconDirective extends ElementDirective with TemplatedDirective 
   def link(scope: ScopeType, elems: Seq[Element], attrs: Attributes, controller: Controller[_]*) = {
     scope.$apply(attrs)
   }
-
 }

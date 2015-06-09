@@ -3,17 +3,20 @@ package org.apache.gearpump.dashboard.controllers
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
 import com.greencatsoft.angularjs.core.{Route, RouteProvider, Scope, Location}
 import com.greencatsoft.angularjs.{Config, injectable, AbstractController}
-import org.apache.gearpump.dashboard.services.RestApiService
-import org.apache.gearpump.shared.Messages.{AppMasterData, AppMastersData}
+import org.apache.gearpump.dashboard.services.{UtilService, RestApiService}
+import org.apache.gearpump.shared.Messages.{AppMasterData, AppMastersData, AppMasterActive}
 
 import scala.scalajs.js
+import scala.scalajs.js.UndefOr
 import scala.scalajs.js.annotation.JSExport
 import scala.util.{Failure, Success}
 
 trait AppsScope extends Scope {
   var apps: js.Array[AppMasterData] = js.native
-  var view: js.Function1[String,Unit] = js.native
-  var kill: js.Function1[String,Unit] = js.native
+  var active: js.Function1[AppMasterData,Boolean] = js.native
+  var kill: js.Function1[Int,Unit] = js.native
+  var stringToDateTime: js.Function1[UndefOr[Any], String] = js.native
+  var view: js.Function1[Int,Unit] = js.native
 }
 
 @JSExport
@@ -25,28 +28,39 @@ class AppsConfig(routeProvider: RouteProvider) extends Config {
 
 @JSExport
 @injectable("AppsCtrl")
-class AppsCtrl(scope: AppsScope, location: Location, restApi: RestApiService)
+class AppsCtrl(scope: AppsScope, location: Location, restApi: RestApiService, util: UtilService)
   extends AbstractController[AppsScope](scope) {
 
   println("AppsCtrl")
 
-  scope.view = view _
-  scope.kill = kill _
   scope.apps = js.Array[AppMasterData]()
+  scope.active = active _
+  scope.kill = kill _
+  scope.stringToDateTime = stringToDateTime _
+  scope.view = view _
 
-  def view(id: String): Unit = {
+  def view(id: Int): Unit = {
     location.path("/apps/app/" + id)
   }
 
-  def kill(id: String): Unit = {
-    restApi.killApp(id)
+  def kill(id: Int): Unit = {
+    restApi.killApp(id.toString)
   }
+
+  def active(app: AppMasterData): Boolean = {
+    app.status == AppMasterActive
+  }
+
+  def stringToDateTime(s: UndefOr[Any]): String = {
+    util.stringToDateTime(s)
+  }
+
+  import js.JSConverters._
 
   restApi.subscribe("/appmasters") onComplete {
     case Success(value) =>
       val data = upickle.read[AppMastersData](value)
-      scope.apps = data.appMasters.to[js.Array]
-      println(s"apps length=${scope.apps.length}")
+      scope.apps = data.appMasters.toJSArray
     case Failure(t) =>
       println(s"Failed to get master ${t.getMessage}")
   }

@@ -23,20 +23,19 @@ import org.apache.gearpump._
 import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.metrics.Metrics.MetricType
-import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
+import org.apache.gearpump.partitioner.PartitionerDescription
+import org.apache.gearpump.shared.Messages.MetricType
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
-import org.apache.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, AllocateResourceTimeOut}
+import org.apache.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
-import org.apache.gearpump.streaming.appmaster.TaskManager.{TaskList, GetTaskList}
+import org.apache.gearpump.streaming.appmaster.TaskManager.{GetTaskList, TaskList}
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.util.ActorPathUtil
-import org.apache.gearpump.util._
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{ActorUtil, LogUtil, Graph}
+import org.apache.gearpump.util.{ActorUtil, Graph, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
@@ -125,7 +124,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
         tasks <- taskFuture
       } yield {
         StreamingAppMasterDataDetail(appId, app.name, dag.processors,
-          Graph.vertexHierarchyLevelMap(dag.graph), dag.graph, address, clock, executors, tasks.tasks)
+          Graph.vertexHierarchyLevelMap(dag.graph), dag.graph, address, clock.toString, executors, tasks.tasks)
       }
 
       val client = sender()

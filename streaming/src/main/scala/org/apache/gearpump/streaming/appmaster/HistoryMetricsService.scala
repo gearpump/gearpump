@@ -21,9 +21,8 @@ package org.apache.gearpump.streaming.appmaster
 import java.util
 
 import akka.actor.Actor
-import org.apache.gearpump.cluster.ClientToMaster.{ QueryHistoryMetrics}
-import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
-import org.apache.gearpump.metrics.Metrics.{Counter, Histogram, MetricType, Meter}
+import org.apache.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
+import org.apache.gearpump.shared.Messages._
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.{HistoryMetricsConfig, MetricsStore}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
@@ -32,7 +31,7 @@ import scala.collection.mutable.ListBuffer
 
 /**
  * Metrics service to serve history metrics data
- * @param appId
+ * @param appId appId
  */
 class HistoryMetricsService(appId: Int, config: HistoryMetricsConfig) extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
@@ -81,9 +80,9 @@ class HistoryMetricsService(appId: Int, config: HistoryMetricsConfig) extends Ac
   def commandHandler: Receive = {
 
     //path accept syntax ? *, ? will match one char, * will match at least one char
-    case QueryHistoryMetrics(appId, inputPath, readLatest) =>
+    case QueryHistoryMetrics(_appId, inputPath, readLatest) =>
       LOG.info(s"Query History Metrics $inputPath")
-      sender ! HistoryMetrics(appId, inputPath, fetchMetricsHistory(inputPath, readLatest))
+      sender ! HistoryMetrics(_appId, inputPath, fetchMetricsHistory(inputPath, readLatest))
    }
 }
 
@@ -134,9 +133,9 @@ object HistoryMetricsService {
   /**
    * min, and max data point for current time window (startTimeMs, startTimeMs + interval)
    *
-   * @param startTimeMs
-   * @param min
-   * @param max
+   * @param startTimeMs startTime
+   * @param min min
+   * @param max max
    */
   case class MinMaxMetrics(startTimeMs: Long, min: HistoryMetricsItem, max: HistoryMetricsItem)
 
@@ -162,7 +161,7 @@ object HistoryMetricsService {
 
     def add(inputMetrics: MetricType): Unit = {
       val now = System.currentTimeMillis()
-      val metrics = HistoryMetricsItem(now, inputMetrics)
+      val metrics = HistoryMetricsItem(now, MetricTypeInfo(inputMetrics.getClass.getCanonicalName, inputMetrics.json))
       latest = List(metrics)
 
       val head = queue.peek()
@@ -217,7 +216,7 @@ object HistoryMetricsService {
     def add(inputMetrics: MetricType): Unit = {
       val now = System.currentTimeMillis()
       val head = queue.peek()
-      val metrics = HistoryMetricsItem(now, inputMetrics)
+      val metrics = HistoryMetricsItem(now, MetricTypeInfo(inputMetrics.getClass.getCanonicalName, inputMetrics.json))
       latest = List(metrics)
 
       if (head == null || now - head.time > retainIntervalMs) {
@@ -260,7 +259,7 @@ object HistoryMetricsService {
   class HistogramMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
 
     private val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
-      left.value.asInstanceOf[Histogram].mean > right.value.asInstanceOf[Histogram].mean
+      upickle.read[Histogram](left.value.json).mean > upickle.read[Histogram](right.value.json).mean
 
     private val history = new MinMaxMetricsStore(
       config.retainHistoryDataHours * 3600 * 1000 / config.retainHistoryDataIntervalMs,
@@ -287,7 +286,7 @@ object HistoryMetricsService {
   class MeterMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
 
     private val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
-      left.value.asInstanceOf[Meter].meanRate > right.value.asInstanceOf[Meter].meanRate
+      upickle.read[Meter](left.value.json).meanRate > upickle.read[Meter](right.value.json).meanRate
 
     private val history = new MinMaxMetricsStore(
       config.retainHistoryDataHours * 3600 * 1000 / config.retainHistoryDataIntervalMs,

@@ -11,19 +11,19 @@ case class Conf(updateChartInterval: Int, updateVisDagInterval: Int,
                 webSocketPreferred: Boolean, webSocketSendTimeout: Int)
 
 @JSExport
-@injectable("OptionsService")
-class OptionsService(location: Location) extends Service {
+@injectable("ConfService")
+class ConfService(location: Location) extends Service {
   val conf = Conf(2000, 2000, 2000, "/api/v1.0", webSocketPreferred = false, 500)
 }
 
 @JSExport
-@injectable("OptionsService")
-class OptionsServiceFactory(location: Location) extends Factory[OptionsService] {
+@injectable("ConfService")
+class ConfServiceFactory(location: Location) extends Factory[ConfService] {
 
-  println("OptionsServiceFactory")
+  println("ConfServiceFactory")
 
   override def apply() = {
-    new OptionsService(location)
+    new ConfService(location)
   }
 }
 

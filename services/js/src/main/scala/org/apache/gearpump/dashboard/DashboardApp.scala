@@ -20,8 +20,9 @@ package org.apache.gearpump.dashboard
 
 import com.greencatsoft.angularjs.Angular
 import org.apache.gearpump.dashboard.controllers._
-import org.apache.gearpump.dashboard.directives.ExplanationIconDirective
-import org.apache.gearpump.dashboard.services.{OptionsServiceFactory, RestApiServiceFactory}
+import org.apache.gearpump.dashboard.directives.{TabDirective, TabSetDirective, ExplanationIconDirective, VisnetworkDirective}
+import org.apache.gearpump.dashboard.filters.LastPartFilter
+import org.apache.gearpump.dashboard.services._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -31,13 +32,18 @@ object DashboardApp extends JSApp {
   override def main(): Unit = {
     println("DashboardApp")
 
-    val options = Angular.module("dashboard.options", Array.empty[String])
-    options.factory[OptionsServiceFactory]
+    val conf = Angular.module("dashboard.conf", Array.empty[String])
+    conf.factory[ConfServiceFactory]
+
+    val tabset = Angular.module("directive.tabset", Array.empty[String])
+    tabset.directive[TabSetDirective]
+    tabset.directive[TabDirective]
+    tabset.controller[TabSetCtrl]
 
     val explanationicon = Angular.module("directive.explanationicon", Array("mgcrea.ngStrap.tooltip"))
     explanationicon.directive[ExplanationIconDirective]
 
-    val restapi = Angular.module("dashboard.restapi", Array("dashboard.options"))
+    val restapi = Angular.module("dashboard.restapi", Array("dashboard.conf"))
     restapi.factory[RestApiServiceFactory]
 
     val cluster = Angular.module("dashboard.cluster", Array("ngRoute"))
@@ -50,6 +56,18 @@ object DashboardApp extends JSApp {
     apps.config[AppsConfig]
     apps.controller[AppsCtrl]
 
+    val visgraph = Angular.module("directive.visgraph", Array.empty[String])
+    visgraph.directive[VisnetworkDirective]
+
+    val appmaster = Angular.module("dashboard.apps.appmaster", Array("directive.visgraph"))
+    appmaster.filter[LastPartFilter]
+    appmaster.config[AppMasterConfig]
+    appmaster.controller[AppMasterCtrl]
+    appmaster.controller[AppStatusCtrl]
+    appmaster.controller[AppDagCtrl]
+    appmaster.controller[AppProcessorCtrl]
+    appmaster.controller[AppMetricsCtrl]
+
     val module = Angular.module("dashboard", Array(
       "ngAnimate",
       "ngRoute",
@@ -57,16 +75,16 @@ object DashboardApp extends JSApp {
       "mgcrea.ngStrap",
       "ui.select",
       "smart-table",
+      "directive.tabset",
       "directive.explanationicon",
-      "dashboard.options",
+      "dashboard.conf",
       "dashboard.restapi",
       "dashboard.cluster",
-      "dashboard.apps"))
-
+      "dashboard.apps",
+      "dashboard.apps.appmaster"))
     module.config[DashboardConfig]
+    module.factory[UtilServiceFactory]
     module.controller[DashboardCtrl]
-    module.controller[AppDagCtrl]
-
   }
 }
 

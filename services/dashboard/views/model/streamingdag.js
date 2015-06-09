@@ -56,7 +56,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       },
 
       hasMetrics: function () {
-        return Object.keys(this.meter).length + Object.keys(this.histogram).length > 0;
+        return Object.keys().length + Object.keys(this.histogram).length > 0;
       },
 
       getNumOfTasks: function() {

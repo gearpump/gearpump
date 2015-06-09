@@ -20,10 +20,8 @@ package org.apache.gearpump.cluster
 
 import akka.actor.ActorRef
 import com.typesafe.config.Config
-import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
-import org.apache.gearpump.metrics.Metrics._
 
 import scala.util.Try
 
@@ -76,10 +74,6 @@ object MasterToClient {
   case class WorkerConfig(config: Config)
 
   case class MasterConfig(config: Config)
-
-  case class HistoryMetricsItem(time: TimeStamp, value: MetricType)
-
-  case class HistoryMetrics(appId: Int, path: String, metrics: List[HistoryMetricsItem])
 }
 
 trait AppMasterRegisterData

@@ -20,18 +20,14 @@ package org.apache.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
-import org.apache.gearpump._
-import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryAppMasterConfig}
-import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, AppMasterConfig}
-import org.apache.gearpump.metrics.Metrics.{MetricType, Meter, Histogram}
-
+import org.apache.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
+import org.apache.gearpump.shared.Messages.HistoryMetrics
 import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.http.StatusCodes
 import spray.routing.HttpService
-import upickle.Js
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait MetricsQueryService extends HttpService  {
   def master:ActorRef
