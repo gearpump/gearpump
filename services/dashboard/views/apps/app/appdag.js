@@ -6,39 +6,6 @@
 angular.module('dashboard.apps.appmaster')
 
   .controller('AppDagCtrl', ['$scope', '$timeout', '$interval', '$filter', 'conf', 'dagStyle', function ($scope, $timeout, $interval, $filter, conf, dagStyle) {
-    var updateClockPromise = null;
-    $scope.$on('$destroy', function() {
-      $interval.cancel(updateClockPromise);
-    });
-
-    var windowSize = 5;
-    var detectPoint = {appClock: $scope.app.clock, local: moment()};
-    //clockPoints store the time of app and local in an array from small to large
-    var clockPoints = new Array();
-    for (var i=0; i<windowSize; i++) {
-      detectPoint.local -= i * 1000;
-      clockPoints.unshift(detectPoint);
-    }
-    var appClockRate = 0;
-    $scope.$watch('app.clock', function(nowAppClock) {
-      $scope.displayClock = $scope.app.clock;
-      var nowLocal = moment();
-      var previousDetectPoint = clockPoints.shift();
-      var lastClockPoint = clockPoints[clockPoints.length-1];
-      if ((lastClockPoint.local * lastClockPoint.appClock > 0)
-          && (nowAppClock - lastClockPoint.appClock > 0)) {
-        appClockRate = (nowLocal - previousDetectPoint.local) /
-          (nowAppClock  - previousDetectPoint.appClock);
-        //localClockInterval calculate the time interval between the local clock changes
-        var localClockInterval = nowLocal - lastClockPoint.local;
-        //update the display clock only once in the middle of the interval
-        updateClockPromise = $timeout(function () {
-          $scope.displayClock += (localClockInterval/2) / appClockRate;
-        }, localClockInterval/2);
-      }
-      var nowClock = {appClock: nowAppClock, local: nowLocal};
-      clockPoints.push(nowClock);
-    });
 
     $scope.visgraph = {
       options: dagStyle.newOptions({depth: $scope.streamingDag.hierarchyDepth()}),
