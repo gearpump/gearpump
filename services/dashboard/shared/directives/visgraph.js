@@ -22,12 +22,16 @@ angular.module('directive.visgraph', [])
         angular.forEach(scope.events, function(callback, name) {
           network.on(name, callback);
         });
+        network.on('resize', function(args) {
+          network.fit();
+        });
         scope.$watch('data', function (data) {
           if (data) {
-            network.once('stabilized', function() {
+            network.setOptions({physics: true});
+            network.setData(data);
+            network.once('stabilizationIterationsDone', function() {
               network.setOptions({physics: false});
             });
-            network.setData(data);
           }
         });
         scope.$watchCollection('options', function (options) {
