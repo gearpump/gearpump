@@ -29,6 +29,7 @@ class CheckpointManager(checkpointInterval: Long,
   private var checkpointTime = checkpointInterval
 
   def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
+    checkpointTime = timestamp + checkpointInterval
     checkpointStore.read(timestamp)
   }
 

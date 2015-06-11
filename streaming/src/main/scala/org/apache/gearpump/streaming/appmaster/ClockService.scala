@@ -31,12 +31,12 @@ import org.apache.gearpump.streaming.appmaster.ClockService._
 import org.apache.gearpump.streaming.storage.AppDataStore
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{DAG, ProcessorId}
-import org.apache.gearpump.util.{Graph, LogUtil}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
+import scala.collection.JavaConversions._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.collection.JavaConversions._
 
 /**
  * The clockService will maintain a global view of message timestamp in the application
@@ -50,6 +50,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   private var startClock: Long = 0
   
   private val processorClockLookup = new util.HashMap[ProcessorId, ProcessorClock]()
+  private var checkpointTimes = Map.empty[TaskId, TimeStamp]
 
   private var reportScheduler : Cancellable = null
   private var snapshotScheduler : Cancellable = null
@@ -128,7 +129,8 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
 
     case GetLatestMinClock =>
       sender ! LatestMinClock(minClock)
-
+    case GetLatestStartClock =>
+      sender ! LatestStartClock(latestStartClock)
     case ReportGlobalClock =>
       selfChecker()
     case SnapshotStartClock =>
@@ -136,6 +138,8 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     case getStalling: GetStallingTasks =>
       val tasks = stallingTasks.map(stallingTask => TaskId(stallingTask.processorId, stallingTask.taskId))
       sender ! StallingTasks(tasks)
+    case CheckpointTime(task, time) =>
+      checkpointTimes += task -> time
   }
 
   private def minClockOfLevel(level: Int): TimeStamp = {
@@ -151,6 +155,14 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
       levelMinClock(levelMinClock.length - 1)
     } else {
       0
+    }
+  }
+
+  private def minCheckpointTime: Option[TimeStamp] = {
+    if (checkpointTimes.isEmpty) {
+      None
+    } else {
+      Some(checkpointTimes.values.min)
     }
   }
 
@@ -198,8 +210,12 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     }
   }
 
+  private def latestStartClock: TimeStamp = {
+    minCheckpointTime.getOrElse(minClock)
+  }
+
   private def snapshotStartClock() : Unit = {
-    store.put(START_CLOCK, minClock)
+    store.put(START_CLOCK, latestStartClock)
   }
 }
 

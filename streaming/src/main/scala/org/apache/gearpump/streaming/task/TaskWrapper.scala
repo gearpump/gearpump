@@ -101,10 +101,6 @@ class TaskWrapper(taskClass: Class[_ <: Task], context: TaskContextData, userCon
     task.map(_.receiveUnManagedMessage).getOrElse(defaultMessageHandler)
   }
 
-  override def stateClock: Option[TimeStamp] = {
-    task.flatMap(_.stateClock)
-  }
-
   override def upstreamMinClock: TimeStamp = {
     actor.getUpstreamMinClock
   }
