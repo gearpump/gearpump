@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.state.system.impl.{WindowConfig, PersistentStateConfig}
+import org.apache.gearpump.streaming.state.system.impl.{KafkaCheckpointStore, WindowConfig, PersistentStateConfig}
 import org.apache.gearpump.streaming.state.user.example.processor.{NumberGeneratorProcessor, WindowAverageProcessor}
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph
@@ -48,7 +48,8 @@ object WindowAverageApp extends App with ArgumentsParser {
     val userConfig = UserConfig.empty
       .withValue(PersistentStateConfig.NAME, stateConfig)
       .withValue(WindowConfig.NAME, WindowConfig(windowSize, windowStep))
-      .withValue(KafkaConfig.NAME, kafkaConfig)
+      .withValue(KafkaCheckpointStore.CONSUMER_CONFIG, kafkaConfig.consumerConfig)
+      .withValue(KafkaCheckpointStore.PRODUCER_CONFIG, kafkaConfig.producerConfig)
     val gen = Processor[NumberGeneratorProcessor](config.getInt("gen"))
     val count = Processor[WindowAverageProcessor](config.getInt("count"))
     val partitioner = new HashPartitioner()
