@@ -19,7 +19,6 @@
 package org.apache.gearpump.streaming.appmaster
 
 import java.util
-import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, Cancellable, Stash}
@@ -33,9 +32,8 @@ import org.apache.gearpump.streaming.appmaster.ClockService._
 import org.apache.gearpump.streaming.storage.AppDataStore
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{DAG, ProcessorId}
-import org.apache.gearpump.util.{Graph, LogUtil}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
-import org.apache.gearpump.partitioner.PartitionerDescription
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -76,6 +74,8 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   // We use Array instead of List for Performance consideration
   private var processorClocks = Array.empty[ProcessorClock]
 
+  private var checkpointClocks = Map.empty[TaskId, TimeStamp]
+
   private def setDAG(dag: DAG, startClock: TimeStamp): Unit = {
     val newClocks = dag.processors.map { pair =>
       val (processorId, processor) = pair
@@ -108,6 +108,8 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     }
 
     this.processorClocks = clocks.toArray.map(_._2)
+
+    this.checkpointClocks = Map.empty[TaskId, TimeStamp]
   }
 
   def waitForStartClock: Receive = {
@@ -155,16 +157,22 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     case GetLatestMinClock =>
       sender ! LatestMinClock(minClock)
 
+    case GetLatestStartClock =>
+      sender ! LatestStartClock(latestStartClock)
+
     case HealthCheck =>
       selfCheck()
 
     case SnapshotStartClock =>
       snapshotStartClock()
 
+    case CheckpointClock(task, time) =>
+      checkpointClocks += task -> time
+
     case getStalling: GetStallingTasks =>
       sender ! StallingTasks(healthChecker.getReport.stallingTasks)
     case ChangeToNewDAG(dag) =>
-      setDAG(dag, minClock)
+      setDAG(dag, latestStartClock)
       LOG.info(s"Change to new DAG(dag = ${dag.version}), send back ChangeToNewDAGSuccess")
       sender ! ChangeToNewDAGSuccess(clocks.map{ pair =>
         val (id, clock) = pair
@@ -179,6 +187,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   def selfCheck() : Unit = {
     val minTimestamp = minClock
 
+
     if (Long.MaxValue == minTimestamp) {
       processorClocks.foreach { clock =>
         LOG.info(s"Processor ${clock.processorId} Clock: min: ${clock.min}, taskClocks: "+ clock.taskClocks.mkString(","))
@@ -188,8 +197,20 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     healthChecker.check(minTimestamp, clocks, dag)
   }
 
+  private def minCheckpointClock: Option[TimeStamp] = {
+    if (checkpointClocks.isEmpty) {
+      None
+    } else {
+      Some(checkpointClocks.values.min)
+    }
+  }
+
+  private def latestStartClock: TimeStamp = {
+    minCheckpointClock.getOrElse(minClock)
+  }
+
   private def snapshotStartClock() : Unit = {
-    store.put(START_CLOCK, minClock)
+    store.put(START_CLOCK, latestStartClock)
   }
 }
 

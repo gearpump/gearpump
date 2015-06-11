@@ -46,6 +46,12 @@ case class UpstreamMinClock(latestMinClock: TimeStamp)
 
 case class LatestMinClock(clock: TimeStamp)
 
+case class CheckpointClock(taskId: TaskId, clock: TimeStamp)
+
+object GetLatestStartClock
+
+case class LatestStartClock(clock: TimeStamp)
+
 case class LatencyProbe(timestamp: Long)
 
 case class SendMessageLoss()

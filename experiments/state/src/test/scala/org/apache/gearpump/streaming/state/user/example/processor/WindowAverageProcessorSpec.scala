@@ -19,13 +19,14 @@
 package org.apache.gearpump.streaming.state.user.example.processor
 
 import akka.actor.ActorSystem
+import akka.testkit.TestProbe
 import com.twitter.algebird.AveragedValue
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.state.system.impl.{WindowConfig, PersistentStateConfig}
-import org.apache.gearpump.streaming.task.StartTime
+import org.apache.gearpump.streaming.task.{CheckpointClock, StartTime}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
@@ -58,7 +59,12 @@ class WindowAverageProcessorSpec extends PropSpec with PropertyChecks with Match
 
         val windowAverage = new WindowAverageProcessor(taskContext, conf)
 
+        val appMaster = TestProbe()(system)
+        when(taskContext.appMaster).thenReturn(appMaster.ref)
+
         windowAverage.onStart(StartTime(0L))
+        appMaster.expectMsg(CheckpointClock(taskContext.taskId, 0L))
+
         for (i <- 1L to num) {
           when(taskContext.upstreamMinClock).thenReturn(0L)
           windowAverage.onNext(Message("" + data, 0L))
@@ -67,10 +73,13 @@ class WindowAverageProcessorSpec extends PropSpec with PropertyChecks with Match
         windowAverage.state.get shouldBe Some(AveragedValue(num, data))
 
         when(taskContext.upstreamMinClock).thenReturn(num)
+
         windowAverage.onNext(Message("" + data, num))
+        appMaster.expectMsg(CheckpointClock(taskContext.taskId, num))
 
         windowAverage.state.get shouldBe Some(AveragedValue(1L, data))
-        system.shutdown()
     }
+
+    system.shutdown()
   }
 }

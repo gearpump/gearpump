@@ -101,7 +101,7 @@ class KafkaCheckpointStoreFactory extends CheckpointStoreFactory {
     implicit val system = taskContext.system
     val topic = s"app${appId}_task_${taskId.processorId}_${taskId.index}"
     val consumerConfig = new ConsumerConfig(conf.getValue[Properties](KafkaCheckpointStore.CONSUMER_CONFIG).get)
-    val producerConfig = conf.getValue[Properties](KafkaCheckpointStore.CONSUMER_CONFIG).get
+    val producerConfig = conf.getValue[Properties](KafkaCheckpointStore.PRODUCER_CONFIG).get
     val connectZk = KafkaUtil.connectZookeeper(consumerConfig)
     val topicExists = KafkaUtil.createTopic(connectZk(), topic, partitions = 1, replicas = 1)
     KafkaCheckpointStore(topic, topicExists, consumerConfig, producerConfig)

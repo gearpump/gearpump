@@ -24,10 +24,11 @@ import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, QueryHistor
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.metrics.Metrics.MetricType
+import org.apache.gearpump.streaming.appmaster.AppMaster.ServiceNotAvailableException
+import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
-import org.apache.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, ServiceNotAvailableException}
-import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
+import org.apache.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.appmaster.TaskManager.{GetTaskList, TaskList}
@@ -106,6 +107,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       actorSystem.eventStream.publish(metrics)
     case lookupTask: LookupTaskActorRef =>
       taskManager.foreach(_ forward lookupTask)
+    case checkpointClock: CheckpointClock =>
+      clockService.foreach(_ forward checkpointClock)
   }
 
   def executorMessageHandler: Receive = {
