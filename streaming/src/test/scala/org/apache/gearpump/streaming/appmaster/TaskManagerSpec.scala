@@ -24,15 +24,14 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTask}
-import org.apache.gearpump.streaming.executor.Executor
-import Executor.RestartExecutor
+import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.TaskManager.MessageLoss
 import org.apache.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
+import org.apache.gearpump.streaming.executor.Executor.RestartExecutor
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.transport.HostPort
@@ -150,16 +149,16 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     // register task(0,0)
     executor.reply(RegisterTask(TaskId(0, 0), executorId, HostPort("127.0.0.1:3000")))
 
-    // taskmanager should return the latest clock to task(0,0)
-    clockService.expectMsg(GetLatestMinClock)
+    // taskmanager should return the latest start clock to task(0,0)
+    clockService.expectMsg(GetLatestStartClock)
 
     executor.expectMsgType[LaunchTask]
 
     //register task(1,0)
     executor.reply(RegisterTask(TaskId(1, 0), executorId, HostPort("127.0.0.1:3000")))
 
-    // taskmanager should return the latest clock to task(1,0)
-    clockService.expectMsg(GetLatestMinClock)
+    // taskmanager should return the latest start clock to task(1,0)
+    clockService.expectMsg(GetLatestStartClock)
 
     //broad cast task locations to all tasks, now the app is ready
     import scala.concurrent.duration._

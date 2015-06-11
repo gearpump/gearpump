@@ -25,7 +25,6 @@ import akka.actor._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.metrics.Metrics.MetricType
-import org.apache.gearpump.partitioner.Partitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.executor.Executor.TaskLocationReady
@@ -50,8 +49,9 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   private val receiveThroughput = Metrics(context.system).meter(s"$metricName.receiveThroughput")
 
   //latency probe
-  import scala.concurrent.duration._
   import context.dispatcher
+
+  import scala.concurrent.duration._
   final val LATENCY_PROBE_INTERVAL = FiniteDuration(1, TimeUnit.SECONDS)
 
   // clock report interval
@@ -117,7 +117,7 @@ class TaskActor(val taskContextData : TaskContextData, userConf : UserConfig, va
   }
 
   def minClockAtCurrentTask: TimeStamp = {
-    this.subscriptions.foldLeft(task.stateClock.getOrElse(Long.MaxValue)){ (clock, subscription) =>
+    this.subscriptions.foldLeft(Long.MaxValue){ (clock, subscription) =>
       Math.min(clock, subscription._2.minClock)
     }
   }

@@ -19,18 +19,20 @@
 package org.apache.gearpump.streaming.state.user.example.processor
 
 import akka.actor.ActorSystem
+import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
-import org.apache.gearpump.streaming.task.StartTime
+import org.apache.gearpump.streaming.task.{CheckpointTime, StartTime}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{PropSpec, Matchers}
+import org.scalatest.{Matchers, PropSpec}
 
-class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
+class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   property("CountProcessor should update state") {
 
@@ -50,6 +52,8 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
           }""".stripMargin
         ))
 
+
+
         val conf = UserConfig.empty
           .withValue(PersistentStateConfig.NAME, stateConfig)
         val count = new CountProcessor(taskContext, conf)
@@ -62,10 +66,15 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
         count.state.get shouldBe Some(num)
 
         when(taskContext.upstreamMinClock).thenReturn(num)
+
+        val appMaster = TestProbe()(system)
+        when(taskContext.appMaster).thenReturn(appMaster.ref)
         count.onNext(Message("" + data, num))
+        appMaster.expectMsg(CheckpointTime(taskContext.taskId, num))
 
         count.state.get shouldBe Some(num + 1)
-        system.shutdown()
+
     }
+    system.shutdown()
   }
 }

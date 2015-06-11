@@ -23,21 +23,21 @@ import akka.pattern.ask
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, StartClock}
-import org.apache.gearpump.streaming.executor.{ExecutorRestartPolicy, Executor}
-import Executor.RestartExecutor
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
-import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef, AllocateResourceTimeOut}
+import org.apache.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, TaskActorRef}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
+import org.apache.gearpump.streaming.appmaster.TaskManager._
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
+import org.apache.gearpump.streaming.executor.Executor.RestartExecutor
+import org.apache.gearpump.streaming.executor.ExecutorRestartPolicy
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{TaskIndex, ExecutorId, DAG}
 import org.apache.gearpump.streaming.util.ActorPathUtil
+import org.apache.gearpump.streaming.{DAG, ExecutorId}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import TaskManager._
 
 private[appmaster] class TaskManager(
     appId: Int,
@@ -121,7 +121,7 @@ private[appmaster] class TaskManager(
 
     case Event(RegisterTask(taskId, executorId, host), state@ TaskRegistrationState(register)) =>
       val client = sender
-      getMinClock.map(client ! StartClock(_))
+      getLatestStartClock.map(client ! StartClock(_))
 
       register.registerTask(taskId, executorId, host)
       if (register.isAllTasksRegistered) {
@@ -148,6 +148,10 @@ private[appmaster] class TaskManager(
 
     case Event(GetLatestMinClock, _)=>
       clockService forward GetLatestMinClock
+      stay
+
+    case Event(checkpointTime: CheckpointTime, _) =>
+      clockService forward checkpointTime
       stay
 
     case Event(executorStopped @ ExecutorStopped(executorId), _) =>
@@ -192,6 +196,10 @@ private[appmaster] class TaskManager(
   import org.apache.gearpump.TimeStamp
   private def getMinClock: Future[TimeStamp] = {
     (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
+  }
+
+  private def getLatestStartClock: Future[TimeStamp] = {
+    (clockService ? GetLatestStartClock).asInstanceOf[Future[LatestStartClock]].map(_.clock)
   }
 }
 
