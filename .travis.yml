@@ -12,7 +12,7 @@ script:
   elif [[ $TRAVIS_BRANCH == "master" ]];
     then sbt clean publish; 
   elif [[ $TRAVIS_TAG != "" ]];
-    then openssl aes-256-cbc -K $encrypted_3d8d53d5fdbf_key -iv $encrypted_3d8d53d5fdbf_iv -in secring.asc.enc -out secring.asc -d; sbt clean publishSigned sonatypeRelease; 
+    then sbt clean assembly packArchive travis_deploy;
   fi  
 jdk:
 - oraclejdk7
@@ -28,7 +28,7 @@ after_success:
 - if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "intel-hadoop/gearpump" ]];
     then bash <(curl -s https://codecov.io/bash);  
   elif [[ $TRAVIS_TAG != "" ]];
-    sbt assembly packArchive travis_deploy;
+    then openssl aes-256-cbc -K $encrypted_3d8d53d5fdbf_key -iv $encrypted_3d8d53d5fdbf_iv -in secring.asc.enc -out secring.asc -d; sbt publishSigned sonatypeRelease; 
   fi 
 deploy:
   provider: releases
