@@ -18,34 +18,38 @@
 
 package org.apache.gearpump.services
 
-
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest}
-import org.apache.gearpump.util.Constants
+import org.apache.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
+import org.apache.gearpump.shared.Messages.HistoryMetrics
+import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.http.StatusCodes
-import spray.json.DefaultJsonProtocol
 import spray.routing.HttpService
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
-trait AppMastersService extends HttpService {
-  import upickle._
+trait MetricsQueryService extends HttpService  {
   def master:ActorRef
+  implicit val system: ActorSystem
+  private val LOG = LogUtil.getLogger(getClass)
 
-  def appMastersRoute = get {
+  def metricQueryRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     pathPrefix("api"/s"$REST_VERSION") {
-      path("appmasters") {
-        onComplete((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]]) {
-          case Success(value: AppMastersData) =>
-            complete(write(value))
-          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+      path("metrics" / "app" / IntNumber / RestPath ) { (appId, path) =>
+        parameter("readLatest" ? "false") { readLatestInput =>
+          val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
+          onComplete((master ? QueryHistoryMetrics(appId, path.head.toString, readLatest))
+            .asInstanceOf[Future[HistoryMetrics]]) {
+            case Success(value: HistoryMetrics) =>
+              complete(upickle.write(value))
+            case Failure(ex) =>
+              complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+          }
         }
       }
     }
   }
 }
-

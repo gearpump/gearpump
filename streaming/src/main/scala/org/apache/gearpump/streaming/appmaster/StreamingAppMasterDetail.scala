@@ -34,7 +34,7 @@ case class StreamingAppMasterDataDetail(
     processorLevels: Map[ProcessorId, Int],
     dag: Graph[ProcessorId, PartitionerDescription] = null,
     actorPath: String = null,
-    clock: TimeStamp = 0,
+    clock: String = null,
     executors: Map[ExecutorId, String] = null,
     tasks: Map[TaskId, ExecutorId] = null)
   extends AppMasterDataDetail {
@@ -52,7 +52,7 @@ object StreamingAppMasterDataDetail {
       val appId = Js.Num(app.appId)
       val appName = Js.Str(app.appName)
       val actorPath = Js.Str(app.actorPath)
-      val clock = Js.Num(app.clock)
+      val clock = Js.Str(app.clock)
 
       val executorsMap = Some(app.executors).map{ executors =>
         upickle.writeJs(executors)
@@ -108,7 +108,7 @@ object StreamingAppMasterDataDetail {
           case "actorPath" =>
             streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(actorPath=upickle.readJs[String](value))
           case "clock" =>
-            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(clock=upickle.readJs[Int](value))
+            streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(clock=upickle.readJs[String](value))
           case "executors" =>
             streamingAppMasterDataDetail = streamingAppMasterDataDetail.copy(executors=upickle.readJs[Map[ExecutorId, String]](value))
           case "tasks" =>

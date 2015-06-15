@@ -18,9 +18,11 @@
 
 package org.apache.gearpump.services
 
+
 import akka.actor.ActorRef
-import akka.pattern._
-import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, AppMasterDataDetail}
+import akka.pattern.ask
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersDataRequest
+import org.apache.gearpump.shared.Messages.AppMastersData
 import org.apache.gearpump.util.Constants
 import spray.http.StatusCodes
 import spray.routing.HttpService
@@ -28,26 +30,22 @@ import spray.routing.HttpService
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-trait WorkerService extends HttpService {
+trait AppMastersService extends HttpService {
   import upickle._
   def master:ActorRef
 
-  def workerRoute = {
+  def appMastersRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
     pathPrefix("api"/s"$REST_VERSION") {
-      path("workers" / IntNumber) { workerId =>
-        onComplete((master ? GetWorkerData(workerId)).asInstanceOf[Future[WorkerData]]) {
-          case Success(value: WorkerData) =>
-            value.workerDescription match {
-              case Some(description) =>
-                complete(write(description))
-              case None =>
-                complete(StatusCodes.InternalServerError, s"worker $workerId not exists")
-            }
+      path("appmasters") {
+        onComplete((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]]) {
+          case Success(value: AppMastersData) =>
+            complete(write(value))
           case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
         }
       }
     }
   }
 }
+

@@ -23,13 +23,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import com.codahale.metrics.{Slf4jReporter, ConsoleReporter, MetricFilter, MetricRegistry}
-import org.apache.gearpump.TimeStamp
+import com.codahale.metrics.{MetricFilter, MetricRegistry, Slf4jReporter}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
-import upickle.Js
-
-import scala.reflect.ClassTag
 
 class Metrics(sampleRate: Int) extends Extension {
 
@@ -52,46 +48,6 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
 
   val LOG: Logger = LogUtil.getLogger(getClass)
   import org.apache.gearpump.util.Constants._
-
-  sealed trait MetricType {
-    def name: String
-  }
-
-  object MetricType {
-
-    implicit val metricJsonWriter: upickle.Writer[MetricType] = upickle.Writer[MetricType] {
-      case histogram: Histogram => upickle.writeJs(histogram)
-      case counter: Counter => upickle.writeJs(counter)
-      case meter: Meter => upickle.writeJs(meter)
-      case timer: Timer => upickle.writeJs(timer)
-      case gauge: Gauge[_] =>
-        upickle.writeJs(Map("name"-> gauge.name, "value" -> gauge.value.toString))
-    }
-  }
-
-  case class Histogram
-      (name: String, count: Long, min: Long, max: Long, mean: Double,
-       stddev: Double, median: Double, p75: Double,
-       p95: Double, p98: Double, p99: Double, p999: Double)
-    extends MetricType
-
-  case class Counter(name: String, value: Long) extends MetricType
-
-  case class Meter(
-      name: String, count: Long, meanRate: Double,
-      m1: Double, m5: Double, m15: Double, rateUnit: String)
-    extends MetricType
-
-  case class Timer(
-      name: String, count: Long, min: Double, max: Double,
-      mean: Double, stddev: Double, median: Double,
-      p75: Double, p95: Double, p98: Double,
-      p99: Double, p999: Double, meanRate: Double,
-      m1: Double, m5: Double, m15: Double,
-      rateUnit: String, durationUnit: String)
-    extends MetricType
-
-  case class Gauge[T:ClassTag](name: String, value: T) extends MetricType
 
   override def get(system: ActorSystem): Metrics = super.get(system)
 

@@ -20,16 +20,16 @@ package org.apache.gearpump.cluster.client
 
 import java.util.concurrent.TimeUnit
 
-import akka.pattern.ask
 import akka.actor.{ActorRef, ActorSystem}
+import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.cluster.MasterToClient.ReplayApplicationResult
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.jarstore.JarFileContainer
+import org.apache.gearpump.shared.Messages.AppMastersData
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger
@@ -61,7 +61,7 @@ class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[Actor
    * the target runtime classpath, and will not send it.
    */
   def submit(app : Application) : Int = {
-    import app.{name, appMaster, userConfig}
+    import app.{appMaster, name, userConfig}
     val clusterConfig = ClusterConfig.load.applicationSubmissionConfig
     val appDescription = AppDescription(name, appMaster.getName, userConfig, clusterConfig)
     submit(appDescription, System.getProperty(GEARPUMP_APP_JAR))

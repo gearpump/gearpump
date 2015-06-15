@@ -27,19 +27,17 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.MasterConfig
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.cluster.master.Master._
-import org.apache.gearpump.cluster.master.InMemoryKVService._
 import org.apache.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated}
-
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.apache.gearpump.jarstore.JarStore
+import org.apache.gearpump.shared.Messages.{WorkerData, MasterStatus, MasterData, MasterDescription}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 private[cluster] class Master extends Actor with Stash {
@@ -122,7 +120,7 @@ private[cluster] class Master extends Actor with Stash {
     case GetMasterData =>
       val aliveFor = System.currentTimeMillis() - birth
       val logFileDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
-      val userDir = System.getProperty("user.dir");
+      val userDir = System.getProperty("user.dir")
       val masterDescription = MasterDescription(hostPort.toTuple, getMasterClusterList.map(_.toTuple), aliveFor, logFileDir, jarStoreRootPath, MasterStatus.Synced, userDir)
       sender ! MasterData(masterDescription)
 
@@ -192,7 +190,7 @@ private[cluster] class Master extends Actor with Stash {
   def terminationWatch : Receive = {
     case t : Terminated =>
       val actor = t.actor
-      LOG.info(s"worker ${actor.path} get terminated, is it due to network reason? ${t.getAddressTerminated()}")
+      LOG.info(s"worker ${actor.path} get terminated, is it due to network reason? ${t.getAddressTerminated}")
       LOG.info("Let's filter out dead resources...")
       // filter out dead worker resource
       if(workers.keySet.contains(actor)){
@@ -224,7 +222,7 @@ object Master {
   object MasterInfo {
     def empty = MasterInfo(null)
   }
-
+/*
   object MasterStatus {
     type Type = String
     val Synced = "synced"
@@ -235,6 +233,7 @@ object Master {
                                logFile: String, jarStore: String,
                                masterStatus: MasterStatus.Type,
                                 homeDirectory: String)
+*/
 
   case class SlotStatus(totalSlots: Int, availableSlots: Int)
 }
