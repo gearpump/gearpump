@@ -1,3 +1,35 @@
+![Alt text](http://g.gravizo.com/g?
+@startuml;
+participant "YARN NM";
+participant YarnApplicationMaster;
+participant ResourceManagerClient;
+participant "YARN RM";
+activate YarnApplicationMaster;
+YarnApplicationMaster -> YarnApplicationMaster: create NMClientAsync;
+YarnApplicationMaster -> "YARN NM": start;
+activate "YARN NM";
+YarnApplicationMaster --> ResourceManagerClient: create actor;
+activate ResourceManagerClient;
+ResourceManagerClient -> ResourceManagerClient: create AMRMClientAsync;
+ResourceManagerClient -> "YARN RM": connect;
+activate "YARN RM";
+ResourceManagerClient --> YarnApplicationMaster: RMConnected;
+YarnApplicationMaster --> ResourceManagerClient: RegisterAMMessage;
+ResourceManagerClient -> "YARN RM": registerApplicationMaster;
+ResourceManagerClient --> YarnApplicationMaster: RegisterAppMasterResponse;
+YarnApplicationMaster --> ResourceManagerClient: ContainerRequestMessage;
+ResourceManagerClient -> "YARN RM": addContainerRequest;
+"YARN RM" --> ResourceManagerClient: ContainersAllocated;
+ResourceManagerClient --> YarnApplicationMaster: ContainersAllocated;
+deactivate ResourceManagerClient;
+YarnApplicationMaster -> "YARN NM": startContainerAsync;
+"YARN NM" --> YarnApplicationMaster: ContainerStarted;
+deactivate YarnApplicationMaster;
+deactivate "YARN NM";
+deactivate "YARN RM";
+@enduml;
+)
+
 How to Start the Gearpump cluster on YARN
 =======================================
 1. Create HDFS folder /user/gearpump/, make sure all read-write rights are granted.
@@ -5,10 +37,6 @@ How to Start the Gearpump cluster on YARN
 3. Modify the config file ```conf/yarn.conf.template``` or create your own config file
 4. Start the gearpump yarn cluster, for example 
   ``` bash
-  bin/yarnclient -version gearpump-0.3.2-SNAPSHOT -config ${LOCAL_CONFIG_FILE}
+  bin/yarnclient -version gearpump-$VERSION -config conf/yarn.conf
   ```
-5. On some machine in the cluster, start the UI server, and bind to the master port.
- ```bash
- bin/services
- ```
 
