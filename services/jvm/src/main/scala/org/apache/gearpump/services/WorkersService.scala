@@ -20,15 +20,14 @@ package org.apache.gearpump.services
 
 import akka.actor.ActorRef
 import akka.pattern._
-import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, GetAllWorkers}
-import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, AppMastersData}
-import org.apache.gearpump.cluster.worker.WorkerDescription
-import org.apache.gearpump.util.{LogUtil, Constants}
-import org.slf4j.Logger
+import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetWorkerData}
+import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
+import org.apache.gearpump.shared.Messages.{WorkerData, WorkerDescription}
+import org.apache.gearpump.util.Constants
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 trait WorkersService extends HttpService {

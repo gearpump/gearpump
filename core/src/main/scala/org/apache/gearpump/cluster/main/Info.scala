@@ -17,8 +17,8 @@
  */
 package org.apache.gearpump.cluster.main
 
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.shared.Messages.AppMastersData
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
