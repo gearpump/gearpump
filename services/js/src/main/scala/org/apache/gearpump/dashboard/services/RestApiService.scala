@@ -35,9 +35,16 @@ class RestApiService(http: HttpService, timeout: Timeout, options: ConfService) 
 
   println("RestApiService")
 
-  def subscribe(url: String): Future[String] = {
-    val future: Future[js.Any] = http.get(options.conf.restapiRoot + url)
+  def subscribe(uri: String): Future[String] = {
+    val url = options.conf.restapiRoot + uri
+    val future: Future[js.Any] = http.get(url)
     future.map(JSON.stringify(_))
+  }
+
+  def getUrl(uri: String): Future[String] = {
+    val url = '/' + uri
+    val future: Future[js.Any] = http.get(url)
+    future.map(_.toString)
   }
 
   def killApp(appId: String): HttpPromise = {

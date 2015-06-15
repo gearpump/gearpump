@@ -20,7 +20,7 @@ package org.apache.gearpump.dashboard
 
 import com.greencatsoft.angularjs.Angular
 import org.apache.gearpump.dashboard.controllers._
-import org.apache.gearpump.dashboard.directives.{TabDirective, TabSetDirective, ExplanationIconDirective, VisnetworkDirective}
+import org.apache.gearpump.dashboard.directives._
 import org.apache.gearpump.dashboard.filters.LastPartFilter
 import org.apache.gearpump.dashboard.services._
 
@@ -38,10 +38,12 @@ object DashboardApp extends JSApp {
     val tabset = Angular.module("directive.tabset", Array.empty[String])
     tabset.directive[TabSetDirective]
     tabset.directive[TabDirective]
-    tabset.controller[TabSetCtrl]
 
     val explanationicon = Angular.module("directive.explanationicon", Array("mgcrea.ngStrap.tooltip"))
     explanationicon.directive[ExplanationIconDirective]
+
+    val metricsCard = Angular.module("directive.metricscard", Array("directive.explanationicon"))
+    metricsCard.directive[MetricsCardDirective]
 
     val restapi = Angular.module("dashboard.restapi", Array("dashboard.conf"))
     restapi.factory[RestApiServiceFactory]
@@ -64,6 +66,7 @@ object DashboardApp extends JSApp {
     appmaster.config[AppMasterConfig]
     appmaster.controller[AppMasterCtrl]
     appmaster.controller[AppStatusCtrl]
+    appmaster.controller[AppSummaryChartsCtrl]
     appmaster.controller[AppDagCtrl]
     appmaster.controller[AppProcessorCtrl]
     appmaster.controller[AppMetricsCtrl]
@@ -77,6 +80,7 @@ object DashboardApp extends JSApp {
       "smart-table",
       "directive.tabset",
       "directive.explanationicon",
+      "directive.metricscard",
       "dashboard.conf",
       "dashboard.restapi",
       "dashboard.cluster",

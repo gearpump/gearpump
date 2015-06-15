@@ -48,7 +48,8 @@ class AppsCtrl(scope: AppsScope, location: Location, restApi: RestApiService, ut
   }
 
   def active(app: AppMasterData): Boolean = {
-    app.status == AppMasterActive
+    val active = app.status == AppMasterActive
+    active
   }
 
   def stringToDateTime(s: UndefOr[Any]): String = {
