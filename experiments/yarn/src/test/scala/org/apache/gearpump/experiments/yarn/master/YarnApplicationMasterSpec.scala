@@ -154,10 +154,10 @@ with TestConfiguration {
         "should start containers for masters using nodeManagerClient and stay in LaunchingMasters state with updated YarnClusterStats" in {
           val probe = TestProbe()
           val nmClientAsyncMock = mock[NMClientAsync]
-          val container = getContainer(NodeId.newInstance("host1", 3001))
+          val container = getContainer(NodeId.newInstance("host1", 3002))
           val stats = mock[YarnClusterStats]
           val fsm = createFSM(probe, nmClientAsyncMock, stats)
-          val expectedContainerInfo = fsm.underlyingActor.newContainerInfoInstance(container, MASTER)
+          val expectedContainerInfo = fsm.underlyingActor.newContainerInfoInstance(container, MASTER, TEST_MASTER_PORT.toInt)
 
           stats.withContainer(any) returns stats
           stats.getContainerInfo(container.getId) returns None
@@ -217,7 +217,7 @@ with TestConfiguration {
           val container = getContainer(NodeId.newInstance("host1", 3001))
           val stats = mock[YarnClusterStats]
           val fsm = createFSM(probe, nmClientAsyncMock, stats)
-          val expectedContainerInfo = fsm.underlyingActor.newContainerInfoInstance(container, WORKER)
+          val expectedContainerInfo = fsm.underlyingActor.newContainerInfoInstance(container, WORKER, 3001)
 
           stats.withContainer(any) returns stats
           stats.getContainerInfo(container.getId) returns None
@@ -241,7 +241,7 @@ with TestConfiguration {
     val container = getContainer(NodeId.newInstance("host1", 3001))
     val stats = mock[YarnClusterStats]
     val fsm = createFSM(probe, nmClientAsyncMock, stats)
-    val expectedContainerInfo = fsm.underlyingActor.newContainerInfoInstance(container, WORKER)
+    val expectedContainerInfo = fsm.underlyingActor.newContainerInfoInstance(container, WORKER, 3001)
 
     stats.withContainer(any) returns stats
     stats.getContainerInfo(container.getId) returns Some(expectedContainerInfo)

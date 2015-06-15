@@ -210,22 +210,22 @@ class YarnApplicationMaster(appConfig: AppConfig, yarnConf: YarnConfiguration,
 
   private def launchMasterContainer(yarnClusterStats:YarnClusterStats, container: Container): YarnClusterStats = {
     val host = container.getNodeId.getHost
-    val port = container.getNodeId.getPort
+    val port = appConfig.getEnv(GEARPUMPMASTER_PORT).toInt
     val masterCommand = MasterContainerCommand(appConfig, HostPort(host, port)).getCommand
     launchCommand(container, masterCommand)
-    yarnClusterStats.withContainer(newContainerInfoInstance(container, MASTER))
+    yarnClusterStats.withContainer(newContainerInfoInstance(container, MASTER, port))
   }
 
   private def launchWorkerContainer(masterAddr: HostPort)(yarnClusterStats:YarnClusterStats, container: Container): YarnClusterStats = {
     val workerHost = container.getNodeId.getHost
     val workerCommand = WorkerContainerCommand(appConfig, masterAddr, workerHost).getCommand
     launchCommand(container, workerCommand)
-    yarnClusterStats.withContainer(newContainerInfoInstance(container, WORKER))
+    yarnClusterStats.withContainer(newContainerInfoInstance(container, WORKER, container.getNodeId.getPort))
   }
 
-  private[master] def newContainerInfoInstance(container: Container, containerType: ContainerType): ContainerInfo = {
+  private[master] def newContainerInfoInstance(container: Container, containerType: ContainerType, port: Int): ContainerInfo = {
     val containerStatus = ContainerStatus.newInstance(container.getId, ContainerState.NEW, "", 0)
-    ContainerInfo(container.getNodeId.getHost, container.getNodeId.getPort, containerType, containerStatus)
+    ContainerInfo(container.getNodeId.getHost, port, containerType, containerStatus)
   }
 
 
