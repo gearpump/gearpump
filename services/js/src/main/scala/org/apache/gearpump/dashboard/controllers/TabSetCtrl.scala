@@ -18,24 +18,26 @@ class TabSetCtrl(scope: AppMasterScope)
     this(scope)
   }
 
+  @JSExport
   def addTab(tab: Tab): Unit = {
     scope.tabs.push(tab)
     if(scope.tabs.length == 1) {
-      scope.selectTab(tab, false)
+      //scope.selectTab(tab, false)
     }
   }
 
+  @JSExport
   def selectTab(selectedTab: Tab, reload: Boolean): Unit = {
     println("selectTab")
     scope.tabs.foreach(tab => {
       selectedTab == tab match {
         case true =>
-          scope.selectedTab = tab
+          //scope.selectedTab = tab
         case false =>
       }
     })
-
   }
+
 
 
   /*

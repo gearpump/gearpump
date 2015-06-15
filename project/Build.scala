@@ -454,7 +454,6 @@ object Build extends sbt.Build {
     "org.webjars" % "angular-ui-select" % "0.11.2",
     "org.webjars" % "bootstrap" % "3.3.4",
     "org.webjars" % "d3js" % "3.5.5",
-    "org.webjars" % "momentjs" % "2.10.3",
     "org.webjars" % "smart-table" % "2.0.3",
     "org.webjars.bower" % "vis" % "4.2.0"
     ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")),
@@ -475,7 +474,7 @@ object Build extends sbt.Build {
     persistLauncher in Compile := true,
     persistLauncher in Test := false,
     skip in packageJSDependencies := false,
-    jsDependencies += "org.webjars" % "angularjs" % "1.3.15" / "angular.js",
+    jsDependencies += "org.webjars" % "angularjs" % "1.4.0" / "angular.js",
     fastOptJS in Compile := {
       val originalResult = (fastOptJS in Compile).value
       copyJSArtifactsToOutput

@@ -6,7 +6,7 @@ import org.scalajs.dom.Element
 import scala.scalajs.js.annotation.JSExport
 
 @JSExport
-@injectable("ExplanationIconDirective")
+@injectable("explanationIconDirective")
 class ExplanationIconDirective extends ElementDirective with TemplatedDirective {
 
   override val templateUrl = "<span class=\"glyphicon glyphicon-question-sign metrics-explanation\" bs-tooltip=\"value\"></span>"

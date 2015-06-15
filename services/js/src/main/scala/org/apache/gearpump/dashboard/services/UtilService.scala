@@ -14,6 +14,7 @@ class UtilService() extends Service {
       case Some(any) =>
         val date = new js.Date(any.toString.toDouble)
         date.formatted("YYYY/MM/DD HH:mm:ss")
+        date.toDateString
       case None =>
         "-"
     }

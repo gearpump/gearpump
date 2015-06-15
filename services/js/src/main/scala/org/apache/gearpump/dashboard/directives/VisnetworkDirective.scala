@@ -15,7 +15,7 @@ trait VisnetworkScope extends Scope {
 }
 
 @JSExport
-@injectable("VisnetworkDirective")
+@injectable("visnetworkDirective")
 class VisnetworkDirective extends ElementDirective with AttributeDirective with IsolatedScope {
 
   println("VisnetworkDirective")

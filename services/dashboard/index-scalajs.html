@@ -14,7 +14,7 @@
   <link href="webjars/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="webjars/angular-motion/0.3.3/angular-motion.min.css" rel="stylesheet"/>
   <link href="webjars/angular-ui-select/0.11.2/select.min.css" rel="stylesheet"/>
-  <link href="webjars/visjs/3.12.0/vis.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="webjars/vis/4.2.0/dist/vis.min.css"/>
   <!-- TODO: Minimize as one for production server -->
   <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic&subset=latin">
   <link href="styles/bootstrap-override.css" rel="stylesheet"/>
@@ -22,16 +22,15 @@
   <link href="styles/dashboard.css" rel="stylesheet"/>
 
   <!-- Static Resources -->
-  <script src="webjars/angularjs/1.3.15/angular.js"></script>
-  <script src="webjars/angularjs/1.3.15/angular-animate.js"></script>
-  <script src="webjars/angularjs/1.3.15/angular-route.js"></script>
-  <script src="webjars/angular-strap/2.2.1/angular-strap.js"></script>
-  <script src="webjars/angular-strap/2.2.1/angular-strap.tpl.min.js"></script>
+  <script src="webjars/angularjs/1.4.0/angular.js"></script>
+  <script src="webjars/angularjs/1.4.0/angular-animate.js"></script>
+  <script src="webjars/angularjs/1.4.0/angular-route.js"></script>
+  <script src="webjars/angular-strap/2.2.3/angular-strap.min.js"></script>
+  <script src="webjars/angular-strap/2.2.3/angular-strap.tpl.min.js"></script>
   <script src="webjars/angular-ui-select/0.11.2/select.min.js"></script>
   <script src="webjars/d3js/3.5.5/d3.js"></script>
-  <script src="webjars/momentjs/2.10.2/moment.js"></script>
-  <script src="webjars/smart-table/2.0.1/smart-table.min.js"></script>
-  <script src="webjars/visjs/3.12.0/vis.js"></script>
+  <script src="webjars/smart-table/2.0.3/smart-table.min.js"></script>
+  <script src="webjars/vis/4.2.0/dist/vis.min.js"></script>
   <script src="shared/vendors/echarts-mod/echarts-all.min.js"></script>
   <script src="shared/vendors/ng-breadcrumbs/ng-breadcrumbs.min.js"></script>
   <script src="shared/filters/readable.js"></script>
@@ -52,7 +51,7 @@
   <div class="container-fluid">
     <div class="navbar-header">
       <a class="navbar-brand" href="#/">Gearpump
-        <span class="label label-primary">0.3.6-SNAPSHOT</span></a>
+        <span class="label label-primary">0.3.8-SNAPSHOT</span></a>
     </div>
     <div class="collapse navbar-collapse">
       <ul class="nav navbar-nav">
@@ -69,14 +68,12 @@
 <div class="container-fluid">
 
   <!-- Breadcrumb as navigation -->
-<!--
   <ol class="breadcrumb breadcrumb-sm">
     <li ng-repeat="breadcrumb in breadcrumbs.get() track by breadcrumb.path" ng-class="{active:$last}">
       <a ng-if="!$last" ng-href="#{{breadcrumb.path}}" ng-bind="breadcrumb.label"></a>
       <span ng-if="$last" ng-bind="breadcrumb.label"></span>
     </li>
   </ol>
--->
 
   <!-- Main content -->
   <div class="container-fluid" id="main">
