@@ -16,24 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.kafka.sink
 
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
-import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.kafka.KafkaSink
 import org.apache.gearpump.streaming.kafka.lib.{KafkaConfig, KafkaUtil}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.kafka.clients.producer.ProducerRecord
 
 import scala.concurrent.duration.FiniteDuration
 
-class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
-  extends Task(taskContext, inputConfig) {
+class KafkaSinkTask(context: TaskContext, conf: UserConfig) extends Task(context, conf) {
 
-  private val kafkaConfig = inputConfig.getValue[KafkaConfig](KafkaConfig.NAME).get
+  private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val topic = kafkaConfig.getProducerTopic
   private val producerConfig = KafkaUtil.buildProducerConfig(kafkaConfig)
   private val kafkaSink = new KafkaSink(producerConfig)
@@ -45,17 +43,16 @@ class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
   private var scheduler: Cancellable = null
 
   override def onStart(startTime : StartTime): Unit = {
-    scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+    scheduler = context.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportThroughput())
   }
 
   override def onNext(msg: Message): Unit = {
-    val kvMessage = msg.msg.asInstanceOf[(String, String)]
-    val key = kvMessage._1
-    val value = kvMessage._2
-    kafkaSink.write(topic, Injection[String, Array[Byte]](key), Injection[String, Array[Byte]](value))
+    val (key, value) = msg.msg.asInstanceOf[(Array[Byte], Array[Byte])]
+    val producerRecord = new ProducerRecord[Array[Byte], Array[Byte]](topic, key, value)
+    kafkaSink.write(producerRecord)
     count += 1
- }
+  }
 
   override def onStop(): Unit = {
     if (scheduler != null) {
@@ -67,9 +64,8 @@ class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
 
   private def reportThroughput() : Unit = {
     val current = System.currentTimeMillis()
-    LOG.info(s"Task ${taskContext.taskId}; Throughput: ${(count - lastCount, (current - lastTime) / 1000)} (messages, second)")
+    LOG.info(s"Task ${context.taskId}; Throughput: ${(count - lastCount, (current - lastTime) / 1000)} (messages, second)")
     lastCount = count
     lastTime = current
   }
 }
-

@@ -22,10 +22,10 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
-import org.apache.gearpump.streaming.examples.kafka.{KafkaStreamProcessor, KafkaStreamProducer}
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
+import org.apache.gearpump.streaming.kafka.sink.KafkaSinkProcessor
+import org.apache.gearpump.streaming.kafka.source.KafkaSourceProcessor
+import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
@@ -34,28 +34,26 @@ object KafkaWordCount extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "kafka_stream_producer" -> CLIOption[Int]("<hom many kafka producer tasks>", required = false, defaultValue = Some(1)),
+    "kafka_source" -> CLIOption[Int]("<hom many kafka source tasks>", required = false, defaultValue = Some(1)),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(1)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1)),
-    "kafka_stream_processor" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(4))
+    "kafka_sink" -> CLIOption[Int]("<hom many kafka sink tasks", required = false, defaultValue = Some(4))
     )
 
   def application(config: ParseResult) : StreamApplication = {
-    val kafkaStreamProducerNum = config.getInt("kafka_stream_producer")
+    val kafkaSourceNum = config.getInt("kafka_source")
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
-    val kafkaStreamProcessorNum = config.getInt("kafka_stream_processor")
+    val kafkaSinkNum = config.getInt("kafka_sink")
 
     val kafkaConfig = KafkaConfig(ConfigFactory.parseResources("kafka.conf"))
-    val appConfig = UserConfig.empty
-      .withValue(KafkaConfig.NAME, kafkaConfig)
 
-    val kafkaStreamProducer = Processor[KafkaStreamProducer](kafkaStreamProducerNum)
+    val kafkaSource = KafkaSourceProcessor(kafkaConfig, kafkaSourceNum)
     val split = Processor[Split](splitNum)
     val sum = Processor[Sum](sumNum)
-    val kafkaStreamProcessor = Processor[KafkaStreamProcessor](kafkaStreamProcessorNum)
-    val computation = kafkaStreamProducer ~> split ~> sum ~> kafkaStreamProcessor
-    val app = StreamApplication("KafkaWordCount", Graph(computation), appConfig)
+    val kafkaSink = KafkaSinkProcessor(kafkaConfig, kafkaSinkNum)
+    val computation = kafkaSource ~> split ~> sum ~> kafkaSink
+    val app = StreamApplication("KafkaWordCount", Graph(computation), UserConfig.empty)
     app
   }
 

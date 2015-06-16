@@ -24,8 +24,8 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.hbase.HBaseSink._
 import org.apache.gearpump.experiments.hbase._
 import org.apache.gearpump.experiments.pipeline.Messages._
-import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.kafka.source.KafkaSource
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource}
 import org.apache.gearpump.util.LogUtil

@@ -16,23 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.wordcount
+package org.apache.gearpump.streaming.sink
 
-import com.twitter.bijection.Injection
-import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+/**
+ * interface to implement custom data sink
+ * which the result of a DAG is typically written to
+ *
+ * an example would be like
+ * {{{
+ *  class ConsoleSink extends DataSink[String] {
+ *
+ *    def write(s: String): Unit = {
+ *      Console.println(s)
+ *    }
+ *
+ *    def close(): Unit = {}
+ *  }
+ * }}}
+ * @tparam T type of data written to sink
+ */
+trait DataSink[T] {
 
-class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.output
+  def write(t: T): Unit
 
-  override def onStart(startTime : StartTime) : Unit = {}
-
-  override def onNext(message: Message) : Unit = {
-    val bytes = message.msg.asInstanceOf[Array[Byte]]
-    for {
-      sentence <- Injection.invert[String, Array[Byte]](bytes)
-      word <- sentence.split("\\s+")
-    } output(new Message(word, message.timestamp))
-  }
+  def close(): Unit
 }

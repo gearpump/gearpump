@@ -16,23 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.wordcount
+package org.apache.gearpump.streaming.kafka.source
 
-import com.twitter.bijection.Injection
-import org.apache.gearpump.Message
+import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.Processor
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 
-class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.output
-
-  override def onStart(startTime : StartTime) : Unit = {}
-
-  override def onNext(message: Message) : Unit = {
-    val bytes = message.msg.asInstanceOf[Array[Byte]]
-    for {
-      sentence <- Injection.invert[String, Array[Byte]](bytes)
-      word <- sentence.split("\\s+")
-    } output(new Message(word, message.timestamp))
+object KafkaSourceProcessor {
+  def apply(kafkaConfig: KafkaConfig,
+            parallelism: Int,
+            description: String = "",
+            taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem): Processor[KafkaSourceTask] = {
+    Processor[KafkaSourceTask](parallelism, description = description,
+      taskConf = taskConf.withValue[KafkaConfig](KafkaConfig.NAME, kafkaConfig))
   }
 }
+

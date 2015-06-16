@@ -16,23 +16,38 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.wordcount
+package org.apache.gearpump.streaming.source
 
-import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.output
+/**
+ * interface to implement custom source
+ * from which data is read into the system
+ *
+ * an example would be like
+ * {{{
+ *  GenStringSource extends DataSource {
+ *    def read(num: Int): List[Message] = {
+ *      val messages =
+ *        for { i <- 0 until num
+ *        } yield Message(s"message-$i", System.currentTimeMillis())
+ *      messages.toList
+ *    }
+ *
+ *    def close(): Unit = {}
+ *  }
+ * }}}
+ */
+trait DataSource {
 
-  override def onStart(startTime : StartTime) : Unit = {}
+  /**
+   *  read 'num' messages from source
+   *  Note: this is best effort. The returned
+   *  message count may be less than 'num'
+   *
+   *  @param num number of messages to read
+   */
+  def read(num: Int): List[Message]
 
-  override def onNext(message: Message) : Unit = {
-    val bytes = message.msg.asInstanceOf[Array[Byte]]
-    for {
-      sentence <- Injection.invert[String, Array[Byte]](bytes)
-      word <- sentence.split("\\s+")
-    } output(new Message(word, message.timestamp))
-  }
+  def close(): Unit
 }

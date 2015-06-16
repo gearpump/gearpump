@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka
+package org.apache.gearpump.streaming.kafka.source
 
 import kafka.common.TopicAndPartition
-import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
-import org.apache.gearpump.streaming.task.{TaskId}
 import org.apache.gearpump.streaming.kafka.lib._
+import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
+import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
 import org.apache.gearpump.streaming.transaction.api._
 import org.apache.gearpump.util.LogUtil
@@ -39,7 +39,7 @@ object KafkaSource {
 class KafkaSource private[kafka](fetchThread: FetchThread,
                                  messageDecoder: MessageDecoder,
                                  offsetManagers: Map[TopicAndPartition, KafkaOffsetManager]) extends TimeReplayableSource {
-  import org.apache.gearpump.streaming.kafka.KafkaSource._
+  import org.apache.gearpump.streaming.kafka.source.KafkaSource._
 
   private[kafka] def this(appName: String, config: KafkaConfig, topicAndPartitions: Array[TopicAndPartition], messageDecoder: MessageDecoder) =
     this(FetchThread(topicAndPartitions, config), messageDecoder,
@@ -81,7 +81,7 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
     fetchThread.start()
   }
 
-  override def pull(number: Int): List[Message] = {
+  override def read(number: Int): List[Message] = {
     var count = 0
     val messagesBuilder = new mutable.ArrayBuilder.ofRef[Message]
     while (count < number) {

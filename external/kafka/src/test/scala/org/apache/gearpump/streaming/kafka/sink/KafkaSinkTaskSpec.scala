@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.kafka.sink
 
 import akka.actor.ActorSystem
 import com.twitter.bijection.Injection
@@ -36,7 +36,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, PropSpec}
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success}
 
-class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterEach with KafkaServerHarness {
+class KafkaSinkTaskSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterEach with KafkaServerHarness {
   val numServers = 1
   override val configs: List[KafkaServerConfig] = {
     for (props <- TestKafkaUtils.createBrokerConfigs(numServers, enableControlledShutdown = false))
@@ -58,7 +58,7 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
     system.shutdown()
   }
 
-  property("KafkaStreamProcessor should write data to kafka") {
+  property("KafkaSinkTask should write data to kafka") {
     val topic = TestKafkaUtils.tempTopic()
     val brokerList = getBrokerList
     val brokerStr = brokerList.mkString(",")
@@ -71,14 +71,14 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
 
     val context = MockUtil.mockTaskContext
 
-    val kafkaStreamProcessor = new KafkaStreamProcessor(context, kafkaConfig)
+    val kafkaSinkTask = new KafkaSinkTask(context, kafkaConfig)
 
     val messages = 0.until(messageNum).foldLeft(List.empty[String]) { (msgs, i) =>
       val msg = s"message-$i"
-      kafkaStreamProcessor.onNext(Message(i.toString -> msg))
+      kafkaSinkTask.onNext(Message(Injection[Int, Array[Byte]](i) -> Injection[String, Array[Byte]](msg)))
       msgs :+ msg
     }
-    kafkaStreamProcessor.onStop()
+    kafkaSinkTask.onStop()
 
     brokerList.foreach { broker =>
       val hostPort = broker.split(":")

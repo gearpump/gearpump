@@ -27,8 +27,8 @@ import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.dsl.op.OpType._
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator.SinkTask
 import org.apache.gearpump.streaming.dsl.{SinkConsumer, StreamApp}
-import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.kafka.source.KafkaSource
 import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource}
 import org.apache.gearpump.util.{Constants, LogUtil}

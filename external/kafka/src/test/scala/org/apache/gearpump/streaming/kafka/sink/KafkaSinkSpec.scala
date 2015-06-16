@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka
+package org.apache.gearpump.streaming.kafka.sink
 
 import com.twitter.bijection.Injection
 import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
@@ -41,7 +41,7 @@ class KafkaSinkSpec extends PropSpec with PropertyChecks with Matchers with Mock
       val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val (topic, key, msg) = data
       val kafkaSink = new KafkaSink(producer)
-      kafkaSink.write(topic, key, msg)
+      kafkaSink.write(new ProducerRecord[Array[Byte], Array[Byte]](topic, key, msg))
       verify(producer).send(anyObject[ProducerRecord[Array[Byte], Array[Byte]]]())
       kafkaSink.close()
     }

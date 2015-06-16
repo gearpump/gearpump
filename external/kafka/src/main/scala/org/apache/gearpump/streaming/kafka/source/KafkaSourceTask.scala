@@ -16,20 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka
+package org.apache.gearpump.streaming.kafka.source
 
-import akka.actor.actorRef2Scala
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource, TimeStampFilter}
-import org.apache.gearpump.{Message, TimeStamp}
 
-class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
-  extends Task(taskContext, conf) {
+class KafkaSourceTask(context: TaskContext, conf: UserConfig) extends Task(context, conf) {
 
-  import taskContext.{output, self, taskId, parallelism}
+  import context.{output, parallelism, taskId}
 
   private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val batchSize = kafkaConfig.getConsumerEmitBatchSize
@@ -38,7 +35,7 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
 
   val taskParallelism = parallelism
 
-  private val source: TimeReplayableSource = new KafkaSource(taskContext.appName, taskId, taskParallelism,
+  private val source: TimeReplayableSource = new KafkaSource(context.appName, taskId, taskParallelism,
     kafkaConfig, msgDecoder)
   private var startTime: TimeStamp = 0L
 
@@ -49,8 +46,8 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
     self ! Message("start", System.currentTimeMillis())
   }
 
-  override def onNext(msg: Message): Unit = {
-    source.pull(batchSize).foreach{msg => filter.filter(msg, startTime).map(output)}
+  override def onNext(message: Message): Unit = {
+    source.read(batchSize).foreach { msg => filter.filter(msg, startTime).foreach(output) }
     self ! Message("continue", System.currentTimeMillis())
   }
 

@@ -16,22 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka
+package org.apache.gearpump.streaming.kafka.source
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.kafka.lib.{FetchThread, KafkaOffsetManager, KafkaMessage}
-import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
+import org.apache.gearpump.streaming.kafka.lib.{FetchThread, KafkaMessage, KafkaOffsetManager}
 import org.apache.gearpump.streaming.transaction.api.MessageDecoder
+import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
 
-import scala.util.{Success, Failure}
+import scala.util.{Failure, Success}
 
 class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 

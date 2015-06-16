@@ -16,31 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka
+package org.apache.gearpump.streaming.kafka.sink
 
 import java.util.Properties
 
-import org.apache.gearpump.streaming.kafka.lib.{KafkaUtil, KafkaConfig}
-import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
+import org.apache.gearpump.streaming.kafka.lib.{KafkaConfig, KafkaUtil}
+import org.apache.gearpump.streaming.sink.DataSink
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 
-class KafkaSink private[kafka](producer: KafkaProducer[Array[Byte], Array[Byte]]) {
+class KafkaSink private[kafka](producer: KafkaProducer[Array[Byte], Array[Byte]])
+  extends DataSink[ProducerRecord[Array[Byte], Array[Byte]]] {
 
   def this(producerConfig: Properties) =
     this(new KafkaProducer[Array[Byte], Array[Byte]](
-      producerConfig, new ByteArraySerializer, new ByteArraySerializer))
+      producerConfig,new ByteArraySerializer, new ByteArraySerializer))
 
   def this(config: KafkaConfig) = this(KafkaUtil.buildProducerConfig(config))
 
-  def write(topic: String, key: Array[Byte], msg: Array[Byte]): Unit = {
-    producer.send(new ProducerRecord[Array[Byte], Array[Byte]](topic, key, msg))
+  override def write(record: ProducerRecord[Array[Byte], Array[Byte]]): Unit = {
+    producer.send(record)
   }
 
-  def write(topic: String, partition: Int, key: Array[Byte], msg: Array[Byte]): Unit = {
-    producer.send(new ProducerRecord[Array[Byte], Array[Byte]](topic, partition, key, msg))
-  }
-
-  def close(): Unit = {
+  override def close(): Unit = {
     producer.close()
   }
 }
+

@@ -16,29 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.topn
+package org.apache.gearpump.streaming.kafka.sink
 
-class Rankings[T] extends Serializable {
-  private var rankings: List[(T, Long)] = newRankings
+import akka.actor.ActorSystem
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.Processor
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 
-  def update(r: (T, Long)): Unit = {
-    rankings :+= r
-  }
-  def update(obj: T, count: Long): Unit = {
-    update((obj, count))
-  }
-
-  def getTopN(n: Int): List[(T, Long)] = {
-    rankings.sortBy(_._2).reverse.take(n)
-  }
-
-  def clear(): Unit = {
-    rankings = newRankings
-  }
-
-  private def newRankings: List[(T, Long)] = {
-    List.empty[(T, Long)]
+object KafkaSinkProcessor {
+  def apply(kafkaConfig: KafkaConfig,
+            parallelism: Int,
+            description: String = "",
+            taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem): Processor[KafkaSinkTask] = {
+    Processor[KafkaSinkTask](parallelism, description = description,
+      taskConf = taskConf.withValue[KafkaConfig](KafkaConfig.NAME, kafkaConfig))
   }
 }
-
-

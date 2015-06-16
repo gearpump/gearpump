@@ -28,8 +28,8 @@ import org.apache.gearpump.streaming.StreamApplication
 import org.apache.gearpump.streaming.dsl.op.OpType.{SinkClosure, Traverse, TraverseType}
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.Planner
-import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.kafka.source.KafkaSource
 import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{TimeReplayableSource, MessageDecoder}
 import org.apache.gearpump.util.Graph
