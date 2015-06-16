@@ -28,10 +28,10 @@ import com.typesafe.config.ConfigFactory
 import kafka.server.{KafkaConfig => KafkaServerConfig}
 import kafka.utils.{TestUtils => TestKafkaUtils, TestZKUtils}
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.MockUtil.{argMatch, mockTaskContext}
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory
+import org.apache.gearpump.streaming.kafka.source.KafkaSourceTask
 import org.apache.gearpump.streaming.kafka.util.KafkaServerHarness
 import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeStampFilter}
@@ -44,7 +44,7 @@ import scala.collection.JavaConverters._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
-class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfterEach with KafkaServerHarness {
+class KafkaSourceTaskSpec extends PropSpec with Matchers with BeforeAndAfterEach with KafkaServerHarness {
   val numServers = 1
   override val configs: List[KafkaServerConfig] =
     for(props <- TestKafkaUtils.createBrokerConfigs(numServers, enableControlledShutdown = false))
@@ -57,7 +57,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
 
   override def beforeEach: Unit = {
     super.setUp()
-    system1 = ActorSystem("KafkaStreamProducer", TestUtil.DEFAULT_CONFIG)
+    system1 = ActorSystem("KafkaSourceTask", TestUtil.DEFAULT_CONFIG)
 
   }
 
@@ -66,7 +66,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
     system1.shutdown()
   }
 
-  property("KafkaStreamProducer should pull messages from kafka") {
+  property("KafkaSourceTask should pull messages from kafka") {
     val messageNum = 1000
     val batchSize = 100
     val topic = TestKafkaUtils.tempTopic()
@@ -81,15 +81,15 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
     when(context.parallelism).thenReturn(1)
     when(context.taskId).thenReturn(taskId)
 
-    val producer = new KafkaStreamProducer(context, kafkaConfig)
-    producer.onStart(StartTime(0))
+    val kafkaSourceTask = new KafkaSourceTask(context, kafkaConfig)
+    kafkaSourceTask.onStart(StartTime(0))
     val round = 3
     for (i <- 1 to round) {
       val messages = partitionsToBrokers.foldLeft(List.empty[String]) { (msgs, partitionAndBroker) =>
         msgs ++ TestKafkaUtils.sendMessagesToPartition(configs, topic, partitionAndBroker._1, messageNum)
       }.map(Message(_, Message.noTimeStamp))
 
-      producer.onNext(Message("next"))
+      kafkaSourceTask.onNext(Message("next"))
 
       var expectedMessage = messages
       verify(context, Mockito.timeout(3000)).output(argMatch[Message](msg => {
@@ -98,7 +98,7 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
         compareResult
       }))
     }
-    producer.onStop()
+    kafkaSourceTask.onStop()
   }
 
   private def getKafkaConfig(consumerTopic: String, consumerEmitBatchSize: Int, brokerList: String, zookeeperConnect: String): UserConfig = {
@@ -121,14 +121,14 @@ class KafkaStreamProducerSpec extends PropSpec with Matchers with BeforeAndAfter
       KafkaConfig.SOCKET_TIMEOUT_MS -> "1000000",
       KafkaConfig.STORAGE_REPLICAS -> "1",
       KafkaConfig.ZOOKEEPER_CONNECT -> zookeeperConnect,
-      KafkaConfig.TIMESTAMP_FILTER_CLASS -> classOf[KafkaStreamProducerSpec.DummyFilter].getName,
-      KafkaConfig.MESSAGE_DECODER_CLASS -> classOf[KafkaStreamProducerSpec.NoTimeStampDecoder].getName
+      KafkaConfig.TIMESTAMP_FILTER_CLASS -> classOf[KafkaSourceTaskSpec.DummyFilter].getName,
+      KafkaConfig.MESSAGE_DECODER_CLASS -> classOf[KafkaSourceTaskSpec.NoTimeStampDecoder].getName
     ).asJava)))
   }
 }
 
 
-object KafkaStreamProducerSpec {
+object KafkaSourceTaskSpec {
   class NoTimeStampDecoder extends MessageDecoder {
     override def fromBytes(bytes: Array[Byte]): Message = {
       Injection.invert[String, Array[Byte]](bytes) match {

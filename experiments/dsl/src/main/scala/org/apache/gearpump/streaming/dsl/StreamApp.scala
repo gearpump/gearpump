@@ -28,8 +28,8 @@ import org.apache.gearpump.streaming.StreamApplication
 import org.apache.gearpump.streaming.dsl.op.OpType.{SinkClosure, Traverse, TraverseType}
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.Planner
-import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.kafka.source.KafkaSource
 import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{TimeReplayableSource, MessageDecoder}
 import org.apache.gearpump.util.Graph
@@ -91,7 +91,7 @@ object StreamApp {
 class TimeReplayableProducer[T:ClassTag](timeReplayableSource: TimeReplayableSource, converter: Message => T, batchSize: Int) extends Traverse[T] {
   val source = timeReplayableSource
   override def foreach[U](fun: T => U): Unit = {
-    val list = source.pull(batchSize)
+    val list = source.read()
     list.foreach(msg => {
       val metrics = converter(msg)
       fun(metrics)
@@ -100,15 +100,13 @@ class TimeReplayableProducer[T:ClassTag](timeReplayableSource: TimeReplayableSou
 }
 
 class KafkaProducer[T:ClassTag](kafkaConfig: KafkaConfig, converter: Message => T) extends Traverse[T] {
-  val batchSize = kafkaConfig.getConsumerEmitBatchSize
-  val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
-  lazy val source = Some(new KafkaSource(kafkaConfig.getClientId, TaskId(0, 0), 1, kafkaConfig, msgDecoder)).map(kafkaSource => {
-    kafkaSource.startFromBeginning
+  lazy val source = Some(KafkaSource(kafkaConfig.getClientId, TaskId(0, 0), 1, kafkaConfig)).map(kafkaSource => {
+    kafkaSource.setStartTime(None)
     kafkaSource
   }).get
 
   override def foreach[U](fun: T => U): Unit = {
-    val list = source.pull(batchSize)
+    val list = source.read()
     list.foreach(msg => {
       val metrics = converter(msg)
       fun(metrics)

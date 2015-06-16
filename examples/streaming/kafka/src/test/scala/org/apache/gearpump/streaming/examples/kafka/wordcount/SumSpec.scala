@@ -51,7 +51,7 @@ class SumSpec extends FlatSpec with Matchers {
 
     expectedWordCountMap.foreach { wordCount =>
       val (word, count) = wordCount
-      assert(count == sum.map.get(word).get)
+      assert(count == sum.wordcount.get(word).get)
     }
   }
 }

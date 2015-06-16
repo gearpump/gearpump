@@ -18,46 +18,28 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.source.DataSource
 
 /**
+ * AT-LEAST-ONCE API
  *
- * TimeReplayableSource would allow users to pull and replay
- * messages from a startTime.
+ * TimeReplayableSource would allow users to replay messages from the time
+ * the system crashed on recovery, and thus provide at-least-once semantics.
  *
- * The typical usage is like the following, where user get startTime
- * from TaskContext in onStart and pull num of messages in each onNext.
- * User could optionally append a TimeStampFilter in case source messages
- * are not stored in TimeStamp order
- *
- * e.g.
- *   class UserTask(conf: Configs) extends TaskActor(conf) {
- *     var startTime = 0L
- *
- *     override def onStart(context: TaskContext): Unit = {
- *       this.startTime = context.startTime
- *       TimeReplayableSource.setStartTime(this.startTime)
- *     }
- *
- *     override def onNext(msg: Message): Unit = {
- *       TimeReplayableSource.pull(num).foreach { msg =>
- *         TimeStampFilter.filter(msg, this.startTime).map(output)
- *       }
- *     }
- *   }
+ * It is used in the same as [[DataSource]]
  *
  */
-trait TimeReplayableSource extends java.io.Serializable {
-  def startFromBeginning(): Unit
-  def setStartTime(startTime: TimeStamp): Unit
+trait TimeReplayableSource extends DataSource {
   /**
-   *  pull the num of messages from source
-   *  Note: this is best effort. The returned
-   *  message count may be less than num
+   * this should be invoked in open() method or
+   * before calling read() method of [[DataSource]]
+   *
+   * a startTime of None usually means start from beginning
+   *
+   * @param startTime is the start time of the system
    */
-  def pull(num: Int): List[Message]
-
-  def close(): Unit
+  def setStartTime(startTime: Option[TimeStamp]): Unit
 }
 
 

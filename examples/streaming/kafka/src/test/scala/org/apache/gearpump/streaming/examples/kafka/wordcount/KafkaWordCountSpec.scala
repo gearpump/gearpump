@@ -42,10 +42,10 @@ class KafkaWordCountSpec extends PropSpec with PropertyChecks with Matchers with
   property("KafkaWordCount should succeed to submit application with required arguments") {
     val requiredArgs = Array.empty[String]
     val optionalArgs = Array(
-      "-kafka_stream_producer", "1",
+      "-kafka_source", "1",
       "-split", "1",
       "-sum", "1",
-      "-kafka_stream_processor", "1")
+      "-kafka_sink", "1")
 
     val args = {
       Table(
