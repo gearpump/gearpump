@@ -19,22 +19,22 @@ package org.apache.gearpump.cluster.main
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.Props
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult}
 import org.apache.gearpump.cluster.MasterToWorker.WorkerRegistered
 import org.apache.gearpump.cluster.WorkerToMaster.RegisterNewWorker
-import org.apache.gearpump.cluster.master.{MasterProxy, AppMasterRuntimeInfo}
+import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
+import org.apache.gearpump.shared.Messages.{AppMasterData, AppMastersData, AppMasterActive}
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.{LogUtil, Constants, Util}
+import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.scalatest._
 
 import scala.concurrent.duration.Duration
 import scala.util.{Success, Try}
-import org.apache.gearpump.util.Constants._
 
 class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 

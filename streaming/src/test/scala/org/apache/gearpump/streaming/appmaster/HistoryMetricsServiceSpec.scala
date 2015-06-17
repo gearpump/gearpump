@@ -18,14 +18,13 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
-import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
 import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.metrics.Metrics.{Histogram, Meter, Counter}
+import org.apache.gearpump.shared.Messages._
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService._
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
 class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAfterEach {
 
@@ -65,10 +64,10 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     assert(result.size == count)
 
     //the oldest value is expired
-    assert(result.head.value.asInstanceOf[Counter].value == 3L)
+    assert(upickle.read[Counter](result.head.value.json).value == 3L)
 
     //the newest value is inserted
-    assert(result.last.value.asInstanceOf[Counter].value == 5L)
+    assert(upickle.read[Counter](result.last.value.json).value == 5L)
   }
 
   val meterTemplate = Meter("meter", 0, 0, 0, 0, 0, "s")
@@ -76,7 +75,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
   "MinMaxMetricsStore" should "retain min and max metrics data and expire old value" in {
 
     val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
-      left.value.asInstanceOf[Meter].meanRate > right.value.asInstanceOf[Meter].meanRate
+      upickle.read[Meter](left.value.json).meanRate > upickle.read[Meter](right.value.json).meanRate
 
     val store = new MinMaxMetricsStore(count, intervalMs, compartor)
 
@@ -103,14 +102,14 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     assert(result.size == count * 2)
 
     //the oldest value A is expired
-    assert(result.head.value.asInstanceOf[Meter].name == "B")
+    assert(upickle.read[Meter](result.head.value.json).name == "B")
     //the first value is "B", min, the second first value is "B", "max"
-    assert(result.head.value.asInstanceOf[Meter].meanRate == min)
+    assert(upickle.read[Meter](result.head.value.json).meanRate == min)
 
     //the newest value C is expired
-    assert(result.last.value.asInstanceOf[Meter].name == "C")
+    assert(upickle.read[Meter](result.last.value.json).name == "C")
     //the last value is "C", max, the second last value is "C", "min"
-    assert(result.last.value.asInstanceOf[Meter].meanRate == max)
+    assert(upickle.read[Meter](result.last.value.json).meanRate == max)
 
   }
 
@@ -157,7 +156,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
         assert(history.path == "metric.counter")
         val metricList = history.metrics
         metricList.foreach(metricItem =>
-          assert(metricItem.value.isInstanceOf[Counter])
+          assert(upickle.read[Counter](metricItem.value.json).isInstanceOf[Counter])
         )
     }
 
@@ -169,7 +168,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
         assert(history.path == "metric.meter")
         val metricList = history.metrics
         metricList.foreach(metricItem =>
-          assert(metricItem.value.isInstanceOf[Meter])
+          assert(upickle.read[Meter](metricItem.value.json).isInstanceOf[Meter])
         )
     }
 
@@ -181,9 +180,13 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
         assert(history.path == "metric.histogram")
         val metricList = history.metrics
         metricList.foreach(metricItem =>
-          assert(metricItem.value.isInstanceOf[Histogram])
+          assert(upickle.read[Histogram](metricItem.value.json).isInstanceOf[Histogram])
         )
     }
+
+    val CounterType = Counter.getClass.getCanonicalName.substring(0, Counter.getClass.getCanonicalName.length-1)
+    val MeterType = Meter.getClass.getCanonicalName.substring(0, Meter.getClass.getCanonicalName.length-1)
+    val HistogramType = Histogram.getClass.getCanonicalName.substring(0, Histogram.getClass.getCanonicalName.length-1)
 
     // filter metrics with path prefix "metric", all metrics which can
     // match the path prefix will be retained.
@@ -197,11 +200,17 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
         var histogramFound = false
 
         metricList.foreach(metricItem =>
-          metricItem.value match {
-            case v: Counter => counterFound = true
-            case v: Meter => meterFound = true
-            case v: Histogram => histogramFound = true
-            case _ => //skip
+          metricItem.value.typeName match {
+            case CounterType =>
+              upickle.read[Counter](metricItem.value.json)
+              counterFound = true
+            case MeterType =>
+              upickle.read[Meter](metricItem.value.json)
+              meterFound = true
+            case HistogramType =>
+              upickle.read[Histogram](metricItem.value.json)
+              histogramFound = true
+            case _ =>
           }
         )
 

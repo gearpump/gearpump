@@ -1,5 +1,6 @@
 import java.nio.file.Files
 import java.util.regex.Pattern
+import scala.collection.JavaConverters._
 
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
@@ -63,6 +64,7 @@ object Build extends sbt.Build {
   val commonSettings = Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
         resolvers ++= Seq(
+          "OSSSnapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
           "maven-repo" at "http://repo.maven.apache.org/maven2",
           "maven1-repo" at "http://repo1.maven.org/maven2",
@@ -70,8 +72,7 @@ object Build extends sbt.Build {
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
           "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
-          "clockfly" at "http://dl.bintray.com/clockfly/maven",
-          "OSSSnapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+          "clockfly" at "http://dl.bintray.com/clockfly/maven"
         ),
         addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
     ) ++
@@ -463,18 +464,26 @@ object Build extends sbt.Build {
   )
 
   lazy val jsSettings = Seq(
-    resolvers ++= Seq(
-      "OSSSnapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-    ),
-    libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "upickle" % "0.2.8",
-      "com.greencatsoft" %%% "scalajs-angular" % "0.5-SNAPSHOT"
-    ),
     scalaVersion := scalaVersionNumber,
-    persistLauncher in Compile := true,
+    checksums := Seq(""),
+    requiresDOM := true,
+    postLinkJSEnv := PhantomJSEnv(autoExit = false).value,
+    resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+    libraryDependencies ++= Seq(
+      "com.greencatsoft" %%% "scalajs-angular" % "0.5-SNAPSHOT",
+      "org.scala-js" %%% "scalajs-dom" % "0.8.0",
+      "com.lihaoyi" %%% "upickle" % "0.2.8",
+      "com.lihaoyi" %%% "utest" % "0.3.0"
+    ),
+    scalaJSStage in Global := FastOptStage,
+    testFrameworks += new TestFramework("utest.runner.Framework"),
+    requiresDOM := true,
+    persistLauncher := true,
     persistLauncher in Test := false,
     skip in packageJSDependencies := false,
     jsDependencies += "org.webjars" % "angularjs" % "1.4.0" / "angular.js",
+    jsDependencies += RuntimeDOM,
+    scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := ".*gearpump\\.dashboard.*;.*gearpump\\.shared.*",
     fastOptJS in Compile := {
       val originalResult = (fastOptJS in Compile).value
       copyJSArtifactsToOutput
@@ -482,7 +491,9 @@ object Build extends sbt.Build {
     },
     compile in Compile <<=
       (compile in Compile) dependsOn copySharedResources,
-    relativeSourceMaps := true)
+    relativeSourceMaps := true,
+    sbt.Keys.test in Test := (),
+    jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
 
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",

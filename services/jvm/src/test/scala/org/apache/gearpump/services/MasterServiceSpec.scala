@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.AppMasterToMaster.MasterData
+import org.apache.gearpump.shared.Messages.MasterData
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import spray.testkit.ScalatestRouteTest
 

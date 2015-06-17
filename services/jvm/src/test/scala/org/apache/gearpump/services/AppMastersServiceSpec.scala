@@ -18,7 +18,7 @@
 package org.apache.gearpump.services
 
 
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
+import org.apache.gearpump.shared.Messages.AppMastersData
 import org.apache.gearpump.util.LogUtil
 import org.scalatest._
 import org.slf4j.Logger

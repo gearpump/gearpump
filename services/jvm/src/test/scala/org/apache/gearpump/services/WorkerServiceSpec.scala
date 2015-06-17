@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.cluster.worker.WorkerDescription
+import org.apache.gearpump.shared.Messages.WorkerDescription
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import spray.testkit.ScalatestRouteTest
 
