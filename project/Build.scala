@@ -1,5 +1,11 @@
+import java.nio.file.Files
+import java.util.regex.Pattern
+import scala.collection.JavaConverters._
+
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
+import org.scalajs.sbtplugin.ScalaJSPlugin
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import sbtassembly.Plugin.AssemblyKeys._
@@ -43,7 +49,7 @@ object Build extends sbt.Build {
   val slf4jVersion = "1.7.7"
   
   val scalaVersionMajor = "scala-2.11"
-  val scalaVersionNumber = "2.11.5"
+  val scalaVersionNumber = "2.11.6"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
   val sprayWebSocketsVersion = "0.1.4"
@@ -55,9 +61,10 @@ object Build extends sbt.Build {
   val algebirdVersion = "0.9.0"
   val chillVersion = "0.6.0"
 
-  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
+  val commonSettings = Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
         resolvers ++= Seq(
+          "OSSSnapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
           "maven-repo" at "http://repo.maven.apache.org/maven2",
           "maven1-repo" at "http://repo1.maven.org/maven2",
@@ -128,9 +135,9 @@ object Build extends sbt.Build {
         "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
         "org.slf4j" % "slf4j-api" % slf4jVersion,
         "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-        "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive,
+        "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive(),
         "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % "provided",
-        "org.fusesource" % "sigar" % sigarVersion classifier("native"),
+        "org.fusesource" % "sigar" % sigarVersion classifier "native",
         "com.google.code.findbugs" % "jsr305" % findbugsVersion,
         "org.apache.commons" % "commons-lang3" % commonsLangVersion,
         "commons-logging" % "commons-logging" % commonsLoggingVersion,
@@ -160,6 +167,7 @@ object Build extends sbt.Build {
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
+        "org.scala-js" %% "scalajs-library" % "0.6.3",
         "com.lihaoyi" %% "upickle" % "0.2.8",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
@@ -167,7 +175,7 @@ object Build extends sbt.Build {
         "org.mockito" % "mockito-core" % mockitoVersion % "test",
         "junit" % "junit" % junitVersion % "test"
       ),
-     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
+     libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-reflect" % _),
      libraryDependencies ++= (
         if (scalaVersion.value.startsWith("2.10")) List("org.scalamacros" %% "quasiquotes" % "2.1.0-M5")
         else Nil
@@ -215,6 +223,8 @@ object Build extends sbt.Build {
         ),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "target" / scalaVersionMajor -> "dashboard"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "js" / "src" -> "dashboard/src"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
 
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
@@ -248,7 +258,7 @@ object Build extends sbt.Build {
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test",
-          ("org.apache.kafka" %% "kafka" % kafkaVersion classifier("test")) % "test"
+          ("org.apache.kafka" %% "kafka" % kafkaVersion classifier "test") % "test"
         ),
         unmanagedClasspath in Test += baseDirectory.value.getParentFile.getParentFile / "conf"
       )
@@ -365,34 +375,125 @@ object Build extends sbt.Build {
     base = file("examples"),
     settings = commonSettings
   ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
+
+  lazy val copySharedResources = Def.task {
+    ConsoleLogger().info("copying shared resources")
+    val sharedMessages = "src/main/scala/org/apache/gearpump/shared/Messages.scala"
+    IO.copyFile(core.base / sharedMessages, file("services/js") / sharedMessages)
+  }
+
+  lazy val services = Project(id = "gearpump-services", base = file("services")).
+    settings(commonSettings: _*).
+    aggregate(servicesjs, servicesjvm).dependsOn(streaming % "test->test;compile->compile")
   
-  lazy val services = Project(
-    id = "gearpump-services",
-    base = file("services"),
-    settings = commonSettings  ++ 
-      Seq(
-        libraryDependencies ++= Seq(
-          "io.spray" %%  "spray-testkit"   % sprayVersion % "test",
-          "io.spray" %%  "spray-httpx"     % sprayVersion,
-          "io.spray" %%  "spray-client"    % sprayVersion,
-          "io.spray" %%  "spray-json"    % sprayJsonVersion,
-          "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
-            exclude("com.typesafe.akka", "akka-actor_2.11"),
-          "org.json4s" %% "json4s-jackson" % json4sVersion,
-          "org.json4s" %% "json4s-native"   % json4sVersion,
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.webjars" % "angularjs" % "1.4.0",
-          "org.webjars" % "angular-motion" % "0.3.3",
-          "org.webjars" % "angular-strap" % "2.2.3",
-          "org.webjars" % "angular-ui-select" % "0.11.2",
-          "org.webjars" % "bootstrap" % "3.3.4",
-          "org.webjars" % "d3js" % "3.5.5",
-          "org.webjars" % "momentjs" % "2.10.3",
-          "org.webjars" % "smart-table" % "2.0.3",
-          "org.webjars.bower" % "vis" % "4.2.0"
-        ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
-      )
-  ) dependsOn(streaming % "test->test;compile->compile")
+  lazy val servicesjvm = Project(id = "gearpump-services-jvm", base = file("services/jvm")).
+    settings(jvmSettings : _*).dependsOn(streaming % "test->test;compile->compile")
+
+  lazy val servicesjs = Project(id = "gearpump-services-js", base = file("services/js")).
+    enablePlugins(ScalaJSPlugin).
+    settings(commonSettings: _*).
+    settings(jsSettings : _*)
+
+  def findDirs(currentDir: String): Array[File] = {
+    val dirs = IO.listFiles(file(currentDir),  DirectoryFilter)
+    dirs ++ dirs.flatMap(dir => {
+      val childDir = currentDir + "/" + dir.getName
+      findDirs(file(childDir).getPath)
+    })
+  }
+
+  def findFiles(dir: File, pattern: PatternFilter): Array[File] = {
+    val dirs = findDirs(dir.getPath)
+    IO.listFiles(dir, pattern) ++ dirs.flatMap(dir => {
+      IO.listFiles(dir, pattern)
+    })
+  }
+
+  def copyJSArtifactsToOutput: Unit = {
+    ConsoleLogger().info("copying JS artifacts")
+    val in = file("services/js/target/scala-2.11/gearpump-services-js-fastopt.js.map")
+    val out = file("output/target/pack/dashboard/gearpump-services-js-fastopt.js.map")
+    val input = IO.read(in)
+    val data = input.replaceAll("../../src","src")
+    IO.write(out, data)
+    IO.copyFile(
+      file("services/js/target/scala-2.11/gearpump-services-js-fastopt.js"),
+      file("output/target/pack/dashboard/gearpump-services-js-fastopt.js")
+    )
+    IO.copyDirectory(
+      file("services/js/src"),
+      file("output/target/pack/dashboard"),
+      true
+    )
+    IO.copyDirectory(
+      file("services/js"), 
+      file("output") / "target" / "pack" / "dashboard",
+      true
+    )
+    val htmlFiles = findFiles(file("services/dashboard"), new PatternFilter(Pattern.compile("^.*.html$")))
+    htmlFiles.foreach(htmlFile => {
+      val source = htmlFile.getPath
+      val target = "output/target/pack" + htmlFile.getPath.replaceFirst("services/", "/")
+      IO.copyFile(file(source), file(target))
+    })
+  }
+
+  lazy val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(
+    "io.spray" %% "spray-testkit" % sprayVersion % "test",
+    "io.spray" %% "spray-httpx" % sprayVersion,
+    "io.spray" %% "spray-client" % sprayVersion,
+    "io.spray" %% "spray-json" % sprayJsonVersion,
+    "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
+      exclude("com.typesafe.akka", "akka-actor_2.11"),
+    "org.json4s" %% "json4s-jackson" % json4sVersion,
+    "org.json4s" %% "json4s-native" % json4sVersion,
+    "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+    "org.webjars" % "angularjs" % "1.4.0",
+    "org.webjars" % "jquery" % "2.1.3",
+    "org.webjars" % "angular-motion" % "0.3.3",
+    "org.webjars" % "angular-strap" % "2.2.3",
+    "org.webjars" % "angular-ui-select" % "0.11.2",
+    "org.webjars" % "bootstrap" % "3.3.4",
+    "org.webjars" % "d3js" % "3.5.5",
+    "org.webjars" % "smart-table" % "2.0.3",
+    "org.webjars.bower" % "vis" % "4.2.0"
+    ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")),
+    compile in Compile <<=
+      (compile in Compile) dependsOn (fastOptJS in (servicesjs, Compile)),
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+  )
+
+  lazy val jsSettings = Seq(
+    scalaVersion := scalaVersionNumber,
+    checksums := Seq(""),
+    requiresDOM := true,
+    postLinkJSEnv := PhantomJSEnv(autoExit = false).value,
+    resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+    libraryDependencies ++= Seq(
+      "com.greencatsoft" %%% "scalajs-angular" % "0.5-SNAPSHOT",
+      "org.scala-js" %%% "scalajs-dom" % "0.8.0",
+      "com.lihaoyi" %%% "upickle" % "0.2.8",
+      "com.lihaoyi" %%% "utest" % "0.3.0"
+    ),
+    scalaJSStage in Global := FastOptStage,
+    testFrameworks += new TestFramework("utest.runner.Framework"),
+    requiresDOM := true,
+    persistLauncher := true,
+    persistLauncher in Test := false,
+    skip in packageJSDependencies := false,
+    jsDependencies += "org.webjars" % "angularjs" % "1.4.0" / "angular.js",
+    jsDependencies += RuntimeDOM,
+    scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := ".*gearpump\\.dashboard.*;.*gearpump\\.shared.*",
+    fastOptJS in Compile := {
+      val originalResult = (fastOptJS in Compile).value
+      copyJSArtifactsToOutput
+      originalResult
+    },
+    compile in Compile <<=
+      (compile in Compile) dependsOn copySharedResources,
+    relativeSourceMaps := true,
+    sbt.Keys.test in Test := (),
+    jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
 
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
@@ -512,7 +613,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         )
       )
-  ) dependsOn(services % "test->test;compile->compile", core % "provided", services % "provided")
+  ) dependsOn(services % "test->test;compile->compile", core % "provided", servicesjvm % "provided")
 
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",

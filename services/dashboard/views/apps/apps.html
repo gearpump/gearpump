@@ -9,7 +9,7 @@
   <caption></caption>
   <thead>
   <tr>
-    <th st-sort="id" st-sort-default="reverse">ID</th>
+    <th st-sort="appId" st-sort-default="reverse">ID</th>
     <th st-sort="status">Status</th>
     <th st-sort="name">Name</th>
     <th st-sort="submissionTime">Submission Time</th>
@@ -22,20 +22,20 @@
   </thead>
   <tbody>
   <tr ng-repeat="app in ng">
-    <td><span ng-bind="app.id"></span></td>
+    <td><span ng-bind="app.appId"></span></td>
     <td><span ng-bind="app.status" class="label"
-              ng-class="{'label-success': app.active, 'label-default': !app.active}"></span></td>
-    <td><span ng-bind="app.name"></span></td>
-    <td><span ng-bind="app.submissionTime"></span></td>
-    <td><span ng-bind="app.startTime"></span></td>
-    <td><span ng-bind="app.finishTime"></span></td>
+              ng-class="{'label-success': active(app), 'label-default': !active(app)}"></span></td>
+    <td><span ng-bind="app.appName"></span></td>
+    <td><span ng-bind="stringToDateTime(app.submissionTime)"></span></td>
+    <td><span ng-bind="stringToDateTime(app.startTime)"></span></td>
+    <td><span ng-bind="stringToDateTime(app.finishTime)"></span></td>
     <td><span ng-bind="app.user"></span></td>
     <td><span ng-bind="app.appMasterPath"></span></td>
     <td class="text-right text-nowrap">
-        <button ng-click="view(app.id)" ng-if="app.active"
+        <button ng-click="view(app.appId)" ng-if="active(app)"
                 type="button" class="btn btn-primary btn-xs media-middle vert-align">View Details
         </button>
-        <button ng-click="kill(app.id)" ng-if="app.active"
+        <button ng-click="kill(app.appId)" ng-if="active(app)"
                 type="button" class="btn btn-default btn-xs media-middle vert-align">Kill
         </button>
     </td>
