@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.services
 
+import java.net.URL
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
@@ -26,9 +27,16 @@ import java.util.jar.Manifest
 trait StaticService extends HttpService {
 
   val version = {
-    val url = getClass.getClassLoader.getResource("META-INF/MANIFEST.MF")
-    val manifest = new Manifest(url.openStream())
+    val manifest = getManifest(this.getClass)
     manifest.getMainAttributes.getValue("Implementation-Version")
+  }
+
+  def getManifest(myClass : Class[_]): Manifest = {
+    val resource = "/" + myClass.getName().replace(".", "/") + ".class"
+    val fullPath = myClass.getResource(resource).toString()
+    val archivePath = fullPath.substring(0, fullPath.length() - resource.length())
+    val input = new URL(archivePath + "/META-INF/MANIFEST.MF").openStream()
+    new Manifest(input)
   }
 
   val staticRoute =

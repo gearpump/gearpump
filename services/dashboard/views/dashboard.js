@@ -40,7 +40,7 @@ angular
     webSocketSendTimeout: 500
   })
 
-  .controller('DashboardCtrl', ['$scope', '$location', 'breadcrumbs', function ($scope, $location, breadcrumbs) {
+  .controller('DashboardCtrl', ['$scope', '$location', 'breadcrumbs', 'restapi', function ($scope, $location, breadcrumbs, restapi) {
     $scope.breadcrumbs = breadcrumbs;
     $scope.links = [
       {label: 'Cluster', url: '#/cluster', iconClass: 'glyphicon glyphicon-th-large'},
@@ -50,5 +50,8 @@ angular
       var path = url.substring(1); // without the leading hash prefix char
       return $location.path().indexOf(path) === 0;
     };
+    restapi.getVersion().then(function (response) {
+      $scope.version = response.data;
+    });
   }])
 ;

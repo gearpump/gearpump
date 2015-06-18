@@ -70,6 +70,12 @@ angular.module('dashboard.restapi', [])
         return conf.restapiRoot + '/config/worker/' + workerId;
       },
 
+      /** Return the version of Gearpump */
+      getVersion: function() {
+        var url = conf.restapiRoot + '/version';
+        return $http.get(url);
+      },
+
       /** Return the config link of the master */
       masterConfigLink: function() {
         return conf.restapiRoot + '/config/master';
