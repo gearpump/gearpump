@@ -23,8 +23,7 @@ import org.apache.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWor
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerList, AppMasterRegistered}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
-import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, AppMasterRuntimeEnvironment}
 import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, ResourceRequest, Resource}
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import org.apache.gearpump.util.ActorUtil

@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.streaming.storage
 
-import org.apache.gearpump.cluster.TestUtil
+import org.apache.gearpump.cluster.{MiniCluster, TestUtil}
 import org.apache.gearpump.streaming.StreamingTestUtil
 import org.apache.gearpump.util.Constants
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
@@ -33,7 +33,7 @@ class InMemoryAppStoreOnMasterSpec extends WordSpec with Matchers with BeforeAnd
   "InMemoryAppStoreOnMaster" should {
     "save and return the data properly" in {
       val appId = 0
-      val miniCluster = TestUtil.startMiniCluster
+      val miniCluster = new MiniCluster
       val master = miniCluster.mockMaster
       StreamingTestUtil.startAppMaster(miniCluster, appId)
       val store = new InMemoryAppStoreOnMaster(appId, master)

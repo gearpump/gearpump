@@ -26,8 +26,8 @@ import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated}
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
-import org.apache.gearpump.cluster.master.{AppMasterRuntimeInfo, MasterProxy}
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, AppMasterRuntimeEnvironment}
+import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask

@@ -21,8 +21,8 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.MockUtil._
+import org.apache.gearpump.streaming.examples.fsio.HadoopConfig
 import org.apache.gearpump.streaming.task.StartTime
-import org.apache.gearpump.util.HadoopConfig
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile.Writer

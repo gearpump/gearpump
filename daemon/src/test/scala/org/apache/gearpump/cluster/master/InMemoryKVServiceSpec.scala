@@ -20,9 +20,9 @@ package org.apache.gearpump.cluster.master
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
 import org.apache.gearpump.cluster.master.InMemoryKVService._
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
 class InMemoryKVServiceSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 

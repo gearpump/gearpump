@@ -15,17 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.util
+package org.apache.gearpump.streaming.examples.fsio
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.util.Constants._
 import org.apache.hadoop.conf.Configuration
+
 import scala.language.implicitConversions
 
 class HadoopConfig(config: UserConfig)  {
-  import org.apache.gearpump.cluster.UserConfig._
 
   def withHadoopConf(conf : Configuration) : UserConfig = config.withBytes(HADOOP_CONF, serializeHadoopConf(conf))
   def hadoopConf : Configuration = deserializeHadoopConf(config.getBytes(HADOOP_CONF).get)

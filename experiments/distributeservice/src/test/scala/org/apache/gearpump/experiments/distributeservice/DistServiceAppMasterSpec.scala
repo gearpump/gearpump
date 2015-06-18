@@ -22,8 +22,7 @@ import akka.testkit.{TestActorRef, TestProbe}
 import org.apache.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers, RegisterAppMaster}
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerList, AppMasterRegistered}
-import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
-import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, AppMasterRuntimeEnvironment}
 import org.apache.gearpump.cluster.{AppMasterContext, UserConfig, AppDescription, TestUtil}
 import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, ResourceRequest, Resource}
 import org.apache.gearpump.experiments.distributeservice.DistServiceAppMaster.{FileContainer, GetFileContainer}

@@ -15,23 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.cluster
+package org.apache.gearpump.cluster.worker
 
 import _root_.akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
-import org.apache.gearpump.cluster.WorkerToAppMaster.{ShutdownExecutorSucceed, ShutdownExecutorFailed, ExecutorLaunchRejected}
+import org.apache.gearpump.cluster.WorkerToAppMaster.{ExecutorLaunchRejected, ShutdownExecutorFailed, ShutdownExecutorSucceed}
 import org.apache.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, ResourceUpdate}
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.worker.Worker
+import org.apache.gearpump.cluster.{ExecutorJVMConfig, MasterHarness, TestUtil}
 import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
 import org.scalatest._
-import scala.language.postfixOps
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config = TestUtil.DEFAULT_CONFIG

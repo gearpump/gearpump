@@ -23,7 +23,7 @@ import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult
 import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.HadoopConfig._
+import HadoopConfig._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger

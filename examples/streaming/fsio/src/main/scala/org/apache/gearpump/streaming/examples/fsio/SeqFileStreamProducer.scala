@@ -21,7 +21,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProducer._
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
-import org.apache.gearpump.util.HadoopConfig._
+import HadoopConfig._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}

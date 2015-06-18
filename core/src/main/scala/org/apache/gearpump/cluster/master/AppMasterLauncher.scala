@@ -21,13 +21,14 @@ package org.apache.gearpump.cluster.master
 import java.util.concurrent.{TimeUnit, TimeoutException}
 
 import akka.actor.{Actor, ActorRef, Props, _}
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.ActorSystemBooter._
@@ -38,16 +39,12 @@ import org.slf4j.Logger
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.Config
 
 class AppMasterLauncher(
     appId : Int, executorId: Int, app : AppDescription,
     jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef])
   extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
-
-  import app._
 
   val scheduler = context.system.scheduler
   val systemConfig = context.system.settings.config

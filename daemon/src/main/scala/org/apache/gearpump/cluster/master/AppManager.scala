@@ -20,18 +20,15 @@ package org.apache.gearpump.cluster.master
 
 import akka.actor._
 import akka.pattern.ask
-import com.typesafe.config.Config
-import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
-import InMemoryKVService._
-import MasterHAService._
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.appmaster.{ApplicationState, AppMasterRuntimeInfo}
+import org.apache.gearpump.cluster.master.InMemoryKVService._
+import org.apache.gearpump.cluster.master.MasterHAService._
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.Logger
@@ -344,17 +341,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   }
 }
 
-case class AppMasterRuntimeInfo(
-    appId: Int,
-    // appName is the unique Id for an application
-    appName: String,
-    worker : ActorRef = null,
-    user: String = null,
-    submissionTime: TimeStamp = 0,
-    startTime: TimeStamp = 0,
-    finishTime: TimeStamp = 0,
-    config: Config = null)
-  extends AppMasterRegisterData
+
 
 object AppManager {
 

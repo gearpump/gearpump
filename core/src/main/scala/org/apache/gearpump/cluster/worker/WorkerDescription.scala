@@ -15,21 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.cluster
+package org.apache.gearpump.cluster.worker
 
-import akka.actor._
+case class WorkerDescription(workerId: Int, state: String, actorPath: String,
+                             aliveFor: Long, logFile: String,
+                             executors: Array[ExecutorInfo], totalSlots: Int, availableSlots: Int,
+                             homeDirectory: String)
 
-object TestUtil {
-  val rawConfig = ClusterConfig.load("test.conf")
-  val DEFAULT_CONFIG = rawConfig.default
-  val MASTER_CONFIG = rawConfig.master
-
-  class DummyAppMaster(context: AppMasterContext, app: AppDescription) extends ApplicationMaster {
-    context.masterProxy ! (context, app)
-
-    def receive : Receive = null
-  }
-
-  val dummyApp : AppDescription = AppDescription("dummy", classOf[DummyAppMaster].getName, UserConfig.empty)
-}
-
+case class ExecutorInfo(appId: Int, executorId: Int, slots: Int)

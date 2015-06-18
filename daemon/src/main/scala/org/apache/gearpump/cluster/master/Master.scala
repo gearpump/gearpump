@@ -27,19 +27,16 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.MasterConfig
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
-import org.apache.gearpump.cluster.master.Master._
-import org.apache.gearpump.cluster.master.InMemoryKVService._
-import org.apache.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated}
-
+import org.apache.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated, _}
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.apache.gearpump.jarstore.JarStore
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 private[cluster] class Master extends Actor with Stash {
@@ -224,17 +221,6 @@ object Master {
   object MasterInfo {
     def empty = MasterInfo(null)
   }
-
-  object MasterStatus {
-    type Type = String
-    val Synced = "synced"
-    val UnSynced = "unsynced"
-  }
-
-  case class MasterDescription(leader: (String, Int), cluster: List[(String, Int)], aliveFor: Long,
-                               logFile: String, jarStore: String,
-                               masterStatus: MasterStatus.Type,
-                                homeDirectory: String)
 
   case class SlotStatus(totalSlots: Int, availableSlots: Int)
 }

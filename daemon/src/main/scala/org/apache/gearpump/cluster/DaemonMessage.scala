@@ -17,19 +17,21 @@
  */
 package org.apache.gearpump.cluster
 
-import akka.actor._
+import akka.actor.ActorRef
+import org.apache.gearpump.cluster.master.Master.MasterInfo
+import org.apache.gearpump.cluster.scheduler.Resource
 
-object TestUtil {
-  val rawConfig = ClusterConfig.load("test.conf")
-  val DEFAULT_CONFIG = rawConfig.default
-  val MASTER_CONFIG = rawConfig.master
-
-  class DummyAppMaster(context: AppMasterContext, app: AppDescription) extends ApplicationMaster {
-    context.masterProxy ! (context, app)
-
-    def receive : Receive = null
-  }
-
-  val dummyApp : AppDescription = AppDescription("dummy", classOf[DummyAppMaster].getName, UserConfig.empty)
+/**
+ * Cluster Bootup Flow
+ */
+object WorkerToMaster {
+  case object RegisterNewWorker
+  case class RegisterWorker(workerId: Int)
+  case class ResourceUpdate(worker: ActorRef, workerId: Int, resource: Resource)
 }
 
+object MasterToWorker {
+  case class WorkerRegistered(workerId : Int, masterInfo: MasterInfo)
+  case class UpdateResourceFailed(reason : String = null, ex: Throwable = null)
+  case object UpdateResourceSucceed
+}

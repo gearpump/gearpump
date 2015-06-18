@@ -24,7 +24,7 @@ import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor._
 import akka.pattern.pipe
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster.QueryWorkerConfig
@@ -35,7 +35,6 @@ import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.worker.Worker.ExecutorInfo
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -43,10 +42,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-case class WorkerDescription(workerId: Int, state: String, actorPath: String,
-                             aliveFor: Long, logFile: String,
-                             executors: Array[ExecutorInfo], totalSlots: Int, availableSlots: Int,
-                             homeDirectory: String)
 /**
  * masterProxy is used to resolve the master
  */
@@ -197,8 +192,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
-  case class ExecutorInfo(appId: Int, executorId: Int, slots: Int)
-
 
   class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo) extends Actor {
 
