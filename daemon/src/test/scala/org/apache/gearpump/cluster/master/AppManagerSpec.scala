@@ -21,17 +21,16 @@ package org.apache.gearpump.cluster.master
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.AppMasterToMaster._
-import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, ResolveAppId, SubmitApplication}
+import org.apache.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication, SubmitApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.{SubmitApplicationResult, ShutdownApplicationResult, ReplayApplicationResult, ResolveAppIdResult}
-import org.apache.gearpump.cluster.TestUtil.{DummyAppMaster}
-import org.apache.gearpump.cluster.master.InMemoryKVService.{PutKVSuccess, GetKVSuccess, GetKV, PutKV}
-import org.apache.gearpump.cluster.master.MasterHAService._
-import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, ApplicationState}
+import org.apache.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVSuccess, PutKV, PutKVSuccess}
+import org.apache.gearpump.cluster.master.MasterHAService._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   var kvService: TestProbe = null

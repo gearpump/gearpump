@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.master.{Master => MasterActor}
 import org.apache.gearpump.cluster.worker.{Worker => WorkerActor}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
-import org.apache.gearpump.util.{Util, Constants, ActorUtil, LogUtil}
+import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._

@@ -20,8 +20,8 @@ package org.apache.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{TestActorRef, TestProbe}
 import com.typesafe.config.Config
-import org.apache.gearpump.cluster.{TestUtil, MasterHarness}
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps

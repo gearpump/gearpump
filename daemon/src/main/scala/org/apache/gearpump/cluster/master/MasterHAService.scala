@@ -19,9 +19,10 @@
 package org.apache.gearpump.cluster.master
 
 import akka.actor._
-import akka.contrib.datareplication.{LWWMap}
+import akka.contrib.datareplication.LWWMap
 import akka.contrib.datareplication.Replicator._
 import akka.pattern.ask
+import org.apache.gearpump.cluster.appmaster.ApplicationState
 
 import scala.concurrent.Future
 

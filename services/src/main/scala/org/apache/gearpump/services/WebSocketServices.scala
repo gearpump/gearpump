@@ -20,11 +20,7 @@ package org.apache.gearpump.services
 
 import akka.actor._
 import akka.io.IO
-import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.cluster.main.Local._
 import org.apache.gearpump.util.{Constants, LogUtil}
-import org.apache.gearpump.util.LogUtil.ProcessType
-import org.slf4j.Logger
 import spray.can.Http
 import spray.can.server.UHttp
 

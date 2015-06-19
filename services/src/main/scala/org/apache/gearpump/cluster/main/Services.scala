@@ -19,8 +19,6 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
-import com.typesafe.config.ConfigValueFactory
-import org.apache.gearpump.cluster.main.Local._
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
 import org.apache.gearpump.services.{RestServices,WebSocketServices}
@@ -39,7 +37,7 @@ object Services extends App {
 
   def start(): Unit = {
 
-    var config = ClusterConfig.load.ui
+    val config = ClusterConfig.load.ui
 
     import scala.collection.JavaConversions._
     val masterCluster = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)

@@ -15,25 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.util
+package org.apache.gearpump.cluster.appmaster
 
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.hadoop.conf.Configuration
-import org.scalatest.{Matchers, WordSpec}
+import akka.actor.ActorRef
+import com.typesafe.config.Config
+import org.apache.gearpump._
+import org.apache.gearpump.cluster.AppMasterRegisterData
 
-class HadoopConfigSpec extends WordSpec with Matchers {
-
-  "HadoopConfig" should {
-    "serialize and deserialze hadoop configuration properly" in {
-      val hadoopConf = new Configuration()
-      val key = "test_key"
-      val value = "test_value"
-      hadoopConf.set(key, value)
-
-      val user = UserConfig.empty
-
-      import org.apache.gearpump.util.HadoopConfig._
-      assert(user.withHadoopConf(hadoopConf).hadoopConf.get(key) == value)
-    }
-  }
-}
+case class AppMasterRuntimeInfo(
+     appId: Int,
+     // appName is the unique Id for an application
+     appName: String,
+     worker : ActorRef = null,
+     user: String = null,
+     submissionTime: TimeStamp = 0,
+     startTime: TimeStamp = 0,
+     finishTime: TimeStamp = 0,
+     config: Config = null)
+  extends AppMasterRegisterData

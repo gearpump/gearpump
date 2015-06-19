@@ -15,21 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.cluster
+package org.apache.gearpump.streaming.examples.fsio
 
-import akka.actor._
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.hadoop.conf.Configuration
+import org.scalatest.{Matchers, WordSpec}
 
-object TestUtil {
-  val rawConfig = ClusterConfig.load("test.conf")
-  val DEFAULT_CONFIG = rawConfig.default
-  val MASTER_CONFIG = rawConfig.master
+class HadoopConfigSpec extends WordSpec with Matchers {
 
-  class DummyAppMaster(context: AppMasterContext, app: AppDescription) extends ApplicationMaster {
-    context.masterProxy ! (context, app)
+  "HadoopConfig" should {
+    "serialize and deserialze hadoop configuration properly" in {
+      val hadoopConf = new Configuration()
+      val key = "test_key"
+      val value = "test_value"
+      hadoopConf.set(key, value)
 
-    def receive : Receive = null
+      val user = UserConfig.empty
+
+      import HadoopConfig._
+      assert(user.withHadoopConf(hadoopConf).hadoopConf.get(key) == value)
+    }
   }
-
-  val dummyApp : AppDescription = AppDescription("dummy", classOf[DummyAppMaster].getName, UserConfig.empty)
 }
-

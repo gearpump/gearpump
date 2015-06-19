@@ -21,11 +21,9 @@ package org.apache.gearpump.services
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData, AppMasterDataDetail}
+import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
 import org.apache.gearpump.cluster.ClientToMaster.{QueryMasterConfig, QueryWorkerConfig, QueryAppMasterConfig, ShutdownApplication}
-import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, WorkerConfig, AppMasterConfig, ShutdownApplicationResult}
-import org.apache.gearpump.cluster.worker.WorkerDescription
 import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.http.StatusCodes
 import spray.routing.HttpService

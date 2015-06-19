@@ -21,9 +21,9 @@ import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
+import org.apache.gearpump.streaming.examples.fsio.HadoopConfig
 import org.apache.gearpump.streaming.{Processor, ProcessorDescription, DAG, MockUtil}
 import org.apache.gearpump.streaming.task.{StartTime, TaskId}
-import org.apache.gearpump.util.HadoopConfig
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile.Reader

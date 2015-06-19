@@ -20,8 +20,8 @@ package org.apache.gearpump.cluster.master
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.master.InMemoryKVService._
-import org.apache.gearpump.cluster.master.MasterHAService.{DeleteMasterStateSuccess, UpdateMasterStateSuccess, UpdateMasterState, MasterState}
+import org.apache.gearpump.cluster.appmaster.ApplicationState
+import org.apache.gearpump.cluster.master.MasterHAService.{DeleteMasterStateSuccess, MasterState, UpdateMasterState, UpdateMasterStateSuccess}
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 

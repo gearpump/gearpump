@@ -16,22 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.jarstore
+package org.apache.gearpump.cluster.appmaster
 
-import akka.actor.Props
-import org.apache.gearpump.jarstore.dfs.DFSJarStore
-import org.apache.gearpump.jarstore.local.LocalJarStore
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, FlatSpec}
+import org.apache.gearpump.cluster.{AppDescription, AppJar}
 
-class JarStoreSpec extends FlatSpec with Matchers with MockitoSugar {
+/**
+  * This state will be persisted across the masters.
+  */
+case class ApplicationState(appId : Int, appName: String, attemptId : Int, app : AppDescription, jar: Option[AppJar], username : String, state : Any) extends Serializable {
 
-  "JarStore" should "return correct Props according to the file path" in {
-    val localPath1 = "/root/file"
-    val localPath2 = "file:///root/file"
-    val dfsPath = "hdfs://root/file"
-    assert(JarStore.props(localPath1).equals(Props(classOf[LocalJarStore], localPath1)))
-    assert(JarStore.props(localPath2).equals(Props(classOf[LocalJarStore], localPath2)))
-    assert(JarStore.props(dfsPath).equals(Props(classOf[DFSJarStore], dfsPath)))
-  }
-}
+   override def equals(other: Any): Boolean = {
+     other match {
+       case that: ApplicationState =>
+         if (appId == that.appId && attemptId == that.attemptId) {
+           true
+         } else {
+           false
+         }
+       case _ =>
+         false
+     }
+   }
+
+   override def hashCode: Int = {
+     import akka.routing.MurmurHash._
+     extendHash(appId, attemptId, startMagicA, startMagicB)
+   }
+ }

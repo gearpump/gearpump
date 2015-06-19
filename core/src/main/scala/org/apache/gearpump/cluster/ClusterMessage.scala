@@ -21,29 +21,12 @@ package org.apache.gearpump.cluster
 import akka.actor.ActorRef
 import com.typesafe.config.Config
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.master.Master.{MasterInfo, MasterDescription}
+import org.apache.gearpump.cluster.master.MasterDescription
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerDescription
 import org.apache.gearpump.metrics.Metrics._
-import upickle._
 
-import scala.reflect.ClassTag
 import scala.util.{Success, Try}
-
-/**
- * Cluster Bootup Flow
- */
-object WorkerToMaster {
-  case object RegisterNewWorker
-  case class RegisterWorker(workerId: Int)
-  case class ResourceUpdate(worker: ActorRef, workerId: Int, resource: Resource)
-}
-
-object MasterToWorker {
-  case class WorkerRegistered(workerId : Int, masterInfo: MasterInfo)
-  case class UpdateResourceFailed(reason : String = null, ex: Throwable = null)
-  case object UpdateResourceSucceed
-}
 
 /**
  * Application Flow

@@ -20,14 +20,13 @@ package org.apache.gearpump.services
 
 import akka.actor.{ActorSystem, ActorRef}
 import akka.testkit.TestKit
-import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.cluster.TestUtil.MiniCluster
+import org.apache.gearpump.cluster.MiniCluster
 import org.apache.gearpump.streaming.StreamingTestUtil
 import org.apache.gearpump.util.LogUtil
 
 class TestCluster(system: ActorSystem) {
   import TestCluster._
-  val cluster: MiniCluster = TestUtil.startMiniCluster
+  val cluster: MiniCluster = new MiniCluster
 
   def master: ActorRef = {
     LOG.info("Accessing master of TestCluster...")

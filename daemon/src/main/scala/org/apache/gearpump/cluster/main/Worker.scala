@@ -19,13 +19,12 @@
 package org.apache.gearpump.cluster.main
 
 import akka.actor.{ActorSystem, Props}
-import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.cluster.worker.{Worker=>WorkerActor}
+import org.apache.gearpump.cluster.worker.{Worker => WorkerActor}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.LogUtil
 import org.apache.gearpump.util.LogUtil.ProcessType
 import org.slf4j.Logger
 

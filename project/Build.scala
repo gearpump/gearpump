@@ -27,8 +27,8 @@ object Build extends sbt.Build {
   val codahaleVersion = "3.0.2"
   val commonsCodecVersion = "1.6"
   val commonsHttpVersion = "3.1"
-  val commonsLangVersion = "3.3.2"
   val commonsLoggingVersion = "1.1.3"
+  val commonsLangVersion = "2.6"
   val commonsIOVersion = "2.4"
   val findbugsVersion = "2.0.1"
   val guavaVersion = "15.0"
@@ -121,6 +121,21 @@ object Build extends sbt.Build {
     }
   )
 
+  val hadoopDependency = Seq(
+    ("org.apache.hadoop" % "hadoop-common" % clouderaVersion).
+      exclude("org.mortbay.jetty", "jetty-util")
+      exclude("org.mortbay.jetty", "jetty")
+      exclude("tomcat", "jasper-runtime")
+      exclude("commons-beanutils", "commons-beanutils-core")
+      exclude("commons-beanutils", "commons-beanutils")
+  )
+
+  val daemonDependencies = Seq(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-contrib" % akkaVersion
+    ) ++ hadoopDependency
+  )
+
   val coreDependencies = Seq(
         libraryDependencies ++= Seq(
         "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
@@ -132,31 +147,20 @@ object Build extends sbt.Build {
         "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % "provided",
         "org.fusesource" % "sigar" % sigarVersion classifier("native"),
         "com.google.code.findbugs" % "jsr305" % findbugsVersion,
-        "org.apache.commons" % "commons-lang3" % commonsLangVersion,
         "commons-logging" % "commons-logging" % commonsLoggingVersion,
+        "commons-lang" % "commons-lang" % commonsLangVersion,
         "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
         "commons-codec" % "commons-codec" % commonsCodecVersion,
         "com.google.guava" % "guava" % guavaVersion,
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
         "com.typesafe.akka" %% "akka-remote" % akkaVersion,
         "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
-        "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
         "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
         "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
         "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
-        ("org.apache.hadoop" % "hadoop-common" % clouderaVersion).
-            exclude("org.mortbay.jetty", "jetty-util")
-            exclude("org.mortbay.jetty", "jetty")
-            exclude("tomcat", "jasper-runtime")
-            exclude("commons-beanutils", "commons-beanutils-core")
-            exclude("commons-beanutils", "commons-beanutils"),
-        ("org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion).
-            exclude("org.mortbay.jetty", "jetty-util")
-            exclude("org.mortbay.jetty", "jetty")
-            exclude("tomcat", "jasper-runtime"),
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
@@ -192,7 +196,7 @@ object Build extends sbt.Build {
         }
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
+   .aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
       transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, pack, pipeline, state)
 
   lazy val pack = Project(
@@ -213,6 +217,7 @@ object Build extends sbt.Build {
           "worker" -> Seq("-server", "-DlogFilename=worker"),
           "services" -> Seq("-server")
         ),
+        packExclude := Seq(thisProjectRef.value.project),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
@@ -223,7 +228,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("/etc/gearpump/conf", "${PROG_HOME}/conf",
           "${PROG_HOME}/dashboard", "/etc/hadoop/conf", "/etc/hbase/conf"))
       )
-  ).dependsOn(core, streaming, services, external_kafka, yarn,storm,dsl,pagerank,hbase, state)
+  ).dependsOn(core, daemon, streaming, services, external_kafka, yarn, storm, dsl, pagerank, hbase, state)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -231,11 +236,17 @@ object Build extends sbt.Build {
     settings = commonSettings ++ coreDependencies
   )
 
+  lazy val daemon = Project(
+    id = "gearpump-daemon",
+    base = file("daemon"),
+    settings = commonSettings ++ daemonDependencies
+  ) dependsOn(core % "test->test;compile->compile")
+
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
     settings = commonSettings
-  )  dependsOn(core % "test->test;compile->compile")
+  )  dependsOn(core % "test->test;compile->compile", daemon % "test->test")
 
   lazy val external_kafka = Project(
     id = "gearpump-external-kafka",
@@ -278,7 +289,7 @@ object Build extends sbt.Build {
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        ),
+        ) ++ hadoopDependency,
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
@@ -392,7 +403,7 @@ object Build extends sbt.Build {
           "org.webjars.bower" % "vis" % "4.2.0"
         ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
       )
-  ) dependsOn(streaming % "test->test;compile->compile")
+  ) dependsOn(streaming % "test->test;compile->compile", daemon % "test->test")
 
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
@@ -510,7 +521,7 @@ object Build extends sbt.Build {
             exclude("org.slf4j", "slf4j-api"),
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
-        )
+        ) ++ hadoopDependency
       )
   ) dependsOn(services % "test->test;compile->compile", core % "provided", services % "provided")
 
@@ -521,7 +532,7 @@ object Build extends sbt.Build {
       Seq(
         libraryDependencies ++= Seq(
           "org.scalaz" %% "scalaz-core" % scalazVersion
-        )
+        ) ++ hadoopDependency
       )
   ) dependsOn(streaming % "test->test;compile->compile", external_kafka % "test->test;compile->compile", hbase % "test->test;compile->compile")
   
@@ -589,7 +600,7 @@ object Build extends sbt.Build {
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        )
+        ) ++ hadoopDependency
       )
   ) dependsOn(streaming % "test->test; provided", external_kafka % "test->test; provided")
 }
