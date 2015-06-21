@@ -22,9 +22,9 @@ import akka.actor.Actor.Receive
 import akka.actor._
 import akka.pattern.ask
 import org.apache.gearpump.cluster.AppMasterToMaster.GetAllWorkers
-import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
-import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{StartExecutorSystems, ExecutorSystemJvmConfig}
+import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, StartExecutorSystems}
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
+import org.apache.gearpump.shared.Messages.WorkerList
 import org.apache.gearpump.transport.HostPort
 import org.slf4j.Logger
 
@@ -50,7 +50,7 @@ object ActorUtil {
     val extendedSystem = system.asInstanceOf[ExtendedActorSystem]
     val clazz = system.getClass
     val m = clazz.getDeclaredMethod("printTree")
-    m.setAccessible(true);
+    m.setAccessible(true)
     LOG.info(m.invoke(system).asInstanceOf[String])
   }
 

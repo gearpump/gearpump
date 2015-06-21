@@ -24,8 +24,11 @@ object Messages {
   @JSExportAll
   case class WorkerDescription(workerId: Int, state: String, actorPath: String,
       aliveFor: Long, logFile: String,
-      executors: Seq[ExecutorInfo], totalSlots: Int, availableSlots: Int,
+      executors: List[ExecutorInfo], totalSlots: Int, availableSlots: Int,
       homeDirectory: String)
+
+  @JSExportAll
+  case class WorkerList(workers: List[Int])
 
   @JSExportAll
   case class WorkerData(workerDescription: Option[WorkerDescription])

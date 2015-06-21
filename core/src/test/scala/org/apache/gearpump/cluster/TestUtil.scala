@@ -19,12 +19,11 @@ package org.apache.gearpump.cluster
 
 import akka.actor._
 import akka.testkit.TestActorRef
-import akka.util.Timeout
 import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.AppMasterToMaster.GetAllWorkers
-import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
 import org.apache.gearpump.cluster.master.Master
 import org.apache.gearpump.cluster.worker.Worker
+import org.apache.gearpump.shared.Messages.WorkerList
 import org.apache.gearpump.util.Constants
 
 import scala.concurrent.{Await, Future}
@@ -63,6 +62,7 @@ object TestUtil {
 
     private def isWorkerRegistered(master: ActorRef): Boolean = {
       import akka.pattern.ask
+
       import scala.concurrent.duration._
       implicit val dispatcher = system.dispatcher
 
@@ -72,7 +72,7 @@ object TestUtil {
 
       // wait until the worker is registered.
       val workers = Await.result[WorkerList](workerListFuture, 5 seconds)
-      workers.workers.size > 0
+      workers.workers.nonEmpty
     }
 
     def shutDown() = {

@@ -30,7 +30,7 @@ import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated}
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.apache.gearpump.jarstore.JarStore
-import org.apache.gearpump.shared.Messages.{WorkerData, MasterStatus, MasterData, MasterDescription}
+import org.apache.gearpump.shared.Messages._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util._

@@ -19,13 +19,14 @@ package org.apache.gearpump.examples.distributedshell
 
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestProbe}
-import org.apache.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers, RegisterAppMaster}
+import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, RegisterAppMaster, RequestResource}
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
-import org.apache.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerList, AppMasterRegistered}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
 import org.apache.gearpump.cluster.master.AppMasterRuntimeInfo
-import org.apache.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, ResourceRequest, Resource}
+import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
+import org.apache.gearpump.shared.Messages.WorkerList
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import org.apache.gearpump.util.ActorUtil
 import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
