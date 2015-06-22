@@ -18,12 +18,11 @@
 
 package org.apache.gearpump.services
 
-import akka.actor.ActorRef
+import akka.actor.{ActorSystem, ActorRef}
 import akka.pattern._
 import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetWorkerData}
-import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
-import org.apache.gearpump.shared.Messages.{WorkerData, WorkerDescription}
-import org.apache.gearpump.util.Constants
+import org.apache.gearpump.shared.Messages.{WorkerData, WorkerDescription, WorkerList}
+import org.apache.gearpump.util.{LogUtil, Constants}
 import spray.http.StatusCodes
 import spray.routing.HttpService
 
@@ -33,6 +32,8 @@ import scala.util.{Failure, Success}
 trait WorkersService extends HttpService {
   import upickle._
   def master:ActorRef
+  implicit val system: ActorSystem
+  private val LOG = LogUtil.getLogger(getClass)
 
   def workersRoute = get {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
@@ -44,6 +45,7 @@ trait WorkersService extends HttpService {
           val workerDataList = List.empty[WorkerDescription]
           Future.fold(workers.map(master ? GetWorkerData(_)))(workerDataList) { (workerDataList, workerData) =>
             val workerDescription = workerData.asInstanceOf[WorkerData].workerDescription
+            LOG.info(s"get worker description $workerDescription")
             if (workerDescription.isEmpty) {
               workerDataList
             } else {
@@ -52,7 +54,7 @@ trait WorkersService extends HttpService {
           }
         }
         onComplete(workerDataFuture) {
-          case Success(result: List[WorkerDescription]) => complete(write(result))
+          case Success(result: List[WorkerDescription]) => complete(write[List[WorkerDescription]](result))
           case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
         }
       }

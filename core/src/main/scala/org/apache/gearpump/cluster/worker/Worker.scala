@@ -118,11 +118,12 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     case UpdateResourceSucceed =>
       LOG.info(s"Worker[$id] update resource succeed")
     case GetWorkerData(workerId) =>
+      LOG.info(s"GetWorkerData $workerId")
       val aliveFor = System.currentTimeMillis() - createdTime
       val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
       val userDir = System.getProperty("user.dir")
       sender ! WorkerData(Some(WorkerDescription(id, "active", address,
-        aliveFor, logDir, executorsInfo.values.toSeq, totalSlots, resource.slots, userDir)))
+        aliveFor, logDir, executorsInfo.values.toList, totalSlots, resource.slots, userDir)))
   }
 
   def clientMessageHandler: Receive = {

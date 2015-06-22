@@ -138,8 +138,6 @@ object MasterToAppMaster {
   case class AppMasterMetricsRequest(appId: Int) extends StreamingType
 
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
-
-  case class WorkerList(workers: List[Int])
 }
 
 object AppMasterToWorker {
