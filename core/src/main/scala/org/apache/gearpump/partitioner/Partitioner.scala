@@ -21,6 +21,7 @@ package org.apache.gearpump.partitioner
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 
+import org.apache.gearpump.TimeStamp
 import scala.reflect.ClassTag
 
 trait Partitioner extends Serializable {
@@ -50,7 +51,11 @@ case class PartitionerByClassName(partitionerClass: String) extends PartitionerF
   override def partitioner: Partitioner = Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
 }
 
-case class LifeTime(birth: Long, death: Long)
+case class LifeTime(birth: TimeStamp, death: TimeStamp) {
+  def contains(timestamp: TimeStamp): Boolean = {
+    timestamp >= birth && timestamp < death
+  }
+}
 
 object LifeTime {
   val Immortal = LifeTime(0L, Long.MaxValue)
@@ -69,4 +74,3 @@ object Partitioner {
     PartitionerDescription(PartitionerByClassName(clazz.runtimeClass.getName))
   }
 }
-

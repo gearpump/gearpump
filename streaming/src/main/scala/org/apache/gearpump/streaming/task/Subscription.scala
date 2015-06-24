@@ -79,7 +79,7 @@ class Subscription(
   def sendMessage(msg: Message): Unit = {
 
     // only send message whose timestamp matches the lifeTime
-    if (msg.timestamp >= life.birth && msg.timestamp < life.death) {
+    if (life.contains(msg.timestamp)) {
 
       val partition = partitioner.getPartition(msg, parallelism, taskId.index)
       val targetTask = TaskId(processorId, partition)

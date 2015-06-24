@@ -232,7 +232,7 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
           case Some(subscription) =>
             subscription.changeLifeTime(subscriber.lifeTime)
           case None =>
-            subscriptions ::= (subscriber.processorId, new Subscription(appId, executorId, taskId, subscriber, sessionId, this))
+            subscriptions :+= (subscriber.processorId, new Subscription(appId, executorId, taskId, subscriber, sessionId, this))
         }
       }
       sender ! TaskChanged(taskId)
