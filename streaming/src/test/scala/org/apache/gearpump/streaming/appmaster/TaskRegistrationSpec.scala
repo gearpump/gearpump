@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.appmaster
 
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.{TaskLocation, Reject, Accept}
 import org.apache.gearpump.streaming.task.{TaskLocations, TaskId}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
@@ -27,16 +28,20 @@ import org.slf4j.Logger
 class TaskRegistrationSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   it should "maintain registered tasks" in {
-    val register = new TaskRegistration(appId = 0, totalTaskCount = 3)
-    val host1 = HostPort("127.0.0.1:3000")
-    val host2 = HostPort("127.0.0.1:3001")
     val task0 = TaskId(0, 0)
     val task1 = TaskId(0, 1)
     val task2 = TaskId(0, 2)
+
+    val register = new TaskRegistry(appId = 0, List(task0, task1, task2))
+    val host1 = HostPort("127.0.0.1:3000")
+    val host2 = HostPort("127.0.0.1:3001")
+
     val executorId = 0
-    register.registerTask(task0, executorId, host1)
-    register.registerTask(task1, executorId, host1)
-    register.registerTask(task2, executorId, host2)
+    assert(Accept == register.registerTask(task0, TaskLocation(executorId, host1)))
+    assert(Accept == register.registerTask(task1, TaskLocation(executorId, host1)))
+    assert(Accept == register.registerTask(task2, TaskLocation(executorId, host2)))
+
+    assert(Reject == register.registerTask(TaskId(100, 0), TaskLocation(executorId, host2)))
 
     assert(register.isAllTasksRegistered)
     val TaskLocations(taskLocations) = register.getTaskLocations

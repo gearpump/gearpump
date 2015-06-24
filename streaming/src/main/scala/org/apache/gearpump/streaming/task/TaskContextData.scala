@@ -20,5 +20,5 @@ package org.apache.gearpump.streaming.task
 
 import akka.actor.ActorRef
 
-case class TaskContextData(taskId : TaskId, executorId : Int, appId : Int,
+case class TaskContextData(executorId : Int, appId : Int,
                       appName: String, appMaster : ActorRef, parallelism: Int, subscribers: List[Subscriber])

@@ -24,22 +24,24 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTask}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTasks}
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGScheduled, GetTaskLaunchData, WatchChange, LatestDAG, GetLatestDAG, TaskLaunchData}
 import org.apache.gearpump.streaming.executor.Executor
-import Executor.RestartExecutor
+import Executor.RestartTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.TaskManager.MessageLoss
 import org.apache.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
-import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
+import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.mockito.Matchers._
 
 class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
@@ -53,8 +55,8 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   val dag: DAG = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
 
-  val task1LaunchData = TaskLaunchData(TaskId(0, 0), task1, Subscriber.of(processorId = 0, dag))
-  val task2LaunchData = TaskLaunchData(TaskId(1, 0), task2, Subscriber.of(processorId = 1, dag))
+  val task1LaunchData = TaskLaunchData(task1, Subscriber.of(processorId = 0, dag))
+  val task2LaunchData = TaskLaunchData(task2, Subscriber.of(processorId = 1, dag))
 
   val appId = 0
 
@@ -70,21 +72,6 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     system.shutdown()
   }
 
-  it should "start the bootup the executor and tasks, and serve clock query correctly" in {
-    val env = bootUp
-    import env._
-
-    //task heartbeat its minclock to taskmanager
-    val updateClock = UpdateClock(TaskId(0, 0), System.currentTimeMillis())
-    taskManager ! updateClock
-
-    //taskmanager will forward to clockservice
-    clockService.expectMsg(updateClock)
-
-    taskManager ! GetLatestMinClock
-    clockService.expectMsg(GetLatestMinClock)
-  }
-
   it should "recover by requesting new executors when executor stopped unexpectedly" in {
     val env = bootUp
     import env._
@@ -97,7 +84,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // when one executor stop, it will also trigger the recovery by restart
     // existing executors
-    executorManager.expectMsg(BroadCast(RestartExecutor))
+    executorManager.expectMsg(BroadCast(RestartTasks))
 
     // ask for new executors
     val returned = executorManager.expectMsg(StartExecutors(resourceRequest))
@@ -114,7 +101,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     taskManager ! MessageLoss
 
     // Restart the executors so that we can replay from minClock
-    executorManager.expectMsg(BroadCast(RestartExecutor))
+    executorManager.expectMsg(BroadCast(RestartTasks))
   }
 
   private def bootUp: Env = {
@@ -124,39 +111,58 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val executor = TestProbe()
 
     val scheduler = mock(classOf[TaskScheduler])
-    val taskManager = system.actorOf(
-      Props(new TaskManager(appId, dag, scheduler, executorManager.ref, clockService.ref, appMaster.ref, "appName")))
 
-    // taskmanager should return the latest clock to task(0,0)
-    clockService.expectMsg(GetLatestMinClock)
-    clockService.reply(LatestMinClock(0))
+    val dagManager = TestProbe()
+
+    val taskManager = system.actorOf(
+      Props(new TaskManager(appId, dagManager.ref, scheduler, executorManager.ref, clockService.ref, appMaster.ref, "appName")))
+
+    dagManager.expectMsgType[WatchChange]
 
     executorManager.expectMsgType[SetTaskManager]
+
+    dagManager.expectMsg(GetLatestDAG)
+    dagManager.reply(LatestDAG(dag))
+
+    dagManager.expectMsgType[DAGScheduled]
+
+    when(scheduler.getResourceRequests())
+      .thenReturn(Array(ResourceRequest(resource)))
+
     executorManager.expectMsgType[StartExecutors]
 
-    when(scheduler.resourceAllocated(workerId, executorId))
-      .thenReturn(
-        //first call
-        Some(task1LaunchData),
-        //second call
-        Some(task2LaunchData))
+    when(scheduler.resourceAllocated(workerId, executorId, resource))
+      .thenReturn(List(TaskId(0, 0), TaskId(1, 0)))
 
-    executorManager.reply(ExecutorStarted(executor.ref, executorId, resource, workerId))
+    executorManager.reply(ExecutorStarted(executorId, resource, workerId))
 
-    executor.expectMsgType[LaunchTask]
+    val taskLaunchData: PartialFunction[Any, TaskLaunchData] = {
+      case GetTaskLaunchData(_, 0, executorStarted) =>
+        task1LaunchData.copy(context = executorStarted)
+      case GetTaskLaunchData(_, 1, executorStarted) =>
+        task2LaunchData.copy(context = executorStarted)
+    }
 
-    //scheduler.resourceAllocated will be called here to ask for task to be started
+    val launchData1 = dagManager.expectMsgPF()(taskLaunchData)
+    dagManager.reply(launchData1)
 
-    // register task(0,0)
-    executor.reply(RegisterTask(TaskId(0, 0), executorId, HostPort("127.0.0.1:3000")))
+    val launchData2 = dagManager.expectMsgPF()(taskLaunchData)
+    dagManager.reply(launchData2)
+
+    val launchTaskMatch: PartialFunction[Any, RegisterTask] = {
+      case UniCast(executorId, launch: LaunchTasks) =>
+        Console.println("Launch Task " + launch.processorDescription.id)
+        RegisterTask(launch.taskId.head, executorId, HostPort("127.0.0.1:3000"))
+    }
+
+    val registerTask1 = executorManager.expectMsgPF()(launchTaskMatch)
+    executorManager.reply(registerTask1)
 
     // taskmanager should return the latest clock to task(0,0)
     clockService.expectMsg(GetLatestMinClock)
 
-    executor.expectMsgType[LaunchTask]
-
-    //register task(1,0)
-    executor.reply(RegisterTask(TaskId(1, 0), executorId, HostPort("127.0.0.1:3000")))
+    val registerTask2 = executorManager.expectMsgPF()(launchTaskMatch)
+    executorManager.reply(registerTask2)
 
     // taskmanager should return the latest clock to task(1,0)
     clockService.expectMsg(GetLatestMinClock)

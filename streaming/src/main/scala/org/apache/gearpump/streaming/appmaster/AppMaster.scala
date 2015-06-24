@@ -27,7 +27,8 @@ import org.apache.gearpump.metrics.Metrics.MetricType
 import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
-import org.apache.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, AllocateResourceTimeOut}
+import org.apache.gearpump.streaming.appmaster.AppMaster.{ServiceNotAvailableException, LookupTaskActorRef, AllocateResourceTimeOut}
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGReplace, LatestDAG, GetLatestDAG}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.appmaster.TaskManager.{TaskList, GetTaskList}
@@ -46,6 +47,9 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   import appContext.{appId, masterProxy, username}
 
   implicit val actorSystem = context.system
+  implicit val timeOut = FUTURE_TIMEOUT
+  import akka.pattern.ask
+  implicit val dispatcher = context.dispatcher
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username $app xxxxxxxxxxxxxxxxx")
@@ -53,19 +57,21 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
 
-  val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
+  private val dagManager = context.actorOf(Props(new DagManager(userConfig)))
 
-  private val (taskManager, executorManager, clockService) = {
-    val executorManager = context.actorOf(ExecutorManager.props(userConfig, appContext, app.clusterConfig),
-      ActorPathUtil.executorManagerActorName)
+  private var taskManager: Option[ActorRef] = None
+  private var clockService: Option[ActorRef] = None
 
+  private val executorManager: ActorRef =
+    context.actorOf(ExecutorManager.props(userConfig, appContext, app.clusterConfig),
+    ActorPathUtil.executorManagerActorName)
+  for (dag <- getDAG) {
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
-    val clockService = context.actorOf(Props(new ClockService(dag, store)))
+    clockService = Some(context.actorOf(Props(new ClockService(dag, store))))
+    val taskScheduler = new TaskSchedulerImpl(appId, app.name, context.system.settings.config)
 
-    val taskScheduler: TaskScheduler = new TaskSchedulerImpl(appId, app.name, context.system.settings.config)
-    val taskManager = context.actorOf(Props(new TaskManager(appContext.appId, dag,
-      taskScheduler, executorManager, clockService, self, app.name)))
-    (taskManager, executorManager, clockService)
+    taskManager = Some(context.actorOf(Props(new TaskManager(appContext.appId, dagManager,
+      taskScheduler, executorManager, clockService.get, self, app.name))))
   }
 
   private def getHistoryMetricsConfig: HistoryMetricsConfig = {
@@ -83,26 +89,27 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   actorSystem.eventStream.subscribe(historyMetricsService, classOf[MetricType])
 
   override def receive : Receive =
-    taskMessageHandler orElse
+      taskMessageHandler orElse
       executorMessageHandler orElse
       recover orElse
-      appMasterInfoService orElse
+      appMasterService orElse
       ActorUtil.defaultMsgHandler(self)
 
   def taskMessageHandler: Receive = {
     case clock: UpdateClock =>
-      taskManager forward clock
+      clockService.foreach(_ forward clock)
+    case clock: GetUpstreamMinClock =>
+      clockService.foreach(_ forward clock)
     case GetLatestMinClock =>
-      taskManager forward GetLatestMinClock
+      clockService.foreach(_ forward GetLatestMinClock)
     case register: RegisterTask =>
-      taskManager forward register
+      taskManager.foreach(_ forward register)
     case replay: ReplayFromTimestampWindowTrailingEdge =>
-      taskManager forward replay
+      taskManager.foreach(_ forward replay)
     case metrics: MetricType =>
-
       actorSystem.eventStream.publish(metrics)
     case lookupTask: LookupTaskActorRef =>
-      taskManager forward lookupTask
+      taskManager.foreach(_ forward lookupTask)
   }
 
   def executorMessageHandler: Receive = {
@@ -110,19 +117,20 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       executorManager forward register
   }
 
-  implicit val timeOut = FUTURE_TIMEOUT
 
-  def appMasterInfoService: Receive = {
+  def appMasterService: Receive = {
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.debug(s"AppMaster got AppMasterDataDetailRequest for $appId ")
 
       val executorsFuture = getExecutorMap
       val clockFuture = getMinClock
       val taskFuture = getTaskList
+      val dagFuture = getDAG
 
       val appMasterDataDetail = for {executors <- executorsFuture
         clock <- clockFuture
         tasks <- taskFuture
+        dag <- dagFuture
       } yield {
         StreamingAppMasterDataDetail(appId, app.name, dag.processors,
           Graph.vertexHierarchyLevelMap(dag.graph), dag.graph, address, clock, executors, tasks.tasks)
@@ -139,8 +147,10 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case query: QueryHistoryMetrics =>
       historyMetricsService forward query
     case getStalling: GetStallingTasks =>
-      clockService forward getStalling
-  }
+      clockService.foreach(_ forward getStalling)
+    case replaceDAG: DAGReplace =>
+      dagManager forward replaceDAG
+   }
 
   def recover: Receive = {
     case AllocateResourceTimeOut =>
@@ -149,10 +159,13 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       context.stop(self)
   }
 
-  import akka.pattern.ask
-  implicit val dispatcher = context.dispatcher
   private def getMinClock: Future[TimeStamp] = {
-    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
+    clockService match {
+      case Some(clockService) =>
+        (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
+      case None =>
+        Future.failed(new ServiceNotAvailableException("clock service not ready"))
+    }
   }
 
   private def getExecutorMap = {
@@ -161,8 +174,17 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     }
   }
 
-  private def getTaskList = {
-    (taskManager ? GetTaskList).asInstanceOf[Future[TaskList]]
+  private def getTaskList: Future[TaskList] = {
+    taskManager match {
+      case Some(taskManager) =>
+        (taskManager ? GetTaskList).asInstanceOf[Future[TaskList]]
+      case None =>
+        Future.failed(new ServiceNotAvailableException("task manager not ready"))
+    }
+  }
+
+  private def getDAG: Future[DAG] = {
+    (dagManager ? GetLatestDAG).asInstanceOf[Future[LatestDAG]].map(_.dag)
   }
 }
 
@@ -172,4 +194,6 @@ object AppMaster {
   case class LookupTaskActorRef(taskId: TaskId)
 
   case class TaskActorRef(task: ActorRef)
+
+  class ServiceNotAvailableException(reason: String) extends Exception(reason)
 }

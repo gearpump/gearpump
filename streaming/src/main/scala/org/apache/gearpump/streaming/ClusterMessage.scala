@@ -22,12 +22,20 @@ import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.streaming.task.{TaskActor, Task, TaskContextData, TaskId}
+import org.apache.gearpump.partitioner.LifeTime
+import org.apache.gearpump.streaming.task.{Subscriber, TaskActor, Task, TaskContextData, TaskId}
 import org.apache.gearpump.transport.HostPort
 import scala.language.existentials
 
 object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, taskContext: TaskContextData, taskClass: Class[_ <: Task], taskActorClass: Class[_ <: Actor] = classOf[TaskActor], taskConfig: UserConfig = null)
+  case class LaunchTasks(taskId: List[TaskId], processorDescription: ProcessorDescription, subscribers: List[Subscriber])
+
+  //TODO: define change tasks
+  case class ChangeTasks(taskId: List[TaskId], life: LifeTime, subscribers: List[Subscriber])
+
+  case class ChangeTask(life: LifeTime, subscribers: List[Subscriber])
+
+  case class TaskChanged(taskId: TaskId)
 
   case class StartClock(clock : TimeStamp)
   case object RestartClockService

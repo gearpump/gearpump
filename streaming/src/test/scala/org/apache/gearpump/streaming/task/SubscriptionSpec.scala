@@ -46,7 +46,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 
   val parallism = 2
   val downstreamProcessor = ProcessorDescription(downstreamProcessorId, classOf[NextTask].getName, parallism)
-  val subscriber = Subscriber(downstreamProcessorId, partitioner, downstreamProcessor)
+  val subscriber = Subscriber(downstreamProcessorId, partitioner, downstreamProcessor.parallelism, downstreamProcessor.life)
 
   private def prepare: (Subscription, ExpressTransport) = {
     val transport = mock[ExpressTransport]

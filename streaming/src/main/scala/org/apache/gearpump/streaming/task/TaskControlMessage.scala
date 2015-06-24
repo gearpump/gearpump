@@ -35,6 +35,8 @@ case class Ack(taskId: TaskId, seq: Long, actualReceivedNum: Long, sessionId: In
 
 case class UpdateClock(taskId: TaskId, time: TimeStamp)
 
+case class GetUpstreamMinClock(taskId: TaskId)
+
 case class UpstreamMinClock(latestMinClock: TimeStamp)
 
 object GetLatestMinClock

@@ -138,6 +138,24 @@ class Graph[N , E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) 
     }
   }
 
+  def subGraph(node: N): Graph[N, E] = {
+    val newGraph = Graph.empty[N, E]
+    for (edge <- edgesOf(node)) {
+      newGraph.addEdge(edge._1, edge._2, edge._3)
+    }
+    newGraph
+  }
+
+  def replaceVertex(node: N, newNode: N): Graph[N, E] = {
+    mapVertex { vertex =>
+      if (vertex == node) {
+        newNode
+      } else {
+        vertex
+      }
+    }
+  }
+
   /**
    * Return an iterator of vertex in topological order
    */

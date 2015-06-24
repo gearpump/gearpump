@@ -62,7 +62,7 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
         Array( ResourceRequest(Resource(4), 1, relaxation = Relaxation.SPECIFICWORKER),
           ResourceRequest(Resource(2), 2, relaxation = Relaxation.SPECIFICWORKER))
 
-      taskScheduler.setTaskDAG(dag)
+      taskScheduler.setDAG(dag)
       val resourceRequests = taskScheduler.getResourceRequests()
 
       val acturalRequests = resourceRequests.sortBy(_.resource.slots)
@@ -71,14 +71,14 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
       val tasksOnWorker1 = ArrayBuffer[Int]()
       val tasksOnWorker2 = ArrayBuffer[Int]()
       for (i <- 0 until 4) {
-        tasksOnWorker1.append(taskScheduler.resourceAllocated(1, executorId = 0).get.taskId.processorId)
+        tasksOnWorker1.append(taskScheduler.resourceAllocated(1, executorId = 0, Resource(1)).head.processorId)
       }
       for (i <- 0 until 2) {
-        tasksOnWorker2.append(taskScheduler.resourceAllocated(2, executorId = 1).get.taskId.processorId)
+        tasksOnWorker2.append(taskScheduler.resourceAllocated(2, executorId = 1, Resource(1)).head.processorId)
       }
 
       //allocate more resource, and no tasks to launch
-      assert(taskScheduler.resourceAllocated(3, executorId = 3) == None)
+      assert(taskScheduler.resourceAllocated(3, executorId = 3, Resource(1)) == List.empty[TaskId])
 
       //on worker1, executor 0
       assert(tasksOnWorker1.sorted.sameElements(Array(0, 0, 1, 1)))
@@ -90,10 +90,10 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
 
       assert(rescheduledResources.sameElements(Array(ResourceRequest(Resource(2), relaxation = Relaxation.ONEWORKER))))
 
-      val launchedTask = taskScheduler.resourceAllocated(workerId  = 3, executorId = 3)
+      val launchedTask = taskScheduler.resourceAllocated(workerId  = 3, executorId = 3, Resource(2))
 
       //start the failed 2 tasks Task(0, 0) and Task(0, 1)
-      assert(launchedTask.get.taskId.processorId == 0)
+      assert(launchedTask.length == 2)
     }
   }
 }
