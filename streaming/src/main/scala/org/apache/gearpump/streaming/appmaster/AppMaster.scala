@@ -28,7 +28,7 @@ import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{ServiceNotAvailableException, LookupTaskActorRef, AllocateResourceTimeOut}
-import org.apache.gearpump.streaming.appmaster.DAGManager.{DAGReplace, LatestDAG, GetLatestDAG}
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGReplace, LatestDAG, GetLatestDAG}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.appmaster.TaskManager.{TaskList, GetTaskList}
@@ -57,7 +57,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
 
-  private val dagManager = context.actorOf(Props(new DAGManager(userConfig)))
+  private val dagManager = context.actorOf(Props(new DagManager(userConfig)))
 
   private var taskManager: Option[ActorRef] = None
   private var clockService: Option[ActorRef] = None

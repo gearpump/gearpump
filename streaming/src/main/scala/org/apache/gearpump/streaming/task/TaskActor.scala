@@ -254,12 +254,7 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
   def getUpstreamMinClock: TimeStamp = upstreamMinClock
 
   private def getSubscription(processorId: ProcessorId): Option[Subscription] = {
-    val filtered = subscriptions.filter(_._1 == processorId)
-    if (filtered.isEmpty) {
-      None
-    } else {
-      Some(filtered(0)._2)
-    }
+    subscriptions.find(_._1 == processorId).map(_._2)
   }
 }
 

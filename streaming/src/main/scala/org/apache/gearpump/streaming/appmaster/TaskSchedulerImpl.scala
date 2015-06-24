@@ -20,8 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.streaming.appmaster.TaskLocator.{WorkerLocality, NonLocality, Locality}
-import org.apache.gearpump.streaming.appmaster.TaskRegistry.ProcessorParallism
-import org.apache.gearpump.streaming.appmaster.TaskScheduler.{ Location, TaskStatus, Status}
+import org.apache.gearpump.streaming.appmaster.TaskScheduler.{ Location, TaskStatus}
 import org.apache.gearpump.streaming.{ProcessorId, DAG, ProcessorDescription}
 import org.apache.gearpump.streaming.task.{Subscriber, TaskId}
 import org.apache.gearpump.util.LogUtil
@@ -68,8 +67,6 @@ trait TaskScheduler {
 }
 
 object TaskScheduler {
-  class Status(val processorParallisms: List[ProcessorParallism])
-
   case class Location(workerId: Int, executorId: Int)
 
   class TaskStatus(val taskId: TaskId, val preferLocality: Locality, var allocation: Location)

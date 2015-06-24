@@ -22,8 +22,8 @@ import akka.actor._
 import akka.pattern.ask
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import org.apache.gearpump.streaming.AppMasterToExecutor.{TaskChanged, ChangeTasks, LaunchTasks, StartClock}
-import org.apache.gearpump.streaming.appmaster.DAGManager.{DAGScheduled, GetTaskLaunchData, WatchChange, TaskLaunchData, LatestDAG, GetLatestDAG}
-import org.apache.gearpump.streaming.appmaster.TaskRegistry.{TaskLocation, ProcessorParallism}
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGScheduled, GetTaskLaunchData, WatchChange, TaskLaunchData, LatestDAG, GetLatestDAG}
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.{TaskLocation}
 import org.apache.gearpump.streaming.executor.{ExecutorRestartPolicy, Executor}
 import Executor.RestartTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask

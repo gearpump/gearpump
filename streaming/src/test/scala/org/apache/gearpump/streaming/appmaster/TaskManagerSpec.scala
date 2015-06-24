@@ -25,8 +25,7 @@ import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTasks}
-import org.apache.gearpump.streaming.appmaster.DAGManager.{DAGScheduled, GetTaskLaunchData, WatchChange, LatestDAG, GetLatestDAG, TaskLaunchData}
-import org.apache.gearpump.streaming.appmaster.TaskRegistry.ProcessorParallism
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGScheduled, GetTaskLaunchData, WatchChange, LatestDAG, GetLatestDAG, TaskLaunchData}
 import org.apache.gearpump.streaming.executor.Executor
 import Executor.RestartTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask

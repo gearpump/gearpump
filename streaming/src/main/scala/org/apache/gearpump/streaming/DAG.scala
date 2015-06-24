@@ -42,16 +42,12 @@ case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription]
     val left = this.processors.keySet
     val right = another.processors.keySet
 
-    val rightOnly = (right -- left)
-    val leftOnly = (left -- right)
+    val rightOnly = right -- left
+    val leftOnly = left -- right
     val join = right -- rightOnly
     
-    val modifiedProcessors = join.flatMap(processorId =>
-      if (processors(processorId) != another.processors(processorId)) {
-        Some(processorId)
-      } else {
-        None
-      }
+    val modifiedProcessors = join.filter(processorId =>
+      processors(processorId) != another.processors(processorId)
     )
 
     DAGDiff(leftOnly.toList.sorted, rightOnly.toList.sorted, modifiedProcessors.toList.sorted)

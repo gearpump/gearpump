@@ -50,7 +50,7 @@ case class PartitionerByClassName(partitionerClass: String) extends PartitionerF
   override def partitioner: Partitioner = Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
 }
 
-case class LifeTime(birth: Long, die: Long)
+case class LifeTime(birth: Long, death: Long)
 
 object LifeTime {
   val Immortal = LifeTime(0L, Long.MaxValue)

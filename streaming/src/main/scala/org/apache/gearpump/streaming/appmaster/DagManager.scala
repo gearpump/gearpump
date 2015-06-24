@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.appmaster
 import akka.actor.{ActorRef, Actor}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.partitioner.{LifeTime, PartitionerDescription}
-import org.apache.gearpump.streaming.appmaster.DAGManager.{DAGScheduled, WatchChange, DAGOperationSuccess, DAGOperationFailed, DAGReplace, TaskLaunchData, LatestDAG, GetTaskLaunchData, GetLatestDAG}
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGScheduled, WatchChange, DAGOperationSuccess, DAGOperationFailed, DAGReplace, TaskLaunchData, LatestDAG, GetTaskLaunchData, GetLatestDAG}
 import org.apache.gearpump.streaming.task.{TaskId, Subscriber}
 import org.apache.gearpump.streaming.{ProcessorId, StreamApplication, ProcessorDescription, DAG}
 import org.apache.gearpump.util.Graph
@@ -31,7 +31,7 @@ import org.apache.gearpump.util.Graph
  * @param userConfig
  */
 
-class DAGManager(userConfig: UserConfig) extends Actor {
+class DagManager(userConfig: UserConfig) extends Actor {
   implicit val system = context.system
 
   private var dags = List(DAG(userConfig.getValue[Graph[ProcessorDescription,
@@ -73,30 +73,19 @@ class DAGManager(userConfig: UserConfig) extends Actor {
   }
 
   private def replaceDAG(dag: DAG, oldProcessorId: ProcessorId, newProcessor: ProcessorDescription, newVersion: Int): DAG = {
-    val newProcessorLife = newProcessor.life
-    val oldProcessorLife = dag.processors(oldProcessorId).life.copy(die = newProcessorLife.birth)
-    var newProcessorMap = dag.processors + (newProcessor.id -> newProcessor)
-    newProcessorMap += oldProcessorId -> dag.processors(oldProcessorId).copy(life = oldProcessorLife)
 
-    val newGraph = Graph.empty[ProcessorId, PartitionerDescription]
-    newGraph.addVertex(newProcessor.id)
-    dag.graph.incomingEdgesOf(oldProcessorId).foreach { nodeEdgeNode =>
-      val (upstreamProcessorId, partitioner, _) = nodeEdgeNode
-      newGraph.addVertex(upstreamProcessorId)
-      newGraph.addEdge(upstreamProcessorId, partitioner, newProcessor.id)
-    }
+    val oldProcessorLife = LifeTime(dag.processors(oldProcessorId).life.birth, newProcessor.life.birth)
 
-    dag.graph.outgoingEdgesOf(oldProcessorId).foreach { nodeEdgeNode =>
-      val (_, partitioner, downstreamProcessorId) = nodeEdgeNode
-      newGraph.addVertex(downstreamProcessorId)
-      newGraph.addEdge(newProcessor.id, partitioner, downstreamProcessorId)
-    }
+    val newProcessorMap = dag.processors ++
+      Map(newProcessor.id -> newProcessor,
+          oldProcessorId -> dag.processors(oldProcessorId).copy(life = oldProcessorLife))
 
-    new DAG(newVersion, newProcessorMap, dag.graph.addGraph(newGraph))
+    val newGraph = dag.graph.subGraph(oldProcessorId).replaceVertex(oldProcessorId, newProcessor.id)
+    new DAG(newVersion, newProcessorMap, newGraph.addGraph(dag.graph))
   }
 }
 
-object DAGManager {
+object DagManager {
   case class WatchChange(watcher: ActorRef)
 
   object GetLatestDAG

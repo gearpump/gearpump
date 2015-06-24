@@ -18,10 +18,10 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import org.apache.gearpump.streaming.appmaster.DAGManager.GetTaskLaunchData
+import org.apache.gearpump.streaming.appmaster.DagManager.GetTaskLaunchData
 import org.apache.gearpump.streaming.appmaster.TaskManager.ChangeTasksOnExecutor
 import org.apache.gearpump.streaming.{ExecutorId, ProcessorId}
-import org.apache.gearpump.streaming.appmaster.TaskRegistry.{TaskLocation, Reject, Accept, RegisterTaskStatus, ProcessorParallism}
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.{TaskLocation, Reject, Accept, RegisterTaskStatus}
 import org.apache.gearpump.streaming.task.{TaskLocations, TaskId}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
@@ -82,8 +82,6 @@ class TaskRegistry(appId: Int, expectedTasks: List[TaskId],
 }
 
 object TaskRegistry {
-  case class ProcessorParallism(processorId: ProcessorId, parallism: Int)
-
   sealed trait RegisterTaskStatus
   object Accept extends RegisterTaskStatus
   object Reject extends RegisterTaskStatus

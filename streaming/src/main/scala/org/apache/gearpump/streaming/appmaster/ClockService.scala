@@ -143,7 +143,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
       sender ! LatestMinClock(minClock)
 
     case HealthCheck =>
-      selfChecker()
+      selfCheck()
 
     case SnapshotStartClock =>
       snapshotStartClock()
@@ -170,7 +170,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     }
   }
 
-  def selfChecker() : Unit = {
+  def selfCheck() : Unit = {
     val latestMinClock = minClock
     val minTimeStamp = new Date(latestMinClock)
     LOG.info(s"Application minClock tracking: $minTimeStamp")
