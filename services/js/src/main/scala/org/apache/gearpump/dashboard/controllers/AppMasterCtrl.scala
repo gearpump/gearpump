@@ -24,9 +24,10 @@ import org.apache.gearpump.dashboard.services.RestApiService
 import org.apache.gearpump.shared.Messages._
 import org.scalajs.dom.raw.HTMLElement
 
+import scala.collection.mutable
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
 import scala.scalajs.js
-import scala.scalajs.js.UndefOr
+import scala.scalajs.js.{JSON, UndefOr}
 import scala.scalajs.js.annotation.{JSExport, JSExportAll}
 import scala.util.{Failure, Success}
 
@@ -46,13 +47,19 @@ case class SummaryEntry(name: String, value: Any)
 case class Options(height: String)
 
 @JSExportAll
-case class Chart(title: String, options: Options, var data: js.Array[Int])
+case class Chart(title: String, options: Options, data: js.Array[Double])
 
 @JSExportAll
-case class ProcessedMessages(total: Int, rate: Int)
+case class AggregatedProcessedMessages(total: Int, rate: Double)
 
 @JSExportAll
-case class ProcessorsData(processors: Map[ProcessorId, ProcessorDescription], hierarchyLevels: Map[Int, Int], weights: Map[Int, Int])
+case class ProcessorConnections(inputs: Int, outputs: Int)
+
+@JSExportAll
+case class ProcessedMessages(total: Array[Int], rate: Array[Double])
+
+@JSExportAll
+case class ProcessorsData(processors: Map[ProcessorId, ProcessorDescription], hierarchyLevels: Map[Int, Int], weights: Map[Int, Double])
 
 @JSExport
 @injectable("AppMasterConfig")
@@ -88,17 +95,30 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     data.value.typeName match {
       case MeterType =>
         val metric = upickle.read[Meter](data.value.json)
-        val (appId, processorId, taskId) = decodeName(metric.name)
-        val metricInfo = MetricInfo[Meter](appId, processorId, taskId, metric)
-        meter += metric.name -> metricInfo
+        val (appId, processorId, taskId, name) = decodeName(metric.name)
+        val metricInfo = MetricInfo[Meter](appId, processorId, taskId, metric, data.value)
+        meter += name -> metricInfo
       case HistogramType =>
         val metric = upickle.read[Histogram](data.value.json)
-        val (appId, processorId, taskId) = decodeName(metric.name)
-        val metricInfo = MetricInfo[Histogram](appId, processorId, taskId, metric)
-        histogram += metric.name -> metricInfo
+        val (appId, processorId, taskId, name) = decodeName(metric.name)
+        val metricInfo = MetricInfo[Histogram](appId, processorId, taskId, metric, data.value)
+        histogram += name -> metricInfo
       case _ =>
         println(s"unknown metric type ${data.value.typeName}")
     }
+  }
+
+  @JSExport
+  def getAggregatedMetrics(metricInfo: MetricInfo[_ <: MetricType], metricType: String, processorId: Option[Int]): Array[Double] = {
+      val ids = processorId match {
+        case Some(id) =>
+          Array(id)
+        case None =>
+          processors.keys.toArray
+      }
+      ids.flatMap(pid => {
+        getProcessorMetrics(pid, metricInfo, metricType)
+      })
   }
 
   @JSExport
@@ -109,83 +129,183 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
   }
 
   @JSExport
-  def getReceivedMessages(processorId: UndefOr[js.Any]): ProcessedMessages = {
-    ProcessedMessages(0, 0)
+  def getReceivedMessages(processorId: UndefOr[Int]): AggregatedProcessedMessages = {
+    processorId.isDefined match {
+      case true =>
+        val id = processorId.asInstanceOf[Int]
+        getProcessedMessagesByProcessor(meter("receiveThroughput"), id, aggregated=false).left.getOrElse(AggregatedProcessedMessages(total=0,rate=0))
+      case false =>
+        getProcessedMessages(meter("receiveThroughput"), getProcessorIdsByType("sink"))
+    }
+  }
+
+  @JSExport
+  def getProcessorIdsByType(typeValue: String): Array[Int] = {
+    val ids = mutable.MutableList.empty[Int]
+    processors.keys.foreach(processorId => {
+      val conn = calculateProcessorConnections(processorId)
+      typeValue match {
+        case "source" =>
+          conn.inputs == 0 && conn.outputs > 0 match {
+            case true =>
+              ids += processorId
+            case false =>
+          }
+        case "sink" =>
+          conn.inputs > 0 && conn.outputs == 0 match {
+            case true =>
+              ids += processorId
+            case false =>
+          }
+      }
+    })
+    ids.toArray
+  }
+
+  @JSExport
+  def calculateProcessorConnections(processorId: Int): ProcessorConnections = {
+    val sum = edges.values.map(edge => {
+      (edge.source == processorId match {
+        case true =>
+          1
+        case false =>
+          0
+      },
+      edge.target == processorId match {
+        case true =>
+          1
+        case false =>
+          0
+      })
+    }).reduce((a1, a2) => {
+      (a1._1 + a2._1, a1._2 + a2._2)
+    })
+    ProcessorConnections(inputs=sum._2,outputs=sum._1)
+  }
+
+  @JSExport
+  def getProcessedMessages(metricInfo: MetricInfo[_ <: MetricType], processorIds: Array[Int]): AggregatedProcessedMessages = {
+    val sum = processorIds.map(processorId => {
+      val aggregated = getProcessedMessagesByProcessor(metricInfo, processorId, aggregated=true).left.get
+      (aggregated.total, aggregated.rate)
+    }).reduce((a1,a2) => {
+      (a1._1 + a2._1, a1._2 + a2._2)
+    })
+    AggregatedProcessedMessages(total=sum._1,rate=sum._2)
+  }
+
+  def getProcessedMessagesByProcessor(metricInfo: MetricInfo[_ <: MetricType], processorId: Int, aggregated: Boolean):
+  Either[AggregatedProcessedMessages,ProcessedMessages] = {
+    val taskCountArray = getAggregatedMetrics(metricInfo, "count", Some(processorId)).map(_.toInt)
+    val taskRateArray = getAggregatedMetrics(metricInfo, "meanRate", Some(processorId))
+    aggregated match {
+      case true =>
+        Left(AggregatedProcessedMessages(total=taskCountArray.sum, rate=taskRateArray.sum))
+      case false =>
+        Right(ProcessedMessages(total=taskCountArray, rate=taskRateArray))
+    }
+  }
+
+  @JSExport
+  def getSentMessages(processorId: UndefOr[Int]): AggregatedProcessedMessages = {
+    processorId.isDefined match {
+      case true =>
+        val id = processorId.get
+        getProcessedMessagesByProcessor(meter("sendThroughput"), id, aggregated = false).left.get
+      case false =>
+        getProcessedMessages(meter("sendThroughput"), getProcessorIdsByType("source"))
+    }
+  }
+
+  @JSExport
+  def getProcessingTime(processorId: UndefOr[Int]): Array[Double] = {
     /*
-        if (processorId !== undefined) {
-          return this._getProcessedMessagesByProcessor(
-            this.meter.receiveThroughput, processorId, false
-          );
-        } else {
-          return this._getProcessedMessages(
-            this.meter.receiveThroughput,
-            this._getProcessorIdsByType('sink')
-          );
-        }
+           var array = this._getAggregatedMetrics(this.histogram.processTime, 'mean', processorId);
+        return processorId !== undefined ? array : d3.mean(array);
+
      */
+    processorId.isDefined match {
+      case true =>
+        val id = processorId.get
+        getAggregatedMetrics(histogram("processTime"), "mean", Some(id))
+      case false =>
+        getAggregatedMetrics(histogram("processTime"), "mean", None)
+    }
   }
 
   @JSExport
-  def getSentMessages(processorId: UndefOr[js.Any]): ProcessedMessages = {
-    ProcessedMessages(0, 0)
-  }
-
-  @JSExport
-  def getProcessingTime(processorId: UndefOr[js.Any]): Int = {
-    0
-  }
-
-  @JSExport
-  def getReceiveLatency(processorId: UndefOr[js.Any]): Int = {
-    0
+  def getReceiveLatency(processorId: UndefOr[Int]): Array[Double] = {
+    /*
+            var array = this._getAggregatedMetrics(this.histogram.receiveLatency, 'mean', processorId);
+        return processorId !== undefined ? array : d3.mean(array);
+     */
+    processorId.isDefined match {
+      case true =>
+        val id = processorId.get
+        getAggregatedMetrics(histogram("receiveLatency"), "mean", Some(id))
+      case false =>
+        getAggregatedMetrics(histogram("receiveLatency"), "mean", None)
+    }
   }
 
   @JSExport
   def getProcessorsData(): ProcessorsData = {
-    /*
-        var weights = {};
-        angular.forEach(this.processors, function (_, key) {
-          var processorId = parseInt(key);
-          weights[processorId] = this._calculateProcessorWeight(processorId);
-        }, this);
-        return {
-          processors: angular.copy(this.processors),
-          hierarchyLevels: angular.copy(this.processorHierarchyLevels),
-          weights: weights
-        };
-     */
     val weights = processors.keys.map(processorId => {
       processorId -> calculateProcessorWeight(processorId)
-    }).toMap[Int, Int]
-
+    }).toMap[Int, Double]
     ProcessorsData(processors, processorHierarchyLevels, weights)
   }
 
   @JSExport
-  def calculateProcessorWeight(processorId: Int): Int = {
-    Array(getProcessorMetrics(processorId, "sendThroughput", "meanRate").sum,
-    getProcessorMetrics(processorId, "receiveThroughput", "meanRate").sum).max
+  def calculateProcessorWeight(processorId: Int): Double = {
+    Array(getProcessorMetrics(processorId, meter("sendThroughput"), "meanRate").sum,
+    getProcessorMetrics(processorId, meter("receiveThroughput"), "meanRate").sum).max
+  }
+
+  def toMap(metricInfo: MetricInfo[_ <: MetricType]): Map[String,Any] = {
+    metricInfo.typeInfo.typeName match {
+      case MeterType =>
+        JSON.parse(upickle.write[Meter](metricInfo.metric.asInstanceOf[Meter])).asInstanceOf[js.Dictionary[Any]].toMap
+      case HistogramType =>
+        JSON.parse(upickle.write[Histogram](metricInfo.metric.asInstanceOf[Histogram])).asInstanceOf[js.Dictionary[Any]].toMap
+      case _ =>
+        println("unknown type")
+        Map.empty[String, Any]
+    }
   }
 
   @JSExport
-  def getProcessorMetrics(processorId: Int, metricGroup: String, metricType: String): Array[Int] = {
-    val rt = Array.empty[Int]
-    rt
+  def getProcessorMetrics(processorId: Int, metricInfo: MetricInfo[_ <: MetricType], metricType: String): Array[Double] = {
+    val tasks = processors(processorId).parallelism
+    var values = mutable.MutableList.empty[Double]
+    (0 until tasks).foreach(task => {
+      val name = s"${processorId}_$task"
+      metricInfo.metric.name == name match {
+        case true =>
+          val fmap = toMap(metricInfo)
+          val value = fmap(metricType).asInstanceOf[Double]
+          values += value
+        case false =>
+          println(s"${metricInfo.metric.name} != $name")
+      }
+    })
+    values.toArray
   }
 
   @JSExport
   def hierarchyDepth(): Int = {
     processorHierarchyLevels.values.max
   }
-
+  
   import js.JSConverters._
 
-  def decodeName(name: String): (Int, Int, Int) = {
+  def decodeName(name: String): (Int, Int, Int, String) = {
     val parts: js.Array[String] = name.split("\\.").toJSArray
     val appId = parts(0).substring("app".length).toInt
     val processorId = parts(1).substring("processor".length).toInt
     val taskId = parts(2).substring("task".length).toInt
-    (appId, processorId, taskId)
+    val metric = parts(3)
+    (appId, processorId, taskId, metric)
   }
 }
 
@@ -234,7 +354,6 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
   }
 
   def selectTab(tab: Tab): Unit = {
-    println("!! selectTab !!")
     tab.selected = true
   }
 
@@ -271,7 +390,7 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
           restApi.subscribe(url) onComplete {
             case Success(rdata) =>
               val value = readHistoryMetrics(rdata)
-              Option(value).foreach(_.metrics.map(metricItem => {
+              Option(value).foreach(_.metrics.foreach(metricItem => {
                 scope.streamingDag.updateMetrics(metricItem)
               }))
             case Failure(t) =>

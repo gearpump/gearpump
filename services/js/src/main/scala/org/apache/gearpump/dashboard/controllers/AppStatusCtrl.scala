@@ -17,7 +17,11 @@ class AppStatusCtrl(scope: AppMasterScope, restApi: RestApiService, util: UtilSe
   println("AppStatusCtrl")
 
   def fetch: Unit = {
-    restApi.subscribe(s"/appmaster/${scope.app.appId}") onComplete {
+    val parentController = scope.dynamic.controller.asInstanceOf[AppMasterCtrl]
+    val inheritedScope = parentController.scope
+    val streamingDag = inheritedScope.streamingDag
+
+    restApi.subscribe(s"/appmaster/${inheritedScope.app.appId}") onComplete {
       case Success(data) =>
         val value = upickle.read[AppMasterData](data)
         scope.summary = js.Array[SummaryEntry](
@@ -27,8 +31,8 @@ class AppStatusCtrl(scope: AppMasterScope, restApi: RestApiService, util: UtilSe
           SummaryEntry(name = "Submission Time", value = util.stringToDateTime(value.submissionTime)),
           SummaryEntry(name = "Start Time", value = util.stringToDateTime(value.startTime)),
           SummaryEntry(name = "Stop Time", value = util.stringToDateTime(value.finishTime)),
-          SummaryEntry(name = "Number of Tasks", value = Option(scope.streamingDag).map(_.getNumOfTasks)),
-          SummaryEntry(name = "Number of Executors", value = Option(scope.streamingDag).map(_.executors.size))
+          SummaryEntry(name = "Number of Tasks", value = Option(streamingDag).map(_.getNumOfTasks)),
+          SummaryEntry(name = "Number of Executors", value = Option(streamingDag).map(_.executors.size))
         )
       case Failure(t) =>
         println(s"Failed to appmaster status ${t.getMessage}")
