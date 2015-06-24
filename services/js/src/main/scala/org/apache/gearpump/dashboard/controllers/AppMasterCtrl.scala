@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.gearpump.dashboard.controllers
 
 import com.greencatsoft.angularjs.core.{Compile, Route, RouteProvider, Scope}
@@ -28,10 +46,13 @@ case class SummaryEntry(name: String, value: Any)
 case class Options(height: String)
 
 @JSExportAll
-case class Chart(title: String, options: Options, data: js.Array[Int])
+case class Chart(title: String, options: Options, var data: js.Array[Int])
 
 @JSExportAll
 case class ProcessedMessages(total: Int, rate: Int)
+
+@JSExportAll
+case class ProcessorsData(processors: Map[ProcessorId, ProcessorDescription], hierarchyLevels: Map[Int, Int], weights: Map[Int, Int])
 
 @JSExport
 @injectable("AppMasterConfig")
@@ -55,11 +76,14 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
   val executors = data.executors
   var meter = Map.empty[String, MetricInfo[Meter]]
   var histogram = Map.empty[String, MetricInfo[Histogram]]
+  val d3 = js.Dynamic.global.d3
 
+  @JSExport
   def hasMetrics: Boolean = {
     meter.nonEmpty && histogram.nonEmpty
   }
 
+  @JSExport
   def updateMetrics(data: HistoryMetricsItem) = {
     data.value.typeName match {
       case MeterType =>
@@ -77,12 +101,14 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     }
   }
 
+  @JSExport
   def getNumOfTasks: Int = {
     processors.valuesIterator.map(processorDescription => {
       processorDescription.parallelism
     }).sum
   }
 
+  @JSExport
   def getReceivedMessages(processorId: UndefOr[js.Any]): ProcessedMessages = {
     ProcessedMessages(0, 0)
     /*
@@ -99,16 +125,57 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
      */
   }
 
+  @JSExport
   def getSentMessages(processorId: UndefOr[js.Any]): ProcessedMessages = {
     ProcessedMessages(0, 0)
   }
 
+  @JSExport
   def getProcessingTime(processorId: UndefOr[js.Any]): Int = {
     0
   }
 
+  @JSExport
   def getReceiveLatency(processorId: UndefOr[js.Any]): Int = {
     0
+  }
+
+  @JSExport
+  def getProcessorsData(): ProcessorsData = {
+    /*
+        var weights = {};
+        angular.forEach(this.processors, function (_, key) {
+          var processorId = parseInt(key);
+          weights[processorId] = this._calculateProcessorWeight(processorId);
+        }, this);
+        return {
+          processors: angular.copy(this.processors),
+          hierarchyLevels: angular.copy(this.processorHierarchyLevels),
+          weights: weights
+        };
+     */
+    val weights = processors.keys.map(processorId => {
+      processorId -> calculateProcessorWeight(processorId)
+    }).toMap[Int, Int]
+
+    ProcessorsData(processors, processorHierarchyLevels, weights)
+  }
+
+  @JSExport
+  def calculateProcessorWeight(processorId: Int): Int = {
+    Array(getProcessorMetrics(processorId, "sendThroughput", "meanRate").sum,
+    getProcessorMetrics(processorId, "receiveThroughput", "meanRate").sum).max
+  }
+
+  @JSExport
+  def getProcessorMetrics(processorId: Int, metricGroup: String, metricType: String): Array[Int] = {
+    val rt = Array.empty[Int]
+    rt
+  }
+
+  @JSExport
+  def hierarchyDepth(): Int = {
+    processorHierarchyLevels.values.max
   }
 
   import js.JSConverters._
@@ -130,6 +197,7 @@ object StreamingDag {
   def apply(data: StreamingAppMasterDataDetail) = new StreamingDag(data)
 }
 
+
 trait AppMasterScope extends Scope {
   var activeProcessorId: Int = js.native
   var app: StreamingAppMasterDataDetail = js.native
@@ -143,6 +211,7 @@ trait AppMasterScope extends Scope {
   var selectTab: js.Function1[Tab,Unit] = js.native
   var switchToTaskTab: js.Function1[Int,Unit] = js.native
 }
+
 
 @JSExport
 @injectable("AppMasterCtrl")
@@ -200,8 +269,8 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
         case false =>
           val url = s"/metrics/app/${scope.app.appId}/app${scope.app.appId}?readLatest=true"
           restApi.subscribe(url) onComplete {
-            case Success(data) =>
-              val value = readHistoryMetrics(data)
+            case Success(rdata) =>
+              val value = readHistoryMetrics(rdata)
               Option(value).foreach(_.metrics.map(metricItem => {
                 scope.streamingDag.updateMetrics(metricItem)
               }))

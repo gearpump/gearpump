@@ -13,10 +13,9 @@ trait AppProcessorScope extends Scope {
 
 @JSExport
 @injectable("AppProcessorCtrl")
-class AppProcessorCtrl(scope: AppProcessorScope, location: Location, conf: ConfService, lastPart: LastPartFilter)
+class AppProcessorCtrl(scope: AppProcessorScope, location: Location, conf: ConfService)
   extends AbstractController[AppProcessorScope](scope) {
 
   println("AppProcessorCtrl")
-
 
 }

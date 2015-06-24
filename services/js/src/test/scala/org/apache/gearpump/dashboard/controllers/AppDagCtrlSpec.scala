@@ -15,25 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.gearpump.dashboard.controllers
 
-import com.greencatsoft.angularjs.core.Scope
-import com.greencatsoft.angularjs.{AbstractController, injectable}
-import org.apache.gearpump.dashboard.services.{UtilService, RestApiService}
+import utest._
 
-import scala.scalajs.js.annotation.JSExport
+object AppDagCtrlSpec extends TestSuite {
+  implicit val ec = utest.ExecutionContext.RunNow
 
-trait AppMetricsScope extends Scope {
-
-}
-
-@JSExport
-@injectable("AppMetricsCtrl")
-class AppMetricsCtrl(scope: AppMetricsScope)
-  extends AbstractController[AppMetricsScope](scope) {
-
-  println("AppMetricsCtrl")
-
-
+  val tests = TestSuite {
+    "test creating AppDagCtrl class" - {
+      val appDagCtrl = new AppDagCtrl(null,null,null)
+    }
+  }
 }
