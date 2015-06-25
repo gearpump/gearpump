@@ -133,7 +133,7 @@ object Messages {
   case class MetricTypeInfo(typeName: String, json: String)
 
   @JSExportAll
-  case class MetricInfo[T<:MetricType:ClassTag](appId: Int, processorId: Int, taskId: Int, metric: T)
+  case class MetricInfo[T<:MetricType:ClassTag](appId: Int, processorId: Int, taskId: Int, metric: T, typeInfo: MetricTypeInfo)
 
   @JSExportAll
   case class Histogram

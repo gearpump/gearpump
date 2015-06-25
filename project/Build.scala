@@ -1,3 +1,5 @@
+import sbt._
+import Keys._
 import java.nio.file.Files
 import java.util.regex.Pattern
 import scala.collection.JavaConverters._
@@ -5,9 +7,8 @@ import scala.collection.JavaConverters._
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import org.scalajs.sbtplugin.ScalaJSPlugin
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
-import sbt.Keys._
-import sbt._
+import ScalaJSPlugin._
+import ScalaJSPlugin.autoImport._
 import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin._
 import xerial.sbt.Pack._
@@ -467,22 +468,19 @@ object Build extends sbt.Build {
     scalaVersion := scalaVersionNumber,
     checksums := Seq(""),
     requiresDOM := true,
-    postLinkJSEnv := PhantomJSEnv(autoExit = false).value,
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "0.8.1",
       "com.greencatsoft" %%% "scalajs-angular" % "0.5-SNAPSHOT",
-      "org.scala-js" %%% "scalajs-dom" % "0.8.0",
       "com.lihaoyi" %%% "upickle" % "0.2.8",
       "com.lihaoyi" %%% "utest" % "0.3.1"
     ),
     scalaJSStage in Global := FastOptStage,
     testFrameworks += new TestFramework("utest.runner.Framework"),
     requiresDOM := true,
-    persistLauncher := true,
-    persistLauncher in Test := false,
+    persistLauncher in Compile:= true,
+    persistLauncher in Test:= false,
     skip in packageJSDependencies := false,
-    jsDependencies += "org.webjars" % "angularjs" % "1.4.0" / "angular.js",
-    jsDependencies += RuntimeDOM,
     scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := ".*gearpump\\.dashboard.*;.*gearpump\\.shared.*",
     fastOptJS in Compile := {
       val originalResult = (fastOptJS in Compile).value
