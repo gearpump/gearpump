@@ -86,7 +86,8 @@ private[cluster] class Master extends Actor with Stash {
       sender ! WorkerRegistered(id, MasterInfo(self, birth))
       scheduler forward WorkerRegistered(id, MasterInfo(self, birth))
       workers += (sender() -> id)
-      LOG.info(s"Register Worker $id....")
+      val workerHostname = ActorUtil.getHostname(sender())
+      LOG.info(s"Register Worker $id from $workerHostname ....")
     case resourceUpdate : ResourceUpdate =>
       scheduler forward resourceUpdate
   }

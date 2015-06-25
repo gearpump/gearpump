@@ -41,6 +41,11 @@ object ActorUtil {
     path.toStringWithAddress(getSystemAddress(system))
   }
 
+  def getHostname(actor : ActorRef): String = {
+    val path = actor.path
+    path.address.host.getOrElse("localhost")
+  }
+
   def defaultMsgHandler(actor : ActorRef) : Receive = {
     case msg : Any =>
     LOG.error(s"Cannot find a matching message, ${msg.getClass.toString}, forwarded from $actor")
