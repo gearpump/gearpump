@@ -71,7 +71,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       this.masterInfo = masterInfo
       killSelf.cancel()
       context.watch(masterInfo.master)
-      LOG.info(s"Worker[$id] Registered ....")
+      LOG.info(s"Worker[$id] registered ....")
       sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
       context.become(appMasterMsgHandler orElse clientMessageHandler orElse terminationWatch(masterInfo.master) orElse ActorUtil.defaultMsgHandler(self))
   }
