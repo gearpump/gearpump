@@ -33,12 +33,12 @@ object DashboardApp extends JSApp {
   override def main(): Unit = {
     println("DashboardApp")
 
-    val conf = Angular.module("dashboard.conf", Array.empty[String])
+    val conf = Angular.module("conf", Array.empty[String])
     conf.factory[ConfServiceFactory]
 
-    val tabset = Angular.module("directive.tabset", Array.empty[String])
-    tabset.directive[TabSetDirective]
-    tabset.directive[TabDirective]
+//    val tabset = Angular.module("directive.tabset", Array.empty[String])
+//    tabset.directive[TabSetDirective]
+//    tabset.directive[TabDirective]
 
     val explanationicon = Angular.module("directive.explanationicon", Array("mgcrea.ngStrap.tooltip"))
     explanationicon.directive[ExplanationIconDirective]
@@ -47,7 +47,7 @@ object DashboardApp extends JSApp {
     metricsCard.filter[HumanizeFilter]
     metricsCard.directive[MetricsCardDirective]
 
-    val restapi = Angular.module("dashboard.restapi", Array("dashboard.conf"))
+    val restapi = Angular.module("dashboard.restapi", Array("conf"))
     restapi.factory[RestApiServiceFactory]
 
     val cluster = Angular.module("dashboard.cluster", Array("ngRoute"))
@@ -69,7 +69,7 @@ object DashboardApp extends JSApp {
     appmaster.controller[AppMasterCtrl]
     appmaster.controller[AppStatusCtrl]
     appmaster.controller[AppSummaryChartsCtrl]
-    appmaster.controller[AppDagCtrl]
+    //appmaster.controller[AppDagCtrl]
     appmaster.controller[AppProcessorCtrl]
     appmaster.controller[AppMetricsCtrl]
 
@@ -83,7 +83,9 @@ object DashboardApp extends JSApp {
       "directive.tabset",
       "directive.explanationicon",
       "directive.metricscard",
-      "dashboard.conf",
+      "conf",
+      "dashboard.metrics",
+      "dashboard.streamingdag",
       "dashboard.restapi",
       "dashboard.cluster",
       "dashboard.apps",

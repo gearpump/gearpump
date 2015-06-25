@@ -473,7 +473,7 @@ object Build extends sbt.Build {
       "com.greencatsoft" %%% "scalajs-angular" % "0.5-SNAPSHOT",
       "org.scala-js" %%% "scalajs-dom" % "0.8.0",
       "com.lihaoyi" %%% "upickle" % "0.2.8",
-      "com.lihaoyi" %%% "utest" % "0.3.0"
+      "com.lihaoyi" %%% "utest" % "0.3.1"
     ),
     scalaJSStage in Global := FastOptStage,
     testFrameworks += new TestFramework("utest.runner.Framework"),
@@ -492,7 +492,6 @@ object Build extends sbt.Build {
     compile in Compile <<=
       (compile in Compile) dependsOn copySharedResources,
     relativeSourceMaps := true,
-    sbt.Keys.test in Test := (),
     jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
 
   lazy val distributedshell = Project(
