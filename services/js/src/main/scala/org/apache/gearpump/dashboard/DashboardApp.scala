@@ -36,10 +36,6 @@ object DashboardApp extends JSApp {
     val conf = Angular.module("conf", Array.empty[String])
     conf.factory[ConfServiceFactory]
 
-//    val tabset = Angular.module("directive.tabset", Array.empty[String])
-//    tabset.directive[TabSetDirective]
-//    tabset.directive[TabDirective]
-
     val explanationicon = Angular.module("directive.explanationicon", Array("mgcrea.ngStrap.tooltip"))
     explanationicon.directive[ExplanationIconDirective]
 
@@ -69,7 +65,6 @@ object DashboardApp extends JSApp {
     appmaster.controller[AppMasterCtrl]
     appmaster.controller[AppStatusCtrl]
     appmaster.controller[AppSummaryChartsCtrl]
-    //appmaster.controller[AppDagCtrl]
     appmaster.controller[AppProcessorCtrl]
     appmaster.controller[AppMetricsCtrl]
 
@@ -80,12 +75,12 @@ object DashboardApp extends JSApp {
       "mgcrea.ngStrap",
       "ui.select",
       "smart-table",
+      "directive.echartfactory",
+      "directive.echarts",
       "directive.tabset",
       "directive.explanationicon",
       "directive.metricscard",
       "conf",
-      "dashboard.metrics",
-      "dashboard.streamingdag",
       "dashboard.restapi",
       "dashboard.cluster",
       "dashboard.apps",

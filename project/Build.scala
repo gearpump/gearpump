@@ -457,6 +457,7 @@ object Build extends sbt.Build {
     "org.webjars" % "bootstrap" % "3.3.4",
     "org.webjars" % "d3js" % "3.5.5",
     "org.webjars" % "smart-table" % "2.0.3",
+    "org.webjars" % "momentjs" % "2.10.3",
     "org.webjars.bower" % "vis" % "4.2.0"
     ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")),
     compile in Compile <<=

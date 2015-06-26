@@ -7,6 +7,7 @@ import org.apache.gearpump.dashboard.services.ConfService
 import scala.scalajs.js
 import scala.scalajs.js.undefined
 import scala.scalajs.js.annotation.JSExport
+import scala.util.Try
 
 
 @JSExport
@@ -24,25 +25,27 @@ class AppSummaryChartsCtrl(scope: AppMasterScope, interval: Interval, conf: Conf
     Chart(title="Average Receive Latency per Task (Unit: ms)", options=options, data=js.Array[Double]())
   )
 
-  def summary: Unit = {
-    val maybeValue = scope.dynamic.$parent.asInstanceOf[AppMasterScope]
-    val maybeValue2 = maybeValue.dynamic.$parent.asInstanceOf[AppMasterScope]
-    val streamingDag = maybeValue2.streamingDag
-    streamingDag.hasMetrics match {
-      case true =>
-        scope.charts(0).data :+ streamingDag.getReceivedMessages(null).rate
-        scope.charts(1).data :+ streamingDag.getSentMessages(null).rate
-        scope.charts(2).data :+ streamingDag.getProcessingTime(null)
-        scope.charts(3).data :+ streamingDag.getReceiveLatency(null)
-        scope.charts(0).data.push(streamingDag.getReceivedMessages(undefined).rate)
-        scope.charts(1).data.push(streamingDag.getSentMessages(undefined).rate)
-        scope.charts(2).data.push(streamingDag.getProcessingTime(undefined)(0))
-        scope.charts(3).data.push(streamingDag.getReceiveLatency(undefined)(0))
-      case false =>
-    }
+  def fetch: Unit = {
+    Try({
+      val streamingDag = scope.streamingDag
+      streamingDag.hasMetrics match {
+        case true =>
+          val receivedMessages = streamingDag.getReceivedMessages(undefined).rate
+          val sentMessages = streamingDag.getSentMessages(undefined).rate
+          println(s"receivedMessages=$receivedMessages sentMessages=$sentMessages charts.size=${scope.charts.size} charts(0).data.size=${scope.charts(0).data.size}")
+          scope.charts(0).data.push(receivedMessages)
+          scope.charts(1).data.push(sentMessages)
+          scope.charts(2).data.push(streamingDag.getProcessingTime(undefined)(0))
+          scope.charts(3).data.push(streamingDag.getReceiveLatency(undefined)(0))
+        case false =>
+          println("no metrics")
+      }
+    }).failed.foreach(throwable => {
+      println(s"failed ${throwable.getMessage}")
+    })
   }
 
-  val timeoutPromise = interval(summary _, conf.conf.updateChartInterval)
+  val timeoutPromise = interval(fetch _, conf.conf.updateChartInterval)
 
   scope.$on("$destroy", () => {
     interval.cancel(timeoutPromise)
