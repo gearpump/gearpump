@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.gearpump.dashboard.controllers
 
 import com.greencatsoft.angularjs.core.{Compile, Route, RouteProvider, Scope}
@@ -23,13 +22,14 @@ import com.greencatsoft.angularjs.{AbstractController, Config, injectable}
 import org.apache.gearpump.dashboard.services.RestApiService
 import org.apache.gearpump.shared.Messages._
 import org.scalajs.dom.raw.HTMLElement
+import upickle.Js
 
 import scala.collection.mutable
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
 import scala.scalajs.js
-import scala.scalajs.js.{JSON, UndefOr}
 import scala.scalajs.js.annotation.{JSExport, JSExportAll}
-import scala.util.{Failure, Success}
+import scala.scalajs.js.{JSON, UndefOr}
+import scala.util.{Try, Failure, Success}
 
 @JSExportAll
 case class Tab(var heading: String, templateUrl: String, controller: String, var selected: Boolean = false)
@@ -47,7 +47,7 @@ case class SummaryEntry(name: String, value: Any)
 case class Options(height: String)
 
 @JSExportAll
-case class Chart(title: String, options: Options, data: js.Array[Double])
+case class Chart(title: String, options: Options, var data: js.Array[Double])
 
 @JSExportAll
 case class AggregatedProcessedMessages(total: Int, rate: Double)
@@ -81,9 +81,11 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     (node1 + "_" + node2) -> GraphEdge(node1, node2, edge)
   }).toMap
   val executors = data.executors
-  var meter = Map.empty[String, MetricInfo[Meter]]
-  var histogram = Map.empty[String, MetricInfo[Histogram]]
+  var meter = Map.empty[String, Map[String,MetricInfo[Meter]]]
+  var histogram = Map.empty[String, Map[String,MetricInfo[Histogram]]]
   val d3 = js.Dynamic.global.d3
+
+  type MetricMap =  Map[String, Map[String, MetricInfo[_ <: MetricType]]]
 
   @JSExport
   def hasMetrics: Boolean = {
@@ -96,20 +98,36 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
       case MeterType =>
         val metric = upickle.read[Meter](data.value.json)
         val (appId, processorId, taskId, name) = decodeName(metric.name)
+        val key = s"${processorId}_$taskId"
         val metricInfo = MetricInfo[Meter](appId, processorId, taskId, metric, data.value)
-        meter += name -> metricInfo
+        meter.contains(name) match {
+          case true =>
+            var map = meter(name)
+            map += key -> metricInfo
+            meter += name -> map
+          case false =>
+            meter += name -> Map(key -> metricInfo)
+        }
       case HistogramType =>
         val metric = upickle.read[Histogram](data.value.json)
         val (appId, processorId, taskId, name) = decodeName(metric.name)
+        val key = processorId + "_" + taskId
         val metricInfo = MetricInfo[Histogram](appId, processorId, taskId, metric, data.value)
-        histogram += name -> metricInfo
+        histogram.contains(name) match {
+          case true =>
+            var map = histogram(name)
+            map += key -> metricInfo
+            histogram += name -> map
+          case false =>
+            histogram += name -> Map(key -> metricInfo)
+        }
       case _ =>
         println(s"unknown metric type ${data.value.typeName}")
     }
   }
 
   @JSExport
-  def getAggregatedMetrics(metricInfo: MetricInfo[_ <: MetricType], metricType: String, processorId: Option[Int]): Array[Double] = {
+  def getAggregatedMetrics(metricMap: MetricMap, metricCategory: String, metricType: String, processorId: Option[Int]): Array[Double] = {
       val ids = processorId match {
         case Some(id) =>
           Array(id)
@@ -117,7 +135,7 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
           processors.keys.toArray
       }
       ids.flatMap(pid => {
-        getProcessorMetrics(pid, metricInfo, metricType)
+        getProcessorMetrics(pid, metricMap, metricCategory, metricType)
       })
   }
 
@@ -133,9 +151,9 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     processorId.isDefined match {
       case true =>
         val id = processorId.asInstanceOf[Int]
-        getProcessedMessagesByProcessor(meter("receiveThroughput"), id, aggregated=false).left.getOrElse(AggregatedProcessedMessages(total=0,rate=0))
+        getProcessedMessagesByProcessor(meter, "receiveThroughput", id, aggregated=true).left.getOrElse(AggregatedProcessedMessages(total=0,rate=0))
       case false =>
-        getProcessedMessages(meter("receiveThroughput"), getProcessorIdsByType("sink"))
+        getProcessedMessages(meter, "receiveThroughput", getProcessorIdsByType("sink"))
     }
   }
 
@@ -184,9 +202,9 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
   }
 
   @JSExport
-  def getProcessedMessages(metricInfo: MetricInfo[_ <: MetricType], processorIds: Array[Int]): AggregatedProcessedMessages = {
+  def getProcessedMessages(metricMap: MetricMap, metricCategory: String, processorIds: Array[Int]): AggregatedProcessedMessages = {
     val sum = processorIds.map(processorId => {
-      val aggregated = getProcessedMessagesByProcessor(metricInfo, processorId, aggregated=true).left.get
+      val aggregated = getProcessedMessagesByProcessor(metricMap, metricCategory, processorId, aggregated=true).left.get
       (aggregated.total, aggregated.rate)
     }).reduce((a1,a2) => {
       (a1._1 + a2._1, a1._2 + a2._2)
@@ -194,10 +212,10 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     AggregatedProcessedMessages(total=sum._1,rate=sum._2)
   }
 
-  def getProcessedMessagesByProcessor(metricInfo: MetricInfo[_ <: MetricType], processorId: Int, aggregated: Boolean):
+  def getProcessedMessagesByProcessor(metricMap: MetricMap, metricCategory: String, processorId: Int, aggregated: Boolean):
   Either[AggregatedProcessedMessages,ProcessedMessages] = {
-    val taskCountArray = getAggregatedMetrics(metricInfo, "count", Some(processorId)).map(_.toInt)
-    val taskRateArray = getAggregatedMetrics(metricInfo, "meanRate", Some(processorId))
+    val taskCountArray = getAggregatedMetrics(metricMap, metricCategory, "count", Some(processorId)).map(_.toInt)
+    val taskRateArray = getAggregatedMetrics(metricMap, metricCategory, "meanRate", Some(processorId))
     aggregated match {
       case true =>
         Left(AggregatedProcessedMessages(total=taskCountArray.sum, rate=taskRateArray.sum))
@@ -211,9 +229,9 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     processorId.isDefined match {
       case true =>
         val id = processorId.get
-        getProcessedMessagesByProcessor(meter("sendThroughput"), id, aggregated = false).left.get
+        getProcessedMessagesByProcessor(meter, "sendThroughput", id, aggregated = true).left.get
       case false =>
-        getProcessedMessages(meter("sendThroughput"), getProcessorIdsByType("source"))
+        getProcessedMessages(meter, "sendThroughput", getProcessorIdsByType("source"))
     }
   }
 
@@ -227,9 +245,9 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     processorId.isDefined match {
       case true =>
         val id = processorId.get
-        getAggregatedMetrics(histogram("processTime"), "mean", Some(id))
+        getAggregatedMetrics(histogram, "processTime", "mean", Some(id))
       case false =>
-        getAggregatedMetrics(histogram("processTime"), "mean", None)
+        getAggregatedMetrics(histogram, "processTime", "mean", None)
     }
   }
 
@@ -242,9 +260,9 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     processorId.isDefined match {
       case true =>
         val id = processorId.get
-        getAggregatedMetrics(histogram("receiveLatency"), "mean", Some(id))
+        getAggregatedMetrics(histogram, "receiveLatency", "mean", Some(id))
       case false =>
-        getAggregatedMetrics(histogram("receiveLatency"), "mean", None)
+        getAggregatedMetrics(histogram, "receiveLatency", "mean", None)
     }
   }
 
@@ -258,35 +276,52 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
 
   @JSExport
   def calculateProcessorWeight(processorId: Int): Double = {
-    Array(getProcessorMetrics(processorId, meter("sendThroughput"), "meanRate").sum,
-    getProcessorMetrics(processorId, meter("receiveThroughput"), "meanRate").sum).max
+    Array(getProcessorMetrics(processorId, meter, "sendThroughput", "meanRate").sum,
+    getProcessorMetrics(processorId, meter, "receiveThroughput", "meanRate").sum).max
   }
 
-  def toMap(metricInfo: MetricInfo[_ <: MetricType]): Map[String,Any] = {
-    metricInfo.typeInfo.typeName match {
-      case MeterType =>
-        JSON.parse(upickle.write[Meter](metricInfo.metric.asInstanceOf[Meter])).asInstanceOf[js.Dictionary[Any]].toMap
-      case HistogramType =>
-        JSON.parse(upickle.write[Histogram](metricInfo.metric.asInstanceOf[Histogram])).asInstanceOf[js.Dictionary[Any]].toMap
-      case _ =>
-        println("unknown type")
-        Map.empty[String, Any]
+  def toMap(metricInfo: MetricInfo[_ <: MetricType]): Map[String, Js.Value] = {
+    Try({
+      metricInfo.typeInfo.typeName match {
+        case MeterType =>
+          upickle.writeJs[Meter](metricInfo.metric.asInstanceOf[Meter]).asInstanceOf[Js.Arr].value(1).asInstanceOf[Js.Obj].value.toMap
+        case HistogramType =>
+          upickle.writeJs[Histogram](metricInfo.metric.asInstanceOf[Histogram]).asInstanceOf[Js.Arr].value(1).asInstanceOf[Js.Obj].value.toMap
+        case _ =>
+          println("unknown type")
+          Map.empty[String,Js.Value]
+      }
+    }) match {
+      case Success(obj) =>
+        obj
+      case Failure(throwable) =>
+        println("failed to convert to dictionary")
+        Map.empty[String,Js.Value]
     }
   }
 
   @JSExport
-  def getProcessorMetrics(processorId: Int, metricInfo: MetricInfo[_ <: MetricType], metricType: String): Array[Double] = {
+  def getProcessorMetrics(processorId: Int, metricMap: Map[String,Map[String,MetricInfo[_ <: MetricType]]], metricCategory: String, metricType: String): Array[Double] = {
     val tasks = processors(processorId).parallelism
     var values = mutable.MutableList.empty[Double]
     (0 until tasks).foreach(task => {
       val name = s"${processorId}_$task"
-      metricInfo.metric.name == name match {
+      metricMap(metricCategory).contains(name) match {
         case true =>
-          val fmap = toMap(metricInfo)
-          val value = fmap(metricType).asInstanceOf[Double]
-          values += value
+          val metricInfo = metricMap(metricCategory)(name)
+          val fMap = toMap(metricInfo)
+          fMap.contains(metricType) match {
+            case true =>
+              val v = fMap(metricType).value
+              val obj = v.toString
+              val value = obj.toDouble
+              //println(s"found $metricCategory[$name][$metricType] = $value")
+              values += value
+            case false =>
+              println(s"could not find $metricCategory[$name][$metricType]")
+          }
         case false =>
-          println(s"${metricInfo.metric.name} != $name")
+          println(s"could not find $metricCategory[$name]")
       }
     })
     values.toArray
@@ -374,10 +409,6 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
   scope.selectTab = selectTab _
   scope.load = load _
 
-  def readHistoryMetrics(data: String): HistoryMetrics = {
-    upickle.read[HistoryMetrics](data)
-  }
-
   restApi.subscribe("/appmaster/" + scope.app.appId + "?detail=true") onComplete {
     case Success(value) =>
       val data = upickle.read[StreamingAppMasterDataDetail](value)
@@ -389,7 +420,7 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
           val url = s"/metrics/app/${scope.app.appId}/app${scope.app.appId}?readLatest=true"
           restApi.subscribe(url) onComplete {
             case Success(rdata) =>
-              val value = readHistoryMetrics(rdata)
+              val value = upickle.read[HistoryMetrics](rdata)
               Option(value).foreach(_.metrics.foreach(metricItem => {
                 scope.streamingDag.updateMetrics(metricItem)
               }))
