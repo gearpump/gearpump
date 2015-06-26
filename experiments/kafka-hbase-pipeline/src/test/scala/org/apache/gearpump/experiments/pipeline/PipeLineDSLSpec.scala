@@ -27,9 +27,9 @@ import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.dsl.op.OpType._
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator.SinkTask
 import org.apache.gearpump.streaming.dsl.{SinkConsumer, StreamApp}
-import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskId}
+import org.apache.gearpump.streaming.kafka.source.KafkaSource
+import org.apache.gearpump.streaming.task.{TaskContext, StartTime, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.scalatest.prop.PropertyChecks
@@ -51,21 +51,19 @@ class TimeReplayableSourceTest extends TimeReplayableSource {
     """.stripMargin
   )
 
-  def startFromBeginning(): Unit = {}
+  override def open(context: TaskContext, startTime: TimeStamp): Unit = {}
 
-  def setStartTime(startTime: TimeStamp): Unit = {}
+  override def setStartTime(startTime: Option[TimeStamp]): Unit = {}
 
-  def pull(num: Int): List[Message] = List(Message(data(0)), Message(data(1)), Message(data(2)))
+  override def read(): List[Message] = List(Message(data(0)), Message(data(1)), Message(data(2)))
 
-  def close(): Unit = {}
+  override def close(): Unit = {}
 }
 
 class KafkaSourceTest(kafkaConfig: KafkaConfig) extends Traverse[Array[Datum]] {
-  private val batchSize = kafkaConfig.getConsumerEmitBatchSize
-  private val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
-  lazy val source = new KafkaSource(kafkaConfig.getClientId, TaskId(0,0), 1, kafkaConfig, msgDecoder)
+  lazy val source = new KafkaSource(kafkaConfig)
   override def foreach[U](fun: Array[Datum] => U): Unit = {
-    val list = source.pull(10)
+    val list = source.read()
     list.foreach(msg => {
       val jsonData = msg.msg.asInstanceOf[String]
       val envelope = read[Envelope](jsonData)

@@ -29,6 +29,7 @@ import org.apache.gearpump.experiments.pipeline.Messages._
 import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.streaming.dsl.StreamApp._
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.apache.hadoop.conf.Configuration
@@ -51,14 +52,15 @@ class TimeReplayableSourceTest1 extends TimeReplayableSource {
     """.stripMargin
   )
 
-  def startFromBeginning(): Unit = {}
+  override def open(context: TaskContext, startTime: TimeStamp): Unit = {}
 
-  def setStartTime(startTime: TimeStamp): Unit = {}
+  override def setStartTime(startTime: Option[TimeStamp]): Unit = {}
 
-  def pull(num: Int): List[Message] = List(Message(data(0)), Message(data(1)), Message(data(2)))
+  override def read(): List[Message] = List(Message(data(0)), Message(data(1)), Message(data(2)))
 
-  def close(): Unit = {}
+  override def close(): Unit = {}
 }
+
 object PipeLineDSL extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 

@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.kafka.lib
 
 import com.typesafe.config.Config
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouperFactory
-import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, MessageDecoder}
+import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeStampFilter}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 

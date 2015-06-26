@@ -16,23 +16,35 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.wordcount
+package org.apache.gearpump.streaming.source
 
-import com.twitter.bijection.Injection
-import org.apache.gearpump.Message
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.output
+object DataSourceTask {
+  val DATA_SOURCE = "data_source"
+}
 
-  override def onStart(startTime : StartTime) : Unit = {}
+class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(context, conf) {
+  import org.apache.gearpump.streaming.source.DataSourceTask._
 
-  override def onNext(message: Message) : Unit = {
-    val bytes = message.msg.asInstanceOf[Array[Byte]]
-    for {
-      sentence <- Injection.invert[String, Array[Byte]](bytes)
-      word <- sentence.split("\\s+")
-    } output(new Message(word, message.timestamp))
+  private val source = conf.getValue[DataSource](DATA_SOURCE).get
+
+  override def onStart(newStartTime: StartTime): Unit = {
+    val time = newStartTime.startTime
+    LOG.info(s"opening data source at $time")
+    source.open(context, time)
+    self ! Message("start", System.currentTimeMillis())
+  }
+
+  override def onNext(message: Message): Unit = {
+    source.read().foreach(context.output)
+    self ! Message("continue", System.currentTimeMillis())
+  }
+
+  override def onStop(): Unit = {
+    LOG.info("closing data source...")
+    source.close()
   }
 }

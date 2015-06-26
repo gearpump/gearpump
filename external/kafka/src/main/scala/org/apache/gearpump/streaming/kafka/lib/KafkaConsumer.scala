@@ -50,9 +50,9 @@ object KafkaConsumer {
 }
 
 class KafkaConsumer(consumer: SimpleConsumer,
-                                   topic: String,
-                                   partition: Int,
-                                   getIterator: (Long) => Iterator[MessageAndOffset]) {
+                    topic: String,
+                    partition: Int,
+                    getIterator: (Long) => Iterator[MessageAndOffset]) {
   private val earliestOffset = consumer
     .earliestOrLatestOffset(TopicAndPartition(topic, partition), OffsetRequest.EarliestTime, -1)
   private var nextOffset: Long = earliestOffset

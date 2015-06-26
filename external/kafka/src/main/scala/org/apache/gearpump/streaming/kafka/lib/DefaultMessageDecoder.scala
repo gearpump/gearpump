@@ -16,23 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.wordcount
+package org.apache.gearpump.streaming.kafka.lib
 
-import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.transaction.api.MessageDecoder
 
-class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.output
-
-  override def onStart(startTime : StartTime) : Unit = {}
-
-  override def onNext(message: Message) : Unit = {
-    val bytes = message.msg.asInstanceOf[Array[Byte]]
-    for {
-      sentence <- Injection.invert[String, Array[Byte]](bytes)
-      word <- sentence.split("\\s+")
-    } output(new Message(word, message.timestamp))
+class DefaultMessageDecoder extends MessageDecoder {
+  override def fromBytes(bytes: Array[Byte]): Message = {
+    Message(bytes, System.currentTimeMillis())
   }
 }

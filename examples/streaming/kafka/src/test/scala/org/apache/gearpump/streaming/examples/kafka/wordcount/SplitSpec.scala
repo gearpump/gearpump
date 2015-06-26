@@ -17,6 +17,7 @@
  */
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
+import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.TaskContext
@@ -34,7 +35,7 @@ class SplitSpec extends FlatSpec with Matchers with MockitoSugar {
     val split = new Split(taskContext, UserConfig.empty)
 
     val msg = "this is a test message"
-    split.onNext(Message(msg))
+    split.onNext(Message(Injection[String, Array[Byte]](msg)))
     verify(taskContext, times(msg.split(" ").length)).output(anyObject[Message])
   }
 }

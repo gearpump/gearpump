@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,23 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.wordcount
+package org.apache.gearpump.streaming.source
 
-import com.twitter.bijection.Injection
-import org.apache.gearpump.Message
+import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.Processor
 
-class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.output
-
-  override def onStart(startTime : StartTime) : Unit = {}
-
-  override def onNext(message: Message) : Unit = {
-    val bytes = message.msg.asInstanceOf[Array[Byte]]
-    for {
-      sentence <- Injection.invert[String, Array[Byte]](bytes)
-      word <- sentence.split("\\s+")
-    } output(new Message(word, message.timestamp))
+object DataSourceProcessor {
+  def apply(dataSource: DataSource,
+            parallelism: Int,
+            description: String = "",
+            taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem): Processor[DataSourceTask] = {
+    Processor[DataSourceTask](parallelism, description = description,
+      taskConf.withValue[DataSource](DataSourceTask.DATA_SOURCE, dataSource))
   }
 }

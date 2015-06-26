@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,29 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.topn
+package org.apache.gearpump.streaming.sink
 
-class Rankings[T] extends Serializable {
-  private var rankings: List[(T, Long)] = newRankings
+import akka.actor.ActorSystem
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.Processor
 
-  def update(r: (T, Long)): Unit = {
-    rankings :+= r
-  }
-  def update(obj: T, count: Long): Unit = {
-    update((obj, count))
-  }
-
-  def getTopN(n: Int): List[(T, Long)] = {
-    rankings.sortBy(_._2).reverse.take(n)
-  }
-
-  def clear(): Unit = {
-    rankings = newRankings
-  }
-
-  private def newRankings: List[(T, Long)] = {
-    List.empty[(T, Long)]
+object DataSinkProcessor {
+  def apply(dataSink: DataSink,
+            parallelism: Int,
+            description: String = "",
+            taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem): Processor[DataSinkTask] = {
+    Processor[DataSinkTask](parallelism, description = description,
+      taskConf.withValue[DataSink](DataSinkTask.DATA_SINK, dataSink))
   }
 }
-
-
