@@ -260,8 +260,7 @@ object Build extends sbt.Build {
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test",
           ("org.apache.kafka" %% "kafka" % kafkaVersion classifier("test")) % "test"
-        ),
-        unmanagedClasspath in Test += baseDirectory.value.getParentFile.getParentFile / "conf"
+        )
       )
   ) dependsOn (streaming % "provided")
 

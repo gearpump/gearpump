@@ -29,21 +29,29 @@ object DataSourceTask {
 /**
  * general task that runs any [[DataSource]]
  * see [[DataSourceProcessor]] for its usage
+ *
+ * DataSourceTask calls
+ *   - `DataSource.open` in `onStart` and pass in [[TaskContext]] and application start time
+ *   - `DataSource.read` in each `onNext`, which reads a batch of messages whose size are defined by
+ *     `gearpump.source.read.batch.size`.
+ *   - `DataSource.close` in `onStop`
  */
 class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(context, conf) {
   import org.apache.gearpump.streaming.source.DataSourceTask._
 
   private val source = conf.getValue[DataSource](DATA_SOURCE).get
+  private val batchSize = conf.getInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE).getOrElse(1000)
+  private var startTime = 0L
 
   override def onStart(newStartTime: StartTime): Unit = {
-    val time = newStartTime.startTime
-    LOG.info(s"opening data source at $time")
-    source.open(context, time)
+    startTime = newStartTime.startTime
+    LOG.info(s"opening data source at $startTime")
+    source.open(context, Some(startTime))
     self ! Message("start", System.currentTimeMillis())
   }
 
   override def onNext(message: Message): Unit = {
-    source.read().foreach(context.output)
+    source.read(batchSize).foreach(context.output)
     self ! Message("continue", System.currentTimeMillis())
   }
 

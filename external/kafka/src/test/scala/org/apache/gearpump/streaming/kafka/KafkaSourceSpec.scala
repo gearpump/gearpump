@@ -21,83 +21,94 @@ package org.apache.gearpump.streaming.kafka
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.kafka.lib.{FetchThread, KafkaOffsetManager, KafkaMessage}
+import org.apache.gearpump.streaming.kafka.lib.consumer.{FetchThread, KafkaMessage}
+import org.apache.gearpump.streaming.kafka.lib.{KafkaConfig, KafkaOffsetManager}
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
-import org.apache.gearpump.streaming.transaction.api.MessageDecoder
+import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeStampFilter}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
 
-import scala.util.{Success, Failure}
+import scala.util.{Failure, Success}
 
 class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   val startTimeGen = Gen.choose[Long](0L, 1000L)
   val offsetGen = Gen.choose[Long](0L, 1000L)
 
-  property("KafkaSource startFromBeginning should set consumer to earliest offset") {
+  property("KafkaSource open sets consumer to earliest offset") {
     val topicAndPartition = mock[TopicAndPartition]
     val fetchThread = mock[FetchThread]
-    val messageDecoder = mock[MessageDecoder]
     val offsetManager = mock[KafkaOffsetManager]
-    val kafkaSource = new KafkaSource(fetchThread, messageDecoder, Map(topicAndPartition -> offsetManager))
+    val messageDecoder = mock[MessageDecoder]
+    val timestampFilter = mock[TimeStampFilter]
+    val kafkaConfig = mock[KafkaConfig]
+    val kafkaSource = new KafkaSource(kafkaConfig, messageDecoder, timestampFilter,
+      Some(fetchThread), Map(topicAndPartition -> offsetManager))
 
-    kafkaSource.startFromBeginning()
+    kafkaSource.setStartTime(None)
 
     verify(fetchThread).start()
     verify(fetchThread, never()).setStartOffset(anyObject[TopicAndPartition](), anyLong())
   }
 
-  property("KafkaSource setStartTime should not set consumer start offset if offset storage is empty") {
+  property("KafkaSource open should not set consumer start offset if offset storage is empty") {
     forAll(startTimeGen) { (startTime: Long) =>
       val offsetManager = mock[KafkaOffsetManager]
       val topicAndPartition = mock[TopicAndPartition]
       val fetchThread = mock[FetchThread]
       val messageDecoder = mock[MessageDecoder]
-      val source = new KafkaSource(fetchThread, messageDecoder, Map(topicAndPartition -> offsetManager))
+      val timestampFilter = mock[TimeStampFilter]
+      val kafkaConfig = mock[KafkaConfig]
+      val source = new KafkaSource(kafkaConfig, messageDecoder, timestampFilter,
+        Some(fetchThread), Map(topicAndPartition -> offsetManager))
 
       when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(StorageEmpty))
 
-      source.setStartTime(startTime)
+      source.setStartTime(Some(startTime))
       verify(fetchThread, never()).setStartOffset(anyObject[TopicAndPartition](), anyLong())
       verify(fetchThread).start()
 
       when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(new RuntimeException))
       intercept[RuntimeException] {
-        source.setStartTime(startTime)
+        source.setStartTime(Some(startTime))
       }
       source.close()
     }
   }
 
-  property("KafkaSource setStartTime should set consumer start offset if offset storage is not empty") {
+  property("KafkaSource open should set consumer start offset if offset storage is not empty") {
     forAll(startTimeGen, offsetGen) {
       (startTime: Long, offset: Long) =>
         val offsetManager = mock[KafkaOffsetManager]
         val topicAndPartition = mock[TopicAndPartition]
         val fetchThread = mock[FetchThread]
         val messageDecoder = mock[MessageDecoder]
-        val source = new KafkaSource(fetchThread, messageDecoder, Map(topicAndPartition -> offsetManager))
+        val timestampFilter = mock[TimeStampFilter]
+        val kafkaConfig = mock[KafkaConfig]
+        val source = new KafkaSource(kafkaConfig, messageDecoder, timestampFilter,
+          Some(fetchThread), Map(topicAndPartition -> offsetManager))
 
         when(offsetManager.resolveOffset(startTime)).thenReturn(Success(offset))
 
-        source.setStartTime(startTime)
+        source.setStartTime(Some(startTime))
         verify(fetchThread).setStartOffset(topicAndPartition, offset)
         verify(fetchThread).start()
 
         when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(new RuntimeException))
         intercept[RuntimeException] {
-          source.setStartTime(startTime)
+          source.setStartTime(Some(startTime))
         }
         source.close()
     }
   }
 
-  property("KafkaSource pull should return number of messages in best effort") {
+  property("KafkaSource read should return number of messages in best effort") {
     val numberGen = Gen.choose[Int](0, 1000)
+
     val kafkaMsgGen = for {
       topic <- Gen.alphaStr
       partition <- Gen.choose[Int](0, 1000)
@@ -105,18 +116,23 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
       key = None
       msg <- Gen.alphaStr.map(Injection[String, Array[Byte]])
     } yield KafkaMessage(TopicAndPartition(topic, partition), offset, key, msg)
-    val kafkaMsgListGen = Gen.listOf[KafkaMessage](kafkaMsgGen)
+    val kafkaMsgListGen = Gen.listOf[KafkaMessage](kafkaMsgGen) suchThat (_.size > 0)
     forAll(numberGen, kafkaMsgListGen) {
       (number: Int, kafkaMsgList: List[KafkaMessage]) =>
         val offsetManager = mock[KafkaOffsetManager]
-        val messageDecoder = mock[MessageDecoder]
         val fetchThread = mock[FetchThread]
+        val messageDecoder = mock[MessageDecoder]
         val message = mock[Message]
-        val source = new KafkaSource(fetchThread, messageDecoder,
-          kafkaMsgList.map(_.topicAndPartition -> offsetManager).toMap)
+
+        val timestampFilter = mock[TimeStampFilter]
+        val kafkaConfig = mock[KafkaConfig]
+        val offsetManagers = kafkaMsgList.map(_.topicAndPartition -> offsetManager).toMap
+
+        val source = new KafkaSource(kafkaConfig, messageDecoder, timestampFilter, Some(fetchThread), offsetManagers)
+
         if (number == 0) {
           verify(fetchThread, never()).poll
-          source.pull(number).size shouldBe 0
+          source.read(number).size shouldBe 0
         } else {
           kafkaMsgList match {
             case Nil =>
@@ -129,9 +145,11 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
             case list =>
               val queue = list.map(Option(_)) ++ List.fill(number - list.size)(None)
               when(fetchThread.poll).thenReturn(queue.head, queue.tail: _*)
+              when(messageDecoder.fromBytes(anyObject[Array[Byte]])).thenReturn(message)
               when(offsetManager.filter(anyObject[(Message, Long)])).thenReturn(Some(message))
+              when(timestampFilter.filter(anyObject[Message], anyLong())).thenReturn(Some(message))
           }
-          source.pull(number).size shouldBe Math.min(number, kafkaMsgList.size)
+          source.read(number).size shouldBe Math.min(number, kafkaMsgList.size)
           verify(fetchThread, times(number)).poll
         }
         source.close()
@@ -140,10 +158,12 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
 
   property("KafkaSource close should close all offset managers") {
     val offsetManager = mock[KafkaOffsetManager]
-    val messageDecoder = mock[MessageDecoder]
     val topicAndPartition = mock[TopicAndPartition]
     val fetchThread = mock[FetchThread]
-    val source = new KafkaSource(fetchThread, messageDecoder,
+    val timestampFilter = mock[TimeStampFilter]
+    val messageDecoder = mock[MessageDecoder]
+    val kafkaConfig = mock[KafkaConfig]
+    val source = new KafkaSource(kafkaConfig, messageDecoder, timestampFilter, Some(fetchThread),
       Map(topicAndPartition -> offsetManager))
     source.close()
     verify(offsetManager).close()

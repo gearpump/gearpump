@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,29 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.topn
+package org.apache.gearpump.streaming.source
 
-class Rankings[T] extends Serializable {
-  private var rankings: List[(T, Long)] = newRankings
+object DataSourceConfig {
 
-  def update(r: (T, Long)): Unit = {
-    rankings :+= r
-  }
-  def update(obj: T, count: Long): Unit = {
-    update((obj, count))
-  }
+  val SOURCE_READ_BATCH_SIZE = "gearpump.source.read.batch.size"
+  val SOURCE_TIMESTAMP_FILTER = "gearpump.source.timestamp.filter.class"
 
-  def getTopN(n: Int): List[(T, Long)] = {
-    rankings.sortBy(_._2).reverse.take(n)
-  }
-
-  def clear(): Unit = {
-    rankings = newRankings
-  }
-
-  private def newRankings: List[(T, Long)] = {
-    List.empty[(T, Long)]
-  }
 }
-
-

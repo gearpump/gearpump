@@ -18,46 +18,14 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.streaming.source.DataSource
 
 /**
+ * AT-LEAST-ONCE API
  *
- * TimeReplayableSource would allow users to pull and replay
- * messages from a startTime.
- *
- * The typical usage is like the following, where user get startTime
- * from TaskContext in onStart and pull num of messages in each onNext.
- * User could optionally append a TimeStampFilter in case source messages
- * are not stored in TimeStamp order
- *
- * e.g.
- *   class UserTask(conf: Configs) extends TaskActor(conf) {
- *     var startTime = 0L
- *
- *     override def onStart(context: TaskContext): Unit = {
- *       this.startTime = context.startTime
- *       TimeReplayableSource.setStartTime(this.startTime)
- *     }
- *
- *     override def onNext(msg: Message): Unit = {
- *       TimeReplayableSource.pull(num).foreach { msg =>
- *         TimeStampFilter.filter(msg, this.startTime).map(output)
- *       }
- *     }
- *   }
- *
+ * subclass should be able to replay messages on recovery from the time
+ * when an application crashed
  */
-trait TimeReplayableSource extends java.io.Serializable {
-  def startFromBeginning(): Unit
-  def setStartTime(startTime: TimeStamp): Unit
-  /**
-   *  pull the num of messages from source
-   *  Note: this is best effort. The returned
-   *  message count may be less than num
-   */
-  def pull(num: Int): List[Message]
-
-  def close(): Unit
-}
+trait TimeReplayableSource extends DataSource
 
 

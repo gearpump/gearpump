@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,23 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.source
 
 import org.apache.gearpump.{TimeStamp, Message}
 import org.scalacheck.Gen
-import org.scalatest.{PropSpec, Matchers}
+import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
 
-class KafkaFilterSpec extends PropSpec with PropertyChecks with Matchers {
-
-  property("KafkaFilter should filter message against give timestamp") {
+class DefaultTimeStampFilterSpec extends PropSpec with PropertyChecks with Matchers {
+  property("DefaultTimeStampFilter should filter message against give timestamp") {
     val timestampGen = Gen.chooseNum[Long](0L, 1000L)
     val messageGen = for {
       msg <- Gen.alphaStr
       time <- timestampGen
     } yield Message(msg, time)
 
-    val filter = new KafkaFilter()
+    val filter = new DefaultTimeStampFilter()
 
     forAll(timestampGen, messageGen) {
       (predicate: TimeStamp, message: Message) =>

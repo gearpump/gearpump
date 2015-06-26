@@ -21,6 +21,7 @@ package org.apache.gearpump.streaming.kafka.lib
 import java.util.concurrent.LinkedBlockingQueue
 
 import kafka.common.TopicAndPartition
+import org.apache.gearpump.streaming.kafka.lib.consumer.{KafkaMessage, KafkaConsumer, FetchThread}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
