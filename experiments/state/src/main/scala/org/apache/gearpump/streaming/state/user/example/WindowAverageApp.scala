@@ -24,6 +24,8 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.kafka.lib.consumer.KafkaConsumerConfig
+import org.apache.gearpump.streaming.kafka.lib.producer.KafkaProducerConfig
 import org.apache.gearpump.streaming.state.system.impl.{WindowConfig, PersistentStateConfig}
 import org.apache.gearpump.streaming.state.user.example.processor.{NumberGeneratorProcessor, WindowAverageProcessor}
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
@@ -44,9 +46,8 @@ object WindowAverageApp extends App with ArgumentsParser {
     val windowStep = config.getInt("window_step")
     val stateConfig = new PersistentStateConfig(
       ConfigFactory.parseResources("state.conf"))
-    val kafkaConfig = new KafkaConfig(
-      ConfigFactory.parseResources("kafka.conf")
-    )
+    val kafkaConfig = new KafkaConfig(ConfigFactory.parseResources("kafka.conf"),
+      KafkaConsumerConfig("consumer.properties"), KafkaProducerConfig("producer.properties"))
     val userConfig = UserConfig.empty
       .withValue(PersistentStateConfig.NAME, stateConfig)
       .withValue(WindowConfig.NAME, WindowConfig(windowSize, windowStep))

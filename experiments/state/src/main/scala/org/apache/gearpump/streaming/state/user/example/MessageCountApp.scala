@@ -24,6 +24,8 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ParseResult, CLIOption, ArgumentsParser}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.kafka.lib.consumer.KafkaConsumerConfig
+import org.apache.gearpump.streaming.kafka.lib.producer.KafkaProducerConfig
 import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
 import org.apache.gearpump.streaming.state.user.example.processor.{CountProcessor, NumberGeneratorProcessor}
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
@@ -42,7 +44,8 @@ object MessageCountApp extends App with ArgumentsParser {
     val gen = Processor[NumberGeneratorProcessor](config.getInt("gen"))
     val count = Processor[CountProcessor](config.getInt("count"))
     val stateConfig = new PersistentStateConfig(ConfigFactory.parseResources("state.conf"))
-    val kafkaConfig = new KafkaConfig(ConfigFactory.parseResources("kafka.conf"))
+    val kafkaConfig = new KafkaConfig(ConfigFactory.parseResources("kafka.conf"),
+      KafkaConsumerConfig("consumer.properties"), KafkaProducerConfig("producer.properties"))
     val userConfig = UserConfig.empty
       .withValue(PersistentStateConfig.NAME, stateConfig)
       .withValue(KafkaConfig.NAME, kafkaConfig)

@@ -22,10 +22,11 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.examples.kafka.{KafkaStreamProcessor, KafkaStreamProducer}
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
+import org.apache.gearpump.streaming.kafka.lib.consumer.KafkaConsumerConfig
+import org.apache.gearpump.streaming.kafka.lib.producer.KafkaProducerConfig
+import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
@@ -46,7 +47,10 @@ object KafkaWordCount extends App with ArgumentsParser {
     val sumNum = config.getInt("sum")
     val kafkaStreamProcessorNum = config.getInt("kafka_stream_processor")
 
-    val kafkaConfig = KafkaConfig(ConfigFactory.parseResources("kafka.conf"))
+    val kafkaConfig = new KafkaConfig(
+      (ConfigFactory.parseResources("kafka.conf")),
+      KafkaConsumerConfig("consumer.properties"),
+      KafkaProducerConfig("producer.properties"))
     val appConfig = UserConfig.empty
       .withValue(KafkaConfig.NAME, kafkaConfig)
 

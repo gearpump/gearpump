@@ -20,7 +20,9 @@ package org.apache.gearpump.streaming.kafka.lib
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
+import kafka.consumer.ConsumerConfig
 import org.apache.gearpump._
+import org.apache.gearpump.streaming.kafka.lib.producer.KafkaProducerConfig
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.apache.gearpump.streaming.transaction.api.{OffsetManager, OffsetStorage}
 import org.apache.gearpump.util.LogUtil
@@ -30,12 +32,16 @@ import scala.util.{Failure, Success, Try}
 
 object KafkaOffsetManager {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaOffsetManager])
-  def apply(appName: String, config: KafkaConfig, topicAndPartition: TopicAndPartition): KafkaOffsetManager = {
+  def apply(appName: String,
+            topicAndPartition: TopicAndPartition,
+            kafkaConfig: KafkaConfig,
+            consumerConfig: ConsumerConfig,
+            producerConfig: KafkaProducerConfig): KafkaOffsetManager = {
     val storageTopic = s"app${appName}_${topicAndPartition.topic}_${topicAndPartition.partition}"
-    val replicas = config.getStorageReplicas
-    val connectZk = KafkaUtil.connectZookeeper(config)
+    val replicas = kafkaConfig.getStorageReplicas
+    val connectZk = KafkaUtil.connectZookeeper(consumerConfig)
     val topicExists = KafkaUtil.createTopic(connectZk(), storageTopic, partitions = 1, replicas)
-    new KafkaOffsetManager(KafkaStorage(config, storageTopic, topicExists, topicAndPartition))
+    new KafkaOffsetManager(KafkaStorage(storageTopic, topicExists, topicAndPartition, consumerConfig, producerConfig))
   }
 }
 

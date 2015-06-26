@@ -21,7 +21,8 @@ package org.apache.gearpump.streaming.kafka
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.kafka.lib.{FetchThread, KafkaOffsetManager, KafkaMessage}
+import org.apache.gearpump.streaming.kafka.lib.consumer.{KafkaMessage, FetchThread}
+import org.apache.gearpump.streaming.kafka.lib.KafkaOffsetManager
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
 import org.apache.gearpump.streaming.transaction.api.MessageDecoder
 import org.mockito.Matchers._

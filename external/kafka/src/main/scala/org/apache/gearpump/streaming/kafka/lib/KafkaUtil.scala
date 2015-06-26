@@ -18,11 +18,13 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
+import java.io.InputStream
 import java.util.Properties
 
 import kafka.admin.AdminUtils
 import kafka.cluster.Broker
 import kafka.common.TopicAndPartition
+import kafka.consumer.ConsumerConfig
 import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
@@ -102,23 +104,26 @@ object KafkaUtil {
     }
   }
 
-
-  def buildProducerConfig(config: KafkaConfig): Properties = {
-    val props = new Properties()
-    props.put("bootstrap.servers", config.getProducerBootstrapServers)
-    props.put("acks", config.getProducerAcks)
-    // scala Int/Long extends AnyVal while this requires AnyRef (java Object)
-    props.put("buffer.memory", config.getProducerBufferMemory.asInstanceOf[java.lang.Long])
-    props.put("compression.type", config.getProducerCompressionType)
-    props.put("batch.size", config.getProducerBatchSize.asInstanceOf[java.lang.Integer])
-    props.put("retries", config.getProducerRetries.asInstanceOf[java.lang.Integer])
-    props
+  def connectZookeeper(config: ConsumerConfig): () => ZkClient = {
+    val zookeeperConnect = config.zkConnect
+    val sessionTimeout = config.zkSessionTimeoutMs
+    val connectionTimeout = config.zkConnectionTimeoutMs
+    () => new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
   }
 
-  def connectZookeeper(config: KafkaConfig): () => ZkClient = {
-    val zookeeperConnect = config.getZookeeperConnect
-    val sessionTimeout = config.getSocketTimeoutMS
-    val connectionTimeout = config.getSocketTimeoutMS
-    () => new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
+  def loadProperties(filename: String): Properties = {
+    val props = new Properties()
+    var propStream: InputStream = null
+    try {
+      propStream = getClass.getClassLoader.getResourceAsStream(filename)
+      props.load(propStream)
+    } catch {
+      case e: Exception =>
+        LOG.error(s"$filename not found")
+    } finally {
+      if(propStream != null)
+        propStream.close()
+    }
+    props
   }
 }

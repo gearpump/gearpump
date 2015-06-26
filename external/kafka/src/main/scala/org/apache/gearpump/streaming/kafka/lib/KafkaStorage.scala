@@ -20,13 +20,15 @@ package org.apache.gearpump.streaming.kafka.lib
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
+import kafka.consumer.ConsumerConfig
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.kafka.lib.consumer.KafkaConsumer
+import org.apache.gearpump.streaming.kafka.lib.producer.KafkaProducerConfig
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.apache.gearpump.util.LogUtil
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
-import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.slf4j.Logger
 
 import scala.collection.mutable
@@ -35,11 +37,14 @@ import scala.util.{Failure, Success, Try}
 object KafkaStorage {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaStorage])
 
-  def apply(config: KafkaConfig, topic: String, topicExists: Boolean, topicAndPartition: TopicAndPartition) = {
-    val getConsumer = () => KafkaConsumer(topic, 0, config)
-    val producer = new KafkaProducer[Array[Byte], Array[Byte]](
-      KafkaUtil.buildProducerConfig(config), new ByteArraySerializer, new ByteArraySerializer)
-    val connectZk = KafkaUtil.connectZookeeper(config)
+  def apply(topic: String,
+            topicExists: Boolean,
+            topicAndPartition: TopicAndPartition,
+            consumerConfig: ConsumerConfig,
+            producerConfig: KafkaProducerConfig) = {
+    val getConsumer = () => KafkaConsumer(topic, 0, consumerConfig)
+    val producer = producerConfig.buildProducer
+    val connectZk = KafkaUtil.connectZookeeper(consumerConfig)
     new KafkaStorage(topic, topicExists, producer, getConsumer(), connectZk())
   }
 }
