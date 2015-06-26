@@ -19,7 +19,7 @@ package org.apache.gearpump.dashboard.controllers
 
 import com.greencatsoft.angularjs.core.{Compile, Route, RouteProvider, Scope}
 import com.greencatsoft.angularjs.{AbstractController, Config, injectable}
-import org.apache.gearpump.dashboard.services.RestApiService
+import org.apache.gearpump.dashboard.services.{DagOptions, RestApiService}
 import org.apache.gearpump.shared.Messages._
 import org.scalajs.dom.raw.HTMLElement
 import upickle.Js
@@ -27,9 +27,9 @@ import upickle.Js
 import scala.collection.mutable
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.runNow
 import scala.scalajs.js
-import scala.scalajs.js.annotation.{JSExport, JSExportAll}
-import scala.scalajs.js.{JSON, UndefOr}
-import scala.util.{Try, Failure, Success}
+import scala.scalajs.js.UndefOr
+import scala.scalajs.js.annotation.{JSExport, JSExportAll, JSName}
+import scala.util.{Failure, Success, Try}
 
 @JSExportAll
 case class Tab(var heading: String, templateUrl: String, controller: String, var selected: Boolean = false)
@@ -59,7 +59,30 @@ case class ProcessorConnections(inputs: Int, outputs: Int)
 case class ProcessedMessages(total: Array[Int], rate: Array[Double])
 
 @JSExportAll
-case class ProcessorsData(processors: Map[ProcessorId, ProcessorDescription], hierarchyLevels: Map[Int, Int], weights: Map[Int, Double])
+case class ProcessorsData(processors: Map[ProcessorId, ProcessorDescription], hierarchyLevels: Map[Int, Int], var weights: Map[Int, Double])
+
+@JSExportAll
+case class EdgesData(edges: Map[Int, (Int,String,Int)], bandwidths: Map[Int, Int])
+
+@JSName("vis.DataSet")
+class DataSet extends js.Object {
+  val length: Int = js.native
+  def add(data: Array[js.Object], senderId: String): Array[String] = js.native
+  def get(id:Int): VisNode = js.native
+  def update(nodes: js.Array[VisNode]): js.Array[Int] = js.native
+}
+
+@JSExportAll
+case class DagData(nodes: DataSet, edges: DataSet)
+
+@JSExportAll
+case class DoubleClickEvent(doubleClick: js.Function1[DagData, Unit])
+
+@JSExportAll
+case class VisGraph(options: DagOptions, data: DagData, events: DoubleClickEvent)
+
+@JSExportAll
+case class VisNode(id: Int, label: String, level: Int, size: Int)
 
 @JSExport
 @injectable("AppMasterConfig")
@@ -328,6 +351,35 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
   }
 
   @JSExport
+  def getEdgesData(): EdgesData = {
+    /*
+        var bandwidths = {};
+        angular.forEach(this.edges, function (_, edgeId) {
+          bandwidths[edgeId] = this._calculateEdgeBandwidth(edgeId);
+        }, /* scope */ this);
+        return {
+          edges: angular.copy(this.edges),
+          bandwidths: bandwidths
+        };
+      },
+
+      /** Bandwidth of an edge equals the minimum of average send throughput and average receive throughput. */
+      _calculateEdgeBandwidth: function (edgeId) {
+        var digits = edgeId.split('_');
+        var sourceId = parseInt(digits[0]);
+        var targetId = parseInt(digits[1]);
+        var sourceOutputs = this.calculateProcessorConnections(sourceId).outputs;
+        var targetInputs = this.calculateProcessorConnections(targetId).inputs;
+        var sourceSendThroughput = d3.sum(this._getProcessorMetrics(sourceId, this.meter.sendThroughput, 'meanRate'));
+        var targetReceiveThroughput = d3.sum(this._getProcessorMetrics(targetId, this.meter.receiveThroughput, 'meanRate'));
+        return Math.min(
+          sourceOutputs === 0 ? 0 : (sourceSendThroughput / sourceOutputs),
+          targetInputs === 0 ? 0 : (targetReceiveThroughput / targetInputs));
+     */
+    EdgesData(Map.empty[Int,(Int,String,Int)],Map.empty[Int,Int])
+  }
+
+  @JSExport
   def hierarchyDepth(): Int = {
     processorHierarchyLevels.values.max
   }
@@ -356,15 +408,19 @@ object StreamingDag {
 trait AppMasterScope extends Scope {
   var activeProcessorId: Int = js.native
   var app: StreamingAppMasterDataDetail = js.native
+  var charts: js.Array[Chart] = js.native
   var streamingDag: StreamingDag = js.native
   var summary: js.Array[SummaryEntry] = js.native
   var switchToTabIndex: TabIndex = js.native
   var tabs: js.Array[Tab] = js.native
-  var charts: js.Array[Chart] = js.native
+  var visgraph: VisGraph = js.native
 
   var load: js.Function2[HTMLElement, Tab,Unit] = js.native
   var selectTab: js.Function1[Tab,Unit] = js.native
   var switchToTaskTab: js.Function1[Int,Unit] = js.native
+  var updateMetricsCounter: js.Function0[Unit] = js.native
+  var updateVisGraphEdges: js.Function0[Unit] = js.native
+  var updateVisGraphNodes: js.Function0[Unit] = js.native
 }
 
 

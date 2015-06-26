@@ -96,7 +96,7 @@ object Messages {
   */
 
   @JSExportAll
-  case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int)
+  case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "")
 
   @JSExportAll
   case class StreamingAppMasterDataDetail(

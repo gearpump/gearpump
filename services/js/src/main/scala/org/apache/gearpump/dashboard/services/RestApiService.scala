@@ -53,15 +53,15 @@ class RestApiService(http: HttpService, timeout: Timeout, options: ConfService) 
   }
 
   def appConfigLink(appId: String): String = {
-    return options.conf.restapiRoot + "/config/app/" + appId
+    options.conf.restapiRoot + "/config/app/" + appId
   }
 
   def workerConfigLink(workerId: String): String = {
-    return options.conf.restapiRoot + "/config/worker/" + workerId
+    options.conf.restapiRoot + "/config/worker/" + workerId
   }
 
   def masterConfigLink: String = {
-    return options.conf.restapiRoot + "/config/master"
+    options.conf.restapiRoot + "/config/master"
   }
 }
 
