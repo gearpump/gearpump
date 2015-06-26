@@ -1,26 +1,69 @@
+/*
+ * Licensed under the Apache License, Version 2.0
+ * See accompanying LICENSE file.
+ */
+
+/* Change default font (better cache related fonts locally) */
+/*@charset "UTF-8";@font-face{font-family:'Source Sans Pro';font-style:normal;font-weight:300;src:local('Source Sans Pro Light'),local('SourceSansPro-Light'),url(http://fonts.gstatic.com/s/sourcesanspro/v9/toadOcfmlt9b38dHJxOBGMw1o1eFRj7wYC6JbISqOjY.ttf) format('truetype')}@font-face{font-family:'Source Sans Pro';font-style:normal;font-weight:400;src:local('Source Sans Pro'),local('SourceSansPro-Regular'),url(http://fonts.gstatic.com/s/sourcesanspro/v9/ODelI1aHBYDBqgeIAH2zlNzbP97U9sKh0jjxbPbfOKg.ttf) format('truetype')}@font-face{font-family:'Source Sans Pro';font-style:normal;font-weight:600;src:local('Source Sans Pro Semibold'),local('SourceSansPro-Semibold'),url(http://fonts.gstatic.com/s/sourcesanspro/v9/toadOcfmlt9b38dHJxOBGNNE-IuDiR70wI4zXaKqWCM.ttf) format('truetype')}@font-face{font-family:'Source Sans Pro';font-style:italic;font-weight:400;src:local('Source Sans Pro Italic'),local('SourceSansPro-It'),url(http://fonts.gstatic.com/s/sourcesanspro/v9/M2Jd71oPJhLKp0zdtTvoM0DauxaEVho0aInXGvhmB4k.ttf) format('truetype')}*/
 body, .tooltip, .popover {
-  font-family: lato, 'helvetica neue', 'segoe ui', arial, helvetica, sans-serif;
+  font-family: roboto, lato, 'helvetica neue', 'segoe ui', arial, helvetica, sans-serif;
 }
 
+/* .navbar-static-top will occupy 50px */
+body {
+  padding-top: 50px; /*equals navbar height*/
+}
+
+/* More distance to the branding logo at left */
 .navbar-nav > li:first-child {
   margin-left: 30px;
 }
 
-#main {
-  margin-bottom: 60px;
+/* A smaller breadcrumb */
+.breadcrumb-sm {
+  font-size: 0.9em;
+  margin-bottom: 8px;
 }
 
-.navbar-fixed-bottom > * {
-  background-color: #eee;
+/* Remove 1px border from stripped table (2 rules) */
+.table-striped tbody > tr:not(:first-child) > td {
+  border-top: 0 none transparent;
 }
 
+.table-striped thead > tr > th {
+  border-bottom: 0 none transparent;
+}
+
+/* Table header column should not be wrapped */
+.table thead > tr > th {
+  white-space: nowrap;
+}
+
+/* Increase the distance of table footer and table body */
+.table tfoot > tr > td {
+  padding-top: 12px;
+  border-top: 0 solid transparent;
+}
+
+/* Smaller font for table meta */
+.table thead > tr > th,
+.table tfoot > tr > td {
+  font-size: .85em;
+}
+
+/* Larger table caption */
+.table caption {
+  font-size: 1.15em;
+}
+
+/* glyphicon in a SPAN might be a bit too high than other SPAN text elements */
 .glyphicon {
   top: 2px;
 }
 
+/* Tune bootstrap-tooltip look and feel (2 rules) */
 .tooltip-inner {
-  max-width: unset;
-  font-size: 12px;
+  max-width: none;
   padding: 4.5px 10px 5px;
 }
 

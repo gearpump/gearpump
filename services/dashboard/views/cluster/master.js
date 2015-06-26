@@ -17,26 +17,24 @@ angular.module('dashboard.cluster', [])
   }])
 
   .controller('MasterCtrl', ['$scope', 'restapi', function ($scope, restapi) {
-    $scope.statusClass = function (status, good, bad) {
-      return status === 'synced' ? good : bad;
-    };
-
     restapi.subscribe('/master', $scope,
       function (data) {
         // TODO: Serde MasterData (#458)
         var desc = data.masterDescription;
-        $scope.master = {
-          aliveFor: desc.aliveFor,
-          clusters: desc.cluster.map(function (item) {
-            return item.join(':');
-          }),
-          configLink: restapi.masterConfigLink(),
-          homeDir: desc.homeDirectory,
-          leader: desc.leader.join(':'),
-          logDir: desc.logFile,
-          jarStore: desc.jarStore,
-          status: desc.masterStatus
-        };
+        var condition = desc.masterStatus === 'synced' ? 'good' : 'concern';
+        $scope.masterProps = [
+          {name: 'Leader', value: desc.leader.join(':')},
+          {name: 'Cluster Members', values: desc.cluster.map(function(item) {return item.join(':');})},
+          {name: 'Status', value: {text: desc.masterStatus, condition: condition}, renderer: 'State'},
+          {name: 'Up Time', value: desc.aliveFor, renderer: 'Duration'}
+        ];
+
+        $scope.quickLinks = [
+          {name: 'Configuration', value: {href: restapi.masterConfigLink(), text: 'Download'}, renderer: 'Link'},
+          {name: 'Home Dir.', value: desc.homeDirectory},
+          {name: 'Log Dir.', value: desc.logFile},
+          {name: 'JAR Store Dir.', value: desc.jarStore}
+        ];
       }
     );
   }])

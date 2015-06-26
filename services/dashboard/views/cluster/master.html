@@ -9,49 +9,20 @@
   </div>
   <div class="col-md-10" role="main">
 
-<h4>Master Information</h4>
+<property-table
+  caption="Master Information"
+  props-bind="masterProps"
+  prop-name-class="col-md-2"
+  prop-value-class="col-md-8">
+</property-table>
 
-<table class="table table-striped table-hover table-two-column">
-  <caption></caption>
-  <tbody>
-  <tr>
-    <td class="col-md-4">Leader</td>
-    <td class="col-md-8"><span ng-bind="master.leader"></span></td>
-  </tr>
-  <tr>
-    <td>Cluster Members</td>
-    <td><div ng-repeat="cluster in master.clusters track by $index" ng-bind="cluster"></div>
-    </td>
-  </tr>
-  <tr>
-    <td>Status</td>
-    <td>
-      <span ng-class="statusClass(master.status, 'label-success', 'label-danger')"
-            class="label" ng-bind="master.status"></span>
-    </td>
-  </tr>
-  <tr>
-    <td>Up Time</td>
-    <td><span ng-bind="master.aliveFor|duration"></span></td>
-  </tr>
-  <tr>
-    <td>Configuration</td>
-    <td><a class="small" href="{{master.configLink}}" target="_blank">Download</a></td>
-  </tr>
-  <tr>
-    <td>Home Dir.</td>
-    <td><span class="small" ng-bind="master.homeDir"></span></td>
-  </tr>
-  <tr>
-    <td>Log Dir.</td>
-    <td><span class="small" ng-bind="master.logDir"></span></td>
-  </tr>
-  <tr>
-    <td>JAR Store Dir.</td>
-    <td><span class="small" ng-bind="master.jarStore"></span></td>
-  </tr>
-  </tbody>
-</table>
+<property-table
+  caption="Quick Links"
+  props-bind="quickLinks"
+  prop-name-class="col-md-2"
+  prop-value-class="col-md-8">
+</property-table>
+
 </div>
 </div>
 

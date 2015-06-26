@@ -12,6 +12,7 @@ angular
     'mgcrea.ngStrap',
     'ui.select',
     'smart-table',
+    'dashing',
     'directive.echartfactory',
     'directive.echarts',
     'directive.tabset',
