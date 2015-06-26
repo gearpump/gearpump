@@ -18,29 +18,25 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
+import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-import scala.collection.mutable
-
-class Sum (taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+class Sum(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.output
 
-  private[wordcount] val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
+  private[wordcount] var wordcount = Map.empty[String, Long]
 
   override def onStart(startTime : StartTime) : Unit = {}
 
-  override def onNext(msg : Message) : Unit = {
-    if (null == msg) {
-      return
-    }
-    val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
-    val word = msg.msg.asInstanceOf[String]
-    val count = current + 1
-    map.put(word, count)
-    output(new Message(s"${msg.timestamp}" -> s"$word:$count", System.currentTimeMillis()))
+  override def onNext(message : Message) : Unit = {
+    val word = message.msg.asInstanceOf[String]
+    val count = wordcount.getOrElse(word, 0L) + 1
+    wordcount += word -> count
+    output(new Message(
+      Injection[String, Array[Byte]](word) ->
+        Injection[Long, Array[Byte]](count),
+      message.timestamp))
   }
-
-  override def onStop() : Unit = {}
 }

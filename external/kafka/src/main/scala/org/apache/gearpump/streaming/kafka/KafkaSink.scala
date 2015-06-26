@@ -20,27 +20,43 @@ package org.apache.gearpump.streaming.kafka
 
 import java.util.Properties
 
-import org.apache.gearpump.streaming.kafka.lib.{KafkaUtil, KafkaConfig}
-import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
+import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.kafka.lib.{KafkaConfig, KafkaUtil}
+import org.apache.gearpump.streaming.sink.DataSink
+import org.apache.gearpump.streaming.task.TaskContext
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 
-class KafkaSink private[kafka](producer: KafkaProducer[Array[Byte], Array[Byte]]) {
+/**
+ * kafka sink connectors that invokes [[KafkaProducer]] to send
+ * messages to kafka queue
+ * @param getProducer is a function to construct a KafkaProducer
+ * @param topic is the kafka topic to write to
+ */
+class KafkaSink private[kafka](getProducer: () => KafkaProducer[Array[Byte], Array[Byte]], topic: String) extends DataSink {
 
-  def this(producerConfig: Properties) =
-    this(new KafkaProducer[Array[Byte], Array[Byte]](
-      producerConfig, new ByteArraySerializer, new ByteArraySerializer))
-
-  def this(config: KafkaConfig) = this(KafkaUtil.buildProducerConfig(config))
-
-  def write(topic: String, key: Array[Byte], msg: Array[Byte]): Unit = {
-    producer.send(new ProducerRecord[Array[Byte], Array[Byte]](topic, key, msg))
+  def this(topic: String, properties: Properties) = {
+    this(() => KafkaUtil.createKafkaProducer(properties,
+      new ByteArraySerializer, new ByteArraySerializer), topic)
   }
 
-  def write(topic: String, partition: Int, key: Array[Byte], msg: Array[Byte]): Unit = {
-    producer.send(new ProducerRecord[Array[Byte], Array[Byte]](topic, partition, key, msg))
+  def this(config: KafkaConfig) = {
+    this(config.getProducerTopic, config.producerConfig)
   }
 
-  def close(): Unit = {
+  // lazily construct producer since KafkaProducer is not serializable
+  private lazy val producer = getProducer()
+
+  override def open(context: TaskContext): Unit = {}
+
+  override def write(message: Message): Unit = {
+    val (key, value) = message.msg.asInstanceOf[(Array[Byte], Array[Byte])]
+    val record = new ProducerRecord[Array[Byte], Array[Byte]](topic, key, value)
+    producer.send(record)
+  }
+
+  override def close(): Unit = {
     producer.close()
   }
 }
+

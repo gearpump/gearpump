@@ -49,7 +49,7 @@ trait DataSource extends java.io.Serializable {
    * @param context is the task context at runtime
    * @param startTime is the start time of system
    */
-  def open(context: TaskContext, startTime: TimeStamp): Unit
+  def open(context: TaskContext, startTime: Option[TimeStamp]): Unit
 
   /**
    * read a number of messages from data source.

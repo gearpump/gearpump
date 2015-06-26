@@ -18,10 +18,13 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
+import java.util.Properties
+
 import com.twitter.bijection.Injection
-import kafka.common.TopicAndPartition
+import kafka.consumer.ConsumerConfig
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.streaming.kafka.lib.consumer.KafkaConsumer
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.apache.gearpump.util.LogUtil
@@ -35,20 +38,25 @@ import scala.util.{Failure, Success, Try}
 object KafkaStorage {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaStorage])
 
-  def apply(config: KafkaConfig, topic: String, topicExists: Boolean, topicAndPartition: TopicAndPartition) = {
-    val getConsumer = () => KafkaConsumer(topic, 0, config)
-    val producer = new KafkaProducer[Array[Byte], Array[Byte]](
-      KafkaUtil.buildProducerConfig(config), new ByteArraySerializer, new ByteArraySerializer)
-    val connectZk = KafkaUtil.connectZookeeper(config)
-    new KafkaStorage(topic, topicExists, producer, getConsumer(), connectZk())
+  def apply(topic: String,
+            topicExists: Boolean,
+            consumerConfig: ConsumerConfig,
+            properties: Properties) = {
+    val getConsumer = () => KafkaConsumer(topic, 0, consumerConfig)
+    val getProducer = () => KafkaUtil.createKafkaProducer[Array[Byte], Array[Byte]](
+      properties, new ByteArraySerializer, new ByteArraySerializer)
+    val connectZk = KafkaUtil.connectZookeeper(consumerConfig)
+    new KafkaStorage(topic, topicExists, getProducer(), getConsumer(), connectZk())
   }
 }
 
-private[kafka] class KafkaStorage(topic: String,
+class KafkaStorage private[kafka](topic: String,
                                   topicExists: Boolean,
-                                  producer: KafkaProducer[Array[Byte], Array[Byte]],
+                                  getProducer: => KafkaProducer[Array[Byte], Array[Byte]],
                                   getConsumer: => KafkaConsumer,
                                   connectZk: => ZkClient) extends OffsetStorage {
+  private val producer = getProducer
+
   private val dataByTime: List[(TimeStamp, Array[Byte])] = {
     if (topicExists){
       load(getConsumer)

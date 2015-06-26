@@ -16,29 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.topn
+package org.apache.gearpump.streaming.kafka.lib.consumer
 
-class Rankings[T] extends Serializable {
-  private var rankings: List[(T, Long)] = newRankings
+import kafka.common.TopicAndPartition
 
-  def update(r: (T, Long)): Unit = {
-    rankings :+= r
-  }
-  def update(obj: T, count: Long): Unit = {
-    update((obj, count))
-  }
-
-  def getTopN(n: Int): List[(T, Long)] = {
-    rankings.sortBy(_._2).reverse.take(n)
-  }
-
-  def clear(): Unit = {
-    rankings = newRankings
-  }
-
-  private def newRankings: List[(T, Long)] = {
-    List.empty[(T, Long)]
-  }
+/**
+ * wrapper over messages from kafka
+ * @param topicAndPartition where message comes from
+ * @param offset message offset on kafka queue
+ * @param key message key, could be None
+ * @param msg message payload
+ */
+case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
+                        key: Option[Array[Byte]], msg: Array[Byte]) {
+  def this(topic: String, partition: Int, offset: Long,
+    key: Option[Array[Byte]], msg: Array[Byte]) =
+    this(TopicAndPartition(topic, partition), offset, key, msg)
 }
-
 

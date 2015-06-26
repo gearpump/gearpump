@@ -23,6 +23,7 @@ import java.nio.ByteBuffer
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.I0Itec.zkclient.ZkClient
+import org.apache.gearpump.streaming.kafka.lib.consumer.{KafkaMessage, KafkaConsumer}
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.mockito.Matchers._

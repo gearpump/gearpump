@@ -38,7 +38,7 @@ class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(contex
   override def onStart(newStartTime: StartTime): Unit = {
     val time = newStartTime.startTime
     LOG.info(s"opening data source at $time")
-    source.open(context, time)
+    source.open(context, Some(time))
     self ! Message("start", System.currentTimeMillis())
   }
 

@@ -18,14 +18,14 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
-import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, SubmitApplication}
-import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
+import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
 import org.apache.gearpump.util.Util
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
-import scala.util.{Success, Try}
+import scala.util.Success
 
 class KafkaWordCountSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
 
@@ -42,10 +42,10 @@ class KafkaWordCountSpec extends PropSpec with PropertyChecks with Matchers with
   property("KafkaWordCount should succeed to submit application with required arguments") {
     val requiredArgs = Array.empty[String]
     val optionalArgs = Array(
-      "-kafka_stream_producer", "1",
+      "-source", "1",
       "-split", "1",
       "-sum", "1",
-      "-kafka_stream_processor", "1")
+      "-sink", "1")
 
     val args = {
       Table(

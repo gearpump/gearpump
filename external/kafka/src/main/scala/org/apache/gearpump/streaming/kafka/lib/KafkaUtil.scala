@@ -18,15 +18,19 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
+import java.io.InputStream
 import java.util.Properties
 
 import kafka.admin.AdminUtils
 import kafka.cluster.Broker
 import kafka.common.TopicAndPartition
+import kafka.consumer.ConsumerConfig
 import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
 import org.apache.gearpump.util.LogUtil
+import org.apache.kafka.clients.producer.{ProducerConfig, KafkaProducer}
+import org.apache.kafka.common.serialization.Serializer
 import org.slf4j.Logger
 
 object KafkaUtil {
@@ -102,23 +106,35 @@ object KafkaUtil {
     }
   }
 
+  def connectZookeeper(config: ConsumerConfig): () => ZkClient = {
+    val zookeeperConnect = config.zkConnect
+    val sessionTimeout = config.zkSessionTimeoutMs
+    val connectionTimeout = config.zkConnectionTimeoutMs
+    () => new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
+  }
 
-  def buildProducerConfig(config: KafkaConfig): Properties = {
+  def loadProperties(filename: String): Properties = {
     val props = new Properties()
-    props.put("bootstrap.servers", config.getProducerBootstrapServers)
-    props.put("acks", config.getProducerAcks)
-    // scala Int/Long extends AnyVal while this requires AnyRef (java Object)
-    props.put("buffer.memory", config.getProducerBufferMemory.asInstanceOf[java.lang.Long])
-    props.put("compression.type", config.getProducerCompressionType)
-    props.put("batch.size", config.getProducerBatchSize.asInstanceOf[java.lang.Integer])
-    props.put("retries", config.getProducerRetries.asInstanceOf[java.lang.Integer])
+    var propStream: InputStream = null
+    try {
+      propStream = getClass.getClassLoader.getResourceAsStream(filename)
+      props.load(propStream)
+    } catch {
+      case e: Exception =>
+        LOG.error(s"$filename not found")
+    } finally {
+      if(propStream != null)
+        propStream.close()
+    }
     props
   }
 
-  def connectZookeeper(config: KafkaConfig): () => ZkClient = {
-    val zookeeperConnect = config.getZookeeperConnect
-    val sessionTimeout = config.getSocketTimeoutMS
-    val connectionTimeout = config.getSocketTimeoutMS
-    () => new ZkClient(zookeeperConnect, sessionTimeout, connectionTimeout, ZKStringSerializer)
+  def createKafkaProducer[K, V](properties: Properties,
+                                keySerializer: Serializer[K],
+                                valueSerializer: Serializer[V]): KafkaProducer[K, V] = {
+    if (properties.getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG) == null) {
+      properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    }
+    new KafkaProducer[K, V](properties, keySerializer, valueSerializer)
   }
 }

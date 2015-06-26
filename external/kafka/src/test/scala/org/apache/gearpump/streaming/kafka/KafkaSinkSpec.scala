@@ -19,6 +19,7 @@
 package org.apache.gearpump.streaming.kafka
 
 import com.twitter.bijection.Injection
+import org.apache.gearpump.Message
 import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -40,8 +41,8 @@ class KafkaSinkSpec extends PropSpec with PropertyChecks with Matchers with Mock
       (data: (String, Array[Byte], Array[Byte])) =>
       val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val (topic, key, msg) = data
-      val kafkaSink = new KafkaSink(producer)
-      kafkaSink.write(topic, key, msg)
+      val kafkaSink = new KafkaSink(() => producer, topic)
+      kafkaSink.write(Message((key, msg)))
       verify(producer).send(anyObject[ProducerRecord[Array[Byte], Array[Byte]]]())
       kafkaSink.close()
     }
@@ -49,7 +50,7 @@ class KafkaSinkSpec extends PropSpec with PropertyChecks with Matchers with Mock
 
   property("KafkaSink close should close kafka producer") {
     val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
-    val kafkaSink = new KafkaSink(producer)
+    val kafkaSink = new KafkaSink(() => producer, "topic")
     kafkaSink.close()
     verify(producer).close()
   }

@@ -210,7 +210,7 @@ class MemoryPersistor(taskContext : TaskContext, conf: UserConfig)
 class KafkaProducer(taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
 
-  import taskContext.{output, parallelism, taskId}
+  import taskContext.{output, parallelism}
 
   private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val batchSize = kafkaConfig.getConsumerEmitBatchSize
@@ -218,21 +218,21 @@ class KafkaProducer(taskContext : TaskContext, conf: UserConfig)
 
   val taskParallelism = parallelism
 
-  private val source: TimeReplayableSource = new KafkaSource(taskContext.appName, taskId, taskParallelism, kafkaConfig, msgDecoder)
+  private val source: TimeReplayableSource = new KafkaSource(kafkaConfig)
   private var startTime: TimeStamp = 0L
 
   override def onStart(newStartTime: StartTime): Unit = {
     Try({
       startTime = newStartTime.startTime
       //source.setStartTime(startTime)
-      source.startFromBeginning()
+      source.open(taskContext, None)
     }).failed.foreach(LOG.error("caught error", _))
     self ! Message("start", System.currentTimeMillis())
   }
 
   override def onNext(msg: Message): Unit = {
     Try({
-      source.pull(batchSize).foreach(msg => {
+      source.read().foreach(msg => {
         val jsonData = msg.msg.asInstanceOf[String]
         val envelope = read[Envelope](jsonData)
         val body = read[Body](envelope.body)
