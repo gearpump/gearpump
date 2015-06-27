@@ -103,6 +103,7 @@ Check [Maven settings](http://www.gearpump.io/site/downloads/downloads/#maven)
 * [Suneel Marthi](https://github.com/smarthi)
 * [Stanley Xu](https://github.com/stanleyxu2005)
 * [Tomasz Targonski](https://github.com/TomaszT)
+* [Sun Kewei](https://github.com/skw1992)
 
 ## Contacts:
 
