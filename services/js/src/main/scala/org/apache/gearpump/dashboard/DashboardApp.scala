@@ -59,9 +59,8 @@ object DashboardApp extends JSApp {
     val visgraph = Angular.module("directive.visgraph", Array.empty[String])
     visgraph.directive[VisnetworkDirective]
 
-    val appmaster = Angular.module("dashboard.apps.appmaster", Array("directive.visgraph"))
+    val appmaster = Angular.module("dashboard.apps.appmaster", Array("directive.visgraph", "conf"))
     appmaster.factory[DagStyleServiceFactory]
-    appmaster.filter[LastPartFilter]
     appmaster.config[AppMasterConfig]
     appmaster.controller[AppMasterCtrl]
     appmaster.controller[AppStatusCtrl]

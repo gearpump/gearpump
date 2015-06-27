@@ -72,11 +72,11 @@ class DagStyleService() {
     DagData(new DataSet(), new DataSet())
   }
 
-  def nodeRadiusRange(): js.Array[Int] = {
+  def nodeRadiusRange(): js.Array[Double] = {
     js.Array(2, 16)
   }
 
-  def edgeWidthRange(): js.Array[Int] = {
+  def edgeWidthRange(): js.Array[Double] = {
     js.Array(1, 5)
   }
 

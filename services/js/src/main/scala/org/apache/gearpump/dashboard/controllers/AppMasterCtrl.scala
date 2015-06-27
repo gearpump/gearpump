@@ -19,7 +19,7 @@ package org.apache.gearpump.dashboard.controllers
 
 import com.greencatsoft.angularjs.core.{Compile, Route, RouteProvider, Scope}
 import com.greencatsoft.angularjs.{AbstractController, Config, injectable}
-import org.apache.gearpump.dashboard.services.{DagOptions, RestApiService}
+import org.apache.gearpump.dashboard.services.{ColorSet, DagOptions, RestApiService}
 import org.apache.gearpump.shared.Messages._
 import org.scalajs.dom.raw.HTMLElement
 import upickle.Js
@@ -62,14 +62,15 @@ case class ProcessedMessages(total: Array[Int], rate: Array[Double])
 case class ProcessorsData(processors: Map[ProcessorId, ProcessorDescription], hierarchyLevels: Map[Int, Int], var weights: Map[Int, Double])
 
 @JSExportAll
-case class EdgesData(edges: Map[Int, (Int,String,Int)], bandwidths: Map[Int, Int])
+case class EdgesData(edges: Map[String, GraphEdge], var bandwidths: Map[String, Double])
 
 @JSName("vis.DataSet")
 class DataSet extends js.Object {
   val length: Int = js.native
   def add(data: Array[js.Object], senderId: String): Array[String] = js.native
   def get(id:Int): VisNode = js.native
-  def update(nodes: js.Array[VisNode]): js.Array[Int] = js.native
+  def get(id:String): VisEdge = js.native
+  def update(nodes: js.Array[_<:Any]): js.Array[Int] = js.native
 }
 
 @JSExportAll
@@ -83,6 +84,18 @@ case class VisGraph(options: DagOptions, data: DagData, events: DoubleClickEvent
 
 @JSExportAll
 case class VisNode(id: Int, label: String, level: Int, size: Int)
+
+@JSExportAll
+case class EdgeScale(scaleFactor: Double)
+
+@JSExportAll
+case class EdgeArrows(to: EdgeScale)
+
+@JSExportAll
+case class EdgeColor(opacity: Double, color: ColorSet)
+
+@JSExportAll
+case class VisEdge(id: String, width: Int, hoverWidth: Int, selectionWidth: Int, arrows: EdgeArrows, color: EdgeColor)
 
 @JSExport
 @injectable("AppMasterConfig")
@@ -352,31 +365,33 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
 
   @JSExport
   def getEdgesData(): EdgesData = {
-    /*
-        var bandwidths = {};
-        angular.forEach(this.edges, function (_, edgeId) {
-          bandwidths[edgeId] = this._calculateEdgeBandwidth(edgeId);
-        }, /* scope */ this);
-        return {
-          edges: angular.copy(this.edges),
-          bandwidths: bandwidths
-        };
-      },
+    val bandwidths = edges.keys.map(edgeId => {
+      edgeId -> calculateEdgeBandwidth(edgeId)
+    }).toMap
+    EdgesData(edges,bandwidths)
+  }
 
-      /** Bandwidth of an edge equals the minimum of average send throughput and average receive throughput. */
-      _calculateEdgeBandwidth: function (edgeId) {
-        var digits = edgeId.split('_');
-        var sourceId = parseInt(digits[0]);
-        var targetId = parseInt(digits[1]);
-        var sourceOutputs = this.calculateProcessorConnections(sourceId).outputs;
-        var targetInputs = this.calculateProcessorConnections(targetId).inputs;
-        var sourceSendThroughput = d3.sum(this._getProcessorMetrics(sourceId, this.meter.sendThroughput, 'meanRate'));
-        var targetReceiveThroughput = d3.sum(this._getProcessorMetrics(targetId, this.meter.receiveThroughput, 'meanRate'));
-        return Math.min(
-          sourceOutputs === 0 ? 0 : (sourceSendThroughput / sourceOutputs),
-          targetInputs === 0 ? 0 : (targetReceiveThroughput / targetInputs));
-     */
-    EdgesData(Map.empty[Int,(Int,String,Int)],Map.empty[Int,Int])
+  @JSExport
+  def calculateEdgeBandwidth(edgeId: String): Double = {
+    val digits = edgeId.split("_")
+    val sourceId = digits(0).toInt
+    val targetId = digits(1).toInt
+    val sourceOutputs = calculateProcessorConnections(sourceId).outputs
+    val targetInputs = calculateProcessorConnections(targetId).inputs
+    val sourceSendThroughput = getProcessorMetrics(sourceId, meter, "sendThroughput", "meanRate").sum
+    val targetReceiveThoughput = getProcessorMetrics(targetId, meter, "receiveThroughput", "meanRate").sum
+    Array(sourceOutputs match {
+      case 0 =>
+        0.0
+      case n =>
+        sourceSendThroughput / sourceOutputs
+    },
+    targetInputs match {
+      case 0 =>
+        0.0
+      case n =>
+        targetReceiveThoughput / targetInputs
+    }).min
   }
 
   @JSExport
@@ -415,7 +430,13 @@ trait AppMasterScope extends Scope {
   var tabs: js.Array[Tab] = js.native
   var visgraph: VisGraph = js.native
 
+  var receivedMessages: AggregatedProcessedMessages = js.native
+  var sentMessages: AggregatedProcessedMessages = js.native
+  var processingTime: Array[Double] = js.native
+  var receiveLatency: Array[Double] = js.native
+
   var load: js.Function2[HTMLElement, Tab,Unit] = js.native
+  var lastPart: js.Function1[String, String] = js.native
   var selectTab: js.Function1[Tab,Unit] = js.native
   var switchToTaskTab: js.Function1[Int,Unit] = js.native
   var updateMetricsCounter: js.Function0[Unit] = js.native
@@ -444,6 +465,10 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
     }
   }
 
+  def lastPart(name: String): String = {
+    name.split("\\.").last
+  }
+
   def selectTab(tab: Tab): Unit = {
     tab.selected = true
   }
@@ -464,6 +489,7 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
   scope.switchToTaskTab = switchToTaskTab _
   scope.selectTab = selectTab _
   scope.load = load _
+  scope.lastPart = lastPart _
 
   restApi.subscribe("/appmaster/" + scope.app.appId + "?detail=true") onComplete {
     case Success(value) =>

@@ -18,19 +18,29 @@
 
 package org.apache.gearpump.dashboard.controllers
 
-import com.greencatsoft.angularjs.core.{Interval, Timeout}
+import com.greencatsoft.angularjs.core.{Interval, Promise, Timeout}
 import com.greencatsoft.angularjs.{AbstractController, injectable}
-import org.apache.gearpump.dashboard.filters.LastPartFilter
-import org.apache.gearpump.dashboard.services.{DagStyleService, Flags}
+import org.apache.gearpump.dashboard.services.{ConfService, DagStyleService, Flags}
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.undefined
 
 @JSExport
 @injectable("AppDagCtrl")
-class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, dagStyle: DagStyleService, lastPart: LastPartFilter)
+class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, conf: ConfService, dagStyle: DagStyleService)
   extends AbstractController[AppMasterScope](scope) {
   val d3 = js.Dynamic.global.d3
+  var timeoutPromise: Promise = _
+
+  def init(): Unit = {
+    scope.visgraph = VisGraph(
+      options=dagStyle.newOptions(Flags(depth=scope.streamingDag.hierarchyDepth())),
+      data=dagStyle.newData(),
+      events=DoubleClickEvent(doubleclick _)
+    )
+    redrawVisGraph
+  }
 
   def doubleclick(data: DagData): Unit = {
     data.nodes.length match {
@@ -40,7 +50,7 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, da
     }
   }
 
-  def rangeMapper(dict: Map[Int, Double], range: js.Array[Int]): js.Function1[Double,Double] = {
+  def rangeMapper(dict: Map[_<:Any, Double], range: js.Array[Double]): js.Function1[Double,Double] = {
     val values = d3.values(dict)
     d3.scale.linear().domain(d3.extent(values)).range(range).asInstanceOf[js.Function1[Double,Double]]
   }
@@ -57,7 +67,7 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, da
         case Some(desc) =>
           desc
         case None =>
-          lastPart.filter(processorDescription.taskClass)
+          scope.lastPart(processorDescription.taskClass)
       }
       val label = "[" + processorId + "] " + description
       val weight = data.weights(processorId)
@@ -74,80 +84,55 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, da
   }
 
   def updateVisGraphEdges(): Unit = {
-
+    val visEdges = scope.visgraph.data.edges
+    val data = scope.streamingDag.getEdgesData()
+    data.bandwidths += "-1" -> 0.0
+    val suggestWidth = rangeMapper(data.bandwidths, dagStyle.edgeWidthRange())
+    val suggestArrowSize = rangeMapper(data.bandwidths, dagStyle.edgeArrowSizeRange())
+    val suggestOpacity = rangeMapper(data.bandwidths, dagStyle.edgeOpacityRange())
+    var diffs = js.Array[VisEdge]()
+    data.edges.foreach(pair => {
+      val (edgeId, edge) = pair
+      val bandwidth = data.bandwidths(edgeId)
+      val visEdge = visEdges.get(edgeId)
+      val newVisWidth = d3.round(suggestWidth(bandwidth), 1).asInstanceOf[Int]
+      visEdge.width != newVisWidth match {
+        case true =>
+          diffs.push(
+            VisEdge(
+              id=edgeId,
+              width=newVisWidth,
+              hoverWidth=0,
+              selectionWidth=0,
+              arrows=EdgeArrows(to=EdgeScale(scaleFactor=d3.round(suggestArrowSize(bandwidth), 1).asInstanceOf[Double])),
+              color=EdgeColor(opacity=d3.round(suggestOpacity(bandwidth), 1).asInstanceOf[Double],
+              color=dagStyle.edgeColorSet(bandwidth > 0))
+            )
+          )
+        case false =>
+      }
+    })
+    visEdges.update(diffs)
   }
 
   def updateMetricsCounter(): Unit = {
-
+    scope.receivedMessages = scope.streamingDag.getReceivedMessages(undefined)
+    scope.sentMessages = scope.streamingDag.getSentMessages(undefined)
+    scope.processingTime = scope.streamingDag.getProcessingTime(undefined)
+    scope.receiveLatency = scope.streamingDag.getReceiveLatency(undefined)
   }
 
-  scope.visgraph = VisGraph(
-    options=dagStyle.newOptions(Flags(depth=scope.streamingDag.hierarchyDepth())),
-    data=dagStyle.newData(),
-    events=DoubleClickEvent(doubleclick _)
-  )
 
- /*
+  def redrawVisGraph(): Unit = {
+    updateVisGraphNodes()
+    updateVisGraphEdges()
+    updateMetricsCounter()
+    timeoutPromise = timeout(redrawVisGraph _, conf.conf.updateVisDagInterval)
+  }
 
-    $scope.updateVisGraphEdges = function () {
-      var visEdges = $scope.visgraph.data.edges;
-      var data = $scope.streamingDag.getEdgesData();
-      data.bandwidths[-1] = 0; // bandwidth range from 0 to max bandwidth
-      var suggestWidth = _rangeMapper(data.bandwidths, dagStyle.edgeWidthRange());
-      var suggestArrowSize = _rangeMapper(data.bandwidths, dagStyle.edgeArrowSizeRange());
-      var suggestOpacity = _rangeMapper(data.bandwidths, dagStyle.edgeOpacityRange());
-      var diff = [];
-
-      angular.forEach(data.edges, function (edge, edgeId) {
-        var bandwidth = parseInt(data.bandwidths[edgeId]);
-        var visEdge = visEdges.get(edgeId);
-        var newVisWidth = d3.round(suggestWidth(bandwidth), 1);
-        if (!visEdge || visEdge.width !== newVisWidth) {
-          diff.push({
-            id: edgeId, from: edge.source, to: edge.target,
-            width: newVisWidth,
-            hoverWidth: 0/*delta*/,
-            selectionWidth: 0/*delta*/,
-            arrows: {
-              to: {
-                scaleFactor: d3.round(suggestArrowSize(bandwidth), 1)
-              }
-            },
-            color: {
-              opacity: d3.round(suggestOpacity(bandwidth), 1),
-              color: dagStyle.edgeColorSet(bandwidth > 0)
-            }
-          });
-        }
-      });
-      visEdges.update(diff);
-    };
-
-    $scope.updateMetricsCounter = function () {
-      $scope.receivedMessages = $scope.streamingDag.getReceivedMessages();
-      $scope.sentMessages = $scope.streamingDag.getSentMessages();
-      $scope.processingTime = $scope.streamingDag.getProcessingTime();
-      $scope.receiveLatency = $scope.streamingDag.getReceiveLatency();
-    };
-
-    var timeoutPromise;
-    $scope.$on('$destroy', function () {
-      $timeout.cancel(timeoutPromise);
-    });
-
-    /** Redraw VisGraph on demand */
-    var redrawVisGraph = function () {
-      $scope.updateVisGraphNodes();
-      $scope.updateVisGraphEdges();
-      $scope.updateMetricsCounter();
-      timeoutPromise = $timeout(redrawVisGraph, conf.updateVisDagInterval);
-    };
-    redrawVisGraph();
-
-    function _rangeMapper(dict, range) {
-      var values = d3.values(dict);
-      return d3.scale.linear().domain(d3.extent(values)).range(range);
-    }
-  */
+  scope.$watch("streamingDag", init _)
+  scope.$on("$destroy", () => {
+    timeout.cancel(timeoutPromise)
+  })
 }
 

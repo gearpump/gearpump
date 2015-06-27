@@ -2,7 +2,7 @@ package org.apache.gearpump.dashboard.controllers
 
 import com.greencatsoft.angularjs.core.Interval
 import com.greencatsoft.angularjs.{AbstractController, injectable}
-import org.apache.gearpump.dashboard.services.ConfService
+import org.apache.gearpump.dashboard.services.{Conf, ConfService}
 
 import scala.scalajs.js
 import scala.scalajs.js.undefined
