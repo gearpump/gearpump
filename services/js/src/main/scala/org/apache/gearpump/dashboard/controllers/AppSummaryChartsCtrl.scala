@@ -2,7 +2,7 @@ package org.apache.gearpump.dashboard.controllers
 
 import com.greencatsoft.angularjs.core.Interval
 import com.greencatsoft.angularjs.{AbstractController, injectable}
-import org.apache.gearpump.dashboard.services.ConfService
+import org.apache.gearpump.dashboard.services.{Conf, ConfService}
 
 import scala.scalajs.js
 import scala.scalajs.js.undefined
@@ -33,10 +33,10 @@ class AppSummaryChartsCtrl(scope: AppMasterScope, interval: Interval, conf: Conf
           val receivedMessages = streamingDag.getReceivedMessages(undefined).rate
           val sentMessages = streamingDag.getSentMessages(undefined).rate
           println(s"receivedMessages=$receivedMessages sentMessages=$sentMessages charts.size=${scope.charts.size} charts(0).data.size=${scope.charts(0).data.size}")
-          scope.charts(0).data.push(receivedMessages)
-          scope.charts(1).data.push(sentMessages)
-          scope.charts(2).data.push(streamingDag.getProcessingTime(undefined)(0))
-          scope.charts(3).data.push(streamingDag.getReceiveLatency(undefined)(0))
+          scope.charts(0).data = js.Array(receivedMessages)
+          scope.charts(1).data = js.Array(sentMessages)
+          scope.charts(2).data = js.Array(streamingDag.getProcessingTime(undefined)(0))
+          scope.charts(3).data = js.Array(streamingDag.getReceiveLatency(undefined)(0))
         case false =>
           println("no metrics")
       }

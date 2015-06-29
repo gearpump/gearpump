@@ -22,18 +22,19 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration._
 
 class Source(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.{output, self}
+  import taskContext.output
 
   override def onStart(startTime: StartTime): Unit = {
     self ! Message("start")
   }
-
+  implicit val ec = system.dispatcher
   override def onNext(msg: Message): Unit = {
     val list = Vector(getClass.getCanonicalName)
     output(new Message(list, System.currentTimeMillis))
+    system.scheduler.scheduleOnce(1000 milliseconds, self, "continue")
     //self ! Message("continue", System.currentTimeMillis())
   }
 }

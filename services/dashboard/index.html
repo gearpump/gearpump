@@ -11,15 +11,38 @@
   <meta name="description" content=""/>
 
   <!-- Static Resources -->
-  <link rel="stylesheet" href="webjars/bootstrap/3.3.4/css/bootstrap.min.css"/>
-  <link rel="stylesheet" href="webjars/angular-motion/0.3.3/angular-motion.min.css"/>
-  <link rel="stylesheet" href="webjars/angular-ui-select/0.11.2/select.min.css"/>
+  <link href="webjars/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="webjars/angular-motion/0.3.3/angular-motion.min.css" rel="stylesheet"/>
+  <link href="webjars/angular-ui-select/0.11.2/select.min.css" rel="stylesheet"/>
   <link rel="stylesheet" href="webjars/vis/4.2.0/dist/vis.min.css"/>
   <!-- TODO: Minimize as one for production server -->
-  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic&subset=latin">
-  <link rel="stylesheet" href="styles/bootstrap-override.css"/>
-  <link rel="stylesheet" href="styles/bootstrap-doc.css"/>
-  <link rel="stylesheet" href="styles/dashboard.css"/>
+  <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic&subset=latin">
+  <link href="styles/bootstrap-override.css" rel="stylesheet"/>
+  <link href="styles/bootstrap-doc.css" rel="stylesheet"/>
+  <link href="styles/dashboard.css" rel="stylesheet"/>
+
+  <!-- Static Resources -->
+  <script src="webjars/angularjs/1.4.0/angular.js"></script>
+  <script src="webjars/angularjs/1.4.0/angular-animate.js"></script>
+  <script src="webjars/angularjs/1.4.0/angular-route.js"></script>
+  <script src="webjars/angular-strap/2.2.3/angular-strap.min.js"></script>
+  <script src="webjars/angular-strap/2.2.3/angular-strap.tpl.min.js"></script>
+  <script src="webjars/angular-ui-select/0.11.2/select.min.js"></script>
+  <script src="webjars/d3js/3.5.5/d3.js"></script>
+  <script src="webjars/momentjs/2.10.3/min/moment.min.js"></script>
+  <script src="webjars/smart-table/2.0.3/smart-table.min.js"></script>
+  <script src="webjars/vis/4.2.0/dist/vis.min.js"></script>
+  <script src="shared/vendors/echarts-mod/echarts-all.min.js"></script>
+  <script src="shared/vendors/ng-breadcrumbs/ng-breadcrumbs.min.js"></script>
+  <script src="shared/filters/readable.js"></script>
+  <script src="shared/directives/angular-future.js"></script>
+  <script src="shared/directives/echartfactory.js"></script>
+  <script src="shared/directives/echarts.js"></script>
+  <script src="shared/directives/tabset.js"></script>
+  <!-- scalajs -->
+  <script src="gearpump-services-js-fastopt.js"></script>
+  <script src="gearpump-services-js-jsdeps.js"></script>
+  <script src="gearpump-services-js-launcher.js"></script>
 </head>
 
 <body ng-controller="DashboardCtrl">
@@ -37,17 +60,6 @@
           <a ng-href="{{link.url}}"><span ng-class="link.iconClass"></span>
             <span ng-bind="link.label"></span></a>
         </li>
-        <!--
-        <li>
-          <a href="//gearpump.io" title="View official website">
-            <span class="glyphicon glyphicon-book"></span>
-            gearpump.io
-          </a>
-        </li>
-        <li>
-          <div>
-          <iframe class="github" src="//ghbtns.com/github-btn.html?user=intel-hadoop&amp;repo=gearpump&amp;type=watch&amp;count=true" allowtransparency="true" frameborder="0" scrolling="0" width="100" height="20"></iframe>
-        </div></li>-->
       </ul>
     </div>
   </div>
@@ -80,43 +92,6 @@
   </div>
 </footer>
 
-<!-- Static Resources -->
-<script src="webjars/angularjs/1.4.0/angular.min.js"></script>
-<script src="webjars/angularjs/1.4.0/angular-animate.min.js"></script>
-<script src="webjars/angularjs/1.4.0/angular-route.min.js"></script>
-<script src="webjars/angular-strap/2.2.3/angular-strap.min.js"></script>
-<script src="webjars/angular-strap/2.2.3/angular-strap.tpl.min.js"></script>
-<script src="webjars/angular-ui-select/0.11.2/select.min.js"></script>
-<script src="webjars/d3js/3.5.5/d3.min.js"></script>
-<script src="webjars/momentjs/2.10.3/min/moment.min.js"></script>
-<script src="webjars/smart-table/2.0.3/smart-table.min.js"></script>
-<script src="webjars/vis/4.2.0/dist/vis.min.js"></script>
-<script src="shared/vendors/echarts-mod/echarts-all.min.js"></script>
-<script src="shared/vendors/ng-breadcrumbs/ng-breadcrumbs.min.js"></script>
-<script src="shared/filters/readable.js"></script>
-<script src="shared/directives/angular-future.js"></script>
-<script src="shared/directives/echartfactory.js"></script>
-<script src="shared/directives/echarts.js"></script>
-<script src="shared/directives/explanationicon.js"></script>
-<script src="shared/directives/metricscard.js"></script>
-<script src="shared/directives/tabset.js"></script>
-<script src="shared/directives/visgraph.js"></script>
-<!-- TODO: Minimize as one for production server -->
-<script src="views/dashboard.js"></script>
-<script src="views/util.js"></script>
-<script src="views/services/restapi.js"></script>
-<script src="views/services/streamingservice.js"></script>
-<script src="views/model/metrics.js"></script>
-<script src="views/model/streamingdag.js"></script>
-<script src="views/cluster/master.js"></script>
-<script src="views/cluster/workers/workers.js"></script>
-<script src="views/apps/apps.js"></script>
-<script src="views/apps/app/appmaster.js"></script>
-<script src="views/apps/app/appstatus.js"></script>
-<script src="views/apps/app/appdag.js"></script>
-<script src="views/apps/app/appprocessor.js"></script>
-<script src="views/apps/app/appmetrics.js"></script>
-<script src="views/apps/app/dagstyle.js"></script>
 
 </body>
 </html>

@@ -11,13 +11,13 @@ case class Conf(updateChartInterval: Int, updateVisDagInterval: Int,
                 webSocketPreferred: Boolean, webSocketSendTimeout: Int)
 
 @JSExport
-@injectable("conf")
+@injectable("ConfService")
 class ConfService(location: Location) extends Service {
   val conf = Conf(2000, 2000, 2000, "/api/v1.0", webSocketPreferred = false, 500)
 }
 
 @JSExport
-@injectable("conf")
+@injectable("ConfService")
 class ConfServiceFactory(location: Location) extends Factory[ConfService] {
 
   println("ConfServiceFactory")
