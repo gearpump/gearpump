@@ -55,7 +55,7 @@ object ActorUtil {
     val extendedSystem = system.asInstanceOf[ExtendedActorSystem]
     val clazz = system.getClass
     val m = clazz.getDeclaredMethod("printTree")
-    m.setAccessible(true);
+    m.setAccessible(true)
     LOG.info(m.invoke(system).asInstanceOf[String])
   }
 

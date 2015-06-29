@@ -37,7 +37,7 @@ import scala.reflect.ClassTag
  *  use ClusterConfigSource(filePath) to construct the object, while filePath points to the .conf file.
  */
 
-case class AppDescription(val name : String, val appMaster : String, val userConfig: UserConfig, val clusterConfig: Config = ConfigFactory.empty())
+case class AppDescription(name : String, appMaster : String, userConfig: UserConfig, clusterConfig: Config = ConfigFactory.empty())
 
 trait Application {
   def name: String

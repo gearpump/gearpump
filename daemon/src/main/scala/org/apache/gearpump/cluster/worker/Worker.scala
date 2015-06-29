@@ -233,7 +233,7 @@ private[cluster] object Worker {
           file.getFile
         }
 
-        val classPathPrefix = Util.getCurrentClassPath ++ ctx.classPath
+        val classPathPrefix = Util.getApplicationClassPath ++ ctx.classPath
         val classPath = jarPath.map(classPathPrefix :+ _).getOrElse(classPathPrefix)
 
         val appLogDir = context.system.settings.config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)

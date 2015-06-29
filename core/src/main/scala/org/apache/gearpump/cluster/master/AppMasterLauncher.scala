@@ -91,7 +91,7 @@ class AppMasterLauncher(
       sender ! ActorSystemRegistered(worker)
 
       val masterAddress = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS)
-        .asScala.map(HostPort(_)).map(ActorUtil.getMasterActorPath(_))
+        .asScala.map(HostPort(_)).map(ActorUtil.getMasterActorPath)
       sender ! CreateActor(AppMasterRuntimeEnvironment.props(masterAddress, app, appContext), s"appdaemon$appId")
 
       import context.dispatcher

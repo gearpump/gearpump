@@ -39,9 +39,14 @@ object Util {
   }
 
   def getCurrentClassPath : Array[String] = {
-    val classpath = System.getProperty("java.class.path");
-    val classpathList = classpath.split(File.pathSeparator);
+    val classpath = System.getProperty("java.class.path")
+    val classpathList = classpath.split(File.pathSeparator)
     classpathList
+  }
+
+  def getApplicationClassPath: Array[String] = {
+    val userDir = System.getProperty("prog.home")
+    Array(userDir + "/conf", userDir + "/dashboard", userDir + "/lib/*", "/etc/hadoop/conf", "/etc/hbase/conf")
   }
 
   def startProcess(options : Array[String], classPath : Array[String], mainClass : String,
@@ -92,11 +97,11 @@ object Util {
 
     val appMasterClassPath = Try(
       conf.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
-        .split(File.pathSeparator).asInstanceOf[Array[String]].filter(_.nonEmpty)).toOption
+        .split(File.pathSeparator).filter(_.nonEmpty)).toOption
 
     val executorClassPath = Try(
       conf.getString(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
-        .split(File.pathSeparator).asInstanceOf[Array[String]].filter(_.nonEmpty)).toOption
+        .split(File.pathSeparator).filter(_.nonEmpty)).toOption
 
     AppJvmSettings(
       JvmSetting(appMasterVMArgs.getOrElse(Array.empty[String]),
