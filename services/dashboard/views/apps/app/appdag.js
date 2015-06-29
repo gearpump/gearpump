@@ -70,10 +70,10 @@ angular.module('dashboard.apps.appmaster')
                 scaleFactor: d3.round(suggestArrowSize(bandwidth), 1)
               }
             },
-            color: {
-              opacity: d3.round(suggestOpacity(bandwidth), 1),
-              color: dagStyle.edgeColorSet(bandwidth > 0)
-            }
+            color: angular.merge({
+              opacity: d3.round(suggestOpacity(bandwidth), 1)},
+              dagStyle.edgeColorSet(bandwidth > 0)
+            )
           });
         }
       });
