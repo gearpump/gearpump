@@ -19,16 +19,16 @@
 package org.apache.gearpump.streaming.kafka.lib
 
 import com.twitter.bijection.Injection
-import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.transaction.api.MessageDecoder
+import org.scalacheck.Gen
+import org.scalatest.{PropSpec, Matchers}
+import org.scalatest.prop.PropertyChecks
 
-import scala.util.{Failure, Success}
-
-class KafkaDecoder extends MessageDecoder {
-  override def fromBytes(bytes: Array[Byte]): Message = {
-    Injection.invert[String, Array[Byte]](bytes) match {
-      case Success(s) => Message(s, System.currentTimeMillis())
-      case Failure(e) => throw e
+class DefaultMessageDecoderSpec extends PropSpec with PropertyChecks with Matchers {
+  property("DefaultMessageDecoder should keep the original bytes data in Message") {
+    val decoder = new DefaultMessageDecoder()
+    forAll(Gen.alphaStr) { (s: String) =>
+      val bytes = Injection[String, Array[Byte]](s)
+      decoder.fromBytes(bytes).msg shouldBe bytes
     }
   }
 }
