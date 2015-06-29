@@ -18,28 +18,11 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
-import java.nio.ByteBuffer
+import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.transaction.api.MessageDecoder
 
-import com.twitter.bijection.Injection
-import org.scalacheck.Gen
-import org.scalatest.{PropSpec, Matchers}
-import org.scalatest.prop.PropertyChecks
-
-class KafkaDecoderSpec extends PropSpec with PropertyChecks with Matchers {
-  property("KafkaDecoder should get Message from bytes") {
-    val decoder = new KafkaDecoder()
-    forAll(Gen.alphaStr) { (s: String) =>
-      val bytes = Injection[String, Array[Byte]](s)
-      decoder.fromBytes(bytes).msg shouldBe s
-    }
+class DefaultMessageDecoder extends MessageDecoder {
+  override def fromBytes(bytes: Array[Byte]): Message = {
+    Message(bytes, System.currentTimeMillis())
   }
-
-  property("KafkaDecoder should throw exception on invalid bytes") {
-    val decoder = new KafkaDecoder()
-    val invalidBytes: Array[Byte] = null
-    intercept[RuntimeException] {
-      decoder.fromBytes(invalidBytes)
-    }
-  }
-
 }

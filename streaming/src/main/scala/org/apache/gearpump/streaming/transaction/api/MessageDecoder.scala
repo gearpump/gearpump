@@ -20,18 +20,6 @@ package org.apache.gearpump.streaming.transaction.api
 
 import org.apache.gearpump.Message
 
-object MessageDecoder {
-  /**
-   * default decoder, which returns Message with raw bytes
-   * and system time
-   */
-  def apply(): MessageDecoder = new MessageDecoder {
-    override def fromBytes(bytes: Array[Byte]): Message = {
-      Message(bytes, System.currentTimeMillis())
-    }
-  }
-}
-
 /**
  * MessageDecoder decodes raw bytes to Message
  * It is usually written by end user and
