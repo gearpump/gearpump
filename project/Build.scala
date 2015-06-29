@@ -403,7 +403,7 @@ object Build extends sbt.Build {
           "org.webjars.bower" % "vis" % "4.2.0"
         ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
       )
-  ) dependsOn(streaming % "test->test;compile->compile", daemon % "test->test")
+  ) dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile")
 
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
