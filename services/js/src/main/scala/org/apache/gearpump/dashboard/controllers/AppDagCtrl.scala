@@ -39,7 +39,7 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
       data=dagStyle.newData(),
       events=DoubleClickEvent(doubleclick _)
     )
-    redrawVisGraph
+    redrawVisGraph()
   }
 
   def doubleclick(data: DagData): Unit = {
@@ -80,6 +80,9 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
         case false =>
       }
     })
+    /*
+    bjectid: 0label: "[0] Source_0"level: 0size: 14.9__proto__: Object, Objectid: 1label: "[1] Sink_1"level: 1size: 3.2__proto__: Object, Objectid: 2label: "[2] Sink_2"level: 1size: 3.2__proto__: Object, Objectid: 3label: "[3] Node_2"level: 1size: 3.2__proto__: Object, Objectid: 4label: "[4] Node_3"level: 2size: 7.9__proto__: Object, Objectid: 5label: "[5] Node_1"level: 1size: 7.9__proto__: Object, Objectid: 6label: "[6] Sink_0"level: 1size: 3.2__proto__: Object, Objectid: 7label: "[7] Sink_3"level: 3size: 14.9__proto__: Object, Objectid: 8label: "[8] Node_4"level: 2size: 3.2__proto__: Object, Objectid: 9label: "[9] Source_1"level: 0size: 5.5__proto__: Object, Objectid: 10label: "[10] Sink_4"level: 1size: 3.2__proto__: Object
+     */
     visNodes.update(diffs)
   }
 

@@ -134,9 +134,7 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
       data.metrics.foreach(data => {
         data.value.typeName match {
           case MeterType =>
-            println("reading meter")
             val metric = upickle.read[Meter](data.value.json)
-            println("read meter")
             val (appId, processorId, taskId, name) = decodeName(metric.name)
             val key = s"${processorId}_$taskId"
             val metricInfo = MetricInfo[Meter](appId, processorId, taskId, metric, data.value)
@@ -149,9 +147,7 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
                 meter += name -> Map(key -> metricInfo)
             }
           case HistogramType =>
-            println("reading histogram")
             val metric = upickle.read[Histogram](data.value.json)
-            println("read histogram")
             val (appId, processorId, taskId, name) = decodeName(metric.name)
             val key = processorId + "_" + taskId
             val metricInfo = MetricInfo[Histogram](appId, processorId, taskId, metric, data.value)
@@ -170,7 +166,6 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
       true
     }) match {
       case Success(value) =>
-        println("success")
         value
       case Failure(throwable) =>
         println(s"cound not update metrics ${throwable.getMessage}")
@@ -290,32 +285,25 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
 
   @JSExport
   def getProcessingTime(processorId: UndefOr[Int]): Array[Double] = {
-    /*
-           var array = this._getAggregatedMetrics(this.histogram.processTime, 'mean', processorId);
-        return processorId !== undefined ? array : d3.mean(array);
-
-     */
     processorId.isDefined match {
       case true =>
         val id = processorId.get
         getAggregatedMetrics(histogram, "processTime", "mean", Some(id))
       case false =>
-        getAggregatedMetrics(histogram, "processTime", "mean", None)
+        val array = getAggregatedMetrics(histogram, "processTime", "mean", None)
+        Array(array.sum/array.length)
     }
   }
 
   @JSExport
   def getReceiveLatency(processorId: UndefOr[Int]): Array[Double] = {
-    /*
-            var array = this._getAggregatedMetrics(this.histogram.receiveLatency, 'mean', processorId);
-        return processorId !== undefined ? array : d3.mean(array);
-     */
     processorId.isDefined match {
       case true =>
         val id = processorId.get
         getAggregatedMetrics(histogram, "receiveLatency", "mean", Some(id))
       case false =>
-        getAggregatedMetrics(histogram, "receiveLatency", "mean", None)
+        val array = getAggregatedMetrics(histogram, "receiveLatency", "mean", None)
+        Array(array.sum/array.length)
     }
   }
 
