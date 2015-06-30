@@ -82,8 +82,8 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
 
       /** Weight of a processor equals the sum of its send throughput and receive throughput. */
       _calculateProcessorWeight: function (processorId) {
-        return Math.max(d3.sum(this._getProcessorMetrics(processorId, this.meter.sendThroughput, 'meanRate')),
-          d3.sum(this._getProcessorMetrics(processorId, this.meter.receiveThroughput, 'meanRate')));
+        return Math.max(d3.sum(this._getProcessorMetrics(processorId, this.meter.sendThroughput, 'movingAverage1m')),
+          d3.sum(this._getProcessorMetrics(processorId, this.meter.receiveThroughput, 'movingAverage1m')));
       },
 
       getEdgesData: function () {
@@ -104,8 +104,8 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         var targetId = parseInt(digits[1]);
         var sourceOutputs = this.calculateProcessorConnections(sourceId).outputs;
         var targetInputs = this.calculateProcessorConnections(targetId).inputs;
-        var sourceSendThroughput = d3.sum(this._getProcessorMetrics(sourceId, this.meter.sendThroughput, 'meanRate'));
-        var targetReceiveThroughput = d3.sum(this._getProcessorMetrics(targetId, this.meter.receiveThroughput, 'meanRate'));
+        var sourceSendThroughput = d3.sum(this._getProcessorMetrics(sourceId, this.meter.sendThroughput, 'movingAverage1m'));
+        var targetReceiveThroughput = d3.sum(this._getProcessorMetrics(targetId, this.meter.receiveThroughput, 'movingAverage1m'));
         return Math.min(
           sourceOutputs === 0 ? 0 : (sourceSendThroughput / sourceOutputs),
           targetInputs === 0 ? 0 : (targetReceiveThroughput / targetInputs));
@@ -193,7 +193,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
 
       _getProcessedMessagesByProcessor: function(metricsGroup, processorId, aggregated) {
         var taskCountArray = this._getAggregatedMetrics(metricsGroup, 'count', processorId);
-        var taskRateArray = this._getAggregatedMetrics(metricsGroup, 'meanRate', processorId);
+        var taskRateArray = this._getAggregatedMetrics(metricsGroup, 'movingAverage1m', processorId);
         return aggregated ?
           {total: d3.sum(taskCountArray), rate: d3.sum(taskRateArray)} :
           {total: taskCountArray, rate: taskRateArray};
