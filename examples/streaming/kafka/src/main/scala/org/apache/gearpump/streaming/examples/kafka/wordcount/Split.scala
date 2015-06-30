@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
+import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
@@ -29,7 +30,7 @@ class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContex
   }
 
   override def onNext(msg : Message) : Unit = {
-    msg.msg.asInstanceOf[String].split("\\s+").foreach(
-      word => output(new Message(word, msg.timestamp)))
+    Injection.invert[String, Array[Byte]](msg.msg.asInstanceOf[Array[Byte]]).foreach(_.split("\\s+").foreach(
+      word => output(new Message(word, msg.timestamp))))
   }
 }
