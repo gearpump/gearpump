@@ -161,7 +161,7 @@ object HistoryMetricsService {
 
     def add(inputMetrics: MetricType): Unit = {
       val now = System.currentTimeMillis()
-      val metrics = HistoryMetricsItem(now, MetricTypeInfo(inputMetrics.getClass.getCanonicalName, inputMetrics.json))
+      val metrics = HistoryMetricsItem(now.toString, MetricTypeInfo(inputMetrics.getClass.getCanonicalName, inputMetrics.json))
       latest = List(metrics)
 
       val head = queue.peek()
@@ -216,10 +216,10 @@ object HistoryMetricsService {
     def add(inputMetrics: MetricType): Unit = {
       val now = System.currentTimeMillis()
       val head = queue.peek()
-      val metrics = HistoryMetricsItem(now, MetricTypeInfo(inputMetrics.getClass.getCanonicalName, inputMetrics.json))
+      val metrics = HistoryMetricsItem(now.toString, MetricTypeInfo(inputMetrics.getClass.getCanonicalName, inputMetrics.json))
       latest = List(metrics)
 
-      if (head == null || now - head.time > retainIntervalMs) {
+      if (head == null || now - head.time.toLong > retainIntervalMs) {
 
         queue.addFirst(metrics)
 

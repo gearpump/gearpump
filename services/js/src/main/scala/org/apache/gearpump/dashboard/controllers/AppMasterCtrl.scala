@@ -129,36 +129,52 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
   }
 
   @JSExport
-  def updateMetrics(data: HistoryMetricsItem) = {
-    data.value.typeName match {
-      case MeterType =>
-        val metric = upickle.read[Meter](data.value.json)
-        val (appId, processorId, taskId, name) = decodeName(metric.name)
-        val key = s"${processorId}_$taskId"
-        val metricInfo = MetricInfo[Meter](appId, processorId, taskId, metric, data.value)
-        meter.contains(name) match {
-          case true =>
-            var map = meter(name)
-            map += key -> metricInfo
-            meter += name -> map
-          case false =>
-            meter += name -> Map(key -> metricInfo)
+  def updateMetrics(data: HistoryMetrics): Boolean = {
+    Try({
+      data.metrics.foreach(data => {
+        data.value.typeName match {
+          case MeterType =>
+            println("reading meter")
+            val metric = upickle.read[Meter](data.value.json)
+            println("read meter")
+            val (appId, processorId, taskId, name) = decodeName(metric.name)
+            val key = s"${processorId}_$taskId"
+            val metricInfo = MetricInfo[Meter](appId, processorId, taskId, metric, data.value)
+            meter.contains(name) match {
+              case true =>
+                var map = meter(name)
+                map += key -> metricInfo
+                meter += name -> map
+              case false =>
+                meter += name -> Map(key -> metricInfo)
+            }
+          case HistogramType =>
+            println("reading histogram")
+            val metric = upickle.read[Histogram](data.value.json)
+            println("read histogram")
+            val (appId, processorId, taskId, name) = decodeName(metric.name)
+            val key = processorId + "_" + taskId
+            val metricInfo = MetricInfo[Histogram](appId, processorId, taskId, metric, data.value)
+            histogram.contains(name) match {
+              case true =>
+                var map = histogram(name)
+                map += key -> metricInfo
+                histogram += name -> map
+              case false =>
+                histogram += name -> Map(key -> metricInfo)
+            }
+          case _ =>
+            println(s"unknown metric type ${data.value.typeName}")
         }
-      case HistogramType =>
-        val metric = upickle.read[Histogram](data.value.json)
-        val (appId, processorId, taskId, name) = decodeName(metric.name)
-        val key = processorId + "_" + taskId
-        val metricInfo = MetricInfo[Histogram](appId, processorId, taskId, metric, data.value)
-        histogram.contains(name) match {
-          case true =>
-            var map = histogram(name)
-            map += key -> metricInfo
-            histogram += name -> map
-          case false =>
-            histogram += name -> Map(key -> metricInfo)
-        }
-      case _ =>
-        println(s"unknown metric type ${data.value.typeName}")
+      })
+      true
+    }) match {
+      case Success(value) =>
+        println("success")
+        value
+      case Failure(throwable) =>
+        println(s"cound not update metrics ${throwable.getMessage}")
+        false
     }
   }
 
@@ -248,6 +264,7 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     AggregatedProcessedMessages(total=sum._1,rate=sum._2)
   }
 
+  @JSExport
   def getProcessedMessagesByProcessor(metricMap: MetricMap, metricCategory: String, processorId: Int, aggregated: Boolean):
   Either[AggregatedProcessedMessages,ProcessedMessages] = {
     val taskCountArray = getAggregatedMetrics(metricMap, metricCategory, "count", Some(processorId)).map(_.toInt)
@@ -495,7 +512,7 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
     case Success(value) =>
       val data = upickle.read[StreamingAppMasterDataDetail](value)
       scope.app = data
-      scope.streamingDag = new StreamingDag(scope.app)
+      scope.streamingDag = StreamingDag(scope.app)
       val hasMetrics = scope.streamingDag.hasMetrics
       hasMetrics match {
         case false =>
@@ -503,9 +520,7 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
           restApi.subscribe(url) onComplete {
             case Success(rdata) =>
               val value = upickle.read[HistoryMetrics](rdata)
-              Option(value).foreach(_.metrics.foreach(metricItem => {
-                scope.streamingDag.updateMetrics(metricItem)
-              }))
+              Option(value).foreach(scope.streamingDag.updateMetrics(_))
             case Failure(t) =>
               println(s"failed ${t.getMessage}")
           }

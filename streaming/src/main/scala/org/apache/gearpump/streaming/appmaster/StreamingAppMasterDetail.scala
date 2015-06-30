@@ -18,25 +18,24 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription, Partitioner}
+import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
-import upickle.{Reader, Js, Writer}
+import upickle.{Js, Reader, Writer}
 
 case class StreamingAppMasterDataDetail(
     appId: Int,
     appName: String = null,
-    processors: Map[ProcessorId, ProcessorDescription],
-    // hiearachy level for each processor
-    processorLevels: Map[ProcessorId, Int],
-    dag: Graph[ProcessorId, PartitionerDescription] = null,
     actorPath: String = null,
     clock: String = null,
     executors: Map[ExecutorId, String] = null,
-    tasks: Map[TaskId, ExecutorId] = null)
+    tasks: Map[TaskId, ExecutorId] = null,
+    processors: Map[ProcessorId, ProcessorDescription],
+    // hiearachy level for each processor
+    processorLevels: Map[ProcessorId, Int],
+    dag: Graph[ProcessorId, PartitionerDescription] = null)
   extends AppMasterDataDetail {
 
   def toJson: String = {
@@ -73,7 +72,7 @@ object StreamingAppMasterDataDetail {
         }
 
         val edges = dag.edges.map(f => {
-          var (node1, edge, node2) = f
+          val (node1, edge, node2) = f
           Js.Arr(Js.Num(node1), Js.Str(edge.partitionerFactory.partitioner.getClass.getName), Js.Num(node2))
         })
 
@@ -97,8 +96,18 @@ object StreamingAppMasterDataDetail {
 
   implicit val reader: Reader[StreamingAppMasterDataDetail] = upickle.Reader[StreamingAppMasterDataDetail] {
     case r: Js.Obj =>
-      var streamingAppMasterDataDetail = StreamingAppMasterDataDetail(-1,null,Map.empty[ProcessorId, ProcessorDescription],Map.empty[ProcessorId, Int])
-      val map = r.value.foreach(pair => {
+      var streamingAppMasterDataDetail = StreamingAppMasterDataDetail(
+        appId = -1,
+        appName = null,
+        actorPath = null,
+        clock = null,
+        executors = null,
+        tasks = null,
+        processors = Map.empty[ProcessorId, ProcessorDescription],
+        processorLevels = Map.empty[ProcessorId, Int],
+        dag = null
+      )
+      r.value.foreach(pair => {
         val (member, value) = pair
         member match {
           case "appId" =>

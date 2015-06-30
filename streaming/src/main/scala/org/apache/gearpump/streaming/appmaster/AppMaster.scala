@@ -123,8 +123,17 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
         clock <- clockFuture
         tasks <- taskFuture
       } yield {
-        StreamingAppMasterDataDetail(appId, app.name, dag.processors,
-          Graph.vertexHierarchyLevelMap(dag.graph), dag.graph, address, clock.toString, executors, tasks.tasks)
+        StreamingAppMasterDataDetail(
+          appId = appId,
+          appName = app.name,
+          actorPath = address,
+          clock = clock.toString,
+          executors = executors,
+          tasks = tasks.tasks,
+          processors = dag.processors,
+          processorLevels = Graph.vertexHierarchyLevelMap(dag.graph),
+          dag = dag.graph
+        )
       }
 
       val client = sender()

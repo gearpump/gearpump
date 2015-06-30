@@ -179,9 +179,9 @@ object Messages {
   case class MasterData(masterDescription: MasterDescription)
 
   @JSExportAll
-  case class HistoryMetricsItem(time: TimeStamp, value: MetricTypeInfo)
+  case class HistoryMetricsItem(time: String, value: MetricTypeInfo)
 
   @JSExportAll
-  case class HistoryMetrics(appId: Int, path: String, metrics: Seq[HistoryMetricsItem])
+  case class HistoryMetrics(appId: Int, path: String, metrics: List[HistoryMetricsItem])
 
 }
