@@ -133,7 +133,7 @@ object Build extends sbt.Build {
   val daemonDependencies = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-contrib" % akkaVersion
-    ) ++ hadoopDependency
+    )
   )
 
   val coreDependencies = Seq(
@@ -170,7 +170,7 @@ object Build extends sbt.Build {
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
         "org.mockito" % "mockito-core" % mockitoVersion % "test",
         "junit" % "junit" % junitVersion % "test"
-      ),
+      ) ++ hadoopDependency,
      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
      libraryDependencies ++= (
         if (scalaVersion.value.startsWith("2.10")) List("org.scalamacros" %% "quasiquotes" % "2.1.0-M5")
@@ -289,7 +289,7 @@ object Build extends sbt.Build {
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        ) ++ hadoopDependency,
+        ),
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
@@ -521,7 +521,7 @@ object Build extends sbt.Build {
             exclude("org.slf4j", "slf4j-api"),
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
-        ) ++ hadoopDependency
+        )
       )
   ) dependsOn(services % "test->test;compile->compile", core % "provided", services % "provided")
 
@@ -532,7 +532,7 @@ object Build extends sbt.Build {
       Seq(
         libraryDependencies ++= Seq(
           "org.scalaz" %% "scalaz-core" % scalazVersion
-        ) ++ hadoopDependency
+        )
       )
   ) dependsOn(streaming % "test->test;compile->compile", external_kafka % "test->test;compile->compile", hbase % "test->test;compile->compile")
   
@@ -600,7 +600,7 @@ object Build extends sbt.Build {
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        ) ++ hadoopDependency
+        )
       )
   ) dependsOn(streaming % "test->test; provided", external_kafka % "test->test; provided")
 }
