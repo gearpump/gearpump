@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.dashboard.controllers
 
-import org.apache.gearpump.shared.Messages.{Histogram, Meter, HistoryMetrics, StreamingAppMasterDataDetail}
+import org.apache.gearpump.shared.Messages.{HistoryMetrics, StreamingAppMasterDataDetail}
 import utest._
 
 import scala.scalajs.js.{JSON, undefined}
@@ -28,344 +28,344 @@ object AppDagCtrlSpec extends TestSuite {
 val metricsJSON =
   """
     |{
-    |"appId": 1,
-    |"path": "path",
+    |"appId":1,
+    |"path":"path",
     |"metrics":
     |[
     |  {
-    |    "time": "1435595418893",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor8.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor8.task0.receiveLatency\",\"count\":\"9\",\"min\":\"0\",\"max\":\"8\",\"mean\":4.333333333333333,\"stddev\":2.8722813232690143,\"median\":5,\"p75\":6.5,\"p95\":8,\"p98\":8,\"p99\":8,\"p999\":8}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418898",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor4.task0.receiveThroughput\",\"count\":\"28\",\"meanRate\":5.1706479477387415,\"m1\":5.6,\"m5\":5.6,\"m15\":5.6,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor4.task0.receiveThroughput\",\"count\":\"543\",\"meanRate\":5.877119779976574,\"m1\":5.856523562730274,\"m5\":5.68403753372094,\"m15\":5.630729887535754,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418860",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor0.task0.sendThroughput\",\"count\":\"60\",\"meanRate\":11.125331910046382,\"m1\":12,\"m5\":12,\"m15\":12,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor0.task0.sendThroughput\",\"count\":\"1080\",\"meanRate\":11.685907044186779,\"m1\":11.040532975551878,\"m5\":11.80165744585941,\"m15\":11.933518176058762,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418893",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor7.task0.processTime\",\"count\":\"6\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor7.task0.processTime\",\"count\":\"110\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418861",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
     |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor10.task0.sendThroughput\",\"count\":\"0\",\"meanRate\":0,\"m1\":0,\"m5\":0,\"m15\":0,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418894",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor11.task0.receiveThroughput\",\"count\":\"8\",\"meanRate\":1.474732767878121,\"m1\":1.6,\"m5\":1.6,\"m15\":1.6,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor11.task0.receiveThroughput\",\"count\":\"177\",\"meanRate\":1.9157485123820237,\"m1\":1.8940679647982497,\"m5\":1.6957508470291223,\"m15\":1.6349829197598136,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418899",
+    |    "time": "1435680269855",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
     |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor7.task0.sendThroughput\",\"count\":\"0\",\"meanRate\":0,\"m1\":0,\"m5\":0,\"m15\":0,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418892",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor4.task0.receiveLatency\",\"count\":\"1\",\"min\":\"1\",\"max\":\"1\",\"mean\":1,\"stddev\":0,\"median\":1,\"p75\":1,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor4.task0.receiveLatency\",\"count\":\"27\",\"min\":\"0\",\"max\":\"8\",\"mean\":2.2222222222222223,\"stddev\":2.1363760352762253,\"median\":3,\"p75\":4,\"p95\":6.799999999999994,\"p98\":8,\"p99\":8,\"p999\":8}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418862",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor5.task0.sendThroughput\",\"count\":\"30\",\"meanRate\":5.563408987313358,\"m1\":6,\"m5\":6,\"m15\":6,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor5.task0.sendThroughput\",\"count\":\"540\",\"meanRate\":5.8429494984317945,\"m1\":5.520266487775939,\"m5\":5.900828722929705,\"m15\":5.966759088029381,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418893",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor7.task0.receiveLatency\",\"count\":\"2\",\"min\":\"0\",\"max\":\"4\",\"mean\":2,\"stddev\":2.8284271247461903,\"median\":2,\"p75\":4,\"p95\":4,\"p98\":4,\"p99\":4,\"p999\":4}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor7.task0.receiveLatency\",\"count\":\"36\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.1111111111111111,\"stddev\":0.3187276291558383,\"median\":0,\"p75\":0,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418859",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor9.task0.processTime\",\"count\":\"1\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor9.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.2777777777777778,\"stddev\":0.46088859896247675,\"median\":0,\"p75\":1,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418855",
+    |    "time": "1435680269807",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
     |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor0.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418892",
+    |    "time": "1435680269853",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor3.task0.processTime\",\"count\":\"1\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor3.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418855",
+    |    "time": "1435680269807",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor0.task0.processTime\",\"count\":\"1\",\"min\":\"1\",\"max\":\"1\",\"mean\":1,\"stddev\":0,\"median\":1,\"p75\":1,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor0.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.3888888888888889,\"stddev\":0.5016313257045503,\"median\":0,\"p75\":1,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418899",
+    |    "time": "1435680269855",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor8.task0.receiveThroughput\",\"count\":\"8\",\"meanRate\":1.474554786585802,\"m1\":1.6,\"m5\":1.6,\"m15\":1.6,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor8.task0.receiveThroughput\",\"count\":\"177\",\"meanRate\":1.9157529806365892,\"m1\":1.8940679647982497,\"m5\":1.6957508470291223,\"m15\":1.6349829197598136,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418899",
+    |    "time": "1435680269855",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor8.task0.sendThroughput\",\"count\":\"10\",\"meanRate\":1.8431532311445549,\"m1\":2,\"m5\":2,\"m15\":2,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor8.task0.sendThroughput\",\"count\":\"180\",\"meanRate\":1.9482226556644775,\"m1\":2,\"m5\":2,\"m15\":2,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418897",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor3.task0.receiveThroughput\",\"count\":\"8\",\"meanRate\":1.4746225192382731,\"m1\":1.6,\"m5\":1.6,\"m15\":1.6,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor3.task0.receiveThroughput\",\"count\":\"177\",\"meanRate\":1.9158306332026798,\"m1\":1.8940679647982497,\"m5\":1.6957508470291223,\"m15\":1.6349829197598136,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418856",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor1.task0.processTime\",\"count\":\"1\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor1.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418862",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor9.task0.receiveThroughput\",\"count\":\"7\",\"meanRate\":1.297930126894312,\"m1\":1.4,\"m5\":1.4,\"m15\":1.4,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor9.task0.receiveThroughput\",\"count\":\"175\",\"meanRate\":1.8935497514648503,\"m1\":1.8366401445236284,\"m5\":1.5421554253491752,\"m15\":1.451941495922701,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418863",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor9.task0.sendThroughput\",\"count\":\"20\",\"meanRate\":3.708313630614926,\"m1\":4,\"m5\":4,\"m15\":4,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor9.task0.sendThroughput\",\"count\":\"360\",\"meanRate\":3.89527491882991,\"m1\":3.6801776585172936,\"m5\":3.9338858152864704,\"m15\":3.9778393920195874,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418860",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor1.task0.receiveThroughput\",\"count\":\"9\",\"meanRate\":1.6691095122936113,\"m1\":1.8,\"m5\":1.8,\"m15\":1.8,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor1.task0.receiveThroughput\",\"count\":\"179\",\"meanRate\":1.9368250762178074,\"m1\":1.9514957850728702,\"m5\":1.8493462687090683,\"m15\":1.8180243435969263,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418857",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor5.task0.processTime\",\"count\":\"1\",\"min\":\"1\",\"max\":\"1\",\"mean\":1,\"stddev\":0,\"median\":1,\"p75\":1,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor5.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.2222222222222222,\"stddev\":0.42779263194649864,\"median\":0,\"p75\":0.25,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418859",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor0.task0.receiveThroughput\",\"count\":\"3\",\"meanRate\":0.556279575261883,\"m1\":0.6,\"m5\":0.6,\"m15\":0.6,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor0.task0.receiveThroughput\",\"count\":\"177\",\"meanRate\":1.9151912073045547,\"m1\":1.6961649169000554,\"m5\":0.9571906425195416,\"m15\":0.7304334749146412,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418897",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
     |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor2.task0.sendThroughput\",\"count\":\"0\",\"meanRate\":0,\"m1\":0,\"m5\":0,\"m15\":0,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418899",
+    |    "time": "1435680269855",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor7.task0.receiveThroughput\",\"count\":\"59\",\"meanRate\":10.874958479546766,\"m1\":11.799999999999999,\"m5\":11.799999999999999,\"m15\":11.799999999999999,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor7.task0.receiveThroughput\",\"count\":\"1099\",\"meanRate\":11.894826925806804,\"m1\":11.951495785072868,\"m5\":11.849346268709066,\"m15\":11.818024343596928,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418896",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor11.task0.sendThroughput\",\"count\":\"10\",\"meanRate\":1.8433727760777074,\"m1\":2,\"m5\":2,\"m15\":2,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor11.task0.sendThroughput\",\"count\":\"180\",\"meanRate\":1.9482165485668792,\"m1\":2,\"m5\":2,\"m15\":2,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418858",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor5.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor5.task0.receiveLatency\",\"count\":\"9\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.1111111111111111,\"stddev\":0.3333333333333333,\"median\":0,\"p75\":0,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418890",
+    |    "time": "1435680269853",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor11.task0.processTime\",\"count\":\"1\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor11.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418893",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor8.task0.processTime\",\"count\":\"1\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor8.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418858",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor6.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor6.task0.receiveLatency\",\"count\":\"9\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.1111111111111111,\"stddev\":0.3333333333333333,\"median\":0,\"p75\":0,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418857",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor10.task0.processTime\",\"count\":\"1\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor10.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418898",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor4.task0.sendThroughput\",\"count\":\"30\",\"meanRate\":5.532103395685169,\"m1\":6,\"m5\":6,\"m15\":6,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor4.task0.sendThroughput\",\"count\":\"550\",\"meanRate\":5.952878402538633,\"m1\":6,\"m5\":6,\"m15\":6,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418862",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
     |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor6.task0.sendThroughput\",\"count\":\"0\",\"meanRate\":0,\"m1\":0,\"m5\":0,\"m15\":0,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418897",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor2.task0.receiveThroughput\",\"count\":\"9\",\"meanRate\":1.6589784967205394,\"m1\":1.8,\"m5\":1.8,\"m15\":1.8,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor2.task0.receiveThroughput\",\"count\":\"179\",\"meanRate\":1.937398060263143,\"m1\":1.9514957850728702,\"m5\":1.8493462687090683,\"m15\":1.8180243435969263,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418860",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
     |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor1.task0.sendThroughput\",\"count\":\"0\",\"meanRate\":0,\"m1\":0,\"m5\":0,\"m15\":0,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418858",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor6.task0.processTime\",\"count\":\"1\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor6.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.05555555555555555,\"stddev\":0.23570226039551584,\"median\":0,\"p75\":0,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418891",
+    |    "time": "1435680269853",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor11.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor11.task0.receiveLatency\",\"count\":\"9\",\"min\":\"1\",\"max\":\"8\",\"mean\":4.777777777777778,\"stddev\":2.279132388529557,\"median\":5,\"p75\":6.5,\"p95\":8,\"p98\":8,\"p99\":8,\"p999\":8}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418891",
+    |    "time": "1435680269853",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor2.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor2.task0.receiveLatency\",\"count\":\"9\",\"min\":\"2\",\"max\":\"8\",\"mean\":5,\"stddev\":1.9364916731037085,\"median\":5,\"p75\":6.5,\"p95\":8,\"p98\":8,\"p99\":8,\"p999\":8}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418856",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor1.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor1.task0.receiveLatency\",\"count\":\"9\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.1111111111111111,\"stddev\":0.3333333333333333,\"median\":0,\"p75\":0,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418861",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor5.task0.receiveThroughput\",\"count\":\"6\",\"meanRate\":1.1126918555593872,\"m1\":1.2,\"m5\":1.2,\"m15\":1.2,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor5.task0.receiveThroughput\",\"count\":\"183\",\"meanRate\":1.9801115372762477,\"m1\":1.7792123242490079,\"m5\":1.388560003669229,\"m15\":1.2689000720855887,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418892",
+    |    "time": "1435680269853",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor3.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor3.task0.receiveLatency\",\"count\":\"9\",\"min\":\"2\",\"max\":\"8\",\"mean\":5,\"stddev\":1.9364916731037085,\"median\":5,\"p75\":6.5,\"p95\":8,\"p98\":8,\"p99\":8,\"p999\":8}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418891",
+    |    "time": "1435680269853",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor2.task0.processTime\",\"count\":\"1\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor2.task0.processTime\",\"count\":\"18\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.05555555555555555,\"stddev\":0.23570226039551584,\"median\":0,\"p75\":0,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418862",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor6.task0.receiveThroughput\",\"count\":\"9\",\"meanRate\":1.6690219217873472,\"m1\":1.8,\"m5\":1.8,\"m15\":1.8,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor6.task0.receiveThroughput\",\"count\":\"179\",\"meanRate\":1.9368198282592202,\"m1\":1.9514957850728702,\"m5\":1.8493462687090683,\"m15\":1.8180243435969263,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418861",
+    |    "time": "1435680269809",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor10.task0.receiveThroughput\",\"count\":\"9\",\"meanRate\":1.669108475620026,\"m1\":1.8,\"m5\":1.8,\"m15\":1.8,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor10.task0.receiveThroughput\",\"count\":\"179\",\"meanRate\":1.9368249416742938,\"m1\":1.9514957850728702,\"m5\":1.8493462687090683,\"m15\":1.8180243435969263,\"rateUnit\":\"events/second\"}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418859",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
     |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor9.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418857",
+    |    "time": "1435680269808",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor10.task0.receiveLatency\",\"count\":\"0\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor10.task0.receiveLatency\",\"count\":\"9\",\"min\":\"0\",\"max\":\"0\",\"mean\":0,\"stddev\":0,\"median\":0,\"p75\":0,\"p95\":0,\"p98\":0,\"p99\":0,\"p999\":0}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418892",
+    |    "time": "1435680269853",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Histogram",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor4.task0.processTime\",\"count\":\"3\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.3333333333333333,\"stddev\":0.5773502691896258,\"median\":0,\"p75\":1,\"p95\":1,\"p98\":1,\"p99\":1,\"p999\":1}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Histogram\",{\"name\":\"app1.processor4.task0.processTime\",\"count\":\"55\",\"min\":\"0\",\"max\":\"1\",\"mean\":0.03636363636363636,\"stddev\":0.18891859540615819,\"median\":0,\"p75\":0,\"p95\":0.19999999999999574,\"p98\":1,\"p99\":1,\"p999\":1}]"
     |    }
     |  },
     |  {
-    |    "time": "1435595418898",
+    |    "time": "1435680269854",
     |    "value": {
     |      "typeName": "org.apache.gearpump.shared.Messages.Meter",
-    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor3.task0.sendThroughput\",\"count\":\"10\",\"meanRate\":1.84325000688076,\"m1\":2,\"m5\":2,\"m15\":2,\"rateUnit\":\"events/second\"}]"
+    |      "json": "[\"org.apache.gearpump.shared.Messages.Meter\",{\"name\":\"app1.processor3.task0.sendThroughput\",\"count\":\"180\",\"meanRate\":1.9483014120438555,\"m1\":2,\"m5\":2,\"m15\":2,\"rateUnit\":\"events/second\"}]"
     |    }
     |  }
     |]
@@ -377,16 +377,16 @@ val metricsJSON =
       |{
       |  "appId": 1,
       |  "appName": "dag",
-      |  "actorPath": "akka.tcp://app1-executor-1@ip-10-10-10-217.eu-west-1.compute.internal:34731/user/daemon/appdaemon1/$c/appmaster",
-      |  "clock": "0",
+      |  "actorPath": "akka.tcp://app1-executor-1@ip-10-10-10-217.eu-west-1.compute.internal:55144/user/daemon/appdaemon1/$c/appmaster",
+      |  "clock": "1435680177628",
       |  "executors": [
       |    [
       |      0,
-      |      "akka.tcp://app1system0@ip-10-10-10-217.eu-west-1.compute.internal:60598/rem…t-1.compute.internal:34731/user/daemon/appdaemon1/$c/appmaster/executors/0"
+      |      "akka.tcp://app1system0@ip-10-10-10-217.eu-west-1.compute.internal:52627/rem…t-1.compute.internal:55144/user/daemon/appdaemon1/$c/appmaster/executors/0"
       |    ],
       |    [
       |      1,
-      |      "akka.tcp://app1system1@ip-10-10-10-217.eu-west-1.compute.internal:53494/rem…t-1.compute.internal:34731/user/daemon/appdaemon1/$c/appmaster/executors/1"
+      |      "akka.tcp://app1system1@ip-10-10-10-217.eu-west-1.compute.internal:50934/rem…t-1.compute.internal:55144/user/daemon/appdaemon1/$c/appmaster/executors/1"
       |    ]
       |  ],
       |  "tasks": [
@@ -625,9 +625,9 @@ val metricsJSON =
       |  ],
       |  "dag": {
       |    "vertices": [
+      |      0,
       |      2,
       |      9,
-      |      0,
       |      5,
       |      8,
       |      1,
@@ -640,9 +640,14 @@ val metricsJSON =
       |    ],
       |    "edges": [
       |      [
-      |        8,
+      |        0,
       |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        7
+      |        4
+      |      ],
+      |      [
+      |        0,
+      |        "org.apache.gearpump.partitioner.HashPartitioner",
+      |        2
       |      ],
       |      [
       |        9,
@@ -650,24 +655,44 @@ val metricsJSON =
       |        11
       |      ],
       |      [
-      |        0,
+      |        5,
       |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        6
-      |      ],
-      |      [
-      |        4,
-      |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        7
+      |        8
       |      ],
       |      [
       |        0,
       |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        3
+      |        1
       |      ],
       |      [
       |        0,
       |        "org.apache.gearpump.partitioner.HashPartitioner",
       |        5
+      |      ],
+      |      [
+      |        3,
+      |        "org.apache.gearpump.partitioner.HashPartitioner",
+      |        4
+      |      ],
+      |      [
+      |        0,
+      |        "org.apache.gearpump.partitioner.HashPartitioner",
+      |        6
+      |      ],
+      |      [
+      |        9,
+      |        "org.apache.gearpump.partitioner.HashPartitioner",
+      |        10
+      |      ],
+      |      [
+      |        8,
+      |        "org.apache.gearpump.partitioner.HashPartitioner",
+      |        7
+      |      ],
+      |      [
+      |        5,
+      |        "org.apache.gearpump.partitioner.HashPartitioner",
+      |        4
       |      ],
       |      [
       |        11,
@@ -682,37 +707,12 @@ val metricsJSON =
       |      [
       |        0,
       |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        1
+      |        3
       |      ],
       |      [
-      |        3,
+      |        4,
       |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        4
-      |      ],
-      |      [
-      |        0,
-      |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        2
-      |      ],
-      |      [
-      |        0,
-      |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        4
-      |      ],
-      |      [
-      |        5,
-      |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        8
-      |      ],
-      |      [
-      |        9,
-      |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        10
-      |      ],
-      |      [
-      |        5,
-      |        "org.apache.gearpump.partitioner.HashPartitioner",
-      |        4
+      |        7
       |      ]
       |    ]
       |  }
@@ -720,7 +720,6 @@ val metricsJSON =
     """.stripMargin
   val tests = TestSuite {
     "test StreamingDag create with StreamingAppMasterDataDetail" - {
-      val obj = JSON.parse(streamingAppMasterDataDetailJSON)
       val streamingAppMasterDataDetail = upickle.read[StreamingAppMasterDataDetail](streamingAppMasterDataDetailJSON)
       streamingDag = StreamingDag(streamingAppMasterDataDetail)
       assert(streamingDag.appId == 1)
@@ -730,28 +729,30 @@ val metricsJSON =
       assert(streamingDag.updateMetrics(historyMetrics))
     }
     "test StreamingDag.getReceivedMessages" - {
-      val receivedMessagesCorrect = AggregatedProcessedMessages(total=325,rate=18.66112496739520)
+      val receivedMessagesCorrect = AggregatedProcessedMessages(total = 1815, rate = 19.642694832221267)
       val receivedMessages = streamingDag.getReceivedMessages(undefined)
       assert(receivedMessagesCorrect.total == receivedMessages.total)
       assert(receivedMessagesCorrect.rate == receivedMessages.rate)
     }
     "test StreamingDag.getSentMessages" - {
-      val sentMessagesCorrect = AggregatedProcessedMessages(total=240,rate=13.798860449520152)
+      val sentMessagesCorrect = AggregatedProcessedMessages(total = 1440, rate = 15.58118196301669)
       val sentMessages = streamingDag.getSentMessages(undefined)
       assert(sentMessagesCorrect.total == sentMessages.total)
       assert(sentMessagesCorrect.rate == sentMessages.rate)
     }
     "test StreamingDag.getProcessingTime" - {
-      val processingTimeCorrect = Array(0.06388888888888888)
+      val processingTimeCorrect = Array(0.08636363636363636)
       val processingTime = streamingDag.getProcessingTime(undefined)
-      assert(processingTime.length==1)
-      assert(processingTimeCorrect(0)==processingTime(0))
+      assert(processingTime.length == 1)
+      assert(processingTimeCorrect(0) == processingTime(0))
     }
     "test StreamingDag.getReceiveLatency" - {
-      val receiveLatencyCorrect = Array(1.7833333333333332)
+      val receiveLatencyCorrect = Array(1.8148148148148147)
       val receiveLatency = streamingDag.getReceiveLatency(undefined)
-      assert(receiveLatency.length==1)
-      assert(receiveLatencyCorrect(0)==receiveLatency(0))
+      assert(receiveLatency.length == 1)
+      assert(receiveLatencyCorrect(0) == receiveLatency(0))
     }
   }
+  tests.run().toSeq.foreach(println)
+
 }

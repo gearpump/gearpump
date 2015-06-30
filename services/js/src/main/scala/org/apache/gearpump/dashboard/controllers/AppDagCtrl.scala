@@ -39,7 +39,7 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
       data=dagStyle.newData(),
       events=DoubleClickEvent(doubleclick _)
     )
-    redrawVisGraph
+    redrawVisGraph()
   }
 
   def doubleclick(data: DagData): Unit = {
