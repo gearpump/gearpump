@@ -67,9 +67,9 @@ object ContainerLaunchContext {
       val hdfsRoot = appConfig.getEnv(HDFS_ROOT)
       Map(
         "pack" -> newYarnAppResource(fs, new Path(s"$hdfsRoot/$version.tar.gz"),
-          LocalResourceType.ARCHIVE, LocalResourceVisibility.PUBLIC),
+          LocalResourceType.ARCHIVE, LocalResourceVisibility.APPLICATION),
         "yarnConf" -> newYarnAppResource(fs, new Path(s"$hdfsRoot/conf"),
-          LocalResourceType.FILE, LocalResourceVisibility.PUBLIC))
+          LocalResourceType.FILE, LocalResourceVisibility.APPLICATION))
     }) match {
       case Success(map) =>
         map
