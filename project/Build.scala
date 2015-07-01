@@ -479,6 +479,10 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
+        ("org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion).
+            exclude("org.mortbay.jetty", "jetty-util")
+            exclude("org.mortbay.jetty", "jetty")
+            exclude("tomcat", "jasper-runtime"),
           "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion
             exclude("com.google.guava", "guava")
             exclude("com.google.protobuf", "protobuf-java")
