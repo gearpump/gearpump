@@ -197,9 +197,9 @@ object Build extends sbt.Build {
       )
   ).dependsOn(core, streaming, services, external_kafka)
    .aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, pack, pipeline, state)
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, packProject, pipeline, state)
 
-  lazy val pack = Project(
+  lazy val packProject = Project(
     id = "gearpump-pack",
     base = file("output"),
     settings = commonSettings ++
@@ -217,7 +217,7 @@ object Build extends sbt.Build {
           "worker" -> Seq("-server", "-DlogFilename=worker"),
           "services" -> Seq("-server")
         ),
-        packExclude := Seq(thisProjectRef.value.project),
+        packLibDir := Map("gearpump-daemon" -> "daemon"),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
@@ -226,9 +226,9 @@ object Build extends sbt.Build {
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("/etc/gearpump/conf", "${PROG_HOME}/conf",
-          "${PROG_HOME}/dashboard", "/etc/hadoop/conf", "/etc/hbase/conf"))
+          "${PROG_HOME}/dashboard", "${PROG_HOME}/daemon/*" ,"/etc/hadoop/conf", "/etc/hbase/conf"))
       )
-  ).dependsOn(core, daemon, streaming, services, external_kafka, yarn, storm, dsl, pagerank, hbase, state)
+  ).dependsOn(core, streaming, services, external_kafka, yarn, storm, dsl, pagerank, hbase, state)
 
   lazy val core = Project(
     id = "gearpump-core",

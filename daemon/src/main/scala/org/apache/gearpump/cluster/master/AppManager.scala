@@ -340,9 +340,3 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
     appMasterRegistry.values.exists(_._2.appName == appName)
   }
 }
-
-
-
-object AppManager {
-
-}

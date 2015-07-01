@@ -2,7 +2,9 @@ addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.2")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
 
-addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.6.12")
+resolvers += "fvunicorn" at "http://dl.bintray.com/fvunicorn/sbt-plugins"
+
+addSbtPlugin("io.gearpump.sbt" % "sbt-pack" % "0.7.4")
 
 addSbtPlugin("de.johoop" % "jacoco4sbt" % "2.1.6")
 
