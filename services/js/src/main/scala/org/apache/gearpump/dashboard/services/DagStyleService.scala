@@ -1,7 +1,7 @@
 package org.apache.gearpump.dashboard.services
 
 import com.greencatsoft.angularjs.{Factory, injectable}
-import org.apache.gearpump.dashboard.controllers.{DataSet, DagData}
+import org.apache.gearpump.dashboard.controllers.{DagData, DataSet}
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.{JSExport, JSExportAll}
@@ -12,41 +12,75 @@ case class Flags(depth: Int)
 @JSExportAll
 case class ColorStyle(border: String, background: String)
 
-@JSExportAll
-case class ColorSet(color: String, hover: String, highlight: String)
+trait ColorSet extends js.Object {
+  val color: String = js.native
+  val hover: String = js.native
+  val highlight: String = js.native
+}
 
-@JSExportAll
-case class HierarchicalLayout(sortMethod: String, direction: String, levelSeparation: Int)
+trait HierarchicalLayout extends js.Object {
+  val sortMethod: String = js.native
+  val direction: String = js.native
+  val levelSeparation: Int = js.native
+}
 
-@JSExportAll
-case class Layout(hierarchical: HierarchicalLayout)
+trait Layout extends js.Object {
+  val hierarchical: HierarchicalLayout = js.native
+}
 
-@JSExportAll
-case class NodeFontStyle(size: Int, face: String, strokeColor: String, strokeWidth: Int)
+trait NodeFontStyle extends js.Object {
+  val size: Int = js.native
+  val face: String = js.native
+  val strokeColor: String = js.native
+  val strokeWidth: Int = js.native
+}
 
-@JSExportAll
-case class NodeStyle(shape: String, font: NodeFontStyle)
+trait NodeStyle extends js.Object {
+  val shape: String = js.native
+  val font: NodeFontStyle = js.native
+}
 
-@JSExportAll
-case class ArrowStyle(to: Boolean)
+trait ArrowStyle extends js.Object {
+  val to: Boolean = js.native
+}
 
-@JSExportAll
-case class EdgeFontStyle(size: Int, face: String, align: String)
+trait EdgeFontStyle extends js.Object {
+  val size: Int = js.native
+  val face: String = js.native
+  val align: String = js.native
+}
 
-@JSExportAll
-case class EdgeColorStyle(opacity: Double)
+trait EdgeColorStyle extends js.Object {
+  val opacity: Double = js.native
+}
 
-@JSExportAll
-case class EdgeStyle(arrows: ArrowStyle, font: EdgeFontStyle, color: EdgeColorStyle, smooth: Boolean)
+trait EdgeStyle extends js.Object {
+  val arrows: ArrowStyle = js.native
+  val font: EdgeFontStyle = js.native
+  val color: EdgeColorStyle = js.native
+  val smooth: Boolean = js.native
+}
 
-@JSExportAll
-case class ToolTipStyle(fontSize: Int, fontFace: String, fontColor: String, color: ColorStyle)
+trait ToolTipStyle extends js.Object {
+  val fontSize: Int = js.native
+  val fontFace: String = js.native
+  val fontColor: String = js.native
+  val color: ColorStyle = js.native
+}
 
-@JSExportAll
-case class Interaction(hover: Boolean)
+trait Interaction extends js.Object {
+  val hover: Boolean = js.native
+}
 
-@JSExportAll
-case class DagOptions(autoResize: Boolean, interaction: Interaction, width: String, height: String, layout: Layout, nodes: NodeStyle, edges: EdgeStyle)
+trait DagOptions extends js.Object {
+  val autoResize: Boolean = js.native
+  val interaction: Interaction = js.native
+  val width: String = js.native
+  val height: String = js.native
+  val layout: Layout = js.native
+  val nodes: NodeStyle = js.native
+  val edges: EdgeStyle = js.native
+}
 
 @JSExport
 @injectable("dagStyle")
@@ -57,19 +91,28 @@ class DagStyleService() {
   val levelDistance = 85
 
   def newOptions(flags: Flags): DagOptions = {
-    DagOptions(
+    js.Dynamic.literal(
       autoResize=true,
-      interaction=Interaction(hover=true),
+      interaction=js.Dynamic.literal(hover=true).asInstanceOf[Interaction],
       width="100%",
       height=(maxNodeRadius * (flags.depth + 1) + levelDistance * flags.depth + verticalMargin * 2).toString + "px",
-      layout=Layout(hierarchical=HierarchicalLayout(sortMethod="direction", direction="UD", levelSeparation=levelDistance)),
-      nodes=NodeStyle(shape="dot", font=NodeFontStyle(size=13, face=fontFace, strokeColor="#fff", strokeWidth=5)),
-      edges=EdgeStyle(arrows=ArrowStyle(to=true), font=EdgeFontStyle(size=11,face=fontFace,align="middle"),color=EdgeColorStyle(opacity=0.75),smooth=true)
-    )
+      layout=js.Dynamic.literal(
+        hierarchical=js.Dynamic.literal(sortMethod="directed", direction="UD", levelSeparation=levelDistance).asInstanceOf[HierarchicalLayout]
+      ).asInstanceOf[Layout],
+      nodes=js.Dynamic.literal(
+        shape="dot",
+        font=js.Dynamic.literal(size=13, face=fontFace, strokeColor="#fff", strokeWidth=5).asInstanceOf[NodeFontStyle]
+      ).asInstanceOf[NodeStyle],
+      edges=js.Dynamic.literal(
+        arrows=js.Dynamic.literal(to=true).asInstanceOf[ArrowStyle],
+        font=js.Dynamic.literal(size=11,face=fontFace,align="middle").asInstanceOf[EdgeFontStyle],
+        color=js.Dynamic.literal(opacity=0.75).asInstanceOf[EdgeColorStyle],
+        smooth=true).asInstanceOf[EdgeStyle]
+    ).asInstanceOf[DagOptions]
   }
 
   def newData(): DagData = {
-    DagData(new DataSet(), new DataSet())
+    DagData(nodes=new DataSet(), edges=new DataSet())
   }
 
   def nodeRadiusRange(): js.Array[Double] = {
@@ -88,12 +131,13 @@ class DagStyleService() {
     js.Array(0.4, 1.0)
   }
 
-  def edgeColorSet(alive: Boolean): ColorSet = {
+  def edgeColorSet(alive: Boolean): String = {
     alive match {
       case true =>
-        ColorSet(color="black", hover="black", highlight="black")
+        "rgb(166,166,166)"
       case false =>
-        ColorSet(color="rgb(195,195,195)", hover="rgb(166,166,166)", highlight="rgb(166,166,166)")
+        //js.Dynamic.literal(color="rgb(195,195,195)", hover="rgb(166,166,166)", highlight="rgb(166,166,166)").asInstanceOf[ColorSet]
+        "rgb(166,166,166)"
     }
   }
 }

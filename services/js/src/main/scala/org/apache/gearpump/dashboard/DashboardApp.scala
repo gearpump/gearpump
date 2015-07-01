@@ -56,10 +56,9 @@ object DashboardApp extends JSApp {
     apps.config[AppsConfig]
     apps.controller[AppsCtrl]
 
-    val visgraph = Angular.module("directive.visgraph", Array.empty[String])
-    visgraph.directive[VisnetworkDirective]
+    //val visgraph = Angular.module("directive.visgraph", Array.empty[String])
 
-    val appmaster = Angular.module("dashboard.apps.appmaster", Array("directive.visgraph", "conf"))
+    val appmaster = Angular.module("dashboard.apps.appmaster", Array("conf"))
     appmaster.factory[DagStyleServiceFactory]
     appmaster.config[AppMasterConfig]
     appmaster.controller[AppMasterCtrl]
@@ -76,6 +75,7 @@ object DashboardApp extends JSApp {
       "mgcrea.ngStrap",
       "ui.select",
       "smart-table",
+      "directive.visgraph",
       "directive.echartfactory",
       "directive.echarts",
       "directive.tabset",

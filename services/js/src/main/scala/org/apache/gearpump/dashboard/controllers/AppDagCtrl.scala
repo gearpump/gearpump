@@ -50,44 +50,51 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
     }
   }
 
-  def rangeMapper(dict: Map[_<:Any, Double], range: js.Array[Double]): js.Function1[Double,Double] = {
-    val values = d3.values(dict)
-    d3.scale.linear().domain(d3.extent(values)).range(range).asInstanceOf[js.Function1[Double,Double]]
+  import js.JSConverters._
+
+  def rangeMapper(map: Map[_<:Any, Double], range: js.Array[Double]): js.Function1[Double,Double] = {
+    val values = map.values.toSeq.toJSArray
+    val extent = d3.extent(values)
+    val func = d3.scale.linear().domain(extent).range(range)
+    func.asInstanceOf[js.Function1[Double,Double]]
   }
 
   def updateVisGraphNodes(): Unit = {
-    val visNodes = scope.visgraph.data.nodes
     val data = scope.streamingDag.getProcessorsData()
     data.weights += -1 -> 0
     val suggestRadius = rangeMapper(data.weights, dagStyle.nodeRadiusRange())
     var diffs = js.Array[VisNode]()
-    data.processors.map(pair => {
+    data.processors.foreach(pair => {
       val (processorId, processorDescription) = pair
       val description = Option(processorDescription.description) match {
         case Some(desc) =>
-          desc
+          if(desc.length() > 1) {
+            desc
+          } else {
+            scope.lastPart(processorDescription.taskClass)
+          }
         case None =>
           scope.lastPart(processorDescription.taskClass)
       }
       val label = "[" + processorId + "] " + description
       val weight = data.weights(processorId)
       val hierarchyLevels = data.hierarchyLevels(processorId)
-      val visNode = visNodes.get(processorId)
-      val newVisRadius = d3.round(suggestRadius(weight), 1).asInstanceOf[Int]
-      visNode.label != label || visNode.size != newVisRadius match {
+      val newVisRadius = d3.round(suggestRadius(weight), 1).asInstanceOf[Double]
+      val visNode = scope.visgraph.data.nodes.get(processorId)
+      visNode == null match {
         case true =>
-           diffs.push(VisNode(id=processorId,label=label,level=hierarchyLevels,size=newVisRadius))
+          diffs.push(js.Dynamic.literal(id=processorId,label=label,level=hierarchyLevels,size=newVisRadius).asInstanceOf[VisNode])
         case false =>
+          val node = visNode.asInstanceOf[VisNode]
+          if(node.label != label || node.size != newVisRadius) {
+            diffs.push(js.Dynamic.literal(id=processorId,label=label,level=hierarchyLevels,size=newVisRadius).asInstanceOf[VisNode])
+          }
       }
     })
-    /*
-    bjectid: 0label: "[0] Source_0"level: 0size: 14.9__proto__: Object, Objectid: 1label: "[1] Sink_1"level: 1size: 3.2__proto__: Object, Objectid: 2label: "[2] Sink_2"level: 1size: 3.2__proto__: Object, Objectid: 3label: "[3] Node_2"level: 1size: 3.2__proto__: Object, Objectid: 4label: "[4] Node_3"level: 2size: 7.9__proto__: Object, Objectid: 5label: "[5] Node_1"level: 1size: 7.9__proto__: Object, Objectid: 6label: "[6] Sink_0"level: 1size: 3.2__proto__: Object, Objectid: 7label: "[7] Sink_3"level: 3size: 14.9__proto__: Object, Objectid: 8label: "[8] Node_4"level: 2size: 3.2__proto__: Object, Objectid: 9label: "[9] Source_1"level: 0size: 5.5__proto__: Object, Objectid: 10label: "[10] Sink_4"level: 1size: 3.2__proto__: Object
-     */
-    visNodes.update(diffs)
+    scope.visgraph.data.nodes.update(diffs)
   }
 
   def updateVisGraphEdges(): Unit = {
-    val visEdges = scope.visgraph.data.edges
     val data = scope.streamingDag.getEdgesData()
     data.bandwidths += "-1" -> 0.0
     val suggestWidth = rangeMapper(data.bandwidths, dagStyle.edgeWidthRange())
@@ -96,26 +103,56 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
     var diffs = js.Array[VisEdge]()
     data.edges.foreach(pair => {
       val (edgeId, edge) = pair
-      val bandwidth = data.bandwidths(edgeId)
-      val visEdge = visEdges.get(edgeId)
-      val newVisWidth = d3.round(suggestWidth(bandwidth), 1).asInstanceOf[Int]
-      visEdge.width != newVisWidth match {
+      val bandwidth = data.bandwidths(edgeId).toInt
+      val newVisWidth = d3.round(suggestWidth(bandwidth), 1).asInstanceOf[Double]
+      val visEdge = scope.visgraph.data.edges.get(edgeId)
+      visEdge == null match {
         case true =>
           diffs.push(
-            VisEdge(
+            js.Dynamic.literal(
               id=edgeId,
+              from=edge.source,
+              to=edge.target,
               width=newVisWidth,
               hoverWidth=0,
               selectionWidth=0,
-              arrows=EdgeArrows(to=EdgeScale(scaleFactor=d3.round(suggestArrowSize(bandwidth), 1).asInstanceOf[Double])),
-              color=EdgeColor(opacity=d3.round(suggestOpacity(bandwidth), 1).asInstanceOf[Double],
-              color=dagStyle.edgeColorSet(bandwidth > 0))
-            )
+              arrows=js.Dynamic.literal(
+                to=js.Dynamic.literal(
+                  scaleFactor=d3.round(suggestArrowSize(bandwidth), 1).asInstanceOf[Double]
+                ).asInstanceOf[EdgeScale]
+              ).asInstanceOf[EdgeArrows],
+              color=js.Dynamic.literal(
+                opacity=d3.round(suggestOpacity(bandwidth), 1).asInstanceOf[Double],
+                color=dagStyle.edgeColorSet(bandwidth > 0)
+              ).asInstanceOf[EdgeColor]
+            ).asInstanceOf[VisEdge]
           )
         case false =>
+          val ledge = visEdge.asInstanceOf[VisEdge]
+          if(ledge.width != newVisWidth) {
+            diffs.push(
+              js.Dynamic.literal(
+                id=edgeId,
+                from=edge.source,
+                to=edge.target,
+                width=newVisWidth,
+                hoverWidth=0,
+                selectionWidth=0,
+                arrows=js.Dynamic.literal(
+                  to=js.Dynamic.literal(
+                    scaleFactor=d3.round(suggestArrowSize(bandwidth), 1).asInstanceOf[Double]
+                  ).asInstanceOf[EdgeScale]
+                ).asInstanceOf[EdgeArrows],
+                color=js.Dynamic.literal(
+                  opacity=d3.round(suggestOpacity(bandwidth), 1).asInstanceOf[Double],
+                  color=dagStyle.edgeColorSet(bandwidth > 0)
+                ).asInstanceOf[EdgeColor]
+              ).asInstanceOf[VisEdge]
+            )
+          }
       }
     })
-    visEdges.update(diffs)
+    scope.visgraph.data.edges.update(diffs)
   }
 
   def updateMetricsCounter(): Unit = {
