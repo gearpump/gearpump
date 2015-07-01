@@ -24,15 +24,17 @@ import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.can._
 import spray.routing.RoutingSettings
 
-trait RestServices extends AppMastersService
-    with AppMasterService with WorkerService with WorkersService with MasterService with SubmitApplicationRequestService
-    with ConfigQueryService with MetricsQueryService with WebSocketService with StaticService with ActorUtilService with InterMediateService
-    with SubmitUserApplicationService {
+trait RestServices extends AppMasterService with MasterService with SubmitApplicationRequestService
+     with WebSocketService with StaticService with SubmitUserApplicationService {
   implicit def executionContext = actorRefFactory.dispatcher
 
-  lazy val routes = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ applicationRequestRoute ~
-    masterRoute ~  configQueryRoute ~ metricQueryRoute ~ webSocketRoute ~ staticRoute ~ actorUtilRoute ~ interMediateRoute ~
-    submitUserApplicationRoute
+  lazy val routes =
+      masterRoute ~
+      appMasterRoute ~
+      applicationRequestRoute ~
+      webSocketRoute ~
+      staticRoute ~
+      submitUserApplicationRoute
 }
 
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {

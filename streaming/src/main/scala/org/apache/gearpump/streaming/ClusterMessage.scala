@@ -21,22 +21,38 @@ package org.apache.gearpump.streaming
 import akka.actor.{Actor, ActorRef}
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.streaming.task.{TaskActor, Task, TaskContextData, TaskId}
+import org.apache.gearpump.streaming.task.{Subscriber, TaskActor, Task, TaskContextData, TaskId}
 import org.apache.gearpump.transport.HostPort
 import scala.language.existentials
 
 object AppMasterToExecutor {
-  case class LaunchTask(taskId: TaskId, taskContext: TaskContextData, taskClass: Class[_ <: Task], taskActorClass: Class[_ <: Actor] = classOf[TaskActor], taskConfig: UserConfig = null)
+  case class LaunchTasks(taskId: List[TaskId], dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber])
+
+  case object TasksLaunched
+
+  /**
+   * dagVersion, life, and subscribers will be changed on target task list.
+   */
+  case class ChangeTasks(taskId: List[TaskId], dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
+
+  case object TasksChanged
+
+  case class ChangeTask(taskId: TaskId, dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
+
+  case class TaskChanged(taskId: TaskId, dagVersion: Int)
 
   case class StartClock(clock : TimeStamp)
+  case object TaskRejected
+
   case object RestartClockService
   class RestartException extends Exception
   class MsgLostException extends Exception
 }
 
 object ExecutorToAppMaster {
-  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, workerId : Int)
+  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, worker : WorkerInfo)
 
   case class RegisterTask(taskId: TaskId, executorId : Int, task: HostPort)
 }

@@ -20,9 +20,9 @@ package org.apache.gearpump.services
 
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestKit
-import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
+import org.apache.gearpump.cluster.ClientToMaster.{ResolveAppId, SubmitApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterDataDetailRequest
-import org.apache.gearpump.cluster.MasterToClient.{SubmitApplicationResult, SubmitApplicationResultValue}
+import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, SubmitApplicationResult, SubmitApplicationResultValue}
 import org.apache.gearpump.partitioner.PartitionerDescription
 import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.appmaster.{StreamingAppMasterDataDetail, SubmitApplicationRequest}
@@ -78,6 +78,8 @@ with ScalatestRouteTest with SubmitApplicationRequestService with AppMasterServi
   class MasterMock extends Actor {
     private val LOG: Logger = LogUtil.getLogger(getClass)
     def receive = {
+      case ResolveAppId(appId) =>
+        sender ! ResolveAppIdResult(Success(self))
       case SubmitApplication(appDescription, appJar, username) =>
         LOG.info("fake master SubmitApplication")
         sender ! SubmitApplicationResult(Success(1))

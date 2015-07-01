@@ -16,16 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.task
+package org.apache.gearpump.cluster
 
-import akka.actor.ActorRef
-import org.apache.gearpump.streaming.LifeTime
+import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
 
-case class TaskContextData(
-    executorId : Int,
-    appId : Int,
-    appName: String,
-    appMaster : ActorRef,
-    parallelism: Int,
-    life: LifeTime,
-    subscribers: List[Subscriber])
+class UserConfigSpec  extends FlatSpec with Matchers with BeforeAndAfterEach {
+  it should "serialize and deserialize with upickle correctly" in {
+    val conf = UserConfig.empty.withString("key", "value")
+    val serialized = upickle.write(conf)
+    val deserialized = upickle.read[UserConfig](serialized)
+    assert(deserialized.getString("key") == Some("value"))
+  }
+}

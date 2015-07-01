@@ -71,7 +71,6 @@ object Local extends App with ArgumentsParser {
 
     val master = system.actorOf(Props[MasterActor], MASTER)
     val masterPath = ActorUtil.getSystemAddress(system).toString + s"/user/$MASTER"
-    LOG.info(s"master is started at $masterPath...")
 
     0.until(workerCount).foreach { id =>
       system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)

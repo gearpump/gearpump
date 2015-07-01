@@ -141,12 +141,15 @@ object MasterToAppMaster {
 
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
 
+  case class MessageLoss(executorId: Int)
+
   case class WorkerList(workers: List[Int])
 }
 
 object AppMasterToWorker {
   case class LaunchExecutor(appId: Int, executorId: Int, resource: Resource, executorJvmConfig: ExecutorJVMConfig)
   case class ShutdownExecutor(appId : Int, executorId : Int, reason : String)
+  case class ChangeExecutorResource(appId: Int, executorId: Int, resource: Resource)
 }
 
 object WorkerToAppMaster {

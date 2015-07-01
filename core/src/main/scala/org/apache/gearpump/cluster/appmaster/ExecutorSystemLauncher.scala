@@ -77,8 +77,7 @@ class ExecutorSystemLauncher (appId: Int, session: Session) extends Actor {
       replyTo ! LaunchExecutorSystemRejected(launch.resource, reason, session)
       context.stop(self)
     case timeout: LaunchExecutorSystemTimeout =>
-      LOG.error(s"The Executor ActorSystem $executorSystemId has not been started in time, cannot start Executor" +
-        "in it...")
+      LOG.error(s"The Executor ActorSystem $executorSystemId has not been started in time")
       replyTo ! timeout
       context.stop(self)
   }

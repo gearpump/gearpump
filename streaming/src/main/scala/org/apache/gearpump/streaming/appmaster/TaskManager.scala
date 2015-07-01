@@ -20,28 +20,29 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.pattern.ask
-import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.streaming.AppMasterToExecutor.{LaunchTask, StartClock}
+import org.apache.gearpump.cluster.MasterToAppMaster.{MessageLoss, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{TasksChanged, TasksLaunched, TaskRejected, TaskChanged, ChangeTasks, LaunchTasks, StartClock}
+import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
+import org.apache.gearpump.streaming.appmaster.DagManager.{NewDAGDeployed, GetTaskLaunchData, WatchChange, TaskLaunchData, LatestDAG, GetLatestDAG}
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.{Accept, TaskLocation}
 import org.apache.gearpump.streaming.executor.{ExecutorRestartPolicy, Executor}
-import Executor.RestartExecutor
+import Executor.RestartTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef, AllocateResourceTimeOut}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
-import org.apache.gearpump.streaming.appmaster.TaskSchedulerImpl.TaskLaunchData
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{TaskIndex, ExecutorId, DAG}
+import org.apache.gearpump.streaming.{ProcessorId, TaskIndex, ExecutorId, DAG}
 import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import TaskManager._
+import org.apache.gearpump.streaming.appmaster.TaskManager._
 
 private[appmaster] class TaskManager(
     appId: Int,
-    dag: DAG,
+    dagManager: ActorRef,
     taskScheduler: TaskScheduler,
     executorManager: ActorRef,
     clockService: ActorRef,
@@ -57,118 +58,116 @@ private[appmaster] class TaskManager(
   implicit val actorSystem = context.system
   import context.dispatcher
 
+
+  self ! Initialize
   startWith(Uninitialized, null)
-  self ! DagInit(dag)
 
-  when (Uninitialized) {
-    case Event(DagInit(dag), _) =>
-      executorManager ! SetTaskManager(self)
-      taskScheduler.setTaskDAG(dag)
-      val resourceRequests = taskScheduler.getResourceRequests()
+  dagManager ! WatchChange(watcher = self)
+  executorManager ! SetTaskManager(self)
 
-      getMinClock.map { clock =>
-        LOG.info(s"Current min Clock is $clock, sending request resource to master...")
-        executorManager ! StartExecutors(resourceRequests)
-      }
-      goto (StartApplication) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
+
+  import org.apache.gearpump.TimeStamp
+
+  private def getMinClock: Future[TimeStamp] = {
+    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
   }
 
-  when(StartApplication)(startTasksAndHandleExecutorLoss)
+  private var startClock: Future[TimeStamp] = getMinClock
 
-  when(Recovery)(startTasksAndHandleExecutorLoss)
+  private val startTasks: StateFunction = {
+    case Event(executor: ExecutorStarted, state) =>
+      val taskIds = taskScheduler.schedule(executor.workerId, executor.executorId, executor.resource)
+      LOG.info(s"Executor $executor has been started, start to schedule tasks: ${taskIds.mkString(",")}")
 
-  private def startTasksAndHandleExecutorLoss: StateFunction = {
-    case Event(ExecutorStarted(executor, executorId, resource, workerId), state@ TaskRegistrationState(register)) =>
-      LOG.info("Executor has been started, start to launch tasks")
-
-      def launchTask(remainResources: Resource): Unit = {
-        if (remainResources > Resource.empty) {
-
-          val taskLaunchData = taskScheduler.resourceAllocated(workerId, executorId)
-
-          taskLaunchData match {
-            case Some(TaskLaunchData(taskId, taskDescription, subscriptions)) =>
-              //Launch task
-              LOG.info("Sending Launch Task to executor: " + executor.toString())
-
-              val taskContext = TaskContextData(taskId, executorId, appId, appName, appMaster = appMaster, taskDescription.parallelism, subscriptions)
-              executor ! LaunchTask(taskId, taskContext, TaskUtil.loadClass(taskDescription.taskClass), classOf[TaskActor], taskDescription.taskConf)
-
-              executorRestartPolicy.addTaskToExecutor(executorId, taskId)
-              //Todo: subtract the actual resource used by task
-              val usedResource = Resource(1)
-              launchTask(remainResources - usedResource)
-            case None =>
-              LOG.info("All tasks have been launched")
-          }
-        }
+      taskIds.groupBy(_.processorId).foreach { pair =>
+        val (processorId, tasks) = pair
+        dagManager ! GetTaskLaunchData(state.dag.version, processorId, StartTasksOnExecutor(executor.executorId, tasks))
       }
-      launchTask(resource)
-      stay using state
-
-    case Event(ExecutorStopped(executorId), state@ TaskRegistrationState( register)) =>
+      stay
+    case Event(StartExecutorsTimeOut, _) =>
+      appMaster ! AllocateResourceTimeOut
+      stay
+    case Event(ExecutorStopped(executorId), _) =>
       if(executorRestartPolicy.allowRestartExecutor(executorId)) {
         val newResourceRequests = taskScheduler.executorFailed(executorId)
         executorManager ! StartExecutors(newResourceRequests)
       } else {
-        LOG.error(s"Executor restarted to many times")
+        LOG.error(s"Executor restarted too many times")
       }
-      stay using state
+      stay
 
-    case Event(StartExecutorsTimeOut, state: TaskRegistrationState) =>
-      appMaster ! AllocateResourceTimeOut
-      stay using state
-
-    case Event(RegisterTask(taskId, executorId, host), state@ TaskRegistrationState(register)) =>
+    case Event(TaskLaunchData(processorDescription, subscribers, command), state) =>
+      command match {
+        case StartTasksOnExecutor(executorId, tasks) =>
+          LOG.info(s"Start tasks on Executor($executorId), tasks: " + tasks)
+          val launchTasks = LaunchTasks(tasks, state.dag.version, processorDescription, subscribers)
+          executorManager ! UniCast(executorId, launchTasks)
+          tasks.foreach(executorRestartPolicy.addTaskToExecutor(executorId, _))
+        case ChangeTasksOnExecutor(executorId, tasks) =>
+          LOG.info("change Task on executor: " + executorId + ", tasks: " + tasks)
+          val changeTasks = ChangeTasks(tasks, state.dag.version, processorDescription.life, subscribers)
+          executorManager ! UniCast(executorId, changeTasks)
+        case other =>
+          LOG.error(s"severe error! we expect ExecutorStarted but get ${other.getClass.toString}")
+      }
+      stay
+    case Event(TasksLaunched, state) =>
+      // We will track all launched task by message RegisterTask
+      stay
+    case Event(TasksChanged, state) =>
+      // We will track all changed task by message TaskChanged.
+      stay
+    case Event(RegisterTask(taskId, executorId, host), state) =>
       val client = sender
-      getMinClock.map(client ! StartClock(_))
-
-      register.registerTask(taskId, executorId, host)
-      if (register.isAllTasksRegistered) {
-        LOG.info(s"Sending Task locations to executors")
-        register.getTaskLocations.locations.toArray.foreach { pair =>
-          val (hostPort, taskSet) = pair
-          taskSet.foreach{ taskId =>
-            val executorId= register.getExecutorId(taskId)
-            LOG.info(s"TaskLocation: $hostPort task: $taskId, executor: $executorId")
-          }
-        }
-
-        executorManager ! BroadCast(register.getTaskLocations)
-        goto (ApplicationReady) using state
+      val register = state.taskRegistry
+      val status = register.registerTask(taskId, TaskLocation(executorId, host))
+      if (status == Accept) {
+        LOG.info(s"RegisterTask($taskId) TaskLocation: $host, Executor: $executorId")
+        startClock.map(client ! StartClock(_))
+        checkApplicationReady(state)
       } else {
-        stay using state
+        sender ! TaskRejected
+        stay
       }
+
+    case Event(TaskChanged(taskId, dagVersion), state) =>
+      state.taskChangeRegistry.taskChanged(taskId)
+      checkApplicationReady(state)
+      
+    case Event(CheckApplicationReady, state) =>
+      checkApplicationReady(state)
   }
 
-  when(ApplicationReady) {
-    case Event(clock: UpdateClock, _) =>
+  private def checkApplicationReady(state: StateData): State = {
+    import state.{taskRegistry, taskChangeRegistry}
+    if (taskRegistry.isAllTasksRegistered && taskChangeRegistry.allTaskChanged) {
+      LOG.info(s"All tasks have been launched; send Task locations to all executors")
+      val taskLocations = taskRegistry.getTaskLocations
+      (clockService ? ChangeToNewDAG(state.dag)).map { _ =>
+        executorManager ! BroadCast(taskLocations)
+      }
+
+      val recoverState = StateData(state.dag, new TaskRegistry(appId, state.dag.tasks))
+      goto(ApplicationReady) using state.copy(recoverState = recoverState)
+    } else {
+      stay
+    }
+  }
+
+  private val onClockEvent: StateFunction = {
+    case Event(clock: ClockEvent, _) =>
       clockService forward clock
       stay
+  }
 
-    case Event(GetLatestMinClock, _)=>
-      clockService forward GetLatestMinClock
+  private val ignoreClockEvent: StateFunction = {
+    case Event(clock: ClockEvent, _) =>
       stay
+  }
 
-    case Event(executorStopped @ ExecutorStopped(executorId), _) =>
-      //restart all tasks
-      executorManager ! BroadCast(RestartExecutor)
-      self ! executorStopped
-      goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
-    case Event(MessageLoss, _) =>
-      //restart all tasks
-      LOG.info("We have detected MessageLoss, going to restart the whole topology")
-      executorManager ! BroadCast(RestartExecutor)
-      goto(Recovery) using TaskRegistrationState(new TaskRegistration(appId, dag.taskCount))
-
-    case Event(reply: ReplayFromTimestampWindowTrailingEdge, _) =>
-
-      LOG.info("We have detected ReplayFromTimestampWindowTrailingEdge")
-      self ! MessageLoss
-      stay
-
-    case Event(LookupTaskActorRef(taskId), state@ TaskRegistrationState(register)) =>
-      val executorId = register.getExecutorId(taskId)
+  private val onClientQuery: StateFunction = {
+    case Event(LookupTaskActorRef(taskId), state) =>
+      val executorId = state.taskRegistry.getExecutorId(taskId)
       val requestor = sender
       executorId.map { executorId =>
         val taskPath = ActorPathUtil.taskActorPath(appMaster, executorId, taskId)
@@ -178,7 +177,8 @@ private[appmaster] class TaskManager(
       }
       stay
 
-    case Event(GetTaskList, state@ TaskRegistrationState(register)) =>
+    case Event(GetTaskList, state) =>
+      val register = state.taskRegistry
       val taskList = register.getTaskLocations.locations.flatMap { pair =>
         val (hostPort, taskSet) = pair
         taskSet.map{ taskId =>
@@ -189,35 +189,156 @@ private[appmaster] class TaskManager(
       stay
   }
 
-  import org.apache.gearpump.TimeStamp
-  private def getMinClock: Future[TimeStamp] = {
-    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
+  when (Uninitialized) {
+    case Event(Initialize, _) =>
+      val state = StateData(DAG.empty().copy(version = -1), new TaskRegistry(appId, List.empty[TaskId]),
+        new TaskChangeRegistry(List.empty[TaskId]), null)
+      goto (ApplicationReady) using state.copy(recoverState = state)
+  }
+
+  when(Recovery)(startTasks orElse ignoreClockEvent)
+
+  private val onMessageLoss: StateFunction = {
+    case Event(executorStopped@ExecutorStopped(executorId), state) =>
+      if (state.taskRegistry.isTaskRegisteredForExecutor(executorId)) {
+        self ! executorStopped
+        goto(Recovery) using state.recoverState
+      } else {
+        stay
+      }
+
+    case Event(MessageLoss(executorId), state) =>
+      if (state.taskRegistry.isTaskRegisteredForExecutor(executorId)) {
+        goto(Recovery) using state.recoverState
+      } else {
+        stay
+      }
+    case Event(reply: ReplayFromTimestampWindowTrailingEdge, state) =>
+      goto(Recovery) using state.recoverState
+  }
+
+  private val onNewDAG: StateFunction = {
+    case Event(LatestDAG(newDag), state: StateData) =>
+      import state.taskRegistry
+      if (newDag.version == state.dag.version) {
+        stay
+      } else {
+        val dagDiff = migrate(state.dag, newDag)
+        taskScheduler.setDAG(newDag)
+        val resourceRequests = taskScheduler.getResourceRequests()
+        executorManager ! StartExecutors(resourceRequests)
+
+        var modifiedTasks = List.empty[TaskId]
+        for (processorId <- (dagDiff.modifiedProcessors ++ dagDiff.impactedUpstream)) {
+          val executors = taskRegistry.processorExecutors(processorId)
+          executors.foreach { pair =>
+            val (executorId, tasks) = pair
+            modifiedTasks ++= tasks
+            dagManager ! GetTaskLaunchData(newDag.version, processorId, ChangeTasksOnExecutor(executorId, tasks))
+          }
+        }
+
+        val taskChangeRegistry = new TaskChangeRegistry(modifiedTasks)
+
+        val startedTasks = state.taskRegistry.registeredTasks
+        val dynamicTaskRegistration = new TaskRegistry(appId, newDag.tasks, startedTasks)
+        val recoverState = state.copy(taskRegistry = new TaskRegistry(appId, state.dag.tasks))
+
+        val nextState = StateData(newDag, dynamicTaskRegistration, taskChangeRegistry , recoverState)
+        goto(DynamicDAG) using nextState
+      }
+  }
+
+  when(ApplicationReady)(onMessageLoss orElse onClientQuery orElse onNewDAG orElse onClockEvent)
+
+  when(DynamicDAG)(onMessageLoss orElse startTasks orElse onClockEvent orElse onClientQuery)
+
+  onTransition {
+    case _ -> ApplicationReady =>
+      val newDagVersion = nextStateData.dag.version
+      executorManager ! nextStateData.taskRegistry.usedResource
+      dagManager ! NewDAGDeployed(newDagVersion)
+      dagManager ! GetLatestDAG
+      LOG.info(s"goto state ApplicationReady(dag = ${newDagVersion})...")
+
+
+    case _ -> Recovery =>
+      val recoverDagVersion = nextStateData.dag.version
+      executorManager ! BroadCast(RestartTasks(recoverDagVersion))
+      taskScheduler.setDAG(nextStateData.dag)
+      self ! CheckApplicationReady
+
+      // Use new Start Clock so that we recover at timepoint we fails.
+      startClock = getMinClock
+      LOG.info(s"goto state Recovery(recoverDag = $recoverDagVersion)...")
+
+    case _ -> DynamicDAG =>
+      LOG.info(s"goto state DynamicDAG from dag: ${stateData.dag.version} to ${nextStateData.dag.version}...")
   }
 }
 
 private [appmaster] object TaskManager {
-
 
   /**
    * State machine states
    */
   sealed trait State
   case object Uninitialized extends State
-  case object StartApplication extends State
-  case object Recovery extends State
   case object ApplicationReady extends State
+  case object Recovery extends State
+  case object DynamicDAG extends State
 
-  /**
-   * State machine state data
-   */
-  sealed trait StateData
-  case class TaskRegistrationState(taskRegistration: TaskRegistration) extends StateData
-
-
-  case class DagInit(dag: DAG)
-  case object MessageLoss
+  case class StateData(
+      dag: DAG, taskRegistry: TaskRegistry,
+      taskChangeRegistry: TaskChangeRegistry = TaskChangeRegistry.empty,
+      recoverState: StateData = null)
 
   case object GetTaskList
 
   case class TaskList(tasks: Map[TaskId, ExecutorId])
+
+  case class StartTasksOnExecutor(executorId: Int, tasks: List[TaskId])
+  case class ChangeTasksOnExecutor(executorId: Int, tasks: List[TaskId])
+
+  class TaskChangeRegistry(targetTasks: List[TaskId]) {
+    private var registeredTasks = Set.empty[TaskId]
+    def taskChanged(taskId: TaskId): Unit = {
+      registeredTasks += taskId
+    }
+    def allTaskChanged: Boolean = {
+      targetTasks.forall(taskId => registeredTasks.contains(taskId))
+    }
+  }
+
+  object TaskChangeRegistry {
+    def empty: TaskChangeRegistry = new TaskChangeRegistry(List.empty[TaskId])
+  }
+
+  case object Initialize
+  case object CheckApplicationReady
+
+  case class DAGDiff(addedProcessors: List[ProcessorId], modifiedProcessors: List[ProcessorId], impactedUpstream: List[ProcessorId])
+
+  def migrate(leftDAG: DAG, rightDAG: DAG): DAGDiff = {
+    val left = leftDAG.processors.keySet
+    val right = rightDAG.processors.keySet
+
+    val added = right -- left
+    val join = right -- added
+
+    val modified = join.filter {processorId =>
+      leftDAG.processors(processorId) != rightDAG.processors(processorId)
+    }
+
+    val upstream = (list: Set[ProcessorId]) => {
+      (list).flatMap {processorId =>
+        rightDAG.graph.incomingEdgesOf(processorId).map(_._1).toSet
+      } -- list
+    }
+
+    val impactedUpstream = upstream(added ++ modified)
+
+    // all upstream will be affected.
+    DAGDiff(added.toList, modified.toList, impactedUpstream.toList)
+  }
 }

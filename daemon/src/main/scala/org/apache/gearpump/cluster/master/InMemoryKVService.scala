@@ -45,7 +45,7 @@ class InMemoryKVService extends Actor with Stash with ClusterReplication {
           LOG.info(s"Successfully retrived key: $key")
           client ! GetKVSuccess(key, appData.get(key).orNull)
         case x: NotFound =>
-          LOG.info("We cannot find any kv")
+          LOG.info(s"We cannot find key $key")
           client ! GetKVSuccess(key, null)
         case x : GetFailure =>
           LOG.error(s"Failed to get application $key data, the request key is $key")

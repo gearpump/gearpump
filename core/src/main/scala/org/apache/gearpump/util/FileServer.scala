@@ -54,6 +54,7 @@ class FileServer(rootDir: File, host: String, port : Int) extends Actor with Sta
 
   override def receive: Receive = {
     case Http.Bound(address) =>
+      LOG.info(s"FileServer bound on port: ${address.getPort}")
       context.become(listen(address.getPort))
       unstashAll()
     case _ =>
@@ -62,7 +63,6 @@ class FileServer(rootDir: File, host: String, port : Int) extends Actor with Sta
 
   def listen(port : Int) : Receive = {
     case FileServer.GetPort => {
-      LOG.info(s"retunning port: $port")
       sender ! FileServer.Port(port)
     }
     case Http.Connected(remote, _) =>

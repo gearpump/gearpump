@@ -18,15 +18,16 @@
 
 package org.apache.gearpump.streaming.executor
 
-import akka.actor.SupervisorStrategy.Restart
+import akka.actor.SupervisorStrategy.Resume
 import akka.actor._
-import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
+import org.apache.gearpump.cluster.MasterToAppMaster.MessageLoss
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.executor.Executor.{RestartExecutor, TaskLocationReady}
-import org.apache.gearpump.streaming.task.TaskActor.RestartTask
-import org.apache.gearpump.streaming.task.{TaskId, TaskLocations, TaskWrapper}
+import org.apache.gearpump.streaming.ProcessorDescription
+import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskArgumentStore, TaskLocationReady, TaskStopped}
+import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
+import org.apache.gearpump.streaming.task.{Subscriber, TaskActor, TaskContextData, TaskId, TaskLocations, TaskUtil, TaskWrapper}
 import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.transport.{Express, HostPort}
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil}
@@ -35,74 +36,163 @@ import org.slf4j.Logger
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher: ITaskLauncher)  extends Actor {
 
-class Executor(executorContext: ExecutorContext, userConf : UserConfig)  extends Actor {
+  def this(executorContext: ExecutorContext, userConf : UserConfig)= {
+    this(executorContext, userConf, TaskLauncher(executorContext, userConf))
+  }
 
   import context.dispatcher
-  import executorContext._
+  import executorContext.{appId, appMaster, executorId, resource, worker}
 
-  private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId,
-    app = appId)
+  private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
   LOG.info(s"Executor actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
 
-  appMaster ! RegisterExecutor(self, executorId, resource, workerId)
+  appMaster ! RegisterExecutor(self, executorId, resource, worker)
   context.watch(appMaster)
+
+  private var tasks = Map.empty[TaskId, ActorRef]
 
   val express = Express(context.system)
 
-  def receive : Receive = appMasterMsgHandler orElse terminationWatch
+  def receive : Receive = appMasterMsgHandler
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case _: MsgLostException =>
-        LOG.info("We got MessageLossException from task, replaying application...")
+        LOG.error("We got MessageLossException from task, replaying application...")
         LOG.info(s"sending to appMaster ${appMaster.path.toString}")
 
-        appMaster ! ReplayFromTimestampWindowTrailingEdge(appId)
-        Restart
-      case _: RestartException => Restart
+        appMaster ! MessageLoss(executorId)
+        Resume
+
+      case ex: Throwable =>
+        LOG.error("We got exception, we will treat it as MessageLoss, so that the system will replay all lost message", ex)
+        appMaster ! MessageLoss(executorId)
+        Resume
     }
 
-  def appMasterMsgHandler : Receive = {
-    case LaunchTask(taskId, taskContext, taskClass, taskActorClass, taskConfig) => {
-      LOG.info(s"Launching Task $taskId for app: ${appId}, $taskClass")
+  private def launchTask(taskId: TaskId, argument: TaskArgument): ActorRef = {
+    launcher.launch(List(taskId), argument, context).values.head
+  }
 
-      val taskConf = userConf.withConfig(taskConfig)
+  private val taskArgumentStore = new TaskArgumentStore()
 
-      val task = new TaskWrapper(taskClass, taskContext, taskConf)
-      val taskActor = context.actorOf(Props(taskActorClass, taskContext, userConf, task).withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), ActorPathUtil.taskActorName(taskId))
+  def appMasterMsgHandler : Receive = terminationWatch orElse {
+    case LaunchTasks(taskIds, dagVersion, processorDescription, subscribers: List[Subscriber]) => {
+      LOG.info(s"Launching Task $taskIds for app: ${appId}")
+      val taskArgument = TaskArgument(dagVersion, processorDescription, subscribers)
+      taskIds.foreach(taskArgumentStore.add(_, taskArgument))
+      val newAdded = launcher.launch(taskIds, taskArgument, context)
+      newAdded.foreach { newAddedTask =>
+        context.watch(newAddedTask._2)
+      }
+      tasks ++= newAdded
+      sender ! TasksLaunched
     }
+
+    case ChangeTasks(taskIds, dagVersion, life, subscribers) =>
+      LOG.info(s"Change Tasks $taskIds for app: ${appId}, verion: $life, $dagVersion, $subscribers")
+      taskIds.foreach { taskId =>
+        for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
+          val processorDescription = taskArgument.processorDescription.copy(life = life)
+          taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription, subscribers))
+        }
+
+        val taskActor = tasks.get(taskId)
+        taskActor.foreach(_ forward ChangeTask(taskId, dagVersion, life, subscribers))
+      }
+      sender ! TasksChanged
+
     case TaskLocations(locations) =>
+      LOG.info(s"TaskLocations Ready...")
       val result = locations.flatMap { kv =>
         val (host, taskIdList) = kv
         taskIdList.map(taskId => (TaskId.toLong(taskId), host))
       }
       express.startClients(locations.keySet).map { _ =>
         express.remoteAddressMap.send(result)
-        express.remoteAddressMap.future().map(result => context.children.foreach(_ ! TaskLocationReady))
+        express.remoteAddressMap.future().map{result =>
+          tasks.foreach { task =>
+            task._2 ! TaskLocationReady
+          }
+        }
       }
-    case RestartExecutor =>
+    case RestartTasks(dagVersion) =>
       LOG.info(s"Executor received restart tasks")
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
-      context.children.foreach(_ ! RestartTask)
+
+      tasks.foreach { task =>
+        task._2 ! PoisonPill
+      }
+      context.become(restartingTask(dagVersion, remain = tasks.keys.size, restarted = Map.empty[TaskId, ActorRef]))
   }
 
-  def terminationWatch : Receive = {
+  def restartingTask(dagVersion: Int, remain: Int, restarted: Map[TaskId, ActorRef]): Receive = terminationWatch orElse {
+    case TaskStopped(actor) =>
+      for ((taskId, _) <- (tasks.find(_._2 == actor))) {
+        for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
+          val task = launchTask(taskId, taskArgument)
+          context.watch(task)
+          val newRestarted = restarted + (taskId -> task)
+          val newRemain = remain - 1
+          if (newRemain == 0) {
+            tasks ++= newRestarted
+            context.become(appMasterMsgHandler)
+          } else {
+            context.become(restartingTask(dagVersion, newRemain, newRestarted))
+          }
+        }
+      }
+  }
+
+  val terminationWatch: Receive = {
     case Terminated(actor) => {
       if (actor.compareTo(appMaster) == 0) {
 
         LOG.info(s"AppMaster ${appMaster.path.toString} is terminated, shutting down current executor $appId, $executorId")
-
         context.stop(self)
+      } else {
+        self ! TaskStopped(actor)
       }
     }
   }
 }
 
 object Executor {
-  case object RestartExecutor
+  case class RestartTasks(dagVersion: Int)
 
   case object TaskLocationReady
+
+  class TaskArgumentStore {
+
+    private var store = Map.empty[TaskId, List[TaskArgument]]
+
+    def add(taskId: TaskId, task: TaskArgument): Unit = {
+      val list = store.getOrElse(taskId, List.empty[TaskArgument])
+      store += taskId -> (task :: list)
+    }
+
+    def get(dagVersion: Int, taskId: TaskId): Option[TaskArgument] = {
+      store.get(taskId).flatMap { list =>
+        list.find { arg =>
+          arg.dagVersion <= dagVersion
+        }
+      }
+    }
+
+    /**
+     * when the new DAG is successfully deployed, then we should remove obsolete TaskArgument of old DAG.
+     */
+    def removeObsoleteVersion: Unit = {
+      store = store.map{ kv =>
+        val (k, list) = kv
+        (k, list.take(1))
+      }
+    }
+  }
+
+  case class TaskStopped(task: ActorRef)
 }

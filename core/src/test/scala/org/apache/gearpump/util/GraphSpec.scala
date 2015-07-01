@@ -123,4 +123,46 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 
     levelMap("C") < levelMap("F")
   }
+
+  property("copy should return a immutalbe new Graph") {
+    val graph = Graph.empty[String, String]
+    val defaultEdge = "edge"
+    graph.addVertex("A")
+    graph.addVertex("B")
+    graph.addEdge("A", defaultEdge, "B")
+
+    val newGraph = graph.copy
+    newGraph.addVertex("C")
+
+    assert(!graph.vertices.toSet.contains("C"), "Graph should be immutable")
+  }
+
+  property("subGraph should return a sub-graph for certain vertex") {
+    val graph = Graph.empty[String, String]
+    val defaultEdge = "edge"
+    graph.addVertex("A")
+    graph.addVertex("B")
+    graph.addVertex("C")
+    graph.addEdge("A", defaultEdge, "B")
+    graph.addEdge("B", defaultEdge, "C")
+    graph.addEdge("A", defaultEdge, "C")
+
+    val subGraph = graph.subGraph("C")
+    assert(subGraph.outDegreeOf("A") != graph.outDegreeOf("A"))
+  }
+
+  property("replaceVertex should hold all upstream downstream relation for a vertex") {
+    val graph = Graph.empty[String, String]
+    val defaultEdge = "edge"
+    graph.addVertex("A")
+    graph.addVertex("B")
+    graph.addVertex("C")
+    graph.addEdge("A", defaultEdge, "B")
+    graph.addEdge("B", defaultEdge, "C")
+
+    val newGraph = graph.copy.replaceVertex("B", "D")
+    assert(newGraph.inDegreeOf("D") == graph.inDegreeOf("B"))
+    assert(newGraph.outDegreeOf("D") == graph.outDegreeOf("B"))
+
+  }
 }

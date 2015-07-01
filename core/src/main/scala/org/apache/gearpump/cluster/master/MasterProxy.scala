@@ -82,7 +82,7 @@ class MasterProxy (masters: Iterable[ActorPath])
       context.become(active(receptionist) orElse messageHandler(receptionist))
     case ActorIdentity(_, None) => // ok, use another instead
     case msg =>
-      LOG.info(s"get unknown message , stashing ${msg.getClass.getSimpleName}")
+      LOG.info(s"Stashing ${msg.getClass.getSimpleName}")
       stash()
   }
 

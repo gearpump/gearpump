@@ -90,7 +90,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
 
   def clientMsgHandler: Receive = {
     case SubmitApplication(app, jar, username) =>
-      LOG.info(s"AppManager Submitting Application $appId...")
+      LOG.info(s"Submit Application ${app.name}($appId) by $username...")
       val client = sender
       if (applicationNameExist(app.name)) {
         client ! SubmitApplicationResult(Failure(new Exception(s"Application name ${app.name} already existed")))
@@ -129,7 +129,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       Option(info) match {
         case Some(info) =>
           val worker = info.worker
-          LOG.info(s"Shutdown app master at ${Option(worker).map(_.path).orNull}, appId: $appId, executorId: $executorId")
+          LOG.info(s"Shutdown AppMaster at ${Option(worker).map(_.path).orNull}, appId: $appId, executorId: $executorId")
           cleanApplicationData(appId)
           val shutdown = ShutdownExecutor(appId, executorId, s"AppMaster $appId shutdown requested by master...")
           sendMsgWithTimeOutCallBack(worker, shutdown, 30, shutDownExecutorTimeOut())
@@ -139,30 +139,12 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
           LOG.error(errorMsg)
           sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
-
-    case replay @ReplayFromTimestampWindowTrailingEdge(appId) =>
-      LOG.info(s"App Manager Replaying application $appId")
-      val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(ref) =>
-          LOG.info(s"Replaying application: $appId")
-          ref forward replay
-          sender ! ReplayApplicationResult(Success(appId))
-        case None =>
-          val errorMsg = s"Can not find regisration information for appId: $appId"
-          LOG.error(errorMsg)
-          sender ! ReplayApplicationResult(Failure(new Exception(errorMsg)))
-      }
-
     case ResolveAppId(appId) =>
-      LOG.info(s"App Manager Resolving appId $appId to ActorRef")
       val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
       if (null != appMaster) {
         sender ! ResolveAppIdResult(Success(appMaster))
       } else {
-        val errorMsg = s"Can not find regisration information for appId: $appId"
-        LOG.error(errorMsg)
-        sender ! ResolveAppIdResult(Failure(new Exception(errorMsg)))
+        sender ! ResolveAppIdResult(Failure(new Exception(s"Can not find Application: $appId")))
       }
     case AppMastersDataRequest =>
       var appMastersData = collection.mutable.ListBuffer[AppMasterData]()
@@ -227,39 +209,6 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         case AppMasterNonExist =>
           sender ! AppMasterData(AppMasterNonExist)
       }
-
-    case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
-      val appId = appMasterDataDetailRequest.appId
-      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(_appMaster) =>
-          _appMaster forward appMasterDataDetailRequest
-        case None =>
-          sender ! GeneralAppMasterDataDetail(appId)
-      }
-    case appMasterMetricsRequest: AppMasterMetricsRequest =>
-      val appId = appMasterMetricsRequest.appId
-      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(_appMaster) =>
-          _appMaster forward appMasterMetricsRequest
-        case None =>
-      }
-
-    case query@ QueryHistoryMetrics(appId, _, _) =>
-      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(_appMaster) =>
-          _appMaster forward query
-        case None =>
-      }
-    case getStalling @ GetStallingTasks(appId) =>
-      val (appMaster, _) = appMasterRegistry.getOrElse(appId, (null, null))
-      Option(appMaster) match {
-        case Some(_appMaster) =>
-          _appMaster forward getStalling
-        case None =>
-      }
   }
 
   def workerMessage: Receive = {
@@ -307,7 +256,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   def terminationWatch: Receive = {
     case terminate: Terminated =>
       terminate.getAddressTerminated()
-      LOG.info(s"App Master is terminiated, network down: ${terminate.getAddressTerminated()}")
+      LOG.info(s"AppMaster(${terminate.actor.path}) is terminiated, network down: ${terminate.getAddressTerminated()}")
       //Now we assume that the only normal way to stop the application is submitting a ShutdownApplication request
       val application = appMasterRegistry.find{appInfo =>
         val (_, (actorRef, _)) = appInfo

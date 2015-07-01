@@ -71,7 +71,7 @@ class DistServiceExecutor(executorContext: ExecutorContext, userConf : UserConfi
   }
 
   private def getEnvSettings : Map[String, Any] = {
-    Map("workerId" -> workerId,
+    Map("workerId" -> worker,
       "localhost" -> ActorUtil.getSystemAddress(context.system).host.get,
       "hostname" -> InetAddress.getLocalHost.getHostName)
   }

@@ -20,9 +20,9 @@ package org.apache.gearpump.cluster.main
 import java.util.concurrent.TimeUnit
 
 import akka.testkit.TestProbe
-import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
+import org.apache.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ShutdownApplicationResult}
+import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ReplayApplicationResult, ShutdownApplicationResult}
 import org.apache.gearpump.cluster.MasterToWorker.WorkerRegistered
 import org.apache.gearpump.cluster.WorkerToMaster.RegisterNewWorker
 import org.apache.gearpump.cluster.master.MasterProxy
@@ -147,6 +147,8 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
 
     try {
 
+      masterReceiver.expectMsgType[ResolveAppId](PROCESS_BOOT_TIME)
+      masterReceiver.reply(ResolveAppIdResult(Success(masterReceiver.ref)))
       masterReceiver.expectMsgType[ReplayFromTimestampWindowTrailingEdge](PROCESS_BOOT_TIME)
       masterReceiver.reply(ReplayApplicationResult(Success(0)))
     } finally {

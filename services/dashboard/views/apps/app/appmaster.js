@@ -52,7 +52,7 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
               // in couple of seconds. This will cause some charts to be empty. For better user experience,
               // we will manually fetch metrics via restapi at least once, before websocket is ready.
               if (!$scope.streamingDag.hasMetrics()) {
-                var url = '/metrics/app/' + $scope.app.id + '/app' + $scope.app.id +'?readLatest=true';
+                var url = '/appmaster/' + $scope.app.id + '/metrics/app' + $scope.app.id +'?readLatest=true';
                 restapi.repeatUntil(url, $scope, function (data) {
                   // TODO: Serde HistoryMetrics (#458)
                   if (data !== null &&

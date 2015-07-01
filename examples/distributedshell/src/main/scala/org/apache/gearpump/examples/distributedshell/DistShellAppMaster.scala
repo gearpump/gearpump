@@ -45,7 +45,7 @@ class DistShellAppMaster(appContext : AppMasterContext, app : AppDescription) ex
   override def receive: Receive = {
     case ExecutorSystemStarted(executorSystem) =>
       import executorSystem.{address, worker, resource => executorResource}
-      val executorContext = ExecutorContext(currentExecutorId, worker.workerId, appId, self, executorResource)
+      val executorContext = ExecutorContext(currentExecutorId, worker, appId, self, executorResource)
       //start executor
       val executor = context.actorOf(Props(classOf[ShellExecutor], executorContext, app.userConfig)
           .withDeploy(Deploy(scope = RemoteScope(address))), currentExecutorId.toString)

@@ -144,6 +144,11 @@ object UserConfig{
       upickle.writeJs(config._config)
   }
 
+  implicit val userConfigReader: upickle.Reader[UserConfig] = upickle.Reader[UserConfig] {
+    case js =>
+      new UserConfig(upickle.readJs[Map[String, String]](js))
+  }
+
   def empty = new UserConfig(Map.empty[String, String])
 
   def apply(config : Map[String, String]) = new UserConfig(config)

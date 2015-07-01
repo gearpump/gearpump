@@ -19,8 +19,9 @@
 package org.apache.gearpump.streaming
 
 import akka.actor.ActorSystem
+import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
-import org.apache.gearpump.partitioner.{PartitionerObject, LifeTime, PartitionerDescription, HashPartitioner, Partitioner}
+import org.apache.gearpump.partitioner.{PartitionerObject, PartitionerDescription, HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.util.Constants._
@@ -58,7 +59,15 @@ object Processor {
 
 }
 
-case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null, life: LifeTime = LifeTime.Immortal) extends ReferenceEqual
+case class LifeTime(birth: TimeStamp, death: TimeStamp) {
+  def contains(timestamp: TimeStamp): Boolean = {
+    timestamp >= birth && timestamp < death
+  }
+}
+
+object LifeTime {
+  val Immortal = LifeTime(0L, Long.MaxValue)
+}
 
 class StreamApplication(override val name : String,  inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, PartitionerDescription])
   extends Application {
@@ -68,6 +77,8 @@ class StreamApplication(override val name : String,  inputUserConfig: UserConfig
     inputUserConfig.withValue(StreamApplication.DAG, dag)
   }
 }
+
+case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null, life: LifeTime = LifeTime.Immortal) extends ReferenceEqual
 
 object StreamApplication {
 

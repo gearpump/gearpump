@@ -19,77 +19,119 @@
 package org.apache.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.pattern.ask
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, RestartApplication, ShutdownApplication}
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
+
+import org.apache.gearpump.cluster.ClientToMaster.{RestartApplication}
+import org.apache.gearpump.cluster.MasterToClient.{SubmitApplicationResult}
 import org.apache.gearpump.services.AppMasterService.Status
+import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, GetStallingTasks, ShutdownApplication}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
+import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, ShutdownApplicationResult}
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
-import org.apache.gearpump.util.{Constants, LogUtil}
+
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperationResult, DAGOperation}
+
+import org.apache.gearpump.util.{LogUtil}
+import org.apache.gearpump.util.{Constants}
 import spray.http.StatusCodes
 import spray.routing.HttpService
+import spray.routing.Route
+import spray.routing.directives.OnCompleteFutureMagnet
+
+
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
+import org.apache.gearpump.util.ActorUtil.{askAppMaster, askActor}
 trait AppMasterService extends HttpService {
+
   import upickle._
+
   def master: ActorRef
 
   implicit val system: ActorSystem
   private val LOG = LogUtil.getLogger(getClass)
 
   def appMasterRoute = {
-    implicit val ec: ExecutionContext = actorRefFactory.dispatcher
+
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    pathPrefix("api" / s"$REST_VERSION") {
-      path("appmaster" / IntNumber) { appId =>
+    implicit val ec: ExecutionContext = actorRefFactory.dispatcher
+
+    pathPrefix("api" / s"$REST_VERSION" / "appmaster" / IntNumber ) { appId =>
+      path("dynamicdag") {
+        (post) {
+          entity(as[String]) { entity =>
+            val dagOperation = read[DAGOperation](entity)
+            finish(askAppMaster[DAGOperationResult](master, appId, dagOperation))
+          }
+        }
+      } ~
+      path("stallingtasks") {
+        finish(askAppMaster[StallingTasks](master, appId, GetStallingTasks(appId)))
+      }  ~
+      path("appmaster" / IntNumber / "restart") { appId =>
+        post {
+          onComplete(askActor[SubmitApplicationResult](master, RestartApplication(appId))) {
+            case Success(_) =>
+              complete(write(Status(true)))
+            case Failure(ex) =>
+              complete(write(Status(false, ex.getMessage)))
+          }
+        }
+      }~
+      path("metrics" / RestPath ) { path =>
+        parameter("readLatest" ? "false") { readLatestInput =>
+          val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
+          val query = QueryHistoryMetrics(appId, path.head.toString, readLatest)
+          finish(askAppMaster[HistoryMetrics](master, appId, query))
+        }
+      } ~
+      pathEnd {
         get {
           parameter("detail" ? "false") { detail =>
             val detailValue = Try(detail.toBoolean).getOrElse(false)
+            val request = AppMasterDataDetailRequest(appId)
             detailValue match {
               case true =>
-                onComplete((master ? AppMasterDataDetailRequest(appId)).asInstanceOf[Future[AppMasterDataDetail]]) {
-                  case Success(value: AppMasterDataDetail) =>
-                    complete(value.toJson)
-                  case Failure(ex) =>
-                    complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-                }
+                val writer: AppMasterDataDetail => String = (detail) => detail.toJson
+                val future = askAppMaster[AppMasterDataDetail](master, appId, request)
+                finish(future, writer)
               case false =>
-                onComplete((master ? AppMasterDataRequest(appId)).asInstanceOf[Future[AppMasterData]]) {
-                  case Success(value: AppMasterData) => complete(write(value))
-                  case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-                }
-            }
-          }
-        } ~
-          delete {
-            onComplete((master ? ShutdownApplication(appId)).asInstanceOf[Future[ShutdownApplicationResult]]) {
-              case Success(value: ShutdownApplicationResult) =>
-                val result = if (value.appId.isSuccess) Map("status" -> "success", "info" -> null) else Map("status" -> "fail", "info" -> value.appId.failed.get.toString)
-                complete(write(result))
-              case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-            }
-          }
-      } ~
-        path("appmaster" / IntNumber / "stallingtasks") { appId =>
-          onComplete((master ? GetStallingTasks(appId)).asInstanceOf[Future[StallingTasks]]) {
-            case Success(value: StallingTasks) =>
-              complete(write(value))
-            case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-          }
-        } ~
-        path("appmaster" / IntNumber / "restart") { appId =>
-          post {
-            onComplete((master ? RestartApplication(appId)).asInstanceOf[Future[SubmitApplicationResult]]) {
-              case Success(_) =>
-                complete(write(Status(true)))
-              case Failure(ex) =>
-                complete(write(Status(false, ex.getMessage)))
+                finish(askActor[AppMasterData](master, AppMasterDataRequest(appId)))
             }
           }
         }
+      } ~
+      pathEnd {
+          delete {
+            val writer = (result: ShutdownApplicationResult) => {
+              val output = if (result.appId.isSuccess) {
+                Map("status" -> "success", "info" -> null)
+              } else {
+                Map("status" -> "fail", "info" -> result.appId.failed.get.toString)
+              }
+              upickle.write(output)
+            }
+            finish(askActor[ShutdownApplicationResult](master, ShutdownApplication(appId)), writer)
+          }
+      }
+    }
+  }
+
+  private def finish[T](future: OnCompleteFutureMagnet[T])(implicit evidence: upickle.Writer[T]): Route = {
+    onComplete(future) {
+      case Success(value) =>
+          complete(upickle.write(value))
+      case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+    }
+  }
+
+  private def finish[T](future: OnCompleteFutureMagnet[T], writer: T => String): Route = {
+    onComplete(future) {
+      case Success(value) =>
+        complete(writer(value))
+      case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
     }
   }
 }

@@ -40,7 +40,7 @@ class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContex
     }
 
     import scala.concurrent.duration._
-    taskContext.scheduleOnce(Duration(10, TimeUnit.MILLISECONDS))(self ! Message("continue", System.currentTimeMillis()))
+    taskContext.scheduleOnce(Duration(100, TimeUnit.MILLISECONDS))(self ! Message("continue", System.currentTimeMillis()))
   }
 }
 
