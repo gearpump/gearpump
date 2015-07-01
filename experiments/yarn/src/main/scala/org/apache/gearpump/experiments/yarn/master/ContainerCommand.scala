@@ -34,6 +34,7 @@ case class MasterContainerCommand(appConfig: AppConfig, masterAddr: HostPort) ex
 
     val properties = Array(
       s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${masterAddr.host}:${masterAddr.port}",
+      s"-D${Constants.GEARPUMP_HOSTNAME}=${masterAddr.host}",
       s"-D${Constants.GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
       s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
 
