@@ -194,7 +194,7 @@ object Build extends sbt.Build {
         }
       )
   ).aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, packProject, pipeline, state)
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, pipeline, state)
 
   lazy val packProject = Project(
     id = "gearpump-pack",
@@ -226,7 +226,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("/etc/gearpump/conf", "${PROG_HOME}/conf",
           "${PROG_HOME}/dashboard", "${PROG_HOME}/daemon/*" ,"/etc/hadoop/conf", "/etc/hbase/conf"))
       )
-  ).dependsOn(core, streaming, services, external_kafka, yarn, storm, dsl, pagerank, hbase, state)
+  ).dependsOn(core, streaming, services, external_kafka, yarn, storm, dsl, pagerank, external_hbase, state)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -537,7 +537,7 @@ object Build extends sbt.Build {
           "org.scalaz" %% "scalaz-core" % scalazVersion
         ) ++ hadoopDependency
       )
-  ) dependsOn(streaming % "test->test;compile->compile", external_kafka % "test->test;compile->compile", hbase % "test->test;compile->compile")
+  ) dependsOn(streaming % "test->test;compile->compile", external_kafka % "test->test;compile->compile", external_hbase % "test->test;compile->compile")
   
   lazy val pagerank = Project(
     id = "gearpump-experiments-pagerank",
@@ -545,9 +545,9 @@ object Build extends sbt.Build {
     settings = commonSettings
   ) dependsOn(streaming % "test->test;compile->compile")
 
-  lazy val hbase = Project(
-    id = "gearpump-experiments-hbase",
-    base = file("experiments/hbase"),
+  lazy val external_hbase = Project(
+    id = "gearpump-external-hbase",
+    base = file("external/hbase"),
     settings = commonSettings ++
       Seq(
         resolvers ++= Seq(
@@ -586,10 +586,14 @@ object Build extends sbt.Build {
   ) dependsOn(core % "provided")
 
   lazy val pipeline = Project(
-    id = "gearpump-experiments-kafka-hbase-pipeline",
-    base = file("experiments/kafka-hbase-pipeline"),
-    settings = commonSettings ++ myAssemblySettings 
-  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase, dsl)
+    id = "gearpump-examples-kafka-hbase-pipeline",
+    base = file("examples/streaming/kafka-hbase-pipeline"),
+    settings = commonSettings ++ myAssemblySettings ++
+      Seq(
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.pipeline.PipeLine"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+      )
+  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", external_hbase, dsl)
 
   lazy val state = Project(
     id = "gearpump-experiments-state",

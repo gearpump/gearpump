@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.dsl
 
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseRepo, HBaseSink, HBaseSinkInterface}
+import org.apache.gearpump.external.hbase.{HBaseConsumer, HBaseRepo, HBaseSink, HBaseSinkInterface}
 import org.apache.gearpump.streaming.dsl.op.OpType._
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.task.{Task, TaskContext}

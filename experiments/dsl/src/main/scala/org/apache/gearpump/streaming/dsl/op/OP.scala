@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.dsl.op
 
-import org.apache.gearpump.experiments.hbase.{HBaseConsumer, HBaseSinkInterface}
+import org.apache.gearpump.external.hbase.{HBaseConsumer, HBaseSinkInterface}
 import org.apache.gearpump.streaming.dsl.SinkConsumer
 import org.apache.gearpump.streaming.dsl.op.OpType.TraverseType
 import org.apache.gearpump.streaming.task.Task
