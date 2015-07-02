@@ -18,22 +18,80 @@
 
 package org.apache.gearpump.dashboard.controllers
 
-import com.greencatsoft.angularjs.core.Scope
 import com.greencatsoft.angularjs.{AbstractController, injectable}
-import org.apache.gearpump.dashboard.services.{UtilService, RestApiService}
+import org.apache.gearpump.shared.Messages.{MetricType, MetricInfo}
 
+import scala.scalajs.js
+import scala.scalajs.js.UndefOr
 import scala.scalajs.js.annotation.JSExport
 
-trait AppMetricsScope extends Scope {
-
-}
 
 @JSExport
 @injectable("AppMetricsCtrl")
-class AppMetricsCtrl(scope: AppMetricsScope)
-  extends AbstractController[AppMetricsScope](scope) {
+class AppMetricsCtrl(scope: AppMasterScope)
+  extends AbstractController[AppMasterScope](scope) {
 
   println("AppMetricsCtrl")
 
+  val lookup = Map[String, String](
+    "streamingDag.meter.receiveThroughput" -> "Receive Throughput",
+    "streamingDag.meter.sendThroughput" -> "Send Throughput",
+    "streamingDag.histogram.processTime" -> "Processing Time",
+    "streamingDag.histogram.receiveLatency" -> "Receive Latency"
+  )
 
+  import js.JSConverters._
+
+  def init(): Unit = {
+    scope.itemsByPage = 15
+    scope.taskName = metricInfo _
+    scope.names = js.Dynamic.literal(
+      available=lookup.values.toSeq.toJSArray,
+      selected=lookup.values.head
+    ).asInstanceOf[MetricNames]
+    scope.isMeter = isMeter _
+  }
+
+  def metricInfo(metrics: MetricInfo[MetricType]): String = {
+     s"processor${metrics.processorId}.task${metrics.taskId}"
+  }
+
+  def getMetricsClassByLabel(label: String): Option[String] = {
+    scope.names.available.indexOf(label) match {
+      case -1 =>
+        None
+      case i =>
+        Some(lookup.keys.toSeq.toJSArray(i))
+    }
+  }
+
+  def isMeter(): Boolean = {
+    getMetricsClassByLabel(scope.names.selected) match {
+      case None =>
+        false
+      case Some(label) =>
+        label.indexOf(".meter.") > 0
+    }
+  }
+
+  scope.$watch("streamingDag", init _)
+
+  var watchFn: js.Function = _
+  scope.$watch("names.selected", (newVal: String) => {
+    if (watchFn != null) {
+      val fn = watchFn.asInstanceOf[js.Function0[Unit]]
+      fn()
+      watchFn = null
+    }
+    getMetricsClassByLabel(newVal) match {
+      case None =>
+        scope.metrics = js.Array[String]()
+      case Some(clazz) =>
+        watchFn = scope.$watchCollection(clazz, (array: UndefOr[Map[String,String]]) => {
+          array.toOption.map(array => {
+            scope.metrics = array.values.toSeq.toJSArray
+          })
+        })
+    }
+  }: Unit)
 }
