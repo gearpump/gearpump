@@ -19,9 +19,25 @@ angular.module('dashboard.apps.appmaster')
       }
     };
 
-    $scope.updateVisGraphNodes = function () {
-      var visNodes = $scope.visgraph.data.nodes;
-      var data = $scope.streamingDag.getProcessorsData();
+    function removeDeadNodes(visNodes, dagNodes) {
+      var ids = visNodes.getIds().filter(function (id) {
+        return !(id in dagNodes);
+      });
+      if (ids.length) {
+        visNodes.remove(ids);
+      }
+    }
+
+    function removeDeadEdges(visEdges, dagEdges) {
+      var ids = visEdges.getIds().filter(function(id) {
+        return !(id in dagEdges);
+      });
+      if (ids.length) {
+        visEdges.remove(ids);
+      }
+    };
+
+    var updateVisGraphNodes = function(visNodes, data) {
       data.weights[-1] = 0; // weight range from 0 to max weight
       var suggestRadius = _rangeMapper(data.weights, dagStyle.nodeRadiusRange());
       var diff = [];
@@ -43,12 +59,12 @@ angular.module('dashboard.apps.appmaster')
           });
         }
       });
-      visNodes.update(diff);
+      if (diff.length) {
+        visNodes.update(diff);
+      }
     };
 
-    $scope.updateVisGraphEdges = function () {
-      var visEdges = $scope.visgraph.data.edges;
-      var data = $scope.streamingDag.getEdgesData();
+    var updateVisGraphEdges = function(visEdges, data) {
       data.bandwidths[-1] = 0; // bandwidth range from 0 to max bandwidth
       var suggestWidth = _rangeMapper(data.bandwidths, dagStyle.edgeWidthRange());
       var suggestArrowSize = _rangeMapper(data.bandwidths, dagStyle.edgeArrowSizeRange());
@@ -77,7 +93,9 @@ angular.module('dashboard.apps.appmaster')
           });
         }
       });
-      visEdges.update(diff);
+      if (diff.length) {
+        visEdges.update(diff);
+      }
     };
 
     $scope.updateMetricsCounter = function () {
@@ -94,8 +112,18 @@ angular.module('dashboard.apps.appmaster')
 
     /** Redraw VisGraph on demand */
     var redrawVisGraph = function () {
-      $scope.updateVisGraphNodes();
-      $scope.updateVisGraphEdges();
+      var visNodes = $scope.visgraph.data.nodes;
+      var visEdges = $scope.visgraph.data.edges;
+      var dagData = $scope.streamingDag.getCurrentDag();
+      visNodes.setOptions({queue: true});
+      visEdges.setOptions({queue: true});
+      removeDeadNodes(visNodes, dagData.processors);
+      removeDeadEdges(visEdges, dagData.edges);
+      updateVisGraphNodes(visNodes, dagData);
+      updateVisGraphEdges(visEdges, dagData);
+      visNodes.setOptions({queue: false});
+      visEdges.setOptions({queue: false});
+
       $scope.updateMetricsCounter();
       timeoutPromise = $timeout(redrawVisGraph, conf.updateVisDagInterval);
     };

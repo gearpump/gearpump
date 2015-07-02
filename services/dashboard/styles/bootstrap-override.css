@@ -27,3 +27,8 @@ body, .tooltip, .popover {
 *[bs-tooltip] {
   cursor: pointer;
 }
+
+/* Table header column should not be wrapped */
+.table thead > tr > th {
+  white-space: nowrap;
+}

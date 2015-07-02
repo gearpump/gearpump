@@ -43,10 +43,10 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
           }
 
           // TODO: Serde Dag (#458)
-          if (data.hasOwnProperty('dag') && data.hasOwnProperty('processors')) {
+          if (data.hasOwnProperty('dag')) {
             if (!$scope.streamingDag) {
-              $scope.streamingDag = new StreamingDag($scope.app.id, data.processors,
-                data.processorLevels, data.dag.edges, data.executors);
+              $scope.streamingDag = new StreamingDag($scope.app.id, $scope.app.clock,
+                data.processors, data.processorLevels, data.dag.edges, data.executors);
 
               // Usually metrics will be pushed by websocket. In worst case, metrics might be available
               // in couple of seconds. This will cause some charts to be empty. For better user experience,
@@ -62,6 +62,9 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
                   return conf.webSocketPreferred && $scope.streamingDag.hasMetrics();
                 });
               }
+            } else {
+              $scope.streamingDag.setData($scope.app.clock, data.processors, data.processorLevels,
+                data.dag.edges, data.executors);
             }
           }
         });

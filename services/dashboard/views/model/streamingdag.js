@@ -9,19 +9,25 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
   .service('StreamingDag', ['Metrics', function (Metrics) {
 
     /** The constructor */
-    function StreamingDag(appId, processors, levels, edges, executors) {
+    function StreamingDag(appId, clock, processors, levels, edges, executors) {
       this.appId = appId;
-      this.processors = _flatMap(processors); // TODO: Try and convert to Scala (#458)
-      this.processorHierarchyLevels = _flatMap(levels);
-      this.edges = _flatMap(edges, function (item) {
-        return [item[0] + '_' + item[2], {source: item[0], target: item[2], type: item[1]}];
-      });
-      this.executors = _flatMap(executors);
       this.meter = {};
       this.histogram = {};
+      this.setData(clock, processors, levels, edges, executors);
     }
 
     StreamingDag.prototype = {
+
+      /** Update the current dag data */
+      setData: function(clock, processors, levels, edges, executors) {
+        this.clock = clock;
+        this.processors = _flatMap(processors); // TODO: Try and convert to Scala (#458)
+        this.processorHierarchyLevels = _flatMap(levels);
+        this.edges = _flatMap(edges, function (item) {
+          return [item[0] + '_' + item[2], {source: item[0], target: item[2], type: item[1]}];
+        });
+        this.executors = _flatMap(executors);
+      },
 
       /** Update (or add) specified metrics in an array */
       updateMetricsArray: function (array) {
@@ -45,6 +51,9 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         function _update(decodeFn, coll, self) {
           var metric = decodeFn(data);
           if (metric.name.appId === self.appId) {
+            if (!(metric.name.processorId in self.processors)) {
+              return;
+            }
             var item = _getOrCreate(coll, metric.name.metric, {});
             var key = metric.name.processorId + '_' + metric.name.taskId;
             item[key] = metric.values;
@@ -61,22 +70,61 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
 
       getNumOfTasks: function() {
         var count = 0;
-        angular.forEach(this.processors, function (processor) {
+        angular.forEach(this.getAliveProcessors(), function(processor) {
           count += processor.parallelism;
         }, this);
         return count;
       },
 
-      getProcessorsData: function () {
+      getAliveProcessors: function() {
+        var result = {};
+        angular.forEach(this.processors, function(processor, processorId) {
+          if (processor.hasOwnProperty('life')) {
+            var life = processor.life;
+            if (life.hasOwnProperty('death') && this.clock > life.death) {
+              return; // dead processors, drop
+            }
+            // (life.hasOwnProperty('birth') && this.clock < life.birth)
+            // future processors, keep
+          }
+          result[processorId] = processor;
+        }, this);
+        return result;
+      },
+
+      getAliveEdges: function(aliveProcessors) {
+        if (!aliveProcessors) {
+          aliveProcessors = this.getAliveProcessors();
+        }
+        var result = {};
+        angular.forEach(this.edges, function(edge, edgeId) {
+          if (edge.source in aliveProcessors && edge.target in aliveProcessors) {
+            result[edgeId] = edge;
+          }
+        }, this);
+        return result;
+      },
+
+      getCurrentDag: function () {
         var weights = {};
-        angular.forEach(this.processors, function (_, key) {
+        var processors = angular.copy(this.getAliveProcessors());
+        angular.forEach(processors, function(_, key) {
           var processorId = parseInt(key);
           weights[processorId] = this._calculateProcessorWeight(processorId);
         }, this);
+
+        var bandwidths = {};
+        var edges = this.getAliveEdges(processors);
+        angular.forEach(edges, function (_, edgeId) {
+          bandwidths[edgeId] = this._calculateEdgeBandwidth(edgeId);
+        }, this);
+
         return {
-          processors: angular.copy(this.processors),
+          processors: processors,
+          edges: edges,
           hierarchyLevels: angular.copy(this.processorHierarchyLevels),
-          weights: weights
+          weights: weights,
+          bandwidths: bandwidths
         };
       },
 
@@ -84,17 +132,6 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       _calculateProcessorWeight: function (processorId) {
         return Math.max(d3.sum(this._getProcessorMetrics(processorId, this.meter.sendThroughput, 'movingAverage1m')),
           d3.sum(this._getProcessorMetrics(processorId, this.meter.receiveThroughput, 'movingAverage1m')));
-      },
-
-      getEdgesData: function () {
-        var bandwidths = {};
-        angular.forEach(this.edges, function (_, edgeId) {
-          bandwidths[edgeId] = this._calculateEdgeBandwidth(edgeId);
-        }, /* scope */ this);
-        return {
-          edges: angular.copy(this.edges),
-          bandwidths: bandwidths
-        };
       },
 
       /** Bandwidth of an edge equals the minimum of average send throughput and average receive throughput. */
@@ -143,7 +180,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       _getAggregatedMetrics: function (metricsGroup, metricsType, processorId) {
         var values = [];
         if (metricsGroup) {
-          var ids = processorId !== undefined ? [processorId] : d3.keys(this.processors);
+          var ids = processorId !== undefined ? [processorId] : d3.keys(this.getAliveProcessors());
           ids.map(function (processorId) {
             var processorValues = this._getProcessorMetrics(processorId, metricsGroup, metricsType);
             values = values.concat(processorValues);
@@ -201,7 +238,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
 
       _getProcessorIdsByType: function(type) {
         var ids = [];
-        d3.keys(this.processors).map(function(processorId) {
+        d3.keys(this.getAliveProcessors()).map(function(processorId) {
           var conn = this.calculateProcessorConnections(processorId);
           if ((type === 'source' && conn.inputs === 0 && conn.outputs > 0) ||
             (type === 'sink' && conn.inputs > 0 && conn.outputs === 0)) {
