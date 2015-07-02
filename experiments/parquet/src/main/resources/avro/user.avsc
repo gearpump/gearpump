@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "org.apache.gearpump.experiments.parquet",
+  "doc": "A user record",
+  "fields": [
+    {
+      "name": "username",
+      "type": "string"
+    },
+    {
+      "name": "creationDate",
+      "type": "long"
+    }
+  ]
+}

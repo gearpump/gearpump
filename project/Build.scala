@@ -4,6 +4,7 @@ import sbt.Keys._
 import sbt._
 import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin._
+import sbtavro.SbtAvro._
 import xerial.sbt.Pack._
 import xerial.sbt.Sonatype._
 
@@ -41,6 +42,8 @@ object Build extends sbt.Build {
   val stormVersion = "0.9.3"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
+  val parquetVersion = "1.7.0"
+  val kitesdkVersion = "1.1.0"
   
   val scalaVersionMajor = "scala-2.11"
   val scalaVersionNumber = "2.11.5"
@@ -197,7 +200,7 @@ object Build extends sbt.Build {
       )
   ).dependsOn(core, streaming, services, external_kafka)
    .aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, packProject, pipeline, state)
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, packProject, pipeline, state, parquet)
 
   lazy val packProject = Project(
     id = "gearpump-pack",
@@ -607,4 +610,26 @@ object Build extends sbt.Build {
         ) ++ hadoopDependency
       )
   ) dependsOn(streaming % "test->test; provided", external_kafka % "test->test; provided")
+
+  lazy val parquet = Project(
+    id = "gearpump-experiments-parquet",
+    base = file("experiments/parquet"),
+    settings = commonSettings ++ avroSettings ++ myAssemblySettings ++
+      Seq(
+        sourceDirectory in avroConfig := baseDirectory.value / "src" / "main"/ "resources" / "avro",
+        mergeStrategy in assembly := {
+          case PathList("META-INF", "maven","org.slf4j","slf4j-api", ps) if ps.startsWith("pom") => MergeStrategy.discard
+          case x =>
+            val oldStrategy = (mergeStrategy in assembly).value
+            oldStrategy(x)
+        },
+        stringType in avroConfig := "String",
+        libraryDependencies ++= Seq(
+          "org.apache.parquet" % "parquet-avro" % parquetVersion,
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        ) ++ hadoopDependency
+      )
+  )dependsOn(streaming % "test->test; provided")
 }
