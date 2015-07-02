@@ -19,6 +19,11 @@ angular.module('directive.echarts', [])
         elem0.style.width = options.width;
         elem0.style.height = options.height;
         var chart = echarts.init(elem0);
+        angular.element(window).on('resize', chart.resize);
+        scope.$on('$destroy', function() {
+          angular.element(window).off('resize', chart.resize);
+          chart.dispose();
+        });
         chart.setOption(options, /*noMerge=*/true);
 
         scope.$watch('data', function (data) {

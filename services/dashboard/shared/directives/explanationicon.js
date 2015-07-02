@@ -12,8 +12,8 @@ angular.module('directive.explanationicon', ['mgcrea.ngStrap.tooltip'])
   .directive('explanationIcon', [function () {
     return {
       restrict: 'E',
-      link: function (scope, elems, attrs) {
-        scope.value = attrs.value;
+      scope: {
+        value: '@'
       },
       template: '<span class="glyphicon glyphicon-question-sign metrics-explanation" ' +
       ' bs-tooltip="value"></span>'
