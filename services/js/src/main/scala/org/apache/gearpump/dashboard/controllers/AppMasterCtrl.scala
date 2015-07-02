@@ -146,6 +146,11 @@ trait VisEdge extends js.Object {
   val color: EdgeColor = js.native
 }
 
+trait MetricNames extends js.Object {
+  val available: js.Array[String] = js.native
+  val selected: String = js.native
+}
+
 @JSExport
 @injectable("AppMasterConfig")
 class AppMasterConfig(routeProvider: RouteProvider) extends Config {
@@ -478,6 +483,9 @@ trait AppMasterScope extends Scope {
   var activeProcessorId: Int = js.native
   var app: StreamingAppMasterDataDetail = js.native
   var charts: js.Array[Chart] = js.native
+  var names: MetricNames = js.native
+  var itemsByPage: Int = js.native
+  var metrics: js.Array[String] = js.native
   var streamingDag: StreamingDag = js.native
   var summary: js.Array[SummaryEntry] = js.native
   var switchToTabIndex: TabIndex = js.native
@@ -489,10 +497,12 @@ trait AppMasterScope extends Scope {
   var processingTime: Array[Double] = js.native
   var receiveLatency: Array[Double] = js.native
 
+  var isMeter: js.Function0[Boolean] = js.native
   var load: js.Function2[HTMLElement, Tab,Unit] = js.native
   var lastPart: js.Function1[String, String] = js.native
   var selectTab: js.Function1[Tab,Unit] = js.native
   var switchToTaskTab: js.Function1[Int,Unit] = js.native
+  var taskName: js.Function1[MetricInfo[MetricType],String] = js.native
   var updateMetricsCounter: js.Function0[Unit] = js.native
   var updateVisGraphEdges: js.Function0[Unit] = js.native
   var updateVisGraphNodes: js.Function0[Unit] = js.native
