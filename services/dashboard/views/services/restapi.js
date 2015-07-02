@@ -28,13 +28,9 @@ angular.module('dashboard.restapi', [])
           $http.get(conf.restapiRoot + url)
             .then(function (response) {
               if (!shouldCancel) {
-                noticeWindow.$promise.then(noticeWindow.hide);
                 shouldCancel = !onData || onData(response.data);
               }
             }, function (response) {
-              if (!shouldCancel) {
-                noticeWindow.$promise.then(noticeWindow.show);
-              }
             })
             .finally(function () {
               if (!shouldCancel) {
@@ -79,6 +75,33 @@ angular.module('dashboard.restapi', [])
       /** Return the config link of the master */
       masterConfigLink: function() {
         return conf.restapiRoot + '/config/master';
+      },
+
+      /** Periodically check health. In case of problems show a notice window */
+      repeatHealthCheck: function(scope, onData) {
+        var timeoutPromise;
+        var shouldCancel = false;
+        scope.$on('$destroy', function () {
+          shouldCancel = true;
+          $timeout.cancel(timeoutPromise);
+        });
+        var fn = function () {
+          $http.get(conf.restapiRoot + '/version')
+            .then(function (response) {
+              noticeWindow.$promise.then(noticeWindow.hide);
+              if (onData) {
+                onData(response.data);
+              }
+            }, function (response) {
+              noticeWindow.$promise.then(noticeWindow.show);
+            })
+            .finally(function () {
+              if (!shouldCancel) {
+                timeoutPromise = $timeout(fn, conf.restapiAutoRefreshInterval);
+              }
+            });
+        };
+        fn();
       }
     };
   }])
