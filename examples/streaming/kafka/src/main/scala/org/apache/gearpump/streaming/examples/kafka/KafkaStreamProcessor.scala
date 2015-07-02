@@ -25,7 +25,7 @@ import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.kafka.KafkaSink
-import org.apache.gearpump.streaming.kafka.lib.{KafkaConfig, KafkaUtil}
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 import scala.concurrent.duration.FiniteDuration
@@ -35,8 +35,7 @@ class KafkaStreamProcessor(taskContext : TaskContext, inputConfig: UserConfig)
 
   private val kafkaConfig = inputConfig.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val topic = kafkaConfig.getProducerTopic
-  private val producerConfig = KafkaUtil.buildProducerConfig(kafkaConfig)
-  private val kafkaSink = new KafkaSink(producerConfig)
+  private val kafkaSink = new KafkaSink(kafkaConfig.producerConfig)
 
   private var count = 0L
   private var lastCount = 0L

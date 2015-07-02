@@ -29,6 +29,8 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.kafka.lib.consumer.KafkaConsumerConfig
+import org.apache.gearpump.streaming.kafka.lib.producer.KafkaProducerConfig
 import org.apache.gearpump.streaming.kafka.util.KafkaServerHarness
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfterEach, Matchers, PropSpec}
@@ -100,16 +102,17 @@ class KafkaStreamProcessorSpec extends PropSpec with PropertyChecks with Matcher
 
   private def getKafkaConfig(producerTopic: String, producerEmitBatchSize: Int, brokerList: String, zookeeperConnect: String): UserConfig = {
 
-    val kafka = UserConfig.empty.withValue[KafkaConfig](KafkaConfig.NAME, KafkaConfig(ConfigFactory.parseMap(Map(
-      KafkaConfig.PRODUCER_BOOTSTRAP_SERVERS -> brokerList,
-      KafkaConfig.PRODUCER_TOPIC -> producerTopic,
-      KafkaConfig.PRODUCER_ACKS -> "1",
-      KafkaConfig.PRODUCER_BUFFER_MEMORY -> "1000000",
-      KafkaConfig.PRODUCER_COMPRESSION_TYPE -> "none",
-      KafkaConfig.PRODUCER_RETRIES -> "0",
-      KafkaConfig.PRODUCER_BATCH_SIZE -> "100",
-      KafkaConfig.ZOOKEEPER_CONNECT -> zookeeperConnect
-    ).asJava)))
-    kafka
+    val consumerConfig = KafkaConsumerConfig()
+    consumerConfig.put("zookeeper.connect", zookeeperConnect)
+    val producerConfig = KafkaProducerConfig()
+    producerConfig.put("bootstrap.servers", brokerList)
+
+    val kafkaConfig = new KafkaConfig(
+      ConfigFactory.parseMap(Map(
+        KafkaConfig.PRODUCER_TOPIC -> producerTopic,
+        KafkaConfig.PRODUCER_BATCH_SIZE -> "100").asJava),
+      consumerConfig, producerConfig
+    )
+    UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig)
   }
 }

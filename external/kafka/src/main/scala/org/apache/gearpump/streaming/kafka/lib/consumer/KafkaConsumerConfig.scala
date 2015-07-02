@@ -16,29 +16,36 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.examples.kafka.topn
+package org.apache.gearpump.streaming.kafka.lib.consumer
 
-class Rankings[T] extends Serializable {
-  private var rankings: List[(T, Long)] = newRankings
+import java.util.Properties
 
-  def update(r: (T, Long)): Unit = {
-    rankings :+= r
-  }
-  def update(obj: T, count: Long): Unit = {
-    update((obj, count))
-  }
+import kafka.consumer.ConsumerConfig
+import org.apache.gearpump.streaming.kafka.lib.{KafkaUtil, PropertiesConfig}
 
-  def getTopN(n: Int): List[(T, Long)] = {
-    rankings.sortBy(_._2).reverse.take(n)
+object KafkaConsumerConfig {
+  def apply(): KafkaConsumerConfig = {
+    KafkaConsumerConfig(new Properties())
   }
 
-  def clear(): Unit = {
-    rankings = newRankings
+  def apply(filename: String): KafkaConsumerConfig = {
+    KafkaConsumerConfig(KafkaUtil.loadProperties(filename))
   }
 
-  private def newRankings: List[(T, Long)] = {
-    List.empty[(T, Long)]
+  def apply(properties: Properties): KafkaConsumerConfig = {
+    new KafkaConsumerConfig(properties)
   }
 }
 
+class KafkaConsumerConfig(properties: Properties) extends PropertiesConfig(properties) {
 
+  // add default values for required keys if absent
+  putIfAbsent("group.id", "")
+  putIfAbsent("zookeeper.connect", "localhost:2181")
+
+  def config: ConsumerConfig = {
+    new ConsumerConfig(properties)
+  }
+
+
+}

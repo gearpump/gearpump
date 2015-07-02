@@ -33,7 +33,7 @@ import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, Matchers, PropSpec}
+import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 import org.slf4j.Logger
 import upickle._
 
@@ -63,7 +63,7 @@ class TimeReplayableSourceTest extends TimeReplayableSource {
 class KafkaSourceTest(kafkaConfig: KafkaConfig) extends Traverse[Array[Datum]] {
   private val batchSize = kafkaConfig.getConsumerEmitBatchSize
   private val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
-  lazy val source = new KafkaSource(kafkaConfig.getClientId, TaskId(0,0), 1, kafkaConfig, msgDecoder)
+  lazy val source = new KafkaSource("test", TaskId(0,0), 1, kafkaConfig, msgDecoder)
   override def foreach[U](fun: Array[Datum] => U): Unit = {
     val list = source.pull(10)
     list.foreach(msg => {
@@ -83,6 +83,7 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
   val pipeLinePath = "conf/pipeline.conf.template"
   val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
   val kafkaConfig = KafkaConfig(pipeLineConfig)
+
   implicit var system: ActorSystem = null
 
   override def beforeAll: Unit = {
@@ -100,6 +101,7 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
     val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig)
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
   }
+
   property("StreamApp should readFromTimeReplayableSource") {
 
     val app = new StreamApp("PipeLineDSL", system, UserConfig.empty)

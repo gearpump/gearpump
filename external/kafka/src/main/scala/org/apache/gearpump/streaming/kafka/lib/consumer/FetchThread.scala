@@ -16,35 +16,47 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.kafka.lib.consumer
 
 import java.nio.channels.ClosedByInterruptException
 import java.util.concurrent.LinkedBlockingQueue
 
 import kafka.common.TopicAndPartition
+import kafka.consumer.ConsumerConfig
+import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 object FetchThread {
   private val LOG: Logger = LogUtil.getLogger(classOf[FetchThread])
 
-  def apply(topicAndPartitions: Array[TopicAndPartition], config: KafkaConfig): FetchThread = {
+  def apply(topicAndPartitions: Array[TopicAndPartition],
+            kafkaConfig: KafkaConfig,
+            consumerConfig: ConsumerConfig): FetchThread = {
     val consumers: Map[TopicAndPartition, KafkaConsumer] = topicAndPartitions.map {
       tp =>
-        tp -> KafkaConsumer(tp.topic, tp.partition, config)
+        tp -> KafkaConsumer(tp.topic, tp.partition, consumerConfig)
     }.toMap
     val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
-    val fetchThreshold = config.getFetchThreshold
-    val fetchSleepMS = config.getFetchSleepMS
+    val fetchThreshold = kafkaConfig.getFetchThreshold
+    val fetchSleepMS = kafkaConfig.getFetchSleepMS
     new FetchThread(consumers, incomingQueue, fetchThreshold, fetchSleepMS)
   }
 }
 
+/**
+ * A thread to fetch messages from multiple kafka [[TopicAndPartition]]s and puts them
+ * onto a queue, which is asynchronously polled by a consumer
+ * @param consumers [[KafkaConsumer]]s by kafka [[TopicAndPartition]]s
+ * @param incomingQueue a queue to buffer incoming messages
+ * @param fetchThreshold above which thread should stop fetching messages
+ * @param fetchSleepMS interval to sleep when no more messages or hitting fetchThreshold
+ */
 private[kafka] class FetchThread(consumers: Map[TopicAndPartition, KafkaConsumer],
                                  incomingQueue: LinkedBlockingQueue[KafkaMessage],
                                  fetchThreshold: Int,
                                  fetchSleepMS: Int) extends Thread {
-  import org.apache.gearpump.streaming.kafka.lib.FetchThread._
+  import org.apache.gearpump.streaming.kafka.lib.consumer.FetchThread._
 
   def setStartOffset(tp: TopicAndPartition, startOffset: Long): Unit = {
     consumers(tp).setStartOffset(startOffset)

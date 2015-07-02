@@ -16,24 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka
+package org.apache.gearpump.streaming.kafka.lib.consumer
 
-import org.apache.gearpump.streaming.kafka.lib.producer.KafkaProducerConfig
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+import kafka.common.TopicAndPartition
 
-class KafkaSink private[kafka](producer: KafkaProducer[Array[Byte], Array[Byte]]) {
-
-  def this(config: KafkaProducerConfig) = this(config.buildProducer)
-
-  def write(topic: String, key: Array[Byte], msg: Array[Byte]): Unit = {
-    producer.send(new ProducerRecord[Array[Byte], Array[Byte]](topic, key, msg))
-  }
-
-  def write(topic: String, partition: Int, key: Array[Byte], msg: Array[Byte]): Unit = {
-    producer.send(new ProducerRecord[Array[Byte], Array[Byte]](topic, partition, key, msg))
-  }
-
-  def close(): Unit = {
-    producer.close()
-  }
+/**
+ * wrapper over messages from kafka
+ * @param topicAndPartition where message comes from
+ * @param offset message offset on kafka queue
+ * @param key message key, could be None
+ * @param msg message payload
+ */
+case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
+                        key: Option[Array[Byte]], msg: Array[Byte]) {
+  def this(topic: String, partition: Int, offset: Long,
+    key: Option[Array[Byte]], msg: Array[Byte]) =
+    this(TopicAndPartition(topic, partition), offset, key, msg)
 }
+

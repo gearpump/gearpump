@@ -29,7 +29,7 @@ import org.apache.gearpump.{Message, TimeStamp}
 class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
 
-  import taskContext.{output, self, taskId, parallelism}
+  import taskContext.{output, parallelism, taskId}
 
   private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
   private val batchSize = kafkaConfig.getConsumerEmitBatchSize
@@ -38,8 +38,8 @@ class KafkaStreamProducer(taskContext : TaskContext, conf: UserConfig)
 
   val taskParallelism = parallelism
 
-  private val source: TimeReplayableSource = new KafkaSource(taskContext.appName, taskId, taskParallelism,
-    kafkaConfig, msgDecoder)
+  private val source: TimeReplayableSource = new KafkaSource(
+    taskContext.appName, taskId, taskParallelism, kafkaConfig, msgDecoder)
   private var startTime: TimeStamp = 0L
 
   override def onStart(newStartTime: StartTime): Unit = {

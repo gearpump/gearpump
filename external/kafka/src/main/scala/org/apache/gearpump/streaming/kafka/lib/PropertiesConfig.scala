@@ -18,12 +18,20 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
-import kafka.common.TopicAndPartition
+import java.util.Properties
 
-case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
-  def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
-    this(TopicAndPartition(topic, partition), offset, key, msg)
+abstract class PropertiesConfig(properties: Properties) extends java.io.Serializable {
+  def put(key: AnyRef, value: AnyRef): Unit = {
+    properties.put(key, value)
+  }
+
+  def putIfAbsent(key: AnyRef, value: AnyRef): Unit = {
+    if (get(key) == null) {
+      put(key, value)
+    }
+  }
+
+  def get(key: AnyRef): AnyRef = {
+    properties.get(key)
+  }
 }
-

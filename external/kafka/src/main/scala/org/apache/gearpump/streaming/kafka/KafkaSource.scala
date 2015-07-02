@@ -19,8 +19,11 @@
 package org.apache.gearpump.streaming.kafka
 
 import kafka.common.TopicAndPartition
+import kafka.consumer.ConsumerConfig
+import org.apache.gearpump.streaming.kafka.lib.consumer.{KafkaConsumerConfig, FetchThread}
 import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
-import org.apache.gearpump.streaming.task.{TaskId}
+import org.apache.gearpump.streaming.kafka.lib.producer.KafkaProducerConfig
+import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.streaming.kafka.lib._
 import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
 import org.apache.gearpump.streaming.transaction.api._
@@ -41,16 +44,38 @@ class KafkaSource private[kafka](fetchThread: FetchThread,
                                  offsetManagers: Map[TopicAndPartition, KafkaOffsetManager]) extends TimeReplayableSource {
   import org.apache.gearpump.streaming.kafka.KafkaSource._
 
-  private[kafka] def this(appName: String, config: KafkaConfig, topicAndPartitions: Array[TopicAndPartition], messageDecoder: MessageDecoder) =
-    this(FetchThread(topicAndPartitions, config), messageDecoder,
-      topicAndPartitions.map(tp => tp -> KafkaOffsetManager(appName, config, tp)).toMap)
+  private[kafka] def this(appName: String,
+                          topicAndPartitions: Array[TopicAndPartition],
+                          messageDecoder: MessageDecoder,
+                          kafkaConfig: KafkaConfig,
+                          consumerConfig: ConsumerConfig,
+                          producerConfig: KafkaProducerConfig) =
+    this(FetchThread(topicAndPartitions, kafkaConfig, consumerConfig), messageDecoder,
+      topicAndPartitions.map(tp =>
+        tp -> KafkaOffsetManager(appName, tp, kafkaConfig, consumerConfig, producerConfig)).toMap)
 
-  private[kafka] def this(appName: String, config: KafkaConfig, grouper: KafkaGrouper, messageDecoder: MessageDecoder) =
-    this(appName, config, KafkaUtil.getTopicAndPartitions(KafkaUtil.connectZookeeper(config)(),
-      grouper, config.getConsumerTopics), messageDecoder)
+  private[kafka] def this(appName: String,
+                          grouper: KafkaGrouper,
+                          messageDecoder: MessageDecoder,
+                          kafkaConfig: KafkaConfig,
+                          consumerConfig: ConsumerConfig,
+                          producerConfig: KafkaProducerConfig) =
+    this(appName, KafkaUtil.getTopicAndPartitions(KafkaUtil.connectZookeeper(consumerConfig)(),
+      grouper, kafkaConfig.getConsumerTopics), messageDecoder, kafkaConfig, consumerConfig, producerConfig)
 
-  def this(appName : String, taskId: TaskId, taskParallelism:Int, config: KafkaConfig, messageDecoder: MessageDecoder) =
-    this(appName: String, config, config.getGrouperFactory.getKafkaGrouper(taskId, taskParallelism), messageDecoder)
+  private[kafka] def this(appName : String,
+           taskId: TaskId,
+           taskParallelism: Int,
+           messageDecoder: MessageDecoder,
+           kafkaConfig: KafkaConfig,
+           consumerConfig: KafkaConsumerConfig,
+           producerConfig: KafkaProducerConfig) =
+    this(appName, kafkaConfig.getGrouperFactory.getKafkaGrouper(taskId, taskParallelism),
+      messageDecoder, kafkaConfig, consumerConfig.config, producerConfig)
+
+  def this(appName: String, taskId: TaskId, taskParallelism: Int, kafkaConfig: KafkaConfig, messageDecoder: MessageDecoder) = {
+    this(appName, taskId, taskParallelism, messageDecoder, kafkaConfig, kafkaConfig.consumerConfig, kafkaConfig.producerConfig)
+  }
 
   private var startTime: TimeStamp = 0L
 
