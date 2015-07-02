@@ -3,9 +3,10 @@
  * See accompanying LICENSE file.
  */
 'use strict';
-angular.module('dashboard.restapi', [])
+angular.module('dashboard.restapi', ['cfp.loadingBar'])
 
-  .factory('restapi', ['$http', '$timeout', '$modal', 'conf', function ($http, $timeout, $modal, conf) {
+  .factory('restapi', ['$http', '$timeout', '$modal', 'Upload', 'conf', 'cfpLoadingBar',
+    function ($http, $timeout, $modal, Upload, conf, cfpLoadingBar) {
 
     var noticeWindow = $modal({
       template: "views/services/serverproblemnotice.html",
@@ -66,15 +67,40 @@ angular.module('dashboard.restapi', [])
         return conf.restapiRoot + '/config/worker/' + workerId;
       },
 
-      /** Return the version of Gearpump */
-      getVersion: function() {
-        var url = conf.restapiRoot + '/version';
-        return $http.get(url);
-      },
-
       /** Return the config link of the master */
       masterConfigLink: function() {
         return conf.restapiRoot + '/config/master';
+      },
+
+      submitUserApp: function(file, onComplete) {
+        cfpLoadingBar.start();
+
+        var upload = Upload.upload({
+          url: conf.restapiRoot + '/userapp/submit',
+          method: 'POST',
+          headers: {},
+          fields: {},
+          file: file
+        });
+
+        upload.then(function (response) {
+          if (onComplete) {
+            var data = response.data;
+            onComplete({success: data && data.success});
+          }
+        }, function () {
+          if (onComplete) {
+            onComplete({success: false});
+          }
+        }).finally(function() {
+          cfpLoadingBar.complete();
+        });
+
+        upload.progress(function (evt) {
+          // Math.min is to fix IE which reports 200% sometimes
+          var progress = Math.min(1, parseInt(evt.loaded / evt.total));
+          cfpLoadingBar.set(progress);
+        });
       },
 
       /** Periodically check health. In case of problems show a notice window */
@@ -92,7 +118,7 @@ angular.module('dashboard.restapi', [])
               if (onData) {
                 onData(response.data);
               }
-            }, function (response) {
+            }, function () {
               noticeWindow.$promise.then(noticeWindow.show);
             })
             .finally(function () {

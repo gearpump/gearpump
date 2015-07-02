@@ -8,6 +8,7 @@ angular
   .module('dashboard', [
     'ngAnimate',
     'ngRoute',
+    'ngFileUpload',
     'ng-breadcrumbs',
     'mgcrea.ngStrap',
     'ui.select',

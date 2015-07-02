@@ -1,4 +1,23 @@
-<h4>Applications</h4>
+<div class="row">
+  <div class="col-md-12" ng-show="shouldNoticeUploadFailed" >
+    <div class="alert alert-danger alert-dismissible" role="alert">
+      <button type="button" ng-click="shouldNoticeUploadFailed=false" class="close" data-dismiss="alert"
+              aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <strong>Ops!</strong> Failed to upload your application. Please try it again.
+    </div>
+  </div>
+  <div class="col-md-6">
+    <h4 class="pull-left">Applications</h4>
+  </div>
+  <div class="col-md-6">
+    <button
+      type="button" class="btn btn-primary btn-sm pull-right"
+      ngf-select ng-model="files" ng-disabled="uploading"
+      ngf-multiple="false" ngf-accept="'*.jar'">
+      Submit own Application
+    </button>
+  </div>
+</div>
 
 <div ng-if="apps.length===0" class="bs-callout bs-callout-default">
   <p>No running or completed applications found</p>
@@ -32,12 +51,12 @@
     <td><span ng-bind="app.user"></span></td>
     <td><span ng-bind="app.appMasterPath"></span></td>
     <td class="text-right text-nowrap">
-        <button ng-click="view(app.id)" ng-if="app.active"
-                type="button" class="btn btn-primary btn-xs media-middle vert-align">View Details
-        </button>
-        <button ng-click="kill(app.id)" ng-if="app.active"
-                type="button" class="btn btn-default btn-xs media-middle vert-align">Kill
-        </button>
+      <button ng-click="view(app.id)" ng-if="app.active"
+              type="button" class="btn btn-primary btn-xs media-middle vert-align">View Details
+      </button>
+      <button ng-click="kill(app.id)" ng-if="app.active"
+              type="button" class="btn btn-default btn-xs media-middle vert-align">Kill
+      </button>
     </td>
   </tr>
   </tbody>

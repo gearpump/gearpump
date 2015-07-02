@@ -15,12 +15,23 @@ angular.module('dashboard.apps', [])
   }])
 
   .controller('AppsCtrl', ['$scope', '$location', 'restapi', 'util', function ($scope, $location, restapi, util) {
+
     $scope.view = function (id) {
       $location.path("/apps/app/" + id);
     };
     $scope.kill = function (id) {
       restapi.killApp(id);
     };
+
+    $scope.$watch('files', function(files) {
+      if (files != null && files.length) {
+        $scope.uploading = true;
+        restapi.submitUserApp(files[0], function(response) {
+          $scope.shouldNoticeUploadFailed = !response.success;
+          $scope.uploading = false;
+        });
+      }
+    });
 
     $scope.apps = [];
     restapi.subscribe('/appmasters', $scope,
