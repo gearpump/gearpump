@@ -67,12 +67,45 @@ case class EdgesData(edges: Map[String, GraphEdge], var bandwidths: Map[String, 
 @JSName("vis.DataSet")
 class DataSet extends js.Object {
   val length: Int = js.native
-  def add(data: Array[js.Object], senderId: String): Array[String] = js.native
-  def get(id:Int): VisNode = js.native
-  def get(id:String): VisEdge = js.native
+  def add(data: js.Array[js.Object], senderId: String): js.Array[String] = js.native
+  def get(id:Int): js.Any = js.native
+  def get(id:String): js.Any  = js.native
   def update(nodes: js.Array[_<:Any]): js.Array[Int] = js.native
 }
 
+/*
+data
+Object {nodes: o, edges: o}edges: o_data: Object
+  0_1: Object
+    arrows: Object
+      to: Object
+        scaleFactor: 0.2__proto__: Object__proto__: Object
+    color: Object
+      opacity: 0.8__proto__: Object
+    from: 0
+    hoverWidth: 0
+    id: "0_1"
+    selectionWidth: 0
+    to: 1
+    width: 3.6__proto__: Object
+  0_2: Object
+    arrows: Object
+      to: Object
+        scaleFactor: 0.2__proto__: Object__proto__: Object
+    color: Object
+      opacity: 0.8__proto__: Object
+    from: 0
+    hoverWidth: 0
+    id: "0_2"
+    selectionWidth: 0
+    to: 2
+    width: 3.6__proto__: Object
+  0_3: Object
+  0_4: Object
+  0_5: Object
+  0_6: Object
+  3_4: Object4_7: Object5_4: Object5_7: Object5_8: Object8_7: Object9_10: Object9_11: Object11_7: Object__proto__: Object_fieldId: "id"_options: Object__proto__: Object_subscribers: Object_type: Object__proto__: Objectlength: 15__proto__: onodes: o__proto__: Object
+ */
 @JSExportAll
 case class DagData(nodes: DataSet, edges: DataSet)
 
@@ -82,20 +115,36 @@ case class DoubleClickEvent(doubleClick: js.Function1[DagData, Unit])
 @JSExportAll
 case class VisGraph(options: DagOptions, data: DagData, events: DoubleClickEvent)
 
-@JSExportAll
-case class VisNode(id: Int, label: String, level: Int, size: Int)
+trait VisNode extends js.Object {
+  val id: Int = js.native
+  val label: String = js.native
+  val level: Int = js.native
+  val size: Double = js.native
+}
 
-@JSExportAll
-case class EdgeScale(scaleFactor: Double)
+trait EdgeScale extends js.Object {
+  val scaleFactor: Double = js.native
+}
 
-@JSExportAll
-case class EdgeArrows(to: EdgeScale)
+trait EdgeArrows extends js.Object {
+  val to: EdgeScale = js.native
+}
 
-@JSExportAll
-case class EdgeColor(opacity: Double, color: ColorSet)
+trait EdgeColor extends js.Object {
+  val opacity: Double = js.native
+  val color: String = js.native
+}
 
-@JSExportAll
-case class VisEdge(id: String, width: Int, hoverWidth: Int, selectionWidth: Int, arrows: EdgeArrows, color: EdgeColor)
+trait VisEdge extends js.Object {
+  val id: String = js.native
+  val from: Int = js.native
+  val to: Int = js.native
+  val width: Double = js.native
+  val hoverWidth: Int = js.native
+  val selectionWidth: Int = js.native
+  val arrows: EdgeArrows = js.native
+  val color: EdgeColor = js.native
+}
 
 @JSExport
 @injectable("AppMasterConfig")
