@@ -1,0 +1,2 @@
+#!/bin/bash
+kafka-topics --zookeeper 10.10.10.236/kafka --topic $1 --create --partitions 2 --replication-factor 2

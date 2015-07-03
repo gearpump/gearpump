@@ -15,8 +15,8 @@ trait ContainerCommand {
   private val classPath = Array(
     s"pack/$version/conf",
     s"pack/$version/dashboard",
-    s"pack/$version/daemon/*",
-    s"pack/$version/lib/*"
+    s"pack/$version/lib/*",
+    s"pack/$version/daemon/*"
   )
 
   def getCommand:String
