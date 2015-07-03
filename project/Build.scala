@@ -41,6 +41,7 @@ object Build extends sbt.Build {
   val stormVersion = "0.9.3"
   val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
+  val parquetVersion = "1.7.0"
   
   val scalaVersionMajor = "scala-2.11"
   val scalaVersionNumber = "2.11.5"
@@ -70,6 +71,7 @@ object Build extends sbt.Build {
         addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
     ) ++
     Seq(
+      addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full),
       scalaVersion := scalaVersionNumber,
       crossScalaVersions := Seq("2.10.5"),
       organization := "com.github.intel-hadoop",
@@ -376,7 +378,15 @@ object Build extends sbt.Build {
     base = file("examples/streaming/kafka-hdfs-pipeline"),
     settings = commonSettings ++ myAssemblySettings ++
       Seq(
+        mergeStrategy in assembly := {
+          case PathList("META-INF", "maven","org.slf4j","slf4j-api", ps) if ps.startsWith("pom") => MergeStrategy.discard
+          case x =>
+            val oldStrategy = (mergeStrategy in assembly).value
+            oldStrategy(x)
+        },
         libraryDependencies ++= Seq(
+          "com.julianpeeters" % "avro-scala-macro-annotations_2.11" % "0.9.0",
+          "org.apache.parquet" % "parquet-avro" % parquetVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
@@ -384,7 +394,7 @@ object Build extends sbt.Build {
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.kafka_hdfs_pipeline.PipeLine"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase, dsl)
+  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase, dsl, examples_kafka)
 
   lazy val examples = Project(
     id = "gearpump-examples",
