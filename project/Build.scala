@@ -196,7 +196,7 @@ object Build extends sbt.Build {
         }
       )
   ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
+   .aggregate(core, daemon, streaming, fsio, examples_kafka, kafka_hdfs_pipeline, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
       transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, packProject, pipeline, state)
 
   lazy val packProject = Project(
@@ -371,11 +371,26 @@ object Build extends sbt.Build {
       )
   ) dependsOn (streaming % "test->test", streaming % "provided")
 
+  lazy val kafka_hdfs_pipeline = Project(
+    id = "gearpump-examples-kafka-hdfs-pipeline",
+    base = file("examples/streaming/kafka-hdfs-pipeline"),
+    settings = commonSettings ++ myAssemblySettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        ) ++ hadoopDependency,
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.kafka_hdfs_pipeline.PipeLine"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+      )
+  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase, dsl)
+
   lazy val examples = Project(
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings
-  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
+  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, kafka_hdfs_pipeline, stockcrawler, transport)
   
   lazy val services = Project(
     id = "gearpump-services",
