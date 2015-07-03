@@ -16,6 +16,8 @@ addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.5")
 
+addSbtPlugin("com.cavorite" % "sbt-avro" % "0.3.2")
+
 resolvers += Classpaths.sbtPluginReleases
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.1.0")
