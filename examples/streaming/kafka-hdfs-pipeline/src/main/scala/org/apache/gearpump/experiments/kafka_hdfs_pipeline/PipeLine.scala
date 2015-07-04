@@ -46,7 +46,6 @@ case class SpaceShuttleMessage(id: String, on: String, body: String)
 @AvroRecord
 case class SpaceShuttleRecord(var timestamp: Double, var vectorClass: Double, var count: Double)
 
-//"http://atk-scoringengine.demo-gotapaas.com/v1/models/DemoModel/score?data=";
 
 object PipeLine extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -54,7 +53,7 @@ object PipeLine extends App with ArgumentsParser {
   val PIPELINE = "pipeline"
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "reader"-> CLIOption[Int]("<kafaka data reader number>", required = false, defaultValue = Some(2)),
+    "reader"-> CLIOption[Int]("<kafka data reader number>", required = false, defaultValue = Some(2)),
     "scorer"-> CLIOption[Int]("<scorer number>", required = false, defaultValue = Some(2)),
     "writer"-> CLIOption[Int]("<parquet file writer number>", required = false, defaultValue = Some(2)),
     "output"-> CLIOption[String]("<output path directory>", required = false, defaultValue = Some("file:///tmp/parquet")),
