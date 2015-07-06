@@ -81,7 +81,12 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
 
   def getCommand = {
     val exe = getEnv(YARNAPPMASTER_COMMAND)
-    val classPath = Array(s"pack/$version/conf", s"pack/$version/dashboard", s"pack/$version/lib/*", "yarnConf")
+    val classPath = Array(
+      s"pack/$version/conf",
+      s"pack/$version/dashboard",
+      s"pack/$version/lib/*",
+      s"pack/$version/daemon/*",
+      "yarnConf")
     val mainClass = getEnv(YARNAPPMASTER_MAIN)
     val logdir = ApplicationConstants.LOG_DIR_EXPANSION_VAR
     val command = s"$exe  -cp ${classPath.mkString(File.pathSeparator)}${File.pathSeparator}" +
