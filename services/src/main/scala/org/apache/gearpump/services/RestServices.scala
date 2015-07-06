@@ -55,7 +55,8 @@ object RestServices {
     val host = config.getString(Constants.GEARPUMP_SERVICE_HOST)
     IO(Http) ! Http.Bind(services, interface = host, port = port)
 
-    LOG.info(s"Please browse to http://$host:$port to see the web UI")
-    println(s"Please browse to http://$host:$port to see the web UI")
+    val displayHost = if(host == "0.0.0.0") "127.0.0.1" else host
+    LOG.info(s"Please browse to http://$displayHost:$port to see the web UI")
+    println(s"Please browse to http://$displayHost:$port to see the web UI")
   }
 }

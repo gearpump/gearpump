@@ -53,8 +53,8 @@ angular.module('dashboard.restapi', ['cfp.loadingBar'])
 
       /** Kill a running application */
       killApp: function(appId) {
-        var url = conf.restapiRoot + '/appmaster/' + appId;
-        return $http.delete(url);
+        var url = conf.restapiRoot + '/internal/intermediate/delete/appmaster/' + appId;
+        return $http.post(url);
       },
 
       /** Return the config link of an application */
