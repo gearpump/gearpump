@@ -54,9 +54,10 @@ trait DataSource extends java.io.Serializable {
   /**
    * read a number of messages from data source.
    * invoked in each onNext() method of [[org.apache.gearpump.streaming.task.Task]]
+   * @param batchSize the max number of messages to return
    * @return a list of messages wrapped in [[Message]]
    */
-  def read(): List[Message]
+  def read(batchSize: Int): List[Message]
 
   /**
    * close connection to data source

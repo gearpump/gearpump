@@ -584,7 +584,7 @@ object Build extends sbt.Build {
           "org.scalaz" %% "scalaz-core" % scalazVersion
         )
       )
-  ) dependsOn(core % "provided")
+  ) dependsOn(core % "provided", streaming % "test->test; provided")
 
   lazy val pipeline = Project(
     id = "gearpump-experiments-kafka-hbase-pipeline",

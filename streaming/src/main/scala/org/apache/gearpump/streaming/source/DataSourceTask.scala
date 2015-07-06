@@ -35,6 +35,8 @@ class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(contex
 
   private val source = conf.getValue[DataSource](DATA_SOURCE).get
 
+  private val batchSize = 1000
+
   override def onStart(newStartTime: StartTime): Unit = {
     val time = newStartTime.startTime
     LOG.info(s"opening data source at $time")
@@ -43,7 +45,7 @@ class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(contex
   }
 
   override def onNext(message: Message): Unit = {
-    source.read().foreach(context.output)
+    source.read(batchSize).foreach(context.output)
     self ! Message("continue", System.currentTimeMillis())
   }
 
