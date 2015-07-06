@@ -1,0 +1,38 @@
+
+kafka {
+    consumer {
+      # change to match cluster zookeepers
+      zookeeper.connect = "127.0.0.1:2181"
+      # consumer topics separated by ","
+      topics = "javour-topic"
+      client.id = "kafka-hdfs-pipeline-app"
+      socket.timeout.ms = 30000
+      socket.receive.buffer.bytes = 65536
+      fetch.message.max.bytes = 1048576
+      emit.batch.size = 100
+      fetch.threshold = 5000
+      fetch.sleep.ms = 100
+    }
+
+    producer {
+      topic = "javour-topic"
+      # list of host/port pairs to use for establishing the initial connection to kafka server
+      # list should be in the form "host1:port1,host2:port2,..."
+      # list need not contain the full set of servers
+      bootstrap.servers = "127.0.0.1:9092"
+      acks = "1"
+      buffer.memory = 33554432
+      compression.type = "none"
+      retries = 0
+      batch.size = 16384
+    }
+
+    storage.replicas = 1
+
+    grouper.factory.class = "org.apache.gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory"
+
+    task {
+      message.decoder.class = "org.apache.gearpump.streaming.kafka.lib.DefaultMessageDecoder"
+      timestamp.filter.class = "org.apache.gearpump.streaming.kafka.lib.KafkaFilter"
+    }
+}

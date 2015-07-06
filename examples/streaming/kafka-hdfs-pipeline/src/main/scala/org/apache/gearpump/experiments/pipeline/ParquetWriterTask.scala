@@ -15,11 +15,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.gearpump.experiments.kafka_hdfs_pipeline
+package org.apache.gearpump.experiments.pipeline
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.kafka_hdfs_pipeline.ParquetWriterTask._
+import org.apache.gearpump.experiments.pipeline.ParquetWriterTask._
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.avro.AvroParquetWriter

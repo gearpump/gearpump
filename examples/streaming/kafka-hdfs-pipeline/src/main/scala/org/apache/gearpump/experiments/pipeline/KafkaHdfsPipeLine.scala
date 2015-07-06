@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.experiments.kafka_hdfs_pipeline
+package org.apache.gearpump.experiments.pipeline
 
 import com.julianpeeters.avro.annotations._
 import com.typesafe.config.ConfigFactory
@@ -47,7 +47,7 @@ case class SpaceShuttleMessage(id: String, on: String, body: String)
 case class SpaceShuttleRecord(var timestamp: Double, var vectorClass: Double, var count: Double)
 
 
-object PipeLine extends App with ArgumentsParser {
+object KafkaHdfsPipeLine extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   val PIPELINE = "pipeline"
@@ -81,17 +81,7 @@ object PipeLine extends App with ArgumentsParser {
     val writer = Processor[ParquetWriterTask](writerNum)
 
     val dag = Graph(reader ~ partitioner ~> scorer ~ partitioner ~> writer)
-    val app = StreamApplication("PipeLine", dag, appConfig)
-
-//    val app = StreamApp("PipeLine", context, appConfig)
-//    app.readFromKafka(kafkaConfig, msg => {
-//      val jsonData = msg.msg.asInstanceOf[String]
-//      read[SpaceShuttleMessage](jsonData)
-//    }, 1, "space-shuttle-data-producer").flatMap(spaceShuttleMessage => {
-//      Some(upickle.read[Array[Float]](spaceShuttleMessage.body))
-//    }).map(scoringVector => {
-//
-//    })
+    val app = StreamApplication("KafkaHdfsPipeLine", dag, appConfig)
 
     context.submit(app)
     context.close()

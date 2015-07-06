@@ -391,7 +391,7 @@ object Build extends sbt.Build {
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         ) ++ hadoopDependency,
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.kafka_hdfs_pipeline.PipeLine"),
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.pipeline.KafkaHdfsPipeLine"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase, dsl, examples_kafka)

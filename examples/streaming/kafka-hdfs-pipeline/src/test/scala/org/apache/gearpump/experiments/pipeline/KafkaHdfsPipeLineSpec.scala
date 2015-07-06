@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.experiments.kafka_hdfs_pipeline
+package org.apache.gearpump.experiments.pipeline
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
@@ -28,7 +28,7 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 import org.slf4j.Logger
 import upickle._
 
-class PipeLineSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll {
+class KafkaHdfsPipeLineSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll {
   val LOG: Logger = LogUtil.getLogger(getClass)
   val pipeLinePath = "conf/pipeline.conf.template"
   val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
@@ -36,7 +36,7 @@ class PipeLineSpec extends PropSpec with PropertyChecks with Matchers with Befor
   implicit var system: ActorSystem = null
 
   override def beforeAll(): Unit = {
-    system = ActorSystem("PipeLineSpec")
+    system = ActorSystem("KafkaHdfsPipeLineSpec")
   }
 
   override def afterAll(): Unit = {
