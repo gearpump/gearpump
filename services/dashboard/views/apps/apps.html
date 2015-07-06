@@ -51,10 +51,13 @@
     <td><span ng-bind="app.user"></span></td>
     <td><span ng-bind="app.appMasterPath"></span></td>
     <td class="text-right text-nowrap">
-      <button ng-click="view(app.id)" ng-if="app.active"
+      <button ng-click="view(app.id)" ng-if="app.active" ng-disabled="operationDenied[app.id]"
               type="button" class="btn btn-primary btn-xs media-middle vert-align">View Details
       </button>
-      <button ng-click="kill(app.id)" ng-if="app.active"
+      <button ng-click="restart(app.id)" ng-if="app.active" ng-disabled="operationDenied[app.id]"
+              type="button" class="btn btn-default btn-xs media-middle vert-align">Restart
+      </button>
+      <button ng-click="kill(app.id)" ng-if="app.active" ng-disabled="operationDenied[app.id]"
               type="button" class="btn btn-default btn-xs media-middle vert-align">Kill
       </button>
     </td>

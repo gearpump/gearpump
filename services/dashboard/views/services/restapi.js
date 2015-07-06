@@ -57,6 +57,12 @@ angular.module('dashboard.restapi', ['cfp.loadingBar'])
         return $http.post(url);
       },
 
+      /** Restart a running application and return a promise */
+      restartAppAsync: function(appId) {
+        var url = conf.restapiRoot + '/appmaster/' + appId + '/restart';
+        return $http.post(url);
+      },
+
       /** Return the config link of an application */
       appConfigLink: function(appId) {
         return conf.restapiRoot + '/config/app/' + appId;
