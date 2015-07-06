@@ -90,7 +90,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
 
   def clientMsgHandler: Receive = {
     case SubmitApplication(app, jar, username) =>
-      LOG.info(s"AppManager Submiting Application $appId...")
+      LOG.info(s"AppManager Submitting Application $appId...")
       val client = sender
       if (applicationNameExist(app.name)) {
         client ! SubmitApplicationResult(Failure(new Exception(s"Application name ${app.name} already existed")))
@@ -102,6 +102,27 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
         masterHA ! UpdateMasterState(appState)
         appId += 1
       }
+
+    case RestartApplication(appId) =>
+      (masterHA ? GetMasterState).asInstanceOf[Future[GetMasterStateResult]].map {
+        case MasterState(maxId, state) =>
+          val appState = state.find(_.appId == appId)
+          if (appState.isDefined) {
+            val appStateData = appState.get
+            LOG.info(s"Shutting down the application (restart), $appId")
+            self ! ShutdownApplication(appId)
+            self forward SubmitApplication(appStateData.app, appStateData.jar, appStateData.username)
+          } else {
+            sender ! SubmitApplicationResult(Failure(
+              new Exception(s"Failed to restart, because the application $appId does not exist.")
+            ))
+          }
+        case GetMasterStateFailed(ex) =>
+          sender ! SubmitApplicationResult(Failure(
+            new Exception(s"Unable to obtain the Master State. Application $appId will not be restarted.")
+          ))
+      }
+
     case ShutdownApplication(appId) =>
       LOG.info(s"App Manager Shutting down application $appId")
       val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))

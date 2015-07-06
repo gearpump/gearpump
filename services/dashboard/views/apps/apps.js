@@ -15,9 +15,15 @@ angular.module('dashboard.apps', [])
   }])
 
   .controller('AppsCtrl', ['$scope', '$location', 'restapi', 'util', function ($scope, $location, restapi, util) {
-
+    $scope.operationDenied = {};
     $scope.view = function (id) {
       $location.path("/apps/app/" + id);
+    };
+    $scope.restart = function (id) {
+      $scope.operationDenied[id] = true;
+      restapi.restartAppAsync(id).finally(function() {
+        delete $scope.operationDenied[id];
+      });
     };
     $scope.kill = function (id) {
       restapi.killApp(id);
@@ -33,7 +39,6 @@ angular.module('dashboard.apps', [])
       }
     });
 
-    $scope.apps = [];
     restapi.subscribe('/appmasters', $scope,
       function (data) {
         // TODO: Serde AppMastersData (#458)

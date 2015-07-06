@@ -154,6 +154,9 @@ private[cluster] class Master extends Actor with Stash {
     case app : SubmitApplication =>
       LOG.debug(s"Receive from client, SubmitApplication $app")
       appManager.forward(app)
+    case app : RestartApplication =>
+      LOG.debug(s"Receive from client, RestartApplication $app")
+      appManager.forward(app)
     case app : ShutdownApplication =>
       LOG.debug(s"Receive from client, Shutting down Application ${app.appId}")
       scheduler ! ApplicationFinished(app.appId)
