@@ -394,7 +394,7 @@ object Build extends sbt.Build {
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.pipeline.KafkaHdfsPipeLine"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", hbase, dsl, examples_kafka)
+  ) dependsOn(streaming % "test->test", daemon % "provided", streaming % "provided", external_kafka  % "test->test; provided", examples_kafka)
 
   lazy val examples = Project(
     id = "gearpump-examples",
