@@ -396,10 +396,12 @@ object Build extends sbt.Build {
           "org.webjars" % "bootstrap" % "3.3.5",
           "org.webjars" % "d3js" % "3.5.5",
           "org.webjars" % "momentjs" % "2.10.3",
+          "org.webjars.bower" % "angular-loading-bar" % "0.8.0",
           "org.webjars.bower" % "angular-motion" % "0.4.2",
           "org.webjars.bower" % "angular-smart-table" % "2.1.0",
           "org.webjars.bower" % "angular-strap" % "2.2.4",
           "org.webjars.bower" % "angular-ui-select" % "0.12.0",
+          "org.webjars.bower" % "ng-file-upload" % "5.0.9",
           "org.webjars.bower" % "vis" % "4.3.0"
         ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
       )

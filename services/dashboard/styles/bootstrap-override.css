@@ -32,3 +32,14 @@ body, .tooltip, .popover {
 .table thead > tr > th {
   white-space: nowrap;
 }
+
+/* Smaller font for table meta */
+.table thead > tr > th,
+.table tfoot > tr > td {
+  font-size: .9em;
+}
+
+/* Larger table caption */
+.table caption {
+  font-size: 1.15em;
+}

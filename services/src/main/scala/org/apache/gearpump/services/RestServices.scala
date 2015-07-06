@@ -26,11 +26,13 @@ import spray.routing.RoutingSettings
 
 trait RestServices extends AppMastersService
     with AppMasterService with WorkerService with WorkersService with MasterService with SubmitApplicationRequestService
-    with ConfigQueryService with MetricsQueryService with WebSocketService with StaticService with ActorUtilService with InterMediateService {
+    with ConfigQueryService with MetricsQueryService with WebSocketService with StaticService with ActorUtilService with InterMediateService
+    with SubmitUserApplicationService {
   implicit def executionContext = actorRefFactory.dispatcher
 
   lazy val routes = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ applicationRequestRoute ~
-    masterRoute ~  configQueryRoute ~ metricQueryRoute ~ webSocketRoute ~ staticRoute ~ actorUtilRoute ~ interMediateRoute
+    masterRoute ~  configQueryRoute ~ metricQueryRoute ~ webSocketRoute ~ staticRoute ~ actorUtilRoute ~ interMediateRoute ~
+    submitUserApplicationRoute
 }
 
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
