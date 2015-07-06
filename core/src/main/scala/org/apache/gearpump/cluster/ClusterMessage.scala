@@ -34,6 +34,7 @@ import scala.util.{Success, Try}
 
 object ClientToMaster {
   case class SubmitApplication(appDescription: AppDescription, appJar: Option[AppJar], username : String = System.getProperty("user.name"))
+  case class RestartApplication(appId: Int)
   case class ShutdownApplication(appId: Int)
   case class ResolveAppId(appId: Int)
 
