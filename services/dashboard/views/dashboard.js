@@ -8,6 +8,7 @@ angular
   .module('dashboard', [
     'ngAnimate',
     'ngRoute',
+    'ngFileUpload',
     'ng-breadcrumbs',
     'mgcrea.ngStrap',
     'ui.select',
@@ -50,8 +51,8 @@ angular
       var path = url.substring(1); // without the leading hash prefix char
       return $location.path().indexOf(path) === 0;
     };
-    restapi.getVersion().then(function (response) {
-      $scope.version = response.data;
+    restapi.repeatHealthCheck($scope, function(data) {
+      $scope.version = data;
     });
   }])
 ;

@@ -3,9 +3,10 @@
  * See accompanying LICENSE file.
  */
 'use strict';
-angular.module('dashboard.restapi', [])
+angular.module('dashboard.restapi', ['cfp.loadingBar'])
 
-  .factory('restapi', ['$http', '$timeout', '$modal', 'conf', function ($http, $timeout, $modal, conf) {
+  .factory('restapi', ['$http', '$timeout', '$modal', 'Upload', 'conf', 'cfpLoadingBar',
+    function ($http, $timeout, $modal, Upload, conf, cfpLoadingBar) {
 
     var noticeWindow = $modal({
       template: "views/services/serverproblemnotice.html",
@@ -28,13 +29,9 @@ angular.module('dashboard.restapi', [])
           $http.get(conf.restapiRoot + url)
             .then(function (response) {
               if (!shouldCancel) {
-                noticeWindow.$promise.then(noticeWindow.hide);
                 shouldCancel = !onData || onData(response.data);
               }
             }, function (response) {
-              if (!shouldCancel) {
-                noticeWindow.$promise.then(noticeWindow.show);
-              }
             })
             .finally(function () {
               if (!shouldCancel) {
@@ -56,8 +53,8 @@ angular.module('dashboard.restapi', [])
 
       /** Kill a running application */
       killApp: function(appId) {
-        var url = conf.restapiRoot + '/appmaster/' + appId;
-        return $http.delete(url);
+        var url = conf.restapiRoot + '/internal/intermediate/delete/appmaster/' + appId;
+        return $http.post(url);
       },
 
       /** Return the config link of an application */
@@ -70,15 +67,67 @@ angular.module('dashboard.restapi', [])
         return conf.restapiRoot + '/config/worker/' + workerId;
       },
 
-      /** Return the version of Gearpump */
-      getVersion: function() {
-        var url = conf.restapiRoot + '/version';
-        return $http.get(url);
-      },
-
       /** Return the config link of the master */
       masterConfigLink: function() {
         return conf.restapiRoot + '/config/master';
+      },
+
+      submitUserApp: function(file, onComplete) {
+        cfpLoadingBar.start();
+
+        var upload = Upload.upload({
+          url: conf.restapiRoot + '/userapp/submit',
+          method: 'POST',
+          headers: {},
+          fields: {},
+          file: file
+        });
+
+        upload.then(function (response) {
+          if (onComplete) {
+            var data = response.data;
+            onComplete({success: data && data.success});
+          }
+        }, function () {
+          if (onComplete) {
+            onComplete({success: false});
+          }
+        }).finally(function() {
+          cfpLoadingBar.complete();
+        });
+
+        upload.progress(function (evt) {
+          // Math.min is to fix IE which reports 200% sometimes
+          var progress = Math.min(1, parseInt(evt.loaded / evt.total));
+          cfpLoadingBar.set(progress);
+        });
+      },
+
+      /** Periodically check health. In case of problems show a notice window */
+      repeatHealthCheck: function(scope, onData) {
+        var timeoutPromise;
+        var shouldCancel = false;
+        scope.$on('$destroy', function () {
+          shouldCancel = true;
+          $timeout.cancel(timeoutPromise);
+        });
+        var fn = function () {
+          $http.get(conf.restapiRoot + '/version')
+            .then(function (response) {
+              noticeWindow.$promise.then(noticeWindow.hide);
+              if (onData) {
+                onData(response.data);
+              }
+            }, function () {
+              noticeWindow.$promise.then(noticeWindow.show);
+            })
+            .finally(function () {
+              if (!shouldCancel) {
+                timeoutPromise = $timeout(fn, conf.restapiAutoRefreshInterval);
+              }
+            });
+        };
+        fn();
       }
     };
   }])

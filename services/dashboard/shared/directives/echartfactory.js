@@ -92,6 +92,11 @@ angular.module('directive.echartfactory', [])
           elem[0].style.height = scope.options.height;
         }
         var chart = echarts.init(elem[0]);
+        angular.element(window).on('resize', chart.resize);
+        scope.$on('$destroy', function() {
+          angular.element(window).off('resize', chart.resize);
+          chart.dispose();
+        });
         chart.setOption(option, true);
 
         scope.$watch('data', function (array) {

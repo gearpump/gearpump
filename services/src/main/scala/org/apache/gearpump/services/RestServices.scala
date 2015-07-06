@@ -26,11 +26,13 @@ import spray.routing.RoutingSettings
 
 trait RestServices extends AppMastersService
     with AppMasterService with WorkerService with WorkersService with MasterService with SubmitApplicationRequestService
-    with ConfigQueryService with MetricsQueryService with WebSocketService with StaticService with ActorUtilService with InterMediateService {
+    with ConfigQueryService with MetricsQueryService with WebSocketService with StaticService with ActorUtilService with InterMediateService
+    with SubmitUserApplicationService {
   implicit def executionContext = actorRefFactory.dispatcher
 
   lazy val routes = appMastersRoute ~ appMasterRoute ~ workersRoute ~ workerRoute ~ applicationRequestRoute ~
-    masterRoute ~  configQueryRoute ~ metricQueryRoute ~ webSocketRoute ~ staticRoute ~ actorUtilRoute ~ interMediateRoute
+    masterRoute ~  configQueryRoute ~ metricQueryRoute ~ webSocketRoute ~ staticRoute ~ actorUtilRoute ~ interMediateRoute ~
+    submitUserApplicationRoute
 }
 
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
@@ -53,7 +55,8 @@ object RestServices {
     val host = config.getString(Constants.GEARPUMP_SERVICE_HOST)
     IO(Http) ! Http.Bind(services, interface = host, port = port)
 
-    LOG.info(s"Please browse to http://$host:$port to see the web UI")
-    println(s"Please browse to http://$host:$port to see the web UI")
+    val displayHost = if(host == "0.0.0.0") "127.0.0.1" else host
+    LOG.info(s"Please browse to http://$displayHost:$port to see the web UI")
+    println(s"Please browse to http://$displayHost:$port to see the web UI")
   }
 }

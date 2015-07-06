@@ -24,6 +24,8 @@ import spray.routing.HttpService
 import spray.http.HttpMethods._
 import akka.io.IO
 import spray.can._
+import spray.http.HttpHeader
+import spray.http.HttpHeaders.Host
 import akka.pattern.ask
 
 import scala.concurrent.{Future, ExecutionContext}
@@ -33,26 +35,31 @@ trait InterMediateService extends HttpService {
   def master:ActorRef
   implicit val system: ActorSystem
   lazy val config = system.settings.config
-  lazy val port = config.getInt(Constants.GEARPUMP_SERVICE_HTTP)
-  lazy val host = config.getString(Constants.GEARPUMP_SERVICE_HOST)
+
+  def extractHost: HttpHeader => Option[Host] = {
+    case h: Host => Some(h)
+    case x => None
+  }
 
   def interMediateRoute = {
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    pathPrefix("api"/s"$REST_VERSION") {
-      // this is a internal API
-      path("internal" / "intermediate" / Segment / RestPath) { (command, path) =>
-        post {
-          val url = s"http://$host:$port/api/$REST_VERSION/$path"
-          val request = command match {
-            case "delete" => HttpRequest(DELETE, url)
-            case "put" => HttpRequest(PUT, url)
-          }
-          onComplete((IO(Http) ? request).asInstanceOf[Future[HttpResponse]]) {
-            case Success(response: HttpResponse) =>
-              complete(response.entity)
-            case Failure(ex) =>
-              complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+    headerValue(extractHost) { host =>
+      pathPrefix("api" / s"$REST_VERSION") {
+        // this is a internal API
+        path("internal" / "intermediate" / Segment / RestPath) { (command, path) =>
+          post {
+            val url = s"http://${host.host}:${host.port}/api/$REST_VERSION/$path"
+            val request = command match {
+              case "delete" => HttpRequest(DELETE, url)
+              case "put" => HttpRequest(PUT, url)
+            }
+            onComplete((IO(Http) ? request).asInstanceOf[Future[HttpResponse]]) {
+              case Success(response: HttpResponse) =>
+                complete(response.entity)
+              case Failure(ex) =>
+                complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+            }
           }
         }
       }

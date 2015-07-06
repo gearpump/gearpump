@@ -32,19 +32,22 @@ class InterMediateServiceSpec extends FlatSpec with ScalatestRouteTest
   with InterMediateService with Matchers with BeforeAndAfterAll {
   def actorRefFactory = system
   val testCluster = TestCluster(system)
+  val port = 8099
+  val host = "127.0.0.1"
 
   def master = testCluster.master
 
-  InterMediateServiceSpec.startMockRestService(system)
+  InterMediateServiceSpec.startMockRestService(host, port)(system)
 
+  import spray.http.HttpHeaders.Host
   "ConfigQueryService" should "return config for application" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Post(s"/api/$REST_VERSION/internal/intermediate/delete/test/intermediate") ~> interMediateRoute).asInstanceOf[RouteResult] ~> check{
+    (Post(s"/api/$REST_VERSION/internal/intermediate/delete/test/intermediate") ~> Host(host, port) ~> interMediateRoute).asInstanceOf[RouteResult] ~> check{
       val responseBody = response.entity.asString
       assert(responseBody == "delete succeed")
     }
 
-    (Post(s"/api/$REST_VERSION/internal/intermediate/put/test/intermediate") ~> interMediateRoute).asInstanceOf[RouteResult] ~> check{
+    (Post(s"/api/$REST_VERSION/internal/intermediate/put/test/intermediate") ~> Host(host, port) ~> interMediateRoute).asInstanceOf[RouteResult] ~> check{
       val responseBody = response.entity.asString
       assert(responseBody == "put succeed")
     }
@@ -56,12 +59,9 @@ class InterMediateServiceSpec extends FlatSpec with ScalatestRouteTest
 }
 
 object InterMediateServiceSpec {
-  def startMockRestService(implicit system: ActorSystem) = {
+  def startMockRestService(host: String, port: Int)(implicit system: ActorSystem) = {
     implicit val executionContext = system.dispatcher
     val services = system.actorOf(Props(classOf[MockRestServiceActor], system), "rest-services")
-    val config = system.settings.config
-    val port = config.getInt(Constants.GEARPUMP_SERVICE_HTTP)
-    val host = config.getString(Constants.GEARPUMP_SERVICE_HOST)
     IO(Http) ! Http.Bind(services, interface = host, port = port)
   }
 
