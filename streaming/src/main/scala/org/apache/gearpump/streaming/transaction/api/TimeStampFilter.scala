@@ -23,6 +23,8 @@ import org.apache.gearpump.{Message, TimeStamp}
 /**
  * TimeStampFilter filters message comparing its TimeStamp with the predicate.
  */
-trait TimeStampFilter {
+trait TimeStampFilter extends java.io.Serializable {
   def filter(msg: Message, predicate: TimeStamp): Option[Message]
 }
+
+

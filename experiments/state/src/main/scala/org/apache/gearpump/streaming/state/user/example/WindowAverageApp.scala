@@ -44,9 +44,7 @@ object WindowAverageApp extends App with ArgumentsParser {
     val windowStep = config.getInt("window_step")
     val stateConfig = new PersistentStateConfig(
       ConfigFactory.parseResources("state.conf"))
-    val kafkaConfig = new KafkaConfig(
-      ConfigFactory.parseResources("kafka.conf")
-    )
+    val kafkaConfig = new KafkaConfig()
     val userConfig = UserConfig.empty
       .withValue(PersistentStateConfig.NAME, stateConfig)
       .withValue(WindowConfig.NAME, WindowConfig(windowSize, windowStep))

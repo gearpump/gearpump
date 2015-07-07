@@ -24,7 +24,6 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.experiments.hbase.HBaseSink._
 import org.apache.gearpump.experiments.hbase.{HBaseRepo, HBaseSink, HBaseSinkInterface}
-import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph._
@@ -47,7 +46,7 @@ object PipeLine extends App with ArgumentsParser {
     val pipelineConfig = PipeLineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
     val processors = pipelineConfig.config.getInt(PROCESSORS)
     val persistors = pipelineConfig.config.getInt(PERSISTORS)
-    val kafkaConfig = KafkaConfig(pipelineConfig.config)
+    val kafkaConfig = new KafkaConfig(pipelineConfig.config)
     val repo = new HBaseRepo {
       def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
     }

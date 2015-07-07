@@ -29,11 +29,11 @@ import org.apache.gearpump.streaming.dsl.plan.OpTranslator.SinkTask
 import org.apache.gearpump.streaming.dsl.{SinkConsumer, StreamApp}
 import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskId}
-import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, TimeReplayableSource}
+import org.apache.gearpump.streaming.task.{StartTime, TaskContext}
+import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, Matchers, PropSpec}
+import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 import org.slf4j.Logger
 import upickle._
 
@@ -51,21 +51,19 @@ class TimeReplayableSourceTest extends TimeReplayableSource {
     """.stripMargin
   )
 
-  def startFromBeginning(): Unit = {}
 
-  def setStartTime(startTime: TimeStamp): Unit = {}
+  override def open(context: TaskContext, startTime: Option[TimeStamp]) = {}
 
-  def pull(num: Int): List[Message] = List(Message(data(0)), Message(data(1)), Message(data(2)))
+  override def read(batchSize: Int): List[Message] = List(Message(data(0)), Message(data(1)), Message(data(2)))
 
-  def close(): Unit = {}
+  override def close(): Unit = {}
 }
 
 class KafkaSourceTest(kafkaConfig: KafkaConfig) extends Traverse[Array[Datum]] {
-  private val batchSize = kafkaConfig.getConsumerEmitBatchSize
-  private val msgDecoder: MessageDecoder = kafkaConfig.getMessageDecoder
-  lazy val source = new KafkaSource(kafkaConfig.getClientId, TaskId(0,0), 1, kafkaConfig, msgDecoder)
+  lazy val source = new KafkaSource(kafkaConfig)
+  lazy val batchSize = 100
   override def foreach[U](fun: Array[Datum] => U): Unit = {
-    val list = source.pull(10)
+    val list = source.read(batchSize)
     list.foreach(msg => {
       val jsonData = msg.msg.asInstanceOf[String]
       val envelope = read[Envelope](jsonData)
@@ -82,7 +80,8 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
   val PERSISTORS = "pipeline.persistors"
   val pipeLinePath = "conf/pipeline.conf.template"
   val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
-  val kafkaConfig = KafkaConfig(pipeLineConfig)
+  val kafkaConfig = new KafkaConfig(pipeLineConfig)
+
   implicit var system: ActorSystem = null
 
   override def beforeAll: Unit = {
@@ -95,11 +94,12 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
 
   property("StreamApp should allow UserConfig and ClusterConfig") {
     val persistors = pipeLineConfig.getInt(PERSISTORS)
-    val kafkaConfig = KafkaConfig(pipeLineConfig)
+    val kafkaConfig = new KafkaConfig(pipeLineConfig)
 
     val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig)
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
   }
+
   property("StreamApp should readFromTimeReplayableSource") {
 
     val app = new StreamApp("PipeLineDSL", system, UserConfig.empty)

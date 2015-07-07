@@ -18,10 +18,14 @@
 
 package org.apache.gearpump.streaming.state.system.impl
 
+import java.util.Properties
+
 import com.twitter.bijection.Injection
+import kafka.consumer.ConsumerConfig
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.kafka.lib.{KafkaConfig, KafkaConsumer, KafkaUtil}
+import org.apache.gearpump.streaming.kafka.lib.KafkaUtil
+import org.apache.gearpump.streaming.kafka.lib.consumer.KafkaConsumer
 import org.apache.gearpump.streaming.state.system.api.{CheckpointStore, CheckpointStoreFactory}
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.LogUtil
@@ -34,10 +38,13 @@ import scala.util.Try
 object KafkaCheckpointStore {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaCheckpointStore])
 
-  def apply(config: KafkaConfig, topic: String, topicExists: Boolean) = {
-    val getConsumer = () => KafkaConsumer(topic, 0, config)
-    val producer = new KafkaProducer[Array[Byte], Array[Byte]](
-      KafkaUtil.buildProducerConfig(config), new ByteArraySerializer, new ByteArraySerializer)
+  val CONSUMER_CONFIG = "consumer_config"
+  val PRODUCER_CONFIG = "producer_config"
+
+  def apply(topic: String, topicExists: Boolean, consumerConfig: ConsumerConfig, producerConfig: Properties) = {
+    val getConsumer = () => KafkaConsumer(topic, 0, consumerConfig)
+    val producer = KafkaUtil.createKafkaProducer[Array[Byte], Array[Byte]](
+      producerConfig, new ByteArraySerializer, new ByteArraySerializer)
     new KafkaCheckpointStore(topic, topicExists, producer, getConsumer())
   }
 }
@@ -93,11 +100,10 @@ class KafkaCheckpointStoreFactory extends CheckpointStoreFactory {
     import taskContext.{appId, taskId}
     implicit val system = taskContext.system
     val topic = s"app${appId}_task_${taskId.processorId}_${taskId.index}"
-    val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME)
-      .getOrElse(throw new RuntimeException("kafka config not provided"))
-    val replicas = kafkaConfig.getStorageReplicas
-    val connectZk = KafkaUtil.connectZookeeper(kafkaConfig)
-    val topicExists = KafkaUtil.createTopic(connectZk(), topic, partitions = 1, replicas)
-    KafkaCheckpointStore(kafkaConfig, topic, topicExists)
+    val consumerConfig = new ConsumerConfig(conf.getValue[Properties](KafkaCheckpointStore.CONSUMER_CONFIG).get)
+    val producerConfig = conf.getValue[Properties](KafkaCheckpointStore.CONSUMER_CONFIG).get
+    val connectZk = KafkaUtil.connectZookeeper(consumerConfig)
+    val topicExists = KafkaUtil.createTopic(connectZk(), topic, partitions = 1, replicas = 1)
+    KafkaCheckpointStore(topic, topicExists, consumerConfig, producerConfig)
   }
 }

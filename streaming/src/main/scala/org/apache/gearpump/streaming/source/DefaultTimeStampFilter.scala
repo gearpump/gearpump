@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.source
 
+import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.streaming.transaction.api.TimeStampFilter
-import org.apache.gearpump.{Message, TimeStamp}
 
-class KafkaFilter extends TimeStampFilter {
+/**
+ * default TimeStampFilter that filters out messages with smaller timestamps
+ */
+class DefaultTimeStampFilter extends TimeStampFilter {
   override def filter(msg: Message, predicate: TimeStamp): Option[Message] = {
     Option(msg).find(_.timestamp >= predicate)
   }

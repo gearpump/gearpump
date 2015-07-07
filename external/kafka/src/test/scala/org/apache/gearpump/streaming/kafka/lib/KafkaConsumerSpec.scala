@@ -23,6 +23,7 @@ import kafka.api.OffsetRequest
 import kafka.common.TopicAndPartition
 import kafka.consumer.SimpleConsumer
 import kafka.message.{Message, MessageAndOffset}
+import org.apache.gearpump.streaming.kafka.lib.consumer.KafkaConsumer
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar

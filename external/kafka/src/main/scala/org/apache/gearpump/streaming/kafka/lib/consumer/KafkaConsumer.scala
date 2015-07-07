@@ -16,23 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.kafka.lib
+package org.apache.gearpump.streaming.kafka.lib.consumer
 
 import kafka.api.{FetchRequestBuilder, OffsetRequest}
 import kafka.common.ErrorMapping._
 import kafka.common.TopicAndPartition
-import kafka.consumer.SimpleConsumer
+import kafka.consumer.{ConsumerConfig, SimpleConsumer}
 import kafka.message.MessageAndOffset
 import kafka.utils.Utils
+import org.apache.gearpump.streaming.kafka.lib.KafkaUtil
 
 object KafkaConsumer {
-  def apply(topic: String, partition: Int, config: KafkaConfig): KafkaConsumer = {
+  def apply(topic: String, partition: Int, config: ConsumerConfig): KafkaConsumer = {
     val connectZk = KafkaUtil.connectZookeeper(config)
     val broker = KafkaUtil.getBroker(connectZk(), topic, partition)
-    val soTimeout = config.getSocketTimeoutMS
-    val soBufferSize = config.getSocketReceiveBufferBytes
-    val fetchSize = config.getFetchMessageMaxBytes
-    val clientId = config.getClientId
+    val soTimeout = config.socketTimeoutMs
+    val soBufferSize = config.socketReceiveBufferBytes
+    val fetchSize = config.fetchMessageMaxBytes
+    val clientId = config.clientId
     val consumer = new SimpleConsumer(broker.host, broker.port, soTimeout, soBufferSize, clientId)
     val getIterator = (offset: Long) => {
       val request = new FetchRequestBuilder()
@@ -49,10 +50,13 @@ object KafkaConsumer {
   }
 }
 
+/**
+ * uses kafka [[SimpleConsumer]] to consume and iterate over messages from a kafka [[TopicAndPartition]]
+ */
 class KafkaConsumer(consumer: SimpleConsumer,
-                                   topic: String,
-                                   partition: Int,
-                                   getIterator: (Long) => Iterator[MessageAndOffset]) {
+                    topic: String,
+                    partition: Int,
+                    getIterator: (Long) => Iterator[MessageAndOffset]) {
   private val earliestOffset = consumer
     .earliestOrLatestOffset(TopicAndPartition(topic, partition), OffsetRequest.EarliestTime, -1)
   private var nextOffset: Long = earliestOffset
