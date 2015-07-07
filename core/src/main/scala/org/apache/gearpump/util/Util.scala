@@ -44,11 +44,6 @@ object Util {
     classpathList
   }
 
-  def getApplicationClassPath: Array[String] = {
-    val userDir = System.getProperty("prog.home")
-    Array(userDir + "/conf", userDir + "/dashboard", userDir + "/lib/*", "/etc/hadoop/conf", "/etc/hbase/conf")
-  }
-
   def startProcess(options : Array[String], classPath : Array[String], mainClass : String,
                    arguments : Array[String]) : Process = {
     val java = System.getProperty("java.home") + "/bin/java"

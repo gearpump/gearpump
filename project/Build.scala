@@ -146,11 +146,9 @@ object Build extends sbt.Build {
         "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive,
         "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % "provided",
         "org.fusesource" % "sigar" % sigarVersion classifier("native"),
-        "com.google.code.findbugs" % "jsr305" % findbugsVersion,
         "commons-logging" % "commons-logging" % commonsLoggingVersion,
         "commons-lang" % "commons-lang" % commonsLangVersion,
         "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
-        "commons-codec" % "commons-codec" % commonsCodecVersion,
         "com.google.guava" % "guava" % guavaVersion,
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
         "com.typesafe.akka" %% "akka-remote" % akkaVersion,
@@ -195,8 +193,7 @@ object Build extends sbt.Build {
           new File(packagePath).renameTo(new File(target))
         }
       )
-  ).dependsOn(core, streaming, services, external_kafka)
-   .aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
+  ).aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
       transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank,hbase, packProject, pipeline, state)
 
   lazy val packProject = Project(
@@ -217,7 +214,8 @@ object Build extends sbt.Build {
           "worker" -> Seq("-server", "-DlogFilename=worker", "-Djava.rmi.server.hostname=localhost"),
           "services" -> Seq("-server", "-Djava.rmi.server.hostname=localhost")
         ),
-        packLibDir := Map("gearpump-daemon" -> "daemon"),
+        packLibDir := Map(daemon.id -> "daemon", services.id -> "daemon", yarn.id -> "daemon"),
+        packExclude := Seq(thisProjectRef.value.project),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
