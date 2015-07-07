@@ -17,20 +17,16 @@
  */
 package org.apache.gearpump.streaming.executor
 
-import akka.actor.Actor.Receive
-import org.apache.gearpump.cluster.TestUtil
+import akka.actor.{Actor, ActorSystem}
+import akka.testkit.TestProbe
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.ProcessorDescription
-import org.apache.gearpump.streaming.executor.Executor.TaskArgumentStore
 import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import org.apache.gearpump.streaming.executor.TaskLauncherSpec.{MockTask, MockTaskActor}
-import org.apache.gearpump.streaming.task.{TaskWrapper, TaskContextData, TaskId}
+import org.apache.gearpump.streaming.task.{Task, TaskContext, TaskContextData, TaskId, TaskWrapper}
 import org.scalatest._
 
 import scala.language.postfixOps
-import akka.testkit.TestProbe
-import akka.actor.{ActorRefFactory, ActorSystem, Actor}
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 class TaskLauncherSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
   val appId = 0
@@ -52,7 +48,7 @@ class TaskLauncherSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
     val launcher = new TaskLauncher(appId, executorId, appMaster.ref, userConf, classOf[MockTaskActor])
     val taskIds = List(TaskId(0, 0), TaskId(0, 1))
     val processor = ProcessorDescription(id = 0, classOf[MockTask].getName, parallelism = 2)
-    val argument = TaskArgument(0, processor, null)
+    val argument = TaskArgument(0, processor, null, "app")
 
     val tasks = launcher.launch(taskIds, argument, system)
     tasks.keys.toSet shouldBe taskIds.toSet

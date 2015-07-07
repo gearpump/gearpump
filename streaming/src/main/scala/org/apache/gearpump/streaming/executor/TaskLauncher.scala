@@ -40,12 +40,12 @@ class TaskLauncher(
     taskActorClass: Class[_ <: Actor])
   extends ITaskLauncher{
   def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory): Map[TaskId, ActorRef] = {
-    import argument.{processorDescription, subscribers}
+    import argument.{appName, processorDescription, subscribers}
 
     val taskConf = userConf.withConfig(processorDescription.taskConf)
 
     val taskContext = TaskContextData(executorId,
-      appId, "appName", appMaster,
+      appId, appName, appMaster,
       processorDescription.parallelism,
       processorDescription.life, subscribers)
 
@@ -64,7 +64,7 @@ class TaskLauncher(
 
 object TaskLauncher {
 
-  case class TaskArgument(dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber])
+  case class TaskArgument(dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber], appName: String)
 
   def apply(executorContext: ExecutorContext, userConf: UserConfig): TaskLauncher = {
     import executorContext.{appId, appMaster, executorId}

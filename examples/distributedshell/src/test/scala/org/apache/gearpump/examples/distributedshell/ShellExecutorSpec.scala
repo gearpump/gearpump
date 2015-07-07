@@ -35,12 +35,13 @@ class ShellExecutorSpec extends WordSpec with Matchers {
       val executorId = 1
       val workerId = 2
       val appId = 0
+      val appName = "app"
       val resource = Resource(1)
       implicit val system = ActorSystem("ShellExecutor", TestUtil.DEFAULT_CONFIG)
       val mockMaster = TestProbe()(system)
       val worker = TestProbe()
       val workerInfo = WorkerInfo(workerId, worker.ref)
-      val executorContext = ExecutorContext(executorId, workerInfo, appId, mockMaster.ref, resource)
+      val executorContext = ExecutorContext(executorId, workerInfo, appId, appName, mockMaster.ref, resource)
       val executor = system.actorOf(Props(classOf[ShellExecutor], executorContext, UserConfig.empty))
 
       val process = Try(s"ls /" !!)

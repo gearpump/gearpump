@@ -20,17 +20,17 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.remote.RemoteScope
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
-import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, ClusterConfigSource, ExecutorContext, UserConfig}
+import org.apache.gearpump.cluster.{AppMasterContext, ExecutorContext, UserConfig}
+import org.apache.gearpump.streaming.ExecutorId
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
-import org.apache.gearpump.streaming.{ExecutorId, StreamApplication}
 import org.apache.gearpump.streaming.executor.Executor
-import org.apache.gearpump.util.{Constants, LogUtil, Util}
+import org.apache.gearpump.util.{LogUtil, Util}
 
 import scala.util.Try
 
@@ -44,11 +44,11 @@ import scala.util.Try
  * @param appContext
  * @param executorFactory
  */
-private[appmaster] class ExecutorManager (
-    userConfig: UserConfig,
-    appContext: AppMasterContext,
-    executorFactory: (ExecutorContext, UserConfig, Address, ExecutorId) => Props,
-    clusterConfig: Config)
+private[appmaster] class ExecutorManager(userConfig: UserConfig,
+                                         appContext: AppMasterContext,
+                                         executorFactory: (ExecutorContext, UserConfig, Address, ExecutorId) => Props,
+                                         clusterConfig: Config,
+                                         appName: String)
   extends Actor {
 
   private val LOG = LogUtil.getLogger(getClass)
@@ -73,10 +73,10 @@ private[appmaster] class ExecutorManager (
     case StartExecutors(resources) =>
       masterProxy ! StartExecutorSystems(resources, getExecutorJvmConfig)
     case ExecutorSystemStarted(executorSystem) =>
-      import executorSystem.{executorSystemId, address, worker, resource => executorResource}
+      import executorSystem.{address, executorSystemId, resource => executorResource, worker}
 
       val executorId = executorSystemId
-      val executorContext = ExecutorContext(executorId, worker, appId, appMaster =  context.parent, executorResource)
+      val executorContext = ExecutorContext(executorId, worker, appId, appName, appMaster =  context.parent, executorResource)
 
       //start executor
       val executor = context.actorOf(executorFactory(executorContext, userConfig, address, executorId),
@@ -125,8 +125,6 @@ private[appmaster] class ExecutorManager (
         case scala.util.Failure(ex) => LOG.error(s"failed to get the executor Id from path string ${actor.path}" , ex)
       }
   }
-
-  import Constants._
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
     val executorAkkaConfig = clusterConfig
     val jvmSetting = Util.resolveJvmSetting(executorAkkaConfig.withFallback(systemConfig)).executor
@@ -149,7 +147,7 @@ private[appmaster] object ExecutorManager {
 
   case object StartExecutorsTimeOut
 
-  def props(userConfig: UserConfig, appContext: AppMasterContext, clusterConfig: Config): Props = {
+  def props(userConfig: UserConfig, appContext: AppMasterContext, clusterConfig: Config, appName: String): Props = {
     val executorFactory =
         (executorContext: ExecutorContext,
          userConfig: UserConfig,
@@ -158,7 +156,7 @@ private[appmaster] object ExecutorManager {
       Props(classOf[Executor], executorContext, userConfig)
         .withDeploy(Deploy(scope = RemoteScope(address)))
 
-    Props(new ExecutorManager(userConfig, appContext, executorFactory, clusterConfig))
+    Props(new ExecutorManager(userConfig, appContext, executorFactory, clusterConfig, appName))
   }
 
   case class ExecutorResourceUsageSummary(resources: Map[ExecutorId, Resource])

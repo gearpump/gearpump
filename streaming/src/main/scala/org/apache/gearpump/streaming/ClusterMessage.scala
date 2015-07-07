@@ -18,13 +18,13 @@
 
 package org.apache.gearpump.streaming
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.ActorRef
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.streaming.task.{Subscriber, TaskActor, Task, TaskContextData, TaskId}
+import org.apache.gearpump.streaming.task.{Subscriber, TaskId}
 import org.apache.gearpump.transport.HostPort
+
 import scala.language.existentials
 
 object AppMasterToExecutor {

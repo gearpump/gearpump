@@ -24,13 +24,11 @@ import org.apache.gearpump.cluster.MasterToAppMaster.MessageLoss
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskArgumentStore, TaskLocationReady, TaskStopped}
 import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
-import org.apache.gearpump.streaming.task.{Subscriber, TaskActor, TaskContextData, TaskId, TaskLocations, TaskUtil, TaskWrapper}
-import org.apache.gearpump.streaming.util.ActorPathUtil
+import org.apache.gearpump.streaming.task.{Subscriber, TaskId, TaskLocations}
 import org.apache.gearpump.transport.{Express, HostPort}
-import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil}
+import org.apache.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
@@ -43,7 +41,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   }
 
   import context.dispatcher
-  import executorContext.{appId, appMaster, executorId, resource, worker}
+  import executorContext.{appId, appName, appMaster, executorId, resource, worker}
 
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 
@@ -83,7 +81,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   def appMasterMsgHandler : Receive = terminationWatch orElse {
     case LaunchTasks(taskIds, dagVersion, processorDescription, subscribers: List[Subscriber]) => {
       LOG.info(s"Launching Task $taskIds for app: ${appId}")
-      val taskArgument = TaskArgument(dagVersion, processorDescription, subscribers)
+      val taskArgument = TaskArgument(dagVersion, processorDescription, subscribers, appName)
       taskIds.foreach(taskArgumentStore.add(_, taskArgument))
       val newAdded = launcher.launch(taskIds, taskArgument, context)
       newAdded.foreach { newAddedTask =>
@@ -98,7 +96,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       taskIds.foreach { taskId =>
         for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
           val processorDescription = taskArgument.processorDescription.copy(life = life)
-          taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription, subscribers))
+          val appName = taskArgument.appName
+          taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription, subscribers, appName))
         }
 
         val taskActor = tasks.get(taskId)

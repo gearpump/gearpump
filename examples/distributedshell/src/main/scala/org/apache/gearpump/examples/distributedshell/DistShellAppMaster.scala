@@ -18,17 +18,17 @@
 package org.apache.gearpump.examples.distributedshell
 
 import akka.actor.{Deploy, Props}
+import akka.pattern.{ask, pipe}
 import akka.remote.RemoteScope
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
-import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, StartExecutorSystemTimeout, ExecutorSystemStarted}
-import org.apache.gearpump.cluster.{ApplicationMaster, ExecutorContext, AppMasterContext, AppDescription}
+import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout}
+import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, ApplicationMaster, ExecutorContext}
 import org.apache.gearpump.examples.distributedshell.DistShellAppMaster._
-import org.apache.gearpump.util.{LogUtil, Constants, ActorUtil, Util}
+import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
-import akka.pattern.{ask, pipe}
 
 class DistShellAppMaster(appContext : AppMasterContext, app : AppDescription) extends ApplicationMaster {
   import appContext._
@@ -44,8 +44,8 @@ class DistShellAppMaster(appContext : AppMasterContext, app : AppDescription) ex
 
   override def receive: Receive = {
     case ExecutorSystemStarted(executorSystem) =>
-      import executorSystem.{address, worker, resource => executorResource}
-      val executorContext = ExecutorContext(currentExecutorId, worker, appId, self, executorResource)
+      import executorSystem.{address, resource => executorResource, worker}
+      val executorContext = ExecutorContext(currentExecutorId, worker, appId, app.name, self, executorResource)
       //start executor
       val executor = context.actorOf(Props(classOf[ShellExecutor], executorContext, app.userConfig)
           .withDeploy(Deploy(scope = RemoteScope(address))), currentExecutorId.toString)

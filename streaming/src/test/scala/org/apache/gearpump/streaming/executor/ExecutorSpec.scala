@@ -17,25 +17,20 @@
 */
 package org.apache.gearpump.streaming.executor
 
-import akka.actor.Actor.Receive
-import org.apache.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{ChangeTask, TasksChanged, ChangeTasks, TasksLaunched, LaunchTasks}
-import org.apache.gearpump.streaming.{LifeTime, ProcessorDescription}
-import org.apache.gearpump.streaming.executor.Executor.TaskArgumentStore
-import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
-import org.apache.gearpump.streaming.executor.TaskLauncherSpec.{MockTask, MockTaskActor}
-import org.apache.gearpump.streaming.task.{Subscriber, TaskWrapper, TaskContextData, TaskId, Task, TaskContext}
+import akka.actor.{ActorSystem, Props}
+import akka.testkit.TestProbe
+import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.mockito.Mockito._
-import org.mockito.Mockito.times
-import org.scalatest.{FlatSpec, Matchers, BeforeAndAfterAll}
+import org.apache.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{ChangeTask, ChangeTasks, LaunchTasks, TasksChanged, TasksLaunched}
+import org.apache.gearpump.streaming.executor.TaskLauncherSpec.MockTask
+import org.apache.gearpump.streaming.task.{Subscriber, TaskId}
+import org.apache.gearpump.streaming.{LifeTime, ProcessorDescription}
 import org.mockito.Matchers._
+import org.mockito.Mockito.{times, _}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 import scala.language.postfixOps
-import akka.testkit.TestProbe
-import akka.actor.{ActorRefFactory, ActorSystem, Actor}
-import org.apache.gearpump.cluster.appmaster.WorkerInfo
-import akka.actor.Props
 
 
 class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
@@ -58,7 +53,7 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   it should "call launcher to launch task" in {
     val worker = TestProbe()
     val workerInfo = WorkerInfo(workerId, worker.ref)
-    val executorContext = ExecutorContext(executorId, workerInfo, appId, appMaster.ref, Resource(2))
+    val executorContext = ExecutorContext(executorId, workerInfo, appId, "app", appMaster.ref, Resource(2))
     val taskLauncher = mock(classOf[ITaskLauncher])
     val executor = system.actorOf(Props(new Executor(executorContext, userConf, taskLauncher)))
     val processor = ProcessorDescription(id = 0, classOf[MockTask].getName, parallelism = 2)
