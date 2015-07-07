@@ -108,6 +108,7 @@ object ArgumentsParser {
           doParse(rest)
 
         case value :: rest =>
+          Console.println(s"Warning: get unknown argument $value, maybe it is a main class")
           remain ++= value :: rest
           doParse(Nil)
       }

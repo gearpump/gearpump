@@ -62,9 +62,9 @@ object AppSubmitter extends App with ArgumentsParser {
       throw new Exception(s"jar $jar does not exist")
     }
 
-    val (main, arguments) = parseMain(jarFile, config.remainArgs)
     val classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:" + jarFile.getAbsolutePath)),
       Thread.currentThread().getContextClassLoader())
+    val (main, arguments) = parseMain(jarFile, config.remainArgs, classLoader)
 
     //set the context classloader as ActorSystem will use context classloader in precedence.
     Thread.currentThread().setContextClassLoader(classLoader)
@@ -73,16 +73,14 @@ object AppSubmitter extends App with ArgumentsParser {
     mainMethod.invoke(null, arguments)
   }
 
-  private def parseMain(jar: File, remainArgs: Array[String]): (String, Array[String]) = {
-    val mainClass = Option(new JarFile(jar).getManifest.getMainAttributes.getValue("Main-Class")).getOrElse("")
-    if (mainClass.isEmpty) {
+  private def parseMain(jar: File, remainArgs: Array[String], classLoader: ClassLoader): (String, Array[String]) = {
+    val mainInManifest = Option(new JarFile(jar).getManifest.getMainAttributes.getValue("Main-Class")).getOrElse("")
+    if (remainArgs.length > 0 && Try(classLoader.loadClass(remainArgs(0))).isSuccess) {
       (remainArgs(0), remainArgs.drop(1))
+    } else if (mainInManifest.nonEmpty) {
+      (mainInManifest, remainArgs)
     } else {
-      if (remainArgs.length > 0 && remainArgs(0) == mainClass) {
-        (mainClass, remainArgs.drop(1))
-      } else {
-        (mainClass, remainArgs)
-      }
+      throw new Exception("No main class specified")
     }
   }
 
