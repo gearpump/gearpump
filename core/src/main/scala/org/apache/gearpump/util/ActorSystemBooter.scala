@@ -71,9 +71,6 @@ object ActorSystemBooter  {
         val LOG: Logger = LogUtil.getLogger(ActorSystemBooter.getClass)
         LOG.info("Maybe we have received a SIGINT signal from parent process, start to cleanup resources....")
         system.shutdown()
-
-        //wait until all cleanup is finished
-        system.awaitTermination()
       }
     });
 
