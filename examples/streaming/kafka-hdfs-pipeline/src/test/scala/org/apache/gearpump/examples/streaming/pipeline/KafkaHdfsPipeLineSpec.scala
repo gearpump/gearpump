@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.experiments.pipeline
+package org.apache.gearpump.examples.streaming.pipeline
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory

@@ -387,11 +387,32 @@ object Build extends sbt.Build {
         libraryDependencies ++= Seq(
           "com.julianpeeters" % "avro-scala-macro-annotations_2.11" % "0.9.0",
           "org.apache.parquet" % "parquet-avro" % parquetVersion,
+          "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion
+            exclude("org.mortbay.jetty", "jetty-util")
+            exclude("org.mortbay.jetty", "jetty")
+            exclude("tomcat", "jasper-runtime"),
+          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion
+            exclude("com.google.guava", "guava")
+            exclude("com.google.protobuf", "protobuf-java")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("org.apache.hadoop", "hadoop-annotations"),
+          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion
+            exclude("com.google.guava", "guava")
+            exclude("com.sun.jersey", "jersey-client")
+            exclude("commons-cli", "commons-cli")
+            exclude("commons-lang", "commons-lang")
+            exclude("commons-logging", "commons-logging")
+            exclude("log4j", "log4j")
+            exclude("org.apache.hadoop", "hadoop-annotations")
+            exclude("org.mortbay.jetty", "jetty-util")
+            exclude("org.apache.hadoop", "hadoop-yarn-api")
+            exclude("org.apache.hadoop", "hadoop-yarn-common"),
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         ) ++ hadoopDependency,
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.pipeline.KafkaHdfsPipeLine"),
+        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.examples.streaming.pipeline.KafkaHdfsPipeLine"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
   ) dependsOn(streaming % "test->test", daemon % "provided", streaming % "provided", external_kafka  % "test->test; provided", examples_kafka)

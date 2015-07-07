@@ -1,6 +1,6 @@
 gearpump {
   serializers {
-    "org.apache.gearpump.experiments.pipeline.SpaceShuttleRecord" = ""
+    "org.apache.gearpump.examples.streaming.pipeline.SpaceShuttleRecord" = ""
   }
 }
 
@@ -9,8 +9,8 @@ kafka {
       # change to match cluster zookeepers
       zookeeper.connect = "127.0.0.1:2181"
       # consumer topics separated by ","
-      topics = "javour-topic"
-      client.id = "kafka-hdfs-pipeline-app"
+      topics = "topic-105"
+      client.id = "kafka_hdfs_app"
       socket.timeout.ms = 30000
       socket.receive.buffer.bytes = 65536
       fetch.message.max.bytes = 1048576
@@ -20,7 +20,7 @@ kafka {
     }
 
     producer {
-      topic = "javour-topic"
+      topic = "topic-105"
       # list of host/port pairs to use for establishing the initial connection to kafka server
       # list should be in the form "host1:port1,host2:port2,..."
       # list need not contain the full set of servers
@@ -32,7 +32,7 @@ kafka {
       batch.size = 16384
     }
 
-    storage.replicas = 1
+    storage.replicas = 2
 
     grouper.factory.class = "org.apache.gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory"
 

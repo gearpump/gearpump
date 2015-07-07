@@ -21,6 +21,7 @@ package org.apache.gearpump.services
 import java.io.{IOException, File}
 import java.net.URLClassLoader
 
+import akka.actor.ActorSystem
 import org.apache.commons.io.FileUtils
 import org.apache.gearpump.cluster.main.AppSubmitter
 import org.apache.gearpump.services.SubmitUserApplicationService.Status
@@ -33,9 +34,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 trait SubmitUserApplicationService extends HttpService {
+  implicit val system: ActorSystem
 
   def submitUserApplicationRoute = {
-
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
     implicit val timeout = Constants.FUTURE_TIMEOUT
 
@@ -65,7 +66,16 @@ trait SubmitUserApplicationService extends HttpService {
     val tempfile = File.createTempFile("gearpump_userapp_", "")
     FileUtils.writeByteArrayToFile(tempfile, data)
     try {
-      val options = Array.empty[String]
+      import scala.collection.JavaConversions._
+
+      val config = system.settings.config
+      val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+      val master = masters.head
+      val hostname = config.getString(Constants.GEARPUMP_HOSTNAME)
+      val options = Array(
+        s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${master.host}:${master.port}",
+        s"-D${Constants.GEARPUMP_HOSTNAME}=${hostname}"
+      )
       val classLoader = Thread.currentThread.getContextClassLoader
       val classPath = classLoader.asInstanceOf[URLClassLoader].getURLs.map(_.toString)
       val clazz = AppSubmitter.getClass.getName.dropRight(1)

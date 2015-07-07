@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.experiments.pipeline
+package org.apache.gearpump.examples.streaming.pipeline
 
 import com.julianpeeters.avro.annotations._
 import com.typesafe.config.ConfigFactory
@@ -115,9 +115,9 @@ object KafkaHdfsPipeLine extends App with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "reader"-> CLIOption[Int]("<kafka data reader number>", required = false, defaultValue = Some(2)),
     "scorer"-> CLIOption[Int]("<scorer number>", required = false, defaultValue = Some(2)),
-    "writer"-> CLIOption[Int]("<parquet file writer number>", required = false, defaultValue = Some(2)),
+    "writer"-> CLIOption[Int]("<parquet file writer number>", required = false, defaultValue = Some(1)),
     "output"-> CLIOption[String]("<output path directory>", required = false, defaultValue = Some("file:///tmp/parquet")),
-    "conf" -> CLIOption[String]("<conf file>", required = true)
+    "conf" -> CLIOption[String]("<conf file>", required = false, defaultValue = Some("conf/kafka-hdfs-pipeline.conf"))
   )
 
   val context = ClientContext()
@@ -129,14 +129,66 @@ object KafkaHdfsPipeLine extends App with ArgumentsParser {
     val writerNum = config.getInt("writer")
     val outputPath = config.getString("output")
     val pipeLinePath = config.getString("conf")
-    val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
+    val file = new java.io.File(pipeLinePath)
+    val pipeLineConfig = file.exists() match {
+      case true =>
+        ConfigFactory.parseFile(file)
+      case false =>
+        val backup =
+          """
+            |gearpump {
+            |  serializers {
+            |    "org.apache.gearpump.examples.streaming.pipeline.SpaceShuttleRecord" = ""
+            |  }
+            |}
+            |
+            |kafka {
+            |    consumer {
+            |      # change to match cluster zookeepers
+            |      zookeeper.connect = "10.10.10.46:2181,10.10.10.236:2181,10.10.10.164:2181/kafka"
+            |      # consumer topics separated by ","
+            |      topics = "topic-105"
+            |      client.id = "kafka_hdfs_app"
+            |      socket.timeout.ms = 30000
+            |      socket.receive.buffer.bytes = 65536
+            |      fetch.message.max.bytes = 1048576
+            |      emit.batch.size = 100
+            |      fetch.threshold = 5000
+            |      fetch.sleep.ms = 100
+            |    }
+            |
+            |    producer {
+            |      topic = "topic-105"
+            |      # list of host/port pairs to use for establishing the initial connection to kafka server
+            |      # list should be in the form "host1:port1,host2:port2,..."
+            |      # list need not contain the full set of servers
+            |      bootstrap.servers = "10.10.10.46:9092,10.10.10.164:9092,10.10.10.236:9092"
+            |      acks = "1"
+            |      buffer.memory = 33554432
+            |      compression.type = "none"
+            |      retries = 0
+            |      batch.size = 16384
+            |    }
+            |
+            |    storage.replicas = 2
+            |
+            |    grouper.factory.class = "org.apache.gearpump.streaming.kafka.lib.grouper.KafkaDefaultGrouperFactory"
+            |
+            |    task {
+            |      message.decoder.class = "org.apache.gearpump.streaming.kafka.lib.DefaultMessageDecoder"
+            |      timestamp.filter.class = "org.apache.gearpump.streaming.kafka.lib.KafkaFilter"
+            |    }
+            |}
+          """.stripMargin
+        ConfigFactory.parseString(backup)
+    }
     val kafkaConfig = KafkaConfig(pipeLineConfig)
     val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withString(ParquetWriterTask.PARQUET_OUTPUT_DIRECTORY, outputPath)
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
 
     val partitioner = new ShufflePartitioner()
-    //val reader = Processor[KafkaStreamProducer](readerNum)
-    val reader = Processor[SpaceShuttleProducer](readerNum)
+    val reader = Processor[KafkaStreamProducer](readerNum)
+    //val reader = Processor[SpaceShuttleProducer](readerNum)
     val scorer = Processor[ScoringTask](scorerNum)
     val writer = Processor[ParquetWriterTask](writerNum)
 

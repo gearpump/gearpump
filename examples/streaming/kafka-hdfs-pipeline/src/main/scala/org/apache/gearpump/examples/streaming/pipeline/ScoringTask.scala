@@ -15,7 +15,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.gearpump.experiments.pipeline
+package org.apache.gearpump.examples.streaming.pipeline
 
 import akka.io.IO
 import akka.pattern.ask
@@ -44,27 +44,29 @@ class ScoringTask(taskContext : TaskContext, config: UserConfig) extends Task(ta
 
   override def onNext(msg: Message): Unit = {
     Try( {
-      LOG.info("ScoringTask")
-      val jsonData = msg.msg.asInstanceOf[String]
-      val spaceShuttleMessage = read[SpaceShuttleMessage](jsonData)
-      LOG.info("deserialized spaceShuttleMessage")
+      LOG.info("ScoringTask as byte array")
+      val jsonData = msg.msg.asInstanceOf[Array[Byte]]
+      LOG.info("ScoringTask as string")
+      val jsonValue = new String(jsonData)
+      val spaceShuttleMessage = read[SpaceShuttleMessage](jsonValue)
+//      LOG.info("deserialized spaceShuttleMessage")
       val vector = read[Array[Float]](spaceShuttleMessage.body)
-      LOG.info("deserialized spaceShuttleMessage in vector")
+//      LOG.info("deserialized spaceShuttleMessage in vector")
 
       val score = vector(0)
       val featureVector = vector.drop(1)
       val featureVectorString = featureVector.mkString(",")
       val url = s"http://atk-scoringengine.demo-gotapaas.com/v1/models/DemoModel/score?data=$featureVectorString"
 
-      LOG.info(s"calling REST API with $url")
+//      LOG.info(s"calling REST API with $url")
 
       val result = Await.result((IO(Http) ? HttpRequest(GET, Uri(url))).asInstanceOf[Future[HttpResponse]], 5 seconds)
       val entity = result.entity.data.asString.toFloat
       entity match {
         case 1.0F =>
-        case anomaly =>
-          LOG.info("found anomaly")
-          output(Message(SpaceShuttleRecord(System.currentTimeMillis(), anomaly, 1), System.currentTimeMillis()))
+        case anomaly:Float =>
+//          LOG.info("found anomaly $anomaly")
+          output(Message(SpaceShuttleRecord(System.currentTimeMillis(), anomaly, 1.0F), System.currentTimeMillis()))
       }
     }) match {
       case Success(ok) =>
