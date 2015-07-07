@@ -20,21 +20,21 @@ package org.apache.gearpump.experiments.pipeline
 
 import com.julianpeeters.avro.annotations._
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.partitioner.ShufflePartitioner
-import org.apache.gearpump.streaming.{Processor, StreamApplication}
-import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.streaming.dsl.StreamApp
-import org.apache.gearpump.streaming.dsl.StreamApp._
-import org.apache.gearpump.util.Graph._
+import org.apache.gearpump.partitioner.ShufflePartitioner
+import org.apache.gearpump.streaming.examples.kafka.KafkaStreamProducer
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.util.{Graph, Constants, LogUtil}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
+import org.apache.gearpump.streaming.{Processor, StreamApplication}
+import org.apache.gearpump.util.Graph._
+import org.apache.gearpump.util.{Constants, Graph, LogUtil}
 import org.slf4j.Logger
-import upickle._
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 case class SpaceShuttleMessage(id: String, on: String, body: String)
 
@@ -47,10 +47,70 @@ case class SpaceShuttleMessage(id: String, on: String, body: String)
 case class SpaceShuttleRecord(var timestamp: Double, var vectorClass: Double, var count: Double)
 
 
+class SpaceShuttleProducer(taskContext : TaskContext, conf: UserConfig)
+  extends Task(taskContext, conf) {
+
+  class SpaceShuttleReplayableSource extends TimeReplayableSource {
+    val data = Array[String](
+      """
+        |{"id":"2a329674-12ad-49f7-b40d-6485aae0aae8","on":"2015-04-02T18:52:02.680178753Z","body":"[-0.414141,-0.0246564,-0.125,0.0140301,-0.474359,0.0256049,-0.0980392,0.463884,0.40836]"}
+      """
+        .stripMargin,
+      """
+        |{"id":"043ade58-2fbc-4fe2-8253-84ab181b8cfa","on":"2015-04-02T18:52:02.680078434Z","body": "[-0.414141,-0.0246564,-0.125,0.0140301,-0.474359,0.0256049,-0.0980392,0.463884,0.40836]"}
+      """.stripMargin,
+      """
+        |{"id":"043ade58-2fbc-4fe2-8253-84ab181b8cfa","on":"2015-04-02T18:52:02.680078434Z","body": "[-0.414141,-0.0246564,-0.125,0.0140301,-0.474359,0.0256049,-0.0980392,0.463884,0.40836]"}
+      """.stripMargin
+    )
+
+    def startFromBeginning(): Unit = {}
+
+    def setStartTime(startTime: TimeStamp): Unit = {}
+
+    def pull(num: Int): List[Message] = List(Message(data(0)), Message(data(1)), Message(data(2)))
+
+    def close(): Unit = {}
+  }
+
+  import taskContext.{output, parallelism}
+
+  private val batchSize = 3
+
+  val taskParallelism = parallelism
+
+  private val source: TimeReplayableSource = new SpaceShuttleReplayableSource()
+  private var startTime: TimeStamp = 0L
+
+  override def onStart(newStartTime: StartTime): Unit = {
+    startTime = newStartTime.startTime
+    LOG.info(s"start time $startTime")
+    source.setStartTime(startTime)
+    self ! Message("start", System.currentTimeMillis())
+  }
+
+  override def onNext(msg: Message): Unit = {
+    Try({
+
+      source.pull(batchSize).foreach(msg => {
+        output(msg)
+      })
+    }) match {
+      case Success(ok) =>
+      case Failure(throwable) =>
+        LOG.error(s"failed ${throwable.getMessage}")
+    }
+    self ! Message("continue", System.currentTimeMillis())
+  }
+
+  override def onStop(): Unit = {
+    LOG.info("closing kafka source...")
+    source.close()
+  }
+}
+
 object KafkaHdfsPipeLine extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
-
-  val PIPELINE = "pipeline"
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "reader"-> CLIOption[Int]("<kafka data reader number>", required = false, defaultValue = Some(2)),
@@ -71,16 +131,17 @@ object KafkaHdfsPipeLine extends App with ArgumentsParser {
     val pipeLinePath = config.getString("conf")
     val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
     val kafkaConfig = KafkaConfig(pipeLineConfig)
-    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig)
-      .withString(ParquetWriterTask.PARQUET_OUTPUT_DIRECTORY, outputPath)
+    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withString(ParquetWriterTask.PARQUET_OUTPUT_DIRECTORY, outputPath)
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
 
     val partitioner = new ShufflePartitioner()
-    val reader = Processor[KafkaStreamProducer](readerNum)
+    //val reader = Processor[KafkaStreamProducer](readerNum)
+    val reader = Processor[SpaceShuttleProducer](readerNum)
     val scorer = Processor[ScoringTask](scorerNum)
     val writer = Processor[ParquetWriterTask](writerNum)
 
     val dag = Graph(reader ~ partitioner ~> scorer ~ partitioner ~> writer)
+    //val dag = Graph(reader ~ partitioner ~> scorer)
     val app = StreamApplication("KafkaHdfsPipeLine", dag, appConfig)
 
     context.submit(app)
