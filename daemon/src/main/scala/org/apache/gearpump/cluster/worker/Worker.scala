@@ -53,7 +53,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
-  private var allocatedResource = Map[ActorRef, Resource]()
+  private var allocatedResources = Map[ActorRef, Resource]()
   private var executorsInfo = Map[ActorRef, ExecutorInfo]()
   private var id = -1
   private val createdTime = System.currentTimeMillis()
@@ -63,7 +63,13 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private var totalSlots: Int = 0
 
   override def receive : Receive = null
-  val LOG : Logger = LogUtil.getLogger(getClass)
+  var LOG: Logger = LogUtil.getLogger(getClass)
+
+  def service: Receive =
+    appMasterMsgHandler orElse
+      clientMessageHandler orElse
+      terminationWatch(masterInfo.master) orElse
+      ActorUtil.defaultMsgHandler(self)
 
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
     case WorkerRegistered(id, masterInfo) =>
@@ -71,30 +77,29 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       this.masterInfo = masterInfo
       killSelf.cancel()
       context.watch(masterInfo.master)
-      LOG.info(s"Worker[$id] registered ....")
+      this.LOG = LogUtil.getLogger(getClass, worker = id)
+      LOG.info(s"Worker is registered. actor path: ${ActorUtil.getFullPath(context.system, self.path)} ....")
       sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
-      context.become(appMasterMsgHandler orElse clientMessageHandler orElse terminationWatch(masterInfo.master) orElse ActorUtil.defaultMsgHandler(self))
+      context.become(service)
   }
 
   private def updateResourceTimeOut(): Unit = {
-    LOG.error(s"Worker[$id] update resource time out")
+    LOG.error(s"Update worker resource time out")
   }
 
   def appMasterMsgHandler : Receive = {
     case shutdown @ ShutdownExecutor(appId, executorId, reason : String) =>
       val actorName = ActorUtil.actorNameForExecutor(appId, executorId)
-      LOG.info(s"Worker[$id] shutting down executor: $actorName due to: $reason")
       val executorToStop = executorNameToActor.get(actorName)
-
       if (executorToStop.isDefined) {
-        LOG.info(s"Worker[$id] Shuttting down child: ${executorToStop.get.path.toString}")
+        LOG.info(s"Shutdown executor ${actorName}(${executorToStop.get.path.toString}) due to: $reason")
         executorToStop.get.forward(shutdown)
       } else {
-        LOG.info(s"Worker[$id] There is no child $actorName, ignore this message")
+        LOG.error(s"Cannot find executor $actorName, ignore this message")
         sender ! ShutdownExecutorFailed(s"Can not find executor $executorId for app $appId")
       }
     case launch : LaunchExecutor =>
-      LOG.info(s"Worker[$id] LaunchExecutor ....$launch")
+      LOG.info(s"$launch")
       if (resource < launch.resource) {
         sender ! ExecutorLaunchRejected("There is no free resource on this machine")
       } else {
@@ -104,10 +109,9 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         executorNameToActor += actorName ->executor
 
         resource = resource - launch.resource
-        allocatedResource = allocatedResource + (executor -> launch.resource)
+        allocatedResources = allocatedResources + (executor -> launch.resource)
 
-        sendMsgWithTimeOutCallBack(masterInfo.master,
-          ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+        reportResourceToMaster
         executorsInfo += executor -> ExecutorInfo(launch.appId, launch.executorId, launch.resource.slots)
         context.watch(executor)
       }
@@ -115,13 +119,37 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       LOG.error(reason)
       context.stop(self)
     case UpdateResourceSucceed =>
-      LOG.info(s"Worker[$id] update resource succeed")
+      LOG.info(s"Update resource succeed")
     case GetWorkerData(workerId) =>
       val aliveFor = System.currentTimeMillis() - createdTime
       val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
       val userDir = System.getProperty("user.dir");
       sender ! WorkerData(Some(WorkerDescription(id, "active", address,
         aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir)))
+
+    case ChangeExecutorResource(appId, executorId, usedResource) =>
+      for (executor <- executorActorRef(appId, executorId);
+            allocatedResource <- allocatedResources.get(executor)) {
+        allocatedResources += executor -> usedResource
+        resource = resource + allocatedResource - usedResource
+        reportResourceToMaster
+
+        if (usedResource == Resource(0)) {
+          allocatedResources -= executor
+          // stop executor if there is no resource binded to it.
+          executor ! ShutdownExecutor(appId, executorId, "Shutdown executor because the resource used is zero")
+        }
+      }
+  }
+
+  private def reportResourceToMaster: Unit = {
+    sendMsgWithTimeOutCallBack(masterInfo.master,
+      ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+  }
+
+  private def executorActorRef(appId: Int, executorId: Int): Option[ActorRef] = {
+    val actorName = ActorUtil.actorNameForExecutor(appId, executorId)
+    executorNameToActor.get(actorName)
   }
 
   def clientMessageHandler: Receive = {
@@ -137,17 +165,17 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     case Terminated(actor) =>
       if (actor.compareTo(master) == 0) {
         // parent is down, let's make suicide
-        LOG.info(s"Worker[$id] parent master cannot be contacted, find a new master ...")
+        LOG.info(s"Master cannot be contacted, find a new master ...")
         context.become(waitForMasterConfirm(repeatActionUtil(30)(masterProxy ! RegisterWorker(id))))
       } else if (ActorUtil.isChildActorPath(self, actor)) {
         //one executor is down,
-        LOG.info(s"Worker[$id] Executor is down ${getExecutorName(actor)}")
+        LOG.info(s"Executor is down ${getExecutorName(actor)}")
 
-        val allocated = allocatedResource.get(actor)
+        val allocated = allocatedResources.get(actor)
         if (allocated.isDefined) {
           resource = resource + allocated.get
           executorsInfo -= actor
-          allocatedResource = allocatedResource - actor
+          allocatedResources = allocatedResources - actor
           sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
         }
       }
@@ -159,7 +187,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
   import context.dispatcher
   override def preStart() : Unit = {
-    LOG.info(s"Worker[$id] Sending master RegisterNewWorker")
+    LOG.info(s"RegisterNewWorker")
     totalSlots = systemConfig.getInt(Constants.GEARPUMP_WORKER_SLOTS)
     this.resource = Resource(totalSlots)
     masterProxy ! RegisterNewWorker
@@ -184,7 +212,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   }
 
   override def postStop : Unit = {
-    LOG.info(s"Worker[$id] is going down....")
+    LOG.info(s"Worker is going down....")
     context.system.shutdown()
   }
 }
@@ -257,7 +285,6 @@ private[cluster] object Worker {
         val remoteDebugFlag = config.getBoolean(Constants.GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM)
         val remoteDebugConfig = if (remoteDebugFlag) {
           val availablePort = Util.findFreePort.get
-          LOG.info(s"Remote debug executor enabled, listening on $availablePort")
           List(
             "-Xdebug",
             s"-Xrunjdwp:server=y,transport=dt_socket,address=${availablePort},suspend=n",
@@ -267,14 +294,30 @@ private[cluster] object Worker {
           List.empty[String]
         }
 
-        val options = ctx.jvmArguments ++ host ++ username ++ logArgs ++ remoteDebugConfig ++ configArgs
+        val verboseGCFlag = config.getBoolean(Constants.GEARPUMP_VERBOSE_GC)
+        val verboseGCConfig = if (verboseGCFlag) {
+          List(
+            s"-Xloggc:${appLogDir}/gc-app${launch.appId}-executor-${launch.executorId}.log",
+            "-verbose:gc",
+            "-XX:+PrintGCDetails",
+            "-XX:+PrintGCDateStamps",
+            "-XX:+PrintTenuringDistribution",
+            "-XX:+PrintGCApplicationConcurrentTime",
+            "-XX:+PrintGCApplicationStoppedTime"
+          )
+        }  else {
+          List.empty[String]
+        }
 
-        LOG.info(s"executor class path: ${classPath.mkString(File.pathSeparator)}")
+        val options = ctx.jvmArguments ++ host ++ username ++
+          logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ configArgs
+
+        LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
         val process = Util.startProcess(options, classPath, ctx.mainClass, ctx.arguments)
 
         new ExecutorHandler {
           override def destroy = {
-            LOG.info(s"destroying executor process ${ctx.mainClass}")
+            LOG.info(s"Destroy executor process ${ctx.mainClass}")
             process.destroy()
             deleteTempFile
           }
@@ -284,7 +327,7 @@ private[cluster] object Worker {
             if (exit == 0) {
               Success(0)
             } else {
-              Failure(new Exception(s"Executor exit with error, exit value: $exit"))
+              Failure(new Exception(s"Executor exit with failure, exit value: $exit"))
             }
           }
 

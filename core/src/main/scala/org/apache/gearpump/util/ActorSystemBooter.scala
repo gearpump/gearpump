@@ -144,7 +144,7 @@ object ActorSystemBooter  {
     }
 
     override def postStop : Unit = {
-      LOG.info(s"Actor System $name is shutting down...")
+      LOG.info(s"ActorSystem $name is shutting down...")
       context.system.shutdown()
     }
   }

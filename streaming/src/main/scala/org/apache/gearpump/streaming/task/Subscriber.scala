@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.task
 
 import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
-import org.apache.gearpump.streaming.{ProcessorDescription, DAG}
+import org.apache.gearpump.streaming.{LifeTime, ProcessorDescription, DAG}
 
 /**
  * Each processor can have multiple downstream subscribers.
@@ -29,9 +29,9 @@ import org.apache.gearpump.streaming.{ProcessorDescription, DAG}
  *
  * @param processorId subscriber processor Id
  * @param partitionerDescription subscriber partitioner
- * @param processor subscriber processor definition
  */
-case class Subscriber(processorId: Int, partitionerDescription: PartitionerDescription, processor: ProcessorDescription)
+
+case class Subscriber(processorId: Int, partitionerDescription: PartitionerDescription, parallelism: Int, lifeTime: LifeTime)
 
 object Subscriber {
 
@@ -51,11 +51,8 @@ object Subscriber {
     edges.foldLeft(List.empty[Subscriber]) { (list, nodeEdgeNode) =>
       val (_, partitioner, downstreamProcessorId) = nodeEdgeNode
       val downstreamProcessor = dag.processors(downstreamProcessorId)
-      list :+ Subscriber(downstreamProcessorId, partitioner, downstreamProcessor)
+      list :+ Subscriber(downstreamProcessorId, partitioner, downstreamProcessor.parallelism, downstreamProcessor.life)
     }
   }
 }
 
-case class Subscribe(subscriberId: Int, subscriber: Subscriber)
-
-case class UnSubscribe(subscriberId: Int)

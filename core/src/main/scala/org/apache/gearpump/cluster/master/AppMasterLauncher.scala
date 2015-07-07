@@ -52,23 +52,23 @@ class AppMasterLauncher(
 
   val appMasterAkkaConfig: Config = app.clusterConfig
 
-  LOG.info(s"AppManager asking Master for resource for app $appId...")
+  LOG.info(s"Ask Master resource to start AppMaster $appId...")
   master ! RequestResource(appId, ResourceRequest(Resource(1)))
 
   def receive : Receive = waitForResourceAllocation
 
   def waitForResourceAllocation : Receive = {
     case ResourceAllocated(allocations) =>
-      LOG.info(s"Resource allocated for appMaster $appId")
+
       val ResourceAllocation(resource, worker, workerId) = allocations(0)
+      LOG.info(s"Resource allocated for appMaster $appId on worker ${workerId}(${worker.path})")
 
       val submissionTime = System.currentTimeMillis()
 
       val appMasterInfo = AppMasterRuntimeInfo(appId, app.name, worker, username,
         submissionTime, config = appMasterAkkaConfig)
       val appMasterContext = AppMasterContext(appId, username, resource, jar, null, appMasterInfo)
-
-      LOG.info(s"Try to launch a executor for app Master on ${worker} for app $appId")
+      LOG.info(s"Try to launch a executor for AppMaster on worker ${workerId} for app $appId")
       val name = ActorUtil.actorNameForExecutor(appId, executorId)
       val selfPath = ActorUtil.getFullPath(context.system, self.path)
 
@@ -87,7 +87,7 @@ class AppMasterLauncher(
       master ! RequestResource(appId, ResourceRequest(resource))
       context.become(waitForResourceAllocation)
     case RegisterActorSystem(systemPath) =>
-      LOG.info(s"Received RegisterActorSystem $systemPath for app master")
+      LOG.info(s"Received RegisterActorSystem $systemPath for AppMaster")
       sender ! ActorSystemRegistered(worker)
 
       val masterAddress = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS)
@@ -104,7 +104,7 @@ class AppMasterLauncher(
     case ActorCreated(appMaster, _) =>
       cancel.cancel()
       sender ! BindLifeCycle(appMaster)
-      LOG.info(s"AppMaster is created, stopping myself...")
+      LOG.info(s"AppMaster is created, mission complete...")
       replyToClient(SubmitApplicationResult(Success(appId)))
       context.stop(self)
     case CreateActorFailed(name, reason) =>

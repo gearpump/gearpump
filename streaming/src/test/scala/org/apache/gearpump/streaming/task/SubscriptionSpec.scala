@@ -22,17 +22,13 @@ import java.util.Random
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.partitioner.{Partitioner, PartitionerDescription, HashPartitioner}
-import org.apache.gearpump.streaming.MockUtil.argMatch
-import org.apache.gearpump.streaming.ProcessorDescription
+import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
+import org.apache.gearpump.streaming.{LifeTime, ProcessorDescription}
 import org.apache.gearpump.streaming.task.SubscriptionSpec.NextTask
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec}
 
-import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{PropSpec, Matchers}
+import org.scalatest.{Matchers}
 import org.scalatest.mock.MockitoSugar
 
 class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
@@ -46,7 +42,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 
   val parallism = 2
   val downstreamProcessor = ProcessorDescription(downstreamProcessorId, classOf[NextTask].getName, parallism)
-  val subscriber = Subscriber(downstreamProcessorId, partitioner, downstreamProcessor)
+  val subscriber = Subscriber(downstreamProcessorId, partitioner, downstreamProcessor.parallelism, downstreamProcessor.life)
 
   private def prepare: (Subscription, ExpressTransport) = {
     val transport = mock[ExpressTransport]
@@ -65,6 +61,13 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
     val broadcastMsg = LatencyProbe(System.currentTimeMillis())
     subscription.probeLatency(broadcastMsg)
     verify(transport, times(1)).transport(broadcastMsg, TaskId(1,0), TaskId(1, 1))
+  }
+
+  it should "not send any more message when its life ends" in {
+    val (subscription, transport) = prepare
+    subscription.changeLife(LifeTime(0, 0))
+    val count = subscription.sendMessage(Message("some"))
+    assert(count == 0)
   }
 
   it should "send message and handle ack correctly" in {
@@ -121,6 +124,15 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 
     assert(subscription.allowSendingMoreMessages() == false)
 
+  }
+
+  it should "report minClock as Long.MaxValue when there is no pending message" in {
+    val (subscription, transport) = prepare
+    val msg1 = new Message("1", timestamp = 70)
+    subscription.sendMessage(msg1)
+    assert(subscription.minClock == 70)
+    subscription.receiveAck(Ack(TaskId(1, 1), 1, 1, session))
+    assert(subscription.minClock == Long.MaxValue)
   }
 
   private def randomMessage: String = new Random().nextInt.toString

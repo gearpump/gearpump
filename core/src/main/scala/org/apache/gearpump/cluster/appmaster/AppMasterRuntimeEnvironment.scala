@@ -70,10 +70,10 @@ class AppMasterRuntimeEnvironment (
 
   def receive: Receive = {
     case MasterConnected =>
-      LOG.info(s"master is connected, start AppMaster ${appId}...")
+      LOG.info(s"Master is connected, start AppMaster ${appId}...")
       appMaster ! StartAppMaster
     case MasterStopped =>
-      LOG.error(s"master is stopped, stopping AppMaster ${appId}...")
+      LOG.error(s"Master is stopped, stop AppMaster ${appId}...")
       context.stop(self)
     case Terminated(actor) => actor match {
       case `appMaster` =>

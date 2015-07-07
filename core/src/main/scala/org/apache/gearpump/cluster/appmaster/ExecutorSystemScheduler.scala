@@ -77,10 +77,10 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
     case ResourceAllocatedForSession(allocations, session) =>
 
       if (isSessionAlive(session)) {
-        val groupedResource = allocations.groupBy(_.worker).mapValues(
+        val groupedResource = allocations.groupBy(_.worker).mapValues {
           _.reduce((resourceA, resourceB) =>
-              resourceA.copy(resource = (resourceA.resource + resourceB.resource))))
-          .toArray
+            resourceA.copy(resource = (resourceA.resource + resourceB.resource)))
+        }.toArray
 
         groupedResource.map((workerAndResources) => {
           val ResourceAllocation(resource, worker, workerId) = workerAndResources._2
@@ -164,13 +164,13 @@ object ExecutorSystemScheduler {
       case request: RequestResource =>
         unallocatedResource += request.request.resource.slots
         Option(timeOutClock).map(_.cancel)
-        timeOutClock = context.system.scheduler.scheduleOnce(timeout seconds, self, ResourceAllocationTimeOut)
+        timeOutClock = context.system.scheduler.scheduleOnce(timeout seconds, self, ResourceAllocationTimeOut(session))
         resourceRequestor = sender
         master ! request
       case ResourceAllocated(allocations) =>
         unallocatedResource -= allocations.map(_.resource.slots).sum
         resourceRequestor forward ResourceAllocatedForSession(allocations, session)
-      case ResourceAllocationTimeOut=>
+      case timeout: ResourceAllocationTimeOut =>
         if (unallocatedResource > 0) {
           resourceRequestor ! ResourceAllocationTimeOut(session)
           //we will not receive any ResourceAllocation after timeout

@@ -47,8 +47,10 @@ object Constants {
 
   // true or false
   val GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM = "gearpump.remote-debug-executor-jvm"
-
   val GEARPUMP_REMOTE_DEBUG_PORT = "gearpump.remote-debug-port"
+
+  // whether turn on GC log, true or false
+  val GEARPUMP_VERBOSE_GC = "gearpump.verbose-gc"
 
   //the time out for Future
   val FUTURE_TIMEOUT = akka.util.Timeout(15, TimeUnit.SECONDS)

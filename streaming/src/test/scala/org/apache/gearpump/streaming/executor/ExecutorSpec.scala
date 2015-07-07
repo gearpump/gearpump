@@ -17,128 +17,69 @@
 */
 package org.apache.gearpump.streaming.executor
 
-import akka.actor.{Actor, ActorRef, PoisonPill, Props}
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
+import akka.actor.Actor.Receive
+import org.apache.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{ChangeTask, TasksChanged, ChangeTasks, TasksLaunched, LaunchTasks}
+import org.apache.gearpump.streaming.{LifeTime, ProcessorDescription}
+import org.apache.gearpump.streaming.executor.Executor.TaskArgumentStore
+import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
+import org.apache.gearpump.streaming.executor.TaskLauncherSpec.{MockTask, MockTaskActor}
+import org.apache.gearpump.streaming.task.{Subscriber, TaskWrapper, TaskContextData, TaskId, Task, TaskContext}
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.cluster.{ExecutorContext, MasterHarness, TestUtil, UserConfig}
-import org.apache.gearpump.streaming.AppMasterToExecutor._
-import Executor.{TaskLocationReady, RestartExecutor}
-import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.executor.ExecutorSpec.{MockTask, MockTaskActor, MockTaskStarted, MsgLost}
-import org.apache.gearpump.streaming.task.TaskActor.RestartTask
-import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{DAG}
-import org.apache.gearpump.transport.HostPort
-import org.scalatest._
+import org.mockito.Mockito._
+import org.mockito.Mockito.times
+import org.scalatest.{FlatSpec, Matchers, BeforeAndAfterAll}
+import org.mockito.Matchers._
 
-import scala.concurrent.duration._
 import scala.language.postfixOps
+import akka.testkit.TestProbe
+import akka.actor.{ActorRefFactory, ActorSystem, Actor}
+import org.apache.gearpump.cluster.appmaster.WorkerInfo
+import akka.actor.Props
 
-class ExecutorSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
-  override def config = ConfigFactory.parseString(""" akka.loggers = ["akka.testkit.TestEventListener"] """).
-    withFallback(TestUtil.DEFAULT_CONFIG)
 
+class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   val appId = 0
-  val workerId = 1
-  val executorId = 1
-  val startClock = 1024
-  val resource = Resource(3)
-  var watcher: TestProbe = null
+  val executorId = 0
+  val workerId = 0
   var appMaster: TestProbe = null
-  var executor: TestActorRef[Executor] = null
-  var executorContext: ExecutorContext = null
-  var taskContext: TaskContextData = null
-  var task: TestProbe = null
+  implicit var system: ActorSystem = null
+  val userConf = UserConfig.empty
 
-  override def beforeEach() = {
-    startActorSystem()
-    implicit val system = getActorSystem
+  override def beforeAll(): Unit = {
+    system = ActorSystem("TaskLauncherSpec", TestUtil.DEFAULT_CONFIG)
     appMaster = TestProbe()
-    watcher = TestProbe()
-    task = TestProbe()
-    val userConfig = UserConfig.empty.withValue(ExecutorSpec.TASK_PROBE, task.ref)
-    executorContext = ExecutorContext(executorId, workerId, appId, appMaster.ref, resource)
-    taskContext = TaskContextData(TaskId(0, 0), executorId, appId,
-      "appName", appMaster.ref, 1, List.empty[Subscriber])
-    executor = TestActorRef(Props(classOf[Executor], executorContext, userConfig))(getActorSystem)
-    appMaster.expectMsg(RegisterExecutor(executor, executorId, resource, workerId))
   }
 
-  override def afterEach() = {
-    shutdownActorSystem()
+  override def afterAll(): Unit = {
+    system.shutdown()
   }
 
-  "The new started executor" should {
-    "launch task properly" in {
-      executor.tell(LaunchTask(TaskId(0, 0), taskContext, classOf[MockTask], classOf[MockTaskActor]), watcher.ref)
-      task.expectMsg(MockTaskStarted)
-      val locations = TaskLocations(Map.empty[HostPort, Set[TaskId]])
-      executor.tell(locations, watcher.ref)
-      task.expectMsg(TaskLocationReady)
+  it should "call launcher to launch task" in {
+    val worker = TestProbe()
+    val workerInfo = WorkerInfo(workerId, worker.ref)
+    val executorContext = ExecutorContext(executorId, workerInfo, appId, appMaster.ref, Resource(2))
+    val taskLauncher = mock(classOf[ITaskLauncher])
+    val executor = system.actorOf(Props(new Executor(executorContext, userConf, taskLauncher)))
+    val processor = ProcessorDescription(id = 0, classOf[MockTask].getName, parallelism = 2)
+    val taskIds = List(TaskId(0, 0), TaskId(0, 1))
+    val launchTasks = LaunchTasks(taskIds, dagVersion = 0,  processor, List.empty[Subscriber])
 
-      executor.tell(RestartExecutor, watcher.ref)
-      task.expectMsg(RestartTask)
-    }
+    val task = TestProbe()
+    when(taskLauncher.launch(any(), any(), any())).thenReturn(taskIds.map((_, task.ref)).toMap)
 
-    "kill it self if the AppMaster is down" in {
-      watcher watch executor
-      appMaster.ref ! PoisonPill
-      watcher.expectTerminated(executor, 5 seconds)
-    }
+    val client = TestProbe()
+    client.send(executor, launchTasks)
+    client.expectMsg(TasksLaunched)
 
-    "handle exception thrown from child properly" in {
-      implicit val system = getActorSystem
-      executor.tell(LaunchTask(TaskId(0, 0), taskContext,classOf[MockTask] ,classOf[MockTaskActor]), watcher.ref)
-      task.expectMsg(MockTaskStarted)
-      EventFilter[MsgLostException](occurrences = 1) intercept {
-        executor.children.head ! MsgLost
-      }
-      appMaster.expectMsgType[ReplayFromTimestampWindowTrailingEdge]
-      task.expectMsg(MockTaskStarted)
-      EventFilter[RestartException](occurrences = 1) intercept {
-        executor.children.head ! new RestartException
-      }
-      task.expectMsg(MockTaskStarted)
-      executor.children.head ! PoisonPill
-      appMaster.expectNoMsg()
-    }
+    verify(taskLauncher, times(1)).launch(any(), any(), any())
+
+    val changeTasks = ChangeTasks(taskIds, dagVersion = 1, life = LifeTime(0, Long.MaxValue), List.empty[Subscriber])
+
+    client.send(executor, changeTasks)
+    client.expectMsg(TasksChanged)
+
+    task.expectMsgType[ChangeTask]
+    task.expectMsgType[ChangeTask]
   }
 }
-
-object ExecutorSpec {
-  val TASK_PROBE = "taskProbe"
-
-
-  case object MockTaskStarted
-  case object MsgLost
-
-
-  class MockTaskActor(taskContext : TaskContextData, userConf : UserConfig, task: TaskWrapper) extends Actor {
-    implicit val system = context.system
-    val taskProbe = userConf.getValue[ActorRef](TASK_PROBE).get
-
-    override def preStart() = {
-      taskProbe ! MockTaskStarted
-    }
-
-    override def receive: Receive = {
-      case MsgLost =>
-        throw new MsgLostException
-      case exception: Exception =>
-        throw exception
-      case msg =>
-        taskProbe forward msg
-    }
-  }
-
-  class MockTask(taskContext : TaskContext, userConf : UserConfig) extends Task(taskContext, userConf) {
-    override def onStart(startTime: StartTime): Unit = Unit
-
-    override def onNext(msg: Message): Unit = Unit
-  }
-}
-
-

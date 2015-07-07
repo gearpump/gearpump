@@ -28,8 +28,8 @@ trait TimeOutScheduler {
   this: Actor =>
   import context.dispatcher
 
-  def sendMsgWithTimeOutCallBack(target: ActorRef, msg: AnyRef, seconds: Int, timeOutHandler: => Unit): Unit = {
-    val result = target.ask(msg)(FiniteDuration(seconds, TimeUnit.SECONDS))
+  def sendMsgWithTimeOutCallBack(target: ActorRef, msg: AnyRef, milliSeconds: Long, timeOutHandler: => Unit): Unit = {
+    val result = target.ask(msg)(FiniteDuration(milliSeconds, TimeUnit.MILLISECONDS))
     result onSuccess {
       case msg =>
         self ! msg

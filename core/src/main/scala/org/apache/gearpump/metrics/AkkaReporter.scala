@@ -23,17 +23,35 @@ import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
 import com.codahale.metrics._
 import org.slf4j.Marker
-;
+import java.util.{SortedMap => JavaSortedMap}
+import com.codahale.metrics.{Gauge => CodaGauge, Counter => CodaCounter, Histogram => CodaHistogram, Meter => CodaMeter, Timer => CodaTimer}
+import scala.util.Try
+import org.apache.gearpump.util.LogUtil
 
 /**
  * A reporter class for logging metrics values to a remote actor periodically
  */
-class AkkaReporter(system: ActorSystem, registry: MetricRegistry, marker: Marker, rateUnit:TimeUnit, durationUnit:TimeUnit, filter: MetricFilter) extends ScheduledReporter(registry, "akka-reporter", filter, rateUnit, durationUnit) {
-    override def report(gauges: java.util.SortedMap[String, com.codahale.metrics.Gauge[_]],
-                       counters: java.util.SortedMap[String, com.codahale.metrics.Counter],
-                       histograms: java.util.SortedMap[String, com.codahale.metrics.Histogram],
-                       meters: java.util.SortedMap[String, com.codahale.metrics.Meter],
-                       timers: java.util.SortedMap[String, com.codahale.metrics.Timer]): Unit = {
+class AkkaReporter(
+    system: ActorSystem,
+    registry: MetricRegistry,
+    marker: Marker,
+    rateUnit:TimeUnit,
+    durationUnit:TimeUnit,
+    filter: MetricFilter)
+  extends ScheduledReporter(registry, "akka-reporter", filter, rateUnit, durationUnit) {
+
+  private val LOG = LogUtil.getLogger(getClass)
+  LOG.info("Start Metrics AkkaReporter")
+
+  override def report(
+    gauges: JavaSortedMap[String, CodaGauge[_]],
+    counters: JavaSortedMap[String, CodaCounter],
+    histograms: JavaSortedMap[String, CodaHistogram],
+    meters: JavaSortedMap[String, CodaMeter],
+    timers: JavaSortedMap[String, CodaTimer]): Unit = {
+
+    Try{
+
       import scala.collection.JavaConversions._
 
       val sgauges = collection.SortedMap(gauges.toSeq: _*)
@@ -67,8 +85,14 @@ class AkkaReporter(system: ActorSystem, registry: MetricRegistry, marker: Marker
       smeters.foreach(pair => {
         import org.apache.gearpump.metrics.Metrics._
         val (key, value: com.codahale.metrics.Meter) = pair
-        system.eventStream.publish(Meter(key, value.getCount, convertRate(value.getMeanRate), convertRate(value.getOneMinuteRate), convertRate(value.getFiveMinuteRate),
-          convertRate(value.getFifteenMinuteRate), getRateUnit))
+        system.eventStream.publish(
+          Meter(key,
+            value.getCount,
+            convertRate(value.getMeanRate),
+            convertRate(value.getOneMinuteRate),
+            convertRate(value.getFiveMinuteRate),
+            convertRate(value.getFifteenMinuteRate),
+            getRateUnit))
       })
 
       val stimers = collection.SortedMap(timers.toSeq: _*)
@@ -76,21 +100,43 @@ class AkkaReporter(system: ActorSystem, registry: MetricRegistry, marker: Marker
         import org.apache.gearpump.metrics.Metrics._
         val (key, value: com.codahale.metrics.Timer) = pair
         val s = value.getSnapshot
-        system.eventStream.publish(Timer(key, value.getCount, convertDuration(s.getMin), convertDuration(s.getMax), convertDuration(s.getMean),
-        convertDuration(s.getStdDev), convertDuration(s.getMedian), convertDuration(s.get75thPercentile), convertDuration(s.get95thPercentile), convertDuration(s.get98thPercentile),
-          convertDuration(s.get99thPercentile), convertDuration(s.get999thPercentile), convertRate(value.getMeanRate), convertRate(value.getOneMinuteRate),
-          convertRate(value.getFiveMinuteRate), convertRate(value.getFifteenMinuteRate), getRateUnit, getDurationUnit))
-
+        system.eventStream.publish(
+          Timer(key,
+            value.getCount,
+            convertDuration(s.getMin),
+            convertDuration(s.getMax),
+            convertDuration(s.getMean),
+            convertDuration(s.getStdDev),
+            convertDuration(s.getMedian),
+            convertDuration(s.get75thPercentile),
+            convertDuration(s.get95thPercentile),
+            convertDuration(s.get98thPercentile),
+            convertDuration(s.get99thPercentile),
+            convertDuration(s.get999thPercentile),
+            convertRate(value.getMeanRate),
+            convertRate(value.getOneMinuteRate),
+            convertRate(value.getFiveMinuteRate),
+            convertRate(value.getFifteenMinuteRate),
+            getRateUnit,
+            getDurationUnit))
       })
+    }.failed.map { ex =>
+      LOG.error("failed to report metrics", ex)
     }
+  }
 
-    override def getRateUnit: String = {
-      "events/" + super.getRateUnit
-    }
+  override def getRateUnit: String = {
+    "events/" + super.getRateUnit
+  }
 }
 
 object AkkaReporter {
-  case class Builder(registry: MetricRegistry, marker: Marker, var rateUnit: TimeUnit, var durationUnit: TimeUnit, var flter: MetricFilter) {
+  case class Builder(
+      registry: MetricRegistry,
+      marker: Marker,
+      var rateUnit: TimeUnit,
+      var durationUnit: TimeUnit,
+      var flter: MetricFilter) {
 
     def build(system: ActorSystem) = {
       new AkkaReporter(system, registry, marker, rateUnit, durationUnit, flter)
@@ -113,10 +159,11 @@ object AkkaReporter {
   }
 
   object Builder {
-    def apply(registry: MetricRegistry): Builder = Builder(registry, null, TimeUnit.SECONDS, TimeUnit.MILLISECONDS, MetricFilter.ALL)
+    def apply(registry: MetricRegistry): Builder = {
+      Builder(registry, null, TimeUnit.SECONDS, TimeUnit.MILLISECONDS, MetricFilter.ALL)
+    }
   }
   def forRegistry(registry: MetricRegistry): Builder = {
     Builder(registry)
   }
 }
-

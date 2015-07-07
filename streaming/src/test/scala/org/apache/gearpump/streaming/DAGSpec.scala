@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming
 
+import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.partitioner.{PartitionerDescription, Partitioner}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph.Node
@@ -35,6 +36,8 @@ class DAGSpec extends PropSpec with PropertyChecks with Matchers {
       val graph = Graph[ProcessorDescription, PartitionerDescription](task)
       val dag = DAG(graph)
       dag.processors.size shouldBe 1
+      assert(dag.taskCount == parallelism)
+      dag.tasks.sortBy(_.index) shouldBe (0 until parallelism).map(index => TaskId(0, index))
       dag.graph.edges shouldBe empty
     }
   }

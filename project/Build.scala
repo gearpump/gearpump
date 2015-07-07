@@ -212,10 +212,10 @@ object Build extends sbt.Build {
           "services" -> "org.apache.gearpump.cluster.main.Services",
           "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
         ),
-        packJvmOpts := Map("local" -> Seq("-server", "-DlogFilename=local"),
-          "master" -> Seq("-server", "-DlogFilename=master"),
-          "worker" -> Seq("-server", "-DlogFilename=worker"),
-          "services" -> Seq("-server")
+        packJvmOpts := Map("local" -> Seq("-server", "-DlogFilename=local", "-Djava.rmi.server.hostname=localhost"),
+          "master" -> Seq("-server", "-DlogFilename=master", "-Djava.rmi.server.hostname=localhost"),
+          "worker" -> Seq("-server", "-DlogFilename=worker", "-Djava.rmi.server.hostname=localhost"),
+          "services" -> Seq("-server", "-Djava.rmi.server.hostname=localhost")
         ),
         packLibDir := Map("gearpump-daemon" -> "daemon"),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),

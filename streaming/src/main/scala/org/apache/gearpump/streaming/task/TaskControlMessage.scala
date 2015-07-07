@@ -33,11 +33,16 @@ case class AckRequest(taskId: TaskId, seq: Long, sessionId: Int)
  */
 case class Ack(taskId: TaskId, seq: Long, actualReceivedNum: Long, sessionId: Int)
 
-case class UpdateClock(taskId: TaskId, time: TimeStamp)
+
+sealed trait ClockEvent
+
+case class UpdateClock(taskId: TaskId, time: TimeStamp) extends ClockEvent
+
+object GetLatestMinClock extends ClockEvent
+
+case class GetUpstreamMinClock(taskId: TaskId) extends ClockEvent
 
 case class UpstreamMinClock(latestMinClock: TimeStamp)
-
-object GetLatestMinClock
 
 case class LatestMinClock(clock: TimeStamp)
 

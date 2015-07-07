@@ -38,8 +38,8 @@ abstract class Scheduler extends Actor{
         LOG.info(s"Worker $id added to the scheduler")
         resources.put(id, (sender, Resource.empty))
       }
-    case ResourceUpdate(worker, workerId, resource) =>
-      LOG.info(s"Resource update id: $workerId, slots: ${resource.slots}....")
+    case update@ResourceUpdate(worker, workerId, resource) =>
+      LOG.info(s"$update...")
       if(resources.contains(workerId)) {
         val resourceReturned = resource > resources.get(workerId).get._2
         resources.update(workerId, (worker, resource))

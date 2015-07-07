@@ -22,6 +22,7 @@ import akka.actor._
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.TestProbeUtil
+import org.apache.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
@@ -38,6 +39,8 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
   implicit var system: ActorSystem = null
 
   private val LOG = LogUtil.getLogger(getClass)
+  private val appId = 0
+  private val resource = Resource(10)
 
   override def beforeAll = {
     system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
@@ -52,7 +55,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val taskManager = TestProbe()
     val executor = TestProbe()
     val userConfig = UserConfig.empty
-    val appId = 0
+
     val username = "user"
     val appJar = None
 
@@ -65,7 +68,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val executorManager = system.actorOf(Props(new ExecutorManager(userConfig, appMasterContext, executorFactory, ConfigFactory.empty)))
 
     taskManager.send(executorManager, SetTaskManager(taskManager.ref))
-    val resourceRequest = Array(ResourceRequest(Resource(1)))
+    val resourceRequest = Array(ResourceRequest(resource))
 
     //start executors
     taskManager.send(executorManager, StartExecutors(resourceRequest))
@@ -98,8 +101,9 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val executorSystemDaemon = TestProbe()
     val worker = TestProbe()
     val workerId = 0
+    val workerInfo = WorkerInfo(workerId, worker.ref)
     val executorSystem = ExecutorSystem(0, null, executorSystemDaemon.ref,
-      Resource(1), WorkerInfo(workerId, worker.ref))
+      resource, workerInfo)
     master.reply(ExecutorSystemStarted(executorSystem))
     import scala.concurrent.duration._
     val bindLifeWith = executorSystemDaemon.receiveOne(3 seconds).asInstanceOf[BindLifeCycle]
@@ -109,17 +113,25 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val executorId = 0
 
     //register executor
-    executor.send(executorManager, RegisterExecutor(proxyExecutor, executorId, Resource(1), workerId))
+    executor.send(executorManager, RegisterExecutor(proxyExecutor, executorId, resource, workerInfo))
     taskManager.expectMsgType[ExecutorStarted]
 
     //broad message to childs
-    val hello = "HELLO, executors!!!"
-    taskManager.send(executorManager, BroadCast(hello))
-    executor.expectMsg(hello)
+    taskManager.send(executorManager, BroadCast("broadcast"))
+    executor.expectMsg("broadcast")
 
-    LOG.info("Shutting down executor, and wait taskManager to get notified")
+    //unicast
+    taskManager.send(executorManager, UniCast(executorId, "unicast"))
+    executor.expectMsg("unicast")
+
+    //update executor resource status
+    val usedResource = Resource(5)
+    executorManager ! ExecutorResourceUsageSummary(Map(executorId -> usedResource))
+    worker.expectMsg(ChangeExecutorResource(appId, executorId, resource - usedResource))
+
     //watch for executor termination
     system.stop(executor.ref)
+    LOG.info("Shutting down executor, and wait taskManager to get notified")
     taskManager.expectMsg(ExecutorStopped(executorId))
   }
 }

@@ -149,8 +149,13 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
   private def flushRequest(channel: Channel, requests: MessageBatch) {
     val future: ChannelFuture = channel.write(requests)
     future.fail { (channel, ex) =>
-      channel.close
-      LOG.error(s"failed to send requests to ${channel.getRemoteAddress}", ex)
+      if (channel.isOpen) {
+        channel.close
+      }
+      LOG.error(s"failed to send requests to ${channel.getRemoteAddress} ${ex.getClass.getSimpleName}")
+      if (!ex.isInstanceOf[ClosedChannelException]) {
+          LOG.error(ex.getMessage, ex)
+      }
       self ! CompareAndReconnectIfEqual(channel)
     }
   }
