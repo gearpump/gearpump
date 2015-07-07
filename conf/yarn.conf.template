@@ -43,6 +43,6 @@ gearpump {
     memory = "1024"
     vcores = "1"
     logname = "services.log"
-    
+    port = "8090"
   }
 }
