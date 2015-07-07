@@ -93,7 +93,7 @@ class YarnApplicationMaster(appConfig: AppConfig, yarnConf: YarnConfiguration,
   private val servicesPort = appConfig.getEnv(SERVICES_PORT).toInt
   private[master] val resourceManagerClient = context.actorOf(propsRMClient, "resourceManagerClient")
   private[master] val host = InetAddress.getLocalHost.getHostName
-  private[master] val trackingURL = "http://" + host + ":" + servicesPort + "/redirect"
+  private[master] val trackingURL = "http://" + host + ":" + servicesPort
   private[master] var servicesActor: Option[ActorRef] = None
 
   startWith(ConnectingToResourceManager, initializedClusterStats)

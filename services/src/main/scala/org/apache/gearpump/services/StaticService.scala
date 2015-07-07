@@ -23,11 +23,6 @@ import spray.http.StatusCodes
 import spray.routing.HttpService
 
 import java.util.jar.Manifest
-import spray.http.HttpHeader
-import spray.http.HttpResponse
-import spray.http.HttpHeaders.Host
-import spray.http.HttpEntity
-import spray.http.MediaTypes._
 
 trait StaticService extends HttpService {
 
@@ -44,41 +39,16 @@ trait StaticService extends HttpService {
     new Manifest(input)
   }
 
-  private def getHost: HttpHeader => Option[Host] = {
-    case h: Host => Some(h)
-    case x => None
-  }
-
   val staticRoute =
     pathEndOrSingleSlash {
       getFromResource("index.html")
     } ~
-    path("favicon.ico") {
-      complete(StatusCodes.NotFound)
-    } ~
-    path("redirect") {
-      headerValue(getHost) {host =>
-
-        respondWithMediaType(`text/html`) {
-          complete {
-            new HttpResponse(StatusCodes.OK, HttpEntity(
-              s"""
-                |  <html>
-                |  <title>Redirect to Gearpump Dashboard</title>
-                |  <body>
-                |    <script>window.location = "http://${host.host}:${host.port}"
-                |    </script>
-                |  </body>
-                |  </html>
-              """.stripMargin
-            ))
-          }
-        }
-      }
-    } ~
-    path(Rest) { path =>
-      getFromResource("%s" format path)
-    } ~
+      path("favicon.ico") {
+        complete(StatusCodes.NotFound)
+      } ~
+      path(Rest) { path =>
+        getFromResource("%s" format path)
+      } ~
     pathPrefix("webjars") {
       get {
         getFromResourceDirectory("META-INF/resources/webjars")
