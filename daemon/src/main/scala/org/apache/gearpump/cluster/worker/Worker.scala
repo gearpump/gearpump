@@ -28,7 +28,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster.QueryWorkerConfig
-import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.cluster.{ExecutorJVMConfig, ClusterConfig}
 import org.apache.gearpump.cluster.MasterToClient.WorkerConfig
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
@@ -130,7 +130,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
     case ChangeExecutorResource(appId, executorId, usedResource) =>
       for (executor <- executorActorRef(appId, executorId);
-            allocatedResource <- allocatedResources.get(executor)) {
+           allocatedResource <- allocatedResources.get(executor)) {
         allocatedResources += executor -> usedResource
         resource = resource + allocatedResource - usedResource
         reportResourceToMaster
@@ -218,13 +218,16 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   }
 }
 
+import scala.concurrent.ExecutionContextExecutor
+
 private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
 
   class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo) extends Actor {
 
-    implicit val executionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+    // used for blocking io
+    implicit val ioPool = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
 
     val config = context.system.settings.config
     private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
@@ -246,16 +249,21 @@ private[cluster] object Worker {
             }
         }
       } else {
-        val appJar = ctx.jar
+        createProcess(ctx)
+      }
+    }
 
-        val jarPath = appJar.map {appJar =>
+    private def createProcess(ctx: ExecutorJVMConfig): ExecutorHandler = {
+
+      val process = Future {
+        val jarPath = ctx.jar.map { appJar =>
           val tempFile = File.createTempFile(appJar.name, ".jar")
           appJar.container.copyToLocalFile(tempFile)
-          val file = new URL("file:"+tempFile)
+          val file = new URL("file:" + tempFile)
           file.getFile
         }
 
-        val configFile = Option(ctx.executorAkkaConfig).filterNot(_.isEmpty).map{conf =>
+        val configFile = Option(ctx.executorAkkaConfig).filterNot(_.isEmpty).map { conf =>
           val configFile = File.createTempFile("gearpump", ".conf")
           ClusterConfig.saveConfig(conf, configFile)
           val file = new URL("file:" + configFile)
@@ -273,7 +281,7 @@ private[cluster] object Worker {
           s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${appLogDir}")
         val configArgs = configFile.map(confFilePath =>
           List(s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=$confFilePath")
-          ).getOrElse(List.empty[String])
+        ).getOrElse(List.empty[String])
 
         // pass hostname as a JVM parameter, so that child actorsystem can read it
         // in priority
@@ -290,7 +298,7 @@ private[cluster] object Worker {
             "-Xdebug",
             s"-Xrunjdwp:server=y,transport=dt_socket,address=${availablePort},suspend=n",
             s"-D${Constants.GEARPUMP_REMOTE_DEBUG_PORT}=$availablePort"
-            )
+          )
         } else {
           List.empty[String]
         }
@@ -306,7 +314,7 @@ private[cluster] object Worker {
             "-XX:+PrintGCApplicationConcurrentTime",
             "-XX:+PrintGCApplicationStoppedTime"
           )
-        }  else {
+        } else {
           List.empty[String]
         }
 
@@ -316,25 +324,27 @@ private[cluster] object Worker {
         LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
         val process = Util.startProcess(options, classPath, ctx.mainClass, ctx.arguments)
 
-        new ExecutorHandler {
-          override def destroy = {
-            LOG.info(s"Destroy executor process ${ctx.mainClass}")
-            process.destroy()
-            deleteTempFile
-          }
+        ProcessInfo(process, jarPath, configFile)
+      }
 
-          override def exitValue: Future[Try[Int]] = Future {
-            val exit = process.exitValue()
+      new ExecutorHandler {
+        override def destroy: Unit = {
+          LOG.info(s"Destroy executor process ${ctx.mainClass}")
+          process.foreach{info =>
+            info.process.destroy()
+            info.jarPath.foreach(new File(_).delete())
+            info.configFile.foreach(new File(_).delete())
+          }
+        }
+
+        override def exitValue: Future[Try[Int]] = {
+          process.map { info =>
+            val exit = info.process.exitValue()
             if (exit == 0) {
               Success(0)
             } else {
               Failure(new Exception(s"Executor exit with failure, exit value: $exit"))
             }
-          }
-
-          def deleteTempFile : Unit = {
-            jarPath.map(new File(_)).map(_.delete())
-            configFile.map(new File(_)).map(_.delete())
           }
         }
       }
@@ -382,4 +392,6 @@ private[cluster] object Worker {
     def destroy : Unit
     def exitValue : Future[Try[Int]]
   }
+
+  case class ProcessInfo(process: scala.sys.process.Process, jarPath: Option[String], configFile: Option[String])
 }
