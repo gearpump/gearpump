@@ -45,10 +45,10 @@ class TaskLauncherSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
   }
 
   it should "able to launch tasks" in {
-    val launcher = new TaskLauncher(appId, executorId, appMaster.ref, userConf, classOf[MockTaskActor])
+    val launcher = new TaskLauncher(appId, "app", executorId, appMaster.ref, userConf, classOf[MockTaskActor])
     val taskIds = List(TaskId(0, 0), TaskId(0, 1))
     val processor = ProcessorDescription(id = 0, classOf[MockTask].getName, parallelism = 2)
-    val argument = TaskArgument(0, processor, null, "app")
+    val argument = TaskArgument(0, processor, null)
 
     val tasks = launcher.launch(taskIds, argument, system)
     tasks.keys.toSet shouldBe taskIds.toSet

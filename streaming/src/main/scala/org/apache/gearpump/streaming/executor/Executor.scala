@@ -41,7 +41,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   }
 
   import context.dispatcher
-  import executorContext.{appId, appName, appMaster, executorId, resource, worker}
+  import executorContext.{appId, appMaster, executorId, resource, worker}
 
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 
@@ -81,7 +81,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   def appMasterMsgHandler : Receive = terminationWatch orElse {
     case LaunchTasks(taskIds, dagVersion, processorDescription, subscribers: List[Subscriber]) => {
       LOG.info(s"Launching Task $taskIds for app: ${appId}")
-      val taskArgument = TaskArgument(dagVersion, processorDescription, subscribers, appName)
+      val taskArgument = TaskArgument(dagVersion, processorDescription, subscribers)
       taskIds.foreach(taskArgumentStore.add(_, taskArgument))
       val newAdded = launcher.launch(taskIds, taskArgument, context)
       newAdded.foreach { newAddedTask =>
@@ -96,8 +96,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       taskIds.foreach { taskId =>
         for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
           val processorDescription = taskArgument.processorDescription.copy(life = life)
-          val appName = taskArgument.appName
-          taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription, subscribers, appName))
+          taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription, subscribers))
         }
 
         val taskActor = tasks.get(taskId)

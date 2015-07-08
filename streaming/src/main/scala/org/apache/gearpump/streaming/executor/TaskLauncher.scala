@@ -34,13 +34,14 @@ trait ITaskLauncher {
 
 class TaskLauncher(
     appId: Int,
+    appName: String,
     executorId: Int,
     appMaster: ActorRef,
     userConf: UserConfig,
     taskActorClass: Class[_ <: Actor])
   extends ITaskLauncher{
   def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory): Map[TaskId, ActorRef] = {
-    import argument.{appName, processorDescription, subscribers}
+    import argument.{processorDescription, subscribers}
 
     val taskConf = userConf.withConfig(processorDescription.taskConf)
 
@@ -64,10 +65,10 @@ class TaskLauncher(
 
 object TaskLauncher {
 
-  case class TaskArgument(dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber], appName: String)
+  case class TaskArgument(dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber])
 
   def apply(executorContext: ExecutorContext, userConf: UserConfig): TaskLauncher = {
-    import executorContext.{appId, appMaster, executorId}
-    new TaskLauncher(appId, executorId, appMaster, userConf, classOf[TaskActor])
+    import executorContext.{appId, appName, appMaster, executorId}
+    new TaskLauncher(appId, appName, executorId, appMaster, userConf, classOf[TaskActor])
   }
 }

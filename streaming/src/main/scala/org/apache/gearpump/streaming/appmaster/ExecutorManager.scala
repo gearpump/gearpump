@@ -44,11 +44,12 @@ import scala.util.Try
  * @param appContext
  * @param executorFactory
  */
-private[appmaster] class ExecutorManager(userConfig: UserConfig,
-                                         appContext: AppMasterContext,
-                                         executorFactory: (ExecutorContext, UserConfig, Address, ExecutorId) => Props,
-                                         clusterConfig: Config,
-                                         appName: String)
+private[appmaster] class ExecutorManager(
+    userConfig: UserConfig,
+    appContext: AppMasterContext,
+    executorFactory: (ExecutorContext, UserConfig, Address, ExecutorId) => Props,
+    clusterConfig: Config,
+    appName: String)
   extends Actor {
 
   private val LOG = LogUtil.getLogger(getClass)
