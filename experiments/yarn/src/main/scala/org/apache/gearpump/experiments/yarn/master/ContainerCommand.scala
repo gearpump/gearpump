@@ -12,7 +12,12 @@ import org.apache.hadoop.yarn.api.ApplicationConstants
 trait ContainerCommand {
   protected val appConfig: AppConfig
   private val version = appConfig.getEnv("version")
-  private val classPath = Array(s"pack/$version/conf", s"pack/$version/dashboard", s"pack/$version/lib/*")
+  private val classPath = Array(
+    s"pack/$version/conf",
+    s"pack/$version/dashboard",
+    s"pack/$version/daemon/*",
+    s"pack/$version/lib/*"
+  )
 
   def getCommand:String
 

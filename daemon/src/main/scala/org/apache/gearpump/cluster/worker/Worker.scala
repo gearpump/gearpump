@@ -35,6 +35,7 @@ import org.apache.gearpump.cluster.WorkerToAppMaster._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.worker.Worker._
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -261,7 +262,7 @@ private[cluster] object Worker {
           file.getFile
         }
 
-        val classPathPrefix = Util.getApplicationClassPath ++ ctx.classPath
+        val classPathPrefix = filterDaemonLib(Util.getCurrentClassPath) ++ ctx.classPath
         val classPath = jarPath.map(classPathPrefix :+ _).getOrElse(classPathPrefix)
 
         val appLogDir = context.system.settings.config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
@@ -360,6 +361,20 @@ private[cluster] object Worker {
       val datePattern = "yyyy-MM-dd-HH-mm"
       val format = new java.text.SimpleDateFormat(datePattern)
       format.format(timestamp)
+    }
+  }
+
+  private def filterDaemonLib(classPath: Array[String]): Array[String] = {
+    val jarFile = new File(getClass.getProtectionDomain.getCodeSource.getLocation.toURI.getPath)
+    val daemonDir = jarFile.getParent
+    classPath.filterNot{path =>
+      //The class path maybe a symbol link
+      val canonicalized = Try(new File(path).getCanonicalPath)
+      if(canonicalized.isSuccess && canonicalized.get.startsWith(daemonDir)) {
+        true
+      } else {
+        false
+      }
     }
   }
 
