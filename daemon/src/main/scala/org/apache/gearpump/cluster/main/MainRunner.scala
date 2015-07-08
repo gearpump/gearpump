@@ -15,34 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.cluster.main
 
-import org.apache.gearpump.cluster.client.ClientContext
+package org.apache.gearpump.cluster.main
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 import scala.util.Try
 
-object Replay extends App with ArgumentsParser {
-
+object MainRunner extends App  {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  override val options: Array[(String, CLIOption[Any])] = Array(
-    "appid" -> CLIOption("<application id>", required = true))
+  val mainClazz = args(0)
+  val commandArgs = args.drop(1)
 
-  override val description = "Replay the application from current min clock(low watermark)"
-
-  def start : Unit = {
-    val config = parse(args)
-
-    if (null == config) {
-      return
-    }
-
-    val client = ClientContext()
-    client.replayFromTimestampWindowTrailingEdge(config.getInt("appid"))
-    client.close()
-  }
-
-  Try(start).failed.foreach{ex => help; throw ex}
+  val clazz = Thread.currentThread().getContextClassLoader().loadClass(mainClazz)
+  val mainMethod = clazz.getMethod("main", classOf[Array[String]])
+  mainMethod.invoke(null, commandArgs)
 }

@@ -29,6 +29,7 @@ import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
+import scala.util.Try
 
 object Local extends App with ArgumentsParser {
   val systemConfig = ClusterConfig.load.master.withFallback(ClusterConfig.load.worker)
@@ -42,7 +43,9 @@ object Local extends App with ArgumentsParser {
     Array("sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
           "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(2)))
 
-  def start() : Unit = {
+  override val description = "Start a local cluster"
+
+  def start: Unit = {
     val config = parse(args)
     if (null == config) {
       return
@@ -79,7 +82,5 @@ object Local extends App with ArgumentsParser {
     system.awaitTermination()
   }
 
-  start()
-
-
+  Try(start).failed.foreach{ex => help; throw ex}
 }

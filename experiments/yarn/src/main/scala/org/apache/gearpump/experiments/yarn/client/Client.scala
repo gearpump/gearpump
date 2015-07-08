@@ -243,5 +243,5 @@ object Client extends App with ArgumentsParser {
     new Client(appConfig, conf, client, containerLaunchContext, fileSystem).deploy()
   }
 
-  apply()
+  Try(apply()).recover{case ex => help; throw ex}
 }

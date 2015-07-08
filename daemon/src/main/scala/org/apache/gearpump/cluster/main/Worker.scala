@@ -29,9 +29,13 @@ import org.apache.gearpump.util.LogUtil.ProcessType
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
-object Worker extends App{
+object Worker extends App with ArgumentsParser {
   var workerConfig = ClusterConfig.load.worker
+
+  override val description = "Start a worker daemon"
+
   val LOG : Logger = {
     LogUtil.loadConfiguration(workerConfig, ProcessType.WORKER)
     //delay creation of LOG instance to avoid creating an empty log file as we reset the log file name here
@@ -59,5 +63,5 @@ object Worker extends App{
     system.awaitTermination()
   }
 
-  start()
+  Try(start).failed.foreach{ex => help; throw ex}
 }

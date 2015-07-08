@@ -19,6 +19,9 @@
 package org.apache.gearpump.cluster.main
 
 import java.io.{File, PrintWriter}
+
+import scala.util.Try
+
 object Shell extends App with ArgumentsParser {
 
   case object ShellStarted
@@ -26,6 +29,7 @@ object Shell extends App with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master"-> CLIOption("<host1:port1,host2:port2,host3:port3>", required = true))
 
+  override val description = "Start a scala shell with classpath loaded"
 
   def shell() : Unit = {
     val config = parse(args)
@@ -76,5 +80,5 @@ object Shell extends App with ArgumentsParser {
     classpathList.mkString(File.pathSeparator)
   }
 
-  shell
+  Try(shell).failed.foreach{ex => help; throw ex}
 }

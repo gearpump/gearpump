@@ -36,6 +36,8 @@ import org.slf4j.Logger
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
+import scala.util.Try
+
 object Master extends App with ArgumentsParser {
   var masterConfig = ClusterConfig.load.master
   private val LOG: Logger = {
@@ -43,10 +45,11 @@ object Master extends App with ArgumentsParser {
     LogUtil.getLogger(getClass)
   }
 
-  val options: Array[(String, CLIOption[Any])] = 
+  override val options: Array[(String, CLIOption[Any])] =
     Array("ip"->CLIOption[String]("<master ip address>",required = true),
       "port"->CLIOption("<master port>",required = true))
 
+  override val description = "Start Master daemon"
 
   val config = parse(args)
 
@@ -122,7 +125,7 @@ object Master extends App with ArgumentsParser {
     system.awaitTermination()
   }
 
-  start()
+  Try(start).failed.foreach{ex => help; throw ex}
 }
 
 class MasterWatcher(role: String, masterProxy : ActorRef) extends Actor  with ActorLogging {
