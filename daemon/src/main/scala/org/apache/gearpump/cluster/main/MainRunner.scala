@@ -15,31 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.cluster.main
 
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
-import org.apache.gearpump.cluster.client.ClientContext
+package org.apache.gearpump.cluster.main
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-object Info extends App with ArgumentsParser {
+import scala.util.Try
 
+object MainRunner extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  def start : Unit = {
-    val client = ClientContext()
+  val mainClazz = args(0)
+  val commandArgs = args.drop(1)
 
-    val AppMastersData(appMasters) = client.listApps
-    Console.println("== Application Information ==")
-    Console.println("====================================")
-    appMasters.foreach { appData =>
-      Console.println(s"application: ${appData.appId}, name: ${appData.appName}, " +
-        s"status: ${appData.status}, worker: ${appData.workerPath}")
-    }
-    client.close()
-  }
-
-  start
+  val clazz = Thread.currentThread().getContextClassLoader().loadClass(mainClazz)
+  val mainMethod = clazz.getMethod("main", classOf[Array[String]])
+  mainMethod.invoke(null, commandArgs)
 }

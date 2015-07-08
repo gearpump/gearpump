@@ -41,9 +41,9 @@ trait  ArgumentsParser {
 
   val ignoreUnknownArgument = false
 
-  def help : Unit = {
+  def help: Unit = {
     Console.println("Usage:")
-    var usage = List(s"java ${removeTrailingDollarChar(this.getClass.toString)} " +
+    var usage = List(s"${removeTrailingDollarChar(this.getClass.getName)} " +
       options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") +
       " " +
       remainArgs.map(k => s"<$k>").mkString(" "))
@@ -56,6 +56,9 @@ trait  ArgumentsParser {
   }
 
   def parse(args: Array[String]): ParseResult = {
+    if (args.length == 0) {
+      help
+    }
     val syntax = Syntax(options, remainArgs, ignoreUnknownArgument)
     ArgumentsParser.parse(syntax, args)
   }

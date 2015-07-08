@@ -22,69 +22,34 @@ import org.slf4j.Logger
 
 import scala.util.Try
 
-object Gear extends App {
+object Gear  {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  def usage(commandOption: Option[String]) = {
-    commandOption match {
-      case Some(command) =>
-        command match {
-          case "kill" =>
-            Kill.main(Array.empty[String])
-          case "shell" =>
-            Shell.main(Array.empty[String])
-          case "info" =>
-            Info.main(Array.empty[String])
-          case "replay" =>
-            Replay.main(Array.empty[String])
-          case "app" =>
-            AppSubmitter.main(Array.empty[String])
-          case x =>
-            throw new Exception("Unknown command " + x)
-        }
-      case None =>
-        Console.println("Usage: app|info|kill|shell|replay|mainClass ...")
-    }
+  val commands = Map("app" -> AppSubmitter, "kill" -> Kill, "shell" -> Shell,
+    "info" -> Info, "replay" -> Replay, "main" -> MainRunner)
+
+  def usage: Unit = {
+    val keys = commands.keys.toList.sorted
+    Console.println("Usage: " + "<" + keys.mkString("|") + ">")
   }
 
   def executeCommand(command : String, commandArgs : Array[String]) = {
-
-    command match {
-      case "kill" =>
-        Kill.main(commandArgs)
-      case "shell" =>
-        Shell.main(commandArgs)
-      case "info" =>
-        Info.main(commandArgs)
-      case "replay" =>
-        Replay.main(commandArgs)
-      case "app" =>
-        AppSubmitter.main(commandArgs)
-      case main =>
-        val customCommand = Try {
-          val clazz = Thread.currentThread().getContextClassLoader().loadClass(main)
-          val mainMethod = clazz.getMethod("main", classOf[Array[String]])
-          mainMethod.invoke(null, commandArgs)
-        }
-        if (customCommand.isFailure) {
-          val ex = customCommand.failed.get
-          LOG.error(s"failed to execute command $main", ex)
-          throw ex
-        }
+    commands.get(command).map(_.main(commandArgs))
+    if (!commands.contains(command)) {
+      val allArgs = (command +: commandArgs.toList).toArray
+      MainRunner.main(allArgs)
     }
   }
 
-  def start = {
+  def main(args: Array[String]) = {
     args.length match {
       case 0 =>
-        usage(None)
+        usage
       case a if(a >= 1) =>
         val command = args(0)
         val commandArgs = args.drop(1)
         executeCommand(command, commandArgs)
     }
   }
-
-  start
 }
