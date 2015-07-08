@@ -1,7 +1,7 @@
 gearpump {
   serializers {
-    "org.apache.gearpump.experiments.pipeline.Messages$Datum" = ""
-    "[Lorg.apache.gearpump.experiments.pipeline.Messages$Datum;" = ""
+    "org.apache.gearpump.streaming.examples.pipeline.Messages$Datum" = ""
+    "[Lorg.apache.gearpump.streaming.examples.pipeline.Messages$Datum;" = ""
   }
 }
 
