@@ -69,7 +69,7 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
   // flush interval
   final val FLUSH_INTERVAL = FiniteDuration(100, TimeUnit.MILLISECONDS)
 
-  private val queue : util.ArrayDeque[Any] = new util.ArrayDeque[Any](INITIAL_WINDOW_SIZE)
+  private val queue = new util.LinkedList[AnyRef]()
 
   private var subscriptions = List.empty[(Int, Subscription)]
 
@@ -245,7 +245,7 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
     case send: SendMessageLoss =>
       LOG.info("received SendMessageLoss")
       throw new MsgLostException
-    case other =>
+    case other: AnyRef =>
       queue.add(other)
       handler()
   }
@@ -262,22 +262,28 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
 }
 
 object TaskActor {
-  val INITIAL_WINDOW_SIZE = 1024 * 16
   val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000 //3 seconds
+
+
+  class MsgCount(var num: Long){
+    def increment() = num += 1
+  }
 
   // If the message comes from an unknown source, securityChecker will drop it
   class SecurityChecker(task_id: TaskId, self : ActorRef) {
 
     private val LOG: Logger = LogUtil.getLogger(getClass, task = task_id)
 
-    private var receivedMsgCount = Map.empty[ActorRef, MsgCount]
+    // Use mutable HashMap for performance optimization
+    private var receivedMsgCount = new util.HashMap[ActorRef, MsgCount]()
 
     def generateAckResponse(ackRequest: AckRequest, sender: ActorRef): Ack = {
-      if (receivedMsgCount.contains(sender)) {
-        Ack(task_id, ackRequest.seq, receivedMsgCount.get(sender).get.num, ackRequest.sessionId)
+      val counter = receivedMsgCount.get(sender)
+      if (counter != null) {
+        Ack(task_id, ackRequest.seq, counter.num, ackRequest.sessionId)
       } else {
-        if(ackRequest.seq == 0){ //We got the first AckRequest before the real messages
-          receivedMsgCount += sender -> new MsgCount(0L)
+        if (ackRequest.seq == 0) { //We got the first AckRequest before the real messages
+          receivedMsgCount.put(sender, new MsgCount(0L))
           Ack(task_id, ackRequest.seq, 0, ackRequest.sessionId)
         } else {
           LOG.debug(s"task $task_id get unkonwn AckRequest $ackRequest from ${ackRequest.taskId}")
@@ -290,18 +296,17 @@ object TaskActor {
     def checkMessage(message : Message, sender: ActorRef): Option[Message] = {
       if(sender.equals(self)){
         Some(message)
-      } else if (!receivedMsgCount.contains(sender)) {
-          // This is an illegal message,
-        LOG.debug(s"Task $task_id received message before receive the first AckRequest")
-        None
       } else {
-        receivedMsgCount.get(sender).get.increment()
-        Some(message)
+        val counter = receivedMsgCount.get(sender)
+        if (counter == null) {
+          // This is an illegal message,
+          LOG.debug(s"Task $task_id received message before receive the first AckRequest")
+          None
+        } else {
+          counter.increment()
+          Some(message)
+        }
       }
-    }
-
-    private class MsgCount(var num: Long){
-      def increment() = num += 1
     }
   }
 
