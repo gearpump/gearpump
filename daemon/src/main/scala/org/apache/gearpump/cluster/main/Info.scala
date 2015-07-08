@@ -22,24 +22,27 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
+import scala.util.Try
+
 object Info extends App with ArgumentsParser {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
+  override val description = "Query the Application list"
 
   def start : Unit = {
     val client = ClientContext()
 
     val AppMastersData(appMasters) = client.listApps
+    Console.println("== Application Information ==")
+    Console.println("====================================")
     appMasters.foreach { appData =>
-      Console.println("== Application Information ==")
-      Console.println("====================================")
       Console.println(s"application: ${appData.appId}, name: ${appData.appName}, " +
         s"status: ${appData.status}, worker: ${appData.workerPath}")
     }
     client.close()
   }
 
-  start
+  Try(start).failed.foreach{ex => help; throw ex}
 }

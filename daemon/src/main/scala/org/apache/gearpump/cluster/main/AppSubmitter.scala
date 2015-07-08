@@ -21,6 +21,7 @@ import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 
+import org.apache.gearpump.cluster.main.Shell.help
 import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger
 
@@ -30,6 +31,8 @@ object AppSubmitter extends App with ArgumentsParser {
   val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val ignoreUnknownArgument = true
+
+  override val description = "Submit an application to Master by providing a jar"
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "namePrefix" -> CLIOption[String]("<application name prefix>", required = false, defaultValue = Some("")),
@@ -84,5 +87,5 @@ object AppSubmitter extends App with ArgumentsParser {
     }
   }
 
-  start
+  Try(start).failed.foreach{ex => help; throw ex}
 }

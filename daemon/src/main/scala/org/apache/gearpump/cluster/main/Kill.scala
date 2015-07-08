@@ -22,12 +22,16 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
+import scala.util.Try
+
 object Kill extends App with ArgumentsParser {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "appid" -> CLIOption("<application id>", required = true))
+
+  override val description = "Kill an application with application Id"
 
   def start : Unit = {
     val config = parse(args)
@@ -42,5 +46,5 @@ object Kill extends App with ArgumentsParser {
     client.close()
   }
 
-  start
+  Try(start).failed.foreach{ex => help; throw ex}
 }
