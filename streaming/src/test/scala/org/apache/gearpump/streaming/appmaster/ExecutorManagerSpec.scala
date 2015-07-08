@@ -57,6 +57,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val userConfig = UserConfig.empty
 
     val username = "user"
+    val appName = "app"
     val appJar = None
 
     val appMasterContext = AppMasterContext(appId, username, null, appJar, master.ref, null)
@@ -65,7 +66,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
       executor.ref ! StartExecutorActorPlease
       TestProbeUtil.toProps(executor)
     }
-    val executorManager = system.actorOf(Props(new ExecutorManager(userConfig, appMasterContext, executorFactory, ConfigFactory.empty)))
+    val executorManager = system.actorOf(Props(new ExecutorManager(userConfig, appMasterContext, executorFactory, ConfigFactory.empty, appName)))
 
     taskManager.send(executorManager, SetTaskManager(taskManager.ref))
     val resourceRequest = Array(ResourceRequest(resource))

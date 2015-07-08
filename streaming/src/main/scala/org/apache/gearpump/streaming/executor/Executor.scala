@@ -24,13 +24,11 @@ import org.apache.gearpump.cluster.MasterToAppMaster.MessageLoss
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskArgumentStore, TaskLocationReady, TaskStopped}
 import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
-import org.apache.gearpump.streaming.task.{Subscriber, TaskActor, TaskContextData, TaskId, TaskLocations, TaskUtil, TaskWrapper}
-import org.apache.gearpump.streaming.util.ActorPathUtil
+import org.apache.gearpump.streaming.task.{Subscriber, TaskId, TaskLocations}
 import org.apache.gearpump.transport.{Express, HostPort}
-import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil}
+import org.apache.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.duration._

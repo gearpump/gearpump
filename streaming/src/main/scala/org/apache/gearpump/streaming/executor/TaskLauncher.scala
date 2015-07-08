@@ -34,6 +34,7 @@ trait ITaskLauncher {
 
 class TaskLauncher(
     appId: Int,
+    appName: String,
     executorId: Int,
     appMaster: ActorRef,
     userConf: UserConfig,
@@ -45,7 +46,7 @@ class TaskLauncher(
     val taskConf = userConf.withConfig(processorDescription.taskConf)
 
     val taskContext = TaskContextData(executorId,
-      appId, "appName", appMaster,
+      appId, appName, appMaster,
       processorDescription.parallelism,
       processorDescription.life, subscribers)
 
@@ -67,7 +68,7 @@ object TaskLauncher {
   case class TaskArgument(dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber])
 
   def apply(executorContext: ExecutorContext, userConf: UserConfig): TaskLauncher = {
-    import executorContext.{appId, appMaster, executorId}
-    new TaskLauncher(appId, executorId, appMaster, userConf, classOf[TaskActor])
+    import executorContext.{appId, appName, appMaster, executorId}
+    new TaskLauncher(appId, appName, executorId, appMaster, userConf, classOf[TaskActor])
   }
 }

@@ -20,16 +20,16 @@ package org.apache.gearpump.experiments.distributeservice
 import java.io.File
 
 import akka.actor.{Deploy, Props}
+import akka.pattern.{ask, pipe}
 import akka.remote.RemoteScope
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
-import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, StartExecutorSystemTimeout, ExecutorSystemStarted}
-import org.apache.gearpump.cluster.{ExecutorContext, ApplicationMaster, AppDescription, AppMasterContext}
-import org.apache.gearpump.experiments.distributeservice.DistServiceAppMaster.{InstallService, FileContainer, GetFileContainer}
+import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout}
+import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, ApplicationMaster, ExecutorContext}
+import org.apache.gearpump.experiments.distributeservice.DistServiceAppMaster.{FileContainer, GetFileContainer, InstallService}
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
-import akka.pattern.{ask, pipe}
 import scala.concurrent.Future
 
 class DistServiceAppMaster(appContext : AppMasterContext, app : AppDescription) extends ApplicationMaster {
@@ -53,8 +53,8 @@ class DistServiceAppMaster(appContext : AppMasterContext, app : AppDescription) 
 
   override def receive: Receive = {
     case ExecutorSystemStarted(executorSystem) =>
-      import executorSystem.{address, worker, resource => executorResource}
-      val executorContext = ExecutorContext(currentExecutorId, worker, appId, self, executorResource)
+      import executorSystem.{address, resource => executorResource, worker}
+      val executorContext = ExecutorContext(currentExecutorId, worker, appId, app.name, self, executorResource)
       //start executor
       val executor = context.actorOf(Props(classOf[DistServiceExecutor], executorContext, app.userConfig)
         .withDeploy(Deploy(scope = RemoteScope(address))), currentExecutorId.toString)

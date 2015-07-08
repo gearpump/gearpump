@@ -21,24 +21,24 @@ package org.apache.gearpump.streaming.appmaster
 import akka.actor._
 import akka.pattern.ask
 import org.apache.gearpump.cluster.MasterToAppMaster.{MessageLoss, ReplayFromTimestampWindowTrailingEdge}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{TasksChanged, TasksLaunched, TaskRejected, TaskChanged, ChangeTasks, LaunchTasks, StartClock}
-import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
-import org.apache.gearpump.streaming.appmaster.DagManager.{NewDAGDeployed, GetTaskLaunchData, WatchChange, TaskLaunchData, LatestDAG, GetLatestDAG}
-import org.apache.gearpump.streaming.appmaster.TaskRegistry.{Accept, TaskLocation}
-import org.apache.gearpump.streaming.executor.{ExecutorRestartPolicy, Executor}
-import Executor.RestartTasks
+import org.apache.gearpump.streaming.AppMasterToExecutor.{ChangeTasks, LaunchTasks, StartClock, TaskChanged, TaskRejected, TasksChanged, TasksLaunched}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
-import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef, AllocateResourceTimeOut}
+import org.apache.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, TaskActorRef}
+import org.apache.gearpump.streaming.appmaster.ClockService.ChangeToNewDAG
+import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
+import org.apache.gearpump.streaming.appmaster.TaskManager._
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.{Accept, TaskLocation}
+import org.apache.gearpump.streaming.executor.Executor.RestartTasks
+import org.apache.gearpump.streaming.executor.ExecutorRestartPolicy
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{ProcessorId, TaskIndex, ExecutorId, DAG}
 import org.apache.gearpump.streaming.util.ActorPathUtil
+import org.apache.gearpump.streaming.{DAG, ExecutorId, ProcessorId}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import org.apache.gearpump.streaming.appmaster.TaskManager._
 
 private[appmaster] class TaskManager(
     appId: Int,
@@ -139,7 +139,7 @@ private[appmaster] class TaskManager(
   }
 
   private def checkApplicationReady(state: StateData): State = {
-    import state.{taskRegistry, taskChangeRegistry}
+    import state.{taskChangeRegistry, taskRegistry}
     if (taskRegistry.isAllTasksRegistered && taskChangeRegistry.allTaskChanged) {
       LOG.info(s"All tasks have been launched; send Task locations to all executors")
       val taskLocations = taskRegistry.getTaskLocations
