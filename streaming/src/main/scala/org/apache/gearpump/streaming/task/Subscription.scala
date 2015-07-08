@@ -109,6 +109,11 @@ class Subscription(
         transport.transport(ackRequest, targetTask)
       }
 
+      if (messageCount(partition) % maxPendingMessageCount == 0) {
+        val probeLatency = LatencyProbe(System.currentTimeMillis())
+        transport.transport(probeLatency, targetTask)
+      }
+
       return 1
     } else {
       if (needFlush) {
@@ -131,10 +136,6 @@ class Subscription(
       val ackRequest = AckRequest(taskId, messageCount(targetTaskId.index), sessionId)
       transport.transport(ackRequest, targetTaskId)
     }
-  }
-
-  def probeLatency(probe: LatencyProbe): Unit = {
-    transport.transport(probe, allTasks: _*)
   }
 
   private def allTasks: scala.collection.Seq[TaskId] = {

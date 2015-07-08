@@ -55,14 +55,6 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
     (subscription, transport)
   }
 
-  it should "broadcast message to all downstream tasks" in {
-    val (subscription, transport) = prepare
-
-    val broadcastMsg = LatencyProbe(System.currentTimeMillis())
-    subscription.probeLatency(broadcastMsg)
-    verify(transport, times(1)).transport(broadcastMsg, TaskId(1,0), TaskId(1, 1))
-  }
-
   it should "not send any more message when its life ends" in {
     val (subscription, transport) = prepare
     subscription.changeLife(LifeTime(0, 0))

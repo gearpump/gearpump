@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{ExecutorContext, MasterHarness, UserConfig, TestUtil}
 import org.apache.gearpump.partitioner.{ Partitioner, HashPartitioner}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{TaskChanged, ChangeTask, TaskRejected, MsgLostException, RestartException, StartClock}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{TaskChanged, ChangeTask, TaskRejected, MsgLostException, RegisterTaskFailedException, StartClock}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
 import org.apache.gearpump.streaming.task.TaskActorSpec.TestTask
 import org.apache.gearpump.streaming.{LifeTime, DAG, ProcessorDescription}
@@ -106,10 +106,10 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       deathWatch.expectTerminated(testActor, 15 seconds)
     }
 
-    "throw RestartException when register to AppMaster time out" in {
+    "throw RegisterTaskFailedException when register to AppMaster time out" in {
       implicit val system = getActorSystem
       val mockTask = mock(classOf[TaskWrapper])
-      EventFilter[RestartException](occurrences = 1) intercept {
+      EventFilter[RegisterTaskFailedException](occurrences = 1) intercept {
         TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
       }
     }

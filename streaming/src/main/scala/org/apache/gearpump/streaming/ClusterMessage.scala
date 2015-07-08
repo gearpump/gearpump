@@ -47,7 +47,7 @@ object AppMasterToExecutor {
   case object TaskRejected
 
   case object RestartClockService
-  class RestartException extends Exception
+  class RegisterTaskFailedException extends Exception
   class MsgLostException extends Exception
 }
 

@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.executor
 
-import akka.actor.SupervisorStrategy.Resume
+import akka.actor.SupervisorStrategy.{Resume, Stop}
 import akka.actor._
 import org.apache.gearpump.cluster.MasterToAppMaster.MessageLoss
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
@@ -67,7 +67,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
         appMaster ! MessageLoss(executorId)
         Resume
-
+      case _: RegisterTaskFailedException =>
+        LOG.error("We got RegisterTaskFailedException, stopping this task...")
+        Stop
       case ex: Throwable =>
         LOG.error("We got exception, we will treat it as MessageLoss, so that the system will replay all lost message", ex)
         appMaster ! MessageLoss(executorId)

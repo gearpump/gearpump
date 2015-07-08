@@ -103,11 +103,6 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
     sendThroughput.mark(count)
   }
 
-  def sendLatencyProbeMessage: Unit = {
-    val probe = LatencyProbe(System.currentTimeMillis())
-    subscriptions.foreach(_._2.probeLatency(probe))
-  }
-
   final override def postStop() : Unit = {
     onStop()
   }
@@ -123,7 +118,7 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
 
   private def registerTaskTimeOut(): Unit = {
     LOG.error(s"Task ${taskId} failed to register to AppMaster of application $appId")
-    throw new RestartException
+    throw new RegisterTaskFailedException
   }
 
   def minClockAtCurrentTask: TimeStamp = {
@@ -185,9 +180,6 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
 
       subscriptions.foreach(_._2.start)
 
-      context.system.scheduler.schedule(
-        LATENCY_PROBE_INTERVAL, LATENCY_PROBE_INTERVAL, self, SendMessageProbe)
-
       context.become(handleMessages(doHandleMessage))
 
       // Put this as the last step so that the subscription is already initialized.
@@ -248,9 +240,6 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
         }
       }
       sender ! TaskChanged(taskId, dagVersion)
-
-    case SendMessageProbe =>
-      sendLatencyProbeMessage
     case LatencyProbe(timeStamp) =>
       receiveLatency.update(System.currentTimeMillis() - timeStamp)
     case send: SendMessageLoss =>
@@ -317,8 +306,6 @@ object TaskActor {
   }
 
   case class SendAck(ack: Ack, targetTask: TaskId)
-
-  case object SendMessageProbe
 
   case object FLUSH
 }
