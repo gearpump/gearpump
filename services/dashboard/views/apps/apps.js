@@ -39,7 +39,7 @@ angular.module('dashboard.apps', [])
       }
     });
 
-    restapi.subscribe('/appmasters', $scope,
+    restapi.subscribe('/master/applist', $scope,
       function (data) {
         // TODO: Serde AppMastersData (#458)
         var masters = data.appMasters;

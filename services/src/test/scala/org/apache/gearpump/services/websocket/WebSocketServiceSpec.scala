@@ -15,43 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.services.websocket
 
-package org.apache.gearpump.services
-
-import java.io.File
-
-import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import org.apache.gearpump.util.Constants
-import org.scalatest._
-import spray.http._
-
+import org.apache.gearpump.services.REST_VERSION
+import org.apache.gearpump.services.websocket.WebSocketService.WebSocketUrl
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import spray.testkit.ScalatestRouteTest
 
-class SubmitUserApplicationServiceSpec(sys: ActorSystem) extends FlatSpec
-with ScalatestRouteTest
-with SubmitUserApplicationService
-with Matchers
-with BeforeAndAfterAll {
+import scala.concurrent.duration._
 
-  def this() = this(ActorSystem("MySpec"))
-
-  override implicit val system: ActorSystem = sys
-
+class WebSocketServiceSpec extends FlatSpec
+with ScalatestRouteTest with WebSocketService with Matchers with BeforeAndAfterAll  {
+  import upickle._
   def actorRefFactory = system
 
-  "SubmitUserApplicationServiceSpec" should "submit an invalid jar and get success = false" in {
-    implicit val timeout = Constants.FUTURE_TIMEOUT
-    val tempfile = new File("foo")
-    val mfd = MultipartFormData(Seq(BodyPart(tempfile, "file")))
-    Post(s"/api/$REST_VERSION/userapp/submit", mfd) ~> submitUserApplicationRoute ~> check {
-      import upickle._
-      val actual = read[SubmitUserApplicationService.Status](response.entity.asString)
-      actual.success shouldEqual false
+  "WebSocketService" should "return a json structure of WebSocket url" in {
+    implicit val customTimeout = RouteTestTimeout(15.seconds)
+    Get(s"/api/$REST_VERSION/websocket/url") ~> webSocketRoute ~> check {
+      //check the type
+      read[WebSocketUrl](response.entity.asString)
     }
   }
 
-  override def afterAll() {
+  override def afterAll {
     TestKit.shutdownActorSystem(system)
   }
 }

@@ -47,7 +47,14 @@ class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends A
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
-  private var maxProcessorId = dags.head.processors.keys.max
+  private var maxProcessorId = {
+    val keys = dags.head.processors.keys
+    if (keys.size == 0) {
+      0
+    }else {
+      keys.max
+    }
+  }
 
   private def nextProcessorId: ProcessorId = {
     maxProcessorId += 1

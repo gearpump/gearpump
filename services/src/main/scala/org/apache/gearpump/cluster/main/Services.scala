@@ -18,10 +18,11 @@
 
 package org.apache.gearpump.cluster.main
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.ActorSystem
+import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
-import org.apache.gearpump.services.{RestServices,WebSocketServices}
+import org.apache.gearpump.services.RestServices
+import org.apache.gearpump.services.websocket.WebSocketServices
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
 import org.apache.gearpump.util.{Constants, LogUtil, Util}

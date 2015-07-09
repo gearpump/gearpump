@@ -16,10 +16,21 @@
  * limitations under the License.
  */
 package org.apache.gearpump.cluster.worker
+import akka.actor.ActorRef
 
-case class WorkerDescription(workerId: Int, state: String, actorPath: String,
-                             aliveFor: Long, logFile: String,
-                             executors: Array[ExecutorInfo], totalSlots: Int, availableSlots: Int,
-                             homeDirectory: String)
+case class WorkerDescription(
+    workerId: Int,
+    state: String,
+    actorPath: String,
+    aliveFor: Long,
+    logFile: String,
+    executors: Array[ExecutorInfo],
+    totalSlots: Int,
+    availableSlots: Int,
+    homeDirectory: String)
+
+object WorkerDescription{
+  def empty = WorkerDescription(-1, "", "", 0L, "", Array.empty[ExecutorInfo], 0, 0, "")
+}
 
 case class ExecutorInfo(appId: Int, executorId: Int, slots: Int)

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.services
+package org.apache.gearpump.services.websocket
 
 import akka.actor._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterMetricsRequest, StreamingType}

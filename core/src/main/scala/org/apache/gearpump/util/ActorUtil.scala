@@ -21,13 +21,14 @@ package org.apache.gearpump.util
 import akka.actor.Actor.Receive
 import akka.actor._
 import akka.pattern.ask
-import org.apache.gearpump.cluster.AppMasterToMaster.GetAllWorkers
-import org.apache.gearpump.cluster.ClientToMaster.ResolveAppId
+import org.apache.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData, GetAllWorkers}
+import org.apache.gearpump.cluster.ClientToMaster.{ResolveWorkerId, ResolveAppId}
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
-import org.apache.gearpump.cluster.MasterToClient.ResolveAppIdResult
+import org.apache.gearpump.cluster.MasterToClient.{ResolveWorkerIdResult, ResolveAppIdResult}
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{StartExecutorSystems, ExecutorSystemJvmConfig}
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
+import org.apache.gearpump.util.ActorUtil.askActor
 import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -110,13 +111,23 @@ object ActorUtil {
         Future.failed(result.appMaster.failed.get)
       }
     }
-    appmaster.flatMap { appMaster =>
-      (appMaster ? msg).asInstanceOf[Future[T]]
-    }
+    appmaster.flatMap(askActor[T](_, msg))
   }
 
-  def askActor[T](master: ActorRef, msg: Any)(implicit ex: ExecutionContext): Future[T] = {
+  def askWorker[T](master: ActorRef, workerId: Int, msg: Any)(implicit ex: ExecutionContext): Future[T] = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    (master ? msg).asInstanceOf[Future[T]]
+    val worker =  askActor[ResolveWorkerIdResult](master, ResolveWorkerId(workerId)).flatMap { result =>
+      if (result.worker.isSuccess) {
+        Future.successful(result.worker.get)
+      } else {
+        Future.failed(result.worker.failed.get)
+      }
+    }
+    worker.flatMap(askActor[T](_, msg))
+  }
+
+  def askActor[T](actor: ActorRef, msg: Any)(implicit ex: ExecutionContext): Future[T] = {
+    implicit val timeout = Constants.FUTURE_TIMEOUT
+    (actor ? msg).asInstanceOf[Future[T]]
   }
 }

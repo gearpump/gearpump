@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.services
+package org.apache.gearpump.services.websocket
 
 import akka.actor._
 import akka.io.IO

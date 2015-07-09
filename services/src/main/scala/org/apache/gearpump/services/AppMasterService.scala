@@ -20,30 +20,18 @@ package org.apache.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-
-import org.apache.gearpump.cluster.ClientToMaster.{RestartApplication}
-import org.apache.gearpump.cluster.MasterToClient.{SubmitApplicationResult}
-import org.apache.gearpump.services.AppMasterService.Status
-import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, GetStallingTasks, ShutdownApplication}
+import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, QueryAppMasterConfig, QueryHistoryMetrics, RestartApplication, ShutdownApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, ShutdownApplicationResult}
+import org.apache.gearpump.cluster.MasterToClient.{AppMasterConfig, HistoryMetrics, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.services.AppMasterService.Status
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
-
-import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperationResult, DAGOperation}
-
-import org.apache.gearpump.util.{LogUtil}
-import org.apache.gearpump.util.{Constants}
-import spray.http.StatusCodes
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperation, DAGOperationResult}
+import org.apache.gearpump.util.ActorUtil.{askActor, askAppMaster}
+import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.routing.HttpService
-import spray.routing.Route
-import spray.routing.directives.OnCompleteFutureMagnet
 
-
-
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
-
-import org.apache.gearpump.util.ActorUtil.{askAppMaster, askActor}
 trait AppMasterService extends HttpService {
 
   import upickle._
@@ -54,23 +42,29 @@ trait AppMasterService extends HttpService {
   private val LOG = LogUtil.getLogger(getClass)
 
   def appMasterRoute = {
-
     implicit val timeout = Constants.FUTURE_TIMEOUT
     implicit val ec: ExecutionContext = actorRefFactory.dispatcher
-
     pathPrefix("api" / s"$REST_VERSION" / "appmaster" / IntNumber ) { appId =>
       path("dynamicdag") {
-        (post) {
+        post {
           entity(as[String]) { entity =>
             val dagOperation = read[DAGOperation](entity)
-            finish(askAppMaster[DAGOperationResult](master, appId, dagOperation))
+            onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
+              case Success(value) =>
+                complete(upickle.write(value))
+              case Failure(ex) => failWith(ex)
+            }
           }
         }
       } ~
       path("stallingtasks") {
-        finish(askAppMaster[StallingTasks](master, appId, GetStallingTasks(appId)))
+        onComplete(askAppMaster[StallingTasks](master, appId, GetStallingTasks(appId))){
+          case Success(value) =>
+            complete(upickle.write(value))
+          case Failure(ex) => failWith(ex)
+        }
       }  ~
-      path("appmaster" / IntNumber / "restart") { appId =>
+      path("restart") {
         post {
           onComplete(askActor[SubmitApplicationResult](master, RestartApplication(appId))) {
             case Success(_) =>
@@ -80,11 +74,25 @@ trait AppMasterService extends HttpService {
           }
         }
       }~
+      path("config") {
+        onComplete(askAppMaster[AppMasterConfig](master, appId, QueryAppMasterConfig(appId))) {
+          case Success(value: AppMasterConfig) =>
+            val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+            complete(config)
+          case Failure(ex) =>
+            failWith(ex)
+        }
+      } ~
       path("metrics" / RestPath ) { path =>
         parameter("readLatest" ? "false") { readLatestInput =>
           val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
           val query = QueryHistoryMetrics(appId, path.head.toString, readLatest)
-          finish(askAppMaster[HistoryMetrics](master, appId, query))
+          onComplete(askAppMaster[HistoryMetrics](master, appId, query)) {
+            case Success(value) =>
+              complete(upickle.write(value))
+            case Failure(ex) =>
+              failWith(ex)
+          }
         }
       } ~
       pathEnd {
@@ -94,11 +102,20 @@ trait AppMasterService extends HttpService {
             val request = AppMasterDataDetailRequest(appId)
             detailValue match {
               case true =>
-                val writer: AppMasterDataDetail => String = (detail) => detail.toJson
-                val future = askAppMaster[AppMasterDataDetail](master, appId, request)
-                finish(future, writer)
+                onComplete(askAppMaster[AppMasterDataDetail](master, appId, request)) {
+                  case Success(value) =>
+                    complete(value.toJson)
+                  case Failure(ex) =>
+                    failWith(ex)
+                }
+
               case false =>
-                finish(askActor[AppMasterData](master, AppMasterDataRequest(appId)))
+                onComplete(askActor[AppMasterData](master, AppMasterDataRequest(appId))) {
+                  case Success(value) =>
+                    complete(upickle.write(value))
+                  case Failure(ex) =>
+                    failWith(ex)
+                }
             }
           }
         }
@@ -113,25 +130,19 @@ trait AppMasterService extends HttpService {
               }
               upickle.write(output)
             }
-            finish(askActor[ShutdownApplicationResult](master, ShutdownApplication(appId)), writer)
+            onComplete(askActor[ShutdownApplicationResult](master, ShutdownApplication(appId))) {
+              case Success(result) =>
+                val output = if (result.appId.isSuccess) {
+                  Map("status" -> "success", "info" -> null)
+                } else {
+                  Map("status" -> "fail", "info" -> result.appId.failed.get.toString)
+                }
+                complete(upickle.write(output))
+              case Failure(ex) =>
+                failWith(ex)
+            }
           }
       }
-    }
-  }
-
-  private def finish[T](future: OnCompleteFutureMagnet[T])(implicit evidence: upickle.Writer[T]): Route = {
-    onComplete(future) {
-      case Success(value) =>
-          complete(upickle.write(value))
-      case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-    }
-  }
-
-  private def finish[T](future: OnCompleteFutureMagnet[T], writer: T => String): Route = {
-    onComplete(future) {
-      case Success(value) =>
-        complete(writer(value))
-      case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
     }
   }
 }

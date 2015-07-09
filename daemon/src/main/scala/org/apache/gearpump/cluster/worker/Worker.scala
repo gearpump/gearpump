@@ -125,9 +125,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       val aliveFor = System.currentTimeMillis() - createdTime
       val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
       val userDir = System.getProperty("user.dir");
-      sender ! WorkerData(Some(WorkerDescription(id, "active", address,
-        aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir)))
-
+      sender ! WorkerData(WorkerDescription(id, "active", address,
+        aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir))
     case ChangeExecutorResource(appId, executorId, usedResource) =>
       for (executor <- executorActorRef(appId, executorId);
            allocatedResource <- allocatedResources.get(executor)) {

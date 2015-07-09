@@ -38,6 +38,8 @@ object ClientToMaster {
   case class ShutdownApplication(appId: Int)
   case class ResolveAppId(appId: Int)
 
+  case class ResolveWorkerId(workerId: Int)
+
   case object GetJarFileContainer
 
   case class QueryAppMasterConfig(appId: Int)
@@ -57,6 +59,8 @@ object MasterToClient {
   case class ShutdownApplicationResult(appId : Try[Int])
   case class ReplayApplicationResult(appId: Try[Int])
   case class ResolveAppIdResult(appMaster: Try[ActorRef])
+
+  case class ResolveWorkerIdResult(worker: Try[ActorRef])
 
   case class AppMasterConfig(config: Config)
 
@@ -105,7 +109,7 @@ object AppMasterToMaster {
 
   case object GetAllWorkers
   case class GetWorkerData(workerId: Int)
-  case class WorkerData(workerDescription: Option[WorkerDescription])
+  case class WorkerData(workerDescription: WorkerDescription)
 
   case object GetMasterData
   case class MasterData(masterDescription: MasterDescription)

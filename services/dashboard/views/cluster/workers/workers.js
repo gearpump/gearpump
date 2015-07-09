@@ -24,7 +24,7 @@ angular.module('dashboard.cluster')
       return status === 'active' ? good : bad;
     };
 
-    restapi.subscribe('/workers', $scope,
+    restapi.subscribe('/master/workerlist', $scope,
       function (data) {
         // TODO: Serde WorkerData (#458)
         $scope.workers = data.map(function (worker) {

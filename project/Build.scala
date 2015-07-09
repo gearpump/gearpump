@@ -194,7 +194,7 @@ object Build extends sbt.Build {
         }
       )
   ).aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, pipeline, state)
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state)
 
   lazy val packProject = Project(
     id = "gearpump-pack",
