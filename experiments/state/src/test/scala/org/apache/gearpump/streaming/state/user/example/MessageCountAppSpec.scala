@@ -26,6 +26,7 @@ import org.scalatest.prop.PropertyChecks
 import org.scalatest.{PropSpec, Matchers, BeforeAndAfter}
 
 import scala.util.Success
+import scala.concurrent.Future
 
 class MessageCountAppSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
 
@@ -57,15 +58,9 @@ class MessageCountAppSpec extends PropSpec with PropertyChecks with Matchers wit
     val masterReceiver = createMockMaster()
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
-
-      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
-        getMainClassName(MessageCountApp), args)
+      Future {MessageCountApp.main(masterConfig, args)}
       masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
       masterReceiver.reply(SubmitApplicationResult(Success(0)))
-
-      process.destroy()
     }
   }
-
-
 }

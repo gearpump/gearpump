@@ -79,8 +79,9 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     appMasterContext = AppMasterContext(appId, "test", resource, None, mockMaster.ref, appMasterRuntimeInfo)
     appDescription = StreamApplication("test", Graph(taskDescription1  ~> taskDescription2), conf)
 
+    import scala.concurrent.duration._
     mockMasterProxy = getActorSystem.actorOf(
-      Props(new MasterProxy(List(mockMaster.ref.path))), AppMasterSpec.MOCK_MASTER_PROXY)
+      Props(new MasterProxy(List(mockMaster.ref.path), 30 seconds)), AppMasterSpec.MOCK_MASTER_PROXY)
     TestActorRef[AppMaster](
       AppMasterRuntimeEnvironment.props(List(mockMasterProxy.path), appDescription, appMasterContext))(getActorSystem)
 
@@ -120,7 +121,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       getActorSystem.stop(mockMasterProxy)
       watcher.expectTerminated(mockMasterProxy)
 
-      mockMasterProxy = getActorSystem.actorOf(Props(new MasterProxy(List(mockMaster.ref.path))), AppMasterSpec.MOCK_MASTER_PROXY)
+      import scala.concurrent.duration._
+      mockMasterProxy = getActorSystem.actorOf(Props(new MasterProxy(List(mockMaster.ref.path), 30 seconds)), AppMasterSpec.MOCK_MASTER_PROXY)
       mockMaster.expectMsgClass(15 seconds, classOf[RegisterAppMaster])
     }
 

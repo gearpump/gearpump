@@ -32,10 +32,12 @@ trait RestServices extends
   implicit def executionContext = actorRefFactory.dispatcher
 
   lazy val routes =
-      staticRoute ~
-      masterRoute ~
-      workerRoute ~
-      appMasterRoute
+    masterRoute ~
+    workerRoute ~
+    appMasterRoute ~
+    // make sure staticRoute is the final one, as it will try to lookup resource in local path
+    // if there is no match in previous routes
+    staticRoute
 }
 
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {

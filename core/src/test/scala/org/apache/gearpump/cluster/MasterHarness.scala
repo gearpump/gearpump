@@ -20,7 +20,8 @@ package org.apache.gearpump.cluster
 
 import java.io.File
 import java.net.{UnknownHostException, SocketTimeoutException, Socket, InetSocketAddress, ServerSocket, URLClassLoader}
-import java.util.concurrent.TimeUnit
+import java.util.Properties
+import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor.{Actor, ActorSystem, Address, Props}
 import akka.testkit.TestProbe
@@ -31,6 +32,7 @@ import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Constants, LogUtil, ActorUtil, Util}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.Duration
 import scala.sys.process.Process
 import scala.util.Try
@@ -38,10 +40,13 @@ import scala.util.Try
 trait MasterHarness {
   private val LOG = LogUtil.getLogger(getClass)
 
+  implicit val pool = MasterHarness.cachedPool
+
   private var system: ActorSystem = null
   private var systemAddress: Address = null
   private var host: String = null
   private var port: Int = 0
+  private var masterProperties = new Properties()
   val PROCESS_BOOT_TIME = Duration(25, TimeUnit.SECONDS)
 
   def getActorSystem: ActorSystem = system
@@ -56,6 +61,9 @@ trait MasterHarness {
     systemAddress = ActorUtil.getSystemAddress(system)
     host = systemAddress.host.get
     port = systemAddress.port.get
+
+    masterProperties.put(s"${GEARPUMP_CLUSTER_MASTERS}.0", s"$getHost:$getPort")
+    masterProperties.put(s"${GEARPUMP_HOSTNAME}", s"$getHost")
 
     LOG.info(s"Actor system is started, $host, $port")
   }
@@ -130,13 +138,24 @@ trait MasterHarness {
     mainObj.getClass.getName.dropRight(1)
   }
 
+  import Constants._
+
   def getMasterListOption(): Array[String] = {
-    Array(s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=$getHost:$getPort",
-    s"-D${Constants.GEARPUMP_HOSTNAME}=$getHost")
+    masterProperties.asScala.toList.map { kv =>
+      s"-D${kv._1}=${kv._2}"
+    }.toArray
+  }
+
+
+  def masterConfig: Config = {
+    ConfigFactory.parseProperties(masterProperties).withFallback(system.settings.config)
   }
 }
 
 object MasterHarness {
+
+  val cachedPool = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
+
   class MockMaster(receiver: TestProbe) extends Actor {
     def receive: Receive = {
       case msg => {

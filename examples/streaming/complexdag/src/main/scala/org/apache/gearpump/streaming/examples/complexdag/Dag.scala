@@ -18,14 +18,15 @@
 
 package org.apache.gearpump.streaming.examples.complexdag
 
-import org.apache.gearpump.cluster.UserConfig
+import com.typesafe.config.Config
+import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
 import org.apache.gearpump.util.Graph.{Node => GraphNode}
-import org.apache.gearpump.util.{Graph, LogUtil}
+import org.apache.gearpump.util.{AkkaApp, Graph, LogUtil}
 import org.slf4j.Logger
 import org.apache.gearpump.streaming.task.Task
 
@@ -62,7 +63,7 @@ case class Sink_2(_context : TaskContext, _conf: UserConfig) extends Sink(_conte
 case class Sink_3(_context : TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
 case class Sink_4(_context : TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
 
-object Dag extends App with ArgumentsParser {
+object Dag extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   val RUN_FOR_EVER = -1
 
@@ -102,9 +103,11 @@ object Dag extends App with ArgumentsParser {
     app
   }
 
-  val config = parse(args)
-  val context = ClientContext()
-  val appId = context.submit(application(config))
-  context.close()
+  override def main(conf: Config, args: Array[String]): Unit = {
+    val userConf = parse(args)
+    val context = ClientContext(conf)
+    val appId = context.submit(application(userConf))
+    context.close()
+  }
 }
 

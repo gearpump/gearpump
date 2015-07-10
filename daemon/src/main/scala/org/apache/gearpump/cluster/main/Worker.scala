@@ -24,44 +24,44 @@ import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.worker.{Worker => WorkerActor}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.apache.gearpump.util.LogUtil.ProcessType
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
 import scala.util.Try
 
-object Worker extends App with ArgumentsParser {
-  var workerConfig = ClusterConfig.load.worker
+object Worker extends AkkaApp with ArgumentsParser {
+  override def akkaConfig = ClusterConfig.load.worker
 
   override val description = "Start a worker daemon"
 
-  val LOG : Logger = {
-    LogUtil.loadConfiguration(workerConfig, ProcessType.WORKER)
-    //delay creation of LOG instance to avoid creating an empty log file as we reset the log file name here
-    LogUtil.getLogger(getClass)
-  }
+  var LOG : Logger = LogUtil.getLogger(getClass)
 
   def uuid = java.util.UUID.randomUUID.toString
 
-  def start(): Unit = {
+  def main(akkaConf: Config, args: Array[String]): Unit = {
     val id = uuid
 
-    val system = ActorSystem(id, workerConfig)
+    this.LOG = {
+      LogUtil.loadConfiguration(akkaConf, ProcessType.WORKER)
+      //delay creation of LOG instance to avoid creating an empty log file as we reset the log file name here
+      LogUtil.getLogger(getClass)
+    }
 
-    val masterAddress = workerConfig.getStringList(GEARPUMP_CLUSTER_MASTERS).asScala.map { address =>
+    val system = ActorSystem(id, akkaConf)
+
+    val masterAddress = akkaConf.getStringList(GEARPUMP_CLUSTER_MASTERS).asScala.map { address =>
       val hostAndPort = address.split(":")
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
     }
 
     LOG.info(s"Trying to connect to masters " + masterAddress.mkString(",") + "...")
-    val masterProxy = system.actorOf(MasterProxy.props(masterAddress), MASTER)
+    val masterProxy = system.actorOf(MasterProxy.props(masterAddress), s"masterproxy${system.name}")
 
     system.actorOf(Props(classOf[WorkerActor], masterProxy),
       classOf[WorkerActor].getSimpleName + id)
 
     system.awaitTermination()
   }
-
-  Try(start).failed.foreach{ex => help; throw ex}
 }

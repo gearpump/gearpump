@@ -25,6 +25,7 @@ import org.apache.gearpump.util.Util
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
 import scala.util.Success
+import scala.concurrent.Future
 
 class DagSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
 
@@ -44,14 +45,8 @@ class DagSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
     val masterReceiver = createMockMaster()
     val args = requiredArgs
 
-    val process = Util.startProcess(getMasterListOption(), getContextClassPath,
-      getMainClassName(Dag), args)
-
-    try {
-      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-      masterReceiver.reply(SubmitApplicationResult(Success(0)))
-    } finally {
-      process.destroy()
-    }
+    Future{Dag.main(masterConfig, args)}
+    masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+    masterReceiver.reply(SubmitApplicationResult(Success(0)))
   }
 }

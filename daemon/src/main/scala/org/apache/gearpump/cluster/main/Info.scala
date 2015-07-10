@@ -19,20 +19,20 @@ package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
 import scala.util.Try
 
-object Info extends App with ArgumentsParser {
+object Info extends AkkaApp with ArgumentsParser {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
   override val description = "Query the Application list"
 
-  def start : Unit = {
-    val client = ClientContext()
+  def main(akkaConf: Config, args: Array[String]): Unit = {
+    val client = ClientContext(akkaConf)
 
     val AppMastersData(appMasters) = client.listApps
     Console.println("== Application Information ==")
@@ -43,6 +43,4 @@ object Info extends App with ArgumentsParser {
     }
     client.close()
   }
-
-  Try(start).failed.foreach{ex => help; throw ex}
 }

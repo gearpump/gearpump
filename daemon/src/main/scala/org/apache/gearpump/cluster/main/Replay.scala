@@ -18,12 +18,12 @@
 package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
 import scala.util.Try
 
-object Replay extends App with ArgumentsParser {
+object Replay extends AkkaApp with ArgumentsParser {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
@@ -32,17 +32,15 @@ object Replay extends App with ArgumentsParser {
 
   override val description = "Replay the application from current min clock(low watermark)"
 
-  def start : Unit = {
+  def main(akkaConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
 
     if (null == config) {
       return
     }
 
-    val client = ClientContext()
+    val client = ClientContext(akkaConf)
     client.replayFromTimestampWindowTrailingEdge(config.getInt("appid"))
     client.close()
   }
-
-  Try(start).failed.foreach{ex => help; throw ex}
 }

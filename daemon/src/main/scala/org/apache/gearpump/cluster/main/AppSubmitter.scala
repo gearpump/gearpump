@@ -22,12 +22,12 @@ import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 
 import org.apache.gearpump.cluster.main.Shell.help
-import org.apache.gearpump.util.{Constants, LogUtil, Util}
+import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.util.Try
 
-object AppSubmitter extends App with ArgumentsParser {
+object AppSubmitter extends AkkaApp with ArgumentsParser {
   val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val ignoreUnknownArgument = true
@@ -38,7 +38,7 @@ object AppSubmitter extends App with ArgumentsParser {
     "namePrefix" -> CLIOption[String]("<application name prefix>", required = false, defaultValue = Some("")),
     "jar" -> CLIOption("<application>.jar", required = true))
 
-  def start : Unit = {
+  def main(akkaConf: Config, args: Array[String]): Unit = {
 
     val config = parse(args)
     if (null == config) {
@@ -86,6 +86,4 @@ object AppSubmitter extends App with ArgumentsParser {
       throw new Exception("No main class specified")
     }
   }
-
-  Try(start).failed.foreach{ex => help; throw ex}
 }

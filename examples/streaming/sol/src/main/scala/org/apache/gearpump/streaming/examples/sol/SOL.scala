@@ -18,16 +18,17 @@
 
 package org.apache.gearpump.streaming.examples.sol
 
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{Graph, LogUtil}
+import org.apache.gearpump.util.{AkkaApp, Graph, LogUtil}
 import org.slf4j.Logger
 
-object SOL extends App with ArgumentsParser {
+object SOL extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -54,8 +55,10 @@ object SOL extends App with ArgumentsParser {
     app
   }
 
-  val config = parse(args)
-  val context = ClientContext()
-  val appId = context.submit(application(config))
-  context.close()
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val config = parse(args)
+    val context = ClientContext(akkaConf)
+    val appId = context.submit(application(config))
+    context.close()
+  }
 }

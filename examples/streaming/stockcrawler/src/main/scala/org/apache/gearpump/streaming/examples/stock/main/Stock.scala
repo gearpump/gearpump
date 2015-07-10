@@ -30,10 +30,10 @@ import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Graph.{Path, Node}
-import org.apache.gearpump.util.{Graph, LogUtil}
+import org.apache.gearpump.util.{AkkaApp, Graph, LogUtil}
 import org.slf4j.Logger
 
-object Stock extends App with ArgumentsParser {
+object Stock extends AkkaApp with ArgumentsParser {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
@@ -62,12 +62,14 @@ object Stock extends App with ArgumentsParser {
     app
   }
 
-  val config = parse(args)
-  val context = ClientContext()
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val config = parse(args)
+    val context = ClientContext(akkaConf)
 
-  implicit val system = context.system
+    implicit val system = context.system
 
-  val app = crawler(config)
-  val appId = context.submit(app)
-  context.close()
+    val app = crawler(config)
+    val appId = context.submit(app)
+    context.close()
+  }
 }

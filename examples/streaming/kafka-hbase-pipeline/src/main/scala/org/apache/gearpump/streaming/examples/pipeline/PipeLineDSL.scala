@@ -31,7 +31,7 @@ import org.apache.gearpump.streaming.dsl.StreamApp._
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{AkkaApp, s, LogUtil}
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 import upickle._
@@ -60,16 +60,17 @@ class TimeReplayableSourceTest1 extends TimeReplayableSource {
 
   override def close(): Unit = {}
 }
-object PipeLineDSL extends App with ArgumentsParser {
+object PipeLineDSL extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "conf" -> CLIOption[String]("<conf file>", required = true)
   )
-  val context = ClientContext()
-  implicit val system = context.system
 
   def application(context: ClientContext, config: ParseResult): Unit = {
+
+    implicit val system = context.system
+
     val pipeLinePath = config.getString("conf")
     val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
     val kafkaConfig = new KafkaConfig(pipeLineConfig)
@@ -77,7 +78,7 @@ object PipeLineDSL extends App with ArgumentsParser {
       def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
     }
     val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig).withValue(HBASESINK, repo)
-    System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
+    System.sSystem.setPropertyts.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
 
     val app = StreamApp("PipeLineDSL", context, appConfig)
     val producer = app.readFromKafka(kafkaConfig, msg => {
@@ -135,69 +136,13 @@ object PipeLineDSL extends App with ArgumentsParser {
       }
     })
 
-    /*
-    val producer = app.readFromTimeReplayableSource(new TimeReplayableSourceTest1, msg => {
-      val jsonData = msg.msg.asInstanceOf[String]
-      val envelope = read[Envelope](jsonData)
-      val body = read[Body](envelope.body)
-      body.metrics
-    }, 10, 1, "time-replayable-producer")
-    producer.flatMap(metrics => {
-      Some(metrics.flatMap(datum => {
-        datum.dimension match {
-          case CPU =>
-            Some(datum)
-          case _ =>
-            None
-        }
-      }))
-    }).map((() => {
-      val average = TAverage(pipeLineConfig.getInt(CPU_INTERVAL))
-      msg: Array[Datum] => {
-        val now = System.currentTimeMillis
-        msg.flatMap(datum => {
-          average.average(datum, now)
-        })
-      }
-    })()).writeToSink(pipeLineConfig, (sinkInterface: HBaseSinkInterface, table: String) => {
-      metrics: Array[Datum] => {
-        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-        LOG.info("writing-to-Sink")
-      }
-    })
-
-    producer.flatMap(metrics => {
-      Some(metrics.flatMap(datum => {
-        datum.dimension match {
-          case MEM =>
-            Some(datum)
-          case _ =>
-            None
-        }
-      }))
-    }).map((() => {
-      val average = TAverage(pipeLineConfig.getInt(MEM_INTERVAL))
-      msg: Array[Datum] => {
-        val now = System.currentTimeMillis
-        msg.flatMap(datum => {
-          average.average(datum, now)
-        })
-      }
-    })()).writeToSink(pipeLineConfig, (sinkInterface: HBaseSinkInterface, table: String) => {
-      metrics: Array[Datum] => {
-        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-        LOG.info("writing-to-Sink")
-      }
-    })
-    */
-
     context.submit(app)
     context.close()
 
   }
-  Try({
+
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val context = ClientContext(akkaConf)
     application(context, parse(args))
-  }).failed.foreach(throwable => {
-    LOG.error("Application Failed", throwable)
-  })
+  }
 }

@@ -23,10 +23,11 @@ import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.{AkkaApp, Graph}
 import org.apache.gearpump.util.Graph._
+import com.typesafe.config.Config
 
-object Transport extends App with ArgumentsParser {
+object Transport extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "source"-> CLIOption[Int]("<how many task to generate data>", required = false, defaultValue = Some(10)),
     "inspector"-> CLIOption[Int]("<how many over speed inspector>", required = false, defaultValue = Some(4)),
@@ -50,11 +51,13 @@ object Transport extends App with ArgumentsParser {
       withInt(VelocityInspector.FAKE_PLATE_THRESHOLD, 200)
     StreamApplication("transport", Graph(source ~> inspector, queryServer), userConfig)
   }
-  
-  val config = parse(args)
-  val context = ClientContext()
-  implicit val system = context.system
-  context.submit(application(config))
-  context.close()
+
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val config = parse(args)
+    val context = ClientContext(akkaConf)
+    implicit val system = context.system
+    context.submit(application(config))
+    context.close()
+  }
 }
 

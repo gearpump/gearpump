@@ -17,6 +17,7 @@
  */
 package org.apache.gearpump.streaming.examples.fsio
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Cancellable
@@ -35,7 +36,7 @@ class SeqFileStreamProcessor(taskContext : TaskContext, config: UserConfig) exte
 
   import taskContext.taskId
 
-  val outputPath = new Path(config.getString(OUTPUT_PATH).get + System.getProperty("file.separator") + taskId)
+  val outputPath = new Path(config.getString(OUTPUT_PATH).get + File.separator + taskId)
   var writer: SequenceFile.Writer = null
   val textClass = new Text().getClass
   val key = new Text()

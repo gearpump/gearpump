@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.streaming.storage
 
-import org.apache.gearpump.cluster.{MiniCluster, TestUtil}
+import org.apache.gearpump.cluster.{MasterHarness, MiniCluster, TestUtil}
 import org.apache.gearpump.streaming.StreamingTestUtil
 import org.apache.gearpump.util.Constants
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
@@ -28,7 +28,7 @@ import scala.language.postfixOps
 
 class InMemoryAppStoreOnMasterSpec extends WordSpec with Matchers with BeforeAndAfterAll{
   implicit val timeout = Constants.FUTURE_TIMEOUT
-  import scala.concurrent.ExecutionContext.Implicits.global
+  implicit val dispatcher = MasterHarness.cachedPool
 
   "InMemoryAppStoreOnMaster" should {
     "save and return the data properly" in {

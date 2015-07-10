@@ -19,23 +19,23 @@ package org.apache.gearpump.experiments.pagerank.example
 
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.experiments.pagerank.PageRankApplication
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.{AkkaApp, Graph}
 import org.apache.gearpump.util.Graph.Node
 
-object PageRankExample extends App {
+object PageRankExample extends AkkaApp {
 
   val a = "a"
   val b = "b"
   val c = "c"
   val d = "d"
 
-  val pageRankGraph = Graph(a ~> b, a~>c, a~>d, b~>a, b~>d, d~>b, d~>c, c~>b)
-  
-  val app = new PageRankApplication("pagerank", iteration = 100, delta = 0.001, pageRankGraph)
+  def help: Unit = Unit
 
-  val context = ClientContext()
-
-  val appId = context.submit(app)
-
-  context.close()
+  def main(akkaConf: Config, args: Array[String]): Unit = {
+    val pageRankGraph = Graph(a ~> b, a ~> c, a ~> d, b ~> a, b ~> d, d ~> b, d ~> c, c ~> b)
+    val app = new PageRankApplication("pagerank", iteration = 100, delta = 0.001, pageRankGraph)
+    val context = ClientContext(akkaConf)
+    val appId = context.submit(app)
+    context.close()
+  }
 }

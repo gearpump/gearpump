@@ -35,6 +35,8 @@ import org.scalatest._
 import scala.concurrent.duration.Duration
 import scala.util.{Success, Try}
 
+import scala.concurrent.Future
+
 class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
   private val LOG = LogUtil.getLogger(getClass)
@@ -101,59 +103,32 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
 
     val masterReceiver = createMockMaster()
 
-    val info = Util.startProcess(getMasterListOption(),
-      getContextClassPath,
-      getMainClassName(org.apache.gearpump.cluster.main.Info),
-      Array.empty)
+    Future {org.apache.gearpump.cluster.main.Info.main(masterConfig, Array.empty)}
 
-    try {
-
-      masterReceiver.expectMsg(PROCESS_BOOT_TIME, AppMastersDataRequest)
-      masterReceiver.reply(AppMastersData(List(AppMasterData(AppMasterActive, 0, "appName"))))
-
-    } finally {
-      info.destroy()
-    }
+    masterReceiver.expectMsg(PROCESS_BOOT_TIME, AppMastersDataRequest)
+    masterReceiver.reply(AppMastersData(List(AppMasterData(AppMasterActive, 0, "appName"))))
   }
 
   "Kill" should "be started without exception" in {
 
     val masterReceiver = createMockMaster()
 
-    val kill = Util.startProcess(getMasterListOption(),
-      getContextClassPath,
-      getMainClassName(org.apache.gearpump.cluster.main.Kill),
-      Array("-appid", "0"))
+    Future {org.apache.gearpump.cluster.main.Kill.main(masterConfig, Array("-appid", "0"))}
 
-
-    try {
-
-      masterReceiver.expectMsg(PROCESS_BOOT_TIME, ShutdownApplication(0))
-      masterReceiver.reply(ShutdownApplicationResult(Success(0)))
-
-    } finally {
-      kill.destroy()
-    }
+    masterReceiver.expectMsg(PROCESS_BOOT_TIME, ShutdownApplication(0))
+    masterReceiver.reply(ShutdownApplicationResult(Success(0)))
   }
 
   "Replay" should "be started without exception" in {
 
     val masterReceiver = createMockMaster()
 
-    val replay = Util.startProcess(getMasterListOption(),
-      getContextClassPath,
-      getMainClassName(org.apache.gearpump.cluster.main.Replay),
-      Array("-appid", "0"))
+    Future {org.apache.gearpump.cluster.main.Replay.main(masterConfig, Array("-appid", "0"))}
 
-    try {
-
-      masterReceiver.expectMsgType[ResolveAppId](PROCESS_BOOT_TIME)
-      masterReceiver.reply(ResolveAppIdResult(Success(masterReceiver.ref)))
-      masterReceiver.expectMsgType[ReplayFromTimestampWindowTrailingEdge](PROCESS_BOOT_TIME)
-      masterReceiver.reply(ReplayApplicationResult(Success(0)))
-    } finally {
-      replay.destroy()
-    }
+    masterReceiver.expectMsgType[ResolveAppId](PROCESS_BOOT_TIME)
+    masterReceiver.reply(ResolveAppIdResult(Success(masterReceiver.ref)))
+    masterReceiver.expectMsgType[ReplayFromTimestampWindowTrailingEdge](PROCESS_BOOT_TIME)
+    masterReceiver.reply(ReplayApplicationResult(Success(0)))
   }
 
   "Local" should "be started without exception" in {
