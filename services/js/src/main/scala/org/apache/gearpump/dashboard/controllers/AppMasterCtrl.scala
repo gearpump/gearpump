@@ -56,7 +56,7 @@ case class AggregatedProcessedMessages(total: Int, rate: Double)
 case class ProcessorConnections(inputs: Int, outputs: Int)
 
 @JSExportAll
-case class ProcessedMessages(total: Array[Int], rate: Array[Double])
+case class ProcessedMessages(total: js.Array[Int], rate: js.Array[Double])
 
 @JSExportAll
 case class ProcessorsData(processors: Map[ProcessorId, ProcessorDescription], hierarchyLevels: Map[Int, Int], var weights: Map[Int, Double])
@@ -73,39 +73,6 @@ class DataSet extends js.Object {
   def update(nodes: js.Array[_<:Any]): js.Array[Int] = js.native
 }
 
-/*
-data
-Object {nodes: o, edges: o}edges: o_data: Object
-  0_1: Object
-    arrows: Object
-      to: Object
-        scaleFactor: 0.2__proto__: Object__proto__: Object
-    color: Object
-      opacity: 0.8__proto__: Object
-    from: 0
-    hoverWidth: 0
-    id: "0_1"
-    selectionWidth: 0
-    to: 1
-    width: 3.6__proto__: Object
-  0_2: Object
-    arrows: Object
-      to: Object
-        scaleFactor: 0.2__proto__: Object__proto__: Object
-    color: Object
-      opacity: 0.8__proto__: Object
-    from: 0
-    hoverWidth: 0
-    id: "0_2"
-    selectionWidth: 0
-    to: 2
-    width: 3.6__proto__: Object
-  0_3: Object
-  0_4: Object
-  0_5: Object
-  0_6: Object
-  3_4: Object4_7: Object5_4: Object5_7: Object5_8: Object8_7: Object9_10: Object9_11: Object11_7: Object__proto__: Object_fieldId: "id"_options: Object__proto__: Object_subscribers: Object_type: Object__proto__: Objectlength: 15__proto__: onodes: o__proto__: Object
- */
 @JSExportAll
 case class DagData(nodes: DataSet, edges: DataSet)
 
@@ -154,13 +121,11 @@ trait MetricNames extends js.Object {
 @JSExport
 @injectable("AppMasterConfig")
 class AppMasterConfig(routeProvider: RouteProvider) extends Config {
-  println("AppMasterConfig")
   routeProvider.when ("/apps/app/:id", Route("views/apps/app/appmaster.html", "Application", "AppMasterCtrl") )
 }
 
 @JSExport
 class StreamingDag(data: StreamingAppMasterDataDetail) {
-
   import StreamingDag._
 
   val appId = data.appId
@@ -171,10 +136,10 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     (node1 + "_" + node2) -> GraphEdge(node1, node2, edge)
   }).toMap
   val executors = data.executors
-  var meter = Map.empty[String, Map[String,MetricInfo[Meter]]]
-  var histogram = Map.empty[String, Map[String,MetricInfo[Histogram]]]
+  var meter = Map.empty[String, Map[String, MetricInfo[_ <: MetricType]]]
+  var histogram = Map.empty[String, Map[String, MetricInfo[_ <: MetricType]]]
   val d3 = js.Dynamic.global.d3
-  type MetricMap =  Map[String, Map[String, MetricInfo[_ <: MetricType]]]
+  type MetricMap = Map[String, Map[String, MetricInfo[_ <: MetricType]]]
 
   @JSExport
   def hasMetrics: Boolean = {
@@ -197,7 +162,6 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
               taskId=taskId,
               metric=metric,
               typeInfo=data.value)
-            println(s"read metric count=${metric.count}")
             meter.contains(name) match {
               case true =>
                 var map = meter(name)
@@ -210,7 +174,13 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
             val metric = upickle.read[Histogram](data.value.json)
             val (appId, processorId, taskClass, taskId, name) = decodeName(metric.name)
             val key = processorId + "_" + taskId
-            val metricInfo = MetricInfo[Histogram](appId, processorId, taskClass, taskId, metric, data.value)
+            val metricInfo = MetricInfo[Histogram](
+              appId=appId,
+              processorId=processorId,
+              taskClass=taskClass,
+              taskId=taskId,
+              metric=metric,
+              typeInfo=data.value)
             histogram.contains(name) match {
               case true =>
                 var map = histogram(name)
@@ -233,13 +203,15 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     }
   }
 
+  import js.JSConverters._
+
   @JSExport
-  def getAggregatedMetrics(metricMap: MetricMap, metricCategory: String, metricType: String, processorId: Option[Int]): Array[Double] = {
+  def getAggregatedMetrics(metricMap: MetricMap, metricCategory: String, metricType: String, processorId: Option[Int]): js.Array[Double] = {
       val ids = processorId match {
         case Some(id) =>
-          Array(id)
+          js.Array(id)
         case None =>
-          processors.keys.toArray
+          processors.keys.toJSArray
       }
       ids.flatMap(pid => {
         getProcessorMetrics(pid, metricMap, metricCategory, metricType)
@@ -344,31 +316,31 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
   }
 
   @JSExport
-  def getProcessingTime(processorId: UndefOr[Int]): Array[Double] = {
+  def getProcessingTime(processorId: UndefOr[Int]): js.Array[Double] = {
     processorId.isDefined match {
       case true =>
         val id = processorId.get
         getAggregatedMetrics(histogram, "processTime", "mean", Some(id))
       case false =>
         val array = getAggregatedMetrics(histogram, "processTime", "mean", None)
-        Array(array.sum/array.length)
+        js.Array(array.sum/array.length)
     }
   }
 
   @JSExport
-  def getReceiveLatency(processorId: UndefOr[Int]): Array[Double] = {
+  def getReceiveLatency(processorId: UndefOr[Int]): js.Array[Double] = {
     processorId.isDefined match {
       case true =>
         val id = processorId.get
         getAggregatedMetrics(histogram, "receiveLatency", "mean", Some(id))
       case false =>
         val array = getAggregatedMetrics(histogram, "receiveLatency", "mean", None)
-        Array(array.sum/array.length)
+        js.Array(array.sum/array.length)
     }
   }
 
   @JSExport
-  def getProcessorsData(): ProcessorsData = {
+  def getProcessorsData: ProcessorsData = {
     val weights = processors.keys.map(processorId => {
       processorId -> calculateProcessorWeight(processorId)
     }).toMap[Int, Double]
@@ -428,7 +400,7 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
   }
 
   @JSExport
-  def getEdgesData(): EdgesData = {
+  def getEdgesData: EdgesData = {
     val bandwidths = edges.keys.map(edgeId => {
       edgeId -> calculateEdgeBandwidth(edgeId)
     }).toMap
@@ -478,12 +450,10 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
 
 @JSExport
 object StreamingDag {
-  val MeterType = "org.apache.gearpump.shared.Messages.Meter" //"org.apache.gearpump.metrics.Metrics.Meter"
-  val HistogramType = "org.apache.gearpump.shared.Messages.Histogram" //"org.apache.gearpump.metrics.Metrics.Histogram"
-
+  val MeterType = "org.apache.gearpump.shared.Messages.Meter"
+  val HistogramType = "org.apache.gearpump.shared.Messages.Histogram"
   def apply(data: StreamingAppMasterDataDetail) = new StreamingDag(data)
 }
-
 
 trait AppMasterScope extends Scope {
   var activeProcessorId: Int = js.native
@@ -491,8 +461,8 @@ trait AppMasterScope extends Scope {
   var charts: js.Array[Chart] = js.native
   var names: MetricNames = js.native
   var itemsByPage: Int = js.native
-  var metrics: js.Array[MetricInfo[Meter]] = js.native
-  var streamingDag: StreamingDag = js.native
+  var metrics: js.Array[MetricInfo[_<:MetricType]] = js.native
+  var streamingDag: UndefOr[StreamingDag] = js.native
   var summary: js.Array[SummaryEntry] = js.native
   var switchToTabIndex: TabIndex = js.native
   var tabs: js.Array[Tab] = js.native
@@ -500,8 +470,8 @@ trait AppMasterScope extends Scope {
 
   var receivedMessages: AggregatedProcessedMessages = js.native
   var sentMessages: AggregatedProcessedMessages = js.native
-  var processingTime: Array[Double] = js.native
-  var receiveLatency: Array[Double] = js.native
+  var processingTime: js.Array[Double] = js.native
+  var receiveLatency: js.Array[Double] = js.native
 
   var isMeter: js.Function0[Boolean] = js.native
   var load: js.Function2[HTMLElement, Tab,Unit] = js.native
@@ -514,13 +484,10 @@ trait AppMasterScope extends Scope {
   var updateVisGraphNodes: js.Function0[Unit] = js.native
 }
 
-
 @JSExport
 @injectable("AppMasterCtrl")
 class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Compile)
   extends AbstractController[AppMasterScope](scope) {
-
-  println("AppMasterCtrl")
 
   def load(elem: HTMLElement, tab: Tab): Unit = {
     restApi.getUrl(tab.templateUrl) onComplete {
@@ -562,12 +529,12 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
 
   import scalajs.js.timers._
 
-  def getMetrics: Unit = {
+  def getMetrics(): Unit = {
     val url = s"/metrics/app/${scope.app.appId}/app${scope.app.appId}?readLatest=true"
     restApi.subscribe(url) onComplete {
       case Success(rdata) =>
         val value = upickle.read[HistoryMetrics](rdata)
-        Option(value).foreach(scope.streamingDag.updateMetrics(_))
+        Option(value).foreach(scope.streamingDag.get.updateMetrics(_))
         setTimeout(500)(getMetrics _)
       case Failure(t) =>
         println(s"failed ${t.getMessage}")

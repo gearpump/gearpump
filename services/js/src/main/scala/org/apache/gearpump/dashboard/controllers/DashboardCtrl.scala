@@ -30,7 +30,6 @@ case class Link(label: String, url: String, iconClass: String)
 @JSExport
 @injectable("DashboardConfig")
 class DashboardConfig(routeProvider: RouteProvider) extends Config {
-  println("DashboardConfig")
   routeProvider.when ("/", Route.redirectTo ("/cluster") ).otherwise (Route.redirectTo ("/") )
 }
 
@@ -44,8 +43,6 @@ trait DashboardScope extends Scope {
 @injectable("DashboardCtrl")
 class DashboardCtrl(scope: DashboardScope, location: Location)
   extends AbstractController[DashboardScope](scope) {
-
-  println("DashboardCtrl")
 
   val links = js.Array(
     Link("Cluster", "#/cluster", "glyphicon glyphicon-th-large"),

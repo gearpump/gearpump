@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.dashboard.controllers
 
-import com.greencatsoft.angularjs.core.{Interval, Promise, Timeout}
+import com.greencatsoft.angularjs.core.{Scope, Interval, Promise, Timeout}
 import com.greencatsoft.angularjs.{AbstractController, injectable}
 import org.apache.gearpump.dashboard.services.{ConfService, DagStyleService, Flags}
 
@@ -35,7 +35,7 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
 
   def init(): Unit = {
     scope.visgraph = VisGraph(
-      options=dagStyle.newOptions(Flags(depth=scope.streamingDag.hierarchyDepth())),
+      options=dagStyle.newOptions(Flags(depth=scope.streamingDag.get.hierarchyDepth())),
       data=dagStyle.newData(),
       events=DoubleClickEvent(doubleclick _)
     )
@@ -60,7 +60,7 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
   }
 
   def updateVisGraphNodes(): Unit = {
-    val data = scope.streamingDag.getProcessorsData()
+    val data = scope.streamingDag.get.getProcessorsData
     data.weights += -1 -> 0
     val suggestRadius = rangeMapper(data.weights, dagStyle.nodeRadiusRange())
     var diffs = js.Array[VisNode]()
@@ -95,7 +95,7 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
   }
 
   def updateVisGraphEdges(): Unit = {
-    val data = scope.streamingDag.getEdgesData()
+    val data = scope.streamingDag.get.getEdgesData
     data.bandwidths += "-1" -> 0.0
     val suggestWidth = rangeMapper(data.bandwidths, dagStyle.edgeWidthRange())
     val suggestArrowSize = rangeMapper(data.bandwidths, dagStyle.edgeArrowSizeRange())
@@ -156,12 +156,11 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
   }
 
   def updateMetricsCounter(): Unit = {
-    scope.receivedMessages = scope.streamingDag.getReceivedMessages(undefined)
-    scope.sentMessages = scope.streamingDag.getSentMessages(undefined)
-    scope.processingTime = scope.streamingDag.getProcessingTime(undefined)
-    scope.receiveLatency = scope.streamingDag.getReceiveLatency(undefined)
+    scope.receivedMessages = scope.streamingDag.get.getReceivedMessages(undefined)
+    scope.sentMessages = scope.streamingDag.get.getSentMessages(undefined)
+    scope.processingTime = scope.streamingDag.get.getProcessingTime(undefined)
+    scope.receiveLatency = scope.streamingDag.get.getReceiveLatency(undefined)
   }
-
 
   def redrawVisGraph(): Unit = {
     updateVisGraphNodes()

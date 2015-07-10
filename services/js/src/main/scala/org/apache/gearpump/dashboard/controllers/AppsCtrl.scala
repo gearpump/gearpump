@@ -22,7 +22,6 @@ trait AppsScope extends Scope {
 @JSExport
 @injectable("AppsConfig")
 class AppsConfig(routeProvider: RouteProvider) extends Config {
-  println("AppsConfig")
   routeProvider.when ("/apps", Route("views/apps/apps.html", "Applications", "AppsCtrl") )
 }
 
@@ -30,8 +29,6 @@ class AppsConfig(routeProvider: RouteProvider) extends Config {
 @injectable("AppsCtrl")
 class AppsCtrl(scope: AppsScope, location: Location, restApi: RestApiService, util: UtilService)
   extends AbstractController[AppsScope](scope) {
-
-  println("AppsCtrl")
 
   scope.apps = js.Array[AppMasterData]()
   scope.active = active _

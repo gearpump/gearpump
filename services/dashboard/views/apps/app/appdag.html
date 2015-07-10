@@ -9,7 +9,7 @@
 <!-- left half -->
 <div class="col-md-9">
   <div class="panel panel-default">
-    <div class="panel-heading">Graph: {{app.name}}</div>
+    <div class="panel-heading">Graph: {{app.appName}}</div>
     <div class="panel-body">
       <div ng-if="visgraph">
         <visnetwork data="visgraph.data" options="visgraph.options" events="visgraph.events"/>
@@ -54,14 +54,14 @@
       <metrics-card
         heading="Avg. Processing Time per Task"
         explanation="Average message processing time per task"
-        value="{{processingTime|number:2}}"
+        value="{{processingTime[0]|number:2}}"
         unit="ms"/>
     </div>
     <div class="col-md-12">
       <metrics-card
         heading="Avg. Receive Latency per Task"
         explanation="Average message receive latency per task"
-        value="{{receiveLatency|number:2}}"
+        value="{{receiveLatency[0]|number:2}}"
         unit="ms"/>
     </div>
   </div>

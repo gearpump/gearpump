@@ -33,8 +33,6 @@ import scala.scalajs.js.annotation.JSExport
 class RestApiService(http: HttpService, timeout: Timeout, options: ConfService) extends Service {
   require(http != null, "Missing argument 'http'.")
 
-  println("RestApiService")
-
   def subscribe(uri: String): Future[String] = {
     val url = options.conf.restapiRoot + uri
     val future: Future[js.Any] = http.get(url)
@@ -69,8 +67,6 @@ class RestApiService(http: HttpService, timeout: Timeout, options: ConfService) 
 @injectable("RestApiService")
 class RestApiServiceFactory(http: HttpService, timeout: Timeout, modal: ModalService, options: ConfService)
   extends Factory[RestApiService] {
-
-  println("RestApiServiceFactory")
 
   def openModal: ModalInstance = {
     val options = ModalOptions()

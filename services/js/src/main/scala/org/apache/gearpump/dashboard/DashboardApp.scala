@@ -20,9 +20,6 @@ package org.apache.gearpump.dashboard
 
 import com.greencatsoft.angularjs.Angular
 import org.apache.gearpump.dashboard.controllers._
-import org.apache.gearpump.dashboard.directives._
-import org.apache.gearpump.dashboard.filters.HumanizeFilter
-import org.apache.gearpump.dashboard.filters.LastPartFilter
 import org.apache.gearpump.dashboard.services._
 
 import scala.scalajs.js.JSApp
@@ -31,12 +28,10 @@ import scala.scalajs.js.annotation.JSExport
 @JSExport
 object DashboardApp extends JSApp {
   override def main(): Unit = {
-    println("DashboardApp")
-
-    val conf = Angular.module("conf", Array.empty[String])
+    val conf = Angular.module("dashboard.conf", Array.empty[String])
     conf.factory[ConfServiceFactory]
 
-    val restapi = Angular.module("dashboard.restapi", Array("conf"))
+    val restapi = Angular.module("dashboard.restapi", Array("dashboard.conf"))
     restapi.factory[RestApiServiceFactory]
 
     val cluster = Angular.module("dashboard.cluster", Array("ngRoute"))
@@ -49,7 +44,7 @@ object DashboardApp extends JSApp {
     apps.config[AppsConfig]
     apps.controller[AppsCtrl]
 
-    val appmaster = Angular.module("dashboard.apps.appmaster", Array("conf"))
+    val appmaster = Angular.module("dashboard.apps.appmaster", Array("dashboard.conf"))
     appmaster.factory[DagStyleServiceFactory]
     appmaster.config[AppMasterConfig]
     appmaster.controller[AppMasterCtrl]
@@ -72,7 +67,7 @@ object DashboardApp extends JSApp {
       "directive.tabset",
       "directive.explanationicon",
       "directive.metricscard",
-      "conf",
+      "dashboard.conf",
       "dashboard.restapi",
       "dashboard.cluster",
       "dashboard.apps",

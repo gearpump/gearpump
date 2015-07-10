@@ -18,7 +18,6 @@ case class Slots(usage: Double, used: Int, total: Int)
 @JSExport
 @injectable("WorkersConfig")
 class WorkersConfig(routeProvider: RouteProvider) extends Config {
-  println("WorkersConfig")
   routeProvider.when("/cluster/workers", Route("views/cluster/workers/workers.html", "Workers", "WorkersCtrl"))
 }
 
@@ -33,8 +32,6 @@ trait WorkersScope extends Scope {
 @injectable("WorkersCtrl")
 class WorkersCtrl(scope: WorkersScope, restApi: RestApiService)
   extends AbstractController[WorkersScope](scope) {
-
-  println("WorkersCtrl")
 
   def slotsUsageClass(usage: Int, good: String, concern: String, bad: String): String = {
     if(usage < 50) {

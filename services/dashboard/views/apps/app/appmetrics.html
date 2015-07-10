@@ -74,13 +74,13 @@
     <tr ng-repeat="m in instance">
       <td><span ng-bind="lastPart(m.taskClass)"></span></td>
       <td><span ng-bind="taskName(m)"></span></td>
-      <td class="text-right"><span ng-bind="m.metric.count|number:0"></span></td>
-      <td class="text-right"><span ng-bind="m.metric.min|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.metric.max|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.metric.mean|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.metric.stddev|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.metric.median|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.metric.p95|number:0"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.count"></span></td>
+      <td class="text-right"><span ng-bind="m.metric.min"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.max"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.mean|number:2"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.stddev|number:2"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.median"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.p95"></span> ms</td>
     </tr>
     </tbody>
     <tfoot>

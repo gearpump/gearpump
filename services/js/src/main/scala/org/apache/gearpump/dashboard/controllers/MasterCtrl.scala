@@ -14,7 +14,6 @@ import scala.util.{Failure, Success}
 @JSExport
 @injectable("MasterConfig")
 class MasterConfig(routeProvider: RouteProvider) extends Config {
-  println("MasterConfig")
   routeProvider.when("/cluster", Route.redirectTo("/cluster/master")).
     when("/cluster/master", Route("views/cluster/master.html", "Master", "MasterCtrl"))
 }
@@ -29,8 +28,6 @@ trait MasterScope extends Scope {
 @injectable("MasterCtrl")
 class MasterCtrl(scope: MasterScope, restApi: RestApiService)
   extends AbstractController[MasterScope](scope) {
-
-  println("MasterCtrl")
 
   def statusClass(value: js.UndefOr[js.Any], good: String, bad: String): String = {
     val status = UndefOrOps.getOrElse$extension(value)("")
