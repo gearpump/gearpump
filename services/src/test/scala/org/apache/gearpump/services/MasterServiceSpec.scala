@@ -18,24 +18,74 @@
 
 package org.apache.gearpump.services
 
+import java.io.File
+
+import akka.actor.ActorRef
+import akka.testkit.TestActor.{AutoPilot, KeepRunning}
+import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.AppMasterToMaster.MasterData
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
+import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
+import org.apache.gearpump.cluster.ClientToMaster.{QueryMasterConfig, ResolveWorkerId, SubmitApplication}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, WorkerList}
+import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, ResolveWorkerIdResult, SubmitApplicationResult, SubmitApplicationResultValue}
 import org.apache.gearpump.cluster.worker.WorkerDescription
+import org.apache.gearpump.streaming.ProcessorDescription
+import org.apache.gearpump.streaming.appmaster.SubmitApplicationRequest
+import org.apache.gearpump.util.{Constants, Graph}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import spray.http.{BodyPart, ContentTypes, HttpEntity, MultipartFormData}
 import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.util.{Success, Try}
+
 
 class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers with BeforeAndAfterAll {
 
   import upickle._
 
   def actorRefFactory = system
-  val testCluster = TestCluster(system)
 
-  def master = testCluster.master
+  val workerId = 0
+  val mockWorker = TestProbe()
+
+  mockWorker.setAutoPilot {
+    new AutoPilot {
+      def run(sender: ActorRef, msg: Any) = msg match {
+        case GetWorkerData(workerId) =>
+          sender ! WorkerData(WorkerDescription.empty.copy(state = "active", workerId = workerId))
+          KeepRunning
+      }
+    }
+  }
+
+  val mockMaster = TestProbe()
+  mockMaster.setAutoPilot {
+    new AutoPilot {
+      def run(sender: ActorRef, msg: Any) = msg match {
+        case GetMasterData =>
+          sender ! MasterData(null)
+          KeepRunning
+        case  AppMastersDataRequest =>
+          sender ! AppMastersData(List.empty[AppMasterData])
+          KeepRunning
+        case GetAllWorkers =>
+          sender ! WorkerList(List(0))
+          KeepRunning
+        case ResolveWorkerId(0) =>
+          sender ! ResolveWorkerIdResult(Success(mockWorker.ref))
+          KeepRunning
+        case QueryMasterConfig =>
+          sender ! MasterConfig(null)
+          KeepRunning
+        case submit: SubmitApplication =>
+          sender ! SubmitApplicationResult(Success(0))
+          KeepRunning
+      }
+    }
+  }
+
+  def master = mockMaster.ref
 
   it should "return master info when asked" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
@@ -44,19 +94,22 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
       val content = response.entity.asString
       read[MasterData](content)
     }
+
+    mockMaster.expectMsg(GetMasterData)
   }
 
   it should "return a json structure of appMastersData for GET request" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmasters") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
+    (Get(s"/api/$REST_VERSION/master/applist") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
       //check the type
       read[AppMastersData](response.entity.asString)
     }
+    mockMaster.expectMsg(AppMastersDataRequest)
   }
 
   it should "return a json structure of worker data for GET request" in {
     implicit val customTimeout = RouteTestTimeout(25.seconds)
-    Get(s"/api/$REST_VERSION/workers") ~> masterRoute ~> check {
+    Get(s"/api/$REST_VERSION/master/workerlist") ~> masterRoute ~> check {
       //check the type
       val workerListJson = response.entity.asString
       val workers = read[List[WorkerDescription]](workerListJson)
@@ -65,36 +118,47 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
         worker.state shouldBe "active"
       }
     }
+    mockMaster.expectMsg(GetAllWorkers)
+    mockMaster.expectMsgType[ResolveWorkerId]
+    mockWorker.expectMsgType[GetWorkerData]
   }
 
-  "ConfigQueryService" should "return config for application" in {
+  it should "return config for master" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/config/app/0") ~> masterRoute).asInstanceOf[RouteResult] ~> check{
+    (Get(s"/api/$REST_VERSION/master/config") ~> masterRoute).asInstanceOf[RouteResult] ~> check{
       val responseBody = response.entity.asString
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
     }
+    mockMaster.expectMsg(QueryMasterConfig)
   }
 
-  "ConfigQueryService" should "return config for master" in {
-    implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/config/master") ~> masterRoute).asInstanceOf[RouteResult] ~> check{
-      val responseBody = response.entity.asString
-      val config = Try(ConfigFactory.parseString(responseBody))
-      assert(config.isSuccess)
+  "submitJar" should "submit an invalid jar and get success = false" in {
+    implicit val timeout = Constants.FUTURE_TIMEOUT
+    implicit val routeTestTimeout = RouteTestTimeout(30.second)
+    val tempfile = new File("foo")
+    val mfd = MultipartFormData(Seq(BodyPart(tempfile, "file")))
+    Post(s"/api/$REST_VERSION/master/submitapp", mfd) ~> masterRoute ~> check {
+      assert(response.status.intValue == 500)
     }
   }
 
-  "ConfigQueryService" should "return config for worker" in {
-    implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/config/worker/1") ~> masterRoute).asInstanceOf[RouteResult] ~> check{
-      val responseBody = response.entity.asString
-      val config = Try(ConfigFactory.parseString(responseBody))
-      assert(config.isSuccess)
-    }
-  }
+  val processors = Map(
+    0 -> ProcessorDescription(0, "A", parallelism = 1),
+    1 -> ProcessorDescription(1, "B", parallelism = 1)
+  )
 
-  override def afterAll {
-    testCluster.shutDown
+  import org.apache.gearpump.util.Graph._
+  val dag = Graph(0 ~ "partitioner" ~> 1)
+  val submit = SubmitApplicationRequest("complexdag", appJar = null, processors, dag)
+
+  "submitDag" should "submit a SubmitApplicationRequest and get an appId > 0" in {
+    implicit val timeout = Constants.FUTURE_TIMEOUT
+    val jsonValue = write(submit)
+    Post(s"/api/$REST_VERSION/master/submitdag", HttpEntity(ContentTypes.`application/json`, jsonValue)) ~> masterRoute ~> check {
+      val responseBody = response.entity.asString
+      val submitApplicationResultValue = read[SubmitApplicationResultValue](responseBody)
+      validate(submitApplicationResultValue.appId >= 0, "invalid appid")
+    }
   }
 }

@@ -19,10 +19,10 @@
 package org.apache.gearpump.services
 
 import java.net.URL
+import java.util.jar.Manifest
+
 import spray.http.StatusCodes
 import spray.routing.HttpService
-
-import java.util.jar.Manifest
 
 trait StaticService extends HttpService {
 
@@ -31,7 +31,7 @@ trait StaticService extends HttpService {
     manifest.getMainAttributes.getValue("Implementation-Version")
   }
 
-  def getManifest(myClass : Class[_]): Manifest = {
+  private def getManifest(myClass : Class[_]): Manifest = {
     val resource = "/" + myClass.getName().replace(".", "/") + ".class"
     val fullPath = myClass.getResource(resource).toString()
     val archivePath = fullPath.substring(0, fullPath.length() - resource.length())
@@ -39,27 +39,25 @@ trait StaticService extends HttpService {
     new Manifest(input)
   }
 
-  val staticRoute =
+  val staticRoute = {
     pathEndOrSingleSlash {
       getFromResource("index.html")
     } ~
-      path("favicon.ico") {
-        complete(StatusCodes.NotFound)
-      } ~
-      path(Rest) { path =>
-        getFromResource("%s" format path)
-      } ~
+    path("favicon.ico") {
+      complete(StatusCodes.NotFound)
+    } ~
+    path(Rest) { path =>
+      getFromResource("%s" format path)
+    } ~
     pathPrefix("webjars") {
       get {
         getFromResourceDirectory("META-INF/resources/webjars")
       }
     } ~
-    pathPrefix("api"/s"$REST_VERSION") {
-      path("version") {
-        get {
-          complete(version)
-        }
+    path("version") {
+      get {
+        complete(version)
       }
     }
-
+  }
 }

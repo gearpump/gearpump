@@ -28,7 +28,7 @@ import com.typesafe.config.Config
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster._
-import org.apache.gearpump.cluster.MasterToClient.MasterConfig
+import org.apache.gearpump.cluster.MasterToClient.{ResolveWorkerIdResult, MasterConfig}
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated, _}
@@ -118,14 +118,6 @@ private[cluster] class Master extends Actor with Stash {
       appManager forward get
     case GetAllWorkers =>
       sender ! WorkerList(workers.values.toList)
-    case get@GetWorkerData(workerId) =>
-      workers.find(_._2 == workerId) match {
-        case Some((ref, _)) =>
-          ref forward get
-        case None =>
-          sender ! WorkerData(None)
-      }
-
     case GetMasterData =>
       val aliveFor = System.currentTimeMillis() - birth
       val logFileDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
@@ -150,6 +142,8 @@ private[cluster] class Master extends Actor with Stash {
     }
   }
 
+  import scala.util.{Success, Failure}
+
   def clientMsgHandler : Receive = {
     case app : SubmitApplication =>
       LOG.debug(s"Receive from client, SubmitApplication $app")
@@ -164,6 +158,13 @@ private[cluster] class Master extends Actor with Stash {
     case app : ResolveAppId =>
       LOG.debug(s"Receive from client, resolving appId ${app.appId} to ActorRef")
       appManager.forward(app)
+    case resolve: ResolveWorkerId =>
+      LOG.debug(s"Receive from client, resolving workerId ${resolve.workerId}")
+      val worker = workers.find(_._2 == resolve.workerId)
+      worker match {
+        case Some(worker) => sender ! ResolveWorkerIdResult(Success(worker._1))
+        case None => sender ! ResolveWorkerIdResult(Failure(new Exception(s"cannot find worker ${resolve.workerId}")))
+      }
     case AppMastersDataRequest =>
       LOG.debug("Master received AppMastersDataRequest")
       appManager forward AppMastersDataRequest

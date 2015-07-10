@@ -65,24 +65,24 @@ angular.module('dashboard.restapi', ['cfp.loadingBar'])
 
       /** Return the config link of an application */
       appConfigLink: function(appId) {
-        return conf.restapiRoot + '/config/app/' + appId;
+        return conf.restapiRoot + '/appmaster/' + appId + '/config';
       },
 
       /** Return the config link of a worker */
       workerConfigLink: function(workerId) {
-        return conf.restapiRoot + '/config/worker/' + workerId;
+        return conf.restapiRoot + '/worker/' + workerId +  '/config';
       },
 
       /** Return the config link of the master */
       masterConfigLink: function() {
-        return conf.restapiRoot + '/config/master';
+        return conf.restapiRoot + '/master/config';
       },
 
       submitUserApp: function(file, onComplete) {
         cfpLoadingBar.start();
 
         var upload = Upload.upload({
-          url: conf.restapiRoot + '/userapp/submit',
+          url: conf.restapiRoot + '/master/submitapp',
           method: 'POST',
           headers: {},
           fields: {},
@@ -118,7 +118,7 @@ angular.module('dashboard.restapi', ['cfp.loadingBar'])
           $timeout.cancel(timeoutPromise);
         });
         var fn = function () {
-          $http.get(conf.restapiRoot + '/version')
+          $http.get(conf.root + 'version')
             .then(function (response) {
               noticeWindow.$promise.then(noticeWindow.hide);
               if (onData) {

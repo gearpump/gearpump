@@ -1,20 +1,50 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 package org.apache.gearpump.services
 
-import akka.actor.{ActorSystem, ActorRef}
-import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, WorkerData, GetWorkerData, MasterData, GetMasterData}
-import org.apache.gearpump.cluster.ClientToMaster.{QueryMasterConfig, QueryWorkerConfig, QueryAppMasterConfig}
-import org.apache.gearpump.cluster.MasterToAppMaster.{WorkerList, AppMastersDataRequest, AppMastersData}
-import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, WorkerConfig, AppMasterConfig}
+import java.io.{File, IOException}
+import java.net.URLClassLoader
+
+import akka.actor.{ActorRef, ActorSystem}
+import com.typesafe.config.Config
+import org.apache.commons.io.FileUtils
+import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
+import org.apache.gearpump.cluster.ClientToMaster.QueryMasterConfig
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
+import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, SubmitApplicationResultValue}
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.main.AppSubmitter
 import org.apache.gearpump.cluster.worker.WorkerDescription
-import org.apache.gearpump.util.{Constants}
-import spray.http.StatusCodes
+import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
+import org.apache.gearpump.streaming.StreamApplication
+import org.apache.gearpump.streaming.appmaster.SubmitApplicationRequest
+import org.apache.gearpump.util.ActorUtil.{askActor, askWorker}
+import org.apache.gearpump.util.Constants.GEARPUMP_APP_JAR
+import org.apache.gearpump.util.{Constants, Util}
+import spray.http.{MediaTypes, MultipartFormData}
 import spray.routing
 import spray.routing.HttpService
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
-import akka.pattern.ask
 
 trait MasterService extends HttpService {
   import upickle._
@@ -25,91 +55,126 @@ trait MasterService extends HttpService {
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
   def masterRoute: routing.Route = {
-    pathPrefix("api"/s"$REST_VERSION") {
-      path("master") {
+    pathPrefix("api" / s"$REST_VERSION" / "master") {
+      pathEnd {
         get {
-          onComplete((master ? GetMasterData).asInstanceOf[Future[MasterData]]) {
+          onComplete(askActor[MasterData](master, GetMasterData)) {
             case Success(value: MasterData) => complete(write(value))
-            case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+            case Failure(ex) => failWith(ex)
           }
         }
       } ~
-      path("appmasters") {
-        onComplete((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]]) {
+      path("applist") {
+        onComplete(askActor[AppMastersData](master, AppMastersDataRequest)) {
           case Success(value: AppMastersData) =>
             complete(write(value))
-          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+          case Failure(ex) => failWith(ex)
         }
       } ~
-      path("workers" / IntNumber) { workerId =>
-        onComplete((master ? GetWorkerData(workerId)).asInstanceOf[Future[WorkerData]]) {
-          case Success(value: WorkerData) =>
-            value.workerDescription match {
-              case Some(description) =>
-                complete(write(description))
-              case None =>
-                complete(StatusCodes.InternalServerError, s"worker $workerId not exists")
-            }
-          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-        }
-      } ~
-      path("workers") {
-        def workerDataFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].flatMap { workerList =>
+      path("workerlist") {
+        def future = askActor[WorkerList](master, GetAllWorkers).flatMap { workerList =>
           val workers = workerList.workers
           val workerDataList = List.empty[WorkerDescription]
-          Future.fold(workers.map(master ? GetWorkerData(_)))(workerDataList) { (workerDataList, workerData) =>
-            val workerDescription = workerData.asInstanceOf[WorkerData].workerDescription
-            if (workerDescription.isEmpty) {
-              workerDataList
-            } else {
-              workerDataList :+ workerDescription.get
-            }
+
+          Future.fold(workers.map { workerId =>
+            askWorker[WorkerData](master, workerId, GetWorkerData(workerId))
+          })(workerDataList) { (workerDataList, workerData) =>
+            workerDataList :+ workerData.workerDescription
           }
         }
-        onComplete(workerDataFuture) {
+        onComplete(future) {
           case Success(result: List[WorkerDescription]) => complete(write(result))
-          case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+          case Failure(ex) => failWith(ex)
         }
       } ~
-      path("config" / "app" / IntNumber) { appId =>
-        onComplete((master ? QueryAppMasterConfig(appId)).asInstanceOf[Future[AppMasterConfig]]) {
-          case Success(value: AppMasterConfig) =>
-            val config = Option(value.config).map(_.root.render()).getOrElse("{}")
-            complete(config)
-          case Failure(ex) =>
-            complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-        }
-      } ~
-      path("config" / "worker" / IntNumber) { workerId =>
-
-        def workerDataFuture(workerId: Int): Future[WorkerConfig] = {
-          (master ? GetWorkerData(workerId)).asInstanceOf[Future[WorkerData]].flatMap { workerData =>
-
-            workerData.workerDescription.map { workerDescription =>
-              system.actorSelection(workerDescription.actorPath)
-            }.map { workerActor =>
-              (workerActor ? QueryWorkerConfig(workerId)).asInstanceOf[Future[WorkerConfig]]
-            }.getOrElse(Future(WorkerConfig(ConfigFactory.empty)))
-          }
-        }
-        onComplete(workerDataFuture(workerId)) {
-          case Success(value: WorkerConfig) =>
-            val config = Option(value.config).map(_.root.render()).getOrElse("{}")
-            complete(config)
-          case Failure(ex) =>
-            complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
-        }
-      } ~
-      path("config" / "master") {
-        onComplete((master ? QueryMasterConfig).asInstanceOf[Future[MasterConfig]]) {
+      path("config") {
+        onComplete(askActor[MasterConfig](master, QueryMasterConfig)) {
           case Success(value: MasterConfig) =>
             val config = Option(value.config).map(_.root.render()).getOrElse("{}")
             complete(config)
           case Failure(ex) =>
-            complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+            failWith(ex)
+        }
+      } ~
+      path("submitapp") {
+        post {
+          respondWithMediaType(MediaTypes.`application/json`) {
+            entity(as[MultipartFormData]) { formData =>
+              val jar = formData.fields.head.entity.data.toByteArray
+              onComplete(Future(MasterService.submitJar(jar, system.settings.config))) {
+                case Success(_) =>
+                  complete(write(MasterService.Status(true)))
+                case Failure(ex) =>
+                  failWith(ex)
+              }
+            }
+          }
+        }
+      } ~
+      path("submitdag") {
+        post {
+          import SubmitApplicationRequest._
+          entity(as[SubmitApplicationRequest]) { submitApplicationRequest =>
+            import submitApplicationRequest.{appJar, appName, dag, processors}
+
+            Option(appJar) match {
+              case Some(jar) =>
+                System.setProperty(GEARPUMP_APP_JAR, appJar)
+              case None =>
+            }
+
+            val context = ClientContext(system.settings.config, Some(system), Some(master))
+
+            val graph = dag.mapVertex {processorId =>
+              processors(processorId)
+            }.mapEdge { (node1, edge, node2) =>
+              PartitionerDescription(PartitionerByClassName(edge))
+            }
+
+            val appId = context.submit(new StreamApplication(appName, UserConfig.empty, graph))
+
+            import upickle._
+            val submitApplicationResultValue = SubmitApplicationResultValue(appId)
+            val jsonData = write(submitApplicationResultValue)
+            complete(jsonData)
+          }
         }
       }
+    }
+  }
+}
 
+object MasterService {
+  case class Status(success: Boolean, reason: String = null)
+
+  /** Upload user application (JAR) into temporary directory and use AppSubmitter to submit
+    * it to master. The temporary file will be removed after submission is done/failed.
+    */
+  def submitJar(data: Array[Byte], config: Config): Unit = {
+    val tempfile = File.createTempFile("gearpump_userapp_", "")
+    FileUtils.writeByteArrayToFile(tempfile, data)
+    try {
+
+      import scala.collection.JavaConversions._
+      val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+      val master = masters.head
+      val hostname = config.getString(Constants.GEARPUMP_HOSTNAME)
+      val options = Array(
+      s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${master.host}:${master.port}",
+      s"-D${Constants.GEARPUMP_HOSTNAME}=${hostname}"
+      )
+
+      val classPath = Util.getCurrentClassPath
+      val clazz = AppSubmitter.getClass.getName.dropRight(1)
+      val args = Array("-jar", tempfile.toString)
+
+      val process = Util.startProcess(options, classPath, clazz, args)
+      val retval = process.exitValue()
+      if (retval != 0) {
+        throw new IOException(s"Process exit abnormally with code $retval")
+      }
+    } finally {
+      tempfile.delete()
     }
   }
 }

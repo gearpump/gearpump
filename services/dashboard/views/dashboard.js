@@ -37,6 +37,7 @@ angular
     updateVisDagInterval: 2000,
     restapiAutoRefreshInterval: 2000,
     restapiRoot: location.pathname + 'api/v1.0',
+    root: location.pathname,
     webSocketPreferred: false,
     webSocketSendTimeout: 500
   })

@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.services
+package org.apache.gearpump.services.websocket
 
-import akka.actor.{ActorSystem, ActorRef}
-import org.apache.gearpump.services.WebSocketService.WebSocketUrl
+import akka.actor.ActorSystem
+import org.apache.gearpump.services.REST_VERSION
+import org.apache.gearpump.services.websocket.WebSocketService.WebSocketUrl
 import org.apache.gearpump.util.Constants
 import spray.routing.HttpService
 
