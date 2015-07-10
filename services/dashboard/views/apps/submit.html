@@ -1,0 +1,51 @@
+<div class="modal" tabindex="-1" ng-controller="AppSubmitCtrl">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        <button type="button" class="close" ng-click="$hide()">
+          <span>&times;</span></button>
+        <h4>Submit Application</h4>
+
+        <div ng-show="shouldNoticeSubmitFailed">
+          <div class="alert alert-danger alert-dismissible" role="alert">
+            <button type="button" class="close" data-dismiss="alert"
+                    ng-click="shouldNoticeSubmitFailed=false" >
+              <span aria-hidden="true">&times;</span></button>
+            Failed to submit the application. Please try it again.
+          </div>
+        </div>
+
+        <p style="padding:14px 0">
+          Are you sure to submit the self contained jar application and launch it immediately?</p>
+
+        <form class="form-horizontal">
+          <div class="form-group">
+            <label for="opt1" class="col-sm-3 control-label">File Name</label>
+            <div class="col-sm-9" style="padding-bottom:4px">
+              <input type="text" class="form-control input-sm" id="opt1" ng-value="filename"
+                     readonly/>
+            </div>
+            <label for="opt2" class="col-sm-3 control-label">File Size</label>
+            <div class="col-sm-9" style="padding-bottom:4px">
+              <input type="text" class="form-control input-sm" id="opt2" ng-value="filesize"
+                     readonly/>
+            </div>
+            <label for="opt3" class="col-sm-3 control-label">Arguments (optional)</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control input-sm" id="opt3" ng-model="extraArgs"/>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default btn-sm" ng-click="$hide()">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm"
+                ng-disabled="files.length!=1||uploading" ng-click="submit(files[0])">
+          <span ng-show="uploading"
+                class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>&nbsp;
+          Submit
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
