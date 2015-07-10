@@ -94,14 +94,6 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
     system.shutdown()
   }
 
-  property("StreamApp should allow UserConfig and ClusterConfig") {
-    val persistors = pipeLineConfig.getInt(PERSISTORS)
-    val kafkaConfig = new KafkaConfig(pipeLineConfig)
-
-    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig)
-    System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
-  }
-
   property("StreamApp should readFromTimeReplayableSource") {
 
     val app = new StreamApp("PipeLineDSL", system, UserConfig.empty)

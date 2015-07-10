@@ -27,6 +27,8 @@ import org.scalatest.prop.PropertyChecks
 
 import scala.util.{Try, Success}
 
+import scala.concurrent.Future
+
 class DistributedShellSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
 
   before {
@@ -44,14 +46,9 @@ class DistributedShellSpec extends PropSpec with PropertyChecks with Matchers wi
 
     val masterReceiver = createMockMaster()
 
-    val process = Util.startProcess(getMasterListOption(), getContextClassPath,
-        getMainClassName(DistributedShell), requiredArgs)
+    Future{DistributedShell.main(masterConfig, requiredArgs)}
 
-    try {
-      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-      masterReceiver.reply(SubmitApplicationResult(Success(0)))
-    } finally {
-      process.destroy()
-    }
+    masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+    masterReceiver.reply(SubmitApplicationResult(Success(0)))
   }
 }

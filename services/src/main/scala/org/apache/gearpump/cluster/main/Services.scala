@@ -44,7 +44,8 @@ object Services extends App {
     val masterCluster = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
 
     implicit val system = ActorSystem("services" , config)
-    val master = system.actorOf(MasterProxy.props(masterCluster), MASTER)
+    import scala.concurrent.duration._
+    val master = system.actorOf(MasterProxy.props(masterCluster, 1 day), s"masterproxy${system.name}")
 
     WebSocketServices(master)
     RestServices(master)

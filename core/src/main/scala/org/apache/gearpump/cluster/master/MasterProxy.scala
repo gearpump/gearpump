@@ -35,7 +35,7 @@ import scala.concurrent.duration.{FiniteDuration, Duration}
  *
  * @param masters
  */
-class MasterProxy (masters: Iterable[ActorPath])
+class MasterProxy (masters: Iterable[ActorPath], timeout: FiniteDuration)
   extends Actor with Stash {
   import MasterProxy._
 
@@ -50,7 +50,7 @@ class MasterProxy (masters: Iterable[ActorPath])
 
   import context.dispatcher
 
-  def findMaster() = repeatActionUtil(30){
+  def findMaster() = repeatActionUtil(timeout){
     contacts foreach { contact =>
       LOG.info(s"sending identity to $contact")
       contact ! Identify(None)
@@ -70,7 +70,7 @@ class MasterProxy (masters: Iterable[ActorPath])
     case _=>
   }
 
-  def establishing(cancelFindMaster : Cancellable): Actor.Receive = {
+  def establishing(findMaster : Cancellable): Actor.Receive = {
     case ActorIdentity(_, Some(receptionist)) =>
       context watch receptionist
       LOG.info("Connected to [{}]", receptionist.path)
@@ -78,7 +78,7 @@ class MasterProxy (masters: Iterable[ActorPath])
 
       watchers.foreach(_ ! MasterRestarted)
       unstashAll()
-      cancelFindMaster.cancel()
+      findMaster.cancel()
       context.become(active(receptionist) orElse messageHandler(receptionist))
     case ActorIdentity(_, None) => // ok, use another instead
     case msg =>
@@ -103,18 +103,22 @@ class MasterProxy (masters: Iterable[ActorPath])
 
   def scheduler = context.system.scheduler
   import scala.concurrent.duration._
-  private def repeatActionUtil(seconds: Int)(action : => Unit) : Cancellable = {
-    val cancelSend = scheduler.schedule(0 seconds, 2 seconds)(action)
-    val cancelSuicide = scheduler.scheduleOnce(seconds seconds, self, PoisonPill)
+  private def repeatActionUtil(timeout: FiniteDuration)(action : => Unit) : Cancellable = {
+    val send = scheduler.schedule(0 seconds, 2 seconds)(action)
+    val suicide = scheduler.scheduleOnce(timeout) {
+      send.cancel()
+      self ! PoisonPill
+    }
+
     new Cancellable {
       def cancel(): Boolean = {
-        val result1 = cancelSend.cancel()
-        val result2 = cancelSuicide.cancel()
+        val result1 = send.cancel()
+        val result2 = suicide.cancel()
         result1 && result2
       }
 
       def isCancelled: Boolean = {
-        cancelSend.isCancelled && cancelSuicide.isCancelled
+        send.isCancelled && suicide.isCancelled
       }
     }
   }
@@ -125,8 +129,9 @@ object MasterProxy {
   case object MasterStopped
   case class WatchMaster(watcher: ActorRef)
 
-  def props(masters: Iterable[HostPort]): Props = {
+  import scala.concurrent.duration._
+  def props(masters: Iterable[HostPort], duration: FiniteDuration = 30 seconds): Props = {
     val contacts = masters.map(ActorUtil.getMasterActorPath(_))
-    Props(new MasterProxy(contacts))
+    Props(new MasterProxy(contacts, duration))
   }
 }

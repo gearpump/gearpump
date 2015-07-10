@@ -20,17 +20,19 @@ package org.apache.gearpump.examples.distributedshell
 import org.apache.gearpump.cluster.{Application, UserConfig, AppDescription}
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ParseResult, CLIOption, ArgumentsParser}
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
-object DistributedShell extends App with ArgumentsParser {
+object DistributedShell extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  LOG.info(s"Distributed shell submitting application...")
-  val context = ClientContext()
-  val appId = context.submit(Application[DistShellAppMaster]("DistributedShell", UserConfig.empty))
-  context.close()
-  LOG.info(s"Distributed Shell Application started with appId $appId !")
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    LOG.info(s"Distributed shell submitting application...")
+    val context = ClientContext(akkaConf)
+    val appId = context.submit(Application[DistShellAppMaster]("DistributedShell", UserConfig.empty))
+    context.close()
+    LOG.info(s"Distributed Shell Application started with appId $appId !")
+  }
 }

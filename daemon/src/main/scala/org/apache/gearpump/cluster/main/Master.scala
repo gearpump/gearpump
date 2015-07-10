@@ -30,7 +30,7 @@ import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.master.{Master => MasterActor}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil}
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
@@ -38,12 +38,11 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.Try
 
-object Master extends App with ArgumentsParser {
-  var masterConfig = ClusterConfig.load.master
-  private val LOG: Logger = {
-    LogUtil.loadConfiguration(masterConfig, ProcessType.MASTER)
-    LogUtil.getLogger(getClass)
-  }
+object Master extends AkkaApp with ArgumentsParser {
+
+  private var LOG: Logger = LogUtil.getLogger(getClass)
+
+  override def akkaConfig: Config = ClusterConfig.load.master
 
   override val options: Array[(String, CLIOption[Any])] =
     Array("ip"->CLIOption[String]("<master ip address>",required = true),
@@ -51,10 +50,15 @@ object Master extends App with ArgumentsParser {
 
   override val description = "Start Master daemon"
 
-  val config = parse(args)
+  def main(akkaConf: Config, args: Array[String]): Unit = {
 
-  def start() = {
-    master(config.getString("ip"), config.getInt("port"))
+    this.LOG  =  {
+      LogUtil.loadConfiguration(akkaConf, ProcessType.MASTER)
+      LogUtil.getLogger(getClass)
+    }
+
+    val config = parse(args)
+    master(config.getString("ip"), config.getInt("port"), akkaConf)
   }
 
   def verifyMaster(master : String, port: Int, masters : Iterable[String])  = {
@@ -63,8 +67,8 @@ object Master extends App with ArgumentsParser {
     }
   }
 
-  def master(ip:String, port : Int): Unit = {
-    val masters = masterConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
+  def master(ip:String, port : Int, akkaConf: Config): Unit = {
+    val masters = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
 
     if (!verifyMaster(ip, port, masters)) {
       LOG.error(s"The provided ip $ip and port $port doesn't conform with config at gearpump.cluster.masters: ${masters.mkString(", ")}")
@@ -73,7 +77,7 @@ object Master extends App with ArgumentsParser {
 
     val masterList = masters.map(master => s"akka.tcp://${MASTER}@$master").toList.asJava
     val quorum = masterList.size() /2  + 1
-    masterConfig = masterConfig.
+    val masterConfig = akkaConf.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
       withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(ip)).
       withValue("akka.cluster.seed-nodes", ConfigValueFactory.fromAnyRef(masterList)).
@@ -124,8 +128,6 @@ object Master extends App with ArgumentsParser {
 
     system.awaitTermination()
   }
-
-  Try(start).failed.foreach{ex => help; throw ex}
 }
 
 class MasterWatcher(role: String, masterProxy : ActorRef) extends Actor  with ActorLogging {

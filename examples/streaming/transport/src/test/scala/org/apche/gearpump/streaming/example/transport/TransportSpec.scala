@@ -27,6 +27,8 @@ import org.scalatest.prop.PropertyChecks
 
 import scala.util.Success
 
+import scala.concurrent.Future
+
 class TransportSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
   override def beforeAll {
     startActorSystem()
@@ -57,16 +59,9 @@ class TransportSpec extends PropSpec with PropertyChecks with Matchers with Befo
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
 
-      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
-        getMainClassName(Transport), args)
-
-      try {
-
-        masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-        masterReceiver.reply(SubmitApplicationResult(Success(0)))
-      } finally {
-        process.destroy()
-      }
+      Future {Transport.main(masterConfig, args)}
+      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+      masterReceiver.reply(SubmitApplicationResult(Success(0)))
     }
   }
 

@@ -21,13 +21,15 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.streaming.dsl.StreamApp._
+import com.typesafe.config.Config
+import org.apache.gearpump.util.AkkaApp
 
-object WordCount extends App with ArgumentsParser{
+object WordCount extends AkkaApp with ArgumentsParser{
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  def submit(): Unit = {
-    val context = ClientContext()
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val context = ClientContext(akkaConf)
     val app = StreamApp("dsl", context)
     val data = "This is a good start, bingo!! bingo!!"
     app.source(data.lines.toList, 1).
@@ -39,6 +41,4 @@ object WordCount extends App with ArgumentsParser{
     val appId = context.submit(app)
     context.close()
   }
-
-  submit()
 }

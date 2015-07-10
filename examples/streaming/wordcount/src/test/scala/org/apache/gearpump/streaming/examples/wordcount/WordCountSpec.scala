@@ -26,6 +26,7 @@ import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 import scala.util.{Success, Try}
+import scala.concurrent.Future
 
 class WordCountSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
 
@@ -53,20 +54,13 @@ class WordCountSpec extends PropSpec with PropertyChecks with Matchers with Befo
     }
     val masterReceiver = createMockMaster()
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
+
       val args = requiredArgs ++ optionalArgs
 
-      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
-        getMainClassName(WordCount), args)
+      Future {WordCount.main(masterConfig, args)}
 
-      try {
-
-        masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-        masterReceiver.reply(SubmitApplicationResult(Success(0)))
-      } finally {
-        process.destroy()
-      }
+      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+      masterReceiver.reply(SubmitApplicationResult(Success(0)))
     }
   }
-
-
 }

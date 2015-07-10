@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.state.user.example
 
+import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
@@ -27,18 +28,18 @@ import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
 import org.apache.gearpump.streaming.state.user.example.processor.{CountProcessor, NumberGeneratorProcessor}
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.util.{AkkaApp, Graph}
 import org.apache.gearpump.util.Graph.Node
 
 
-object MessageCountApp extends App with ArgumentsParser {
+object MessageCountApp extends AkkaApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "gen" -> CLIOption("<how many gen tasks>", required = false, defaultValue = Some(1)),
     "count" -> CLIOption("<how mange count tasks", required = false, defaultValue = Some(1))
   )
 
-  def application(config: ParseResult) : StreamApplication = {
+  def application(config: ParseResult)(implicit system: ActorSystem) : StreamApplication = {
     val gen = Processor[NumberGeneratorProcessor](config.getInt("gen"))
     val count = Processor[CountProcessor](config.getInt("count"))
     val stateConfig = new PersistentStateConfig(ConfigFactory.parseResources("state.conf"))
@@ -52,9 +53,12 @@ object MessageCountApp extends App with ArgumentsParser {
     app
   }
 
-  val config = parse(args)
-  val context = ClientContext()
-  implicit val system = context.system
-  val appId = context.submit(application(config))
-  context.close()
+  def main(akkaConf: Config, args: Array[String]): Unit = {
+
+    val config = parse(args)
+    val context = ClientContext(akkaConf)
+    implicit val system = context.system
+    val appId = context.submit(application(config))
+    context.close()
+  }
 }

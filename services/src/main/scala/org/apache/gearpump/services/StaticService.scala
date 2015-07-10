@@ -46,9 +46,6 @@ trait StaticService extends HttpService {
     path("favicon.ico") {
       complete(StatusCodes.NotFound)
     } ~
-    path(Rest) { path =>
-      getFromResource("%s" format path)
-    } ~
     pathPrefix("webjars") {
       get {
         getFromResourceDirectory("META-INF/resources/webjars")
@@ -58,6 +55,9 @@ trait StaticService extends HttpService {
       get {
         complete(version)
       }
+    } ~
+    path(Rest) { path =>
+      getFromResource("%s" format path)
     }
   }
 }

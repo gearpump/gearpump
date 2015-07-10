@@ -25,19 +25,16 @@ import org.apache.gearpump.cluster.master.{Master => MasterActor}
 import org.apache.gearpump.cluster.worker.{Worker => WorkerActor}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
-import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
+import org.apache.gearpump.util.{AkkaApp, ActorUtil, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
 import scala.util.Try
 
-object Local extends App with ArgumentsParser {
-  val systemConfig = ClusterConfig.load.master.withFallback(ClusterConfig.load.worker)
+object Local extends AkkaApp with ArgumentsParser {
+  override def akkaConfig: Config = ClusterConfig.load.master.withFallback(ClusterConfig.load.worker)
 
-  private val LOG: Logger = {
-    LogUtil.loadConfiguration(systemConfig, ProcessType.LOCAL)
-    LogUtil.getLogger(getClass)
-  }
+  var LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] =
     Array("sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
@@ -45,22 +42,27 @@ object Local extends App with ArgumentsParser {
 
   override val description = "Start a local cluster"
 
-  def start: Unit = {
+  def main(akkaConf: Config, args: Array[String]): Unit = {
+
+    this.LOG = {
+      LogUtil.loadConfiguration(akkaConf, ProcessType.LOCAL)
+      LogUtil.getLogger(getClass)
+    }
+
     val config = parse(args)
     if (null == config) {
       return
     }
-
-    local(config.getInt("workernum"), config.getBoolean("sameprocess"))
+    local(config.getInt("workernum"), config.getBoolean("sameprocess"), akkaConf)
   }
 
-  def local(workerCount : Int, sameProcess : Boolean) : Unit = {
+  def local(workerCount : Int, sameProcess : Boolean, akkaConf: Config) : Unit = {
     if (sameProcess) {
       LOG.info("Starting local in same process")
       System.setProperty("LOCAL", "true")
     }
-    val masters = systemConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
-    val local = systemConfig.getString(Constants.GEARPUMP_HOSTNAME)
+    val masters = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+    val local = akkaConf.getString(Constants.GEARPUMP_HOSTNAME)
 
     if(masters.size != 1 && masters.head.host != local) {
       LOG.error(s"The ${Constants.GEARPUMP_CLUSTER_MASTERS} is not match with ${Constants.GEARPUMP_HOSTNAME}")
@@ -68,7 +70,7 @@ object Local extends App with ArgumentsParser {
     }
 
     val hostPort = masters.head
-    implicit val system = ActorSystem(MASTER, systemConfig.
+    implicit val system = ActorSystem(MASTER, akkaConf.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port))
     )
 
@@ -81,6 +83,4 @@ object Local extends App with ArgumentsParser {
 
     system.awaitTermination()
   }
-
-  Try(start).failed.foreach{ex => help; throw ex}
 }

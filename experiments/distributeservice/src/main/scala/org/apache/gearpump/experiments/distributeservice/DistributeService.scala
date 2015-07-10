@@ -20,18 +20,19 @@ package org.apache.gearpump.experiments.distributeservice
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.{Application, AppJar, UserConfig, AppDescription}
 import org.apache.gearpump.cluster.main.{ParseResult, CLIOption, ArgumentsParser}
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
-object DistributeService extends App with ArgumentsParser  {
+object DistributeService extends AkkaApp with ArgumentsParser  {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-
-  LOG.info(s"Distribute Service submitting application...")
-  val context = ClientContext()
-  val appId = context.submit(Application[DistServiceAppMaster]("DistributedService", UserConfig.empty))
-  context.close()
-  LOG.info(s"Distribute Service Application started with appId $appId !")
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    LOG.info(s"Distribute Service submitting application...")
+    val context = ClientContext(akkaConf)
+    val appId = context.submit(Application[DistServiceAppMaster]("DistributedService", UserConfig.empty))
+    context.close()
+    LOG.info(s"Distribute Service Application started with appId $appId !")
+  }
 }
