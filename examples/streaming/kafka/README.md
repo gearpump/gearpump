@@ -2,7 +2,7 @@ This README explains how to quick-start a KafkaWordCount example on a single nod
 
 ## Step 1. Download and install Kafka
 
-We support Kafka 0.8.2-beta and you can download it from [the official site](http://kafka.apache.org/downloads.html). Note that our examples might or might not work with other Kafka versions. Extract the downloaded package to any directory you feel comfortable.
+Please download the latest kafka from [the official site](http://kafka.apache.org/downloads.html). Extract the downloaded package to any directory you feel comfortable.
 
 ## Step 2. Configure and Start Zookeeper
 
@@ -78,21 +78,6 @@ Change directory into gearpump root, build gearpump with `sbt pack` and launch a
    ./target/pack/bin/local
    ```
    
-Configure `./target/conf/kafka.conf` as below.
-
-   ```bash
-   kafka {
-     consumer {
-       zookeeper.connect = "127.0.0.1:2181"
-       topics = ["topic1"]
-     }
-     
-     producer {
-       topic: topic2
-     }   
-   }
-   ```
-
 Finally, let's run the KafkaWordCount example.
 
    ```bash
