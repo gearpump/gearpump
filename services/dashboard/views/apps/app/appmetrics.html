@@ -17,28 +17,28 @@
       <th class="col-md-1" st-sort="taskClass" st-skip-natural="true">Task Class</th>
       <th class="col-md-3" st-sort="processorId+'.'+taskId" st-sort-default="true"
           st-skip-natural="true">Task ID</th>
-      <th class="col-md-1 text-right" st-sort="count" st-skip-natural="true">Sampling Points</th>
-      <th class="col-md-1 text-right" st-sort="meanRate" st-skip-natural="true">Mean Rate</th>
-      <th class="col-md-1 text-right" st-sort="movingAverage1m" st-skip-natural="true">MA 1m
+      <th class="col-md-1 text-right" st-sort="metric.count" st-skip-natural="true">Sampling Points1</th>
+      <th class="col-md-1 text-right" st-sort="metric.meanRate" st-skip-natural="true">Mean Rate</th>
+      <th class="col-md-1 text-right" st-sort="metric.m1" st-skip-natural="true">MA 1m
         <explanation-icon value="1-minute moving average"/>
       </th>
-      <th class="col-md-1 text-right" st-sort="movingAverage5m" st-skip-natural="true">MA 5m
+      <th class="col-md-1 text-right" st-sort="metric.m5" st-skip-natural="true">MA 5m
         <explanation-icon value="5-minute moving average"/>
       </th>
-      <th class="col-md-1 text-right" st-sort="movingAverage15m" st-skip-natural="true">MA 15m
+      <th class="col-md-1 text-right" st-sort="metric.m15" st-skip-natural="true">MA 15m
         <explanation-icon value="15-minute moving average"/>
       </th>
     </tr>
     </thead>
     <tbody>
     <tr ng-repeat="m in instance">
-      <td><span ng-bind="m.taskClass|lpart"></span></td>
+      <td><span ng-bind="lastPart(m.taskClass)"></span></td>
       <td><span ng-bind="taskName(m)"></span></td>
-      <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
-      <td class="text-right"><span ng-bind="m.meanRate|number:1"></span> msgs/s</td>
-      <td class="text-right"><span ng-bind="m.movingAverage1m|number:0"></span> msgs/s</td>
-      <td class="text-right"><span ng-bind="m.movingAverage5m|number:0"></span> msgs/s</td>
-      <td class="text-right"><span ng-bind="m.movingAverage15m|number:0"></span> msgs/s</td>
+      <td class="text-right"><span ng-bind="m.metric.count"></span></td>
+      <td class="text-right"><span ng-bind="m.metric.meanRate|number:1"></span> msgs/s</td>
+      <td class="text-right"><span ng-bind="m.metric.m1|number:0"></span> msgs/s</td>
+      <td class="text-right"><span ng-bind="m.metric.m5|number:0"></span> msgs/s</td>
+      <td class="text-right"><span ng-bind="m.metric.m15|number:0"></span> msgs/s</td>
     </tr>
     </tbody>
     <tfoot>
@@ -59,28 +59,28 @@
       <th class="col-md-1" st-sort="taskClass" st-skip-natural="true">Task Class</th>
       <th class="col-md-1" st-sort="processorId+'.'+taskId" st-sort-default="true"
           st-skip-natural="true">Task ID</th>
-      <th class="col-md-1 text-right" st-sort="count" st-skip-natural="true">Sampling Points</th>
-      <th class="col-md-1 text-right" st-sort="minimum" st-skip-natural="true">Min</th>
-      <th class="col-md-1 text-right" st-sort="maximum" st-skip-natural="true">Max</th>
-      <th class="col-md-1 text-right" st-sort="mean" st-skip-natural="true">Mean Rate</th>
-      <th class="col-md-1 text-right" st-sort="stddev" st-skip-natural="true">Std. Dev.</th>
-      <th class="col-md-1 text-right" st-sort="median" st-skip-natural="true">Median</th>
-      <th class="col-md-1 text-right" st-sort="p95" st-skip-natural="true">p95%
+      <th class="col-md-1 text-right" st-sort="metric.count" st-skip-natural="true">Sampling Points</th>
+      <th class="col-md-1 text-right" st-sort="metric.min" st-skip-natural="true">Min</th>
+      <th class="col-md-1 text-right" st-sort="metric.max" st-skip-natural="true">Max</th>
+      <th class="col-md-1 text-right" st-sort="metric.mean" st-skip-natural="true">Mean Rate</th>
+      <th class="col-md-1 text-right" st-sort="metric.stddev" st-skip-natural="true">Std. Dev.</th>
+      <th class="col-md-1 text-right" st-sort="metric.median" st-skip-natural="true">Median</th>
+      <th class="col-md-1 text-right" st-sort="metric.p95" st-skip-natural="true">p95%
         <explanation-icon value="95th percentage"/>
       </th>
     </tr>
     </thead>
     <tbody>
     <tr ng-repeat="m in instance">
-      <td><span ng-bind="m.taskClass|lpart"></span></td>
+      <td><span ng-bind="lastPart(m.taskClass)"></span></td>
       <td><span ng-bind="taskName(m)"></span></td>
-      <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
-      <td class="text-right"><span ng-bind="m.minimum|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.maximum|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.mean|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.stddev|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.median|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.p95|number:0"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.count|number:0"></span></td>
+      <td class="text-right"><span ng-bind="m.metric.min|number:0"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.max|number:0"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.mean|number:0"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.stddev|number:0"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.median|number:0"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.metric.p95|number:0"></span> ms</td>
     </tr>
     </tbody>
     <tfoot>

@@ -19,7 +19,7 @@
 package org.apache.gearpump.dashboard.controllers
 
 import com.greencatsoft.angularjs.{AbstractController, injectable}
-import org.apache.gearpump.shared.Messages.{MetricType, MetricInfo}
+import org.apache.gearpump.shared.Messages.{Meter, MetricInfo, MetricType}
 
 import scala.scalajs.js
 import scala.scalajs.js.UndefOr
@@ -28,26 +28,27 @@ import scala.scalajs.js.annotation.JSExport
 
 @JSExport
 @injectable("AppMetricsCtrl")
-class AppMetricsCtrl(scope: AppMasterScope)
-  extends AbstractController[AppMasterScope](scope) {
+class AppMetricsCtrl(scope: AppMasterScope) extends AbstractController[AppMasterScope](scope) {
+  import js.JSConverters._
 
   println("AppMetricsCtrl")
 
   val lookup = Map[String, String](
-    "streamingDag.meter.receiveThroughput" -> "Receive Throughput",
-    "streamingDag.meter.sendThroughput" -> "Send Throughput",
-    "streamingDag.histogram.processTime" -> "Processing Time",
-    "streamingDag.histogram.receiveLatency" -> "Receive Latency"
+    "streamingDag.receivedMessages" -> "Receive Throughput",
+    "streamingDag.sentMessages" -> "Send Throughput",
+    "streamingDag.processingTime" -> "Processing Time",
+    "streamingDag.receiveLatency" -> "Receive Latency"
   )
-
-  import js.JSConverters._
+  var watchFn: js.Function = _
 
   def init(): Unit = {
     scope.itemsByPage = 15
     scope.taskName = metricInfo _
+    val available = lookup.values.toSeq.toJSArray
+    val selected = available(0)
     scope.names = js.Dynamic.literal(
-      available=lookup.values.toSeq.toJSArray,
-      selected=lookup.values.head
+      available=available,
+      selected=selected
     ).asInstanceOf[MetricNames]
     scope.isMeter = isMeter _
   }
@@ -70,28 +71,43 @@ class AppMetricsCtrl(scope: AppMasterScope)
       case None =>
         false
       case Some(label) =>
-        label.indexOf(".meter.") > 0
+        label match {
+          case "streamingDag.receivedMessages" =>
+            true
+          case "streamingDag.sentMessages" =>
+            true
+          case remaining =>
+            false
+        }
     }
   }
 
   scope.$watch("streamingDag", init _)
-
-  var watchFn: js.Function = _
   scope.$watch("names.selected", (newVal: String) => {
     if (watchFn != null) {
+      println("watchFn != null")
       val fn = watchFn.asInstanceOf[js.Function0[Unit]]
       fn()
       watchFn = null
     }
     getMetricsClassByLabel(newVal) match {
       case None =>
-        scope.metrics = js.Array[String]()
+        scope.metrics = js.Array[MetricInfo[Meter]]()
       case Some(clazz) =>
-        watchFn = scope.$watchCollection(clazz, (array: UndefOr[Map[String,String]]) => {
-          array.toOption.map(array => {
-            scope.metrics = array.values.toSeq.toJSArray
-          })
+        watchFn = scope.$watchCollection(clazz, (array: UndefOr[Any]) => {
+          clazz match {
+            case "streamingDag.receivedMessages" =>
+              val map = scope.streamingDag.meter("receiveThroughput")
+              scope.metrics = map.values.toSeq.toJSArray
+            case "streamingDag.sentMessages" =>
+              val map = scope.streamingDag.meter("sendThroughput")
+              scope.metrics = map.values.toSeq.toJSArray
+            case unknown =>
+              println("unknown type $unknown")
+              scope.metrics = js.Array[MetricInfo[Meter]]()
+          }
         })
     }
   }: Unit)
 }
+

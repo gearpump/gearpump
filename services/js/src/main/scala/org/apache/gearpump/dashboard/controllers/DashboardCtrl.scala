@@ -35,7 +35,7 @@ class DashboardConfig(routeProvider: RouteProvider) extends Config {
 }
 
 trait DashboardScope extends Scope {
-  var breadcrumbs: Service = js.native
+  var breadcrumbs: js.Dynamic = js.native
   var links: js.Array[Link] = js.native
   var navClass: js.Function1[String, Boolean] = js.native
 }
@@ -59,6 +59,7 @@ class DashboardCtrl(scope: DashboardScope, location: Location)
 
   scope.links = links
   scope.navClass = navClass _
-
+  scope.breadcrumbs = js.Dynamic.global.breadcrumbs
+  println(s"breadcrumbs=${scope.breadcrumbs}")
  }
 

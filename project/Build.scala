@@ -168,7 +168,7 @@ object Build extends sbt.Build {
         "io.spray" %%  "spray-can"       % sprayVersion,
         "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
-        "org.scala-js" %% "scalajs-library" % "0.6.3",
+        "org.scala-js" %% "scalajs-library" % "0.6.4",
         "com.lihaoyi" %% "upickle" % "0.2.8",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
