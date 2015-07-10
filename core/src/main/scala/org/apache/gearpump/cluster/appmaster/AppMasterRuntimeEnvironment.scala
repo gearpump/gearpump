@@ -57,7 +57,8 @@ class AppMasterRuntimeEnvironment (
   val appId = appContextInput.appId
   private val LOG = LogUtil.getLogger(getClass, app = appId)
 
-  private val master = context.actorOf(masterFactory(appId, context.actorOf(Props(new MasterProxy(masters)))))
+  import scala.concurrent.duration._
+  private val master = context.actorOf(masterFactory(appId, context.actorOf(Props(new MasterProxy(masters, 30 seconds)))))
   private val appContext = appContextInput.copy(masterProxy = master)
 
   //create appMaster proxy to receive command and forward to appmaster

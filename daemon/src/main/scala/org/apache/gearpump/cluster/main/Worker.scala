@@ -55,7 +55,7 @@ object Worker extends App with ArgumentsParser {
     }
 
     LOG.info(s"Trying to connect to masters " + masterAddress.mkString(",") + "...")
-    val masterProxy = system.actorOf(MasterProxy.props(masterAddress), MASTER)
+    val masterProxy = system.actorOf(MasterProxy.props(masterAddress), s"masterproxy${system.name}")
 
     system.actorOf(Props(classOf[WorkerActor], masterProxy),
       classOf[WorkerActor].getSimpleName + id)

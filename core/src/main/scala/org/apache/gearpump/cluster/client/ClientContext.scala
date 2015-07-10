@@ -51,7 +51,7 @@ class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[Actor
 
   import system.dispatcher
 
-  private val master = mster.getOrElse(system.actorOf(MasterProxy.props(masters), system.name))
+  private val master = mster.getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
 
   LOG.info(s"Creating master proxy ${master} for master list: $masters")
 
