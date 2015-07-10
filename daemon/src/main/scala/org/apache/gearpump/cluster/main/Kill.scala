@@ -19,12 +19,12 @@
 package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
 import scala.util.Try
 
-object Kill extends App with ArgumentsParser {
+object Kill extends AkkaApp with ArgumentsParser {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
@@ -33,18 +33,16 @@ object Kill extends App with ArgumentsParser {
 
   override val description = "Kill an application with application Id"
 
-  def start : Unit = {
+  def main(akkaConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
 
     if (null == config) {
       return
     }
 
-    val client = ClientContext()
+    val client = ClientContext(akkaConf)
     LOG.info("Client ")
     client.shutdown(config.getInt("appid"))
     client.close()
   }
-
-  Try(start).failed.foreach{ex => help; throw ex}
 }

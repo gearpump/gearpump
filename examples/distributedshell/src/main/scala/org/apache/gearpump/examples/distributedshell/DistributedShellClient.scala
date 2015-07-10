@@ -22,12 +22,11 @@ import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
 
 import akka.pattern.ask
-import org.apache.gearpump.util.Constants
+import org.apache.gearpump.util.{AkkaApp, Constants}
 import org.slf4j.{LoggerFactory, Logger}
 
-object DistributedShellClient extends App with ArgumentsParser  {
+object DistributedShellClient extends AkkaApp with ArgumentsParser  {
   implicit val timeout = Constants.FUTURE_TIMEOUT
-  import scala.concurrent.ExecutionContext.Implicits.global
   private val LOG: Logger = LoggerFactory.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -35,14 +34,18 @@ object DistributedShellClient extends App with ArgumentsParser  {
     "command" -> CLIOption[String]("<shell command>", required = true)
   )
 
-  val config = parse(args)
-  val context = ClientContext()
-  val appid = config.getInt("appid")
-  val command = config.getString("command")
-  val appMaster = context.resolveAppID(appid)
-  LOG.info(s"Resolved appMaster $appid address ${appMaster.path.toString}, sending command $command")
-  (appMaster ? ShellCommand(command)).map { result =>
-    LOG.info(s"Result: $result")
-    context.close()
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val config = parse(args)
+    val context = ClientContext(akkaConf)
+    implicit val system = context.system
+    implicit val dispatcher = system.dispatcher
+    val appid = config.getInt("appid")
+    val command = config.getString("command")
+    val appMaster = context.resolveAppID(appid)
+    LOG.info(s"Resolved appMaster $appid address ${appMaster.path.toString}, sending command $command")
+    (appMaster ? ShellCommand(command)).map { result =>
+      LOG.info(s"Result: $result")
+      context.close()
+    }
   }
 }

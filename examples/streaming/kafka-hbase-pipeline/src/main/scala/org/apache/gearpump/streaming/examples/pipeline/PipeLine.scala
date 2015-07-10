@@ -28,11 +28,11 @@ import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{Graph, LogUtil}
+import org.apache.gearpump.util.{AkkaApp, Graph, LogUtil}
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 
-object PipeLine extends App with ArgumentsParser {
+object PipeLine extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   val PROCESSORS = "pipeline.processors"
   val PERSISTORS = "pipeline.persistors"
@@ -42,6 +42,7 @@ object PipeLine extends App with ArgumentsParser {
   )
 
   def application(config: ParseResult): StreamApplication = {
+    implicit val system = context.system
     import Messages._
     val pipeLinePath = config.getString("conf")
     val pipelineConfig = PipeLineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
@@ -65,10 +66,12 @@ object PipeLine extends App with ArgumentsParser {
     app
   }
 
-  val config = parse(args)
-  val context = ClientContext()
-  implicit val system = context.system
-  val appId = context.submit(application(config))
-  context.close()
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
 
+    val config = parse(args)
+    val context = ClientContext(akkaConf)
+
+    val appId = context.submit(application(config))
+    context.close()
+  }
 }

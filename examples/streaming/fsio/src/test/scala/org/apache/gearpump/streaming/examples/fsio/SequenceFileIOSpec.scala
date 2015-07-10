@@ -26,6 +26,7 @@ import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 
 import scala.util.{Success, Try}
+import scala.concurrent.Future
 
 class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
   override def beforeAll {
@@ -56,16 +57,10 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
     val masterReceiver = createMockMaster()
     forAll(validArgs) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
-      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
-        getMainClassName(SequenceFileIO), args)
 
-      try {
-
-        masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-        masterReceiver.reply(SubmitApplicationResult(Success(0)))
-      } finally {
-        process.destroy()
-      }
+      Future {SequenceFileIO.main(masterConfig, args)}
+      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+      masterReceiver.reply(SubmitApplicationResult(Success(0)))
     }
 
     val invalidArgs = {

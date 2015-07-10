@@ -22,37 +22,40 @@ import backtype.storm.Config
 import java.io.File
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{CLIOption, ArgumentsParser}
-import org.apache.gearpump.util.{Constants, Util}
+import org.apache.gearpump.util.{AkkaApp, Constants, Util}
 
 
-object StormRunner extends App with ArgumentsParser {
+object StormRunner extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "storm_topology" -> CLIOption[String]("<storm topology main class>", required = true),
     "storm_args" -> CLIOption[String]("<storm topology name>", required = false),
     "storm_config" -> CLIOption[String]("<storm config path>", required = false),
     "runseconds"-> CLIOption[Int]("<how long to run this example>", required = false, defaultValue = Some(60)))
 
-  val config = parse(args)
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
 
-  val clientContext = ClientContext()
-  val thriftServer = GearpumpThriftServer(clientContext)
-  thriftServer.start()
+    val config = parse(args)
 
-  val topologyClass = config.getString("storm_topology")
-  val stormArgs = config.getString("storm_args")
-  val stormConfig = new File(config.getString("storm_config"))
-  val stormJar = System.getProperty(Constants.GEARPUMP_APP_JAR)
-  val stormOptions = Array("-Dstorm.options=" +
-    s"${Config.NIMBUS_HOST}=127.0.0.1,${Config.NIMBUS_THRIFT_PORT}=${GearpumpThriftServer.THRIFT_PORT}",
-    "-Dstorm.jar=" + stormJar,
-    "-Dstorm.conf.file=" + stormConfig.getName
-  )
+    val clientContext = ClientContext(akkaConf)
+    val thriftServer = GearpumpThriftServer(clientContext)
+    thriftServer.start()
 
-  val classPath = Array(System.getProperty("java.class.path"), stormConfig.getParent, stormJar)
-  val arguments = stormArgs.split(",")
-  Util.startProcess(stormOptions, classPath, topologyClass, arguments)
+    val topologyClass = config.getString("storm_topology")
+    val stormArgs = config.getString("storm_args")
+    val stormConfig = new File(config.getString("storm_config"))
+    val stormJar = System.getProperty(Constants.GEARPUMP_APP_JAR)
+    val stormOptions = Array("-Dstorm.options=" +
+      s"${Config.NIMBUS_HOST}=127.0.0.1,${Config.NIMBUS_THRIFT_PORT}=${GearpumpThriftServer.THRIFT_PORT}",
+      "-Dstorm.jar=" + stormJar,
+      "-Dstorm.conf.file=" + stormConfig.getName
+    )
 
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  thriftServer.close()
-  clientContext.close()
+    val classPath = Array(System.getProperty("java.class.path"), stormConfig.getParent, stormJar)
+    val arguments = stormArgs.split(",")
+    Util.startProcess(stormOptions, classPath, topologyClass, arguments)
+
+    Thread.sleep(config.getInt("runseconds") * 1000)
+    thriftServer.close()
+    clientContext.close()
+  }
 }

@@ -26,6 +26,7 @@ import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 import scala.util.Success
+import scala.concurrent.Future
 
 class WindowAverageAppSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
   before {
@@ -61,12 +62,10 @@ class WindowAverageAppSpec extends PropSpec with PropertyChecks with Matchers wi
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
 
-      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
-        getMainClassName(WindowAverageApp), args)
+      Future {WindowAverageApp.main(masterConfig, args)}
+
       masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
       masterReceiver.reply(SubmitApplicationResult(Success(0)))
-
-      process.destroy()
     }
   }
 }

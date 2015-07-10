@@ -71,17 +71,18 @@ object LogUtil {
   }
 
   def loadConfiguration(config : Config, processType : ProcessType.ProcessType) : Unit = {
-    setHostnameSystemProperty
-
     //set log file name
     val propName = s"gearpump.${processType.toString.toLowerCase}.log.file"
-    System.setProperty("gearpump.log.file", "${" + propName + "}")
 
     val props = new Properties()
     val log4jConfStream = getClass().getClassLoader.getResourceAsStream("log4j.properties")
     if(log4jConfStream!=null) {
       props.load(log4jConfStream)
     }
+
+    props.setProperty("gearpump.log.file", "${" + propName + "}")
+
+    props.setProperty("JVM_NAME", jvmName)
 
     processType match {
       case ProcessType.APPLICATION =>
@@ -100,11 +101,9 @@ object LogUtil {
     new File(dir)
   }
 
-  private def setHostnameSystemProperty : Unit = {
+  private def jvmName : String = {
     val hostname = Try(InetAddress.getLocalHost.getHostName).getOrElse("local")
-    val jvmIdentity = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
-    //as log4j missing the HOSTNAME system property, add it to system property, just like logback does
-    System.setProperty("JVM_NAME", jvmIdentity)
+    java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
   }
 
   def applicationLogDir(config: Config): File = {
