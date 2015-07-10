@@ -20,7 +20,7 @@ package org.apache.gearpump.cluster.worker
 
 import java.io.File
 import java.net.URL
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
 
 import akka.actor._
 import akka.pattern.pipe
@@ -28,7 +28,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster.QueryWorkerConfig
-import org.apache.gearpump.cluster.{ExecutorJVMConfig, ClusterConfig}
+import org.apache.gearpump.cluster.{ExecutorContext, ExecutorJVMConfig, ClusterConfig}
 import org.apache.gearpump.cluster.MasterToClient.WorkerConfig
 import org.apache.gearpump.cluster.MasterToWorker._
 import org.apache.gearpump.cluster.WorkerToAppMaster._
@@ -60,6 +60,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
   private var executorNameToActor = Map.empty[String, ActorRef]
+
+  private val ioPool = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 
   private var totalSlots: Int = 0
 
@@ -106,7 +108,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       } else {
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
-        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo))
+        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo, ioPool))
         executorNameToActor += actorName ->executor
 
         resource = resource - launch.resource
@@ -213,6 +215,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
   override def postStop : Unit = {
     LOG.info(s"Worker is going down....")
+    ioPool.shutdown()
     context.system.shutdown()
   }
 }
@@ -223,13 +226,12 @@ private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
 
-  class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo) extends Actor {
-
-    // used for blocking io
-    implicit val ioPool = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+  class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo, ioPool: ExecutionContext) extends Actor {
 
     val config = context.system.settings.config
     private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
+
+    implicit val executorService = ioPool
 
     private val executorHandler = {
       val ctx = launch.executorJvmConfig
@@ -327,12 +329,18 @@ private[cluster] object Worker {
       }
 
       new ExecutorHandler {
+
+        var destroyed = false
+
         override def destroy: Unit = {
           LOG.info(s"Destroy executor process ${ctx.mainClass}")
-          process.foreach{info =>
-            info.process.destroy()
-            info.jarPath.foreach(new File(_).delete())
-            info.configFile.foreach(new File(_).delete())
+          if (!destroyed) {
+            destroyed = true
+            process.foreach { info =>
+              info.process.destroy()
+              info.jarPath.foreach(new File(_).delete())
+              info.configFile.foreach(new File(_).delete())
+            }
           }
         }
 
@@ -351,6 +359,10 @@ private[cluster] object Worker {
 
     override def preStart: Unit = {
       executorHandler.exitValue.map(ExecutorResult).pipeTo(self)
+    }
+
+    override def postStop: Unit = {
+      executorHandler.destroy
     }
 
     override def receive: Receive = {
