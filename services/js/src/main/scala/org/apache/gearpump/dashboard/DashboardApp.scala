@@ -36,13 +36,6 @@ object DashboardApp extends JSApp {
     val conf = Angular.module("conf", Array.empty[String])
     conf.factory[ConfServiceFactory]
 
-    val explanationicon = Angular.module("directive.explanationicon", Array("mgcrea.ngStrap.tooltip"))
-    explanationicon.directive[ExplanationIconDirective]
-
-    val metricsCard = Angular.module("directive.metricscard", Array("directive.explanationicon"))
-    metricsCard.filter[HumanizeFilter]
-    metricsCard.directive[MetricsCardDirective]
-
     val restapi = Angular.module("dashboard.restapi", Array("conf"))
     restapi.factory[RestApiServiceFactory]
 
@@ -55,8 +48,6 @@ object DashboardApp extends JSApp {
     val apps = Angular.module("dashboard.apps", Array.empty[String])
     apps.config[AppsConfig]
     apps.controller[AppsCtrl]
-
-    //val visgraph = Angular.module("directive.visgraph", Array.empty[String])
 
     val appmaster = Angular.module("dashboard.apps.appmaster", Array("conf"))
     appmaster.factory[DagStyleServiceFactory]

@@ -32,7 +32,6 @@ class AppSummaryChartsCtrl(scope: AppMasterScope, interval: Interval, conf: Conf
         case true =>
           val receivedMessages = streamingDag.getReceivedMessages(undefined).rate
           val sentMessages = streamingDag.getSentMessages(undefined).rate
-          println(s"receivedMessages=$receivedMessages sentMessages=$sentMessages charts.size=${scope.charts.size} charts(0).data.size=${scope.charts(0).data.size}")
           scope.charts(0).data = js.Array(receivedMessages)
           scope.charts(1).data = js.Array(sentMessages)
           scope.charts(2).data = js.Array(streamingDag.getProcessingTime(undefined)(0))

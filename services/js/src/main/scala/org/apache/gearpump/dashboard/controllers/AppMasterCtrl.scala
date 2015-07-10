@@ -19,7 +19,7 @@ package org.apache.gearpump.dashboard.controllers
 
 import com.greencatsoft.angularjs.core.{Compile, Route, RouteProvider, Scope}
 import com.greencatsoft.angularjs.{AbstractController, Config, injectable}
-import org.apache.gearpump.dashboard.services.{ColorSet, DagOptions, RestApiService}
+import org.apache.gearpump.dashboard.services.{DagOptions, RestApiService}
 import org.apache.gearpump.shared.Messages._
 import org.scalajs.dom.raw.HTMLElement
 import upickle.Js
@@ -174,7 +174,6 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
   var meter = Map.empty[String, Map[String,MetricInfo[Meter]]]
   var histogram = Map.empty[String, Map[String,MetricInfo[Histogram]]]
   val d3 = js.Dynamic.global.d3
-
   type MetricMap =  Map[String, Map[String, MetricInfo[_ <: MetricType]]]
 
   @JSExport
@@ -189,9 +188,16 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
         data.value.typeName match {
           case MeterType =>
             val metric = upickle.read[Meter](data.value.json)
-            val (appId, processorId, taskId, name) = decodeName(metric.name)
+            val (appId, processorId, taskClass, taskId, name) = decodeName(metric.name)
             val key = s"${processorId}_$taskId"
-            val metricInfo = MetricInfo[Meter](appId, processorId, taskId, metric, data.value)
+            val metricInfo = MetricInfo[Meter](
+              appId=appId,
+              processorId=processorId,
+              taskClass=taskClass,
+              taskId=taskId,
+              metric=metric,
+              typeInfo=data.value)
+            println(s"read metric count=${metric.count}")
             meter.contains(name) match {
               case true =>
                 var map = meter(name)
@@ -202,9 +208,9 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
             }
           case HistogramType =>
             val metric = upickle.read[Histogram](data.value.json)
-            val (appId, processorId, taskId, name) = decodeName(metric.name)
+            val (appId, processorId, taskClass, taskId, name) = decodeName(metric.name)
             val key = processorId + "_" + taskId
-            val metricInfo = MetricInfo[Histogram](appId, processorId, taskId, metric, data.value)
+            val metricInfo = MetricInfo[Histogram](appId, processorId, taskClass, taskId, metric, data.value)
             histogram.contains(name) match {
               case true =>
                 var map = histogram(name)
@@ -222,7 +228,7 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
       case Success(value) =>
         value
       case Failure(throwable) =>
-        println(s"cound not update metrics ${throwable.getMessage}")
+        println(s"could not update metrics ${throwable.getMessage}")
         false
     }
   }
@@ -410,7 +416,6 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
               val v = fMap(metricType).value
               val obj = v.toString
               val value = obj.toDouble
-              //println(s"found $metricCategory[$name][$metricType] = $value")
               values += value
             case false =>
               println(s"could not find $metricCategory[$name][$metricType]")
@@ -460,13 +465,14 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
   
   import js.JSConverters._
 
-  def decodeName(name: String): (Int, Int, Int, String) = {
+  def decodeName(name: String): (Int, Int, String, Int, String) = {
     val parts: js.Array[String] = name.split("\\.").toJSArray
     val appId = parts(0).substring("app".length).toInt
     val processorId = parts(1).substring("processor".length).toInt
+    val taskClass = processors(processorId).taskClass
     val taskId = parts(2).substring("task".length).toInt
     val metric = parts(3)
-    (appId, processorId, taskId, metric)
+    (appId, processorId, taskClass, taskId, metric)
   }
 }
 
@@ -485,7 +491,7 @@ trait AppMasterScope extends Scope {
   var charts: js.Array[Chart] = js.native
   var names: MetricNames = js.native
   var itemsByPage: Int = js.native
-  var metrics: js.Array[String] = js.native
+  var metrics: js.Array[MetricInfo[Meter]] = js.native
   var streamingDag: StreamingDag = js.native
   var summary: js.Array[SummaryEntry] = js.native
   var switchToTabIndex: TabIndex = js.native
@@ -521,7 +527,6 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
       case Success(html) =>
         val templateScope = scope.$new(true).asInstanceOf[AppMasterScope]
         elem.innerHTML = html
-        //tabSetCtrl(templateScope)
         elem.setAttribute("ngController", tab.controller)
         compile(elem.innerHTML, null, 0)(templateScope, null)
       case Failure(t) =>
@@ -555,24 +560,27 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
   scope.load = load _
   scope.lastPart = lastPart _
 
+  import scalajs.js.timers._
+
+  def getMetrics: Unit = {
+    val url = s"/metrics/app/${scope.app.appId}/app${scope.app.appId}?readLatest=true"
+    restApi.subscribe(url) onComplete {
+      case Success(rdata) =>
+        val value = upickle.read[HistoryMetrics](rdata)
+        Option(value).foreach(scope.streamingDag.updateMetrics(_))
+        setTimeout(500)(getMetrics _)
+      case Failure(t) =>
+        println(s"failed ${t.getMessage}")
+    }
+
+  }
+
   restApi.subscribe("/appmaster/" + scope.app.appId + "?detail=true") onComplete {
     case Success(value) =>
       val data = upickle.read[StreamingAppMasterDataDetail](value)
       scope.app = data
       scope.streamingDag = StreamingDag(scope.app)
-      val hasMetrics = scope.streamingDag.hasMetrics
-      hasMetrics match {
-        case false =>
-          val url = s"/metrics/app/${scope.app.appId}/app${scope.app.appId}?readLatest=true"
-          restApi.subscribe(url) onComplete {
-            case Success(rdata) =>
-              val value = upickle.read[HistoryMetrics](rdata)
-              Option(value).foreach(scope.streamingDag.updateMetrics(_))
-            case Failure(t) =>
-              println(s"failed ${t.getMessage}")
-          }
-        case true =>
-      }
+      getMetrics
     case Failure(t) =>
       println(s"Failed to get workers ${t.getMessage}")
   }
