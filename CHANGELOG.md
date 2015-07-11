@@ -1,3 +1,52 @@
+gearpump-0.4
+===================
+Highlights:
+----------------
+ 1. Better YARN support, and error handling.
+ 2. UI allow user to submit a application directly
+ 3. Split framework lib with application lib, to reduce class path pollution(ongoing). (#1017)
+ 4. Exacly once mesage processing API (#6).
+ 5. Improved Data Connector with Kafka, and Hbase. (#1012)
+ 6. Dynamic DAG(#101). Which allow user to replace a computation processor(e.g. Change the parallelism, or change to upgraded implementation Task class)
+
+Change logs:
+-------------------- 
+ - #1154: UI, allow user to submit application jar in UI
+ - #1162: UI Backend, Rest backend cannot resume connection with master after master restart
+ - #1159: memory leak in worker thread pool.
+ - #1157: refactor rest interface and UT
+ - #1151: reduce the memory footprint when there are thousands of tasks
+ - #1149: Shell tools printed too much detail on console
+ - #1146: actor hungry when worker use block-io to wait response from FileServer.
+ - #1088: move hbase code to external/
+ - #1140：pass app name to task
+ - #1017: Split daemon dependencies with core dependencies
+ - #1144: fix out of memory when trying to scale gearpump to 2000 task on a 2 core machine
+ - #995: Command line parser should be able to fall back  to MAIN-CLASS definition in MANIFEST.IN when mainClass is not specified in command line options.
+ - #1136: fix a dead-lock when shutting down actor system.
+ - #101: feature dynamic dag, which allows user to change the running topology in the fly.
+ - #1115: design better interface for kafka module 
+ - #1123: UI, able to restart a running application via dashboard
+  - #1037: When user create daemon logs like ui.log in the running, we should be able to recreate a new log file.
+ - #1106: cache opensource webfont lato (831kb in total) locally so that there is no error when no internet access
+ - #1097: appdag should adapt to window size automatically.
+ - #1096: (1) echart would not response resizing (2) metric selector did not work due to angularjs 1.4 breaking change (3) tested and updated other js libraries
+ - #1094: service unreachable message will be shown when health check fails
+ - #1066: AppSubmitter should not return 0 when error occurred
+ - #1056: fix yarn client, to be able to submit applications to master when running in YARN
+ - #1083: fix KafkaWordCount example
+ - #1080: [UI] uses moving average 1 minute instead of mean rate. As the meanrate changes much slower.
+ - #1017, split the lib directory into daemon, and lib. So that user application can have less dependencies.
+ - #1067. [YARN]Changing visibility of yarn resources
+ - #1064: UI. edge data was not constructed correctly
+ - #1060: Add default kafka message decoder
+ - #1012, add Source and Sink API
+ - #1044 print worker hostname in master log when registering
+ - #922: UI. get version by rest api
+ - #1025: master is binding to incorrect port when deployed on Yarn
+ - #964: #966. Use FSM to manage state in YarnApplicationMaster. Adding missing UT.
+ - #1010, Simplify the travis build so that it take less time.
+
 gearpump-0.3.7
 ===================
 
