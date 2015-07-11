@@ -1,13 +1,21 @@
 <div class="row">
+  <div class="col-md-12" ng-show="shouldNoticeUploadFailed" >
+    <div class="alert alert-danger alert-dismissible" role="alert">
+      <button type="button" ng-click="shouldNoticeUploadFailed=false" class="close" data-dismiss="alert"
+              aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <strong>Ops!</strong> Failed to upload your application. Please try it again.
+    </div>
+  </div>
   <div class="col-md-6">
     <h4 class="pull-left">Applications</h4>
   </div>
   <div class="col-md-6">
     <button
       type="button" class="btn btn-primary btn-sm pull-right"
-      ngf-select ng-model="files"
+      ngf-select ng-model="files" ng-disabled="uploading"
       ngf-multiple="false" ngf-accept="'*.jar'">
-      Submit Application...</button>
+      Submit own Application
+    </button>
   </div>
 </div>
 
