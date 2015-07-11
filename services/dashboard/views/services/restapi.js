@@ -3,10 +3,10 @@
  * See accompanying LICENSE file.
  */
 'use strict';
-angular.module('dashboard.restapi', [])
+angular.module('dashboard.restapi', ['cfp.loadingBar'])
 
-  .factory('restapi', ['$http', '$timeout', '$modal', 'Upload', 'conf',
-    function ($http, $timeout, $modal, Upload, conf) {
+  .factory('restapi', ['$http', '$timeout', '$modal', 'Upload', 'conf', 'cfpLoadingBar',
+    function ($http, $timeout, $modal, Upload, conf, cfpLoadingBar) {
 
     var noticeWindow = $modal({
       template: "views/services/serverproblemnotice.html",
@@ -78,12 +78,14 @@ angular.module('dashboard.restapi', [])
         return conf.restapiRoot + '/master/config';
       },
 
-      submitUserApp: function(file, data, onComplete) {
+      submitUserApp: function(file, onComplete) {
+        cfpLoadingBar.start();
+
         var upload = Upload.upload({
           url: conf.restapiRoot + '/master/submitapp',
           method: 'POST',
           headers: {},
-          fields: data,
+          fields: {},
           file: file
         });
 
@@ -97,6 +99,13 @@ angular.module('dashboard.restapi', [])
             onComplete({success: false});
           }
         }).finally(function() {
+          cfpLoadingBar.complete();
+        });
+
+        upload.progress(function (evt) {
+          // Math.min is to fix IE which reports 200% sometimes
+          var progress = Math.min(1, parseInt(evt.loaded / evt.total));
+          cfpLoadingBar.set(progress);
         });
       },
 

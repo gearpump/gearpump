@@ -14,16 +14,7 @@ angular.module('dashboard.apps', [])
       });
   }])
 
-  .controller('AppsCtrl', ['$scope', '$location', '$modal', 'restapi', 'util',
-    function ($scope, $location, $modal, restapi, util) {
-
-    var submitWindow = $modal({
-      template: "views/apps/submit.html",
-      backdrop: 'static',
-      show: false,
-      scope: $scope
-    });
-
+  .controller('AppsCtrl', ['$scope', '$location', 'restapi', 'util', function ($scope, $location, restapi, util) {
     $scope.operationDenied = {};
     $scope.view = function (id) {
       $location.path("/apps/app/" + id);
@@ -40,8 +31,11 @@ angular.module('dashboard.apps', [])
 
     $scope.$watch('files', function(files) {
       if (files != null && files.length) {
-        $scope.fileToUpload = files[0];
-        submitWindow.$promise.then(submitWindow.show);
+        $scope.uploading = true;
+        restapi.submitUserApp(files[0], function(response) {
+          $scope.shouldNoticeUploadFailed = !response.success;
+          $scope.uploading = false;
+        });
       }
     });
 
