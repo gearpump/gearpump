@@ -58,7 +58,7 @@ class ScoringTask(taskContext : TaskContext, config: UserConfig) extends Task(ta
       entity match {
         case 1.0F =>
         case anomaly:Float =>
-          LOG.info("found anomaly $anomaly")
+          LOG.info(s"found anomaly $anomaly")
           output(Message(SpaceShuttleRecord(System.currentTimeMillis(), anomaly, 1.0F), System.currentTimeMillis()))
       }
     }) match {
