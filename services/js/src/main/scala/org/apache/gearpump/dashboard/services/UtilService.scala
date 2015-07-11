@@ -24,9 +24,6 @@ class UtilService() extends Service {
 @JSExport
 @injectable("UtilService")
 class UtilServiceFactory() extends Factory[UtilService] {
-
-  println("UtilServiceFactory")
-
   override def apply() = {
     new UtilService()
   }

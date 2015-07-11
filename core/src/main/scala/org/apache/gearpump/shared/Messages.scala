@@ -136,8 +136,7 @@ object Messages {
   case class MetricInfo[T<:MetricType:ClassTag](appId: Int, processorId: Int, taskClass: String, taskId: Int, metric: T, typeInfo: MetricTypeInfo)
 
   @JSExportAll
-  case class Histogram
-  (name: String, count: Long, min: Long, max: Long, mean: Double,
+  case class Histogram(name: String, count: Long, min: Long, max: Long, mean: Double,
    stddev: Double, median: Double, p75: Double,
    p95: Double, p98: Double, p99: Double, p999: Double)
     extends MetricType {

@@ -9,13 +9,10 @@ import scala.scalajs.js.undefined
 import scala.scalajs.js.annotation.JSExport
 import scala.util.Try
 
-
 @JSExport
 @injectable("AppSummaryChartsCtrl")
 class AppSummaryChartsCtrl(scope: AppMasterScope, interval: Interval, conf: ConfService)
   extends AbstractController[AppMasterScope](scope) {
-
-  println("AppSummaryChartsCtrl")
 
   var options = Options(height="108px")
   scope.charts = js.Array(
@@ -25,19 +22,16 @@ class AppSummaryChartsCtrl(scope: AppMasterScope, interval: Interval, conf: Conf
     Chart(title="Average Receive Latency per Task (Unit: ms)", options=options, data=js.Array[Double]())
   )
 
-  def fetch: Unit = {
+  def fetch(): Unit = {
     Try({
       val streamingDag = scope.streamingDag
-      streamingDag.hasMetrics match {
+      streamingDag.get.hasMetrics match {
         case true =>
-          val receivedMessages = streamingDag.getReceivedMessages(undefined).rate
-          val sentMessages = streamingDag.getSentMessages(undefined).rate
-          scope.charts(0).data = js.Array(receivedMessages)
-          scope.charts(1).data = js.Array(sentMessages)
-          scope.charts(2).data = js.Array(streamingDag.getProcessingTime(undefined)(0))
-          scope.charts(3).data = js.Array(streamingDag.getReceiveLatency(undefined)(0))
+          scope.charts(0).data = js.Array(streamingDag.get.getReceivedMessages(undefined).rate)
+          scope.charts(1).data = js.Array(streamingDag.get.getSentMessages(undefined).rate)
+          scope.charts(2).data = js.Array(streamingDag.get.getProcessingTime(undefined)(0))
+          scope.charts(3).data = js.Array(streamingDag.get.getReceiveLatency(undefined)(0))
         case false =>
-          println("no metrics")
       }
     }).failed.foreach(throwable => {
       println(s"failed ${throwable.getMessage}")

@@ -19,25 +19,23 @@
 package org.apache.gearpump.dashboard.controllers
 
 import com.greencatsoft.angularjs.{AbstractController, injectable}
-import org.apache.gearpump.shared.Messages.{Meter, MetricInfo, MetricType}
+import org.apache.gearpump.dashboard.services.ConfService
+import org.apache.gearpump.shared.Messages.{MetricInfo, MetricType}
 
 import scala.scalajs.js
-import scala.scalajs.js.UndefOr
 import scala.scalajs.js.annotation.JSExport
 
 
 @JSExport
 @injectable("AppMetricsCtrl")
-class AppMetricsCtrl(scope: AppMasterScope) extends AbstractController[AppMasterScope](scope) {
+class AppMetricsCtrl(scope: AppMasterScope, conf: ConfService) extends AbstractController[AppMasterScope](scope) {
   import js.JSConverters._
 
-  println("AppMetricsCtrl")
-
   val lookup = Map[String, String](
-    "streamingDag.receivedMessages" -> "Receive Throughput",
-    "streamingDag.sentMessages" -> "Send Throughput",
-    "streamingDag.processingTime" -> "Processing Time",
-    "streamingDag.receiveLatency" -> "Receive Latency"
+    "receivedMessages" -> "Receive Throughput",
+    "sentMessages" -> "Send Throughput",
+    "processingTime" -> "Processing Time",
+    "receiveLatency" -> "Receive Latency"
   )
   var watchFn: js.Function = _
 
@@ -72,41 +70,52 @@ class AppMetricsCtrl(scope: AppMasterScope) extends AbstractController[AppMaster
         false
       case Some(label) =>
         label match {
-          case "streamingDag.receivedMessages" =>
+          case "receivedMessages" =>
             true
-          case "streamingDag.sentMessages" =>
+          case "sentMessages" =>
             true
-          case remaining =>
+          case "processingTime" =>
+            false
+          case "receiveLatency" =>
+            false
+          case _ =>
             false
         }
     }
   }
 
+  import scalajs.js.timers._
+
+  def refreshMetrics(clazz: String)(): Unit = {
+    val streamingDag = scope.streamingDag.get
+    clazz match {
+      case "receivedMessages" =>
+        scope.metrics = streamingDag.meter("receiveThroughput").values.toSeq.toJSArray
+      case "sentMessages" =>
+        scope.metrics = streamingDag.meter("sendThroughput").values.toSeq.toJSArray
+      case "processingTime" =>
+        scope.metrics = streamingDag.histogram("processTime").values.toSeq.toJSArray
+      case "receiveLatency" =>
+        scope.metrics = streamingDag.histogram("receiveLatency").values.toSeq.toJSArray
+      case unknown =>
+        println("unknown type $unknown")
+        scope.metrics = js.Array[MetricInfo[_<:MetricType]]()
+    }
+    val selected = getMetricsClassByLabel(scope.names.selected).getOrElse("")
+    clazz.eq(selected) match {
+      case true =>
+        setTimeout(conf.conf.updateMetricsInterval)(refreshMetrics(clazz))
+      case false =>
+    }
+  }
+
   scope.$watch("streamingDag", init _)
   scope.$watch("names.selected", (newVal: String) => {
-    if (watchFn != null) {
-      println("watchFn != null")
-      val fn = watchFn.asInstanceOf[js.Function0[Unit]]
-      fn()
-      watchFn = null
-    }
     getMetricsClassByLabel(newVal) match {
       case None =>
-        scope.metrics = js.Array[MetricInfo[Meter]]()
+        scope.metrics = js.Array[MetricInfo[_<:MetricType]]()
       case Some(clazz) =>
-        watchFn = scope.$watchCollection(clazz, (array: UndefOr[Any]) => {
-          clazz match {
-            case "streamingDag.receivedMessages" =>
-              val map = scope.streamingDag.meter("receiveThroughput")
-              scope.metrics = map.values.toSeq.toJSArray
-            case "streamingDag.sentMessages" =>
-              val map = scope.streamingDag.meter("sendThroughput")
-              scope.metrics = map.values.toSeq.toJSArray
-            case unknown =>
-              println("unknown type $unknown")
-              scope.metrics = js.Array[MetricInfo[Meter]]()
-          }
-        })
+        refreshMetrics(clazz)
     }
   }: Unit)
 }

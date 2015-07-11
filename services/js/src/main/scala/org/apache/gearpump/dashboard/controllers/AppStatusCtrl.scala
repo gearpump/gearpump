@@ -31,32 +31,30 @@ import scala.util.{Try, Failure, Success}
 class AppStatusCtrl(scope: AppMasterScope, restApi: RestApiService, util: UtilService)
   extends AbstractController[AppMasterScope](scope) {
 
-  println("AppStatusCtrl")
-
-  def fetch: Unit = {
+  def fetch(): Unit = {
     Try({
-      val streamingDag = scope.streamingDag
-      restApi.subscribe(s"/appmaster/${scope.app.appId}") onComplete {
-        case Success(data) =>
-          val value = upickle.read[AppMasterData](data)
-          scope.summary = js.Array[SummaryEntry](
-            SummaryEntry(name = "Name", value = value.appName),
-            SummaryEntry(name = "ID", value = value.appId),
-            SummaryEntry(name = "Status", value = value.status),
-            SummaryEntry(name = "Submission Time", value = util.stringToDateTime(value.submissionTime)),
-            SummaryEntry(name = "Start Time", value = util.stringToDateTime(value.startTime)),
-            SummaryEntry(name = "Stop Time", value = util.stringToDateTime(value.finishTime)),
-            SummaryEntry(name = "Number of Tasks", value = streamingDag.getNumOfTasks),
-            SummaryEntry(name = "Number of Executors", value = streamingDag.executors.size)
-          )
-        case Failure(t) =>
-          println(s"Failed to appmaster status ${t.getMessage}")
+      if (scope.streamingDag.isDefined) {
+        val streamingDag = scope.streamingDag.get
+        restApi.subscribe(s"/appmaster/${scope.app.appId}") onComplete {
+          case Success(data) =>
+            val value = upickle.read[AppMasterData](data)
+            scope.summary = js.Array[SummaryEntry](
+              SummaryEntry(name = "Name", value = value.appName),
+              SummaryEntry(name = "ID", value = value.appId),
+              SummaryEntry(name = "Status", value = value.status),
+              SummaryEntry(name = "Submission Time", value = util.stringToDateTime(value.submissionTime)),
+              SummaryEntry(name = "Start Time", value = util.stringToDateTime(value.startTime)),
+              SummaryEntry(name = "Stop Time", value = util.stringToDateTime(value.finishTime)),
+              SummaryEntry(name = "Number of Tasks", value = streamingDag.getNumOfTasks),
+              SummaryEntry(name = "Number of Executors", value = streamingDag.executors.size)
+            )
+          case Failure(t) =>
+            println(s"Failed to appmaster status ${t.getMessage}")
+        }
       }
     }).failed.foreach(throwable => {
       println(s"failed ${throwable.getMessage}")
     })
   }
-
   scope.$watch("streamingDag", fetch _)
-
 }
