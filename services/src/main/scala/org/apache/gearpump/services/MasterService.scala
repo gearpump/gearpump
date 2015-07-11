@@ -20,7 +20,6 @@
 package org.apache.gearpump.services
 
 import java.io.{File, IOException}
-import java.net.URLClassLoader
 
 import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.config.Config
@@ -38,11 +37,12 @@ import org.apache.gearpump.streaming.StreamApplication
 import org.apache.gearpump.streaming.appmaster.SubmitApplicationRequest
 import org.apache.gearpump.util.ActorUtil.{askActor, askWorker}
 import org.apache.gearpump.util.Constants.GEARPUMP_APP_JAR
-import org.apache.gearpump.util.{Constants, Util}
+import org.apache.gearpump.util.{HttpUtil, Constants, Util}
 import spray.http.{MediaTypes, MultipartFormData}
 import spray.routing
 import spray.routing.HttpService
 
+import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -98,14 +98,19 @@ trait MasterService extends HttpService {
       } ~
       path("submitapp") {
         post {
-          respondWithMediaType(MediaTypes.`application/json`) {
-            entity(as[MultipartFormData]) { formData =>
-              val jar = formData.fields.head.entity.data.toByteArray
-              onComplete(Future(MasterService.submitJar(jar, system.settings.config))) {
-                case Success(_) =>
-                  complete(write(MasterService.Status(true)))
-                case Failure(ex) =>
-                  failWith(ex)
+          anyParams('args.as[Option[String]]) { (args) =>
+            respondWithMediaType(MediaTypes.`application/json`) {
+              entity(as[MultipartFormData]) { formData =>
+                val jar = HttpUtil.findFirstDataByteArray(formData.fields, ".jar")
+                val userConf = HttpUtil.findFirstDataByteArray(formData.fields, ".conf")
+                val argsArray = args.getOrElse("").split(" +")
+                onComplete(Future(
+                  MasterService.submitJar(jar.get, userConf, argsArray, system.settings.config))) {
+                  case Success(_) =>
+                    complete(write(MasterService.Status(success = true)))
+                  case Failure(ex) =>
+                    failWith(ex)
+                }
               }
             }
           }
@@ -147,34 +152,44 @@ trait MasterService extends HttpService {
 object MasterService {
   case class Status(success: Boolean, reason: String = null)
 
-  /** Upload user application (JAR) into temporary directory and use AppSubmitter to submit
-    * it to master. The temporary file will be removed after submission is done/failed.
-    */
-  def submitJar(data: Array[Byte], config: Config): Unit = {
-    val tempfile = File.createTempFile("gearpump_userapp_", "")
-    FileUtils.writeByteArrayToFile(tempfile, data)
+  /**
+   * Upload user application (JAR) into temporary directory and use AppSubmitter to submit
+   * it to master. The temporary file will be removed after submission is done/failed.
+   */
+  def submitJar(jarData: Array[Byte], userConfData: Option[Array[Byte]], extraArgs: Array[String],
+                sysConfig: Config): Unit = {
+    val jar = File.createTempFile("gearpump_userapp_", "")
+    val userConf = File.createTempFile("gearpump_userconf_", "")
+
     try {
-
-      import scala.collection.JavaConversions._
-      val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+      val masters = sysConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
       val master = masters.head
-      val hostname = config.getString(Constants.GEARPUMP_HOSTNAME)
-      val options = Array(
-      s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${master.host}:${master.port}",
-      s"-D${Constants.GEARPUMP_HOSTNAME}=${hostname}"
+      val hostname = sysConfig.getString(Constants.GEARPUMP_HOSTNAME)
+      var options = Array(
+        s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${master.host}:${master.port}",
+        s"-D${Constants.GEARPUMP_HOSTNAME}=$hostname"
       )
+      if (userConfData.isDefined) {
+        FileUtils.writeByteArrayToFile(userConf, userConfData.get)
+        options :+= s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=${userConf.getPath}"
+      }
 
-      val classPath = Util.getCurrentClassPath
-      val clazz = AppSubmitter.getClass.getName.dropRight(1)
-      val args = Array("-jar", tempfile.toString)
+      FileUtils.writeByteArrayToFile(jar, jarData)
 
-      val process = Util.startProcess(options, classPath, clazz, args)
+      val process = Util.startProcess(options,
+        classPath = Util.getCurrentClassPath,
+        mainClass = AppSubmitter.getClass.getName.dropRight(1),
+        arguments = Array("-jar", jar.getPath) ++ extraArgs)
+
       val retval = process.exitValue()
       if (retval != 0) {
         throw new IOException(s"Process exit abnormally with code $retval")
       }
+
     } finally {
-      tempfile.delete()
+      userConf.delete()
+      jar.delete()
     }
   }
+
 }
