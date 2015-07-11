@@ -20,7 +20,6 @@
 package org.apache.gearpump.services
 
 import java.io.{File, IOException}
-import java.net.URLClassLoader
 
 import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.config.Config
@@ -98,14 +97,16 @@ trait MasterService extends HttpService {
       } ~
       path("submitapp") {
         post {
-          respondWithMediaType(MediaTypes.`application/json`) {
-            entity(as[MultipartFormData]) { formData =>
-              val jar = formData.fields.head.entity.data.toByteArray
-              onComplete(Future(MasterService.submitJar(jar, system.settings.config))) {
-                case Success(_) =>
-                  complete(write(MasterService.Status(true)))
-                case Failure(ex) =>
-                  failWith(ex)
+          anyParams('args.as[Option[String]]) { (extraArgs) =>
+            respondWithMediaType(MediaTypes.`application/json`) {
+              entity(as[MultipartFormData]) { formData =>
+                val jar = formData.fields.head.entity.data.toByteArray
+                onComplete(Future(MasterService.submitJar(jar, system.settings.config, extraArgs))) {
+                  case Success(_) =>
+                    complete(write(MasterService.Status(success = true)))
+                  case Failure(ex) =>
+                    failWith(ex)
+                }
               }
             }
           }
@@ -150,7 +151,7 @@ object MasterService {
   /** Upload user application (JAR) into temporary directory and use AppSubmitter to submit
     * it to master. The temporary file will be removed after submission is done/failed.
     */
-  def submitJar(data: Array[Byte], config: Config): Unit = {
+  def submitJar(data: Array[Byte], config: Config, extraArgs: Option[String]): Unit = {
     val tempfile = File.createTempFile("gearpump_userapp_", "")
     FileUtils.writeByteArrayToFile(tempfile, data)
     try {
@@ -163,12 +164,15 @@ object MasterService {
       s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${master.host}:${master.port}",
       s"-D${Constants.GEARPUMP_HOSTNAME}=${hostname}"
       )
+      var args = Array("-jar", tempfile.toString)
+      if (extraArgs.isDefined) {
+        args ++= extraArgs.get.split(" +")
+      }
 
-      val classPath = Util.getCurrentClassPath
-      val clazz = AppSubmitter.getClass.getName.dropRight(1)
-      val args = Array("-jar", tempfile.toString)
-
-      val process = Util.startProcess(options, classPath, clazz, args)
+      val process = Util.startProcess(options,
+        classPath = Util.getCurrentClassPath,
+        mainClass = AppSubmitter.getClass.getName.dropRight(1),
+        args)
       val retval = process.exitValue()
       if (retval != 0) {
         throw new IOException(s"Process exit abnormally with code $retval")
@@ -177,4 +181,5 @@ object MasterService {
       tempfile.delete()
     }
   }
+
 }
