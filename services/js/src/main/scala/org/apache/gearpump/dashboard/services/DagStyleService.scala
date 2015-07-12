@@ -112,7 +112,10 @@ class DagStyleService() {
   }
 
   def newData(): DagData = {
-    DagData(nodes=new DataSet(), edges=new DataSet())
+    js.Dynamic.literal(
+      nodes=new DataSet(),
+      edges=new DataSet()
+    ).asInstanceOf[DagData]
   }
 
   def nodeRadiusRange(): js.Array[Double] = {
