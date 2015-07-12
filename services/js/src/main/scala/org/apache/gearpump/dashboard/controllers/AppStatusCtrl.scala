@@ -52,9 +52,11 @@ class AppStatusCtrl(scope: AppMasterScope, restApi: RestApiService, util: UtilSe
             println(s"Failed to appmaster status ${t.getMessage}")
         }
       }
-    }).failed.foreach(throwable => {
-      println(s"failed ${throwable.getMessage}")
-    })
+    }) match {
+      case Success(ok) =>
+      case Failure(throwable) =>
+        println(s"failed ${throwable.getMessage}")
+    }
   }
   scope.$watch("streamingDag", fetch _)
 }

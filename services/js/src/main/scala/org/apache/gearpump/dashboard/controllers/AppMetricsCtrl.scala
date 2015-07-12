@@ -119,7 +119,8 @@ class AppMetricsCtrl(scope: AppMasterScope, conf: ConfService) extends AbstractC
       case None =>
         scope.metrics = js.Array[MetricInfo[_<:MetricType]]()
       case Some(clazz) =>
-        scope.$watchCollection(clazz, refreshMetrics _)
+        println(s"watching $clazz")
+        scope.$watch(clazz, refreshMetrics(clazz) _)
     }
   }: Unit)
 }

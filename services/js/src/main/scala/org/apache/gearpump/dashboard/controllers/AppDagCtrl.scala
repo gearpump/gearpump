@@ -36,7 +36,7 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
   def init(): Unit = {
     val doubleClick = js.Dynamic.literal(
       apply=doubleclick _
-    ).asInstanceOf[js.Function1[DagData,Unit]]
+    ).asInstanceOf[js.Function1[VisGraph,Unit]]
     val doubleClickEvent = js.Dynamic.literal(
       doubleClick = doubleClick
     ).asInstanceOf[DoubleClickEvent]
@@ -49,10 +49,11 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
   }
 
   @JSExport
-  def doubleclick(data: DagData): Unit = {
-    data.nodes.length match {
+  def doubleclick(obj: VisGraph): Unit = {
+    val selected = obj.getSelectedNodes()
+    selected.length match {
       case 1 =>
-        scope.switchToTaskTab(/*data.nodes(0)*/0)
+        scope.switchToTaskTab(selected(0).toInt)
       case _ =>
     }
   }

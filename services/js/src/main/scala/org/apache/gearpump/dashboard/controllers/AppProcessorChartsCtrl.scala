@@ -21,7 +21,6 @@ class AppProcessorChartsCtrl(scope: AppMasterScope, interval: Interval, conf: Co
 
   @JSExport
   def init(): Unit = {
-    val streamingDag = scope.streamingDag.get
     timeoutPromise = interval(fetch _, conf.conf.updateChartInterval)
   }
 
@@ -58,7 +57,6 @@ class AppProcessorChartsCtrl(scope: AppMasterScope, interval: Interval, conf: Co
     ).asInstanceOf[SkewOptions]
   }
 
-  @JSExport
   def charts(tasks: Tasks): Unit = {
     println("in charts")
     tasks.selected.length > 0 match {
@@ -87,6 +85,7 @@ class AppProcessorChartsCtrl(scope: AppMasterScope, interval: Interval, conf: Co
   }
 
   def fetch(): Unit = {
+    println("AppProcessorChartsCtrl fetching data")
     val streamingDag = scope.streamingDag.get
     val activeProcessorId = scope.activeProcessorId.toOption.get
     val xLabel = new js.Date(js.Date.now).formatted("HH:mm:ss")

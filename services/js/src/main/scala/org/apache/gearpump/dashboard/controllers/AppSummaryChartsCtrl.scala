@@ -7,7 +7,7 @@ import org.apache.gearpump.dashboard.services.{Conf, ConfService}
 import scala.scalajs.js
 import scala.scalajs.js.undefined
 import scala.scalajs.js.annotation.JSExport
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 @JSExport
 @injectable("AppSummaryChartsCtrl")
@@ -33,9 +33,11 @@ class AppSummaryChartsCtrl(scope: AppMasterScope, interval: Interval, conf: Conf
           scope.charts(3).data = js.Array(streamingDag.get.getReceiveLatency(undefined)(0))
         case false =>
       }
-    }).failed.foreach(throwable => {
-      println(s"failed ${throwable.getMessage}")
-    })
+    }) match {
+      case Success(ok) =>
+      case Failure(throwable) =>
+        println(s"failed ${throwable.getMessage}")
+    }
   }
 
   val timeoutPromise = interval(fetch _, conf.conf.updateChartInterval)

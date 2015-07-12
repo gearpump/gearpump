@@ -79,13 +79,15 @@ trait DagData extends js.Object {
 }
 
 trait DoubleClickEvent extends js.Object {
-  val doubleClick: js.Function1[DagData, Unit] = js.native
+  val doubleClick: js.Function1[VisGraph, Unit] = js.native
 }
 
 trait VisGraph extends js.Object {
   val options: DagOptions = js.native
   val data: DagData = js.native
   val events: DoubleClickEvent = js.native
+  def getSelectedNodes(): js.Array[String] = js.native
+  def getSelectedEdges(): js.Array[String] = js.native
 }
 
 trait VisNode extends js.Object {
@@ -125,8 +127,8 @@ trait MetricNames extends js.Object {
 }
 
 trait Tasks extends js.Object {
-  val available: js.Function0[js.Array[String]] = js.native
-  val selected: js.Array[String] = js.native
+  var available: js.Array[String] = js.native
+  var selected: js.Array[String] = js.native
 }
 
 trait SkewParams extends js.Object {
@@ -168,7 +170,7 @@ trait SkewInject extends js.Object {
 trait SkewSeriesData extends js.Object {
   var name: String = js.native
   var data: js.Array[Double] = js.native
-  var typeName: String = js.native
+  var `type`: String = js.native
   var clickable: Boolean = js.native
   var scale: Boolean = js.native
 }
@@ -194,6 +196,7 @@ class AppMasterConfig(routeProvider: RouteProvider) extends Config {
 @JSExport
 class StreamingDag(data: StreamingAppMasterDataDetail) {
   import StreamingDag._
+  import js.JSConverters._
 
   val appId = data.appId
   val processors = data.processors
@@ -202,7 +205,14 @@ class StreamingDag(data: StreamingAppMasterDataDetail) {
     val (node1, edge, node2) = tuple
     (node1 + "_" + node2) -> GraphEdge(node1, node2, edge)
   }).toMap
-  val executors = data.executors
+  @JSExport
+  val executorKeys = data.executors.keys.map(_.toString).toJSArray
+  @JSExport
+  val executors = js.Dictionary.empty[String]
+  data.executors.foreach(pair => {
+    val (id, path) = pair
+    executors(id.toString) = path
+  })
   var meter = Map.empty[String, Map[String, MetricInfo[_ <: MetricType]]]
   var histogram = Map.empty[String, Map[String, MetricInfo[_ <: MetricType]]]
   val d3 = js.Dynamic.global.d3
@@ -551,7 +561,7 @@ trait AppMasterScope extends Scope {
 
   var isMeter: js.Function0[Boolean] = js.native
   var load: js.Function2[HTMLElement, Tab,Unit] = js.native
-  var lastPart: js.Function1[String, String] = js.native
+  var lastPart: js.Function1[UndefOr[String], String] = js.native
   var selectTab: js.Function1[Tab,Unit] = js.native
   var switchToTaskTab: js.Function1[Int,Unit] = js.native
   var taskName: js.Function1[MetricInfo[MetricType],String] = js.native
@@ -577,8 +587,13 @@ class AppMasterCtrl(scope: AppMasterScope, restApi: RestApiService, compile: Com
     }
   }
 
-  def lastPart(name: String): String = {
-    name.split("\\.").last
+  def lastPart(name: UndefOr[String]): String = {
+    name.toOption match {
+      case Some(name) =>
+        name.split("\\.").last
+      case None =>
+        ""
+    }
   }
 
   def selectTab(tab: Tab): Unit = {
