@@ -86,7 +86,9 @@ class AppMetricsCtrl(scope: AppMasterScope, conf: ConfService) extends AbstractC
 
   import scalajs.js.timers._
 
+  @JSExport
   def refreshMetrics(clazz: String)(): Unit = {
+    println("refreshMetrics")
     val streamingDag = scope.streamingDag.get
     clazz match {
       case "receivedMessages" =>
@@ -101,12 +103,14 @@ class AppMetricsCtrl(scope: AppMasterScope, conf: ConfService) extends AbstractC
         println("unknown type $unknown")
         scope.metrics = js.Array[MetricInfo[_<:MetricType]]()
     }
+    /*
     val selected = getMetricsClassByLabel(scope.names.selected).getOrElse("")
     clazz.eq(selected) match {
       case true =>
         setTimeout(conf.conf.updateMetricsInterval)(refreshMetrics(clazz))
       case false =>
     }
+    */
   }
 
   scope.$watch("streamingDag", init _)
@@ -115,7 +119,7 @@ class AppMetricsCtrl(scope: AppMasterScope, conf: ConfService) extends AbstractC
       case None =>
         scope.metrics = js.Array[MetricInfo[_<:MetricType]]()
       case Some(clazz) =>
-        refreshMetrics(clazz)
+        scope.$watchCollection(clazz, refreshMetrics _)
     }
   }: Unit)
 }

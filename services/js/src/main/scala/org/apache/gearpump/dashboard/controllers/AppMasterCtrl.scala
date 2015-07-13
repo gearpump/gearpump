@@ -73,14 +73,20 @@ class DataSet extends js.Object {
   def update(nodes: js.Array[_<:Any]): js.Array[Int] = js.native
 }
 
-@JSExportAll
-case class DagData(nodes: DataSet, edges: DataSet)
+trait DagData extends js.Object {
+  val nodes: DataSet = js.native
+  val edges: DataSet = js.native
+}
 
-@JSExportAll
-case class DoubleClickEvent(doubleClick: js.Function1[DagData, Unit])
+trait DoubleClickEvent extends js.Object {
+  val doubleClick: js.Function1[DagData, Unit] = js.native
+}
 
-@JSExportAll
-case class VisGraph(options: DagOptions, data: DagData, events: DoubleClickEvent)
+trait VisGraph extends js.Object {
+  val options: DagOptions = js.native
+  val data: DagData = js.native
+  val events: DoubleClickEvent = js.native
+}
 
 trait VisNode extends js.Object {
   val id: Int = js.native
@@ -116,6 +122,67 @@ trait VisEdge extends js.Object {
 trait MetricNames extends js.Object {
   val available: js.Array[String] = js.native
   val selected: String = js.native
+}
+
+trait Tasks extends js.Object {
+  val available: js.Function0[js.Array[String]] = js.native
+  val selected: js.Array[String] = js.native
+}
+
+trait SkewParams extends js.Object {
+  val name: String = js.native
+  val data: Double = js.native
+}
+
+trait SkewSeriesParams extends SkewParams {
+  val seriesName: String = js.native
+}
+
+trait SkewToolTip extends js.Object {
+  def formatter(params: js.Array[_<:SkewParams]): String = js.native
+}
+
+trait SkewData extends js.Object {
+  var x: String = js.native
+  var y: Double = js.native
+}
+
+trait SkewGrid extends js.Object {
+  var y: Int = js.native
+}
+
+trait SkewDataZoom extends js.Object {
+  var show: Boolean = js.native
+  var realtime: Boolean = js.native
+  var y: Int = js.native
+  var height: Int = js.native
+}
+
+trait SkewInject extends js.Object {
+  var height: String = js.native
+  var xAxisDataNum: Int = js.native
+  var dataZoom: SkewDataZoom = js.native
+  var tooltip: SkewToolTip = js.native
+}
+
+trait SkewSeriesData extends js.Object {
+  var name: String = js.native
+  var data: js.Array[Double] = js.native
+  var typeName: String = js.native
+  var clickable: Boolean = js.native
+  var scale: Boolean = js.native
+}
+
+trait SkewOptions extends js.Object {
+  var inject: SkewInject = js.native
+  var series: js.Array[SkewSeriesData] = js.native
+  var xAxisData: js.Array[String] = js.native
+  var stacked: Boolean = js.native
+}
+
+trait SkewChart extends js.Object {
+  var options: SkewOptions = js.native
+  var data: js.Array[SkewData] = js.native
 }
 
 @JSExport
@@ -456,22 +523,31 @@ object StreamingDag {
 }
 
 trait AppMasterScope extends Scope {
-  var activeProcessorId: Int = js.native
+  var activeProcessorId: UndefOr[Int] = js.native
   var app: StreamingAppMasterDataDetail = js.native
   var charts: js.Array[Chart] = js.native
   var names: MetricNames = js.native
   var itemsByPage: Int = js.native
   var metrics: js.Array[MetricInfo[_<:MetricType]] = js.native
+  var processor: ProcessorDescription = js.native
+  var processorConnections: ProcessorConnections = js.native
+  var receiveSkewChart: SkewChart = js.native
   var streamingDag: UndefOr[StreamingDag] = js.native
   var summary: js.Array[SummaryEntry] = js.native
   var switchToTabIndex: TabIndex = js.native
   var tabs: js.Array[Tab] = js.native
+  var tasks: Tasks = js.native
   var visgraph: VisGraph = js.native
 
   var receivedMessages: AggregatedProcessedMessages = js.native
   var sentMessages: AggregatedProcessedMessages = js.native
   var processingTime: js.Array[Double] = js.native
   var receiveLatency: js.Array[Double] = js.native
+
+  var receiveMessageRateChart: SkewChart = js.native
+  var sendMessageRateChart: SkewChart = js.native
+  var processingTimeChart: SkewChart = js.native
+  var receiveLatencyChart: SkewChart = js.native
 
   var isMeter: js.Function0[Boolean] = js.native
   var load: js.Function2[HTMLElement, Tab,Unit] = js.native

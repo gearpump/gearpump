@@ -52,6 +52,7 @@ object DashboardApp extends JSApp {
     appmaster.controller[AppSummaryChartsCtrl]
     appmaster.controller[AppDagCtrl]
     appmaster.controller[AppProcessorCtrl]
+    appmaster.controller[AppProcessorChartsCtrl]
     appmaster.controller[AppMetricsCtrl]
 
     val module = Angular.module("dashboard", Array(

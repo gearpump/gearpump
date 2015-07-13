@@ -34,14 +34,21 @@ class AppDagCtrl(scope: AppMasterScope, timeout: Timeout, interval: Interval, co
   var timeoutPromise: Promise = _
 
   def init(): Unit = {
-    scope.visgraph = VisGraph(
+    val doubleClick = js.Dynamic.literal(
+      apply=doubleclick _
+    ).asInstanceOf[js.Function1[DagData,Unit]]
+    val doubleClickEvent = js.Dynamic.literal(
+      doubleClick = doubleClick
+    ).asInstanceOf[DoubleClickEvent]
+    scope.visgraph = js.Dynamic.literal(
       options=dagStyle.newOptions(Flags(depth=scope.streamingDag.get.hierarchyDepth())),
       data=dagStyle.newData(),
-      events=DoubleClickEvent(doubleclick _)
-    )
+      events=doubleClickEvent
+    ).asInstanceOf[VisGraph]
     redrawVisGraph()
   }
 
+  @JSExport
   def doubleclick(data: DagData): Unit = {
     data.nodes.length match {
       case 1 =>
