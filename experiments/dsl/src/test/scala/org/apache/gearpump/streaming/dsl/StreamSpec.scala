@@ -24,7 +24,6 @@ import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner}
 import org.apache.gearpump.streaming.dsl.StreamSpec.Join
-import org.apache.gearpump.streaming.dsl.op.{Op, OpEdge}
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
@@ -62,14 +61,14 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with Mo
         five  four
         five
       """
-    val stream = app.source(data.lines.toList, 1).
+    val stream = app.source(data.lines.toList, 1, "").
       flatMap(line => line.split("[\\s]+")).filter(_.nonEmpty).
       map(word => (word, 1)).
       groupBy(_._1, parallism = 2).
       reduce((left, right) => (left._1, left._2 + right._2)).
       map[Either[(String, Int), String]](Left(_))
 
-    val query = app.source(List("two"), 1).map[Either[(String, Int), String]](Right(_))
+    val query = app.source(List("two"), 1, "").map[Either[(String, Int), String]](Right(_))
     stream.merge(query).process[(String, Int)](classOf[Join], 1)
 
     val appDescription = app.plan
