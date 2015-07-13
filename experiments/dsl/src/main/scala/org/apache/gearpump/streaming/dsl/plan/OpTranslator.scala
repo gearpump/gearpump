@@ -24,8 +24,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.Processor
 import org.apache.gearpump.streaming.Processor.DefaultProcessor
-import org.apache.gearpump.streaming.dsl.SinkConsumer
-import org.apache.gearpump.streaming.dsl.op.OpType.TraverseType
+import org.apache.gearpump.streaming.dsl.{TypedDataSource, SinkConsumer}
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
@@ -41,8 +40,6 @@ import scala.util.{Failure, Success, Try}
 class OpTranslator extends java.io.Serializable {
   val LOG: Logger = LogUtil.getLogger(getClass)
   def translate(ops: OpChain)(implicit system: ActorSystem): Processor[_ <: Task] = {
-    val head = ops.ops.head
-
     ops.ops.head match {
       case op: MasterOp =>
         val tail = ops.ops.tail
@@ -50,10 +47,10 @@ class OpTranslator extends java.io.Serializable {
         val userConfig = UserConfig.empty.withValue(GEARPUMP_STREAMING_OPERATOR, func)
 
         op match {
-          case TraversableSource(traversable, parallism, description) =>
+          case DataSourceOp(dataSource, parallism, description) =>
             Processor[SourceTask[Object, Object]](parallism,
               description = description + "." + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, traversable))
+              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, dataSource))
           case groupby@ GroupByOp(_, parallism, description) =>
             Processor[GroupByTask[Object, Object, Object]](parallism,
               description = description + "." + func.description,
@@ -182,38 +179,42 @@ object OpTranslator {
     }
   }
 
-  class SourceTask[T, OUT](source: TraverseType[T], operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class SourceTask[T, OUT](source: TypedDataSource[T], operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
     def this(taskContext: TaskContext, userConf: UserConfig) = {
       this(
-        userConf.getValue[TraverseType[T]](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
+        userConf.getValue[TypedDataSource[T]](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
         userConf.getValue[SingleInputFunction[T, OUT]](GEARPUMP_STREAMING_OPERATOR)(taskContext.system),
         taskContext, userConf)
     }
 
     override def onStart(startTime: StartTime): Unit = {
+      source.open(taskContext, Some(startTime.startTime))
       self ! Message("start", System.currentTimeMillis())
     }
 
     override def onNext(msg: Message): Unit = {
       val time = System.currentTimeMillis()
-      source.foreach(msg => {
+      source.read(1).foreach(msg => {
         operator match {
           case Some(operator) =>
             operator match {
               case bad: DummyInputFunction[T] =>
-                taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
+                taskContext.output(msg)
               case _ =>
-                operator.process(msg).foreach(msg => {
+                operator.process(msg.msg.asInstanceOf[T]).foreach(msg => {
                   taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
                 })
             }
           case None =>
-            taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
+            taskContext.output(msg)
         }
-
       })
       self ! Message("next", System.currentTimeMillis())
+    }
+
+    override def onStop() = {
+      source.close()
     }
   }
 

@@ -21,7 +21,6 @@ package org.apache.gearpump.streaming.dsl
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.streaming.dsl.op.{OpEdge, Op}
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
 import org.mockito.Mockito.when
 import org.scalatest._
@@ -44,8 +43,8 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with
     when(context.system).thenReturn(system)
 
     val app = StreamApp("dsl", context)
-    app.source(List("A"), 1)
-    app.source(List("B"), 1)
+    app.sourceFromCollection(List("A"), 1)
+    app.sourceFromCollection(List("B"), 1)
 
     assert(app.graph.vertices.size == 2)
   }
@@ -56,7 +55,7 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with
 
     val app = StreamApp("dsl", context)
     val parallism = 3
-    app.source(List("A","B","C"), parallism).flatMap(Array(_)).reduce(_+_)
+    app.sourceFromCollection(List("A","B","C"), parallism).flatMap(Array(_)).reduce(_+_)
     val task = app.plan.dag.vertices.iterator.next()
     assert(task.taskClass == classOf[SourceTask[_, _]].getName)
     assert(task.parallelism == parallism)
@@ -70,7 +69,7 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with
       "1",
       "2"
     )
-    val producer = app.source(list, 1, "producer").flatMap(Array(_)).reduce(_+_)
+    val producer = app.sourceFromCollection(list, 1, "producer").flatMap(Array(_)).reduce(_+_)
     val task = app.plan.dag.vertices.iterator.next()
       /*
       val task = app.plan.dag.vertices.iterator.map(desc => {

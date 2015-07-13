@@ -260,7 +260,7 @@ object Build extends sbt.Build {
           ("org.apache.kafka" %% "kafka" % kafkaVersion classifier("test")) % "test"
         )
       )
-  ) dependsOn (streaming % "provided")
+  ) dependsOn (streaming % "provided", dsl)
 
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
@@ -537,7 +537,7 @@ object Build extends sbt.Build {
           "org.scalaz" %% "scalaz-core" % scalazVersion
         ) ++ hadoopDependency
       )
-  ) dependsOn(streaming % "test->test;compile->compile", external_kafka % "test->test;compile->compile", external_hbase % "test->test;compile->compile")
+  ) dependsOn(streaming % "test->test;compile->compile", external_hbase % "test->test;compile->compile")
   
   lazy val pagerank = Project(
     id = "gearpump-experiments-pagerank",

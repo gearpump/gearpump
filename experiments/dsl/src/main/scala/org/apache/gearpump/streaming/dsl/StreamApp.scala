@@ -22,17 +22,13 @@ import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.streaming.StreamApplication
-import org.apache.gearpump.streaming.dsl.op.OpType.{Traverse, TraverseType}
+import org.apache.gearpump.streaming.source.DataSource
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.Planner
-import org.apache.gearpump.streaming.kafka.KafkaSource
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
 import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
-import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.{Message, TimeStamp}
 
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -71,62 +67,29 @@ object StreamApp {
   }
 
   implicit class Source(app: StreamApp) extends java.io.Serializable {
-    def source[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallism: Int, description: String = null): Stream[T] = {
-      implicit val source = TraversableSource(traversable, parallism, Some(description).getOrElse("traversable"))
-      app.graph.addVertex(source)
-      new Stream[T](app.graph, source)
+    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int, description: String = null): Stream[T] = {
+      implicit val sourceOp = DataSourceOp(dataSource, parallism, description)
+      app.graph.addVertex(sourceOp)
+      new Stream[T](app.graph, sourceOp)
     }
-    def readFromTimeReplayableSource[T: ClassTag](timeReplayableSource: TimeReplayableSource, converter: Message => T, batchSize: Int, parallism: Int, description: String = null): Stream[T] = {
-      this.source(new TimeReplayableProducer(timeReplayableSource, converter, batchSize), parallism, description)
-    }
-    def readFromKafka[T: ClassTag](kafkaConfig: KafkaConfig, converter: Message => T, parallism: Int, description: String = null): Stream[T] = {
-      this.source(new KafkaProducer(kafkaConfig, converter), parallism, description)
+    def sourceFromCollection[T: ClassTag](seq: Seq[T], parallism: Int, description: String = null): Stream[T] = {
+      this.source(new CollectionDataSource[T](seq), parallism, description)
     }
   }
 }
 
-class TimeReplayableProducer[T:ClassTag](timeReplayableSource: TimeReplayableSource, converter: Message => T, batchSize: Int) extends Traverse[T] {
-  val source = timeReplayableSource
-  override def foreach[U](fun: T => U): Unit = {
-    val list = source.read(batchSize)
-    list.foreach(msg => {
-      val metrics = converter(msg)
-      fun(metrics)
-    })
+trait TypedDataSource[T] extends DataSource
+
+class CollectionDataSource[T](seq: Seq[T]) extends TypedDataSource[T] {
+  var index = 0
+
+  override def read(batchSize: Int): List[Message] = {
+    val size = Math.min(seq.length - index % seq.length, batchSize)
+    index += size
+    seq.slice(index % seq.length - size, size).toList.map(msg => Message(msg.asInstanceOf[AnyRef], System.currentTimeMillis()))
   }
+
+  override def close(): Unit = {}
+
+  override def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {}
 }
-
-class KafkaProducer[T:ClassTag](kafkaConfig: KafkaConfig, converter: Message => T) extends Traverse[T] {
-  lazy val context = new TaskContext {
-      override def taskId: TaskId = TaskId(0, 0)
-      override def appName: String = "gearpump"
-      override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit): Cancellable = null
-      override def appId: Int = 0
-      override def executorId: Int = 0
-      override def parallelism: Int = 1
-      override def scheduleOnce(initialDelay: FiniteDuration)(f: => Unit): Cancellable = null
-      override def self: ActorRef = null
-      override def output(msg: Message): Unit = {}
-      override def upstreamMinClock: TimeStamp = Message.noTimeStamp
-      override def actorOf(props: Props): ActorRef = null
-      override def actorOf(props: Props, name: String): ActorRef = null
-      override def sender: ActorRef = null
-      override def appMaster: ActorRef = null
-      override def system: ActorSystem = null
-    }
-  lazy val source = Some(new KafkaSource(kafkaConfig)).map(kafkaSource => {
-    kafkaSource.open(context, None)
-    kafkaSource
-  }).get
-
-  lazy val batchSize = 100
-
-  override def foreach[U](fun: T => U): Unit = {
-    val list = source.read(batchSize)
-    list.foreach(msg => {
-      val metrics = converter(msg)
-      fun(metrics)
-    })
-  }
-}
-
