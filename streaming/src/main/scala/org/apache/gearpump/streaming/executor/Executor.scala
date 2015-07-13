@@ -22,6 +22,7 @@ import akka.actor.SupervisorStrategy.{Resume, Stop}
 import akka.actor._
 import org.apache.gearpump.cluster.MasterToAppMaster.MessageLoss
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
+import org.apache.gearpump.serializer.KryoPool
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskArgumentStore, TaskLocationReady, TaskStopped}
@@ -37,13 +38,16 @@ import scala.language.postfixOps
 class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher: ITaskLauncher)  extends Actor {
 
   def this(executorContext: ExecutorContext, userConf : UserConfig)= {
-    this(executorContext, userConf, TaskLauncher(executorContext, userConf))
+    this(executorContext, userConf, TaskLauncher(executorContext, userConf ))
   }
 
   import context.dispatcher
   import executorContext.{appId, appMaster, executorId, resource, worker}
 
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
+
+  private val kryoPool =  new KryoPool(context.system.asInstanceOf[ExtendedActorSystem])
+  launcher.setKryoPool(kryoPool)
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
   LOG.info(s"Executor actor path: ${ActorUtil.getFullPath(context.system, self.path)}")

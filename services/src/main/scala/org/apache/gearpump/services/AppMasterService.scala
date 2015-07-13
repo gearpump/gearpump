@@ -75,7 +75,7 @@ trait AppMasterService extends HttpService {
         }
       }~
       path("config") {
-        onComplete(askAppMaster[AppMasterConfig](master, appId, QueryAppMasterConfig(appId))) {
+        onComplete(askActor[AppMasterConfig](master, QueryAppMasterConfig(appId))) {
           case Success(value: AppMasterConfig) =>
             val config = Option(value.config).map(_.root.render()).getOrElse("{}")
             complete(config)

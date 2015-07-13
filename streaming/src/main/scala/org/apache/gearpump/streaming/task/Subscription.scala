@@ -18,10 +18,7 @@
 
 package org.apache.gearpump.streaming.task
 
-import com.google.common.primitives.Longs
-import java.util
-
-import org.apache.gearpump.partitioner.{Partitioner}
+import com.google.common.primitives.{Shorts}
 import org.apache.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import org.apache.gearpump.streaming.LifeTime
 import org.apache.gearpump.streaming.task.Subscription._
@@ -48,19 +45,21 @@ class Subscription(
     ackOnceEveryMessageCount: Int = ONE_ACKREQUEST_EVERY_MESSAGE_COUNT) {
 
   assert(maxPendingMessageCount > ackOnceEveryMessageCount)
+  assert(maxPendingMessageCount  < Short.MaxValue / 2)
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
   import subscriber.{partitionerDescription, processorId, parallelism}
 
-  private var messageCount: Array[Long] = null
-  private var pendingMessageCount: Array[Long] = null
-  private var minClockValue: Array[TimeStamp] = null
+  // Don't worry if this store negative number. We will wrap the Short
+  private val messageCount: Array[Short] = new Array[Short](parallelism)
+  private val pendingMessageCount: Array[Short] = new Array[Short](parallelism)
+  private val candidateMinClockSince: Array[Short] = new Array[Short](parallelism)
 
-  private var candidateMinClockSince: Array[Long] = null
-  private var candidateMinClock: Array[TimeStamp] = null
+  private var minClockValue: Array[TimeStamp] = new Array[TimeStamp](parallelism)
+  private var candidateMinClock: Array[TimeStamp] = new Array[TimeStamp](parallelism)
 
-  private var allowSendingMsg = true
+  private var maxPendingCount: Short = 0
 
   private var life = subscriber.lifeTime
 
@@ -71,14 +70,7 @@ class Subscription(
   }
 
   def start: Unit = {
-    minClockValue = Array.fill(parallelism)(Long.MaxValue)
-
-    candidateMinClock = Array.fill(parallelism)(Long.MaxValue)
-    candidateMinClockSince = Array.fill(parallelism)(0)
-
-    messageCount = Array.fill(parallelism)(0)
-    pendingMessageCount = Array.fill(parallelism)(0)
-    val ackRequest = AckRequest(taskId, 0, sessionId)
+    val ackRequest = InitialAckRequest(taskId, sessionId)
     transport.transport(ackRequest, allTasks: _*)
   }
 
@@ -97,12 +89,11 @@ class Subscription(
       transport.transport(msg, targetTask)
 
       this.minClockValue(partition) = Math.min(this.minClockValue(partition), msg.timestamp)
-
       this.candidateMinClock(partition) = Math.min(this.candidateMinClock(partition), msg.timestamp)
 
-      messageCount(partition) += 1
-      pendingMessageCount(partition) += 1
-      updateAllowSendingFlag()
+      messageCount(partition) = (messageCount(partition) + 1).toShort
+      pendingMessageCount(partition) = (pendingMessageCount(partition) + 1).toShort
+      updateMaxPendingCount()
 
       if (messageCount(partition) % ackOnceEveryMessageCount == 0) {
         val ackRequest = AckRequest(taskId, messageCount(partition), sessionId)
@@ -127,7 +118,7 @@ class Subscription(
   private var lastFlushTime: Long = 0L
   private val FLUSH_INTERVAL = 5 * 1000 // ms
   private def needFlush: Boolean = {
-    System.currentTimeMillis() - lastFlushTime > FLUSH_INTERVAL && Longs.max(pendingMessageCount: _*) > 0
+    System.currentTimeMillis() - lastFlushTime > FLUSH_INTERVAL && Shorts.max(pendingMessageCount: _*) > 0
   }
 
   private def flush: Unit = {
@@ -154,7 +145,7 @@ class Subscription(
 
     if (ack.sessionId == sessionId) {
       if (ack.actualReceivedNum == ack.seq) {
-        if (ack.seq >= candidateMinClockSince(index)) {
+        if ((ack.seq - candidateMinClockSince(index)).toShort >= 0) {
           if (ack.seq == messageCount(index)) {
             // all messages have been acked.
             minClockValue(index) = Long.MaxValue
@@ -165,8 +156,8 @@ class Subscription(
           candidateMinClockSince(index) = messageCount(index)
         }
 
-        pendingMessageCount(ack.taskId.index) = messageCount(ack.taskId.index) - ack.seq
-        updateAllowSendingFlag()
+        pendingMessageCount(ack.taskId.index) = (messageCount(ack.taskId.index) - ack.seq).toShort
+        updateMaxPendingCount()
       } else {
         LOG.error(s"Failed! Some messages sent from actor ${taskId} to ${taskId} are lost, try to replay...")
         throw new MsgLostException
@@ -179,14 +170,13 @@ class Subscription(
   }
 
   def allowSendingMoreMessages() : Boolean = {
-    allowSendingMsg
+    maxPendingCount < maxPendingMessageCount
   }
 
-  private def updateAllowSendingFlag() : Unit = {
-    allowSendingMsg = Longs.max(pendingMessageCount: _*) < maxPendingMessageCount
+  private def updateMaxPendingCount() : Unit = {
+    maxPendingCount = Shorts.max(pendingMessageCount: _*)
   }
 }
-
 
 object Subscription {
   //make sure it is smaller than MAX_PENDING_MESSAGE_COUNT

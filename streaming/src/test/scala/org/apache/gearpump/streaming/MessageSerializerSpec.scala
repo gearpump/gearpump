@@ -71,6 +71,18 @@ class MessageSerializerSpec extends WordSpec with Matchers {
     }
   }
 
+  "InitialAckRequestSerializer"  should {
+    "serialize and deserialize AckRequest properly" in {
+      val serializer = kryo.getRegistration(classOf[InitialAckRequest]).getSerializer
+      assert(serializer.isInstanceOf[InitialAckRequestSerializer])
+      val ackRequestSerializer = serializer.asInstanceOf[InitialAckRequestSerializer]
+      val ackRequest = InitialAckRequest(TaskId(1, 2), 1024)
+      ackRequestSerializer.write(kryo, outPut, ackRequest)
+      val result = ackRequestSerializer.read(kryo, input, classOf[InitialAckRequest])
+      assert(result.equals(ackRequest))
+    }
+  }
+
   "AckSerializer"  should {
     "serialize and deserialize Ack properly" in {
       val serializer = kryo.getRegistration(classOf[Ack]).getSerializer

@@ -58,7 +58,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     LOG.info("Initializing Clock service, get snapshotted StartClock ....")
     store.get(START_CLOCK).asInstanceOf[Future[TimeStamp]].map { clock =>
       val startClock = Option(clock).getOrElse(0L)
-      self ! StartClock(startClock)
+      self ! StoredStartClock(startClock)
       LOG.info(s"Start Clock Retrieved, starting ClockService, startClock: $startClock")
     }
 
@@ -111,7 +111,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   }
 
   def waitForStartClock: Receive = {
-    case StartClock(startClock) =>
+    case StoredStartClock(startClock) =>
       setDAG(dag, startClock)
 
       import context.dispatcher
@@ -281,4 +281,6 @@ object ClockService {
 
   case class ChangeToNewDAG(dag: DAG)
   case class ChangeToNewDAGSuccess(clocks: Map[ProcessorId, TimeStamp])
+
+  case class StoredStartClock(clock: TimeStamp)
 }

@@ -32,6 +32,7 @@ import org.apache.gearpump.util.Graph
 import org.scalatest.{WordSpec, Matchers, BeforeAndAfterEach}
 import org.apache.gearpump.util.Graph._
 import org.mockito.Mockito.{mock, when, verify, times}
+import org.apache.gearpump.util.Util
 
 class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config = ConfigFactory.parseString(
@@ -69,7 +70,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       val express1 = Express(getActorSystem)
       val testActorHost = express1.localHost
       mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
-      mockMaster.reply(StartClock(0))
+      mockMaster.reply(StartClock(0, Util.randInt))
 
       implicit val system = getActorSystem
       val ack = Ack(taskId2, 100, 99, testActor.underlyingActor.sessionId)
@@ -85,7 +86,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       val express1 = Express(getActorSystem)
       val testActorHost = express1.localHost
       mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
-      mockMaster.reply(StartClock(0))
+      mockMaster.reply(StartClock(0, Util.randInt))
 
       mockMaster.send(testActor, ChangeTask(taskId1, 1, LifeTime.Immortal, List.empty[Subscriber]))
       mockMaster.expectMsgType[TaskChanged]
@@ -120,7 +121,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
       val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
 
-      testActor.tell(StartClock(0), mockMaster.ref)
+      testActor.tell(StartClock(0, Util.randInt), mockMaster.ref)
 
       testActor.tell(msg, testActor)
 

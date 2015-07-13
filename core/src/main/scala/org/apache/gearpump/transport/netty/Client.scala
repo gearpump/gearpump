@@ -20,6 +20,7 @@ package org.apache.gearpump.transport.netty
 
 import java.net.{ConnectException, InetSocketAddress}
 import java.nio.channels.ClosedChannelException
+import java.util
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
@@ -30,7 +31,6 @@ import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
 import org.slf4j.Logger
 
-import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.FiniteDuration
 import scala.language.implicitConversions
 
@@ -43,7 +43,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
   private final var random: Random = new Random
   private var channel : Channel = null
 
-  val batch = new ArrayBuffer[TaskMessage]
+  var batch = new util.ArrayList[TaskMessage]
 
   private val init = {
     bootstrap = NettyUtil.createClientBootStrap(factory, new ClientPipelineFactory(name), conf.buffer_size)
@@ -54,7 +54,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
 
   def messageHandler : Receive = {
     case msg: TaskMessage =>
-      batch += msg
+      batch.add(msg)
     case flush @ Flush(flushChannel)  =>
       if (channel != flushChannel) {
         Unit //Drop, as it belong to old channel flush message
@@ -113,7 +113,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     }
   }
 
-  private def send(flushChannel: Channel, msgs: Iterator[TaskMessage]) {
+  private def send(flushChannel: Channel, msgs: util.Iterator[TaskMessage]) {
     var messageBatch: MessageBatch = null
 
     while (msgs.hasNext) {
@@ -139,7 +139,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
       channel.close()
       channel = null
     }
-    batch.clear()
+    batch = null
   }
 
   override def postStop() = {

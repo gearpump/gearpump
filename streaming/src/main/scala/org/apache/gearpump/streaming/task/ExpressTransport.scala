@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.task
 
 import akka.actor.{ActorRef, ExtendedActorSystem}
-import org.apache.gearpump.serializer.FastKryoSerializer
+import org.apache.gearpump.serializer.{KryoPool, FastKryoSerializer}
 import org.apache.gearpump.transport.netty.TaskMessage
 import org.apache.gearpump.transport.{Express, HostPort}
 
@@ -30,11 +30,15 @@ trait ExpressTransport {
 
   final val express = Express(context.system)
   implicit val system = context.system.asInstanceOf[ExtendedActorSystem]
-  final val serializer = new FastKryoSerializer(system)
+
   final def local = express.localHost
   lazy val sourceId = TaskId.toLong(taskId)
 
-  val sendLater = new SendLater(express, serializer, self)
+  lazy val sessionRef: ActorRef = {
+    system.actorFor(s"/session#$sessionId")
+  }
+
+  lazy val sendLater = new SendLater(express, kryoPool, sessionRef)
 
   def transport(msg : AnyRef, remotes : TaskId *): Unit = {
 
@@ -48,11 +52,11 @@ trait ExpressTransport {
         if(sendLater.hasPendingMessages){
           sendLater.flushPendingMessages(localActor.get, transportId)
         }
-        localActor.get.tell(msg, self)
+        localActor.get.tell(msg, sessionRef)
       } else {
       //remote
         if (null == serializedMessage) {
-          serializedMessage = serializer.serialize(msg)
+          serializedMessage = kryoPool.get.serialize(msg)
         }
         val taskMessage = new TaskMessage(sessionId, transportId, sourceId, serializedMessage)
 
@@ -70,7 +74,7 @@ trait ExpressTransport {
   }
 }
 
-class SendLater(express: Express, serializer: FastKryoSerializer, sender: ActorRef){
+class SendLater(express: Express, kryoPool: KryoPool, sender: ActorRef){
   private var buffer = Map.empty[Long, mutable.Queue[TaskMessage]]
 
   def addMessage(transportId: Long, taskMessage: TaskMessage) = {
@@ -93,7 +97,7 @@ class SendLater(express: Express, serializer: FastKryoSerializer, sender: ActorR
     val queue = buffer.getOrElse(transportId, mutable.Queue.empty[TaskMessage])
     while (queue.nonEmpty) {
       val taskMessage = queue.dequeue()
-      val msg = serializer.deserialize(taskMessage.message())
+      val msg = kryoPool.get.deserialize(taskMessage.message())
       localActor.tell(msg, sender)
     }
   }

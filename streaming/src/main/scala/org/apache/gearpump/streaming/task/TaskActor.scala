@@ -22,10 +22,12 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import com.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.metrics.Metrics.MetricType
 import org.apache.gearpump.partitioner.{Partitioner}
+import org.apache.gearpump.serializer.KryoPool
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.ProcessorId
@@ -34,9 +36,16 @@ import org.apache.gearpump.util.{ActorUtil, LogUtil, TimeOutScheduler, Util}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
-class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userConf : UserConfig, val task: TaskWrapper) extends Actor with ExpressTransport  with TimeOutScheduler{
+class TaskActor(
+    val taskId: TaskId,
+    val taskContextData : TaskContextData,
+    userConf : UserConfig,
+    val task: TaskWrapper,
+     inputKryoPool: KryoPool)
+  extends Actor with ExpressTransport  with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
 
+  def kryoPool: KryoPool = inputKryoPool
 
   import org.apache.gearpump.streaming.task.TaskActor._
   import taskContextData._
@@ -76,7 +85,7 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
   // securityChecker will be responsible of dropping messages from
   // unknown sources
   private val securityChecker  = new SecurityChecker(taskId, self)
-  private[task] val sessionId = Util.randInt
+  private[task] var sessionId = 0
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -166,7 +175,8 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
     case TaskRejected =>
       LOG.info(s"Task $taskId is rejected by AppMaster, shutting down myself...")
       context.stop(self)
-    case start@ StartClock(clock) =>
+    case start@ StartClock(clock, sessionId) =>
+      this.sessionId = sessionId
 
       LOG.info(s"received $start")
 
@@ -194,6 +204,12 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
   def stashMessages: Receive = handleMessages(() => Unit)
 
   def handleMessages(handler: () => Unit): Receive = {
+    case ackRequest: InitialAckRequest =>
+      val ackResponse = securityChecker.handleInitialAckRequest(ackRequest)
+      if (null != ackResponse) {
+        queue.add(SendAck(ackResponse, ackRequest.taskId))
+        handler()
+      }
     case ackRequest: AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
       val ackResponse = securityChecker.generateAckResponse(ackRequest, sender)
@@ -264,31 +280,37 @@ class TaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userC
 object TaskActor {
   val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000 //3 seconds
 
-
-  class MsgCount(var num: Long){
-    def increment() = num += 1
-  }
-
   // If the message comes from an unknown source, securityChecker will drop it
   class SecurityChecker(task_id: TaskId, self : ActorRef) {
 
     private val LOG: Logger = LogUtil.getLogger(getClass, task = task_id)
 
     // Use mutable HashMap for performance optimization
-    private var receivedMsgCount = new util.HashMap[ActorRef, MsgCount]()
+    private val receivedMsgCount = new IntShortHashMap()
+
+
+    // Tricky performance optimization to save memory.
+    // We store the session Id in the uid of ActorPath
+    // ActorPath.hashCode is same as uid.
+    private def getSessionId(actor: ActorRef): Int = {
+      //TODO: As method uid is protected in [akka] package. We
+      // are using hashCode instead of uid.
+      actor.hashCode()
+    }
+
+    def handleInitialAckRequest(ackRequest: InitialAckRequest): Ack = {
+      LOG.debug(s"Handle InitialAckRequest for session $ackRequest" )
+      receivedMsgCount.put(ackRequest.sessionId, 0)
+      Ack(task_id, 0, 0, ackRequest.sessionId)
+    }
 
     def generateAckResponse(ackRequest: AckRequest, sender: ActorRef): Ack = {
-      val counter = receivedMsgCount.get(sender)
-      if (counter != null) {
-        Ack(task_id, ackRequest.seq, counter.num, ackRequest.sessionId)
+      val sessionId = getSessionId(sender)
+      if (receivedMsgCount.containsKey(sessionId)) {
+        Ack(task_id, ackRequest.seq, receivedMsgCount.get(sessionId), ackRequest.sessionId)
       } else {
-        if (ackRequest.seq == 0) { //We got the first AckRequest before the real messages
-          receivedMsgCount.put(sender, new MsgCount(0L))
-          Ack(task_id, ackRequest.seq, 0, ackRequest.sessionId)
-        } else {
-          LOG.debug(s"task $task_id get unkonwn AckRequest $ackRequest from ${ackRequest.taskId}")
-          null
-        }
+        LOG.debug(s"task $task_id get unknown AckRequest $ackRequest from ${ackRequest}")
+        null
       }
     }
 
@@ -297,14 +319,14 @@ object TaskActor {
       if(sender.equals(self)){
         Some(message)
       } else {
-        val counter = receivedMsgCount.get(sender)
-        if (counter == null) {
-          // This is an illegal message,
-          LOG.debug(s"Task $task_id received message before receive the first AckRequest")
-          None
-        } else {
-          counter.increment()
+        val sessionId = getSessionId(sender)
+        if (receivedMsgCount.containsKey(sessionId)) {
+          receivedMsgCount.put(sessionId, (receivedMsgCount.get(sessionId) + 1).toShort)
           Some(message)
+        } else {
+          // This is an illegal message,
+          LOG.debug(s"Task $task_id received message before receive the first AckRequest, session $sessionId")
+          None
         }
       }
     }

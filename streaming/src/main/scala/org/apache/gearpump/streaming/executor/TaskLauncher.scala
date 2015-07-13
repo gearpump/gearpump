@@ -19,16 +19,18 @@
 
 package org.apache.gearpump.streaming.executor
 
-import akka.actor.{Props, ActorRef, ActorRefFactory}
+import akka.actor.{ExtendedActorSystem, Props, ActorRef, ActorRefFactory, Actor}
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
+import org.apache.gearpump.serializer.KryoPool
 import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import org.apache.gearpump.streaming.task.{Subscriber, TaskWrapper, TaskActor, TaskUtil, TaskContextData, TaskId}
 import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.util.Constants
-import akka.actor.Actor
 
 trait ITaskLauncher {
+  def setKryoPool(pool: KryoPool): Unit
+
   def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory): Map[TaskId, ActorRef]
 }
 
@@ -40,6 +42,13 @@ class TaskLauncher(
     userConf: UserConfig,
     taskActorClass: Class[_ <: Actor])
   extends ITaskLauncher{
+
+  private var kryoPool: KryoPool = null
+
+  def setKryoPool(pool: KryoPool): Unit = {
+    this.kryoPool = pool
+  }
+
   def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory): Map[TaskId, ActorRef] = {
     import argument.{processorDescription, subscribers}
 
@@ -55,7 +64,7 @@ class TaskLauncher(
     var tasks = Map.empty[TaskId, ActorRef]
     taskIds.foreach { taskId =>
       val task = new TaskWrapper(taskId, taskClass, taskContext, taskConf)
-      val taskActor = context.actorOf(Props(taskActorClass, taskId, taskContext, userConf, task).
+      val taskActor = context.actorOf(Props(taskActorClass, taskId, taskContext, userConf, task, kryoPool).
         withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), ActorPathUtil.taskActorName(taskId))
       tasks += taskId -> taskActor
     }

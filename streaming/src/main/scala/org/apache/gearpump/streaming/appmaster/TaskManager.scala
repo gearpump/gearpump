@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.appmaster
 
+import java.util
+
 import akka.actor._
 import akka.pattern.ask
 import org.apache.gearpump.cluster.MasterToAppMaster.{MessageLoss, ReplayFromTimestampWindowTrailingEdge}
@@ -37,8 +39,10 @@ import org.apache.gearpump.streaming.{DAG, ExecutorId, ProcessorId}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
+import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import org.apache.gearpump.util.Util
 
 private[appmaster] class TaskManager(
     appId: Int,
@@ -52,6 +56,8 @@ private[appmaster] class TaskManager(
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   val systemConfig = context.system.settings.config
+
+  private val ids = new SessionIdFactory()
 
   private val executorRestartPolicy = new ExecutorRestartPolicy(maxNrOfRetries = 5, withinTimeRange = 20 seconds)
   implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -123,7 +129,7 @@ private[appmaster] class TaskManager(
       val status = register.registerTask(taskId, TaskLocation(executorId, host))
       if (status == Accept) {
         LOG.info(s"RegisterTask($taskId) TaskLocation: $host, Executor: $executorId")
-        startClock.map(client ! StartClock(_))
+        startClock.map(client ! StartClock(_, ids.newSessionId))
         checkApplicationReady(state)
       } else {
         sender ! TaskRejected
@@ -340,5 +346,21 @@ private [appmaster] object TaskManager {
 
     // all upstream will be affected.
     DAGDiff(added.toList, modified.toList, impactedUpstream.toList)
+  }
+
+
+  class SessionIdFactory {
+    private val ids = new util.HashSet[Int]()
+
+    @tailrec
+    final def newSessionId: Int = {
+      val id = Util.randInt
+      if (ids.contains(id)) {
+        newSessionId
+      } else {
+        ids.add(id)
+        id
+      }
+    }
   }
 }

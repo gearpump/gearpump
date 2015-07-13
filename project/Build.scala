@@ -138,6 +138,8 @@ object Build extends sbt.Build {
 
   val coreDependencies = Seq(
         libraryDependencies ++= Seq(
+        "com.goldmansachs" % "gs-collections-api" % "6.2.0",
+        "com.goldmansachs" % "gs-collections" % "6.2.0",
         "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
         "com.codahale.metrics" % "metrics-core" % codahaleVersion,
         "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
