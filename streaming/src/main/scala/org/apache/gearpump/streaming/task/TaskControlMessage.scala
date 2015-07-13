@@ -20,18 +20,22 @@ package org.apache.gearpump.streaming.task
 
 import org.apache.gearpump.TimeStamp
 
-case class Seq(id: Int, seq: Long)
+
+/*
+ * Initial AckRequest
+ */
+case class InitialAckRequest(taskId: TaskId, sessionId: Int)
 
 /*
   Here the sessionId filed is used to distinguish messages
     between different replays after the application restart
  */
-case class AckRequest(taskId: TaskId, seq: Long, sessionId: Int)
+case class AckRequest(taskId: TaskId, seq: Short, sessionId: Int)
 /*
   Here the seq field represents the expected number of received messages
     and the actualReceivedNum field means the actual received number since start
  */
-case class Ack(taskId: TaskId, seq: Long, actualReceivedNum: Long, sessionId: Int)
+case class Ack(taskId: TaskId, seq: Short, actualReceivedNum: Short, sessionId: Int)
 
 
 sealed trait ClockEvent

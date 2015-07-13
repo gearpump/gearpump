@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming.executor
 import akka.actor.{Actor, ActorSystem}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
+import org.apache.gearpump.serializer.SerializerPool
 import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import org.apache.gearpump.streaming.executor.TaskLauncherSpec.{MockTask, MockTaskActor}
@@ -50,13 +51,18 @@ class TaskLauncherSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
     val processor = ProcessorDescription(id = 0, classOf[MockTask].getName, parallelism = 2)
     val argument = TaskArgument(0, processor, null)
 
-    val tasks = launcher.launch(taskIds, argument, system)
+    val tasks = launcher.launch(taskIds, argument, system, null)
     tasks.keys.toSet shouldBe taskIds.toSet
   }
 }
 
 object TaskLauncherSpec {
-  class MockTaskActor(val taskId: TaskId, val taskContextData : TaskContextData, userConf : UserConfig, val task: TaskWrapper) extends Actor {
+  class MockTaskActor(
+      val taskId: TaskId,
+      val taskContextData : TaskContextData,
+      userConf : UserConfig,
+      val task: TaskWrapper,
+      serializer: SerializerPool) extends Actor {
     def receive: Receive = null
   }
 

@@ -91,7 +91,7 @@ object Server {
   // use a helper object to bypass this deprecation warning.
   @deprecated("", "")
   private def fakeActorRefForTask(context: ActorContext, taskId: Long, sessonId : Int): ActorRef = {
-    context.system.actorFor(s"/tasks/doNotUseFakeActorRef/${taskId}#${sessonId}")
+    context.system.actorFor(s"/session#${sessonId}")
   }
   object FakeActorRefForTaskHelper {
     @deprecated("", "")

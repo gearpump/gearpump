@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTr
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.partitioner.{PartitionerDescription, HashPartitioner, Partitioner}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{StartClock, LaunchTasks}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{Start, LaunchTasks}
 import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAGSuccess, ChangeToNewDAG}
 import org.apache.gearpump.streaming.appmaster.DagManager.{NewDAGDeployed, GetTaskLaunchData, WatchChange, LatestDAG, GetLatestDAG, TaskLaunchData}
 import org.apache.gearpump.streaming.executor.Executor

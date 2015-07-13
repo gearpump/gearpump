@@ -23,8 +23,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import com.codahale.metrics.{Slf4jReporter, ConsoleReporter, MetricFilter, MetricRegistry}
+import com.codahale.metrics.{Counter, Histogram, Slf4jReporter, ConsoleReporter, MetricFilter, MetricRegistry}
 import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.metrics.{Counter, Histogram, Meter}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 import upickle.Js
@@ -104,9 +105,10 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
     val metricsEnabled = system.settings.config.getBoolean(GEARPUMP_METRIC_ENABLED)
     LOG.info(s"Metrics is enabled...,  $metricsEnabled")
     val sampleRate = system.settings.config.getInt(GEARPUMP_METRIC_SAMPLE_RATE)
-    val meters = new Metrics(sampleRate)
 
     if (metricsEnabled) {
+
+      val meters = new Metrics(sampleRate)
 
       val reportInterval = system.settings.config.getInt(GEARPUMP_METRIC_REPORT_INTERVAL)
 
@@ -168,8 +170,63 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
           override def run = reporter.stop()
         })
       }
+      meters
+    } else {
+      new DummyMetrics
+    }
+  }
+
+  class DummyMetrics extends Metrics(1) {
+
+    override def meter(name : String) = {
+      DummyMetrics.meter
     }
 
-    meters
+    override def histogram(name : String) = {
+      DummyMetrics.histogram
+    }
+
+    override def counter(name : String) = {
+      DummyMetrics.counter
+    }
+  }
+
+  object DummyMetrics {
+    import org.apache.gearpump._
+    val meter = new metrics.Meter("", null) {
+      override def mark() {
+      }
+
+      override  def mark(n: Long) {
+      }
+
+      override def getOneMinuteRate() : Double = {
+        0
+      }
+    }
+
+    val histogram = new metrics.Histogram("", null) {
+
+      override def update(value: Long) {
+      }
+
+      override def getMean() : Double = {
+        0
+      }
+
+      override def getStdDev() : Double = {
+        0
+      }
+    }
+
+    val counter = new metrics.Counter("", null) {
+
+      override def inc() {
+      }
+
+      override def inc(n: Long) {
+      }
+    }
+
   }
 }
