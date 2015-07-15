@@ -17,12 +17,13 @@
 */
 package org.apache.gearpump.streaming.task
 
-import akka.actor.{Actor, ActorRef, Props, ActorSystem}
+import akka.actor.{ExtendedActorSystem, Actor, ActorRef, Props, ActorSystem}
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{ExecutorContext, MasterHarness, UserConfig, TestUtil}
 import org.apache.gearpump.partitioner.{ Partitioner, HashPartitioner}
+import org.apache.gearpump.serializer.SerializerPool
 import org.apache.gearpump.streaming.AppMasterToExecutor.{TaskChanged, ChangeTask, TaskRejected, MsgLostException, RegisterTaskFailedException, Start}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
 import org.apache.gearpump.streaming.task.TaskActorSpec.TestTask
@@ -33,6 +34,11 @@ import org.scalatest.{WordSpec, Matchers, BeforeAndAfterEach}
 import org.apache.gearpump.util.Graph._
 import org.mockito.Mockito.{mock, when, verify, times}
 import org.apache.gearpump.util.Util
+import org.mockito.Matchers._
+import org.scalatest.{Matchers}
+import org.scalatest.mock.MockitoSugar
+import org.apache.gearpump.serializer.FastKryoSerializer
+
 
 class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config = ConfigFactory.parseString(
@@ -53,9 +59,16 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   var mockMaster: TestProbe = null
   var taskContext1: TaskContextData = null
 
+  var mockSerializerPool: SerializerPool = null
+
   override def beforeEach() = {
     startActorSystem()
     mockMaster = TestProbe()(getActorSystem)
+
+    mockSerializerPool = mock(classOf[SerializerPool])
+    val serializer = new FastKryoSerializer(getActorSystem.asInstanceOf[ExtendedActorSystem])
+    when(mockSerializerPool.get(anyLong())).thenReturn(serializer)
+
     taskContext1 = TaskContextData(executorId1, appId,
       "appName", mockMaster.ref, 1,
       LifeTime.Immortal,
@@ -66,7 +79,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     "register itself to AppMaster when started" in {
 
       val mockTask = mock(classOf[TaskWrapper])
-      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
+      val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
       val express1 = Express(getActorSystem)
       val testActorHost = express1.localHost
       mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
@@ -82,7 +95,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     "respond to ChangeTask" in {
 
       val mockTask = mock(classOf[TaskWrapper])
-      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
+      val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
       val express1 = Express(getActorSystem)
       val testActorHost = express1.localHost
       mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
@@ -94,7 +107,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
     "shutdown itself when RegisterTask is rejected" in {
       val mockTask = mock(classOf[TaskWrapper])
-      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
+      val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
       val express1 = Express(getActorSystem)
       val testActorHost = express1.localHost
       mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
@@ -111,7 +124,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       implicit val system = getActorSystem
       val mockTask = mock(classOf[TaskWrapper])
       EventFilter[RegisterTaskFailedException](occurrences = 1) intercept {
-        TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
+        TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
       }
     }
 
@@ -119,7 +132,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       val mockTask = mock(classOf[TaskWrapper])
       val msg = Message("test")
 
-      val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
+      val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
 
       testActor.tell(Start(0, Util.randInt), mockMaster.ref)
 
