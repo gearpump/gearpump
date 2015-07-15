@@ -41,7 +41,7 @@ class TaskActor(
     val taskContextData : TaskContextData,
     userConf : UserConfig,
     val task: TaskWrapper,
-     inputKryoPool: KryoPool)
+    inputKryoPool: KryoPool)
   extends Actor with ExpressTransport  with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
 
