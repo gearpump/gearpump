@@ -18,11 +18,23 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
+import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.transaction.api.MessageDecoder
+
+import scala.util.{Failure, Success}
 
 class DefaultMessageDecoder extends MessageDecoder {
   override def fromBytes(bytes: Array[Byte]): Message = {
     Message(bytes, System.currentTimeMillis())
+  }
+}
+
+class StringMessageDecoder extends MessageDecoder {
+  override def fromBytes(bytes: Array[Byte]): Message = {
+    Injection.invert[String, Array[Byte]](bytes) match {
+      case Success(s) => Message(s, System.currentTimeMillis())
+      case Failure(e) => throw e
+    }
   }
 }

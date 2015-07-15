@@ -19,22 +19,13 @@
 package org.apache.gearpump.streaming.dsl.op
 
 import org.apache.gearpump.external.hbase.{HBaseConsumer, HBaseSinkInterface}
-import org.apache.gearpump.streaming.dsl.SinkConsumer
-import org.apache.gearpump.streaming.dsl.op.OpType.TraverseType
+import org.apache.gearpump.streaming.dsl.{TypedDataSource, SinkConsumer}
 import org.apache.gearpump.streaming.task.Task
 
 import scala.reflect.ClassTag
 
 object OpType {
-  type TraverseType[T] = {
-    def foreach[U](t: T => U): Unit
-  }
-  trait Traverse[T] extends java.io.Serializable {
-    def foreach[U](t: T => U): Unit
-  }
-
   type SinkClosure[T] = (HBaseSinkInterface,HBaseConsumer) => (T => Unit)
-
 }
 
 /**
@@ -65,7 +56,7 @@ case class GroupByOp[T: ClassTag, R](fun: T => R, parallism: Int, description: S
 
 case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int, description: String) extends ParameterizedOp[T]
 
-case class TraversableSource[M[_] <: TraverseType[_], T: ClassTag](traversable: M[T], parallelism: Int, description: String) extends ParameterizedOp[T]
+case class DataSourceOp[T: ClassTag](dataSource: TypedDataSource[T], parallelism: Int, description: String) extends ParameterizedOp[T]
 
 case class TraversableSink[M[_] <: SinkConsumer[_], T: ClassTag](sinkConsumer: M[T], parallelism: Int, description: String) extends ParameterizedOp[T]
 

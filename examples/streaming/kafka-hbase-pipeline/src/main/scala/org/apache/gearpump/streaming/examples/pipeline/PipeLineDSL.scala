@@ -28,7 +28,8 @@ import org.apache.gearpump.external.hbase.{HBaseConsumer, HBaseRepo, HBaseSinkIn
 import Messages._
 import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.streaming.dsl.StreamApp._
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.kafka.dsl.KafkaDSLUtil
+import org.apache.gearpump.streaming.kafka.lib.{StringMessageDecoder, KafkaConfig}
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
 import org.apache.gearpump.util.{Constants, LogUtil}
@@ -43,8 +44,7 @@ class TimeReplayableSourceTest1 extends TimeReplayableSource {
   val data = Array[String](
     """
       |{"id":"2a329674-12ad-49f7-b40d-6485aae0aae8","on":"2015-04-02T18:52:02.680178753Z","body":"{\"sample_id\":\"sample-0\",\"source_id\":\"src-13\",\"event_ts\":\"2015-04-02T18:52:04.784086993Z\",\"metrics\":[{\"dimension\":\"CPU\",\"metric\":\"total\",\"value\":27993997},{\"dimension\":\"CPU\",\"metric\":\"user\",\"value\":39018},{\"dimension\":\"CPU\",\"metric\":\"sys\",\"value\":23299},{\"dimension\":\"LOAD\",\"metric\":\"min\",\"value\":0},{\"dimension\":\"MEM\",\"metric\":\"free\",\"value\":15607009280},{\"dimension\":\"MEM\",\"metric\":\"used\",\"value\":163528704}]}"}
-    """
-      .stripMargin,
+    """.stripMargin,
     """
       |{"id":"043ade58-2fbc-4fe2-8253-84ab181b8cfa","on":"2015-04-02T18:52:02.680078434Z","body":"{\"sample_id\":\"sample-0\",\"source_id\":\"src-4\",\"event_ts\":\"2015-04-02T18:52:04.78364878Z\",\"metrics\":[{\"dimension\":\"CPU\",\"metric\":\"total\",\"value\":27993996},{\"dimension\":\"CPU\",\"metric\":\"user\",\"value\":39017},{\"dimension\":\"CPU\",\"metric\":\"sys\",\"value\":23299},{\"dimension\":\"LOAD\",\"metric\":\"min\",\"value\":0},{\"dimension\":\"MEM\",\"metric\":\"free\",\"value\":15607009280},{\"dimension\":\"MEM\",\"metric\":\"used\",\"value\":163528704}]}"}
     """.stripMargin,
@@ -53,13 +53,13 @@ class TimeReplayableSourceTest1 extends TimeReplayableSource {
     """.stripMargin
   )
 
-
   override def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {}
 
   override def read(batchSize: Int): List[Message] = List(Message(data(0)), Message(data(1)), Message(data(2)))
 
   override def close(): Unit = {}
 }
+
 object PipeLineDSL extends App with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
@@ -80,12 +80,12 @@ object PipeLineDSL extends App with ArgumentsParser {
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
 
     val app = StreamApp("PipeLineDSL", context, appConfig)
-    val producer = app.readFromKafka(kafkaConfig, msg => {
-      val jsonData = msg.msg.asInstanceOf[String]
-      val envelope = read[Envelope](jsonData)
+    val kafkaStream = KafkaDSLUtil.createStream[String](app, 1, "time-replayable-producer", kafkaConfig, new StringMessageDecoder)
+    val producer = kafkaStream.map{ message =>
+      val envelope = read[Envelope](message)
       val body = read[Body](envelope.body)
       body.metrics
-    }, 1, "time-replayable-producer")
+    }
     producer.flatMap(metrics => {
       Some(metrics.flatMap(datum => {
         datum.dimension match {
@@ -134,67 +134,11 @@ object PipeLineDSL extends App with ArgumentsParser {
         })
       }
     })
-
-    /*
-    val producer = app.readFromTimeReplayableSource(new TimeReplayableSourceTest1, msg => {
-      val jsonData = msg.msg.asInstanceOf[String]
-      val envelope = read[Envelope](jsonData)
-      val body = read[Body](envelope.body)
-      body.metrics
-    }, 10, 1, "time-replayable-producer")
-    producer.flatMap(metrics => {
-      Some(metrics.flatMap(datum => {
-        datum.dimension match {
-          case CPU =>
-            Some(datum)
-          case _ =>
-            None
-        }
-      }))
-    }).map((() => {
-      val average = TAverage(pipeLineConfig.getInt(CPU_INTERVAL))
-      msg: Array[Datum] => {
-        val now = System.currentTimeMillis
-        msg.flatMap(datum => {
-          average.average(datum, now)
-        })
-      }
-    })()).writeToSink(pipeLineConfig, (sinkInterface: HBaseSinkInterface, table: String) => {
-      metrics: Array[Datum] => {
-        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-        LOG.info("writing-to-Sink")
-      }
-    })
-
-    producer.flatMap(metrics => {
-      Some(metrics.flatMap(datum => {
-        datum.dimension match {
-          case MEM =>
-            Some(datum)
-          case _ =>
-            None
-        }
-      }))
-    }).map((() => {
-      val average = TAverage(pipeLineConfig.getInt(MEM_INTERVAL))
-      msg: Array[Datum] => {
-        val now = System.currentTimeMillis
-        msg.flatMap(datum => {
-          average.average(datum, now)
-        })
-      }
-    })()).writeToSink(pipeLineConfig, (sinkInterface: HBaseSinkInterface, table: String) => {
-      metrics: Array[Datum] => {
-        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-        LOG.info("writing-to-Sink")
-      }
-    })
-    */
 
     context.submit(app)
     context.close()
-
   }
+
   Try({
     application(context, parse(args))
   }).failed.foreach(throwable => {

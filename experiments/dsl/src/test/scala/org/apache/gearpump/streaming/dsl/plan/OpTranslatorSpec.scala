@@ -23,6 +23,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.dsl.CollectionDataSource
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
 import org.apache.gearpump.streaming.task.StartTime
 import org.mockito.ArgumentCaptor
@@ -67,18 +68,18 @@ class OpTranslatorSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
     val data = "one two three".split("\\s")
 
     //source with no transformer
-    val source = new SourceTask[String, String](data, None, taskContext, conf)
+    val source = new SourceTask[String, String](new CollectionDataSource[String](data), None, taskContext, conf)
     source.onStart(StartTime(0))
     source.onNext(Message("next"))
-    verify(taskContext, times(data.length)).output(anyObject())
+    verify(taskContext, times(1)).output(anyObject())
 
     //source with transformer
     val anotherTaskContext = MockUtil.mockTaskContext
     val double = new FlatMapFunction[String, String](word => List(word, word), "double")
-    val another = new SourceTask(data, Some(double), anotherTaskContext, conf)
+    val another = new SourceTask(new CollectionDataSource[String](data), Some(double), anotherTaskContext, conf)
     another.onStart(StartTime(0))
     another.onNext(Message("next"))
-    verify(anotherTaskContext, times(data.length * 2)).output(anyObject())
+    verify(anotherTaskContext, times(2)).output(anyObject())
   }
 
   "GroupByTask" should "group input by groupBy Function and apply attached operator for each group" in {

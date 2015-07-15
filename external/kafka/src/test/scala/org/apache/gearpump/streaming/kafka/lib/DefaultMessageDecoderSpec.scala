@@ -32,3 +32,13 @@ class DefaultMessageDecoderSpec extends PropSpec with PropertyChecks with Matche
     }
   }
 }
+
+class StringMessageDecoderSpec extends PropSpec with PropertyChecks with Matchers {
+  property("StringMessageDecoder should decode original bytes data into string") {
+    val decoder = new StringMessageDecoder()
+    forAll(Gen.alphaStr) { (s: String) =>
+      val bytes = Injection[String, Array[Byte]](s)
+      decoder.fromBytes(bytes).msg shouldBe s
+    }
+  }
+}
