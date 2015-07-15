@@ -23,7 +23,7 @@ import java.util
 import akka.actor._
 import akka.pattern.ask
 import org.apache.gearpump.cluster.MasterToAppMaster.{MessageLoss, ReplayFromTimestampWindowTrailingEdge}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{ChangeTasks, LaunchTasks, StartClock, TaskChanged, TaskRejected, TasksChanged, TasksLaunched}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{ChangeTasks, LaunchTasks, Start, TaskChanged, TaskRejected, TasksChanged, TasksLaunched}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, TaskActorRef}
 import org.apache.gearpump.streaming.appmaster.ClockService.ChangeToNewDAG
@@ -129,7 +129,7 @@ private[appmaster] class TaskManager(
       val status = register.registerTask(taskId, TaskLocation(executorId, host))
       if (status == Accept) {
         LOG.info(s"RegisterTask($taskId) TaskLocation: $host, Executor: $executorId")
-        startClock.map(client ! StartClock(_, ids.newSessionId))
+        startClock.map(client ! Start(_, ids.newSessionId))
         checkApplicationReady(state)
       } else {
         sender ! TaskRejected

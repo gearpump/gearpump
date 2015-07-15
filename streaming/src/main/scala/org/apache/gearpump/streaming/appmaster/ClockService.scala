@@ -26,7 +26,7 @@ import akka.actor.{Actor, Cancellable, Stash}
 import com.google.common.primitives.Longs
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.ClientToMaster.GetStallingTasks
-import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
+import org.apache.gearpump.streaming.AppMasterToExecutor.Start
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
 import org.apache.gearpump.streaming.appmaster.ClockService.HealthChecker.ClockValue
 import org.apache.gearpump.streaming.appmaster.ClockService._

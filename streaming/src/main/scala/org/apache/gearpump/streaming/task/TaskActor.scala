@@ -175,7 +175,7 @@ class TaskActor(
     case TaskRejected =>
       LOG.info(s"Task $taskId is rejected by AppMaster, shutting down myself...")
       context.stop(self)
-    case start@ StartClock(clock, sessionId) =>
+    case start@ Start(clock, sessionId) =>
       this.sessionId = sessionId
 
       LOG.info(s"received $start")

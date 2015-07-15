@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{ExecutorContext, MasterHarness, UserConfig, TestUtil}
 import org.apache.gearpump.partitioner.{ Partitioner, HashPartitioner}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{TaskChanged, ChangeTask, TaskRejected, MsgLostException, RegisterTaskFailedException, StartClock}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{TaskChanged, ChangeTask, TaskRejected, MsgLostException, RegisterTaskFailedException, Start}
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
 import org.apache.gearpump.streaming.task.TaskActorSpec.TestTask
 import org.apache.gearpump.streaming.{LifeTime, DAG, ProcessorDescription}
@@ -70,7 +70,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       val express1 = Express(getActorSystem)
       val testActorHost = express1.localHost
       mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
-      mockMaster.reply(StartClock(0, Util.randInt))
+      mockMaster.reply(Start(0, Util.randInt))
 
       implicit val system = getActorSystem
       val ack = Ack(taskId2, 100, 99, testActor.underlyingActor.sessionId)
@@ -86,7 +86,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       val express1 = Express(getActorSystem)
       val testActorHost = express1.localHost
       mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
-      mockMaster.reply(StartClock(0, Util.randInt))
+      mockMaster.reply(Start(0, Util.randInt))
 
       mockMaster.send(testActor, ChangeTask(taskId1, 1, LifeTime.Immortal, List.empty[Subscriber]))
       mockMaster.expectMsgType[TaskChanged]
@@ -121,7 +121,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
       val testActor = TestActorRef[TaskActor](Props(classOf[TaskActor], taskId1, taskContext1, UserConfig.empty, mockTask))(getActorSystem)
 
-      testActor.tell(StartClock(0, Util.randInt), mockMaster.ref)
+      testActor.tell(Start(0, Util.randInt), mockMaster.ref)
 
       testActor.tell(msg, testActor)
 
