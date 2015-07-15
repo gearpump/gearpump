@@ -43,3 +43,12 @@ body, .tooltip, .popover {
 .table caption {
   font-size: 1.15em;
 }
+
+/* Make horizontal form group more compact (2 rules) */
+.form-group-compact-h > label {
+  padding-right: 0;
+}
+
+.form-group-compact-h {
+  padding: 2px 0 2px 0;
+}

@@ -14,7 +14,20 @@ angular.module('dashboard.apps', [])
       });
   }])
 
-  .controller('AppsCtrl', ['$scope', '$location', 'restapi', 'util', function ($scope, $location, restapi, util) {
+  .controller('AppsCtrl', ['$scope', '$location', '$modal', 'restapi', 'util',
+    function ($scope, $location, $modal, restapi, util) {
+
+    var submitWindow = $modal({
+      template: "views/apps/submit.html",
+      backdrop: 'static',
+      keyboard: false /* https://github.com/mgcrea/angular-strap/issues/1779 */,
+      show: false
+    });
+
+    $scope.openSubmitDialog = function() {
+      submitWindow.$promise.then(submitWindow.show);
+    };
+
     $scope.operationDenied = {};
     $scope.view = function (id) {
       $location.path("/apps/app/" + id);
@@ -28,16 +41,6 @@ angular.module('dashboard.apps', [])
     $scope.kill = function (id) {
       restapi.killApp(id);
     };
-
-    $scope.$watch('files', function(files) {
-      if (files != null && files.length) {
-        $scope.uploading = true;
-        restapi.submitUserApp(files[0], function(response) {
-          $scope.shouldNoticeUploadFailed = !response.success;
-          $scope.uploading = false;
-        });
-      }
-    });
 
     restapi.subscribe('/master/applist', $scope,
       function (data) {

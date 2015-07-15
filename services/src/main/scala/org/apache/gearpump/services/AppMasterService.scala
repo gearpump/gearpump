@@ -39,7 +39,6 @@ trait AppMasterService extends HttpService {
   def master: ActorRef
 
   implicit val system: ActorSystem
-  private val LOG = LogUtil.getLogger(getClass)
 
   def appMasterRoute = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
