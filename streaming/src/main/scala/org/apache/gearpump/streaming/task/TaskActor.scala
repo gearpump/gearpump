@@ -27,7 +27,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.metrics.Metrics.MetricType
 import org.apache.gearpump.partitioner.{Partitioner}
-import org.apache.gearpump.serializer.KryoPool
+import org.apache.gearpump.serializer.{SerializerPool, KryoPool}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.ProcessorId
@@ -41,11 +41,11 @@ class TaskActor(
     val taskContextData : TaskContextData,
     userConf : UserConfig,
     val task: TaskWrapper,
-    inputKryoPool: KryoPool)
+    inputSerializerPool: SerializerPool)
   extends Actor with ExpressTransport  with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
 
-  def kryoPool: KryoPool = inputKryoPool
+  def serializerPool: SerializerPool = inputSerializerPool
 
   import org.apache.gearpump.streaming.task.TaskActor._
   import taskContextData._

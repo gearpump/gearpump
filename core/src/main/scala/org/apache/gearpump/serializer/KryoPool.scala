@@ -20,18 +20,18 @@ package org.apache.gearpump.serializer
 
 import akka.actor.{ExtendedActorSystem, ActorSystem}
 
-/**
- * Thread Local Cache Pool of Kryo Serializers
- * @param system
- */
-class KryoPool(system: ExtendedActorSystem) {
+trait SerializerPool {
+  def get(threadId: Long): FastKryoSerializer
+}
+
+class KryoPool(system: ExtendedActorSystem) extends SerializerPool{
   private val pool = new ThreadLocal[FastKryoSerializer]() {
       override def initialValue(): FastKryoSerializer = {
       new FastKryoSerializer(system)
     }
   }
 
-  def get: FastKryoSerializer = {
+  def get(threadId: Long): FastKryoSerializer = {
     pool.get()
   }
 }

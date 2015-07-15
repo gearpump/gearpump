@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.executor
 
 import akka.actor.{ExtendedActorSystem, Props, ActorRef, ActorRefFactory, Actor}
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
-import org.apache.gearpump.serializer.KryoPool
+import org.apache.gearpump.serializer.{SerializerPool, KryoPool}
 import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import org.apache.gearpump.streaming.task.{Subscriber, TaskWrapper, TaskActor, TaskUtil, TaskContextData, TaskId}
@@ -29,9 +29,7 @@ import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.util.Constants
 
 trait ITaskLauncher {
-  def setKryoPool(pool: KryoPool): Unit
-
-  def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory): Map[TaskId, ActorRef]
+  def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory, serializer: SerializerPool): Map[TaskId, ActorRef]
 }
 
 class TaskLauncher(
@@ -43,13 +41,7 @@ class TaskLauncher(
     taskActorClass: Class[_ <: Actor])
   extends ITaskLauncher{
 
-  private var kryoPool: KryoPool = null
-
-  def setKryoPool(pool: KryoPool): Unit = {
-    this.kryoPool = pool
-  }
-
-  def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory): Map[TaskId, ActorRef] = {
+  def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory, serializer: SerializerPool): Map[TaskId, ActorRef] = {
     import argument.{processorDescription, subscribers}
 
     val taskConf = userConf.withConfig(processorDescription.taskConf)
@@ -64,7 +56,7 @@ class TaskLauncher(
     var tasks = Map.empty[TaskId, ActorRef]
     taskIds.foreach { taskId =>
       val task = new TaskWrapper(taskId, taskClass, taskContext, taskConf)
-      val taskActor = context.actorOf(Props(taskActorClass, taskId, taskContext, userConf, task, kryoPool).
+      val taskActor = context.actorOf(Props(taskActorClass, taskId, taskContext, userConf, task, serializer).
         withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), ActorPathUtil.taskActorName(taskId))
       tasks += taskId -> taskActor
     }
