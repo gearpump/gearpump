@@ -50,9 +50,6 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
         case QueryHistoryMetrics(appId, path, _) =>
           sender ! HistoryMetrics(appId, path, List.empty[HistoryMetricsItem])
           KeepRunning
-        case QueryAppMasterConfig(appId) =>
-          sender ! AppMasterConfig(null)
-          KeepRunning
       }
     }
   }
@@ -66,6 +63,9 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
           KeepRunning
         case AppMasterDataRequest(appId, _) =>
           sender ! AppMasterData("active")
+          KeepRunning
+        case QueryAppMasterConfig(appId) =>
+          sender ! AppMasterConfig(null)
           KeepRunning
       }
     }
