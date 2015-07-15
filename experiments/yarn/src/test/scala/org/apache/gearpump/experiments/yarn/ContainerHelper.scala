@@ -17,11 +17,11 @@ object ContainerHelper extends TestConfiguration {
     ContainerId.newInstance(ApplicationAttemptId.newInstance(ApplicationId.newInstance(1, 1), 1), 1)
   }
 
-  def getContainerId(id: Long): ContainerId = {
+  def getContainerId(id: Int): ContainerId = {
     ContainerId.newInstance(ApplicationAttemptId.newInstance(ApplicationId.newInstance(1, 1), 1), id)
   }
 
-  def getContainerStatus(id: Long, state: ContainerState): ContainerStatus = {
+  def getContainerStatus(id: Int, state: ContainerState): ContainerStatus = {
     ContainerStatus.newInstance(getContainerId(id), state, "", 0)
   }
 

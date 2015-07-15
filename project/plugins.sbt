@@ -8,7 +8,7 @@ addSbtPlugin("io.gearpump.sbt" % "sbt-pack" % "0.7.4")
 
 addSbtPlugin("de.johoop" % "jacoco4sbt" % "2.1.6")
 
-addSbtPlugin("com.gilt" % "sbt-dependency-graph-sugar" % "0.7.4")
+addSbtPlugin("com.gilt" % "sbt-dependency-graph-sugar" % "0.7.5-1")
 
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "0.2.1")
 
