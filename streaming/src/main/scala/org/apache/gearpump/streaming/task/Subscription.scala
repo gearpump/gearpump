@@ -56,8 +56,8 @@ class Subscription(
   private val pendingMessageCount: Array[Short] = new Array[Short](parallelism)
   private val candidateMinClockSince: Array[Short] = new Array[Short](parallelism)
 
-  private var minClockValue: Array[TimeStamp] = new Array[TimeStamp](parallelism)
-  private var candidateMinClock: Array[TimeStamp] = new Array[TimeStamp](parallelism)
+  private var minClockValue: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
+  private var candidateMinClock: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
 
   private var maxPendingCount: Short = 0
 
