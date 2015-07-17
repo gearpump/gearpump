@@ -22,18 +22,19 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.external.hbase.{HBaseRepo, HBaseSinkInterface, HBaseSink}
-import org.apache.gearpump.external.hbase.HBaseSink._
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.external.hbase.HBaseSink
+import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.sink.DataSinkProcessor
+import org.apache.gearpump.streaming.source.DataSourceProcessor
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph._
 import org.apache.gearpump.util.{AkkaApp, Graph, LogUtil}
-import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 
 object PipeLine extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
+
   val PROCESSORS = "pipeline.processors"
   val PERSISTORS = "pipeline.persistors"
 
@@ -41,27 +42,24 @@ object PipeLine extends AkkaApp with ArgumentsParser {
     "conf" -> CLIOption[String]("<conf file>", required = true)
   )
 
-  def application(config: ParseResult): StreamApplication = {
+  def application(context: ClientContext, config: ParseResult): StreamApplication = {
     implicit val system = context.system
     import Messages._
     val pipeLinePath = config.getString("conf")
     val pipelineConfig = PipeLineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
     val processors = pipelineConfig.config.getInt(PROCESSORS)
-    val persistors = pipelineConfig.config.getInt(PERSISTORS)
     val kafkaConfig = new KafkaConfig(pipelineConfig.config)
-    val repo = new HBaseRepo {
-      def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
-    }
-    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipelineConfig).withValue(HBASESINK, repo)
+    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipelineConfig)
 
-    val kafka = Processor[KafkaProducer](1, "KafkaProducer")
+    val tableName = pipelineConfig.config.getString(HBaseSink.TABLE_NAME)
+
+    val kafka = DataSourceProcessor(new KafkaSource(kafkaConfig, new DatumDecoder), 1)
     val cpuProcessor = Processor[CpuProcessor](processors, "CpuProcessor")
     val memoryProcessor = Processor[MemoryProcessor](processors, "MemoryProcessor")
-    val cpuPersistor = Processor[CpuPersistor](persistors, "CpuPersistor")
-    val memoryPersistor = Processor[MemoryPersistor](persistors, "MemoryPersistor")
+    val hbaseSink = DataSinkProcessor(HBaseSink(tableName), 1)
     val app = StreamApplication("PipeLine", Graph(
-      kafka ~> cpuProcessor ~> cpuPersistor,
-      kafka ~> memoryProcessor ~> memoryPersistor
+      kafka ~> cpuProcessor ~> hbaseSink,
+      kafka ~> memoryProcessor ~> hbaseSink
     ), appConfig)
     app
   }
@@ -71,7 +69,7 @@ object PipeLine extends AkkaApp with ArgumentsParser {
     val config = parse(args)
     val context = ClientContext(akkaConf)
 
-    val appId = context.submit(application(config))
+    val appId = context.submit(application(context, config))
     context.close()
   }
 }

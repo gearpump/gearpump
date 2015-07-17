@@ -19,19 +19,13 @@ package org.apache.gearpump.streaming.examples.pipeline
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import Messages.{Body, Envelope, Datum}
 import Messages._
-import org.apache.gearpump.external.hbase.{HBaseConsumer, HBaseSinkInterface}
-import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.op.OpType._
-import org.apache.gearpump.streaming.dsl.plan.OpTranslator.SinkTask
-import org.apache.gearpump.streaming.dsl.{SinkConsumer, StreamApp}
+import org.apache.gearpump.streaming.dsl.StreamApp
+import org.apache.gearpump.external.hbase.dsl.HBaseDSLSink._
 import org.apache.gearpump.streaming.examples.pipeline.Messages.{Datum, Body, Envelope}
 import org.apache.gearpump.streaming.kafka.dsl.KafkaDSLUtil
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.task.{StartTime, TaskContext}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
@@ -56,26 +50,6 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
     system.shutdown()
   }
 
-  property("SinkTask should call the passed in closure") {
-    val taskContext = MockUtil.mockTaskContext
-    val conf = UserConfig.empty
-    val data = Array[Datum](Datum("CPU", "total", 1.401257775E7))
-    val expected = Message(data)
-    var called = false
-    val sinkClosure: SinkClosure[Array[Datum]] = (sinkInterface: HBaseSinkInterface, hbaseConsumer: HBaseConsumer) => {
-      metrics: Array[Datum] => {
-        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-        LOG.info("writing-to-HBase")
-        called = true
-      }
-    }
-    val sinkOp = new SinkConsumer(pipeLineConfig, sinkClosure)
-    val task = new SinkTask(Some(sinkOp), taskContext, conf)
-    task.onStart(StartTime(0))
-    task.onNext(expected)
-    taskContext.output(expected)
-    assert(called)
-  }
 
   property("StreamApp should readFromKafka") {
     val app = new StreamApp("PipeLineDSL", system, UserConfig.empty)
@@ -100,18 +74,13 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
           average.average(datum, now)
         })
       }
-    })()).writeToHBase(pipeLineConfig, (sinkInterface: HBaseSinkInterface, hbaseConsumer: HBaseConsumer) => {
-      metrics: Array[Datum] => {
-        val LOG: Logger = LogUtil.getLogger(metrics.getClass)
-        LOG.info("writing-to-HBase")
-      }
-    })
+    })()).writeToHbase("mock", 1, "sink")
     val graphVertices = List(
       "org.apache.gearpump.streaming.dsl.op.DataSourceOp",
       "org.apache.gearpump.streaming.dsl.op.FlatMapOp",
       "org.apache.gearpump.streaming.dsl.op.FlatMapOp",
       "org.apache.gearpump.streaming.dsl.op.ReduceOp",
-      "org.apache.gearpump.streaming.dsl.op.TraversableSink"
+      "org.apache.gearpump.streaming.dsl.op.DataSinkOp"
     )
     var i = 0
     app.graph.vertices.foreach(op => {

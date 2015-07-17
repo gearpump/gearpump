@@ -18,15 +18,10 @@
 
 package org.apache.gearpump.streaming.dsl.op
 
-import org.apache.gearpump.external.hbase.{HBaseConsumer, HBaseSinkInterface}
-import org.apache.gearpump.streaming.dsl.{TypedDataSource, SinkConsumer}
+import org.apache.gearpump.streaming.dsl.{TypedDataSink, TypedDataSource}
 import org.apache.gearpump.streaming.task.Task
 
 import scala.reflect.ClassTag
-
-object OpType {
-  type SinkClosure[T] = (HBaseSinkInterface,HBaseConsumer) => (T => Unit)
-}
 
 /**
  * Operators for the DSL
@@ -58,8 +53,7 @@ case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int,
 
 case class DataSourceOp[T: ClassTag](dataSource: TypedDataSource[T], parallelism: Int, description: String) extends ParameterizedOp[T]
 
-case class TraversableSink[M[_] <: SinkConsumer[_], T: ClassTag](sinkConsumer: M[T], parallelism: Int, description: String) extends ParameterizedOp[T]
-
+case class DataSinkOp[T: ClassTag](dataSink: TypedDataSink[T], parallelism: Int, description: String) extends ParameterizedOp[T]
 
 /**
  * Contains operators which can be chained to single one.

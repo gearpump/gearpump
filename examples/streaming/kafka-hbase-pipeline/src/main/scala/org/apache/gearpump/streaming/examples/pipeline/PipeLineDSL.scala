@@ -24,7 +24,8 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import Messages.{Datum, Body, Envelope}
-import org.apache.gearpump.external.hbase.{HBaseConsumer, HBaseRepo, HBaseSinkInterface, HBaseSink}
+import org.apache.gearpump.external.hbase.HBaseSink
+import org.apache.gearpump.external.hbase.dsl.HBaseDSLSink._
 import Messages._
 import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.streaming.dsl.StreamApp._
@@ -33,12 +34,10 @@ import org.apache.gearpump.streaming.kafka.lib.{StringMessageDecoder, KafkaConfi
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
 import org.apache.gearpump.util.{AkkaApp, LogUtil}
-import org.apache.hadoop.conf.Configuration
+import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 import upickle._
 
-import scala.util.Try
-import org.apache.gearpump.external.hbase.HBaseSink._
 import org.apache.gearpump.util.Constants
 
 class TimeReplayableSourceTest1 extends TimeReplayableSource {
@@ -76,11 +75,12 @@ object PipeLineDSL extends AkkaApp with ArgumentsParser {
     val pipeLinePath = config.getString("conf")
     val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
     val kafkaConfig = new KafkaConfig(pipeLineConfig)
-    val repo = new HBaseRepo {
-      def getHBase(table: String, conf: Configuration): HBaseSinkInterface = HBaseSink(table, conf)
-    }
-    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig).withValue(HBASESINK, repo)
+    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig)
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
+
+    val tableName = pipeLineConfig.getString(HBaseSink.TABLE_NAME)
+    val columnFamily = pipeLineConfig.getString(HBaseSink.COLUMN_FAMILY)
+    val columnName = pipeLineConfig.getString(HBaseSink.COLUMN_NAME)
 
     val app = StreamApp("PipeLineDSL", context, appConfig)
     val kafkaStream = KafkaDSLUtil.createStream[String](app, 1, "time-replayable-producer", kafkaConfig, new StringMessageDecoder)
@@ -103,16 +103,11 @@ object PipeLineDSL extends AkkaApp with ArgumentsParser {
       msg: Array[Datum] => {
         val now = System.currentTimeMillis
         msg.flatMap(datum => {
-          average.average(datum, now)
+          val result = average.average(datum, now)
+          result.map(cpu => (System.currentTimeMillis.toString, columnFamily, columnName, write[Datum](cpu)))
         })
       }
-    })()).writeToHBase(pipeLineConfig, (sinkInterface:HBaseSinkInterface, hbaseConsumer:HBaseConsumer) => {
-      metrics:Array[Datum] => {
-        metrics.foreach(datum => {
-          sinkInterface.insert(System.currentTimeMillis.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](datum))
-        })
-      }
-    })
+    })()).writeToHbase(tableName, 1, "sink")
     producer.flatMap(metrics => {
       Some(metrics.flatMap(datum => {
         datum.dimension match {
@@ -127,16 +122,11 @@ object PipeLineDSL extends AkkaApp with ArgumentsParser {
       msg: Array[Datum] => {
         val now = System.currentTimeMillis
         msg.flatMap(datum => {
-          average.average(datum, now)
+          val result = average.average(datum, now)
+          result.map(mem => (System.currentTimeMillis.toString, columnFamily, columnName, write[Datum](mem)))
         })
       }
-    })()).writeToHBase(pipeLineConfig, (sinkInterface:HBaseSinkInterface, hbaseConsumer:HBaseConsumer) => {
-      metrics:Array[Datum] => {
-        metrics.foreach(datum => {
-          sinkInterface.insert(System.currentTimeMillis.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](datum))
-        })
-      }
-    })
+    })()).writeToHbase(tableName, 1, "sink")
 
     context.submit(app)
     context.close()
