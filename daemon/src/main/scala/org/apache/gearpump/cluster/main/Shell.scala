@@ -20,9 +20,11 @@ package org.apache.gearpump.cluster.main
 
 import java.io.{File, PrintWriter}
 
+import org.apache.gearpump.util.AkkaApp
+
 import scala.util.Try
 
-object Shell extends App with ArgumentsParser {
+object Shell extends AkkaApp with ArgumentsParser {
 
   case object ShellStarted
 
@@ -31,7 +33,8 @@ object Shell extends App with ArgumentsParser {
 
   override val description = "Start a scala shell with classpath loaded"
 
-  def shell() : Unit = {
+
+  def main(akkaConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
     if (null == config) {
       return
@@ -79,6 +82,4 @@ object Shell extends App with ArgumentsParser {
     classpathList :+= scalaHome + "/lib/*"
     classpathList.mkString(File.pathSeparator)
   }
-
-  Try(shell).failed.foreach{ex => help; throw ex}
 }

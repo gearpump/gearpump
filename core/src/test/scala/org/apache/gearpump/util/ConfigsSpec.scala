@@ -22,7 +22,7 @@ import java.io.File
 
 import akka.actor.ActorSystem
 import org.apache.commons.io.FileUtils
-import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
+import org.apache.gearpump.cluster.{ClusterConfigSource, ClusterConfig, UserConfig}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 import com.typesafe.config.ConfigFactory
@@ -55,8 +55,7 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
     val file = File.createTempFile("test", ".conf")
     FileUtils.writeStringToFile(file, conf)
 
-    System.setProperty(GEARPUMP_CUSTOM_CONFIG_FILE, file.toString)
-    val raw = ClusterConfig.load
+    val raw = ClusterConfig.load(ClusterConfigSource(file.toString))
 
     assert(raw.master.getString("conf") == "master", "master > base")
     assert(raw.worker.getString("conf") == "worker", "worker > base")

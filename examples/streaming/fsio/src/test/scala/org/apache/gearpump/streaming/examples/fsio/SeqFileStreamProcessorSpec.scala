@@ -17,12 +17,13 @@
  */
 package org.apache.gearpump.streaming.examples.fsio
 
+import java.io.File
+
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.examples.fsio.HadoopConfig
-import org.apache.gearpump.streaming.{Processor, ProcessorDescription, DAG, MockUtil}
+import org.apache.gearpump.streaming.{Processor, MockUtil}
 import org.apache.gearpump.streaming.task.{StartTime, TaskId}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -37,7 +38,7 @@ import scala.collection.mutable.ArrayBuffer
 class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
   val kvPairs = new ArrayBuffer[(String, String)]
   val outputDirectory = "SeqFileStreamProcessor_Test"
-  val sequenceFilePath = new Path(outputDirectory + System.getProperty("file.separator") + TaskId(0, 0))
+  val sequenceFilePath = new Path(outputDirectory + File.separator + TaskId(0, 0))
   val hadoopConf = new Configuration()
   val fs = FileSystem.get(hadoopConf)
   val textClass = new Text().getClass

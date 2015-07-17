@@ -32,13 +32,14 @@ import org.apache.gearpump.streaming.kafka.dsl.KafkaDSLUtil
 import org.apache.gearpump.streaming.kafka.lib.{StringMessageDecoder, KafkaConfig}
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 import upickle._
 
 import scala.util.Try
 import org.apache.gearpump.external.hbase.HBaseSink._
+import org.apache.gearpump.util.Constants
 
 class TimeReplayableSourceTest1 extends TimeReplayableSource {
   val data = Array[String](
@@ -60,16 +61,18 @@ class TimeReplayableSourceTest1 extends TimeReplayableSource {
   override def close(): Unit = {}
 }
 
-object PipeLineDSL extends App with ArgumentsParser {
+object PipeLineDSL extends AkkaApp with ArgumentsParser {
+
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "conf" -> CLIOption[String]("<conf file>", required = true)
   )
-  val context = ClientContext()
-  implicit val system = context.system
 
   def application(context: ClientContext, config: ParseResult): Unit = {
+
+    implicit val system = context.system
+
     val pipeLinePath = config.getString("conf")
     val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
     val kafkaConfig = new KafkaConfig(pipeLineConfig)
@@ -139,9 +142,8 @@ object PipeLineDSL extends App with ArgumentsParser {
     context.close()
   }
 
-  Try({
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val context = ClientContext(akkaConf)
     application(context, parse(args))
-  }).failed.foreach(throwable => {
-    LOG.error("Application Failed", throwable)
-  })
+  }
 }

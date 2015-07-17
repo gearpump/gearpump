@@ -22,16 +22,15 @@ import org.apache.commons.io.FileUtils
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{CLIOption, ArgumentsParser}
 import org.apache.gearpump.experiments.distributeservice.DistServiceAppMaster.{InstallService, FileContainer, GetFileContainer}
-import org.apache.gearpump.util.{LogUtil, FileServer, Constants}
+import org.apache.gearpump.util.{AkkaApp, LogUtil, FileServer, Constants}
 import org.slf4j.{LoggerFactory, Logger}
 
 import akka.pattern.ask
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-object DistributeServiceClient extends App with ArgumentsParser{
+object DistributeServiceClient extends AkkaApp with ArgumentsParser{
   implicit val timeout = Constants.FUTURE_TIMEOUT
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "appid" -> CLIOption[Int]("<the distributed shell appid>", required = true),
@@ -46,22 +45,26 @@ object DistributeServiceClient extends App with ArgumentsParser{
     Console.println(s"-D<name>=<value> set a property to the service")
   }
 
-  val config = parse(filterCustomOptions(args))
-  val context = ClientContext()
-  val appid = config.getInt("appid")
-  val zipFile = new File(config.getString("file"))
-  val script = new File(config.getString("script"))
-  val serviceName = config.getString("serviceName")
-  val appMaster = context.resolveAppID(appid)
-  (appMaster ? GetFileContainer).asInstanceOf[Future[FileContainer]].map { container =>
-    val bytes = FileUtils.readFileToByteArray(zipFile)
-    val result = FileServer.newClient.save(container.url, bytes)
-    result match {
-      case Success(_) =>
-        appMaster ! InstallService(container.url, zipFile.getName, config.getString("target"),
-          FileUtils.readFileToByteArray(script), serviceName, parseServiceConfig(args))
-        context.close()
-      case Failure(ex) => throw ex
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val config = parse(filterCustomOptions(args))
+    val context = ClientContext(akkaConf)
+    implicit val system = context.system
+    implicit val dispatcher = system.dispatcher
+    val appid = config.getInt("appid")
+    val zipFile = new File(config.getString("file"))
+    val script = new File(config.getString("script"))
+    val serviceName = config.getString("serviceName")
+    val appMaster = context.resolveAppID(appid)
+    (appMaster ? GetFileContainer).asInstanceOf[Future[FileContainer]].map { container =>
+      val bytes = FileUtils.readFileToByteArray(zipFile)
+      val result = FileServer.newClient.save(container.url, bytes)
+      result match {
+        case Success(_) =>
+          appMaster ! InstallService(container.url, zipFile.getName, config.getString("target"),
+            FileUtils.readFileToByteArray(script), serviceName, parseServiceConfig(args))
+          context.close()
+        case Failure(ex) => throw ex
+      }
     }
   }
 

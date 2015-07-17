@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
+import akka.actor.ActorSystem
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
@@ -26,10 +28,10 @@ import org.apache.gearpump.streaming.sink.DataSinkProcessor
 import org.apache.gearpump.streaming.source.DataSourceProcessor
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{Graph, LogUtil}
+import org.apache.gearpump.util.{AkkaApp, Graph, LogUtil}
 import org.slf4j.Logger
 
-object KafkaWordCount extends App with ArgumentsParser {
+object KafkaWordCount extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -39,7 +41,8 @@ object KafkaWordCount extends App with ArgumentsParser {
     "sink" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(4))
     )
 
-  def application(config: ParseResult) : StreamApplication = {
+  def application(config: ParseResult, system: ActorSystem) : StreamApplication = {
+    implicit val actorSystem = system
     val sourceNum = config.getInt("source")
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
@@ -57,11 +60,10 @@ object KafkaWordCount extends App with ArgumentsParser {
     app
   }
 
-  val config = parse(args)
-  val context = ClientContext()
-
-  implicit val system = context.system
-
-  val appId = context.submit(application(config))
-  context.close()
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val config = parse(args)
+    val context = ClientContext(akkaConf)
+    val appId = context.submit(application(config, context.system))
+    context.close()
+  }
 }

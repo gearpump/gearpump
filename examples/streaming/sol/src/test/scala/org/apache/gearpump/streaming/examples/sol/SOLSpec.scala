@@ -27,6 +27,8 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, Matchers, PropSpec}
 
 import scala.util.{Success, Try}
 
+import scala.concurrent.Future
+
 class SOLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
   override def beforeAll {
     startActorSystem()
@@ -55,15 +57,11 @@ class SOLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
     val masterReceiver = createMockMaster()
     forAll(args) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
-      val process = Util.startProcess(getMasterListOption(), getContextClassPath,
-        getMainClassName(SOL), args)
 
-      try {
-        masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
-        masterReceiver.reply(SubmitApplicationResult(Success(0)))
-      } finally {
-        process.destroy()
-      }
+      Future {SOL.main(masterConfig, args)}
+
+      masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
+      masterReceiver.reply(SubmitApplicationResult(Success(0)))
     }
   }
 

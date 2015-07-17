@@ -17,18 +17,22 @@
  */
 
 package org.apache.gearpump.cluster.main
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
 import scala.util.Try
 
-object MainRunner extends App  {
+object MainRunner extends AkkaApp  {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  val mainClazz = args(0)
-  val commandArgs = args.drop(1)
+  def help: Unit = Unit
 
-  val clazz = Thread.currentThread().getContextClassLoader().loadClass(mainClazz)
-  val mainMethod = clazz.getMethod("main", classOf[Array[String]])
-  mainMethod.invoke(null, commandArgs)
+  def main(akkaConf: Config, args: Array[String]): Unit = {
+    val mainClazz = args(0)
+    val commandArgs = args.drop(1)
+
+    val clazz = Thread.currentThread().getContextClassLoader().loadClass(mainClazz)
+    val mainMethod = clazz.getMethod("main", classOf[Array[String]])
+    mainMethod.invoke(null, commandArgs)
+  }
 }
