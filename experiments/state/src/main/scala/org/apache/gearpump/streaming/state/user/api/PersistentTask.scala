@@ -18,11 +18,11 @@
 
 package org.apache.gearpump.streaming.state.user.api
 
-import org.apache.gearpump.{TimeStamp, Message}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.state.system.api.PersistentState
 import org.apache.gearpump.streaming.state.system.impl._
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task._
+import org.apache.gearpump.{Message, TimeStamp}
 
 /**
  * PersistentTask is part of the transaction API
@@ -32,6 +32,7 @@ import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
  */
 abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
+  import taskContext.{appMaster, taskId}
 
   val stateConfig = conf.getValue[PersistentStateConfig](PersistentStateConfig.NAME).get
   val checkpointInterval = stateConfig.getCheckpointInterval
@@ -44,7 +45,7 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
    *
    * the framework has already offered two states
    *
-   *   - UnboundedState
+   *   - NonWindowState
    *     state with no time or other boundary
    *   - WindowState
    *     each state is bounded by a time window
@@ -64,15 +65,19 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
     checkpointManager
       .recover(timestamp)
       .foreach(state.recover(timestamp, _))
+    appMaster ! ReportCheckpointClock(taskId, timestamp)
   }
 
   final override def onNext(message: Message): Unit = {
+
     val checkpointTime = checkpointManager.getCheckpointTime
     checkpointManager.update(message.timestamp)
-    if (taskContext.upstreamMinClock >= checkpointTime) {
+    val upstreamMinClock = taskContext.upstreamMinClock
+
+    if (checkpointManager.shouldCheckpoint(upstreamMinClock)) {
       val serialized = state.checkpoint(checkpointTime)
       checkpointManager.checkpoint(checkpointTime, serialized)
-      checkpointManager.updateCheckpointTime()
+      appMaster ! ReportCheckpointClock(taskId, checkpointTime)
     }
 
     processMessage(state, message, checkpointTime)

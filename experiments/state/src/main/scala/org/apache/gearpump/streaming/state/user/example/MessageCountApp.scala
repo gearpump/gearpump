@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
+import org.apache.gearpump.streaming.state.system.impl.{KafkaCheckpointStore, PersistentStateConfig}
 import org.apache.gearpump.streaming.state.user.example.processor.{CountProcessor, NumberGeneratorProcessor}
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.{AkkaApp, Graph}
@@ -46,7 +46,8 @@ object MessageCountApp extends AkkaApp with ArgumentsParser {
     val kafkaConfig = new KafkaConfig()
     val userConfig = UserConfig.empty
       .withValue(PersistentStateConfig.NAME, stateConfig)
-      .withValue(KafkaConfig.NAME, kafkaConfig)
+      .withValue(KafkaCheckpointStore.CONSUMER_CONFIG, kafkaConfig.consumerConfig)
+      .withValue(KafkaCheckpointStore.PRODUCER_CONFIG, kafkaConfig.producerConfig)
 
     val partitioner = new HashPartitioner()
     val app = StreamApplication("MessageCount", Graph(gen ~ partitioner ~> count), userConfig)

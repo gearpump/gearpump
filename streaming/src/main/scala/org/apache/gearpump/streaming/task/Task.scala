@@ -19,15 +19,14 @@
 package org.apache.gearpump.streaming.task
 
 import akka.actor.Actor.Receive
-import akka.actor.{Cancellable, Props, ActorRef, ActorSystem}
-import org.apache.gearpump.{TimeStamp, Message}
+import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.{ProcessorId, TaskIndex}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
 case class TaskId(processorId : ProcessorId, index : TaskIndex)
@@ -166,14 +165,6 @@ trait TaskInterface {
   * @return
   */
   def receiveUnManagedMessage: Receive = null
-
-  /**
-   * This represent the min-clock of state
-   * None means there is no in-memory state, Or the in-memory state doesn't
-   * requires recovery.
-   * @return
-   */
-  def stateClock: Option[TimeStamp]
 }
 
 abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends TaskInterface{
@@ -205,12 +196,4 @@ abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends Ta
     case msg =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + msg.toString)
   }
-
-  /**
-   * This represent the min-clock of state
-   * None means there is no in-memory state, Or the in-memory state doesn't
-   * requires recovery.
-   * @return
-   */
-  override def stateClock: Option[TimeStamp] = None
 }
