@@ -43,7 +43,7 @@ object AppMasterToExecutor {
 
   case class TaskChanged(taskId: TaskId, dagVersion: Int)
 
-  case class StartClock(clock : TimeStamp)
+  case class Start(startClock : TimeStamp, sessionId: Int)
   case object TaskRejected
 
   case object RestartClockService

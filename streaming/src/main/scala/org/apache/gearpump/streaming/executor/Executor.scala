@@ -22,6 +22,7 @@ import akka.actor.SupervisorStrategy.{Resume, Stop}
 import akka.actor._
 import org.apache.gearpump.cluster.MasterToAppMaster.MessageLoss
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
+import org.apache.gearpump.serializer.KryoPool
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskArgumentStore, TaskLocationReady, TaskStopped}
@@ -36,7 +37,7 @@ import scala.language.postfixOps
 
 class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher: ITaskLauncher)  extends Actor {
 
-  def this(executorContext: ExecutorContext, userConf : UserConfig)= {
+  def this(executorContext: ExecutorContext, userConf: UserConfig) = {
     this(executorContext, userConf, TaskLauncher(executorContext, userConf))
   }
 
@@ -44,6 +45,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   import executorContext.{appId, appMaster, executorId, resource, worker}
 
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
+
+  private val kryoPool =  new KryoPool(context.system.asInstanceOf[ExtendedActorSystem])
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
   LOG.info(s"Executor actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
@@ -75,7 +78,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     }
 
   private def launchTask(taskId: TaskId, argument: TaskArgument): ActorRef = {
-    launcher.launch(List(taskId), argument, context).values.head
+    launcher.launch(List(taskId), argument, context, kryoPool).values.head
   }
 
   private val taskArgumentStore = new TaskArgumentStore()
@@ -85,7 +88,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       LOG.info(s"Launching Task $taskIds for app: ${appId}")
       val taskArgument = TaskArgument(dagVersion, processorDescription, subscribers)
       taskIds.foreach(taskArgumentStore.add(_, taskArgument))
-      val newAdded = launcher.launch(taskIds, taskArgument, context)
+      val newAdded = launcher.launch(taskIds, taskArgument, context, kryoPool)
       newAdded.foreach { newAddedTask =>
         context.watch(newAddedTask._2)
       }

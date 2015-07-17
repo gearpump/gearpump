@@ -49,7 +49,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
     val subscription = new Subscription(appId, executorId, taskId, subscriber, session, transport)
     subscription.start
 
-    val expectedAckRequest = AckRequest(taskId, 0, session)
+    val expectedAckRequest = InitialAckRequest(taskId, session)
     verify(transport, times(1)).transport(expectedAckRequest, TaskId(1,0), TaskId(1, 1))
 
     (subscription, transport)

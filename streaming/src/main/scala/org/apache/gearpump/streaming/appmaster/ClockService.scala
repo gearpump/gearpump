@@ -26,7 +26,7 @@ import akka.actor.{Actor, Cancellable, Stash}
 import com.google.common.primitives.Longs
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.ClientToMaster.GetStallingTasks
-import org.apache.gearpump.streaming.AppMasterToExecutor.StartClock
+import org.apache.gearpump.streaming.AppMasterToExecutor.Start
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
 import org.apache.gearpump.streaming.appmaster.ClockService.HealthChecker.ClockValue
 import org.apache.gearpump.streaming.appmaster.ClockService._
@@ -58,7 +58,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     LOG.info("Initializing Clock service, get snapshotted StartClock ....")
     store.get(START_CLOCK).asInstanceOf[Future[TimeStamp]].map { clock =>
       val startClock = Option(clock).getOrElse(0L)
-      self ! StartClock(startClock)
+      self ! StoredStartClock(startClock)
       LOG.info(s"Start Clock Retrieved, starting ClockService, startClock: $startClock")
     }
 
@@ -111,7 +111,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   }
 
   def waitForStartClock: Receive = {
-    case StartClock(startClock) =>
+    case StoredStartClock(startClock) =>
       setDAG(dag, startClock)
 
       import context.dispatcher
@@ -281,4 +281,6 @@ object ClockService {
 
   case class ChangeToNewDAG(dag: DAG)
   case class ChangeToNewDAGSuccess(clocks: Map[ProcessorId, TimeStamp])
+
+  case class StoredStartClock(clock: TimeStamp)
 }

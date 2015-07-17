@@ -68,22 +68,14 @@ class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[Actor
   }
 
   private def submit(app : AppDescription, jarPath: String) : Int = {
-    Try({
-      val client = new MasterClient(master)
-      val appName = checkAndAddNamePrefix(app.name, System.getProperty(GEARPUMP_APP_NAME_PREFIX))
-      val updatedApp = AppDescription(appName, app.appMaster, app.userConfig, app.clusterConfig)
-      if (jarPath == null) {
-        client.submitApplication(updatedApp, None)
-      } else {
-        val appJar = loadFile(jarPath)
-        client.submitApplication(updatedApp, Option(appJar))
-      }
-    }) match {
-      case Success(appId) =>
-        appId
-      case Failure(ex) =>
-        LOG.error("Failed to submit", ex)
-        -1
+    val client = new MasterClient(master)
+    val appName = checkAndAddNamePrefix(app.name, System.getProperty(GEARPUMP_APP_NAME_PREFIX))
+    val updatedApp = AppDescription(appName, app.appMaster, app.userConfig, app.clusterConfig)
+    if (jarPath == null) {
+      client.submitApplication(updatedApp, None)
+    } else {
+      val appJar = loadFile(jarPath)
+      client.submitApplication(updatedApp, Option(appJar))
     }
   }
 

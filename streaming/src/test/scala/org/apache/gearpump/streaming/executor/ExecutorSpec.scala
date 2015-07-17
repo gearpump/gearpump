@@ -61,13 +61,13 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val launchTasks = LaunchTasks(taskIds, dagVersion = 0,  processor, List.empty[Subscriber])
 
     val task = TestProbe()
-    when(taskLauncher.launch(any(), any(), any())).thenReturn(taskIds.map((_, task.ref)).toMap)
+    when(taskLauncher.launch(any(), any(), any(), any())).thenReturn(taskIds.map((_, task.ref)).toMap)
 
     val client = TestProbe()
     client.send(executor, launchTasks)
     client.expectMsg(TasksLaunched)
 
-    verify(taskLauncher, times(1)).launch(any(), any(), any())
+    verify(taskLauncher, times(1)).launch(any(), any(), any(), any())
 
     val changeTasks = ChangeTasks(taskIds, dagVersion = 1, life = LifeTime(0, Long.MaxValue), List.empty[Subscriber])
 
