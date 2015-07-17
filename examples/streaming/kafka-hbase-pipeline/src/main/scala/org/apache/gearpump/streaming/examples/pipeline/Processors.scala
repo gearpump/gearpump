@@ -21,20 +21,15 @@ package org.apache.gearpump.streaming.examples.pipeline
 import com.typesafe.config.Config
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.external.hbase.{HBaseConsumer, HBaseRepo, HBaseSink}
 import Messages._
-import org.apache.gearpump.streaming.kafka.KafkaSource
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.source.DataSourceConfig
+import org.apache.gearpump.external.hbase.HBaseSink
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
-import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 import upickle._
 
 import scala.language.implicitConversions
 import scala.util.Try
-import org.apache.gearpump.external.hbase.HBaseSink._
 
 // NOTE: Do not split up into separate files
 // See http://stackoverflow.com/questions/28630780/upickle-and-scalajs-sealed-trait-serialisation
@@ -106,12 +101,14 @@ abstract class MetricProcessor(taskContext: TaskContext, conf: UserConfig)
   override def onStart(newStartTime: StartTime): Unit = {
     LOG.info(s"starting timeInterval=$timeInterval")
   }
-
 }
 
 class CpuProcessor(taskContext: TaskContext, conf: UserConfig)
   extends MetricProcessor(taskContext, conf) {
   import taskContext.output
+
+  val columnFamily = pipelineConfig.get.config.getString(HBaseSink.COLUMN_FAMILY)
+  val columnName = pipelineConfig.get.config.getString(HBaseSink.COLUMN_NAME)
 
   override val timeInterval = pipelineConfig.map(config => {
     config.config.getInt(CPU_INTERVAL)
@@ -121,25 +118,25 @@ class CpuProcessor(taskContext: TaskContext, conf: UserConfig)
     Try({
       val jsonData = msg.msg.asInstanceOf[String]
       val metrics = read[Array[Datum]](jsonData)
-      val data = metrics.flatMap(datum => {
+      metrics.foreach{ datum =>
         datum.dimension match {
           case CPU =>
-            val results = average(datum, msg.timestamp)
-            LOG.info(s"returning $results")
-            results
+            val result = average(datum, msg.timestamp)
+            result.foreach(cpu =>
+              output(Message((msg.timestamp.toString, columnFamily, columnName, write[Datum](cpu)) ,msg.timestamp)))
           case _ =>
-            None
         }
-      })
-      output(Message(write[Array[Datum]](data),msg.timestamp))
+      }
     }).failed.foreach(LOG.error("bad message", _))
   }
 }
 
 class MemoryProcessor(taskContext: TaskContext, conf: UserConfig)
   extends MetricProcessor(taskContext, conf) {
-
   import taskContext.output
+
+  val columnFamily = pipelineConfig.get.config.getString(HBaseSink.COLUMN_FAMILY)
+  val columnName = pipelineConfig.get.config.getString(HBaseSink.COLUMN_NAME)
 
   override val timeInterval = pipelineConfig.map(config => {
     config.config.getInt(MEM_INTERVAL)
@@ -149,103 +146,17 @@ class MemoryProcessor(taskContext: TaskContext, conf: UserConfig)
     Try({
       val jsonData = msg.msg.asInstanceOf[String]
       val metrics = read[Array[Datum]](jsonData)
-      val data = metrics.flatMap(datum => {
+      metrics.foreach{ datum =>
         datum.dimension match {
           case MEM =>
-            average(datum, msg.timestamp)
+            val result = average(datum, msg.timestamp)
+            println(result)
+            result.foreach(mem =>
+              output(Message((msg.timestamp.toString, columnFamily, columnName, write[Datum](mem)) ,msg.timestamp)))
           case _ =>
-            None
         }
-      }).toSeq.toArray
-      output(Message(write[Array[Datum]](data),msg.timestamp))
+      }
     }).failed.foreach(LOG.error("bad message", _))
-  }
-}
-
-class CpuPersistor(taskContext : TaskContext, conf: UserConfig)
-  extends Task(taskContext, conf) {
-
-  def userConf = conf
-  val pipeLineConfig: PipeLineConfig = userConf.getValue[PipeLineConfig](PIPELINE).get
-  val hbaseConsumer = HBaseConsumer(taskContext.system, Some(pipeLineConfig.config))
-  lazy val hbase = hbaseConsumer.getHBase(userConf.getValue[HBaseRepo](HBASESINK).get)
-
-  override def onStart(newStartTime: StartTime): Unit = {
-    LOG.info("starting")
-  }
-
-  override def onNext(msg: Message): Unit = {
-    Try({
-      val cpus = read[Array[Datum]](msg.msg.asInstanceOf[String])
-      cpus.foreach(cpu => {
-        hbase.insert(msg.timestamp.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](cpu))
-      })
-    }).failed.foreach(LOG.error("bad message", _))
-  }
-
-}
-
-class MemoryPersistor(taskContext : TaskContext, conf: UserConfig)
-  extends Task(taskContext, conf) {
-
-  def userConf = conf
-  val pipeLineConfig: PipeLineConfig = userConf.getValue[PipeLineConfig](PIPELINE).get
-  val hbaseConsumer = HBaseConsumer(taskContext.system, Some(pipeLineConfig.config))
-  lazy val hbase = hbaseConsumer.getHBase(userConf.getValue[HBaseRepo](HBASESINK).get)
-
-  override def onStart(newStartTime: StartTime): Unit = {
-    LOG.info("starting")
-  }
-
-  override def onNext(msg: Message): Unit = {
-    Try({
-      val memories = read[Array[Datum]](msg.msg.asInstanceOf[String])
-      memories.foreach(memory => {
-        hbase.insert(msg.timestamp.toString, hbaseConsumer.family, hbaseConsumer.column, write[Datum](memory))
-      })
-    }).failed.foreach(LOG.error("bad message", _))
-  }
-
-}
-
-class KafkaProducer(taskContext : TaskContext, conf: UserConfig)
-  extends Task(taskContext, conf) {
-
-  import taskContext.{output, parallelism}
-
-  private val kafkaConfig = conf.getValue[KafkaConfig](KafkaConfig.NAME).get
-  private val batchSize = conf.getValue[Int](DataSourceConfig.SOURCE_READ_BATCH_SIZE).get
-
-  val taskParallelism = parallelism
-
-  private val source: TimeReplayableSource = new KafkaSource(kafkaConfig)
-  private var startTime: TimeStamp = 0L
-
-  override def onStart(newStartTime: StartTime): Unit = {
-    Try({
-      startTime = newStartTime.startTime
-      //source.setStartTime(startTime)
-      source.open(taskContext, None)
-    }).failed.foreach(LOG.error("caught error", _))
-    self ! Message("start", System.currentTimeMillis())
-  }
-
-  override def onNext(msg: Message): Unit = {
-    Try({
-      source.read(batchSize).foreach(msg => {
-        val jsonData = msg.msg.asInstanceOf[String]
-        val envelope = read[Envelope](jsonData)
-        val body = read[Body](envelope.body)
-        val metrics = body.metrics
-        output(Message(write[Array[Datum]](metrics), msg.timestamp))
-      })
-    }).failed.foreach(LOG.error("caught error", _))
-    self ! Message("continue", System.currentTimeMillis())
-  }
-
-  override def onStop(): Unit = {
-    LOG.info("closing kafka source...")
-    source.close()
   }
 }
 

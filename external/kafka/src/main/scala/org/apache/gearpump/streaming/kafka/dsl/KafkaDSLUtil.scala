@@ -22,7 +22,6 @@ import java.util.Properties
 import org.apache.gearpump.streaming.dsl.{TypedDataSource, StreamApp, Stream}
 import org.apache.gearpump.streaming.kafka.KafkaSource
 import org.apache.gearpump.streaming.kafka.lib.{DefaultMessageDecoder, KafkaConfig}
-import org.apache.gearpump.streaming.source.DefaultTimeStampFilter
 import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, MessageDecoder}
 
 import scala.reflect.ClassTag

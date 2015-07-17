@@ -20,15 +20,10 @@ package org.apache.gearpump.streaming.examples.pipeline
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import Messages.{Body, Envelope, Datum}
-import org.apache.gearpump.external.hbase.{HBaseRepo, HBaseSinkInterface, HBaseSink}
-import org.apache.gearpump.external.hbase.HBaseSink._
 import Messages.{Body, Datum, Envelope, _}
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.task.StartTime
 import org.apache.gearpump.util.LogUtil
-import org.apache.hadoop.conf.Configuration
-import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
@@ -60,18 +55,8 @@ object Processors {
       |}
     """.
       stripMargin
-  val hbaseCPU = Mockito.mock(classOf[HBaseSinkInterface])
-  val hbaseMEM = Mockito.mock(classOf[HBaseSinkInterface])
-  val repoCPU = new HBaseRepo {
-    def getHBase(table:String, conf:Configuration): HBaseSinkInterface = hbaseCPU
-  }
-  val repoMEM = new HBaseRepo {
-    def getHBase(table:String, conf:Configuration): HBaseSinkInterface = hbaseMEM
-  }
   val pipelineConfig = PipeLineConfig(ConfigFactory.parseString(pipelineConfigText))
   val userConfig = UserConfig.empty.withValue(PIPELINE, pipelineConfig)
-  val cpuConfig = userConfig.withValue(HBASESINK,repoCPU)
-  val memoryConfig = userConfig.withValue(HBASESINK,repoMEM)
 
   val data = Array[String](
     """
@@ -104,17 +89,17 @@ class CpuProcessorSpec extends PropSpec with PropertyChecks with Matchers with B
 
   val cpuProcessor = new CpuProcessor(context, userConfig)
 
-  property("CpuProcessor should send an empty Array[Datum]") {
+  property("CpuProcessor should not send a message") {
     val metrics = getMetrics(data(0))
     val expected = Message(write[Array[Datum]](Array[Datum]()), timeStamps(0))
     cpuProcessor.onStart(StartTime())
     cpuProcessor.onNext(Message(write[Array[Datum]](metrics), timeStamps(0)))
-    verify(context).output(expected)
+    verify(context, times(0)).output(expected)
   }
 
-  property("CpuProcessor should send an Array[Datum](Datum(\"CPU\", \"total\", 1.401257775E7)") {
+  property("CpuProcessor should send Datum(\"CPU\", \"total\", 1.401257775E7)") {
     val metrics = getMetrics(data(0))
-    val expected = Message(write[Array[Datum]](Array[Datum](Datum("CPU", "total", 1.401257775E7))), timeStamps(1))
+    val expected = Message((timeStamps(1).toString, "metrics", "average", write[Datum](Datum("CPU", "total", 1.401257775E7))), timeStamps(1))
     cpuProcessor.onNext(Message(write[Array[Datum]](metrics), timeStamps(1)))
     verify(context).output(expected)
   }
@@ -131,63 +116,23 @@ class MemoryProcessorSpec extends PropSpec with PropertyChecks with Matchers wit
 
   val memoryProcessor = new MemoryProcessor(context, userConfig)
 
-  property("Memory should send an empty Array[Datum](Datum(\"MEM\",\"free\",1.0459182421333334E10))") {
+  property("Memory should not send message") {
     val metrics = getMetrics(data(0))
     val expected = Message(write[Array[Datum]](Array[Datum]()), timeStamps(0))
     memoryProcessor.onStart(StartTime())
     memoryProcessor.onNext(Message(write[Array[Datum]](metrics), timeStamps(0)))
-    verify(context).output(expected)
+    verify(context, times(0)).output(expected)
   }
 
-  property("MemoryProcessor should send an Array[Datum]") {
+  property("MemoryProcessor should send Datum(\"MEM\",\"free\",1.0459182421333334E10)") {
     val metrics = getMetrics(data(0))
-    val expected = Message(write[Array[Datum]](Array[Datum](Datum("MEM","free",1.0459182421333334E10))), timeStamps(1))
+    val expected = Message((timeStamps(1).toString, "metrics", "average", write[Datum](Datum("MEM","free",1.0459182421333334E10))), timeStamps(1))
     memoryProcessor.onNext(Message(write[Array[Datum]](metrics), timeStamps(1)))
     verify(context).output(expected)
   }
 
   after(() => {
     memoryProcessor.onStop()
-  })
-}
-
-class CpuPersistorSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
-  import Processors._
-
-  val context = MockUtil.mockTaskContext
-  val cpuPersistor = new CpuPersistor(context, cpuConfig)
-
-  property("CpuPersistor should call HBaseSinkInterface.insert(\"1428004406134\", \"metrics\", \"average\", \"{\"dimension\":\"CPU\",\"metric\":\"total\",\"value\":27993997}\"") {
-    val metrics = getMetrics(data(0))
-    val expected = Message(write[Array[Datum]](Array[Datum]()), timeStamps(0))
-    cpuPersistor.onStart(StartTime())
-    cpuPersistor.onNext(Message(write[Array[Datum]](metrics), timeStamps(0)))
-    val metric = """|{"dimension":"CPU","metric":"total","value":27993997}""".stripMargin
-    verify(hbaseCPU).insert("1428004406134", "metrics", "average", metric)
-  }
-
-  after(() => {
-    cpuPersistor.onStop()
-  })
-}
-
-class MemoryPersistorSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
-  import Processors._
-
-  val context = MockUtil.mockTaskContext
-  val memoryPersistor = new MemoryPersistor(context, memoryConfig)
-
-  property("MemoryPersistor should call HBaseSinkInterface.insert(\"1428004406134\", \"metrics\", \"average\", \"{\"dimension\":\"CPU\",\"metric\":\"total\",\"value\":27993997}\"") {
-    val metrics = getMetrics(data(0))
-    val expected = Message(write[Array[Datum]](Array[Datum]()), timeStamps(0))
-    memoryPersistor.onStart(StartTime())
-    memoryPersistor.onNext(Message(write[Array[Datum]](metrics), timeStamps(0)))
-    val metric = """|{"dimension":"CPU","metric":"total","value":27993997}""".stripMargin
-    verify(hbaseMEM).insert("1428004406134", "metrics", "average", metric)
-  }
-
-  after(() => {
-    memoryPersistor.onStop()
   })
 }
 

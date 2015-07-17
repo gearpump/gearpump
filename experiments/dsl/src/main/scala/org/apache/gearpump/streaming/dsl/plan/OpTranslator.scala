@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.Processor
 import org.apache.gearpump.streaming.Processor.DefaultProcessor
-import org.apache.gearpump.streaming.dsl.{TypedDataSource, SinkConsumer}
+import org.apache.gearpump.streaming.dsl.{TypedDataSink, TypedDataSource}
 import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
@@ -32,7 +32,6 @@ import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 import scala.collection.TraversableOnce
-import scala.util.{Failure, Success, Try}
 
 /**
  * Translate a OP to a TaskDescription
@@ -63,10 +62,10 @@ class OpTranslator extends java.io.Serializable {
             DefaultProcessor(parallism,
               description = description + "." + func.description,
               taskConf = null, processor)
-          case TraversableSink(sinkConsumer, parallelism, description) =>
+          case DataSinkOp(dataSink, parallelism, description) =>
             Processor[SinkTask[Object]](parallelism,
               description = func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SINK, sinkConsumer))
+              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SINK, dataSink))
         }
       case op: SlaveOp[_] =>
         val func = toFunction(ops.ops)
@@ -242,27 +241,21 @@ object OpTranslator {
     }
   }
 
-  class SinkTask[T](sinkConsumer: Option[SinkConsumer[T]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class SinkTask[T](dataSink: TypedDataSink[T], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
     def this(taskContext: TaskContext, userConf: UserConfig) = {
-      this(userConf.getValue[SinkConsumer[T]](GEARPUMP_STREAMING_SINK)(taskContext.system), taskContext, userConf)
+      this(userConf.getValue[TypedDataSink[T]](GEARPUMP_STREAMING_SINK)(taskContext.system).get, taskContext, userConf)
     }
 
-    val process: T => Unit = sinkConsumer.map(sc => {
-      sc.process(taskContext, userConf)
-    }).get
-
     override def onStart(startTime: StartTime): Unit = {
+      dataSink.open(taskContext)
     }
 
     override def onNext(msg: Message): Unit = {
-      Try({
-        process(msg.msg.asInstanceOf[T])
-      }) match {
-        case Success(success) =>
-          success
-        case Failure(ex) =>
-          LOG.error("Failed to call sink thunk", ex)
-      }
+      dataSink.write(msg)
+    }
+
+    override def onStop() = {
+      dataSink.close()
     }
   }
 

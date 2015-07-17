@@ -196,7 +196,7 @@ object Build extends sbt.Build {
         }
       )
   ).aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state)
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state, pipeline)
 
   lazy val packProject = Project(
     id = "gearpump-pack",
@@ -537,9 +537,9 @@ object Build extends sbt.Build {
       Seq(
         libraryDependencies ++= Seq(
           "org.scalaz" %% "scalaz-core" % scalazVersion
-        ) ++ hadoopDependency
+        )
       )
-  ) dependsOn(streaming % "test->test;compile->compile", external_hbase % "test->test;compile->compile")
+  ) dependsOn(streaming % "test->test;compile->compile")
   
   lazy val pagerank = Project(
     id = "gearpump-experiments-pagerank",
@@ -585,7 +585,7 @@ object Build extends sbt.Build {
           "org.scalaz" %% "scalaz-core" % scalazVersion
         )
       )
-  ) dependsOn(core % "provided")
+  ) dependsOn(streaming % "provided", dsl)
 
   lazy val pipeline = Project(
     id = "gearpump-examples-kafka-hbase-pipeline",
@@ -595,7 +595,7 @@ object Build extends sbt.Build {
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.pipeline.PipeLine"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided", external_hbase, dsl)
+  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "provided", external_hbase % "provided")
 
   lazy val state = Project(
     id = "gearpump-experiments-state",
