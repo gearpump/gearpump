@@ -58,3 +58,7 @@ trait OffsetStorage {
   def append(time: TimeStamp, offset: Array[Byte]): Unit
   def close(): Unit
 }
+
+trait OffsetStorageFactory extends java.io.Serializable {
+  def getOffsetStorage(dir: String): OffsetStorage
+}

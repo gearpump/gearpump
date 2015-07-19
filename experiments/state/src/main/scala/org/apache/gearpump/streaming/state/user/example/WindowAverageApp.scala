@@ -24,8 +24,8 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.streaming.state.system.impl.{WindowConfig, PersistentStateConfig}
+import org.apache.gearpump.streaming.kafka.lib.{KafkaUtil, KafkaSourceConfig}
+import org.apache.gearpump.streaming.state.system.impl.{KafkaCheckpointStore, WindowConfig, PersistentStateConfig}
 import org.apache.gearpump.streaming.state.user.example.processor.{NumberGeneratorProcessor, WindowAverageProcessor}
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.{AkkaApp, Graph}
@@ -45,11 +45,12 @@ object WindowAverageApp extends AkkaApp with ArgumentsParser {
     val windowStep = config.getInt("window_step")
     val stateConfig = new PersistentStateConfig(
       ConfigFactory.parseResources("state.conf"))
-    val kafkaConfig = new KafkaConfig()
+    val kafkaConfig = new KafkaSourceConfig()
     val userConfig = UserConfig.empty
       .withValue(PersistentStateConfig.NAME, stateConfig)
       .withValue(WindowConfig.NAME, WindowConfig(windowSize, windowStep))
-      .withValue(KafkaConfig.NAME, kafkaConfig)
+      .withValue(KafkaCheckpointStore.CONSUMER_CONFIG, KafkaUtil.buildConsumerConfig("localhost:2181"))
+      .withValue(KafkaCheckpointStore.PRODUCER_CONFIG, KafkaUtil.buildProducerConfig("localhost:9092"))
     val gen = Processor[NumberGeneratorProcessor](config.getInt("gen"))
     val count = Processor[WindowAverageProcessor](config.getInt("count"))
     val partitioner = new HashPartitioner()

@@ -19,15 +19,12 @@
 package org.apache.gearpump.streaming.kafka.lib.grouper
 
 import kafka.common.TopicAndPartition
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{TaskId, TaskContext, TaskContextData}
 
-trait KafkaGrouperFactory {
-  def getKafkaGrouper(taskId: TaskId, taskParallelism:Int): KafkaGrouper
-}
-
+/**
+ * this class dispatches kafka [[TopicAndPartition]] to gearpump tasks
+ */
 trait KafkaGrouper {
-  def group(topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition]
+  def group(taskNum: Int, taskIndex: Int, topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition]
 }
 
 

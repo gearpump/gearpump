@@ -23,7 +23,7 @@ import com.typesafe.config.Config
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.streaming.kafka.{KafkaSink, KafkaSource}
+import org.apache.gearpump.streaming.kafka._
 import org.apache.gearpump.streaming.sink.DataSinkProcessor
 import org.apache.gearpump.streaming.source.DataSourceProcessor
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
@@ -49,7 +49,8 @@ object KafkaWordCount extends AkkaApp with ArgumentsParser {
     val sinkNum = config.getInt("sink")
 
     val appConfig = UserConfig.empty
-    val source = new KafkaSource("topic1", "localhost:2181")
+    val offsetStorageFactory = new KafkaStorageFactory("localhost:2181", "localhost:9092")
+    val source = new KafkaSource("topic1", "localhost:2181", offsetStorageFactory)
     val sourceProcessor = DataSourceProcessor(source, sourceNum)
     val split = Processor[Split](splitNum)
     val sum = Processor[Sum](sumNum)

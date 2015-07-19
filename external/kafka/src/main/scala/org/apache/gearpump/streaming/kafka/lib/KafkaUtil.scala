@@ -27,9 +27,8 @@ import kafka.common.TopicAndPartition
 import kafka.consumer.ConsumerConfig
 import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
-import org.apache.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
 import org.apache.gearpump.util.LogUtil
-import org.apache.kafka.clients.producer.{ProducerConfig, KafkaProducer}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig}
 import org.apache.kafka.common.serialization.Serializer
 import org.slf4j.Logger
 
@@ -52,15 +51,25 @@ object KafkaUtil {
     }
   }
 
-  def getTopicAndPartitions(connectZk: => ZkClient, grouper: KafkaGrouper, consumerTopics: List[String]): Array[TopicAndPartition] = {
+  def getTopicAndPartitions(connectZk: => ZkClient, consumerTopics: List[String]): Array[TopicAndPartition] = {
     val zkClient = connectZk
     try {
-      val tps = grouper.group(
-        ZkUtils.getPartitionsForTopics(zkClient, consumerTopics)
-          .flatMap { case (topic, partitions) =>
-          partitions.map(TopicAndPartition(topic, _))
-        }.toArray)
-      tps
+        ZkUtils.getPartitionsForTopics(zkClient, consumerTopics).flatMap {
+          case (topic, partitions) => partitions.map(TopicAndPartition(topic, _))
+        }.toArray
+    } catch {
+      case e: Exception =>
+        LOG.error(e.getMessage)
+        throw e
+    } finally {
+      zkClient.close()
+    }
+  }
+
+  def topicExists(connectZk: => ZkClient, topic: String): Boolean = {
+    val zkClient = connectZk
+    try {
+      AdminUtils.topicExists(zkClient, topic)
     } catch {
       case e: Exception =>
         LOG.error(e.getMessage)
@@ -140,13 +149,15 @@ object KafkaUtil {
 
   def buildProducerConfig(bootstrapServers: String): Properties = {
     val properties = new Properties()
-    properties.setProperty(KafkaConfig.BOOTSTRAP_SERVERS, bootstrapServers)
+    properties.setProperty("bootstrap.servers", bootstrapServers)
     properties
   }
 
- def setZookeeperConnect(config: KafkaConfig, zkConnect: String): KafkaConfig = {
-   config.consumerConfig.setProperty(KafkaConfig.ZOOKEEPER_CONNECT, zkConnect)
-   config
+ def buildConsumerConfig(zkConnect: String): Properties = {
+   val properties = new Properties()
+   properties.setProperty("zookeeper.connect", zkConnect)
+   properties.setProperty("group.id", "gearpump")
+   properties
   }
 
 }

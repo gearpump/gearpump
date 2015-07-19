@@ -18,28 +18,16 @@
 
 package org.apache.gearpump.streaming.kafka.lib
 
-import java.nio.ByteBuffer
-
-import com.twitter.bijection.Injection
-import kafka.common.TopicAndPartition
-import org.I0Itec.zkclient.ZkClient
-import org.apache.gearpump.streaming.kafka.lib.consumer.{KafkaMessage, KafkaConsumer}
-import org.apache.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
-import org.mockito.Matchers._
-import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.util.{Failure, Success, Try}
-
 class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
   val minTimeGen = Gen.choose[Long](1L, 500L)
   val maxTimeGen = Gen.choose[Long](500L, 999L)
 
-  property("KafkaStorage lookup time should report StorageEmpty if storage is empty") {
+ /* property("KafkaStorage lookup time should report StorageEmpty if storage is empty") {
     forAll { (time: Long, topic: String) =>
       val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
       val getConsumer = () => mock[KafkaConsumer]
@@ -188,5 +176,5 @@ class KafkaStorageSpec extends PropSpec with PropertyChecks with Matchers with M
     kafkaStorage.close()
     verify(producer).close()
     verify(zkClient).createPersistent(anyString(), anyString())
-  }
+  }*/
 }
