@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,12 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.state.system.impl
+package org.apache.gearpump.streaming.hadoop.lib.rotation
 
-object PersistentStateConfig {
+import org.apache.gearpump.TimeStamp
 
-  val STATE_CHECKPOINT_INTERVAL_MS = "state.checkpoint.interval.ms"
-  val STATE_CHECKPOINT_STORE_FACTORY = "state.checkpoint.store.factory"
-  val STATE_WINDOW_SIZE = "state.window.size"
-  val STATE_WINDOW_STEP = "state.window.step"
+class FileSizeRotation(size: FileSize) extends Rotation {
+
+  private[rotation] val maxBytes = size.toBytes
+  private var bytesWritten = 0L
+
+  override def mark(timestamp: TimeStamp, offset: Long): Unit = {
+    bytesWritten = offset
+  }
+
+  override def shouldRotate: Boolean = bytesWritten >= maxBytes
+
+  override def rotate: Unit = {
+    bytesWritten = 0L
+  }
 }
+
+
+
+

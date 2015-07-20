@@ -16,12 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.state.system.impl
+package org.apache.gearpump.streaming.transaction.api
 
-object PersistentStateConfig {
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.TaskContext
 
-  val STATE_CHECKPOINT_INTERVAL_MS = "state.checkpoint.interval.ms"
-  val STATE_CHECKPOINT_STORE_FACTORY = "state.checkpoint.store.factory"
-  val STATE_WINDOW_SIZE = "state.window.size"
-  val STATE_WINDOW_STEP = "state.window.step"
+/**
+ * CheckpointStore persistently stores mapping of timestamp to checkpoint
+ * it's possible that two checkpoints have the same timestamp
+ * CheckpointStore needs to handle this either during write or read
+ */
+trait CheckpointStore {
+
+  def persist(timeStamp: TimeStamp, checkpoint: Array[Byte]): Unit
+
+  def recover(timestamp: TimeStamp): Option[Array[Byte]]
+
+  def close(): Unit
 }
+
+trait CheckpointStoreFactory extends java.io.Serializable {
+  def getCheckpointStore(conf: UserConfig, taskContext: TaskContext): CheckpointStore
+}
+

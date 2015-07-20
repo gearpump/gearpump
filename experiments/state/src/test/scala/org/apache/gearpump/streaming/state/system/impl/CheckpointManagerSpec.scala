@@ -20,7 +20,8 @@ package org.apache.gearpump.streaming.state.system.impl
 
 import com.twitter.bijection.Injection
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.state.system.api.CheckpointStore
+import org.apache.gearpump.streaming.transaction.api.CheckpointStore
+import org.mockito.{Matchers => MockitoMatchers}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
@@ -39,7 +40,7 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
           new CheckpointManager(checkpointInterval, checkpointStore)
         checkpointManager.recover(timestamp)
 
-        verify(checkpointStore).read(timestamp)
+        verify(checkpointStore).recover(timestamp)
     }
   }
 
@@ -52,7 +53,7 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
           new CheckpointManager(checkpointInterval, checkpointStore)
         checkpointManager.checkpoint(timestamp, checkpoint)
 
-        verify(checkpointStore).write(timestamp, checkpoint)
+        verify(checkpointStore).persist(timestamp, checkpoint)
     }
   }
 
@@ -78,9 +79,12 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
         val maxTimestamp = timestamps.max
         checkpointManager.getMaxMessageTime shouldBe maxTimestamp
 
-        checkpointManager.updateCheckpointTime()
         val checkpointTime = checkpointManager.getCheckpointTime
-        maxTimestamp should (be < checkpointTime and be >= (checkpointTime - checkpointInterval))
+        checkpointManager.checkpoint(checkpointTime, Array.empty[Byte])
+        verify(checkpointStore).persist(MockitoMatchers.eq(checkpointTime),
+        MockitoMatchers.anyObject[Array[Byte]]())
+        val newCheckpointTime = checkpointManager.getCheckpointTime
+        maxTimestamp should (be < newCheckpointTime and be >= (newCheckpointTime - checkpointInterval))
     }
   }
 

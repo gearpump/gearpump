@@ -30,9 +30,9 @@ class InMemoryCheckpointStoreSpec extends PropSpec with PropertyChecks with Matc
     val checkpointGen = Gen.alphaStr.map(Injection[String, Array[Byte]])
     forAll(timestampGen, checkpointGen) { (timestamp: Long, checkpoint: Array[Byte]) =>
       val store = new InMemoryCheckpointStore
-      store.read(timestamp) shouldBe None
-      store.write(timestamp, checkpoint)
-      store.read(timestamp) shouldBe Some(checkpoint)
+      store.recover(timestamp) shouldBe None
+      store.persist(timestamp, checkpoint)
+      store.recover(timestamp) shouldBe Some(checkpoint)
     }
   }
 }
