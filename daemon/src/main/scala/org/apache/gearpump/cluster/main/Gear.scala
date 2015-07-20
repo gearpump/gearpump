@@ -20,13 +20,11 @@ package org.apache.gearpump.cluster.main
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-import scala.util.Try
-
 object Gear  {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  val commands = Map("app" -> AppSubmitter, "kill" -> Kill, "shell" -> Shell,
+  val commands = Map("app" -> AppSubmitter, "kill" -> Kill,
     "info" -> Info, "replay" -> Replay, "main" -> MainRunner)
 
   def usage: Unit = {

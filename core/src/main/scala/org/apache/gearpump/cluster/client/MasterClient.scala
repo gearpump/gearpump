@@ -39,7 +39,9 @@ class MasterClient(master : ActorRef) {
   def submitApplication(app : AppDescription, appJar: Option[AppJar]) : Int = {
     val result = Await.result( (master ? SubmitApplication(app, appJar)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)
     val appId = result.appId match {
-      case Success(appId) => appId
+      case Success(appId) =>
+        Console.println(s"Submit application succeed. The application id is $appId")
+        appId
       case Failure(ex) => throw ex
     }
     appId
