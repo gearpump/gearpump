@@ -609,7 +609,7 @@ object Build extends sbt.Build {
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        ) ++ hadoopDependency
+        )
       )
   ) dependsOn(streaming % "test->test; provided", external_kafka % "test->test; provided")
 }
