@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,22 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.state.impl
+package org.apache.gearpump.streaming.hadoop.lib.rotation
 
+import org.apache.gearpump.TimeStamp
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-class InMemoryCheckpointStoreSpec extends PropSpec with PropertyChecks with Matchers {
+class FileSizeRotationSpec extends PropSpec with PropertyChecks with Matchers {
 
-  property("InMemoryCheckpointStore should provide read / write checkpoint") {
-    val timestampGen = Gen.chooseNum[Long](1, 1000)
-    val checkpointGen = Gen.alphaStr.map(_.getBytes("UTF-8"))
-    forAll(timestampGen, checkpointGen) { (timestamp: Long, checkpoint: Array[Byte]) =>
-      val store = new InMemoryCheckpointStore
-      store.recover(timestamp) shouldBe None
-      store.persist(timestamp, checkpoint)
-      store.recover(timestamp) shouldBe Some(checkpoint)
+  val timestampGen = Gen.chooseNum[Long](0L, 1000L)
+  val fileSizeGen = Gen.chooseNum[Long](1, Long.MaxValue)
+
+  property("FileSize rotation rotates on file size") {
+    forAll(timestampGen, fileSizeGen) { (timestamp: TimeStamp, fileSize: Long) =>
+      val rotation = new FileSizeRotation(fileSize)
+      rotation.shouldRotate shouldBe false
+      rotation.mark(timestamp, rotation.maxBytes / 2)
+      rotation.shouldRotate shouldBe false
+      rotation.mark(timestamp, rotation.maxBytes)
+      rotation.shouldRotate shouldBe true
+      rotation.rotate
+      rotation.shouldRotate shouldBe false
     }
   }
 }

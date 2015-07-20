@@ -19,18 +19,18 @@
 package org.apache.gearpump.streaming.examples.state
 
 import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.state.processor.{CountProcessor, NumberGeneratorProcessor}
-import org.apache.gearpump.streaming.kafka.KafkaCheckpointStore
-import org.apache.gearpump.streaming.kafka.lib.KafkaUtil
-import org.apache.gearpump.streaming.state.impl.PersistentStateConfig
+import org.apache.gearpump.streaming.hadoop.HadoopCheckpointStoreFactory
+import org.apache.gearpump.streaming.hadoop.lib.rotation._
+import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
+import org.apache.gearpump.util.Graph.Node
 import org.apache.gearpump.util.{AkkaApp, Graph}
-import org.apache.gearpump.util.Graph._
+import org.apache.hadoop.conf.Configuration
 
 object MessageCountApp extends AkkaApp with ArgumentsParser {
 
@@ -42,11 +42,14 @@ object MessageCountApp extends AkkaApp with ArgumentsParser {
   def application(config: ParseResult)(implicit system: ActorSystem) : StreamApplication = {
     val gen = Processor[NumberGeneratorProcessor](config.getInt("gen"))
     val count = Processor[CountProcessor](config.getInt("count"))
-    val stateConfig = new PersistentStateConfig(ConfigFactory.parseResources("state.conf"))
+    val hadoopConfig = new Configuration
+    hadoopConfig.set("fs.defaultFS", "hdfs://localhost:9000")
+    val checkpointStoreFactory = new HadoopCheckpointStoreFactory("MessageCount", hadoopConfig,
+      // rotate on 1KB
+      new FileSizeRotation(1000))
     val userConfig = UserConfig.empty
-      .withValue(PersistentStateConfig.NAME, stateConfig)
-      .withValue(KafkaCheckpointStore.PRODUCER_CONFIG, KafkaUtil.buildProducerConfig("localhost:9092"))
-      .withValue(KafkaCheckpointStore.CONSUMER_CONFIG, KafkaUtil.buildConsumerConfig("localhost:2181"))
+      .withLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS, 1000L)
+      .withValue(PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY, checkpointStoreFactory)
 
     val partitioner = new HashPartitioner()
     val app = StreamApplication("MessageCount", Graph(gen ~ partitioner ~> count), userConfig)

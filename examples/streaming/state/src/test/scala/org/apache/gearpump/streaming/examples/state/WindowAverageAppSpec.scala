@@ -21,8 +21,8 @@ package org.apache.gearpump.streaming.examples.state
 import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
 import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
+import org.scalatest.{Matchers, BeforeAndAfter, PropSpec}
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{Matchers, PropSpec, BeforeAndAfter}
 
 import scala.concurrent.Future
 import scala.util.Success

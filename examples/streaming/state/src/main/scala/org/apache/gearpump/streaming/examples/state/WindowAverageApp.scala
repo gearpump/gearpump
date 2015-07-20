@@ -19,18 +19,18 @@
 package org.apache.gearpump.streaming.examples.state
 
 import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.examples.state.processor.{WindowAverageProcessor, NumberGeneratorProcessor}
-import org.apache.gearpump.streaming.kafka.KafkaCheckpointStore
-import org.apache.gearpump.streaming.kafka.lib.{KafkaSourceConfig, KafkaUtil}
-import org.apache.gearpump.streaming.state.impl.{WindowConfig, PersistentStateConfig}
+import org.apache.gearpump.streaming.examples.state.processor.{NumberGeneratorProcessor, WindowAverageProcessor}
+import org.apache.gearpump.streaming.hadoop.HadoopCheckpointStoreFactory
+import org.apache.gearpump.streaming.state.impl.WindowConfig
+import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
+import org.apache.gearpump.util.Graph.Node
 import org.apache.gearpump.util.{AkkaApp, Graph}
-import org.apache.gearpump.util.Graph._
+import org.apache.hadoop.conf.Configuration
 
 object WindowAverageApp extends AkkaApp with ArgumentsParser {
 
@@ -44,14 +44,11 @@ object WindowAverageApp extends AkkaApp with ArgumentsParser {
   def application(config: ParseResult)(implicit system: ActorSystem) : StreamApplication = {
     val windowSize = config.getInt("window_size")
     val windowStep = config.getInt("window_step")
-    val stateConfig = new PersistentStateConfig(
-      ConfigFactory.parseResources("state.conf"))
-    val kafkaConfig = new KafkaSourceConfig()
+    val checkpointStoreFactory = new HadoopCheckpointStoreFactory("MessageCount", new Configuration)
     val userConfig = UserConfig.empty
-      .withValue(PersistentStateConfig.NAME, stateConfig)
-      .withValue(WindowConfig.NAME, WindowConfig(windowSize, windowStep))
-      .withValue(KafkaCheckpointStore.CONSUMER_CONFIG, KafkaUtil.buildConsumerConfig("localhost:2181"))
-      .withValue(KafkaCheckpointStore.PRODUCER_CONFIG, KafkaUtil.buildProducerConfig("localhost:9092"))
+        .withLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS, 1000L)
+        .withValue(PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY, checkpointStoreFactory)
+        .withValue(WindowConfig.NAME, WindowConfig(windowSize, windowStep))
     val gen = Processor[NumberGeneratorProcessor](config.getInt("gen"))
     val count = Processor[WindowAverageProcessor](config.getInt("count"))
     val partitioner = new HashPartitioner()

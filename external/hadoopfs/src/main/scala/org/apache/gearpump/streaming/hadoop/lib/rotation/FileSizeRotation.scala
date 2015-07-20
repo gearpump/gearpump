@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,28 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.state.api
+package org.apache.gearpump.streaming.hadoop.lib.rotation
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.TaskContext
 
-/**
- * CheckpointStore persistently stores mapping of timestamp to checkpoint
- * it's possible that two checkpoints have the same timestamp
- * CheckpointStore needs to handle this either during write or read
- */
-trait CheckpointStore {
+case class FileSizeRotation(maxBytes: Long) extends Rotation {
 
-  def write(timeStamp: TimeStamp, checkpoint: Array[Byte]): Unit
+  private var bytesWritten = 0L
 
-  def read(timestamp: TimeStamp): Option[Array[Byte]]
+  override def mark(timestamp: TimeStamp, offset: Long): Unit = {
+    bytesWritten = offset
+  }
 
-  def close(): Unit
+  override def shouldRotate: Boolean = bytesWritten >= maxBytes
+
+  override def rotate: Unit = {
+    bytesWritten = 0L
+  }
 }
 
-trait CheckpointStoreFactory {
-  def getCheckpointStore(conf: UserConfig,
-                         taskContext: TaskContext): CheckpointStore
-}
+
+
 

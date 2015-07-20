@@ -19,8 +19,10 @@
 package org.apache.gearpump.streaming.state.api
 
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.state.impl.{PersistentStateConfig, CheckpointManager}
+import org.apache.gearpump.streaming.state.impl.CheckpointManager
+import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import org.apache.gearpump.{Message, TimeStamp}
 
 /**
@@ -32,9 +34,9 @@ import org.apache.gearpump.{Message, TimeStamp}
 abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
 
-  val stateConfig = conf.getValue[PersistentStateConfig](PersistentStateConfig.NAME).get
-  val checkpointInterval = stateConfig.getCheckpointInterval
-  val checkpointStore = stateConfig.getCheckpointStoreFactory.getCheckpointStore(conf, taskContext)
+  val checkpointStoreFactory = conf.getValue[CheckpointStoreFactory](PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY).get
+  val checkpointStore = checkpointStoreFactory.getCheckpointStore(conf, taskContext)
+  val checkpointInterval = conf.getLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS).get
   val checkpointManager = new CheckpointManager(checkpointInterval, checkpointStore)
 
   /**

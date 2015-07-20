@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,21 @@
 
 package org.apache.gearpump.streaming.examples.state.processor
 
-import com.twitter.algebird.Monoid.longMonoid
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.monoid.AlgebirdMonoid
 import org.apache.gearpump.streaming.serializer.ChillSerializer
-import org.apache.gearpump.streaming.state.api.{PersistentTask, PersistentState}
+import org.apache.gearpump.streaming.state.api.{PersistentState, PersistentTask}
 import org.apache.gearpump.streaming.state.impl.NonWindowState
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.{Message, TimeStamp}
 
 class CountProcessor(taskContext: TaskContext, conf: UserConfig)
   extends PersistentTask[Long](taskContext, conf) {
-  override def persistentState: PersistentState[Long] =
-    new NonWindowState[Long](new AlgebirdMonoid[Long](longMonoid), new ChillSerializer[Long])
+
+  override def persistentState: PersistentState[Long] = {
+    import com.twitter.algebird.Monoid.longMonoid
+    new NonWindowState[Long](new AlgebirdMonoid(longMonoid), new ChillSerializer[Long])
+  }
 
   override def processMessage(state: PersistentState[Long], message: Message, checkpointTime: TimeStamp): Unit = {
     state.update(message.timestamp, 1L, checkpointTime)
