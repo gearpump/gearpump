@@ -191,7 +191,7 @@ object Build extends sbt.Build {
         }
       )
   ).aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state)
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state, examples_state)
 
   val daemonClassPath = Seq(
     "${PROG_HOME}/conf",
@@ -256,7 +256,7 @@ object Build extends sbt.Build {
           "storm" -> stormClassPath
         )
       )
-  ).dependsOn(core, streaming, services, yarn, storm, dsl)//, state)
+  ).dependsOn(core, streaming, services, yarn, storm, dsl, state)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -409,7 +409,7 @@ object Build extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings
-  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
+  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, examples_state, distributedshell, stockcrawler, transport)
   
   lazy val services = Project(
     id = "gearpump-services",
@@ -633,7 +633,6 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "com.twitter" %% "bijection-core" % bijectionVersion,
           "com.twitter" %% "algebird-core" % algebirdVersion,
           "com.twitter" %% "chill-bijection" % chillVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
@@ -641,5 +640,30 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn(streaming % "test->test; provided", external_kafka % "test->test; provided")
+  ) dependsOn(streaming % "test->test; provided")
+
+  lazy val external_hadoop = Project(
+    id = "gearpump-external-hadoop",
+    base = file("external/hadoop"),
+    settings = commonSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "com.twitter" %% "bijection-core" % bijectionVersion
+        ) ++ hadoopDependency
+      )
+  ) dependsOn(streaming % "test->test; provided")
+
+  lazy val examples_state = Project(
+    id = "gearpump-examples-state",
+    base = file("examples/streaming/state"),
+    settings = commonSettings ++ myAssemblySettings ++ Seq(
+      libraryDependencies ++= Seq(
+        "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion,
+        "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+        "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+        "org.mockito" % "mockito-core" % mockitoVersion % "test"
+      ),
+      target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+    )
+  ) dependsOn(streaming % "test -> test; provided", state % "provided", external_hadoop)
 }
