@@ -21,6 +21,7 @@ package org.apache.gearpump.streaming.appmaster
 import java.util
 
 import akka.actor.Actor
+import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.ClientToMaster.{ QueryHistoryMetrics}
 import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
 import org.apache.gearpump.metrics.Metrics.{Counter, Histogram, MetricType, Meter}
@@ -159,8 +160,9 @@ object HistoryMetricsService {
     val queue = new util.ArrayDeque[MinMaxMetrics]()
     private var latest = List.empty[HistoryMetricsItem]
 
-    def add(inputMetrics: MetricType): Unit = {
-      val now = System.currentTimeMillis()
+    override def add(inputMetrics: MetricType): Unit = add(inputMetrics, System.currentTimeMillis())
+
+    def add(inputMetrics: MetricType, now: TimeStamp): Unit = {
       val metrics = HistoryMetricsItem(now, inputMetrics)
       latest = List(metrics)
 
