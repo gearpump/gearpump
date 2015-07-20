@@ -125,8 +125,8 @@ trait MasterService extends HttpService {
       } ~
       path("submitdag") {
         post {
-          import SubmitApplicationRequest._
-          entity(as[SubmitApplicationRequest]) { submitApplicationRequest =>
+          entity(as[String]) { request =>
+            val submitApplicationRequest = read[SubmitApplicationRequest](request)
             import submitApplicationRequest.{appJar, appName, dag, processors}
 
             Option(appJar) match {

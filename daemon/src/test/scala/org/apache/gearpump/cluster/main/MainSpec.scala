@@ -178,25 +178,5 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
     val tryThis = Try(Gear.main(Array("unknownCommand", "-noexist")))
     assert(tryThis.isFailure, "unknown command, throw")
   }
-
-  "Shell" should "be started without exception" in {
-
-    val masterReceiver = createMockMaster()
-
-    val shell = Util.startProcess(getMasterListOption(),
-      getContextClassPath,
-      getMainClassName(org.apache.gearpump.cluster.main.Shell),
-      Array("-master", s"$getHost:$getPort"))
-
-    try {
-
-      val scalaHome = Option(System.getenv("SCALA_HOME")).map { _ =>
-        // Only test this when SCALA_HOME env is set
-        masterReceiver.expectMsg(Duration(15, TimeUnit.SECONDS), AppMastersDataRequest)
-      }
-    } finally {
-      shell.destroy()
-    }
-  }
 }
 

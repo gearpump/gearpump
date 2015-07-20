@@ -31,7 +31,7 @@ object Build extends sbt.Build {
   val commonsLangVersion = "2.6"
   val commonsIOVersion = "2.4"
   val findbugsVersion = "2.0.1"
-  val guavaVersion = "15.0"
+  val guavaVersion = "16.0.1"
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.5.1"
   val jgraphtVersion = "0.9.0"
@@ -132,7 +132,11 @@ object Build extends sbt.Build {
 
   val daemonDependencies = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-contrib" % akkaVersion
+      "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
+      "io.spray" %%  "spray-can"       % sprayVersion,
+      "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
+      "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
+      "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
     ) ++ hadoopDependency
   )
 
@@ -145,12 +149,8 @@ object Build extends sbt.Build {
         "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
         "org.slf4j" % "slf4j-api" % slf4jVersion,
         "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-        "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive,
         "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % "provided",
-        "org.fusesource" % "sigar" % sigarVersion classifier("native"),
-        "commons-logging" % "commons-logging" % commonsLoggingVersion,
         "commons-lang" % "commons-lang" % commonsLangVersion,
-        "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
         "com.google.guava" % "guava" % guavaVersion,
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
         "com.typesafe.akka" %% "akka-remote" % akkaVersion,
@@ -158,11 +158,7 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
         "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
         "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
-        "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
-        "io.spray" %%  "spray-can"       % sprayVersion,
-        "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
         "commons-io" % "commons-io" % commonsIOVersion,
         "com.lihaoyi" %% "upickle" % "0.2.8",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
@@ -228,7 +224,7 @@ object Build extends sbt.Build {
         packExtraClasspath := new DefaultValueMap(Seq("/etc/gearpump/conf", "${PROG_HOME}/conf",
           "${PROG_HOME}/dashboard", "${PROG_HOME}/daemon/*" ,"/etc/hadoop/conf", "/etc/hbase/conf"))
       )
-  ).dependsOn(core, streaming, services, external_kafka, yarn, storm, dsl, pagerank, external_hbase, state)
+  ).dependsOn(core, streaming, services, yarn, storm, dsl)//, state)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -330,6 +326,9 @@ object Build extends sbt.Build {
     settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
+          "io.spray" %%  "spray-can"       % sprayVersion,
+          "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
+          "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
           "net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
           "joda-time" % "joda-time" % "2.7",
           "io.spray" %%  "spray-json"    % sprayJsonVersion
@@ -363,6 +362,8 @@ object Build extends sbt.Build {
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
           "org.mockito" % "mockito-core" % mockitoVersion % "test",
+          "io.spray" %%  "spray-can"       % sprayVersion,
+          "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
           "io.spray" %%  "spray-json"    % sprayJsonVersion
         ),
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.transport.Transport"),
@@ -419,7 +420,7 @@ object Build extends sbt.Build {
     id = "gearpump-experiments-distributeservice",
     base = file("experiments/distributeservice"),
     settings = commonSettings
-  ) dependsOn(core % "test->test;compile->compile")
+  ) dependsOn(daemon % "test->test;compile->compile")
 
   lazy val storm = Project(
     id = "gearpump-experiments-storm",
@@ -533,12 +534,7 @@ object Build extends sbt.Build {
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",
     base = file("experiments/dsl"),
-    settings = commonSettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.scalaz" %% "scalaz-core" % scalazVersion
-        )
-      )
+    settings = commonSettings
   ) dependsOn(streaming % "test->test;compile->compile")
   
   lazy val pagerank = Project(
@@ -592,6 +588,9 @@ object Build extends sbt.Build {
     base = file("examples/streaming/kafka-hbase-pipeline"),
     settings = commonSettings ++ myAssemblySettings ++
       Seq(
+        libraryDependencies ++= Seq(
+          "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive
+        ),
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.pipeline.PipeLine"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )

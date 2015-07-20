@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import akka.pattern.ask
-import akka.testkit.{ImplicitSender, TestKit}
 import com.google.common.io.Files
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.util.FileServer._

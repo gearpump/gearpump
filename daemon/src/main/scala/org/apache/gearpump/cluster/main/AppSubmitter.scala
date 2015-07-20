@@ -21,7 +21,6 @@ import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 
-import org.apache.gearpump.cluster.main.Shell.help
 import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 import org.slf4j.Logger
 

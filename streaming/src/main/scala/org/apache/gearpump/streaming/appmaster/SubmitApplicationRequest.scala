@@ -21,8 +21,6 @@ package org.apache.gearpump.streaming.appmaster
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
-import spray.http.HttpRequest
-import spray.httpx.unmarshalling.Deserializer
 import upickle.Js
 
 import scala.util.{Failure, Success, Try}
@@ -70,20 +68,4 @@ object SubmitApplicationRequest {
     })
     SubmitApplicationRequest(appName = appName, appJar = appJar, processors = processors, dag = dag)
   }
-
-  implicit def convert(httpRequest: HttpRequest): SubmitApplicationRequest = {
-    val content = httpRequest.entity.asString
-    Try({
-      deserialize(upickle.json.read(content))
-    }) match {
-      case Success(value:SubmitApplicationRequest) =>
-        value
-      case Failure(ex) =>
-        LOG.error("failed", ex)
-        null
-    }
-  }
-
-  implicit val unmarshaller = Deserializer.fromFunction2Converter[HttpRequest, SubmitApplicationRequest]
-
 }
