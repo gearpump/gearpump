@@ -19,61 +19,71 @@ package org.apache.gearpump.streaming.kafka.dsl
 
 import java.util.Properties
 
-import org.apache.gearpump.streaming.dsl.{TypedDataSource, StreamApp, Stream}
+import org.apache.gearpump.streaming.dsl.{Stream, StreamApp, TypedDataSource}
 import org.apache.gearpump.streaming.kafka.KafkaSource
-import org.apache.gearpump.streaming.kafka.lib.{DefaultMessageDecoder, KafkaConfig}
-import org.apache.gearpump.streaming.transaction.api.{TimeStampFilter, MessageDecoder}
+import org.apache.gearpump.streaming.kafka.lib.{DefaultMessageDecoder, KafkaSourceConfig}
+import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, OffsetStorageFactory, TimeStampFilter}
 
 import scala.reflect.ClassTag
 
 object KafkaDSLUtil {
   def createStream[T: ClassTag](
       app: StreamApp,
-      parallism: Int,
+      parallelism: Int,
       description: String,
-      kafkaConfig: KafkaConfig,
+      kafkaConfig: KafkaSourceConfig,
+      offsetStorageFactory: OffsetStorageFactory,
       messageDecoder: MessageDecoder = new DefaultMessageDecoder): Stream[T] = {
-    app.source[T](new KafkaSource(kafkaConfig, messageDecoder) with TypedDataSource[T], parallism, description)
+    app.source[T](new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder)
+        with TypedDataSource[T], parallelism, description)
   }
 
   def createStream[T: ClassTag](
       app: StreamApp,
-      parallism: Int,
-      description: String,
-      topics: String,
-      zkConnect: String): Stream[T] = {
-    app.source[T](new KafkaSource(topics, zkConnect) with TypedDataSource[T], parallism, description)
-  }
-
-  def createStream[T: ClassTag](
-      app: StreamApp,
-      parallism: Int,
+      parallelism: Int,
       description: String,
       topics: String,
       zkConnect: String,
-      messageDecoder: MessageDecoder,
-      timestampFilter: TimeStampFilter): Stream[T] = {
-    app.source[T](new KafkaSource(topics, zkConnect, messageDecoder, timestampFilter) with TypedDataSource[T], parallism, description)
+      offsetStorageFactory: OffsetStorageFactory): Stream[T] = {
+    app.source[T](new KafkaSource(topics, zkConnect, offsetStorageFactory)
+        with TypedDataSource[T], parallelism, description)
   }
 
   def createStream[T: ClassTag](
       app: StreamApp,
-      parallism: Int,
+      parallelism: Int,
       description: String,
       topics: String,
-      properties: Properties): Stream[T] = {
-    app.source[T](new KafkaSource(topics, properties) with TypedDataSource[T], parallism, description)
+      zkConnect: String,
+      offsetStorageFactory: OffsetStorageFactory,
+      messageDecoder: MessageDecoder,
+      timestampFilter: TimeStampFilter): Stream[T] = {
+    app.source[T](new KafkaSource(topics, zkConnect, offsetStorageFactory, messageDecoder, timestampFilter)
+        with TypedDataSource[T], parallelism, description)
+  }
+
+  def createStream[T: ClassTag](
+      app: StreamApp,
+      parallelism: Int,
+      description: String,
+      topics: String,
+      properties: Properties,
+      offsetStorageFactory: OffsetStorageFactory): Stream[T] = {
+    app.source[T](new KafkaSource(topics, properties, offsetStorageFactory)
+        with TypedDataSource[T], parallelism, description)
   }
 
   def createStream[T: ClassTag](
       app: StreamApp,
       topics: String,
-      parallism: Int,
+      parallelism: Int,
       description: String,
       properties: Properties,
+      offsetStorageFactory: OffsetStorageFactory,
       messageDecoder: MessageDecoder,
       timestampFilter: TimeStampFilter): Stream[T] = {
-    app.source[T](new KafkaSource(topics, properties, messageDecoder, timestampFilter) with TypedDataSource[T], parallism, description)
+    app.source[T](new KafkaSource(topics, properties, offsetStorageFactory, messageDecoder, timestampFilter)
+        with TypedDataSource[T], parallelism, description)
   }
 }
 

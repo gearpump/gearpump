@@ -32,8 +32,8 @@ class KafkaDefaultGrouperSpec extends PropSpec with PropertyChecks with Matchers
           p <- 0.until(partitionNum)
         } yield TopicAndPartition("topic" + t, p)
         0.until(taskNum).foreach { taskIndex =>
-          val grouper = new KafkaDefaultGrouper(taskNum, taskIndex)
-          grouper.group(topicAndPartitions.toArray).forall(
+          val grouper = new KafkaDefaultGrouper
+          grouper.group(taskNum, taskIndex, topicAndPartitions.toArray).forall(
             tp => topicAndPartitions.indexOf(tp) % taskNum == taskIndex)
         }
       }

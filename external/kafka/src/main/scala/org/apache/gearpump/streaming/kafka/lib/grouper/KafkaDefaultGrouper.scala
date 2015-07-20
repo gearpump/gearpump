@@ -19,14 +19,6 @@
 package org.apache.gearpump.streaming.kafka.lib.grouper
 
 import kafka.common.TopicAndPartition
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{TaskId, TaskContext, TaskContextData}
-
-class KafkaDefaultGrouperFactory extends KafkaGrouperFactory {
-  override def getKafkaGrouper(taskId: TaskId, taskParallelism:Int): KafkaGrouper = {
-    new KafkaDefaultGrouper(taskParallelism, taskId.index)
-  }
-}
 
 /**
  * default grouper groups TopicAndPartitions among StreamProducers by partitions
@@ -37,8 +29,8 @@ class KafkaDefaultGrouperFactory extends KafkaGrouperFactory {
  * streamProducer0 gets (topicA, partition1), (topicB, partition1) and (topicA, partition3)
  * streamProducer1 gets (topicA, partition2), (topicB, partition2)
  */
-class KafkaDefaultGrouper(taskNum: Int, taskIndex: Int) extends KafkaGrouper {
-  def group(topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition] = {
-    0.until(topicAndPartitions.size).filter(_ % taskNum == taskIndex).map(i => topicAndPartitions(i)).toArray
+class KafkaDefaultGrouper extends KafkaGrouper {
+  def group(taskNum: Int, taskIndex: Int, topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition] = {
+    topicAndPartitions.indices.filter(_ % taskNum == taskIndex).map(i => topicAndPartitions(i)).toArray
   }
 }

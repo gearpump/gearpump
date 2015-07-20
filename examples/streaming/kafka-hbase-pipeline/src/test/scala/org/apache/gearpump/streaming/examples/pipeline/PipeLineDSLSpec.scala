@@ -20,25 +20,26 @@ package org.apache.gearpump.streaming.examples.pipeline
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.UserConfig
-import Messages._
-import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.external.hbase.dsl.HBaseDSLSink._
-import org.apache.gearpump.streaming.examples.pipeline.Messages.{Datum, Body, Envelope}
+import org.apache.gearpump.streaming.dsl.StreamApp
+import org.apache.gearpump.streaming.examples.pipeline.Messages.{Body, Datum, Envelope, _}
 import org.apache.gearpump.streaming.kafka.dsl.KafkaDSLUtil
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.streaming.kafka.lib.{KafkaSourceConfig, KafkaUtil}
+import org.apache.gearpump.streaming.transaction.api.OffsetStorageFactory
+import org.apache.gearpump.util.LogUtil
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 import org.slf4j.Logger
 import upickle._
 
-class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll {
+class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar with BeforeAndAfterAll {
   val LOG: Logger = LogUtil.getLogger(getClass)
   val PROCESSORS = "pipeline.processors"
   val PERSISTORS = "pipeline.persistors"
   val pipeLinePath = "conf/pipeline.conf.template"
   val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
-  val kafkaConfig = new KafkaConfig(pipeLineConfig)
+  val kafkaConfig = new KafkaSourceConfig(KafkaUtil.buildConsumerConfig("localhost:2181"))
 
   implicit var system: ActorSystem = null
 
@@ -53,7 +54,8 @@ class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with Be
 
   property("StreamApp should readFromKafka") {
     val app = new StreamApp("PipeLineDSL", system, UserConfig.empty)
-    val producer = KafkaDSLUtil.createStream[String](app, 1, "", kafkaConfig).map{ message =>
+    val offsetStorageFactory = mock[OffsetStorageFactory]
+    val producer = KafkaDSLUtil.createStream[String](app, 1, "", kafkaConfig, offsetStorageFactory).map{ message =>
       val envelope = read[Envelope](message)
       val body = read[Body](envelope.body)
       body.metrics

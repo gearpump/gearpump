@@ -19,23 +19,20 @@
 package org.apache.gearpump.streaming.appmaster
 
 import java.util
-import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, Cancellable, Stash}
 import com.google.common.primitives.Longs
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.ClientToMaster.GetStallingTasks
-import org.apache.gearpump.streaming.AppMasterToExecutor.Start
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
 import org.apache.gearpump.streaming.appmaster.ClockService.HealthChecker.ClockValue
 import org.apache.gearpump.streaming.appmaster.ClockService._
 import org.apache.gearpump.streaming.storage.AppDataStore
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.{DAG, ProcessorId}
-import org.apache.gearpump.util.{Graph, LogUtil}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
-import org.apache.gearpump.partitioner.PartitionerDescription
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -185,7 +182,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
       }
     }
 
-    healthChecker.check(minTimestamp, clocks, dag)
+    healthChecker.check(minTimestamp, clocks, dag, System.currentTimeMillis())
   }
 
   private def snapshotStartClock() : Unit = {
@@ -227,8 +224,7 @@ object ClockService {
     private val stallingThresholdMilliseconds = stallingThresholdSeconds * 1000 // 60 seconds
     private var stallingTasks = Array.empty[TaskId]
 
-    def check(currentMinClock: TimeStamp, processorClocks: Map[ProcessorId, ProcessorClock], dag: DAG): Unit = {
-      val now = System.currentTimeMillis()
+    def check(currentMinClock: TimeStamp, processorClocks: Map[ProcessorId, ProcessorClock], dag: DAG, now: TimeStamp): Unit = {
       var isClockStalling = false
       if (currentMinClock > minClock.appClock) {
         minClock = ClockValue(systemClock = now, appClock = currentMinClock)

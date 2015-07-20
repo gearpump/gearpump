@@ -23,8 +23,8 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.external.hbase.HBaseSink
-import org.apache.gearpump.streaming.kafka.KafkaSource
-import org.apache.gearpump.streaming.kafka.lib.KafkaConfig
+import org.apache.gearpump.streaming.kafka.lib.{KafkaSourceConfig, KafkaUtil}
+import org.apache.gearpump.streaming.kafka.{KafkaSource, KafkaStorageFactory}
 import org.apache.gearpump.streaming.sink.DataSinkProcessor
 import org.apache.gearpump.streaming.source.DataSourceProcessor
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
@@ -48,12 +48,14 @@ object PipeLine extends AkkaApp with ArgumentsParser {
     val pipeLinePath = config.getString("conf")
     val pipelineConfig = PipeLineConfig(ConfigFactory.parseFile(new java.io.File(pipeLinePath)))
     val processors = pipelineConfig.config.getInt(PROCESSORS)
-    val kafkaConfig = new KafkaConfig(pipelineConfig.config)
-    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipelineConfig)
+    val appConfig = UserConfig.empty.withValue(PIPELINE, pipelineConfig)
 
     val tableName = pipelineConfig.config.getString(HBaseSink.TABLE_NAME)
 
-    val kafka = DataSourceProcessor(new KafkaSource(kafkaConfig, new DatumDecoder), 1)
+    val topics = pipelineConfig.config.getString("kafka.consumer.topics")
+    val kafkaSourceConfig = new KafkaSourceConfig(KafkaUtil.buildConsumerConfig("localhost:2181")).withConsumerTopics(topics)
+    val offsetStorageFactory = new KafkaStorageFactory("localhost:2181", "localhost:9092")
+    val kafka = DataSourceProcessor(new KafkaSource(kafkaSourceConfig, offsetStorageFactory, new DatumDecoder), 1)
     val cpuProcessor = Processor[CpuProcessor](processors, "CpuProcessor")
     val memoryProcessor = Processor[MemoryProcessor](processors, "MemoryProcessor")
     val hbaseSink = DataSinkProcessor(HBaseSink(tableName), 1)

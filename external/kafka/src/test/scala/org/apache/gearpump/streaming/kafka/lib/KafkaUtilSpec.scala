@@ -91,12 +91,13 @@ class KafkaUtilSpec extends PropSpec with PropertyChecks with BeforeAndAfterEach
 
   property("KafkaUtil should be able to get TopicAndPartitions info and group with KafkaGrouper") {
     val grouper: KafkaGrouper = new KafkaGrouper {
-      override def group(topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition] = topicAndPartitions
+      override def group(taskNum: Int, taskIndex: Int, topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition] =
+        topicAndPartitions
     }
     val topicNum = 3
     val topics = List.fill(topicNum)(TestUtils.tempTopic())
     topics.foreach(t => createTopicUntilLeaderIsElected(t, partitions = 1, replicas = 1))
-    KafkaUtil.getTopicAndPartitions(connectZk(), grouper, topics).toSet shouldBe topics.map(t => TopicAndPartition(t, 0)).toSet
+    KafkaUtil.getTopicAndPartitions(connectZk(), topics).toSet shouldBe topics.map(t => TopicAndPartition(t, 0)).toSet
   }
 
 }

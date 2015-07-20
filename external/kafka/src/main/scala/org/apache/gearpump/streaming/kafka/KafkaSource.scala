@@ -21,7 +21,6 @@ package org.apache.gearpump.streaming.kafka
 import java.util.Properties
 
 import kafka.common.TopicAndPartition
-import kafka.consumer.ConsumerConfig
 import org.apache.gearpump.streaming.kafka.lib._
 import org.apache.gearpump.streaming.kafka.lib.consumer.{FetchThread, KafkaMessage}
 import org.apache.gearpump.streaming.source.DefaultTimeStampFilter
@@ -52,62 +51,69 @@ object KafkaSource {
  * kafka message is wrapped into gearpump [[Message]] and further filtered by a [[TimeStampFilter]]
  * such that obsolete messages are dropped.
  *
- * @param config utility class for kafka config, see [[KafkaConfig]]
+ * @param config kafka source config
  * @param messageDecoder decodes [[Message]] from raw bytes
  * @param timestampFilter filters out message based on timestamp
  * @param fetchThread fetches messages and puts on a in-memory queue
  * @param offsetManagers manages offset-to-timestamp storage for each [[TopicAndPartition]]
  */
-class KafkaSource (config: KafkaConfig,
-                   messageDecoder: MessageDecoder = new DefaultMessageDecoder,
-                   timestampFilter: TimeStampFilter = new DefaultTimeStampFilter,
-                   private var fetchThread: Option[FetchThread] = None,
-                   private var offsetManagers: Map[TopicAndPartition, KafkaOffsetManager] = Map.empty[TopicAndPartition, KafkaOffsetManager])
-
+class KafkaSource(
+    config: KafkaSourceConfig,
+    offsetStorageFactory: OffsetStorageFactory,
+    messageDecoder: MessageDecoder = new DefaultMessageDecoder,
+    timestampFilter: TimeStampFilter = new DefaultTimeStampFilter,
+    private var fetchThread: Option[FetchThread] = None,
+    private var offsetManagers: Map[TopicAndPartition, KafkaOffsetManager] = Map.empty[TopicAndPartition, KafkaOffsetManager])
   extends TimeReplayableSource {
   import org.apache.gearpump.streaming.kafka.KafkaSource._
 
   private var startTime: Option[TimeStamp] = None
 
+
   /**
    * @param topics comma-separated string of topics
    * @param properties kafka consumer config
+   * @param offsetStorageFactory [[OffsetStorageFactory]] that creates [[OffsetStorage]]
+   *
    */
-  def this(topics: String, properties: Properties) = {
-    this(KafkaConfig.empty()
-      .withConsumerTopics(topics).withConsumerConfig(properties))
+  def this(topics: String, properties: Properties, offsetStorageFactory: OffsetStorageFactory) = {
+    this(KafkaSourceConfig(properties).withConsumerTopics(topics), offsetStorageFactory)
   }
   /**
    * @param topics comma-separated string of topics
    * @param properties kafka consumer config
+   * @param offsetStorageFactory [[OffsetStorageFactory]] that creates [[OffsetStorage]]
    * @param messageDecoder decodes [[Message]] from raw bytes
    * @param timestampFilter filters out message based on timestamp
    */
-  def this(topics: String, properties: Properties,
+  def this(topics: String, properties: Properties, offsetStorageFactory: OffsetStorageFactory,
            messageDecoder: MessageDecoder,
            timestampFilter: TimeStampFilter) = {
-    this(KafkaConfig.empty()
-      .withConsumerTopics(topics).withConsumerConfig(properties), messageDecoder, timestampFilter)
+    this(KafkaSourceConfig(properties)
+      .withConsumerTopics(topics), offsetStorageFactory,
+      messageDecoder, timestampFilter)
   }
 
   /**
    * @param topics comma-separated string of topics
    * @param zkConnect kafka consumer config `zookeeper.connect`
+   * @param offsetStorageFactory [[OffsetStorageFactory]] that creates [[OffsetStorage]]
    */
-  def this(topics: String, zkConnect: String) =
-    this(KafkaUtil.setZookeeperConnect(KafkaConfig.empty()
-        .withConsumerTopics(topics), zkConnect))
+  def this(topics: String, zkConnect: String, offsetStorageFactory: OffsetStorageFactory) =
+    this(topics, KafkaUtil.buildConsumerConfig(zkConnect), offsetStorageFactory)
+
   /**
    * @param topics comma-separated string of topics
    * @param zkConnect kafka consumer config `zookeeper.connect`
+   * @param offsetStorageFactory [[OffsetStorageFactory]] that creates [[OffsetStorage]]
    * @param messageDecoder decodes [[Message]] from raw bytes
    * @param timestampFilter filters out message based on timestamp
    */
-  def this(topics: String, zkConnect: String,
+  def this(topics: String, zkConnect: String, offsetStorageFactory: OffsetStorageFactory,
            messageDecoder: MessageDecoder,
            timestampFilter: TimeStampFilter) = {
-    this(KafkaUtil.setZookeeperConnect(KafkaConfig.empty()
-        .withConsumerTopics(topics), zkConnect), messageDecoder, timestampFilter)
+    this(topics, KafkaUtil.buildConsumerConfig(zkConnect), offsetStorageFactory,
+      messageDecoder, timestampFilter)
   }
 
   LOG.debug(s"assigned ${offsetManagers.keySet}")
@@ -135,17 +141,16 @@ class KafkaSource (config: KafkaConfig,
   override def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {
     import context.{appId, appName, parallelism, taskId}
 
-    val grouper = config.getGrouperFactory.getKafkaGrouper(taskId, parallelism)
-    val consumerConfig = new ConsumerConfig(config.consumerConfig)
-    val topicAndPartitions = KafkaUtil.getTopicAndPartitions(KafkaUtil.connectZookeeper(consumerConfig)(),
-      grouper, config.getConsumerTopics)
+    val topics = config.getConsumerTopics
+    val grouper = config.getGrouper
+    val consumerConfig = config.consumerConfig
+    val topicAndPartitions = grouper.group(parallelism, taskId.index,
+      KafkaUtil.getTopicAndPartitions(KafkaUtil.connectZookeeper(consumerConfig)(), topics))
     this.fetchThread = Some(FetchThread(topicAndPartitions, config.getFetchThreshold,
       config.getFetchSleepMS, consumerConfig))
     this.offsetManagers = topicAndPartitions.map { tp =>
       val storageTopic = s"app${appId}_${appName}_${tp.topic}_${tp.partition}"
-      val connectZk = KafkaUtil.connectZookeeper(consumerConfig)
-      val topicExists = KafkaUtil.createTopic(connectZk(), storageTopic, partitions = 1, config.getStorageReplicas)
-      val storage = KafkaStorage(storageTopic, topicExists, consumerConfig, config.producerConfig)
+      val storage = offsetStorageFactory.getOffsetStorage(storageTopic)
       tp -> new KafkaOffsetManager(storage)
     }.toMap
 

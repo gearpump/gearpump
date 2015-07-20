@@ -23,22 +23,19 @@ import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import Messages.{Datum, Body, Envelope}
 import org.apache.gearpump.external.hbase.HBaseSink
 import org.apache.gearpump.external.hbase.dsl.HBaseDSLSink._
-import Messages._
 import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.streaming.dsl.StreamApp._
+import org.apache.gearpump.streaming.examples.pipeline.Messages.{Body, Datum, Envelope, _}
+import org.apache.gearpump.streaming.kafka.KafkaStorageFactory
 import org.apache.gearpump.streaming.kafka.dsl.KafkaDSLUtil
-import org.apache.gearpump.streaming.kafka.lib.{StringMessageDecoder, KafkaConfig}
+import org.apache.gearpump.streaming.kafka.lib.{KafkaSourceConfig, KafkaUtil, StringMessageDecoder}
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
-import org.apache.gearpump.util.{AkkaApp, LogUtil}
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil}
 import org.slf4j.Logger
 import upickle._
-
-import org.apache.gearpump.util.Constants
 
 class TimeReplayableSourceTest1 extends TimeReplayableSource {
   val data = Array[String](
@@ -74,8 +71,7 @@ object PipeLineDSL extends AkkaApp with ArgumentsParser {
 
     val pipeLinePath = config.getString("conf")
     val pipeLineConfig = ConfigFactory.parseFile(new java.io.File(pipeLinePath))
-    val kafkaConfig = new KafkaConfig(pipeLineConfig)
-    val appConfig = UserConfig.empty.withValue(KafkaConfig.NAME, kafkaConfig).withValue(PIPELINE, pipeLineConfig)
+    val appConfig = UserConfig.empty.withValue(PIPELINE, pipeLineConfig)
     System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, pipeLinePath)
 
     val tableName = pipeLineConfig.getString(HBaseSink.TABLE_NAME)
@@ -83,7 +79,11 @@ object PipeLineDSL extends AkkaApp with ArgumentsParser {
     val columnName = pipeLineConfig.getString(HBaseSink.COLUMN_NAME)
 
     val app = StreamApp("PipeLineDSL", context, appConfig)
-    val kafkaStream = KafkaDSLUtil.createStream[String](app, 1, "time-replayable-producer", kafkaConfig, new StringMessageDecoder)
+    val topics = pipeLineConfig.getString("kafka.consumer.topics")
+    val kafkaConfig = new KafkaSourceConfig(KafkaUtil.buildConsumerConfig("localhost:2181")).withConsumerTopics(topics)
+    val offsetStorageFactory = new KafkaStorageFactory("localhost:2181", "localhost:9092")
+    val kafkaStream = KafkaDSLUtil.createStream[String](app, 1, "time-replayable-producer",
+      kafkaConfig, offsetStorageFactory, new StringMessageDecoder)
     val producer = kafkaStream.map{ message =>
       val envelope = read[Envelope](message)
       val body = read[Body](envelope.body)

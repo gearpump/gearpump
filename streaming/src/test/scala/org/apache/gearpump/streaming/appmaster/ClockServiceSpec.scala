@@ -18,21 +18,19 @@
 package org.apache.gearpump.streaming.appmaster
 
 import akka.actor.{ActorSystem, Props}
-import akka.testkit.{TestProbe, TestActorRef, ImplicitSender, TestKit}
+import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
+import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
+import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess, HealthChecker, ProcessorClock}
 import org.apache.gearpump.streaming.appmaster.ClockServiceSpec.Store
 import org.apache.gearpump.streaming.storage.AppDataStore
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{ProcessorId, DAG, ProcessorDescription}
+import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import org.apache.gearpump.partitioner.PartitionerDescription
-import org.apache.gearpump.partitioner.PartitionerObject
 import scala.concurrent.{Future, Promise}
-import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAGSuccess, ChangeToNewDAG, ProcessorClock, HealthChecker, ProcessorClocks}
 
 class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll{
@@ -157,20 +155,19 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       sinkClock.updateMinClock(0, 100L)
 
       // clock advance from 0 to 100, there is no stalling.
-      healthChecker.check(currentMinClock = 100, clocks, dag)
+      healthChecker.check(currentMinClock = 100, clocks, dag, 200)
       healthChecker.getReport.stallingTasks shouldBe List.empty[TaskId]
 
       // clock not advancing.
       // pasted time exceed the stalling threshold, report stalling
-      Thread.sleep(1000) // sleep 1 second
-      healthChecker.check(currentMinClock = 100, clocks, dag)
+      healthChecker.check(currentMinClock = 100, clocks, dag, 1300)
 
       // the source task is stalling the clock
       healthChecker.getReport.stallingTasks shouldBe List(TaskId(0, 0))
 
       // advance the source clock
       sourceClock.updateMinClock(0, 101L)
-      healthChecker.check(currentMinClock = 100, clocks, dag)
+      healthChecker.check(currentMinClock = 100, clocks, dag, 1300)
       // the sink task is stalling the clock
       healthChecker.getReport.stallingTasks shouldBe List(TaskId(1, 0))
     }
