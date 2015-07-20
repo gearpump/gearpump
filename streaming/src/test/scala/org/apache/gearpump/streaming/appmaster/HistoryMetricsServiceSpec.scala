@@ -82,22 +82,23 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
 
     val min = 1
     val max = 10
+    var now = 0L
 
     // only two data points will be kept in @intervalMs, one is the min, the other is the max
-    (min to max).foreach(num => store.add(meterTemplate.copy(name = "A", meanRate = num)))
+    (min to max).foreach(num => store.add(meterTemplate.copy(name = "A", meanRate = num), now))
 
     //sleep @intervalMs + 1 so that we are allowed to push new data
-    Thread.sleep(intervalMs + 1)
+    now += intervalMs + 1
 
     // only two data points will be kept in @intervalMs, one is the min, the other is the max
-    (min to max).foreach(num => store.add(meterTemplate.copy(name = "B", meanRate = num)))
+    (min to max).foreach(num => store.add(meterTemplate.copy(name = "B", meanRate = num), now))
 
     //sleep @intervalMs + 1 so that we are allowed to push new data
-    Thread.sleep(intervalMs + 1)
+    now += intervalMs + 1
 
     // only two data points will be kept in @intervalMs, one is the min, the other is the max
     // also will expire the oldest data, because we only keep @count records
-    (min to max).foreach(num => store.add(meterTemplate.copy(name = "C", meanRate = num)))
+    (min to max).foreach(num => store.add(meterTemplate.copy(name = "C", meanRate = num), now))
 
     val result = store.read
     assert(result.size == count * 2)
