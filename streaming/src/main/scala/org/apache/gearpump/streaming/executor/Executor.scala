@@ -116,8 +116,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         taskIdList.map(taskId => (TaskId.toLong(taskId), host))
       }
       express.startClients(locations.keySet).map { _ =>
-        express.remoteAddressMap.send(result)
-        express.remoteAddressMap.future().map{result =>
+        val remoteAddress = result.filter(taskAndHost => !taskAndHost._2.equals(express.localHost))
+        express.remoteAddressMap.send(remoteAddress)
+        express.remoteAddressMap.future().map{_ =>
           tasks.foreach { task =>
             task._2 ! TaskLocationReady
           }

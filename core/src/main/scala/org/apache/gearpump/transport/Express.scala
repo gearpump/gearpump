@@ -104,7 +104,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     if (remoteClient.isDefined) {
       remoteClient.get.tell(taskMessage, Actor.noSender)
     } else {
-      val errorMsg = "Clients has not been launched properly before transporting messages"
+      val errorMsg = s"Clients has not been launched properly before transporting messages, the destination is $remote"
       LOG.error(errorMsg)
       throw new Exception(errorMsg)
     }
