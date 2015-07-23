@@ -19,6 +19,7 @@
 package org.apache.gearpump.serializer
 
 import akka.actor.{ExtendedActorSystem}
+import com.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
 import com.romix.akka.serialization.kryo.{KryoSerializer}
 import org.apache.gearpump.serializer.FastKryoSerializer.KryoSerializationException
 import org.apache.gearpump.util.LogUtil
@@ -30,6 +31,7 @@ class FastKryoSerializer(system: ExtendedActorSystem) {
 
   private val kryoSerializer = new KryoSerializer(system).serializer
   private val kryo = kryoSerializer.kryo
+  kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy)
   private val kryoClazz = new GearpumpSerialization(config).customize(kryo)
 
 
