@@ -1,4 +1,9 @@
-body, .tooltip, .popover {
+/*
+ * Licensed under the Apache License, Version 2.0
+ * See accompanying LICENSE file.
+ */
+
+* {
   font-family: lato, 'helvetica neue', 'segoe ui', arial, helvetica, sans-serif;
 }
 
@@ -45,10 +50,22 @@ body, .tooltip, .popover {
 }
 
 /* Make horizontal form group more compact (2 rules) */
-.form-group-compact-h > label {
+.form-group-compact-h > .control-label-box {
+  padding-top: 6px;
   padding-right: 0;
 }
 
-.form-group-compact-h {
+.form-group-compact-h,
+.form-group-compact-h > * {
   padding: 2px 0 2px 0;
+}
+
+/* Smaller font size and spacing for dropdown menu (2 rules) */
+.dropdown-menu-sm {
+  font-size: 0.95em;
+}
+
+.dropdown-menu-sm > li > a {
+  padding-left: 10px;
+  cursor: pointer;
 }

@@ -236,6 +236,11 @@ div.metrics {
   cursor: pointer;
 }
 
+/* ui-select input control should align with grid */
+* [theme="select2"] {
+  width: 100%;
+}
+
 /**
  * Animated loading arrows (3 rules)
  */
@@ -252,4 +257,12 @@ div.metrics {
 @keyframes spin {
   from { transform: scale(1) rotate(0deg);}
   to { transform: scale(1) rotate(360deg);}
+}
+
+/* Invisible context menu container */
+.cm-container {
+  position: relative;
+  visibility: hidden;
+  width: 0;
+  height: 0;
 }

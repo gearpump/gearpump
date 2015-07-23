@@ -12,6 +12,8 @@
     <div class="panel-heading">Graph: {{app.name}}</div>
     <div class="panel-body">
       <div ng-if="visgraph">
+        <div class="cm-container" id="viscm" bs-dropdown data-animation="am-fade" html="true"
+          template-url="views/apps/app/appdagcontextmenu.html"></div>
         <visnetwork data="visgraph.data" options="visgraph.options" events="visgraph.events"/>
       </div>
     </div>
