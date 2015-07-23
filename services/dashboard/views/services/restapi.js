@@ -9,7 +9,7 @@ angular.module('dashboard.restapi', [])
     function ($http, $timeout, $modal, Upload, conf) {
 
     var noticeWindow = $modal({
-      template: "views/services/serverproblemnotice.html",
+      templateUrl: "views/services/serverproblemnotice.html",
       backdrop: 'static',
       show: false
     });
@@ -78,6 +78,7 @@ angular.module('dashboard.restapi', [])
         return conf.restapiRoot + '/master/config';
       },
 
+      /** Submit an user defined application with user configuration */
       submitUserApp: function(files, formFormNames, args, onComplete) {
         var params = args ? '?args=' + encodeURIComponent(args) : '';
         var upload = Upload.upload({
@@ -95,6 +96,30 @@ angular.module('dashboard.restapi', [])
         }, function () {
           if (onComplete) {
             onComplete({success: false});
+          }
+        });
+      },
+
+      /** Replace a dag processor at runtime */
+      replaceDagProcessor: function(appId, oldProcessorId, newProcessor, onComplete) {
+        var url = conf.restapiRoot + '/appmaster/' + appId + '/dynamicdag';
+        var args = [
+          'org.apache.gearpump.streaming.appmaster.DagManager.ReplaceProcessor', {
+            oldProcessorId: oldProcessorId,
+            newProcessorDescription: {
+              id: oldProcessorId,
+              taskClass: newProcessor.taskClass,
+              parallelism: newProcessor.parallelism,
+              description: newProcessor.description
+            }
+          }];
+        $http.post(url, args).then(function (response) {
+          if (onComplete) {
+            onComplete({success: true});
+          }
+        }, function (response) {
+          if (onComplete) {
+            onComplete({success: false, reason: response.data});
           }
         });
       },

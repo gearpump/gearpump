@@ -5,7 +5,30 @@
 'use strict';
 angular.module('dashboard.apps.appmaster')
 
-  .controller('AppDagCtrl', ['$scope', '$timeout', '$interval', '$filter', 'conf', 'dagStyle', function ($scope, $timeout, $interval, $filter, conf, dagStyle) {
+  .controller('AppDagCtrl', ['$scope', '$timeout', '$interval', '$filter', '$modal', 'conf', 'dagStyle', function($scope, $timeout, $interval, $filter, $modal, conf, dagStyle) {
+
+    var editDagDialog = $modal({
+      templateUrl: "views/apps/app/editdag.html",
+      backdrop: 'static',
+      show: false,
+      scope: $scope
+    });
+
+    $scope.modify = function(options) {
+      $scope.modifyOptions = options;
+      editDagDialog.$promise.then(editDagDialog.show);
+    };
+
+    $scope.view = function() {
+      $scope.switchToTaskTab($scope.selectedNodeId);
+    };
+
+    function showNodeContextMenu(nodeId, point) {
+      $scope.selectedNodeId = nodeId.toString(); // cast as string for the time being
+      var elem = document.getElementById('viscm');
+      angular.element(elem).css({left: point.x + 'px', top: point.y + 'px'});
+      angular.element(elem).triggerHandler('click');
+    }
 
     $scope.visgraph = {
       options: dagStyle.newOptions({depth: $scope.streamingDag.hierarchyDepth()}),
@@ -14,6 +37,12 @@ angular.module('dashboard.apps.appmaster')
         doubleClick: function (data) {
           if (data.nodes.length === 1) {
             $scope.switchToTaskTab(data.nodes[0]);
+          }
+        },
+        oncontext: function (data) {
+          var elem = document.getElementById('viscm');
+          if (data.hasOwnProperty('node')) {
+            showNodeContextMenu(data.node, data.pointer.DOM);
           }
         }
       }

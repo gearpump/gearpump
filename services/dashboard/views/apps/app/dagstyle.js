@@ -21,7 +21,7 @@ angular.module('dashboard.apps.appmaster')
           height: (maxNodeRadius * (flags.depth + 1) + levelDistance * flags.depth + verticalMargin * 2) + 'px',
           layout: {
             hierarchical: {
-              sortMethod: 'directed',
+              sortMethod: 'hubsize',
               direction: 'UD',
               levelSeparation: levelDistance
             }

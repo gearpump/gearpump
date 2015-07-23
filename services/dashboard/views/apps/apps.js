@@ -18,7 +18,7 @@ angular.module('dashboard.apps', [])
     function ($scope, $location, $modal, restapi, util) {
 
     var submitWindow = $modal({
-      template: "views/apps/submit.html",
+      templateUrl: "views/apps/submit.html",
       backdrop: 'static',
       keyboard: false /* https://github.com/mgcrea/angular-strap/issues/1779 */,
       show: false

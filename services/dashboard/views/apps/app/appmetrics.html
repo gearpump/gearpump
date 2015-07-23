@@ -1,5 +1,5 @@
 <div class="col-md-12">
-  <ui-select ng-model="names.selected" ng-disabled="disabled"
+  <ui-select theme="select2" ng-model="names.selected"
              style="width:300px;margin-bottom:20px">
     <ui-select-match>{{$select.selected}}</ui-select-match>
     <ui-select-choices repeat="name in names.available">
