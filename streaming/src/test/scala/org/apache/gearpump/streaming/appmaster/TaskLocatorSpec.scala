@@ -18,22 +18,16 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import org.apache.gearpump._
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription, Partitioner}
-import org.apache.gearpump.streaming._
+import org.apache.gearpump.streaming.appmaster.TaskLocator.Localities
 import org.apache.gearpump.streaming.task.TaskId
-import org.apache.gearpump.util.Graph
+import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 
-case class StreamingAppMasterDataDetail(
-    appId: Int,
-    appName: String = null,
-    processors: Map[ProcessorId, ProcessorDescription],
-    // hiearachy level for each processor
-    processorLevels: Map[ProcessorId, Int],
-    dag: Graph[ProcessorId, String] = null,
-    actorPath: String = null,
-    clock: TimeStamp = 0,
-    executors: Map[ExecutorId, String] = null,
-    tasks: Map[TaskId, ExecutorId] = null)
-  extends AppMasterDataDetail
+class TaskLocatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+  it should "serialize/deserialize correctly" in {
+    val localities = new Localities(Map(0 -> Array(TaskId(0, 1), TaskId(1,2))))
+    Localities.toJson(localities)
+
+    localities.localities.mapValues(_.toList) shouldBe
+      Localities.fromJson(Localities.toJson(localities)).localities.mapValues(_.toList)
+  }
+}

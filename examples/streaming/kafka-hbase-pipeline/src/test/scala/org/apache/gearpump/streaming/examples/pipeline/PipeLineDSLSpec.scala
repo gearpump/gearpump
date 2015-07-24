@@ -31,7 +31,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 import org.slf4j.Logger
-import upickle._
+import upickle.default.{read, write}
 
 class PipeLineDSLSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar with BeforeAndAfterAll {
   val LOG: Logger = LogUtil.getLogger(getClass)

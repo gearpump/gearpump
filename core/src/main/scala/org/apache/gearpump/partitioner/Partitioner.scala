@@ -42,12 +42,19 @@ trait Partitioner extends Serializable {
 }
 
 sealed trait PartitionerFactory {
+
+  def name: String
+
   def partitioner: Partitioner
 }
 
-case class PartitionerObject(partitioner: Partitioner) extends PartitionerFactory
+case class PartitionerObject(partitioner: Partitioner) extends PartitionerFactory {
+  override def name: String = partitioner.getClass.getName
+}
 
 case class PartitionerByClassName(partitionerClass: String) extends PartitionerFactory {
+  override def name: String = partitionerClass
+
   override def partitioner: Partitioner = Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
 }
 

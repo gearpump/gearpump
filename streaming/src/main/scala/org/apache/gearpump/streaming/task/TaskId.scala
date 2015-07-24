@@ -16,24 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.appmaster
+package org.apache.gearpump.streaming.task
 
-import org.apache.gearpump._
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming._
-import org.apache.gearpump.streaming.task.TaskId
-import org.apache.gearpump.util.Graph
 
-case class StreamingAppMasterDataDetail(
-    appId: Int,
-    appName: String = null,
-    processors: Map[ProcessorId, ProcessorDescription],
-    // hiearachy level for each processor
-    processorLevels: Map[ProcessorId, Int],
-    dag: Graph[ProcessorId, String] = null,
-    actorPath: String = null,
-    clock: TimeStamp = 0,
-    executors: Map[ExecutorId, String] = null,
-    tasks: Map[TaskId, ExecutorId] = null)
-  extends AppMasterDataDetail
+
+case class TaskId(processorId : ProcessorId, index : TaskIndex)
+
+object TaskId {
+  def toLong(id : TaskId) = (id.processorId.toLong << 32) + id.index
+  def fromLong(id : Long) = TaskId(((id >> 32) & 0xFFFFFFFF).toInt, (id & 0xFFFFFFFF).toInt)
+}

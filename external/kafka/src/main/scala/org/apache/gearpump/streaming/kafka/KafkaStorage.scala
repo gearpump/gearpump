@@ -138,4 +138,3 @@ class KafkaStorage private[kafka](
   }
 
 }
-

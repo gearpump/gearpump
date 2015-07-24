@@ -29,7 +29,7 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
   case class Vertex(id: Int)
   case class Edge(from: Int, to: Int)
 
-  val verticesNumGen = Gen.chooseNum[Int](1, 100)
+  val vertexCount = 100
 
   property("Graph with no edges should be built correctly") {
     val vertexSet = Set("A", "B", "C")
@@ -38,47 +38,42 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
   }
 
   property("Graph with vertices and edges should be built correctly") {
-    forAll(verticesNumGen) {
-      (num: Int) =>
-        val vertices: Array[Vertex] = 0.until(num).map(Vertex).toArray
-        val genEdge = for {
-          from <- Gen.chooseNum[Int](0, num - 1)
-          to   <- Gen.chooseNum[Int](0, num - 1)
-        } yield Edge(from, to)
-        val genEdges: Gen[Array[Edge]] = Gen.containerOf[Array, Edge](genEdge).map(edges => edges.toSet.toArray)
+    val vertices: Array[Vertex] = 0.until(vertexCount).map(Vertex).toArray
+    val genEdge = for {
+      from <- Gen.chooseNum[Int](0, vertexCount - 1)
+      to <- Gen.chooseNum[Int](0, vertexCount - 1)
+    } yield Edge(from, to)
 
-        forAll(genEdges) {
-          (edges: Array[Edge]) =>
-            var graphElements = Array.empty[Path[Vertex, _ <: Edge]]
-            val outDegrees = new Array[Int](vertices.length)
-            val outGoingEdges = vertices.map(_ => Array.empty[(Vertex, Edge, Vertex)])
-            val edgesOf = vertices.map(_ => Array.empty[(Vertex, Edge, Vertex)])
-            vertices.foreach { v =>
-              graphElements :+= Node(v)
-            }
-            edges.foreach { e =>
-              val from = vertices(e.from)
-              val to = vertices(e.to)
-              graphElements :+= from ~ e ~> to
-              outDegrees(e.from) += 1
-              outGoingEdges(e.from) :+= (from, e, to)
-              edgesOf(e.from) :+= (from, e, to)
-              if (e.from != e.to) {
-                edgesOf(e.to) :+=(from, e, to)
-              }
-            }
+    var graphElements = Array.empty[Path[Vertex, _ <: Edge]]
+    val outDegrees = new Array[Int](vertices.length)
+    val outGoingEdges = vertices.map(_ => Set.empty[(Vertex, Edge, Vertex)])
+    val edgesOf = vertices.map(_ => Set.empty[(Vertex, Edge, Vertex)])
+    vertices.foreach { v =>
+      graphElements :+= Node(v)
+    }
 
-            val graph: Graph[Vertex, Edge] = Graph(graphElements: _*)
-            graph.vertices should contain theSameElementsAs vertices
-            graph.edges.toArray should contain theSameElementsAs edges.map(e => (vertices(e.from), e, vertices(e.to)))
+    forAll(genEdge) {
+      e: Edge =>
+        val from = vertices(e.from)
+        val to = vertices(e.to)
+        graphElements :+= from ~ e ~> to
+        outDegrees(e.from) += 1
 
-            0.until(vertices.size).foreach { i =>
-              val v = vertices(i)
-              graph.outDegreeOf(v) shouldBe outDegrees(i)
-              graph.outgoingEdgesOf(v) should contain theSameElementsAs outGoingEdges(i)
-              graph.edgesOf(v) should contain theSameElementsAs edgesOf(i)
-            }
-        }
+        val nodeEdgeNode = (from, e, to)
+        outGoingEdges(e.from) += nodeEdgeNode
+
+        edgesOf(e.from) += nodeEdgeNode
+        edgesOf(e.to) += nodeEdgeNode
+    }
+
+    val graph: Graph[Vertex, Edge] = Graph(graphElements: _*)
+    graph.vertices should contain theSameElementsAs vertices
+
+    0.until(vertices.size).foreach { i =>
+      val v = vertices(i)
+      graph.outgoingEdgesOf(v) should contain theSameElementsAs outGoingEdges(i)
+      graph.edgesOf(v).sortBy(_._1.id)
+      graph.edgesOf(v) should contain theSameElementsAs edgesOf(i)
     }
   }
 
@@ -110,7 +105,7 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 
     graph.addEdge("C", defaultEdge, "E")
 
-    val levelMap = Graph.vertexHierarchyLevelMap(graph)
+    val levelMap = graph.vertexHierarchyLevelMap()
 
     //check whether the rule holds: : if vertex A -> B, then level(A) < level(B)
     levelMap("A") < levelMap("B")

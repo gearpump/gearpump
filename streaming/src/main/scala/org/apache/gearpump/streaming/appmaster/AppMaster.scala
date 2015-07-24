@@ -127,9 +127,20 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
         tasks <- taskFuture
         dag <- dagFuture
       } yield {
-        val activeDag = dag
-        StreamingAppMasterDataDetail(appId, app.name, activeDag.processors,
-          Graph.vertexHierarchyLevelMap(activeDag.graph), activeDag.graph, address, clock, executors, tasks.tasks)
+        val graph = dag.graph
+
+        StreamingAppMasterDataDetail(
+          appId,
+          app.name,
+          dag.processors,
+          graph.vertexHierarchyLevelMap(),
+          graph.mapEdge {(node1, edge, node2) =>
+            edge.partitionerFactory.name
+          },
+          address,
+          clock,
+          executors,
+          tasks.tasks)
       }
 
       val client = sender()

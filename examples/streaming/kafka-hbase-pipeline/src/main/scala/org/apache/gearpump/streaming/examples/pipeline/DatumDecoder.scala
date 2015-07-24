@@ -21,7 +21,7 @@ import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.transaction.api.MessageDecoder
 import org.apache.gearpump.streaming.examples.pipeline.Messages._
-import upickle._
+import upickle.default.{read, write}
 
 import scala.util.{Failure, Success}
 

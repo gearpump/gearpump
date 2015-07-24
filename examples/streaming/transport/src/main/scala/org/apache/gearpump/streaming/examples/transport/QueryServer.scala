@@ -34,7 +34,7 @@ import org.apache.gearpump.util.Graph
 import spray.can.Http
 import spray.http.StatusCodes
 import spray.routing.HttpService
-import upickle._
+import upickle.default.{read, write}
 import spray.json._
 
 import scala.concurrent.Future

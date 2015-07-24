@@ -20,10 +20,7 @@ package org.apache.gearpump.util
 
 import java.io.File
 import java.net.ServerSocket
-
-import com.google.common.io.BaseEncoding
 import com.typesafe.config.Config
-import org.apache.commons.lang.SerializationUtils
 import org.apache.gearpump.transport.HostPort
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -102,17 +99,5 @@ object Util {
         appMasterClassPath.getOrElse(Array.empty[String]) ),
       JvmSetting(executorVMArgs
         .getOrElse(Array.empty[String]), executorClassPath.getOrElse(Array.empty[String])))
-  }
-
-  def toBase64String(value: java.io.Serializable): String = {
-    val bytes = SerializationUtils.serialize(value)
-    BaseEncoding.base64().encode(bytes)
-  }
-
-  def fromBase64String[T](base64: String): Option[T] = {
-    Try {
-      val decoded = BaseEncoding.base64().decode(base64)
-      SerializationUtils.deserialize(decoded).asInstanceOf[T]
-    }.toOption
   }
 }

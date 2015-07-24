@@ -57,7 +57,7 @@ class Planner {
   private def optimize(dag: Graph[Op, OpEdge]): Graph[OpChain, OpEdge] = {
     val newGraph = dag.mapVertex(op => OpChain(List(op)))
 
-    val nodes = newGraph.topologicalOrderIterator.asScala.toList.reverse
+    val nodes = newGraph.topologicalOrderIterator.toList.reverse
     for (node <- nodes) {
       val outGoingEdges = newGraph.outgoingEdgesOf(node)
       for (edge <- outGoingEdges) {

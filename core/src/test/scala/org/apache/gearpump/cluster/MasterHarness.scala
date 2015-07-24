@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster
 
 import java.io.File
+import org.apache.gearpump.util.{FileUtils}
 import java.net.{UnknownHostException, SocketTimeoutException, Socket, InetSocketAddress, ServerSocket, URLClassLoader}
 import java.util.Properties
 import java.util.concurrent.{Executors, TimeUnit}
@@ -26,7 +27,6 @@ import java.util.concurrent.{Executors, TimeUnit}
 import akka.actor.{Actor, ActorSystem, Address, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigValueFactory}
-import org.apache.commons.io.FileUtils
 import org.apache.gearpump.cluster.MasterHarness.MockMaster
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Constants, LogUtil, ActorUtil, Util}

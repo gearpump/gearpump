@@ -16,14 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster.main
+package org.apache.gearpump.services.main
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.services.RestServices
 import org.apache.gearpump.services.websocket.WebSocketServices
-import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
 import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger

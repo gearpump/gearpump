@@ -29,7 +29,7 @@ import spray.http.HttpRequest
 import spray.routing.HttpServiceActor
 
 class WebSocketWorker(val serverConnection: ActorRef, val master: ActorRef) extends HttpServiceActor with websocket.WebSocketServerWorker {
-  import upickle._
+  import upickle.default.{read, write}
   final case class Push(msg: String)
   private val LOG = LogUtil.getLogger(getClass)
   var client: ActorRef = _
@@ -53,7 +53,6 @@ class WebSocketWorker(val serverConnection: ActorRef, val master: ActorRef) exte
     case metrics: MetricType =>
       LOG.debug("writing metrics")
       client ! TextFrame(write(metrics))
-
     case Push(msg) => send(TextFrame(msg))
 
     case x: FrameCommandFailed =>

@@ -35,7 +35,7 @@ object Build extends sbt.Build {
   val dataReplicationVersion = "0.7"
   val hadoopVersion = "2.6.0"
   val jgraphtVersion = "0.9.0"
-  val json4sVersion = "3.2.10"
+  val upickleVersion = "0.3.4"
   val junitVersion = "4.12"
   val kafkaVersion = "0.8.2.1"
   val stormVersion = "0.9.3"
@@ -125,6 +125,7 @@ object Build extends sbt.Build {
     ("org.apache.hadoop" % "hadoop-common" % clouderaVersion).
       exclude("org.mortbay.jetty", "jetty-util")
       exclude("org.mortbay.jetty", "jetty")
+      exclude("org.fusesource.leveldbjni", "leveldbjni-all")
       exclude("tomcat", "jasper-runtime")
       exclude("commons-beanutils", "commons-beanutils-core")
       exclude("commons-beanutils", "commons-beanutils")
@@ -132,35 +133,38 @@ object Build extends sbt.Build {
 
   val daemonDependencies = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
+      "com.typesafe.akka" %% "akka-contrib" % akkaVersion
+        exclude("com.typesafe.akka", "akka-persistence-experimental_2.11"),
+      "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
       "io.spray" %%  "spray-can"       % sprayVersion,
       "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
       "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
+      "commons-logging" % "commons-logging" % commonsLoggingVersion,
       "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
     ) ++ hadoopDependency
   )
 
+  val streamingDependencies = Seq(
+    libraryDependencies ++= Seq(
+      "com.goldmansachs" % "gs-collections-api" % "6.2.0",
+      "com.goldmansachs" % "gs-collections" % "6.2.0"
+    )
+  )
+
   val coreDependencies = Seq(
         libraryDependencies ++= Seq(
-        "com.goldmansachs" % "gs-collections-api" % "6.2.0",
-        "com.goldmansachs" % "gs-collections" % "6.2.0",
-        "org.jgrapht" % "jgrapht-core" % jgraphtVersion,
         "com.codahale.metrics" % "metrics-core" % codahaleVersion,
         "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
         "org.slf4j" % "slf4j-api" % slf4jVersion,
         "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-        "org.slf4j" % "jcl-over-slf4j" % slf4jVersion % "provided",
-        "commons-lang" % "commons-lang" % commonsLangVersion,
         "com.google.guava" % "guava" % guavaVersion,
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
         "com.typesafe.akka" %% "akka-remote" % akkaVersion,
-        "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
         "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
-        "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
-        "commons-io" % "commons-io" % commonsIOVersion,
-        "com.lihaoyi" %% "upickle" % "0.2.8",
+        "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion
+          exclude("net.jpountz.lz4", "lz4"),
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
@@ -204,15 +208,16 @@ object Build extends sbt.Build {
           "local" -> "org.apache.gearpump.cluster.main.Local",
           "master" -> "org.apache.gearpump.cluster.main.Master",
           "worker" -> "org.apache.gearpump.cluster.main.Worker",
-          "services" -> "org.apache.gearpump.cluster.main.Services",
-          "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client"
+          "services" -> "org.apache.gearpump.services.main.Services",
+          "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client",
+          "storm" -> "org.apache.gearpump.experiments.storm.StormRunner"
         ),
         packJvmOpts := Map("local" -> Seq("-server", "-DlogFilename=local", "-Djava.rmi.server.hostname=localhost"),
           "master" -> Seq("-server", "-DlogFilename=master", "-Djava.rmi.server.hostname=localhost"),
           "worker" -> Seq("-server", "-DlogFilename=worker", "-Djava.rmi.server.hostname=localhost"),
           "services" -> Seq("-server", "-Djava.rmi.server.hostname=localhost")
         ),
-        packLibDir := Map(daemon.id -> "daemon", services.id -> "daemon", yarn.id -> "daemon"),
+        packLibDir := Map(daemon.id -> "daemon", services.id -> "daemon", yarn.id -> "daemon", storm.id -> "storm"),
         packExclude := Seq(thisProjectRef.value.project),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
@@ -222,7 +227,7 @@ object Build extends sbt.Build {
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
         packExtraClasspath := new DefaultValueMap(Seq("/etc/gearpump/conf", "${PROG_HOME}/conf",
-          "${PROG_HOME}/dashboard", "${PROG_HOME}/daemon/*" ,"/etc/hadoop/conf", "/etc/hbase/conf"))
+          "${PROG_HOME}/dashboard", "${PROG_HOME}/daemon/*", "${PROG_HOME}/storm/*", "/etc/hadoop/conf", "/etc/hbase/conf"))
       )
   ).dependsOn(core, streaming, services, yarn, storm, dsl)//, state)
 
@@ -241,7 +246,7 @@ object Build extends sbt.Build {
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
-    settings = commonSettings
+    settings = commonSettings ++ streamingDependencies
   )  dependsOn(core % "test->test;compile->compile", daemon % "test->test")
 
   lazy val external_kafka = Project(
@@ -328,6 +333,7 @@ object Build extends sbt.Build {
         libraryDependencies ++= Seq(
           "io.spray" %%  "spray-can"       % sprayVersion,
           "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
+          "com.lihaoyi" %% "upickle" % upickleVersion,
           "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
           "net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
           "joda-time" % "joda-time" % "2.7",
@@ -364,7 +370,8 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test",
           "io.spray" %%  "spray-can"       % sprayVersion,
           "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
-          "io.spray" %%  "spray-json"    % sprayJsonVersion
+          "io.spray" %%  "spray-json"    % sprayJsonVersion,
+          "com.lihaoyi" %% "upickle" % upickleVersion
         ),
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.transport.Transport"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
@@ -389,11 +396,10 @@ object Build extends sbt.Build {
           "io.spray" %%  "spray-json"    % sprayJsonVersion,
           "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
             exclude("com.typesafe.akka", "akka-actor_2.11"),
-          "org.json4s" %% "json4s-jackson" % json4sVersion,
-          "org.json4s" %% "json4s-native"   % json4sVersion,
           "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.webjars" % "angularjs" % "1.4.3", // We stick on 1.3.x until angular-ui-select works
           "org.webjars" % "bootstrap" % "3.3.5",
+          "com.lihaoyi" %% "upickle" % upickleVersion,
           "org.webjars" % "d3js" % "3.5.5",
           "org.webjars" % "momentjs" % "2.10.3",
           "org.webjars.bower" % "angular-loading-bar" % "0.8.0",
@@ -422,7 +428,12 @@ object Build extends sbt.Build {
   lazy val distributeservice = Project(
     id = "gearpump-experiments-distributeservice",
     base = file("experiments/distributeservice"),
-    settings = commonSettings
+    settings = commonSettings ++ Seq(
+      libraryDependencies ++= Seq(
+        "commons-lang" % "commons-lang" % commonsLangVersion,
+        "commons-io" % "commons-io" % commonsIOVersion
+      )
+    )
   ) dependsOn(daemon % "test->test;compile->compile")
 
   lazy val storm = Project(
@@ -431,6 +442,8 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
+          "commons-lang" % "commons-lang" % commonsLangVersion,
+          "commons-io" % "commons-io" % commonsIOVersion,
           "org.apache.storm" % "storm-core" % stormVersion
             exclude("ch.qos.logback", "logback-classic")
             exclude("ch.qos.logback", "logback-core")
@@ -446,9 +459,7 @@ object Build extends sbt.Build {
             exclude("com.twitter", "chill-java")
             exclude("commons-codec", "commons-codec")
             exclude("commons-fileupload", "commons-fileupload")
-            exclude("commons-io", "commons-io")
-            exclude("commons-lang", "commons-lang")
-            exclude("commons-logging", "commons-loggin")
+            exclude("commons-logging", "commons-logging")
             exclude("hiccup", "hiccup")
             exclude("javax.servlet", "servlet-api")
             exclude("jgrapht", "jgrapht-core")
@@ -592,7 +603,8 @@ object Build extends sbt.Build {
     settings = commonSettings ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive
+          "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive,
+          "com.lihaoyi" %% "upickle" % upickleVersion
         ),
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.pipeline.PipeLine"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor

@@ -96,16 +96,11 @@ object AppMasterToMaster {
 
     // from executor Id to executor path
     def executors: Map[Int, String]
-    def toJson: String
   }
 
   case class GeneralAppMasterDataDetail(
       appId: Int, appName: String = null, actorPath: String = null, executors: Map[Int, String] = Map.empty[Int, String])
-    extends AppMasterDataDetail {
-    def toJson: String = {
-      upickle.write(this)
-    }
-  }
+    extends AppMasterDataDetail
 
   case object GetAllWorkers
   case class GetWorkerData(workerId: Int)

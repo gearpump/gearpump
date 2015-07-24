@@ -35,7 +35,7 @@ import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.TimeReplayableSource
 import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil}
 import org.slf4j.Logger
-import upickle._
+import upickle.default.{read, write}
 
 class TimeReplayableSourceTest1 extends TimeReplayableSource {
   val data = Array[String](

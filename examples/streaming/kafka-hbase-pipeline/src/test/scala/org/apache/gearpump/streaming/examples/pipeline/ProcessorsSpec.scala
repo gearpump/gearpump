@@ -28,7 +28,7 @@ import org.mockito.Mockito._
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 import org.slf4j.Logger
-import upickle._
+import upickle.default.{read, write}
 
 object Processors {
   val LOG: Logger = LogUtil.getLogger(getClass)

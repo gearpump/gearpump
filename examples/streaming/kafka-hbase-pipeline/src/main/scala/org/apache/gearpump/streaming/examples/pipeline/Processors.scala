@@ -26,7 +26,7 @@ import org.apache.gearpump.external.hbase.HBaseSink
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
-import upickle._
+import upickle.default.{read, write}
 
 import scala.language.implicitConversions
 import scala.util.Try

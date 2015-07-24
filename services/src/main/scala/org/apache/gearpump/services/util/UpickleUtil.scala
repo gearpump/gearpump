@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.services.util
 
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import org.apache.gearpump.util.Graph
+import upickle.Js
 
-class UserConfigSpec  extends FlatSpec with Matchers with BeforeAndAfterEach {
-  it should "serialize and deserialize with upickle correctly" in {
-    val conf = UserConfig.empty.withString("key", "value")
-    val serialized = upickle.write(conf)
-    val deserialized = upickle.read[UserConfig](serialized)
-    assert(deserialized.getString("key") == Some("value"))
+object UpickleUtil {
+
+  //TODO: upickle cannot infer the reader automatically due to
+  // issue https://github.com/lihaoyi/upickle-pprint/issues/88
+  implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
+    case Js.Obj(verties, edges) =>
+      val vertexList = upickle.default.readJs[List[Int]](verties._2)
+      val edgeList = upickle.default.readJs[List[(Int, String, Int)]](edges._2)
+      Graph(vertexList, edgeList)
   }
 }
