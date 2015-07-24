@@ -19,22 +19,23 @@
 package org.apache.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
+import org.apache.gearpump.cluster.AppMasterToMaster.{GeneralAppMasterDataDetail, AppMasterDataDetail}
 import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, QueryAppMasterConfig, QueryHistoryMetrics, RestartApplication, ShutdownApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.cluster.MasterToClient.{AppMasterConfig, HistoryMetrics, ShutdownApplicationResult, SubmitApplicationResult}
 import org.apache.gearpump.services.AppMasterService.Status
+import org.apache.gearpump.services.util.UpickleUtil._
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
 import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperation, DAGOperationResult}
+import org.apache.gearpump.streaming.appmaster.StreamingAppMasterDataDetail
 import org.apache.gearpump.util.ActorUtil.{askActor, askAppMaster}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.routing.HttpService
-
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
-trait AppMasterService extends HttpService {
+import upickle.default.{write, read}
 
-  import upickle._
+trait AppMasterService extends HttpService {
 
   def master: ActorRef
 
@@ -50,7 +51,7 @@ trait AppMasterService extends HttpService {
             val dagOperation = read[DAGOperation](entity)
             onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
               case Success(value) =>
-                complete(upickle.write(value))
+                complete(write(value))
               case Failure(ex) => failWith(ex)
             }
           }
@@ -59,7 +60,7 @@ trait AppMasterService extends HttpService {
       path("stallingtasks") {
         onComplete(askAppMaster[StallingTasks](master, appId, GetStallingTasks(appId))){
           case Success(value) =>
-            complete(upickle.write(value))
+            complete(write(value))
           case Failure(ex) => failWith(ex)
         }
       }  ~
@@ -88,7 +89,7 @@ trait AppMasterService extends HttpService {
           val query = QueryHistoryMetrics(appId, path.head.toString, readLatest)
           onComplete(askAppMaster[HistoryMetrics](master, appId, query)) {
             case Success(value) =>
-              complete(upickle.write(value))
+              complete(write(value))
             case Failure(ex) =>
               failWith(ex)
           }
@@ -103,7 +104,12 @@ trait AppMasterService extends HttpService {
               case true =>
                 onComplete(askAppMaster[AppMasterDataDetail](master, appId, request)) {
                   case Success(value) =>
-                    complete(value.toJson)
+                    value match {
+                      case data: GeneralAppMasterDataDetail =>
+                        complete(write(data))
+                      case data: StreamingAppMasterDataDetail =>
+                        complete(write(data))
+                    }
                   case Failure(ex) =>
                     failWith(ex)
                 }
@@ -111,7 +117,7 @@ trait AppMasterService extends HttpService {
               case false =>
                 onComplete(askActor[AppMasterData](master, AppMasterDataRequest(appId))) {
                   case Success(value) =>
-                    complete(upickle.write(value))
+                    complete(write(value))
                   case Failure(ex) =>
                     failWith(ex)
                 }
@@ -127,7 +133,7 @@ trait AppMasterService extends HttpService {
               } else {
                 Map("status" -> "fail", "info" -> result.appId.failed.get.toString)
               }
-              upickle.write(output)
+              write(output)
             }
             onComplete(askActor[ShutdownApplicationResult](master, ShutdownApplication(appId))) {
               case Success(result) =>
@@ -136,7 +142,7 @@ trait AppMasterService extends HttpService {
                 } else {
                   Map("status" -> "fail", "info" -> result.appId.failed.get.toString)
                 }
-                complete(upickle.write(output))
+                complete(write(output))
               case Failure(ex) =>
                 failWith(ex)
             }

@@ -26,7 +26,7 @@ import spray.routing.HttpService
 import scala.concurrent.ExecutionContext
 
 trait WebSocketService extends HttpService{
-  import upickle._
+  import upickle.default.{read, write}
   implicit val system: ActorSystem
 
   def webSocketRoute = {

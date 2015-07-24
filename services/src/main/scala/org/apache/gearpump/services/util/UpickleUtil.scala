@@ -16,20 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.util
+package org.apache.gearpump.services.util
 
-import java.io.{Closeable, Flushable}
+import org.apache.gearpump.util.Graph
+import upickle.Js
 
-import org.slf4j.LoggerFactory
+object UpickleUtil {
 
-import scala.sys.process.ProcessLogger
-
-class ProcessLogRedirector extends ProcessLogger with Closeable with Flushable {
-  private val LOG = LoggerFactory.getLogger("redirect")
-
-  def out(s: => String): Unit = LOG.info(s)
-  def err(s: => String): Unit = LOG.error(s)
-  def buffer[T](f: => T): T = f
-  def close(): Unit = Unit
-  def flush(): Unit = Unit
+  //TODO: upickle cannot infer the reader automatically due to
+  // issue https://github.com/lihaoyi/upickle-pprint/issues/102
+  implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
+    case Js.Obj(verties, edges) =>
+      val vertexList = upickle.default.readJs[List[Int]](verties._2)
+      val edgeList = upickle.default.readJs[List[(Int, String, Int)]](edges._2)
+      Graph(vertexList, edgeList)
+  }
 }

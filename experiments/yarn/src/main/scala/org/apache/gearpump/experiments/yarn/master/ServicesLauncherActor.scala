@@ -20,6 +20,7 @@ package org.apache.gearpump.experiments.yarn.master
 
 import akka.actor._
 import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.services.main.Services
 import org.apache.gearpump.util.{Constants, LogUtil}
 
 class ServicesLauncherActor(masters: Array[String], host: String, port: Int) extends Actor {
@@ -39,7 +40,7 @@ class ServicesLauncherActor(masters: Array[String], host: String, port: Int) ext
     }
 
     ConfigFactory.invalidateCaches()
-    org.apache.gearpump.cluster.main.Services.main(Array.empty[String])
+    Services.main(Array.empty[String])
   }
 
   override def receive: Receive = {

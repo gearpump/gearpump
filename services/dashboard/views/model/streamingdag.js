@@ -33,7 +33,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       updateMetricsArray: function (array) {
         for (var i = 0; i < array.length; i++) {
           var value = array[i].value;
-          this.updateMetrics(value[0], value[1]);
+          this.updateMetrics(value.$type, value);
         }
       },
 

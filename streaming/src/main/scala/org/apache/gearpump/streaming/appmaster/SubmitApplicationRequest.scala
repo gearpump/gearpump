@@ -19,53 +19,10 @@
 package org.apache.gearpump.streaming.appmaster
 
 import org.apache.gearpump.streaming._
-import org.apache.gearpump.util.{Graph, LogUtil}
-import org.slf4j.Logger
-import upickle.Js
-
-import scala.util.{Failure, Success, Try}
+import org.apache.gearpump.util.{Graph}
 
 case class SubmitApplicationRequest (
     appName: String = null,
     appJar: String = null,
     processors: Map[ProcessorId, ProcessorDescription] = null,
     dag: Graph[Int, String] = null)
-
-object SubmitApplicationRequest {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
-  implicit def deserialize(value: Js.Value): SubmitApplicationRequest = {
-    import upickle._
-    val submitApplicationRequest = value.asInstanceOf[Js.Obj]
-    val members = submitApplicationRequest.value.toMap
-    val appName = readJs[String](members.get("appName").get)
-    val appJar = members.get("appJar") match {
-      case Some(jar) =>
-        readJs[String](jar)
-      case None =>
-        null
-    }
-    val processors = members.get("processors").map(f => {
-      readJs[Map[ProcessorId, ProcessorDescription]](f)
-    }).get
-    val dagObject = members.get("dag").map(f => f.asInstanceOf[Js.Obj]).get.value
-    val dag = Graph.empty[Int, String]
-    dagObject.seq.foreach(pair => {
-      val (name, value) = pair
-      name match {
-        case "vertices" =>
-          val vertices = readJs[Array[Int]](value)
-          vertices.foreach(f => {
-            dag.addVertex(f)
-          })
-        case "edges" =>
-          val edges = readJs[Array[(Int, String, Int)]](value)
-          edges.foreach(triple => {
-            val (p1, part, p2) = triple
-            dag.addEdge(p1, part, p2)
-          })
-      }
-
-    })
-    SubmitApplicationRequest(appName = appName, appJar = appJar, processors = processors, dag = dag)
-  }
-}

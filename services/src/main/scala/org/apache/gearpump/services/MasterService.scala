@@ -23,7 +23,7 @@ import java.io.{File, IOException}
 
 import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.config.Config
-import org.apache.commons.io.FileUtils
+import org.apache.gearpump.util.FileUtils
 import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import org.apache.gearpump.cluster.ClientToMaster.QueryMasterConfig
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
@@ -45,9 +45,10 @@ import spray.routing.HttpService
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
+import org.apache.gearpump.services.util.UpickleUtil._
 
 trait MasterService extends HttpService {
-  import upickle._
+  import upickle.default.{read, write}
   def master:ActorRef
   implicit val system: ActorSystem
 
@@ -145,7 +146,7 @@ trait MasterService extends HttpService {
 
             val appId = context.submit(new StreamApplication(appName, UserConfig.empty, graph))
 
-            import upickle._
+            import upickle.default.{read, write}
             val submitApplicationResultValue = SubmitApplicationResultValue(appId)
             val jsonData = write(submitApplicationResultValue)
             complete(jsonData)

@@ -18,20 +18,28 @@
 
 package org.apache.gearpump.experiments.storm
 
-import org.apache.gearpump.cluster.client.ClientContext
+import akka.actor.ActorSystem
+import akka.testkit.TestProbe
+import backtype.storm.generated.StormTopology
+import org.apache.gearpump.cluster.TestUtil
+import org.apache.gearpump.experiments.storm.Commands.{GetTopology, Kill, Submit}
+import org.apache.gearpump.experiments.storm.GearpumpThriftServer.GearpumpNimbus
 import org.apache.gearpump.experiments.storm.util.TopologyUtil
-import org.apache.gearpump.streaming.StreamApplication
-import org.mockito.Matchers._
-import org.mockito.Mockito._
-import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mock.MockitoSugar
+import org.scalatest.{Matchers, WordSpec}
+
+import scala.concurrent.Future
 
 class GearpumpNimbusSpec extends WordSpec with Matchers with MockitoSugar {
 
   "GearpumpNimbus" should {
     "submit and kill topology through ClientContext" in {
-      val clientContext = mock[ClientContext]
-      val gearpumpNimbus = new GearpumpNimbus(clientContext)
+
+      implicit val system = ActorSystem("storm-test", TestUtil.DEFAULT_CONFIG)
+      implicit val dispatcher = system.dispatcher
+
+      val handler = TestProbe()
+      val gearpumpNimbus = new GearpumpNimbus(handler.ref)
 
       val appId = 0
       val name = "test"
@@ -39,22 +47,21 @@ class GearpumpNimbusSpec extends WordSpec with Matchers with MockitoSugar {
       val jsonConf = "storm_json_conf"
       val topology = TopologyUtil.getTestTopology
 
-      when(clientContext.submit(any(classOf[StreamApplication]))).thenReturn(appId)
+      Future(gearpumpNimbus.submitTopology(name, uploadedJarLocation, jsonConf, topology))
+      handler.expectMsgType[Submit]
 
-      gearpumpNimbus.submitTopology(name, uploadedJarLocation, jsonConf, topology)
-      verify(clientContext).submit(any(classOf[StreamApplication]))
+      Future(gearpumpNimbus.getTopology(name))
+      handler.expectMsgType[GetTopology]
+      handler.reply(new StormTopology)
 
-      gearpumpNimbus.getTopology(name) shouldBe topology
-      gearpumpNimbus.getUserTopology(name) shouldBe topology
+      Future(gearpumpNimbus.getUserTopology(name))
+      handler.expectMsgType[GetTopology]
+      handler.reply(new StormTopology)
 
-      gearpumpNimbus.killTopology(name)
-      verify(clientContext).shutdown(appId)
+      Future(gearpumpNimbus.killTopology(name))
+      handler.expectMsgType[Kill]
 
-      intercept[RuntimeException] {
-        gearpumpNimbus.killTopology(name)
-      }
+      system.shutdown()
     }
-
   }
-
 }

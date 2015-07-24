@@ -23,8 +23,8 @@ import org.apache.gearpump.streaming.appmaster.DagManager.GetTaskLaunchData
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.ExecutorResourceUsageSummary
 import org.apache.gearpump.streaming.appmaster.TaskManager.ChangeTasksOnExecutor
 import org.apache.gearpump.streaming.{ExecutorId, ProcessorId}
-import org.apache.gearpump.streaming.appmaster.TaskRegistry.{TaskLocation, Reject, Accept, RegisterTaskStatus}
-import org.apache.gearpump.streaming.task.{TaskLocations, TaskId}
+import org.apache.gearpump.streaming.appmaster.TaskRegistry._
+import org.apache.gearpump.streaming.task.{TaskId}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
@@ -104,4 +104,6 @@ object TaskRegistry {
   case object Reject extends RegisterTaskStatus
 
   case class TaskLocation(executorId: Int, host: HostPort)
+
+  case class TaskLocations(locations : Map[HostPort, Set[TaskId]])
 }

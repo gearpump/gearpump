@@ -16,20 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.util
+package org.apache.gearpump.streaming.task
 
-import java.io.{Closeable, Flushable}
+import org.apache.gearpump.streaming._
 
-import org.slf4j.LoggerFactory
 
-import scala.sys.process.ProcessLogger
+case class TaskId(processorId : ProcessorId, index : TaskIndex)
 
-class ProcessLogRedirector extends ProcessLogger with Closeable with Flushable {
-  private val LOG = LoggerFactory.getLogger("redirect")
-
-  def out(s: => String): Unit = LOG.info(s)
-  def err(s: => String): Unit = LOG.error(s)
-  def buffer[T](f: => T): T = f
-  def close(): Unit = Unit
-  def flush(): Unit = Unit
+object TaskId {
+  def toLong(id : TaskId) = (id.processorId.toLong << 32) + id.index
+  def fromLong(id : Long) = TaskId(((id >> 32) & 0xFFFFFFFF).toInt, (id & 0xFFFFFFFF).toInt)
 }

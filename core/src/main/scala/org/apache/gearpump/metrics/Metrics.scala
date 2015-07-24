@@ -23,14 +23,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import com.codahale.metrics.{Counter, Histogram, Slf4jReporter, ConsoleReporter, MetricFilter, MetricRegistry}
-import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.metrics.{Counter, Histogram, Meter}
+import com.codahale.metrics.{Slf4jReporter, MetricFilter, MetricRegistry}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
-import upickle.Js
-
-import scala.reflect.ClassTag
 
 class Metrics(sampleRate: Int) extends Extension {
 
@@ -59,14 +54,23 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
   }
 
   object MetricType {
+    def unapply(obj: MetricType): Option[(Histogram, Counter, Meter, Timer)] = {
+      obj match {
+        case x: Histogram => Some((x, null, null, null))
+        case x: Counter => Some((null, x, null, null))
+        case x: Meter => Some((null, null, x, null))
+        case x: Timer => Some((null, null, null, x))
+      }
+    }
 
-    implicit val metricJsonWriter: upickle.Writer[MetricType] = upickle.Writer[MetricType] {
-      case histogram: Histogram => upickle.writeJs(histogram)
-      case counter: Counter => upickle.writeJs(counter)
-      case meter: Meter => upickle.writeJs(meter)
-      case timer: Timer => upickle.writeJs(timer)
-      case gauge: Gauge[_] =>
-        upickle.writeJs(Map("name"-> gauge.name, "value" -> gauge.value.toString))
+    def apply(h: Histogram, c: Counter, m: Meter, t: Timer): MetricType = {
+      val result =
+        if (h != null) h
+        else if (c != null) c
+        else if (m != null) m
+        else if (t != null) t
+        else null
+      result
     }
   }
 
@@ -92,7 +96,8 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
       rateUnit: String, durationUnit: String)
     extends MetricType
 
-  case class Gauge[T:ClassTag](name: String, value: T) extends MetricType
+  //TODO: Refactor Gauge to remove dependency on ClassTag[T]
+  //case class Gauge[T:ClassTag](name: String, value: T) extends MetricType
 
   override def get(system: ActorSystem): Metrics = super.get(system)
 
@@ -227,6 +232,5 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
       override def inc(n: Long) {
       }
     }
-
   }
 }
