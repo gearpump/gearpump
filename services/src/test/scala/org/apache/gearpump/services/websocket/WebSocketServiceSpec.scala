@@ -27,7 +27,7 @@ import scala.concurrent.duration._
 
 class WebSocketServiceSpec extends FlatSpec
 with ScalatestRouteTest with WebSocketService with Matchers with BeforeAndAfterAll  {
-  import upickle._
+  import upickle.default.{read, write}
   def actorRefFactory = system
 
   "WebSocketService" should "return a json structure of WebSocket url" in {

@@ -16,13 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.appmaster
+package org.apache.gearpump.experiments.storm
 
-import org.apache.gearpump.streaming._
-import org.apache.gearpump.util.{Graph}
+import backtype.storm.generated.{KillOptions, StormTopology, SubmitOptions}
 
-case class SubmitApplicationRequest (
-    appName: String = null,
-    appJar: String = null,
-    processors: Map[ProcessorId, ProcessorDescription] = null,
-    dag: Graph[Int, String] = null)
+object Commands {
+
+  case class Submit(name: String, uploadedJarLocation: String, jsonConf: String, topology: StormTopology, options: SubmitOptions)
+
+  case class AppSubmitted(name: String, appId: Int)
+
+  case class Kill(name: String, option: KillOptions)
+
+  case class AppKilled(name: String, appId: Int)
+
+  case object GetClusterInfo
+
+  case class GetTopology(id: String)
+}

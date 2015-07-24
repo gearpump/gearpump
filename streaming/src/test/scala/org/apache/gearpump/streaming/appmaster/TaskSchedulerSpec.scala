@@ -49,9 +49,7 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
             2 -> Array(TaskId(0,2), TaskId(0,3))
       ))
 
-      import upickle._
-
-      val localityConfig = ConfigFactory.parseString(upickle.write(localities))
+      val localityConfig = ConfigFactory.parseString(Localities.toJson(localities))
 
       import org.apache.gearpump.streaming.Constants.GEARPUMP_STREAMING_LOCALITIES
       val appName = "app"
@@ -97,8 +95,6 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
     }
 
     "schedule task fairly" in {
-
-      import upickle._
 
       import org.apache.gearpump.streaming.Constants.GEARPUMP_STREAMING_LOCALITIES
       val appName = "app"

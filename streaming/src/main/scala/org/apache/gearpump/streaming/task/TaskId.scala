@@ -16,13 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.appmaster
+package org.apache.gearpump.streaming.task
 
 import org.apache.gearpump.streaming._
-import org.apache.gearpump.util.{Graph}
 
-case class SubmitApplicationRequest (
-    appName: String = null,
-    appJar: String = null,
-    processors: Map[ProcessorId, ProcessorDescription] = null,
-    dag: Graph[Int, String] = null)
+
+case class TaskId(processorId : ProcessorId, index : TaskIndex)
+
+object TaskId {
+  def toLong(id : TaskId) = (id.processorId.toLong << 32) + id.index
+  def fromLong(id : Long) = TaskId(((id >> 32) & 0xFFFFFFFF).toInt, (id & 0xFFFFFFFF).toInt)
+}

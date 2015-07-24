@@ -21,6 +21,7 @@ package org.apache.gearpump.cluster
 import akka.actor.ActorRef
 import com.typesafe.config.Config
 import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterStatus
 import org.apache.gearpump.cluster.master.MasterDescription
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerDescription
@@ -96,16 +97,21 @@ object AppMasterToMaster {
 
     // from executor Id to executor path
     def executors: Map[Int, String]
-    def toJson: String
+
+    def status: AppMasterStatus
+    def startTime: TimeStamp
+    def user: String
   }
 
   case class GeneralAppMasterDataDetail(
-      appId: Int, appName: String = null, actorPath: String = null, executors: Map[Int, String] = Map.empty[Int, String])
-    extends AppMasterDataDetail {
-    def toJson: String = {
-      upickle.write(this)
-    }
-  }
+      appId: Int,
+      appName: String = null,
+      actorPath: String = null,
+      executors: Map[Int, String] = Map.empty[Int, String],
+      status: AppMasterStatus = MasterToAppMaster.AppMasterActive,
+      startTime: TimeStamp = 0L,
+      user: String = null)
+    extends AppMasterDataDetail
 
   case object GetAllWorkers
   case class GetWorkerData(workerId: Int)

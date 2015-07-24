@@ -25,9 +25,10 @@ import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.serializer.KryoPool
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
 import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskArgumentStore, TaskLocationReady, TaskStopped}
 import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
-import org.apache.gearpump.streaming.task.{Subscriber, TaskId, TaskLocations}
+import org.apache.gearpump.streaming.task.{Subscriber, TaskId}
 import org.apache.gearpump.transport.{Express, HostPort}
 import org.apache.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger

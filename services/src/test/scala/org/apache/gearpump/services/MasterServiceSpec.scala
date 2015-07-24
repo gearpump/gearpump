@@ -42,7 +42,7 @@ import scala.util.{Success, Try}
 
 class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers with BeforeAndAfterAll {
 
-  import upickle._
+  import upickle.default.{read, write}
 
   def actorRefFactory = system
 

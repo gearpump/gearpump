@@ -21,12 +21,9 @@ package org.apache.gearpump.util
 import java.io.File
 
 import akka.actor.ActorSystem
-import org.apache.commons.io.FileUtils
 import org.apache.gearpump.cluster.{ClusterConfigSource, ClusterConfig, UserConfig}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.util.Constants._
 
 class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
   "Typesafe Cluster Configs" should "follow the override rules" in {
@@ -53,7 +50,7 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
   """
 
     val file = File.createTempFile("test", ".conf")
-    FileUtils.writeStringToFile(file, conf)
+    FileUtils.write(file, conf)
 
     val raw = ClusterConfig.load(ClusterConfigSource(file.toString))
 
@@ -75,7 +72,7 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
 
     val map = Map[String,String]("key1"->"1", "key2"->"value2")
 
-    val user = UserConfig(map)
+    val user = new UserConfig(map)
       .withLong("key3", 2L)
       .withBoolean("key4", value = true)
       .withFloat("key5", 3.14F)

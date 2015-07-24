@@ -16,13 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.appmaster
+package org.apache.gearpump.services.util
 
-import org.apache.gearpump.streaming._
-import org.apache.gearpump.util.{Graph}
+import org.apache.gearpump.util.Graph
+import upickle.Js
 
-case class SubmitApplicationRequest (
-    appName: String = null,
-    appJar: String = null,
-    processors: Map[ProcessorId, ProcessorDescription] = null,
-    dag: Graph[Int, String] = null)
+object UpickleUtil {
+
+  //TODO: upickle cannot infer the reader automatically due to
+  // issue https://github.com/lihaoyi/upickle-pprint/issues/102
+  implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
+    case Js.Obj(verties, edges) =>
+      val vertexList = upickle.default.readJs[List[Int]](verties._2)
+      val edgeList = upickle.default.readJs[List[(Int, String, Int)]](edges._2)
+      Graph(vertexList, edgeList)
+  }
+}
