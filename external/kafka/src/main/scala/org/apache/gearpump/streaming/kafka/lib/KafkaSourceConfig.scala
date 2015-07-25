@@ -48,11 +48,11 @@ object KafkaSourceConfig {
 class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends java.io.Serializable  {
   import org.apache.gearpump.streaming.kafka.lib.KafkaSourceConfig._
 
-  if (!consumerProps.contains(ZOOKEEPER_CONNECT)) {
+  if (!consumerProps.containsKey(ZOOKEEPER_CONNECT)) {
     consumerProps.setProperty(ZOOKEEPER_CONNECT, "localhost:2181")
   }
 
-  if (!consumerProps.contains(GROUP_ID)) {
+  if (!consumerProps.containsKey(GROUP_ID)) {
     consumerProps.setProperty(GROUP_ID, "gearpump")
   }
 
