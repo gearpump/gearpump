@@ -192,7 +192,7 @@ object Build extends sbt.Build {
         }
       )
   ).aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state, pipeline)
+      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state)
 
   lazy val packProject = Project(
     id = "gearpump-pack",
@@ -585,19 +585,6 @@ object Build extends sbt.Build {
         )
       )
   ) dependsOn(streaming % "provided", dsl)
-
-  lazy val pipeline = Project(
-    id = "gearpump-examples-kafka-hbase-pipeline",
-    base = file("examples/streaming/kafka-hbase-pipeline"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.slf4j" % "jul-to-slf4j" % slf4jVersion intransitive
-        ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.pipeline.PipeLine"),
-        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
-      )
-  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "provided", external_hbase % "provided")
 
   lazy val state = Project(
     id = "gearpump-experiments-state",
