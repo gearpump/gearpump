@@ -65,6 +65,7 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def getConfiguration = configuration
   def getYarnConf = yarnConf
+  def getFs = FileSystem.get(getYarnConf)
   private def getEnv = getConfiguration.getEnv _
 
   private val version = configuration.getEnv("version")
@@ -114,6 +115,23 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
     Apps.addToEnvironment(appMasterEnv, Environment.CLASSPATH.name(),
       Environment.PWD.$()+File.separator+"*", File.pathSeparator)
     appMasterEnv.toMap
+  }
+
+  def uploadConfigToHDFS: Boolean = {
+    val localConfigPath = getEnv("config")
+    val configDir = new Path(confOnYarn)
+    val hdfsConfigPath = new Path(confOnYarn + YARN_CONFIG)
+    if(!getFs.exists(configDir.getParent)){
+      getFs.mkdirs(configDir.getParent)
+    }
+    Try(getFs.copyFromLocalFile(false, true, new Path(localConfigPath), hdfsConfigPath)) match {
+      case Success(a) =>
+        LOG.info(s"$localConfigPath uploaded to $hdfsConfigPath")
+        true
+      case Failure(error) =>
+        LOG.error(s"$localConfigPath could not be uploaded to $hdfsConfigPath ${error.getMessage}")
+        false
+    }
   }
 
   def getAMCapability: Resource = {
@@ -208,7 +226,7 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
   private def deploy(): Unit = {
     LOG.info("Starting AM")
     Try({
-      start() match {
+      uploadConfigToHDFS && start() match {
         case true =>
           submit() match {
             case Success(appId) =>
