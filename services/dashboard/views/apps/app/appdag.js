@@ -79,12 +79,15 @@ angular.module('dashboard.apps.appmaster')
         var hierarchyLevels = data.hierarchyLevels[processorId];
         var visNode = visNodes.get(processorId);
         var newVisRadius = d3.round(suggestRadius(weight), 1);
-        if (!visNode || visNode.label !== label || visNode.size !== newVisRadius) {
+        var newColor = dagStyle.nodeColor(processor.stalling);
+        if (!visNode || visNode.label !== label || visNode.size !== newVisRadius ||
+          (visNode.color && visNode.color !== newColor)) {
           diff.push({
             id: processorId,
             label: label,
             level: hierarchyLevels,
-            size: newVisRadius
+            size: newVisRadius,
+            color: newColor
           });
         }
       });

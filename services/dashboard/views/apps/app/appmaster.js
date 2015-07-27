@@ -69,6 +69,17 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
           }
         });
 
+      restapi.subscribe('/appmaster/' + $scope.app.id + '/stallingtasks', $scope, function(data) {
+        var tasks = data.tasks;
+        if ($scope.streamingDag) {
+          var ids = {};
+          tasks.map(function(task) {
+            ids[task.processorId] = task;
+          })
+          $scope.streamingDag.setStallingProcessors(ids);
+        }
+      });
+
       if (conf.webSocketPreferred) {
         var request = JSON.stringify(
           ["org.apache.gearpump.cluster.MasterToAppMaster.AppMasterMetricsRequest",

@@ -60,6 +60,21 @@ angular.module('dashboard.apps.appmaster')
       nodeRadiusRange: function () {
         return [2, 16];
       },
+      nodeColor: function (concern) {
+        var colorSet = concern ? {
+          border: 'rgb(138,1,12)',
+          background: 'rgb(248,106,91)'
+        } : {
+          border: '#2B7CE9',
+          background: '#D2E5FF'
+        };
+        var result = colorSet;
+        if (concern) {
+          result.hover = colorSet;
+          result.highlight = colorSet;
+        }
+        return result;
+      },
       edgeWidthRange: function () {
         return [1, 5];
       },
