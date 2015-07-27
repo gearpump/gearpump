@@ -581,7 +581,10 @@ object Build extends sbt.Build {
             exclude("commons-logging", "commons-logging")
             exclude("junit", "junit")
             exclude("log4j", "log4j"),
-          "org.scalaz" %% "scalaz-core" % scalazVersion
+          "org.scalaz" %% "scalaz-core" % scalazVersion,
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
   ) dependsOn(streaming % "provided", dsl)
