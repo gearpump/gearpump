@@ -1,3 +1,20 @@
+gearpump-0.4.1
+==============  
+
+Change logs:
+--------------------
+ - #1175 refactor dsl source and sink to remove hbase/kafka dependencies.
+ - #1154: allow user to submit app by UI
+ - #1165, fix random UT failures, avoid create new process in UT
+ - #1166, throw exception when submit application failed. fix #1151, reduce the memory footprint of each Task
+ - #1098, decouple KafkaStorage from KafkaSource
+ - #1189 remove unnecessary dependency
+ - #1192, fix potential message loss exception in ExpressTransport
+ - #1191 change Kryo's instantiator strategy, add fallback strategy when serialization fails.
+ - #1156: (1) ui supports replace processor (2) network graph would not be destroyed (3) changed dropdown menu look and feel (4) updated js libraries
+ - #1208 zookeeper.connect is being overridden to localhost:2181
+ - #1210, fix kafka examples
+
 gearpump-0.4
 ===================
 Highlights:
