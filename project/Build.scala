@@ -170,7 +170,7 @@ object Build extends sbt.Build {
      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
      libraryDependencies ++= (
         if (scalaVersion.value.startsWith("2.10")) List("org.scalamacros" %% "quasiquotes" % "2.1.0-M5")
-        else Nil
+        else List("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3")
       )
   )
 
@@ -258,7 +258,7 @@ object Build extends sbt.Build {
           ("org.apache.kafka" %% "kafka" % kafkaVersion classifier("test")) % "test"
         )
       )
-  ) dependsOn (streaming % "provided", dsl)
+  ) dependsOn (streaming % "provided", dsl % "provided")
 
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
@@ -273,7 +273,7 @@ object Build extends sbt.Build {
         ),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn(streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided")
+  ) dependsOn(streaming % "test->test; provided", external_kafka)
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
