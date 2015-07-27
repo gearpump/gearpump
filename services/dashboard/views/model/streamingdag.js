@@ -29,6 +29,12 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         this.executors = _flatMap(executors);
       },
 
+      setStallingProcessors: function(ids) {
+        angular.forEach(this.processors, function(processor, key) {
+          this.processors[key].stalling = processor.id in ids;
+        }, this);
+      },
+
       /** Update (or add) specified metrics in an array */
       updateMetricsArray: function (array) {
         for (var i = 0; i < array.length; i++) {
