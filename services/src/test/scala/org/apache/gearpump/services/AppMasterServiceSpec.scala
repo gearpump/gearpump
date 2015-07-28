@@ -33,9 +33,10 @@ import spray.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
+import upickle.default.{read,write}
 
 class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterAll {
-  import upickle._
+
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
 

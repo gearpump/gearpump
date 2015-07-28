@@ -17,57 +17,52 @@
  */
 
 package org.apache.gearpump.util
-
-import org.apache.gearpump.partitioner.Partitioner
-import org.apache.gearpump.util.Graph.Edge
-import org.jgrapht.Graphs
-import org.jgrapht.graph.DefaultDirectedGraph
-import org.jgrapht.traverse.TopologicalOrderIterator
-import upickle.{Reader, Js, Writer}
-import org.slf4j.Logger
-
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 import scala.language.implicitConversions
 
 /**
  * Application DAG
  */
+class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serializable{
 
-class Graph[N , E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) extends Serializable{
-  import org.apache.gearpump.util.Graph._
+  private val _vertices = mutable.Set.empty[N] ++ vertexList
+  private val _edges = mutable.Set.empty[(N, E, N)] ++ edgeList
 
   def addVertex(vertex : N): Unit = {
-    graph.addVertex(vertex)
+    _vertices.add(vertex)
   }
 
-  def vertices: Iterable[N] = {
-    graph.vertexSet()
+  def vertices: List[N] = {
+    _vertices.toList
   }
 
   def outDegreeOf(node : N): Int = {
-    graph.outDegreeOf(node)
+    _edges.count(_._1 == node)
   }
 
   def inDegreeOf(node: N): Int = {
-    graph.inDegreeOf(node)
+    _edges.count(_._3 == node)
   }
 
-  def outgoingEdgesOf(node : N): Array[(N, E, N)]  = {
-    toEdgeArray(graph.outgoingEdgesOf(node))
+  def outgoingEdgesOf(node : N): List[(N, E, N)]  = {
+    _edges.toList.filter(_._1 == node)
   }
 
-  def incomingEdgesOf(node: N): Array[(N, E, N)] = {
-    toEdgeArray(graph.incomingEdgesOf(node))
+  def incomingEdgesOf(node: N): List[(N, E, N)] = {
+    _edges.toList.filter(_._3 == node)
   }
 
   def removeVertex(node: N): Unit = {
-    graph.removeVertex(node)
+    _vertices.remove(node)
+    val toBeRemoved = incomingEdgesOf(node) ++ outgoingEdgesOf(node)
+    toBeRemoved.foreach(_edges.remove(_))
   }
 
   def addEdge(node1 : N, edge: E, node2: N): Unit = {
     addVertex(node1)
     addVertex(node2)
-    graph.addEdge(node1, node2, Edge(edge))
+    _edges.add((node1, edge, node2))
   }
 
   /**
@@ -77,16 +72,13 @@ class Graph[N , E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) 
    * @return
    */
   def mapVertex[NewNode](fun: N => NewNode): Graph[NewNode, E] = {
-    val vertexMap = vertices.foldLeft(Map.empty[N, NewNode]){(map, vertex) =>
-      map + (vertex -> fun(vertex))
+    val vertexMap: Map[N, NewNode] = vertices.map(node => (node, fun(node))).toMap
+    val newNodes = vertexMap.values.toList
+
+    val newEdges = edges.map { edge =>
+      (vertexMap(edge._1), edge._2, vertexMap(edge._3))
     }
-    val newGraph = Graph.empty[NewNode, E]
-    vertexMap.values.foreach(newGraph.addVertex(_))
-    edges.foreach {edgeWithEnds =>
-      val (node1, edge, node2) = edgeWithEnds
-      newGraph.addEdge(vertexMap(node1), edge, vertexMap(node2))
-    }
-    newGraph
+    new Graph(newNodes, newEdges)
   }
 
   /**
@@ -96,40 +88,29 @@ class Graph[N , E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) 
    * @return
    */
   def mapEdge[NewEdge](fun: (N, E, N) => NewEdge): Graph[N, NewEdge] = {
-    val newGraph = Graph.empty[N, NewEdge]
-    vertices.foreach(newGraph.addVertex(_))
-    edges.foreach {edgeWithEnds =>
-      val (node1, edge, node2) = edgeWithEnds
-      val newEdge = fun(node1, edge, node2)
-      newGraph.addEdge(node1, newEdge, node2)
+    val newEdges =  edges.map {edge =>
+      (edge._1, fun(edge._1, edge._2, edge._3), edge._3)
     }
-    newGraph
+    new Graph(vertices, newEdges)
   }
 
-  def edgesOf(node : N): Array[(N, E, N)] = {
-    toEdgeArray(graph.edgesOf(node))
+
+  def edgesOf(node : N): List[(N, E, N)] = {
+    (incomingEdgesOf(node) ++ outgoingEdgesOf(node)).toSet.toList
   }
 
-  private def toEdgeArray(edges: Iterable[Edge[E]]): Array[(N, E, N)] = {
-    edges.map { edge =>
-      val node1 = graph.getEdgeSource(edge)
-      val node2 = graph.getEdgeTarget(edge)
-      (node1, edge.edge, node2)
-    }.toArray
-  }
-
-  def edges: Array[(N, E, N)] = {
-    toEdgeArray(graph.edgeSet())
+  def edges: List[(N, E, N)] = {
+    _edges.toList
   }
 
   def addGraph(other : Graph[N, E]) : Graph[N, E] = {
-    Graphs.addGraph(graph, other.graph)
+    (vertices ++ other.vertices).foreach(addVertex(_))
+    (edges ++ other.edges).foreach(edge =>addEdge(edge._1, edge._2, edge._3))
     this
   }
 
   def copy: Graph[N, E] = {
-    val newGraph = graph.clone().asInstanceOf[DefaultDirectedGraph[N, Edge[E]]]
-    new Graph(newGraph)
+    new Graph(vertices, edges)
   }
 
   def isEmpty: Boolean = {
@@ -162,15 +143,44 @@ class Graph[N , E](private[Graph] val graph : DefaultDirectedGraph[N, Edge[E]]) 
     this
   }
 
+  private def removeZeroInDegree: List[N] = {
+    val toBeRemoved = vertices.filter(inDegreeOf(_) == 0)
+    toBeRemoved.foreach(removeVertex(_))
+    toBeRemoved
+  }
+
   /**
    * Return an iterator of vertex in topological order
    */
-  def topologicalOrderIterator = {
-    new TopologicalOrderIterator[N, Edge[E]](graph)
+  def topologicalOrderIterator: Iterator[N] = {
+    val newGraph = copy
+    var output = List.empty[N]
+
+    while(!newGraph.isEmpty) {
+      output ++= newGraph.removeZeroInDegree
+    }
+    output.iterator
+  }
+
+
+  /**
+   * Generate a level map for each vertex
+   * withholding: if vertex A -> B, then level(A) < level(B)
+   */
+  def vertexHierarchyLevelMap(): Map[N, Int] = {
+    val newGraph = copy
+    var output = Map.empty[N, Int]
+    var level = 0
+    while(!newGraph.isEmpty) {
+      output ++= newGraph.removeZeroInDegree.map((_, level)).toMap
+      level += 1
+    }
+    output
   }
 
   override def toString = {
-    graph.toString
+    Map("vertices" -> vertices.mkString(","),
+    "edges" -> edges.mkString(",")).toString()
   }
 }
 
@@ -196,60 +206,19 @@ object Graph {
     graph
   }
 
-  /**
-   * Reserved for java usage
-   * @param elems
-   * @tparam N
-   * @tparam E
-   * @return
-   */
-  def apply[N, E](elems: java.util.List[Path[_ <: N, _ <: E]]): Graph[N, E] = {
-    val graph = empty[N, E]
-    elems.foreach{ path =>
-      path.updategraph(graph)
-    }
-    graph
+  def apply[N , E](vertices: List[N], edges: List[(N, E, N)]): Graph[N, E] = {
+    new Graph(vertices, edges)
+  }
+
+  def unapply[N, E](graph: Graph[N, E]): Option[(List[N], List[(N, E, N)])] = {
+    Some((graph.vertices, graph.edges))
   }
 
   def empty[N, E] = {
-    new Graph(new DefaultDirectedGraph[N, Edge[E]](classOf[Edge[E]]))
-  }
-
-  //we ensure two edge instance never equal
-  case class Edge[E](edge: E)  extends ReferenceEqual
-
-  /**
-   * Generate a level map for each vertex
-   * withholding: if vertex A -> B, then level(A) < level(B)
-   *
-   * @param graph
-   * @tparam N
-   * @tparam E
-   * @return
-   */
-  def vertexHierarchyLevelMap[N, E](graph: Graph[N, E]): Map[N, Int] = {
-    val levelGraph = graph.graph.clone().asInstanceOf[DefaultDirectedGraph[N, Edge[E]]]
-
-    var levelMap = Map.empty[N, Int]
-    var currentLevel = 0
-    while (levelGraph.vertexSet().size() > 0) {
-      val nodes = vertexsZeroInDegree(levelGraph)
-      levelMap = nodes.foldLeft(levelMap)((map, node) => map + (node -> currentLevel))
-      levelGraph.removeAllVertices(nodes)
-      currentLevel += 1
-    }
-    levelMap
-  }
-
-  import scala.collection.JavaConverters._
-  import scala.collection.JavaConversions
-  private def vertexsZeroInDegree[N, E](graph: DefaultDirectedGraph[N, Edge[E]]) = {
-    graph.vertexSet().asScala.filter(node => graph.inDegreeOf(node) == 0)
+    new Graph(List.empty[N], List.empty[(N, E, N)])
   }
 
   class Path[N, +E](path: List[Either[N, E]]) {
-
-
 
     def ~[Edge >: E](edge: Edge): Path[N, Edge] = {
       new Path(path :+ Right(edge))
@@ -313,44 +282,4 @@ object Graph {
       this ~ edge ~> node
     }
   }
-
-  implicit val writer: Writer[Graph[Int, String]] = upickle.Writer[Graph[Int, String]] {
-
-    case dag =>
-      val vertices = dag.vertices.map(processorId => {
-        Js.Num(processorId)
-      })
-
-      val edges = dag.edges.map(f => {
-        var (node1, edge, node2) = f
-        Js.Arr(Js.Num(node1), Js.Str(edge), Js.Num(node2))
-      })
-
-      Js.Obj(
-        ("vertices", Js.Arr(vertices.toSeq: _*)),
-        ("edges", Js.Arr(edges.toSeq: _*)))
-
-  }
-
-  implicit val reader: Reader[Graph[Int, String]] = upickle.Reader[Graph[Int, String]] {
-
-    case r: Js.Obj =>
-      val graph = Graph.empty[Int, String]
-      r.value.foreach(pair => {
-        val (member, value) = pair
-        member match {
-          case "vertices" =>
-            val vertices = upickle.readJs[Array[Int]](value)
-            vertices.foreach(graph.addVertex(_))
-          case "edges" =>
-            val paths = upickle.readJs[Array[(Int,String,Int)]](value)
-            paths.foreach(tuple => {
-              val (node1, edge, node2) = tuple
-              graph.addEdge(node1, edge, node2)
-            })
-        }
-      })
-      graph
-  }
-
 }

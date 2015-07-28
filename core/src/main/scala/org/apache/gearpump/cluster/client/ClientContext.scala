@@ -40,7 +40,7 @@ import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
 //TODO: add interface to query master here
-class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[ActorRef]) {
+class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[ActorRef]) {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
@@ -51,7 +51,7 @@ class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[Actor
 
   import system.dispatcher
 
-  private val master = mster.getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
+  private val master = _master.getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
 
   LOG.info(s"Creating master proxy ${master} for master list: $masters")
 
@@ -61,10 +61,14 @@ class ClientContext(config: Config, sys:Option[ActorSystem], mster: Option[Actor
    * the target runtime classpath, and will not send it.
    */
   def submit(app : Application) : Int = {
+    submit(app, System.getProperty(GEARPUMP_APP_JAR))
+  }
+
+  def submit(app : Application, jar: String) : Int = {
     import app.{name, appMaster, userConfig}
     val clusterConfig = ClusterConfig.load.applicationSubmissionConfig
     val appDescription = AppDescription(name, appMaster.getName, userConfig, clusterConfig)
-    submit(appDescription, System.getProperty(GEARPUMP_APP_JAR))
+    submit(appDescription, jar)
   }
 
   private def submit(app : AppDescription, jarPath: String) : Int = {

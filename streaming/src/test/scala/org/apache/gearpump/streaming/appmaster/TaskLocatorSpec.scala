@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster
+package org.apache.gearpump.streaming.appmaster
 
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import org.apache.gearpump.streaming.appmaster.TaskLocator.Localities
+import org.apache.gearpump.streaming.task.TaskId
+import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 
-class UserConfigSpec  extends FlatSpec with Matchers with BeforeAndAfterEach {
-  it should "serialize and deserialize with upickle correctly" in {
-    val conf = UserConfig.empty.withString("key", "value")
-    val serialized = upickle.write(conf)
-    val deserialized = upickle.read[UserConfig](serialized)
-    assert(deserialized.getString("key") == Some("value"))
+class TaskLocatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+  it should "serialize/deserialize correctly" in {
+    val localities = new Localities(Map(0 -> Array(TaskId(0, 1), TaskId(1,2))))
+    Localities.toJson(localities)
+
+    localities.localities.mapValues(_.toList) shouldBe
+      Localities.fromJson(Localities.toJson(localities)).localities.mapValues(_.toList)
   }
 }

@@ -28,6 +28,7 @@ import org.apache.gearpump.partitioner.{PartitionerDescription, HashPartitioner,
 import org.apache.gearpump.streaming.AppMasterToExecutor.{Start, LaunchTasks}
 import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAGSuccess, ChangeToNewDAG}
 import org.apache.gearpump.streaming.appmaster.DagManager.{NewDAGDeployed, GetTaskLaunchData, WatchChange, LatestDAG, GetLatestDAG, TaskLaunchData}
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
 import org.apache.gearpump.streaming.executor.Executor
 import Executor.RestartTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask

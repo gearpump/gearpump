@@ -18,8 +18,8 @@
 
 package org.apache.gearpump.streaming.appmaster
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.streaming.appmaster.TaskRegistry.{TaskLocation, Reject, Accept}
-import org.apache.gearpump.streaming.task.{TaskLocations, TaskId}
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.{TaskLocations, TaskLocation, Reject, Accept}
+import org.apache.gearpump.streaming.task.{ TaskId}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.LogUtil
 import org.scalatest.{FlatSpec, BeforeAndAfterEach, Matchers, WordSpec}

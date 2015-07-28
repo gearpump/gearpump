@@ -54,12 +54,13 @@ class AkkaReporter(
 
       import scala.collection.JavaConversions._
 
-      val sgauges = collection.SortedMap(gauges.toSeq: _*)
-      sgauges.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
-        val (key, value) = pair
-        system.eventStream.publish(Gauge(key, value))
-      })
+      //TODO: depends on Gauge refactory. @see Metrics.scala
+//      val sgauges = collection.SortedMap(gauges.toSeq: _*)
+//      sgauges.foreach(pair => {
+//        import org.apache.gearpump.metrics.Metrics._
+//        val (key, value) = pair
+//        system.eventStream.publish(Gauge(key, value))
+//      })
 
       val scounters = collection.SortedMap(counters.toSeq: _*)
       scounters.foreach(pair => {

@@ -16,20 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.util
+package org.apache.gearpump.experiments.storm
 
-import java.io.{Closeable, Flushable}
+import backtype.storm.generated.{KillOptions, StormTopology, SubmitOptions}
 
-import org.slf4j.LoggerFactory
+object Commands {
 
-import scala.sys.process.ProcessLogger
+  case class Submit(name: String, uploadedJarLocation: String, jsonConf: String, topology: StormTopology, options: SubmitOptions)
 
-class ProcessLogRedirector extends ProcessLogger with Closeable with Flushable {
-  private val LOG = LoggerFactory.getLogger("redirect")
+  case class AppSubmitted(name: String, appId: Int)
 
-  def out(s: => String): Unit = LOG.info(s)
-  def err(s: => String): Unit = LOG.error(s)
-  def buffer[T](f: => T): T = f
-  def close(): Unit = Unit
-  def flush(): Unit = Unit
+  case class Kill(name: String, option: KillOptions)
+
+  case class AppKilled(name: String, appId: Int)
+
+  case object GetClusterInfo
+
+  case class GetTopology(id: String)
 }

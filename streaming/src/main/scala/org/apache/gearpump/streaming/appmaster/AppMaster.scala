@@ -49,6 +49,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   import akka.pattern.ask
   implicit val dispatcher = context.dispatcher
 
+  val startTime: TimeStamp = System.currentTimeMillis()
+
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username, app: $app xxxxxxxxxxxxxxxxx")
   LOG.info(s"AppMaster actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
@@ -127,9 +129,23 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
         tasks <- taskFuture
         dag <- dagFuture
       } yield {
-        val activeDag = dag
-        StreamingAppMasterDataDetail(appId, app.name, activeDag.processors,
-          Graph.vertexHierarchyLevelMap(activeDag.graph), activeDag.graph, address, clock, executors, tasks.tasks)
+        val graph = dag.graph
+
+        StreamingAppMasterDataDetail(
+          appId,
+          app.name,
+          dag.processors,
+          graph.vertexHierarchyLevelMap(),
+          graph.mapEdge {(node1, edge, node2) =>
+            edge.partitionerFactory.name
+          },
+          address,
+          clock,
+          executors,
+          tasks.tasks,
+          status = MasterToAppMaster.AppMasterActive,
+          startTime = startTime,
+          user = username)
       }
 
       val client = sender()

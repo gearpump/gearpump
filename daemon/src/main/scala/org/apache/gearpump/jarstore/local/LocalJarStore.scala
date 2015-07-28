@@ -22,7 +22,7 @@ import java.io.File
 
 import akka.actor.{Actor, Props, Stash}
 import akka.pattern.{ask, pipe}
-import org.apache.commons.io.FileUtils
+import org.apache.gearpump.util.FileUtils
 import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
 import org.apache.gearpump.jarstore.JarFileContainer
 import org.apache.gearpump.util.{Constants, FileServer, LogUtil}

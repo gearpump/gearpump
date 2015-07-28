@@ -17,18 +17,11 @@
  */
 package org.apache.gearpump.streaming.appmaster
 
-import java.util
-
-import akka.actor.Actor
-import com.typesafe.config.{ConfigRenderOptions, Config}
-import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.streaming.{ProcessorId, ProcessorDescription}
+import com.typesafe.config.{ConfigValueFactory, ConfigFactory, ConfigRenderOptions, Config}
 import org.apache.gearpump.streaming.appmaster.TaskLocator.{Localities, WorkerLocality, NonLocality, Locality}
-import org.apache.gearpump.streaming.task.{TaskId, Task, TaskUtil}
-import org.apache.gearpump.util.{ActorUtil, Constants}
-
-import scala.collection.mutable
+import org.apache.gearpump.streaming.task.{TaskId}
 import scala.util.Try
+import scala.collection.JavaConverters._
 
 class TaskLocator(appName: String, config: Config) {
   private var taskLocalities: Map[TaskId, Locality] = loadTaskLocalities(config)
@@ -37,31 +30,11 @@ class TaskLocator(appName: String, config: Config) {
     taskLocalities.getOrElse(taskId, NonLocality)
   }
 
-  /*
-The task resource requests format:
-gearpump {
-  streaming {
-    localities {
-      app1: {
-        workerId: [
-          TaskId(0,0), TaskId(0,1)
-        ]
-      }
-      app2: {
-        workerId: [
-          TaskId(1,0), TaskId(1,1)
-        ]
-      }
-    }
-  }
-}
- */
   def loadTaskLocalities(config: Config) : Map[TaskId, Locality] = {
     import org.apache.gearpump.streaming.Constants.GEARPUMP_STREAMING_LOCALITIES
     Try(config.getConfig(s"$GEARPUMP_STREAMING_LOCALITIES.$appName")).map {appConfig =>
       val json = appConfig.root().render(ConfigRenderOptions.concise)
-      import upickle._
-      upickle.read[Localities](json)
+      Localities.fromJson(json)
     }.map { localityConfig =>
       import localityConfig.localities
       localities.keySet.flatMap {workerId =>
@@ -83,4 +56,29 @@ object TaskLocator {
   type WorkerId = Int
 
   case class Localities(localities: Map[WorkerId, Array[TaskId]])
+
+  object Localities {
+    val pattern = "task_([0-9]+)_([0-9]+)".r
+
+    def fromJson(json: String): Localities = {
+      val localities = ConfigFactory.parseString(json).getAnyRef("localities")
+        .asInstanceOf[java.util.Map[String, String]].asScala.map { pair =>
+        val workerId: WorkerId = pair._1.toInt
+        val tasks = pair._2.split(",").map { task =>
+          val pattern(processorId, taskIndex) = task
+          TaskId(processorId.toInt, taskIndex.toInt)
+        }
+        (workerId, tasks)
+      }.toMap
+      new Localities(localities)
+    }
+
+    def toJson(localities: Localities): String = {
+      val map = localities.localities.toList.map {pair =>
+        (pair._1.toString, pair._2.map(task => s"task_${task.processorId}_${task.index}").mkString(","))
+      }.toMap.asJava
+      ConfigFactory.empty().withValue("localities", ConfigValueFactory.fromAnyRef(map)).
+        root.render(ConfigRenderOptions.concise())
+    }
+  }
 }

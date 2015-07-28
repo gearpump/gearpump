@@ -33,7 +33,7 @@ import scala.util.{Failure, Success}
 
 trait WorkerService extends HttpService {
 
-  import upickle._
+  import upickle.default.{read, write}
 
   def master: ActorRef
 

@@ -24,7 +24,6 @@ import akka.actor.{Actor, Stash}
 import akka.io.IO
 import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.methods.{ByteArrayRequestEntity, GetMethod, PostMethod}
-import org.apache.commons.io.FileUtils
 import spray.can.Http
 import spray.http.HttpMethods._
 import spray.http._

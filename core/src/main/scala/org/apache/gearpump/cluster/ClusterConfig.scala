@@ -19,11 +19,9 @@
 package org.apache.gearpump.cluster
 
 import java.io.File
-
 import com.typesafe.config.{ConfigValueFactory, Config, ConfigFactory, ConfigParseOptions}
-import org.apache.commons.io.FileUtils
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{FileUtils, Constants, LogUtil}
 
 /**
  * Please use ClusterConfig.load to construct this object

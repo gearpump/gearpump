@@ -26,7 +26,6 @@ import com.google.common.io.BaseEncoding
  * Immutable configuration
  */
 final class UserConfig(private val _config: Map[String, String])  extends Serializable{
-import org.apache.gearpump.cluster.UserConfig._
 
   def withBoolean(key: String, value: Boolean): UserConfig = {
     new UserConfig(_config + (key -> value.toString))
@@ -139,18 +138,9 @@ import org.apache.gearpump.cluster.UserConfig._
 
 object UserConfig{
 
-  implicit val userConfigJsonWriter: upickle.Writer[UserConfig] = upickle.Writer[UserConfig] {
-    case config: UserConfig =>
-      upickle.writeJs(config._config)
-  }
-
-  implicit val userConfigReader: upickle.Reader[UserConfig] = upickle.Reader[UserConfig] {
-    case js =>
-      new UserConfig(upickle.readJs[Map[String, String]](js))
-  }
-
   def empty = new UserConfig(Map.empty[String, String])
 
   def apply(config : Map[String, String]) = new UserConfig(config)
 
+  def unapply(config: UserConfig): Option[Map[String, String]] = Option(config._config)
 }

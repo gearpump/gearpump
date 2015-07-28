@@ -37,6 +37,9 @@ import org.slf4j.Logger
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
+import scala.collection.JavaConversions._
+import scala.language.implicitConversions
+
 /**
  * The clockService will maintain a global view of message timestamp in the application
  */
@@ -87,7 +90,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
       val upstreamClocks = for (edge <- dag.graph.incomingEdgesOf(vertex)) yield {
         clocks(edge._1)
       }
-      (vertex, upstreamClocks)
+      (vertex, upstreamClocks.toArray)
     }.toMap
 
     // init the clock of all processors.
