@@ -18,14 +18,14 @@
 package org.apache.gearpump.external.hbase.dsl
 
 import org.apache.gearpump.external.hbase.HBaseSink
-import org.apache.gearpump.streaming.dsl.{TypedDataSink, Stream}
+import org.apache.gearpump.streaming.dsl.Stream
 import org.apache.gearpump.streaming.dsl.Stream.Sink
 
 import scala.reflect.ClassTag
 
 class HBaseDSLSink[T: ClassTag](stream: Stream[T]) {
   def writeToHbase(table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(new HBaseSink(table) with TypedDataSink[T], parallism, description)
+    stream.sink(HBaseSink(table), parallism, description)
   }
 }
 

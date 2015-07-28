@@ -17,8 +17,27 @@
  */
 package org.apache.gearpump.external.hbase
 
-//Todo
-class HBaseSinkSpec {
+import org.apache.hadoop.hbase.client.{HTable, Put}
+import org.apache.hadoop.hbase.util.Bytes
+import org.mockito.Mockito
+import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
 
+class HBaseSinkSpec extends PropSpec with PropertyChecks with Matchers {
+
+
+  property("HBaseSink should insert a row successfully") {
+    import Mockito._
+    val htable = Mockito.mock(classOf[HTable])
+    val row = "row"
+    val group = "group"
+    val name = "name"
+    val value = "1.2"
+    val put = new Put(Bytes.toBytes(row))
+    put.add(Bytes.toBytes(group), Bytes.toBytes(name), Bytes.toBytes(value))
+    val hbaseSink = HBaseSink(htable)
+    hbaseSink.insert(put)
+    verify(htable).put(put)
+  }
 }
 

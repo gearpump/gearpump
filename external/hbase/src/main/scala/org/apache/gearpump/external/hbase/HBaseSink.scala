@@ -18,15 +18,14 @@
 package org.apache.gearpump.external.hbase
 
 import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.dsl.TypedDataSink
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.{HTable, Put}
 import org.apache.hadoop.hbase.util.Bytes
 
-class HBaseSink(tableName: String) extends DataSink{
-  lazy val hbaseConf = HBaseConfiguration.create()
-  lazy val table = new HTable(hbaseConf, tableName)
+class HBaseSink(table: HTable) extends DataSink{
 
   override def open(context: TaskContext): Unit = {}
 
@@ -71,5 +70,12 @@ object HBaseSink {
   val TABLE_NAME = "hbase.table.name"
   val COLUMN_FAMILY = "hbase.table.column.family"
   val COLUMN_NAME = "hbase.table.column.name"
-  def apply(tableName: String): HBaseSink = new HBaseSink(tableName)
+  def apply[T](tableName: String): HBaseSink with TypedDataSink[T] = {
+    val hbaseConf = HBaseConfiguration.create()
+    val table = new HTable(hbaseConf, tableName)
+    new HBaseSink(table) with TypedDataSink[T]
+  }
+  def apply(table: HTable): HBaseSink = {
+    new HBaseSink(table)
+  }
 }
