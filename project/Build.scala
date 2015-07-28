@@ -226,8 +226,44 @@ object Build extends sbt.Build {
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
-        packExtraClasspath := new DefaultValueMap(Seq("/etc/gearpump/conf", "${PROG_HOME}/conf",
-          "${PROG_HOME}/dashboard", "${PROG_HOME}/daemon/*", "${PROG_HOME}/storm/*", "/etc/hadoop/conf", "/etc/hbase/conf"))
+        packExtraClasspath := Map(
+          "gear" -> Seq(
+            "/etc/gearpump/conf",
+            "${PROG_HOME}/conf",
+            "${PROG_HOME}/daemon/*"
+            ),
+
+          "local" -> Seq(
+            "/etc/gearpump/conf",
+            "${PROG_HOME}/conf",
+            "${PROG_HOME}/daemon/*"),
+
+          "master" -> Seq(
+            "/etc/gearpump/conf",
+            "${PROG_HOME}/conf",
+            "${PROG_HOME}/daemon/*"
+            ),
+
+          "services" -> Seq(
+            "/etc/gearpump/conf",
+            "${PROG_HOME}/conf",
+            "${PROG_HOME}/dashboard",
+            "${PROG_HOME}/daemon/*"
+            ),
+
+          "yarnclient" -> Seq(
+            "/etc/gearpump/conf",
+            "${PROG_HOME}/conf",
+            "${PROG_HOME}/daemon/*",
+            "/etc/hadoop/conf",
+            "/etc/hbase/conf"),
+
+          "storm" -> Seq(
+            "/etc/gearpump/conf",
+            "${PROG_HOME}/conf",
+            "${PROG_HOME}/storm/*"
+            )
+        )
       )
   ).dependsOn(core, streaming, services, yarn, storm, dsl)//, state)
 
