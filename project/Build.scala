@@ -190,7 +190,7 @@ object Build extends sbt.Build {
         }
       )
   ).aggregate(core, daemon, streaming,  services, external_kafka,
-      examples, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state)
+      examples, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state, storage_hdfs)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -209,6 +209,19 @@ object Build extends sbt.Build {
     base = file("streaming"),
     settings = commonSettings ++ streamingDependencies
   )  dependsOn(core % "test->test; compile->compile", daemon % "test->test")
+
+  lazy val storage_hdfs = Project(
+    id = "gearpump-storage-hdfs",
+    base = file("storage/storage-hdfs"),
+    settings = commonSettings ++ 
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+        ) ++ hadoopDependency
+      )
+  ) dependsOn (core % "test->test;compile->compile")
 
   lazy val external_kafka = Project(
     id = "gearpump-external-kafka",
