@@ -108,6 +108,4 @@ object ContainerLaunchContext {
     context.setLocalResources(getAMLocalResourcesMap)
     context
   }
-
 }
-

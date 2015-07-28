@@ -271,8 +271,10 @@ private[cluster] object Worker {
           file.getFile
         }
 
-        val classPathPrefix = filterDaemonLib(Util.getCurrentClassPath) ++ ctx.classPath
-        val classPath = jarPath.map(classPathPrefix :+ _).getOrElse(classPathPrefix)
+        val classPath = filterDaemonLib(Util.getCurrentClassPath) ++
+          ctx.classPath.map(path => expandEnviroment(path)) ++
+          jarPath.map(Array(_)).getOrElse(Array.empty[String])
+
 
         val appLogDir = context.system.settings.config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
         val logArgs = List(
@@ -355,6 +357,12 @@ private[cluster] object Worker {
           }
         }
       }
+    }
+
+    import Constants._
+    private def expandEnviroment(path: String): String = {
+      //TODO: extend this to support more environment.
+      path.replace(s"<${GEARPUMP_HOME}>", config.getString(GEARPUMP_HOME))
     }
 
     override def preStart: Unit = {

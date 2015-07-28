@@ -22,7 +22,7 @@ import java.io._
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.experiments.yarn.{ContainerLaunchContext, AppConfig}
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.{Constants, LogUtil}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.yarn.api.ApplicationConstants
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
@@ -86,13 +86,16 @@ class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: Y
       s"pack/$version/conf",
       s"pack/$version/dashboard",
       s"pack/$version/lib/*",
-      s"pack/$version/daemon/*",
+      s"pack/$version/lib/daemon/*",
+      s"pack/$version/lib/services/*",
+      s"pack/$version/lib/yarn/*",
       "yarnConf"
     )
     val mainClass = getEnv(YARNAPPMASTER_MAIN)
     val logdir = ApplicationConstants.LOG_DIR_EXPANSION_VAR
     val command = s"$exe  -cp ${classPath.mkString(File.pathSeparator)}${File.pathSeparator}" +
       "$CLASSPATH" +
+      s" -D${Constants.GEARPUMP_HOME}=${Environment.HOME.$$()}/pack" +
       s" $mainClass" +
       s" -version $version" +
       " 1>" + logdir +"/" + ApplicationConstants.STDOUT +

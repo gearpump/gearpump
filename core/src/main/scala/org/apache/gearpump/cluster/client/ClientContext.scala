@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 import akka.pattern.ask
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
-import com.typesafe.config.Config
+import com.typesafe.config.{ConfigFactory, Config}
 import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.cluster.MasterToClient.ReplayApplicationResult
@@ -66,9 +66,28 @@ class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[Act
 
   def submit(app : Application, jar: String) : Int = {
     import app.{name, appMaster, userConfig}
-    val clusterConfig = ClusterConfig.load.applicationSubmissionConfig
-    val appDescription = AppDescription(name, appMaster.getName, userConfig, clusterConfig)
+    val submissionConfig = getSubmissionConfig(config)
+    val appDescription = AppDescription(name, appMaster.getName, userConfig, submissionConfig)
     submit(appDescription, jar)
+  }
+
+  import scala.collection.JavaConverters._
+  private def getSubmissionConfig(config: Config): Config = {
+    val filterReferenceConf = config.entrySet().asScala.foldLeft(ConfigFactory.empty()){(config, entry) =>
+      val key = entry.getKey
+      val value = entry.getValue
+      val origin = value.origin()
+      if (origin.resource() == "reference.conf"){
+        config
+      } else {
+        config.withValue(key, value)
+      }
+    }
+
+    val filterJvmReservedKeys = ClusterConfig.JVM_RESERVED_PROPERTIES.foldLeft(filterReferenceConf){(config, key) =>
+      config.withoutPath(key)
+    }
+    filterJvmReservedKeys
   }
 
   private def submit(app : AppDescription, jarPath: String) : Int = {

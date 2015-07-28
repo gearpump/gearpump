@@ -88,7 +88,7 @@ object Util {
 
     val appMasterClassPath = Try(
       conf.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
-        .split(File.pathSeparator).filter(_.nonEmpty)).toOption
+        .split("[;:]").filter(_.nonEmpty)).toOption
 
     val executorClassPath = Try(
       conf.getString(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)

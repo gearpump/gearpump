@@ -7,15 +7,14 @@ import org.apache.gearpump.experiments.yarn.Constants._
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants
 import org.apache.hadoop.yarn.api.ApplicationConstants
-
+import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
 
 trait ContainerCommand {
-  protected val appConfig: AppConfig
-  private val version = appConfig.getEnv("version")
+  protected def appConfig: AppConfig
+  def version = appConfig.getEnv("version")
   private val classPath = Array(
     s"pack/$version/conf",
-    s"pack/$version/dashboard",
-    s"pack/$version/daemon/*",
+    s"pack/$version/lib/daemon/*",
     s"pack/$version/lib/*"
   )
 
@@ -31,7 +30,6 @@ trait ContainerCommand {
   }
 }
 
-
 case class MasterContainerCommand(appConfig: AppConfig, masterAddr: HostPort) extends ContainerCommand {
 
   def getCommand: String = {
@@ -40,6 +38,7 @@ case class MasterContainerCommand(appConfig: AppConfig, masterAddr: HostPort) ex
     val properties = Array(
       s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${masterAddr.host}:${masterAddr.port}",
       s"-D${Constants.GEARPUMP_HOSTNAME}=${masterAddr.host}",
+      s"-D${Constants.GEARPUMP_HOME}=${Environment.HOME.$$()}/pack/$version",
       s"-D${Constants.GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
       s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}")
 
@@ -54,11 +53,10 @@ case class WorkerContainerCommand(appConfig: AppConfig, masterAddr: HostPort, wo
     val properties = Array(
       s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${masterAddr.host}:${masterAddr.port}",
       s"-D${Constants.GEARPUMP_LOG_DAEMON_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
+      s"-D${Constants.GEARPUMP_HOME}=${Environment.HOME.$$()}/pack/$version",
       s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${ApplicationConstants.LOG_DIR_EXPANSION_VAR}",
       s"-D${Constants.GEARPUMP_HOSTNAME}=$workerHost")
 
     buildCommand(WORKER_COMMAND, properties,  WORKER_MAIN, "", WORKER_LOG)
   }
-
-
 }

@@ -61,10 +61,6 @@ class ClusterConfig private(systemProperties : Config, custom : Config,
     convert(config)
   }
 
-  def applicationSubmissionConfig: Config = {
-    systemProperties.withFallback(custom)
-  }
-
   private def baseConfig: Config = {
     if (akka.util.Helpers.isWindows) {
       windows.getConfig(WINDOWS).withFallback(base.getConfig(BASE))
@@ -147,7 +143,7 @@ object ClusterConfig {
       all = all)
   }
 
-  private val JVM_RESERVED_PROPERTIES = List(
+  val JVM_RESERVED_PROPERTIES = List(
     "os", "java", "sun", "boot", "user", "prog", "path", "line", "awt", "file"
   )
 
