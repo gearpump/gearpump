@@ -63,6 +63,10 @@ case class LifeTime(birth: TimeStamp, death: TimeStamp) {
   def contains(timestamp: TimeStamp): Boolean = {
     timestamp >= birth && timestamp < death
   }
+
+  def cross(another: LifeTime): LifeTime = {
+    LifeTime(Math.max(birth, another.birth), Math.min(death, another.death))
+  }
 }
 
 object LifeTime {
