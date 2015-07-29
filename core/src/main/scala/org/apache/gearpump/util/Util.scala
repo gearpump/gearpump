@@ -24,7 +24,7 @@ import com.typesafe.config.Config
 import org.apache.gearpump.transport.HostPort
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.sys.process.Process
+import scala.sys.process.{ProcessLogger, Process}
 import scala.util.Try
 
 object Util {
@@ -42,12 +42,13 @@ object Util {
   }
 
   def startProcess(options : Array[String], classPath : Array[String], mainClass : String,
-                   arguments : Array[String]) : Process = {
+                   arguments : Array[String]) : RichProcess = {
     val java = System.getProperty("java.home") + "/bin/java"
     val command = List(java) ++ options ++ List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
     LOG.info(s"Starting executor process java $mainClass ${arguments.mkString(" ")}; options: ${options.mkString(" ")}")
-    val process = Process(command).run(new ProcessLogRedirector())
-    process
+    val logger = new ProcessLogRedirector()
+    val process = Process(command).run(logger)
+    new RichProcess(process, logger)
   }
 
   /**

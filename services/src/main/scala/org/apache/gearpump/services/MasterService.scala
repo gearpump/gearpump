@@ -188,7 +188,7 @@ object MasterService {
       val process = Util.startProcess(options, Util.getCurrentClassPath, mainClass, arguments)
       val retval = process.exitValue()
       if (retval != 0) {
-        throw new IOException(s"Process exit abnormally with code $retval")
+        throw new IOException(s"Process exit abnormally with code $retval, error summary: ${process.logger.summary}")
       }
     } finally {
       userConf.delete()

@@ -352,7 +352,7 @@ private[cluster] object Worker {
             if (exit == 0) {
               Success(0)
             } else {
-              Failure(new Exception(s"Executor exit with failure, exit value: $exit"))
+              Failure(new Exception(s"Executor exit with failure, exit value: $exit, error summary: ${info.process.logger.summary}"))
             }
           }
         }
@@ -412,5 +412,5 @@ private[cluster] object Worker {
     def exitValue : Future[Try[Int]]
   }
 
-  case class ProcessInfo(process: scala.sys.process.Process, jarPath: Option[String], configFile: Option[String])
+  case class ProcessInfo(process: RichProcess, jarPath: Option[String], configFile: Option[String])
 }
