@@ -141,7 +141,7 @@ trait MasterService extends HttpService {
             val graph = dag.mapVertex {processorId =>
               processors(processorId)
             }.mapEdge { (node1, edge, node2) =>
-              PartitionerDescription(PartitionerByClassName(edge))
+              PartitionerDescription(new PartitionerByClassName(edge))
             }
 
             val appId = context.submit(new StreamApplication(appName, UserConfig.empty, graph))

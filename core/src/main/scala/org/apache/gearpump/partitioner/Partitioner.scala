@@ -23,7 +23,7 @@ import org.apache.gearpump.cluster.UserConfig
 
 import org.apache.gearpump.TimeStamp
 import scala.reflect.ClassTag
-
+import org.apache.commons.lang.SerializationUtils
 trait Partitioner extends Serializable {
 
   /**
@@ -48,11 +48,14 @@ sealed trait PartitionerFactory {
   def partitioner: Partitioner
 }
 
-case class PartitionerObject(partitioner: Partitioner) extends PartitionerFactory {
+class PartitionerObject(private [this] val _partitioner: Partitioner) extends PartitionerFactory with Serializable {
+
   override def name: String = partitioner.getClass.getName
+
+  override def partitioner: Partitioner = SerializationUtils.clone(_partitioner).asInstanceOf[Partitioner]
 }
 
-case class PartitionerByClassName(partitionerClass: String) extends PartitionerFactory {
+class PartitionerByClassName(partitionerClass: String) extends PartitionerFactory with Serializable {
   override def name: String = partitionerClass
 
   override def partitioner: Partitioner = Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
@@ -69,6 +72,6 @@ object Partitioner {
   val UNKNOWN_PARTITION_ID = -1
 
   def apply[T <: Partitioner](implicit clazz: ClassTag[T]): PartitionerDescription = {
-    PartitionerDescription(PartitionerByClassName(clazz.runtimeClass.getName))
+    PartitionerDescription(new PartitionerByClassName(clazz.runtimeClass.getName))
   }
 }

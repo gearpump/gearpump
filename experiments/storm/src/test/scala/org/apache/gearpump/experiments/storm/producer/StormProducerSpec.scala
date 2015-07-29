@@ -52,7 +52,7 @@ class StormProducerSpec extends PropSpec with PropertyChecks with Matchers {
       processorIdIndex += 1
       description
     }.mapEdge { (node1, edge, node2) =>
-      PartitionerDescription(PartitionerObject(edge))
+      PartitionerDescription(new PartitionerObject(edge))
     }
 
     val dag = DAG(processorDescriptionGraph)
