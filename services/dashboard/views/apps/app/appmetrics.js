@@ -7,9 +7,6 @@ angular.module('dashboard.apps.appmaster')
 
   .controller('AppMetricsCtrl', ['$scope', function ($scope) {
     $scope.itemsByPage = 15;
-    $scope.taskName = function (metrics) {
-      return 'processor' + metrics.processorId + '.task' + metrics.taskId;
-    };
 
     var lookup = {
       'streamingDag.meter.receiveThroughput': 'Receive Throughput',
