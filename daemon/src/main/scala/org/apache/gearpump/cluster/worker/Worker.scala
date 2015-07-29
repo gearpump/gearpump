@@ -271,8 +271,10 @@ private[cluster] object Worker {
           file.getFile
         }
 
-        val classPathPrefix = filterDaemonLib(Util.getCurrentClassPath) ++ ctx.classPath
-        val classPath = jarPath.map(classPathPrefix :+ _).getOrElse(classPathPrefix)
+        val classPath = filterDaemonLib(Util.getCurrentClassPath) ++
+          ctx.classPath.map(path => expandEnviroment(path)) ++
+          jarPath.map(Array(_)).getOrElse(Array.empty[String])
+
 
         val appLogDir = context.system.settings.config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
         val logArgs = List(
@@ -350,11 +352,17 @@ private[cluster] object Worker {
             if (exit == 0) {
               Success(0)
             } else {
-              Failure(new Exception(s"Executor exit with failure, exit value: $exit"))
+              Failure(new Exception(s"Executor exit with failure, exit value: $exit, error summary: ${info.process.logger.summary}"))
             }
           }
         }
       }
+    }
+
+    import Constants._
+    private def expandEnviroment(path: String): String = {
+      //TODO: extend this to support more environment.
+      path.replace(s"<${GEARPUMP_HOME}>", config.getString(GEARPUMP_HOME))
     }
 
     override def preStart: Unit = {
@@ -404,5 +412,5 @@ private[cluster] object Worker {
     def exitValue : Future[Try[Int]]
   }
 
-  case class ProcessInfo(process: scala.sys.process.Process, jarPath: Option[String], configFile: Option[String])
+  case class ProcessInfo(process: RichProcess, jarPath: Option[String], configFile: Option[String])
 }

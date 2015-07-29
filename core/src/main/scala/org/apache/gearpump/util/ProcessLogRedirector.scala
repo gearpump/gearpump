@@ -24,11 +24,22 @@ import org.slf4j.LoggerFactory
 
 import scala.sys.process.ProcessLogger
 
-class ProcessLogRedirector extends ProcessLogger with Closeable with Flushable {
+class ProcessLogRedirector extends ProcessLogger with Closeable with Flushable with ErrorSummary {
   private val LOG = LoggerFactory.getLogger("redirect")
 
+  // We only capture the first 1K chars
+  private final val LENGTH = 1000
+  private var _summary: String = ""
+
+  def summary: String = _summary
+
   def out(s: => String): Unit = LOG.info(s)
-  def err(s: => String): Unit = LOG.error(s)
+  def err(s: => String): Unit = {
+    if (_summary.length <= LENGTH) {
+      _summary += "\n" + s
+    }
+    LOG.error(s)
+  }
   def buffer[T](f: => T): T = f
   def close(): Unit = Unit
   def flush(): Unit = Unit

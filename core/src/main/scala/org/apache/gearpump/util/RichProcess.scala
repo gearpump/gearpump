@@ -16,11 +16,14 @@
  * limitations under the License.
  */
 
-import org.apache.gearpump.cluster.client.ClientContext
+package org.apache.gearpump.util
+import scala.sys.process.Process
 
-Console.out.println("Gear Shell is started...")
+trait ErrorSummary {
+  def summary: String
+}
 
-val context = ClientContext()
-implicit val system = context.system
-
-context.listApps
+class RichProcess(process: Process, val logger: ErrorSummary) extends Process {
+  def exitValue() : scala.Int = process.exitValue()
+  def destroy() : scala.Unit = process.destroy()
+}

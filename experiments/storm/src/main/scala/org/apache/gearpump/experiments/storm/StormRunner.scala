@@ -23,13 +23,14 @@ import java.io.File
 import akka.actor.{Actor, ActorSystem, Props}
 import backtype.storm.Config
 import backtype.storm.generated.{ClusterSummary, StormTopology, SupervisorSummary, TopologySummary}
+import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.experiments.storm.Commands._
 import org.apache.gearpump.experiments.storm.util.GraphBuilder
 import org.apache.gearpump.streaming.StreamApplication
-import org.apache.gearpump.util.{AkkaApp, LogUtil, Util}
+import org.apache.gearpump.util.{Constants, AkkaApp, LogUtil, Util}
 
 import scala.collection.JavaConverters._
 
@@ -40,7 +41,9 @@ object StormRunner extends AkkaApp with ArgumentsParser {
 
   override val remainArgs = Array("topology_name")
 
-  override def main(akkaConf: Config, args: Array[String]): Unit = {
+  override def main(inputAkkaConf: Config, args: Array[String]): Unit = {
+
+    val akkaConf = addStormClassPath(inputAkkaConf)
     val config = parse(args)
 
     val jar = config.getString("jar")
@@ -72,8 +75,18 @@ object StormRunner extends AkkaApp with ArgumentsParser {
     system.shutdown()
 
     if (exit != 0) {
-      throw new Exception("failed to submit jar, exit code " + exit)
+      throw new Exception(s"failed to submit jar, exit code $exit, error summary: ${process.logger.summary}")
     }
+  }
+
+  import Constants._
+  private def addStormClassPath(config: Config): Config = {
+    val storm = s"<${GEARPUMP_HOME}>/lib/storm/*"
+    val appClassPath = s"$storm${File.pathSeparator}" + config.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
+    val executorClassPath = s"$storm${File.pathSeparator}" + config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
+
+    config.withValue(GEARPUMP_APPMASTER_EXTRA_CLASSPATH, ConfigValueFactory.fromAnyRef(appClassPath))
+      .withValue(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH, ConfigValueFactory.fromAnyRef(executorClassPath))
   }
 
   class Handler(clientContext: ClientContext, jar: String) extends Actor {

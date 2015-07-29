@@ -32,7 +32,7 @@ import scala.collection.JavaConversions._
 import scala.util.Try
 
 object Local extends AkkaApp with ArgumentsParser {
-  override def akkaConfig: Config = ClusterConfig.load.master.withFallback(ClusterConfig.load.worker)
+  override def akkaConfig: Config = ClusterConfig.load.master
 
   var LOG: Logger = LogUtil.getLogger(getClass)
 

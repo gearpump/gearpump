@@ -42,24 +42,23 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
 
     val store = new SingleValueMetricsStore(count, intervalMs)
 
+    var now = 0L
     //only 1 data point will be kept in @intervalMs
-    store.add(Counter("count", 1))
-    store.add(Counter("count", 2))
+    store.add(Counter("count", 1), now)
+    store.add(Counter("count", 2), now)
 
-    //sleep @intervalMs + 1 so that we are allowed to push new data
-    Thread.sleep(intervalMs + 1)
+    now = now + intervalMs + 1
 
     //only 1 data point will be kept in @intervalMs
-    store.add(Counter("count", 3))
-    store.add(Counter("count", 4))
+    store.add(Counter("count", 3), now)
+    store.add(Counter("count", 4), now)
 
-    //sleep @intervalMs + 1 so that we are allowed to push new data
-    Thread.sleep(intervalMs + 1)
+    now = now + intervalMs + 1
 
     //only 1 data point will be kept in @intervalMs
     //expire oldest data point, because we only keep @count records
-    store.add(Counter("count", 5))
-    store.add(Counter("count", 6))
+    store.add(Counter("count", 5), now)
+    store.add(Counter("count", 6), now)
 
     val result = store.read
     assert(result.size == count)

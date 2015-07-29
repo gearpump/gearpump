@@ -24,25 +24,27 @@ import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.services.RestServices
 import org.apache.gearpump.services.websocket.WebSocketServices
 import org.apache.gearpump.util.LogUtil.ProcessType
-import org.apache.gearpump.util.{Constants, LogUtil, Util}
+import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
-object Services extends App {
-  val systemConfig = ClusterConfig.load.master.withFallback(ClusterConfig.load.worker)
+object Services extends AkkaApp {
 
-  private val LOG: Logger = {
-    LogUtil.loadConfiguration(systemConfig, ProcessType.UI)
-    LogUtil.getLogger(getClass)
+  override def akkaConfig: Config = {
+    ClusterConfig.load.ui
   }
 
-  def start(): Unit = {
+  def help: Unit = "UI Server"
 
-    val config = ClusterConfig.load.ui
+  override def main(akkaConf: Config, args: Array[String]): Unit = {
+    val LOG: Logger = {
+      LogUtil.loadConfiguration(akkaConf, ProcessType.UI)
+      LogUtil.getLogger(getClass)
+    }
 
     import scala.collection.JavaConversions._
-    val masterCluster = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+    val masterCluster = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
 
-    implicit val system = ActorSystem("services" , config)
+    implicit val system = ActorSystem("services" , akkaConf)
     import scala.concurrent.duration._
     val master = system.actorOf(MasterProxy.props(masterCluster, 1 day), s"masterproxy${system.name}")
 
@@ -51,5 +53,4 @@ object Services extends App {
 
     system.awaitTermination()
   }
-  start ()
 }

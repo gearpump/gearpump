@@ -20,10 +20,13 @@ package org.apache.gearpump.services
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
+import org.apache.commons.lang.exception.ExceptionUtils
 import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.can._
-import spray.routing.RoutingSettings
-
+import spray.routing.{ExceptionHandler, RoutingSettings}
+import spray.util.LoggingContext
+import org.apache.commons.lang.SerializationUtils
+import spray.http.StatusCodes._
 trait RestServices extends
     StaticService with
     MasterService with
@@ -44,6 +47,14 @@ class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with R
   def actorRefFactory = context
   implicit val system: ActorSystem = sys
   implicit val eh = RoutingSettings.default(context)
+
+  implicit def myExceptionHandler(implicit log: LoggingContext): ExceptionHandler = ExceptionHandler{
+    case ex: Throwable =>
+      requestUri { uri =>
+        log.error(ex, "Request to {} could not be handled normally", uri)
+        complete(InternalServerError, ExceptionUtils.getStackTrace(ex))
+      }
+  }
 
   val master = masters
   def receive = runRoute(routes)

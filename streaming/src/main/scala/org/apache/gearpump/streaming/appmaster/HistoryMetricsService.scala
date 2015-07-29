@@ -215,8 +215,11 @@ object HistoryMetricsService {
     private val queue =  new util.ArrayDeque[HistoryMetricsItem]()
     private var latest = List.empty[HistoryMetricsItem]
 
-    def add(inputMetrics: MetricType): Unit = {
-      val now = System.currentTimeMillis()
+    override def add(inputMetrics: MetricType): Unit = {
+      add(inputMetrics, System.currentTimeMillis())
+    }
+
+    def add(inputMetrics: MetricType, now: TimeStamp): Unit = {
       val head = queue.peek()
       val metrics = HistoryMetricsItem(now, inputMetrics)
       latest = List(metrics)

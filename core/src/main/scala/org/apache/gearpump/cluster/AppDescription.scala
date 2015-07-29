@@ -54,9 +54,8 @@ object Application {
     override def userConfig(implicit system: ActorSystem): UserConfig = inputUserConfig
   }
 
-  implicit def ApplicationToAppDescription(app: Application)(implicit system: ActorSystem): AppDescription = {
-    val clusterConfig = ClusterConfig.load.applicationSubmissionConfig
-    AppDescription(app.name, app.appMaster.getName, app.userConfig, clusterConfig)
+  def ApplicationToAppDescription(app: Application)(implicit system: ActorSystem): AppDescription = {
+    AppDescription(app.name, app.appMaster.getName, app.userConfig, system.settings.config)
   }
 }
 

@@ -93,7 +93,7 @@ object StreamApplication {
       processorIndex += 1
       updatedProcessor
     }.mapEdge { (node1, edge, node2) =>
-      PartitionerDescription(PartitionerObject(Option(edge).getOrElse(StreamApplication.hashPartitioner)))
+      PartitionerDescription(new PartitionerObject(Option(edge).getOrElse(StreamApplication.hashPartitioner)))
     }
     new StreamApplication(name, userConfig, graph)
   }

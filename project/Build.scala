@@ -10,7 +10,6 @@ import xerial.sbt.Sonatype._
 import scala.collection.immutable.Map.WithDefault
 
 object Build extends sbt.Build {
-
   class DefaultValueMap[+B](value : B) extends WithDefault[String, B](null, (key) => value) {
     override def get(key: String) = Some(value)
   }
@@ -25,21 +24,16 @@ object Build extends sbt.Build {
   val clouderaVersion = "2.6.0-cdh5.4.2"
   val clouderaHBaseVersion = "1.0.0-cdh5.4.2"
   val codahaleVersion = "3.0.2"
-  val commonsCodecVersion = "1.6"
   val commonsHttpVersion = "3.1"
   val commonsLoggingVersion = "1.1.3"
   val commonsLangVersion = "2.6"
   val commonsIOVersion = "2.4"
-  val findbugsVersion = "2.0.1"
   val guavaVersion = "16.0.1"
   val dataReplicationVersion = "0.7"
-  val hadoopVersion = "2.6.0"
-  val jgraphtVersion = "0.9.0"
   val upickleVersion = "0.3.4"
   val junitVersion = "4.12"
   val kafkaVersion = "0.8.2.1"
   val stormVersion = "0.9.3"
-  val sigarVersion = "1.6.4"
   val slf4jVersion = "1.7.7"
   
   val scalaVersionMajor = "scala-2.11"
@@ -199,6 +193,26 @@ object Build extends sbt.Build {
   ).aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
       transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state)
 
+  val daemonClassPath = Seq(
+    "${PROG_HOME}/conf",
+    "${PROG_HOME}/lib/daemon/*"
+  )
+
+  val serviceClassPath = daemonClassPath ++ Seq(
+    "${PROG_HOME}/lib/services/*",
+    "${PROG_HOME}/dashboard"
+  )
+
+  val yarnClassPath = serviceClassPath ++ Seq(
+    "${PROG_HOME}/lib/yarn/*",
+    "/etc/hadoop/conf",
+    "/etc/hbase/conf"
+  )
+
+  val stormClassPath = daemonClassPath ++ Seq(
+    "${PROG_HOME}/lib/storm/*"
+  )
+
   lazy val packProject = Project(
     id = "gearpump-pack",
     base = file("output"),
@@ -213,12 +227,17 @@ object Build extends sbt.Build {
           "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client",
           "storm" -> "org.apache.gearpump.experiments.storm.StormRunner"
         ),
-        packJvmOpts := Map("local" -> Seq("-server", "-DlogFilename=local", "-Djava.rmi.server.hostname=localhost"),
-          "master" -> Seq("-server", "-DlogFilename=master", "-Djava.rmi.server.hostname=localhost"),
-          "worker" -> Seq("-server", "-DlogFilename=worker", "-Djava.rmi.server.hostname=localhost"),
-          "services" -> Seq("-server", "-Djava.rmi.server.hostname=localhost")
+        packJvmOpts := Map(
+          "local" -> Seq("-server", "-DlogFilename=local", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+          "master" -> Seq("-server", "-DlogFilename=master", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+          "worker" -> Seq("-server", "-DlogFilename=worker", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+          "services" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost")
         ),
-        packLibDir := Map(daemon.id -> "daemon", services.id -> "daemon", yarn.id -> "daemon", storm.id -> "storm"),
+        packLibDir := Map(
+          daemon.id -> "lib/daemon",
+          services.id -> "lib/services",
+          storm.id -> "lib/storm",
+          yarn.id -> "lib/yarn"),
         packExclude := Seq(thisProjectRef.value.project),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
@@ -228,42 +247,14 @@ object Build extends sbt.Build {
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
         packExtraClasspath := Map(
-          "gear" -> Seq(
-            "/etc/gearpump/conf",
-            "${PROG_HOME}/conf",
-            "${PROG_HOME}/daemon/*"
-            ),
 
-          "local" -> Seq(
-            "/etc/gearpump/conf",
-            "${PROG_HOME}/conf",
-            "${PROG_HOME}/daemon/*"),
-
-          "master" -> Seq(
-            "/etc/gearpump/conf",
-            "${PROG_HOME}/conf",
-            "${PROG_HOME}/daemon/*"
-            ),
-
-          "services" -> Seq(
-            "/etc/gearpump/conf",
-            "${PROG_HOME}/conf",
-            "${PROG_HOME}/dashboard",
-            "${PROG_HOME}/daemon/*"
-            ),
-
-          "yarnclient" -> Seq(
-            "/etc/gearpump/conf",
-            "${PROG_HOME}/conf",
-            "${PROG_HOME}/daemon/*",
-            "/etc/hadoop/conf",
-            "/etc/hbase/conf"),
-
-          "storm" -> Seq(
-            "/etc/gearpump/conf",
-            "${PROG_HOME}/conf",
-            "${PROG_HOME}/storm/*"
-            )
+          "gear" -> daemonClassPath,
+          "local" -> daemonClassPath,
+          "master" -> daemonClassPath,
+          "worker" -> daemonClassPath,
+          "services" -> serviceClassPath,
+          "yarnclient" -> yarnClassPath,
+          "storm" -> stormClassPath
         )
       )
   ).dependsOn(core, streaming, services, yarn, storm, dsl)//, state)
