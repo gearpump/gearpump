@@ -23,9 +23,9 @@ import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.AppMasterToMaster.GeneralAppMasterDataDetail
-import org.apache.gearpump.cluster.ClientToMaster.{QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
+import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.MasterToClient.{AppMasterConfig, HistoryMetrics, HistoryMetricsItem, ResolveAppIdResult}
+import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
@@ -41,6 +41,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
   def actorRefFactory = system
 
   val mockAppMaster = TestProbe()
+  val failure = LastFailure(System.currentTimeMillis(), "Some error")
 
   mockAppMaster.setAutoPilot {
     new AutoPilot {
@@ -50,6 +51,9 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
           KeepRunning
         case QueryHistoryMetrics(appId, path, _) =>
           sender ! HistoryMetrics(appId, path, List.empty[HistoryMetricsItem])
+          KeepRunning
+        case GetLastFailure(appId) =>
+          sender ! failure
           KeepRunning
       }
     }
@@ -93,6 +97,14 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
       val responseBody = response.entity.asString
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
+    }
+  }
+
+  "AppMaster" should "return lastest error" in {
+    implicit val customTimeout = RouteTestTimeout(15.seconds)
+    (Get(s"/api/$REST_VERSION/appmaster/0/errors") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check {
+      val responseBody = response.entity.asString
+      assert(read[LastFailure](responseBody) == failure)
     }
   }
 

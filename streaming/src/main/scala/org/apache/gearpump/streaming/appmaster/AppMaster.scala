@@ -20,8 +20,9 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import org.apache.gearpump._
-import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
+import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.MasterToClient.LastFailure
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.metrics.Metrics.MetricType
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
@@ -61,6 +62,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private var taskManager: Option[ActorRef] = None
   private var clockService: Option[ActorRef] = None
+
+  private var lastFailure = LastFailure(0L, null)
 
   private val executorManager: ActorRef =
     context.actorOf(ExecutorManager.props(userConfig, appContext, app.clusterConfig, app.name),
@@ -103,6 +106,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case replay: ReplayFromTimestampWindowTrailingEdge =>
       taskManager.foreach(_ forward replay)
     case messageLoss: MessageLoss =>
+      lastFailure = LastFailure(System.currentTimeMillis(), messageLoss.cause)
       taskManager.foreach(_ forward messageLoss)
     case metrics: MetricType =>
       actorSystem.eventStream.publish(metrics)
@@ -162,6 +166,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       clockService.foreach(_ forward getStalling)
     case replaceDAG: ReplaceProcessor =>
       dagManager forward replaceDAG
+    case GetLastFailure(_) =>
+      sender ! lastFailure
    }
 
   def recover: Receive = {
