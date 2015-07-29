@@ -65,6 +65,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
             item[key].processorId = metric.name.processorId;
             item[key].taskClass = self.processors[metric.name.processorId].taskClass;
             item[key].taskId = metric.name.taskId;
+            item[key].taskPath = 'processor' + metric.name.processorId + '.task' + metric.name.taskId;
           }
         }
       },
