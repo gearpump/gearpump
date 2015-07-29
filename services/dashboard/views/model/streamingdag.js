@@ -13,6 +13,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       this.appId = appId;
       this.meter = {};
       this.histogram = {};
+      this.stalling = {};
       this.setData(clock, processors, levels, edges, executors);
     }
 
@@ -30,9 +31,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
       },
 
       setStallingProcessors: function(ids) {
-        angular.forEach(this.processors, function(processor, key) {
-          this.processors[key].stalling = processor.id in ids;
-        }, this);
+        this.stalling = ids;
       },
 
       /** Update (or add) specified metrics in an array */
@@ -117,6 +116,7 @@ angular.module('dashboard.streamingdag', ['dashboard.metrics'])
         angular.forEach(processors, function(_, key) {
           var processorId = parseInt(key);
           weights[processorId] = this._calculateProcessorWeight(processorId);
+          processors[key].stalling = processorId in this.stalling;
         }, this);
 
         var bandwidths = {};
