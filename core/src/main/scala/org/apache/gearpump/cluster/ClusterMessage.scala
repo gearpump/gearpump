@@ -52,6 +52,8 @@ object ClientToMaster {
   case class QueryHistoryMetrics(appId: Int, path: String, readLatest: Boolean = false)
 
   case class GetStallingTasks(appId: Int)
+
+  case class GetLastFailure(appId: Int)
 }
 
 object MasterToClient {
@@ -72,6 +74,8 @@ object MasterToClient {
   case class HistoryMetricsItem(time: TimeStamp, value: MetricType)
 
   case class HistoryMetrics(appId: Int, path: String, metrics: List[HistoryMetricsItem])
+
+  case class LastFailure(time: TimeStamp, error: String)
 }
 
 trait AppMasterRegisterData
@@ -151,7 +155,7 @@ object MasterToAppMaster {
 
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
 
-  case class MessageLoss(executorId: Int)
+  case class MessageLoss(executorId: Int, cause: String)
 
   case class WorkerList(workers: List[Int])
 }

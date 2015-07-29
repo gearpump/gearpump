@@ -35,6 +35,7 @@ import org.slf4j.Logger
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import org.apache.commons.lang.exception.ExceptionUtils
 
 class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher: ITaskLauncher)  extends Actor {
 
@@ -61,20 +62,28 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
   def receive : Receive = appMasterMsgHandler
 
+  private def getTaskId(actorRef: ActorRef): Option[TaskId] = {
+    tasks.find(_._2 == sender()).map(_._1)
+  }
+
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case _: MsgLostException =>
-        LOG.error("We got MessageLossException from task, replaying application...")
+        val cause =  s"We got MessageLossException from task ${getTaskId(sender)}, replaying application..."
+        LOG.error(cause)
         LOG.info(s"sending to appMaster ${appMaster.path.toString}")
-
-        appMaster ! MessageLoss(executorId)
+        appMaster ! MessageLoss(executorId, cause)
         Resume
       case _: RegisterTaskFailedException =>
-        LOG.error("We got RegisterTaskFailedException, stopping this task...")
+        val taskId = getTaskId(sender)
+        LOG.error(s"We got RegisterTaskFailedException from ${taskId}, stopping this task...")
         Stop
       case ex: Throwable =>
-        LOG.error("We got exception, we will treat it as MessageLoss, so that the system will replay all lost message", ex)
-        appMaster ! MessageLoss(executorId)
+        val taskId = getTaskId(sender)
+        val errorMsg = s"We got ${ex.getClass.getName} from ${taskId}, we will treat it as MessageLoss, so that the system will replay all lost message"
+        LOG.error(errorMsg, ex)
+        val detailErrorMsg = errorMsg + "\n" + ExceptionUtils.getStackTrace(ex)
+        appMaster ! MessageLoss(executorId, detailErrorMsg)
         Resume
     }
 

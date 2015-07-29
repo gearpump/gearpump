@@ -158,6 +158,7 @@ object Build extends sbt.Build {
         "org.slf4j" % "slf4j-api" % slf4jVersion,
         "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
         "com.google.guava" % "guava" % guavaVersion,
+        "commons-lang" % "commons-lang" % commonsLangVersion,
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
         "com.typesafe.akka" %% "akka-remote" % akkaVersion,
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,

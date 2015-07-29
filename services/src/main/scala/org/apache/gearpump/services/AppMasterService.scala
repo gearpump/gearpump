@@ -20,9 +20,9 @@ package org.apache.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
 import org.apache.gearpump.cluster.AppMasterToMaster.{GeneralAppMasterDataDetail, AppMasterDataDetail}
-import org.apache.gearpump.cluster.ClientToMaster.{GetStallingTasks, QueryAppMasterConfig, QueryHistoryMetrics, RestartApplication, ShutdownApplication}
+import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
-import org.apache.gearpump.cluster.MasterToClient.{AppMasterConfig, HistoryMetrics, ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.services.AppMasterService.Status
 import org.apache.gearpump.services.util.UpickleUtil._
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
@@ -64,6 +64,13 @@ trait AppMasterService extends HttpService {
           case Failure(ex) => failWith(ex)
         }
       }  ~
+      path("errors") {
+        onComplete(askAppMaster[LastFailure](master, appId, GetLastFailure(appId))){
+          case Success(value) =>
+            complete(write(value))
+          case Failure(ex) => failWith(ex)
+        }
+      } ~
       path("restart") {
         post {
           onComplete(askActor[SubmitApplicationResult](master, RestartApplication(appId))) {

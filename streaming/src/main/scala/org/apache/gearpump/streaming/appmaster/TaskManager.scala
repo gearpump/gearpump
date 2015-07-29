@@ -213,7 +213,7 @@ private[appmaster] class TaskManager(
         stay
       }
 
-    case Event(MessageLoss(executorId), state) =>
+    case Event(MessageLoss(executorId, cause), state) =>
       if (state.taskRegistry.isTaskRegisteredForExecutor(executorId)) {
         goto(Recovery) using state.recoverState
       } else {
