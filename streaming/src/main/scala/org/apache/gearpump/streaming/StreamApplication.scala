@@ -91,10 +91,9 @@ object StreamApplication {
   def apply[T <: Processor[Task], P <: Partitioner] (name : String, dag: Graph[T, P], userConfig: UserConfig): StreamApplication = {
     import Processor._
 
-    var processorIndex = 0
+    val indices = dag.topologicalOrderIterator.toList.zipWithIndex.toMap
     val graph = dag.mapVertex {processor =>
-      val updatedProcessor = ProcessorToProcessorDescription(processorIndex, processor)
-      processorIndex += 1
+      val updatedProcessor = ProcessorToProcessorDescription(indices(processor), processor)
       updatedProcessor
     }.mapEdge { (node1, edge, node2) =>
       PartitionerDescription(new PartitionerObject(Option(edge).getOrElse(StreamApplication.hashPartitioner)))
