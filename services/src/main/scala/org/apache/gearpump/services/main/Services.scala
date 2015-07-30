@@ -33,7 +33,9 @@ object Services extends AkkaApp {
     ClusterConfig.load.ui
   }
 
-  def help: Unit = "UI Server"
+  override def help: Unit = {
+    Console.println("UI Server")
+  }
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {
     val LOG: Logger = {
