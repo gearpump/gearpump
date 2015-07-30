@@ -33,7 +33,7 @@ angular.module('dashboard.apps.appmaster', ['directive.visgraph', 'dashboard.str
           if (data.hasOwnProperty('appName')) {
             $scope.app = {
               actorPath: data.actorPath,
-              clock: data.clock,
+              clock: Number(data.clock),
               executors: data.executors,
               id: data.appId,
               name: data.appName
