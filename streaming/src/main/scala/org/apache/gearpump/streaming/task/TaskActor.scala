@@ -247,7 +247,7 @@ class TaskActor(
         val subscription = getSubscription(processorId)
         subscription match {
           case Some(subscription) =>
-            subscription.changeLife(subscriber.lifeTime)
+            subscription.changeLife(subscriber.lifeTime cross this.life)
           case None =>
             val subscription = new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
               maxPendingMessageCount, ackOnceEveryMessageCount)
