@@ -16,6 +16,12 @@ angular.module('dashboard.apps.appmaster')
       $scope.description = processor.description;
       $scope.parallelism = processor.parallelism;
 
+      $scope.fillDefaultTime = function() {
+        if (!$scope.transitTime) {
+          $scope.transitTime = moment($scope.app.clock).format('HH:mm:ss');
+        }
+      };
+
       $scope.validParallelism = true;
       $scope.$watch('parallelism', function(val) {
         $scope.validParallelism = val && !isNaN(val);
@@ -45,11 +51,11 @@ angular.module('dashboard.apps.appmaster')
           parallelism: $scope.parallelism
         };
         if ($scope.transitTime) {
-          var transitUnixTime = moment(
-            ($scope.transitDate || moment().format('YYYY-MM-DD')) + 'T' + $scope.transitTime);
+          var isoDateTimeString = ($scope.transitDate || moment().format('YYYY-MM-DD')) + 'T' + $scope.transitTime;
+          var transitUnixTime = moment(isoDateTimeString).valueOf();
           newProcessor.life = {
-            birth: transitUnixTime.toString,
-            death: ""
+            birth: transitUnixTime.toString(),
+            death: "9223372036854775807" /* Long.max */
           }
         };
         restapi.replaceDagProcessor($scope.app.id, $scope.processorId, newProcessor, function(response) {

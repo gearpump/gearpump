@@ -60,8 +60,8 @@
               <div class="col-md-3"
                    ng-class="{'has-error':form.time.$invalid}">
                 <input type="text" size="8" class="form-control" placeholder="Time" name="time"
-                       ng-model="transitTime" data-time-format="HH:mm:ss"
-                       hour-step="1" minute-step="1" second-step="1" time-type="string"
+                       ng-model="transitTime" ng-click="fillDefaultTime()" data-time-format="HH:mm:ss"
+                       hour-step="-1" minute-step="-1" second-step="-1" time-type="string"
                        arrow-behavior="picker" bs-timepicker/>
               </div>
             </div>

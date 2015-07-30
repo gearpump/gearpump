@@ -101,17 +101,14 @@ angular.module('dashboard.restapi', [])
       },
 
       /** Replace a dag processor at runtime */
-      replaceDagProcessor: function(appId, oldProcessorId, newProcessor, onComplete) {
+      replaceDagProcessor: function(appId, oldProcessorId, newProcessorDescription, onComplete) {
         var url = conf.restapiRoot + '/appmaster/' + appId + '/dynamicdag';
         var args = {
             "$type": 'org.apache.gearpump.streaming.appmaster.DagManager.ReplaceProcessor',
             oldProcessorId: oldProcessorId,
-            newProcessorDescription: {
-              id: oldProcessorId,
-              taskClass: newProcessor.taskClass,
-              parallelism: newProcessor.parallelism,
-              description: newProcessor.description
-            }
+            newProcessorDescription: angular.merge({
+              id: oldProcessorId
+            }, newProcessorDescription)
           };
         $http.post(url, args).then(function (response) {
           if (onComplete) {
