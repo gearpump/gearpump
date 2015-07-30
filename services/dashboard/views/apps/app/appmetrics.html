@@ -54,6 +54,7 @@
     </tfoot>
   </table>
 
+
   <table ng-if="!isMeter()"
          class="table table-striped table-hover table-condensed table-xs">
     <thead>
@@ -62,13 +63,17 @@
       <th class="col-md-1" st-sort="taskPath" st-sort-default="true"
           st-skip-natural="true">Task Path</th>
       <th class="col-md-1 text-right" st-sort="count" st-skip-natural="true">Sampling Points</th>
-      <th class="col-md-1 text-right" st-sort="minimum" st-skip-natural="true">Min</th>
-      <th class="col-md-1 text-right" st-sort="maximum" st-skip-natural="true">Max</th>
       <th class="col-md-1 text-right" st-sort="mean" st-skip-natural="true">Mean Rate</th>
       <th class="col-md-1 text-right" st-sort="stddev" st-skip-natural="true">Std. Dev.</th>
       <th class="col-md-1 text-right" st-sort="median" st-skip-natural="true">Median</th>
       <th class="col-md-1 text-right" st-sort="p95" st-skip-natural="true">p95%
         <explanation-icon value="95th percentage"/>
+      </th>
+      <th class="col-md-1 text-right" st-sort="p95" st-skip-natural="true">p99%
+        <explanation-icon value="99th percentage"/>
+      </th>
+      <th class="col-md-1 text-right" st-sort="p95" st-skip-natural="true">p99.9%
+        <explanation-icon value="99.9th percentage"/>
       </th>
     </tr>
     </thead>
@@ -77,14 +82,15 @@
       <td><span ng-bind="m.taskClass|lpart"></span></td>
       <td><span ng-bind="m.taskPath"></span></td>
       <td class="text-right"><span ng-bind="m.count|number:0"></span></td>
-      <td class="text-right"><span ng-bind="m.minimum|number:0"></span> ms</td>
-      <td class="text-right"><span ng-bind="m.maximum|number:0"></span> ms</td>
       <td class="text-right"><span ng-bind="m.mean|number:0"></span> ms</td>
       <td class="text-right"><span ng-bind="m.stddev|number:0"></span> ms</td>
       <td class="text-right"><span ng-bind="m.median|number:0"></span> ms</td>
       <td class="text-right"><span ng-bind="m.p95|number:0"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.p99|number:0"></span> ms</td>
+      <td class="text-right"><span ng-bind="m.p999|number:0"></span> ms</td>
     </tr>
     </tbody>
+
     <tfoot>
     <tr>
       <td colspan="100%" class="text-center">
