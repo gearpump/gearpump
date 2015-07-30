@@ -36,8 +36,6 @@ import org.slf4j.Logger
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
-import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 
 /**
@@ -94,7 +92,6 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     }.toMap
 
     // init the clock of all processors.
-    import scala.collection.JavaConversions._
     dag.graph.topologicalOrderIterator.foreach { processorId =>
       val processorClock = clocks(processorId)
       val upstreamClock = getUpStreamMinClock(processorId)
@@ -223,13 +220,13 @@ object ClockService {
   class HealthChecker(stallingThresholdSeconds: Int) {
     private val LOG: Logger = LogUtil.getLogger(getClass)
 
-    private var minClock = ClockValue(0L, 0L)
+    private var minClock: ClockValue = null
     private val stallingThresholdMilliseconds = stallingThresholdSeconds * 1000 // 60 seconds
     private var stallingTasks = Array.empty[TaskId]
 
     def check(currentMinClock: TimeStamp, processorClocks: Map[ProcessorId, ProcessorClock], dag: DAG, now: TimeStamp): Unit = {
       var isClockStalling = false
-      if (currentMinClock > minClock.appClock) {
+      if (null == minClock || currentMinClock > minClock.appClock) {
         minClock = ClockValue(systemClock = now, appClock = currentMinClock)
       } else {
         //clock not advancing
@@ -240,7 +237,6 @@ object ClockService {
       }
 
       if (isClockStalling) {
-        import scala.collection.JavaConversions._
         val processorId = dag.graph.topologicalOrderIterator.toList.find { processorId =>
           processorClocks(processorId).min == minClock.appClock
         }
