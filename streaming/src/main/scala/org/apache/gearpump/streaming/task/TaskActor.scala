@@ -56,7 +56,7 @@ class TaskActor(
 
   //metrics
   private val metricName = s"app${appId}.processor${taskId.processorId}.task${taskId.index}"
-  private val receiveLatency = Metrics(context.system).histogram(s"$metricName.receiveLatency")
+  private val receiveLatency = Metrics(context.system).histogram(s"$metricName.receiveLatency", 1)
   private val processTime = Metrics(context.system).histogram(s"$metricName.processTime")
   private val sendThroughput = Metrics(context.system).meter(s"$metricName.sendThroughput")
   private val receiveThroughput = Metrics(context.system).meter(s"$metricName.receiveThroughput")

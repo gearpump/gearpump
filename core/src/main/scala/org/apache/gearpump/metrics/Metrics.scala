@@ -39,6 +39,10 @@ class Metrics(sampleRate: Int) extends Extension {
     new Histogram(name, registry.histogram(name), sampleRate)
   }
 
+  def histogram(name : String, sampleRate: Int) = {
+    new Histogram(name, registry.histogram(name), sampleRate)
+  }
+
   def counter(name : String) = {
     new Counter(name, registry.counter(name), sampleRate)
   }
