@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.transport.netty;
 
-import com.google.common.io.Closeables;
+import io.gearpump.google.common.io.Closeables;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferOutputStream;
 import org.jboss.netty.buffer.ChannelBuffers;

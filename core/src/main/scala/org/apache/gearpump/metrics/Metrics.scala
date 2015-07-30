@@ -22,8 +22,8 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import com.codahale.metrics.{Slf4jReporter, MetricFilter, MetricRegistry}
+import io.gearpump.codahale.metrics.graphite.{Graphite, GraphiteReporter}
+import io.gearpump.codahale.metrics.{Slf4jReporter, MetricFilter, MetricRegistry}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 

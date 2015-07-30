@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.metrics
 
-import com.codahale.metrics.{Counter => CodaHaleCounter}
+import io.gearpump.codahale.metrics.{Counter => CodaHaleCounter}
 
 /**
  * sampleRate: take a data point for every sampleRate...

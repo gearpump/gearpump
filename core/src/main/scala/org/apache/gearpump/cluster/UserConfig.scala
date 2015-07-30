@@ -19,8 +19,8 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.{ExtendedActorSystem, ActorSystem}
-import akka.serialization.{JavaSerializer}
-import com.google.common.io.BaseEncoding
+import akka.serialization.JavaSerializer
+import io.gearpump.google.common.io.BaseEncoding
 
 /**
  * Immutable configuration

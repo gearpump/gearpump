@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.metrics
 
-import com.codahale.metrics.{Histogram => CodaHaleHistogram}
+import io.gearpump.codahale.metrics.{Histogram => CodaHaleHistogram}
 
 /**
  * sampleRate: take a data point for every sampleRate...

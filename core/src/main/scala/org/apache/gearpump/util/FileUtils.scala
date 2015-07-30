@@ -19,7 +19,7 @@
 package org.apache.gearpump.util
 
 import java.nio.charset.Charset
-import com.google.common.io.Files
+import io.gearpump.google.common.io.Files
 import java.io.{IOException, File}
 
 object FileUtils {
