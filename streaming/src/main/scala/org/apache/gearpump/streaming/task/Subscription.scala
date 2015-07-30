@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.task
 
-import com.google.common.primitives.{Shorts}
+import io.gearpump.google.common.primitives.Shorts
 import org.apache.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import org.apache.gearpump.streaming.LifeTime
 import org.apache.gearpump.streaming.task.Subscription._

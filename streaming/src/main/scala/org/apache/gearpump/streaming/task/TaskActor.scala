@@ -22,11 +22,10 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import com.gs.collections.impl.map.mutable.primitive.IntShortHashMap
+import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.metrics.Metrics.MetricType
-import org.apache.gearpump.partitioner.{Partitioner}
 import org.apache.gearpump.serializer.{SerializerPool, KryoPool}
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._

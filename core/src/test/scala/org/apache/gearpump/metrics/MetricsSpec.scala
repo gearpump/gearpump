@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.metrics
 
-import com.codahale.metrics.{Counter => CodaHaleCounter, Histogram => CodaHaleHistogram, Meter => CodaHaleMeter}
+import io.gearpump.codahale.metrics.{Counter => CodaHaleCounter, Histogram => CodaHaleHistogram, Meter => CodaHaleMeter}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{FlatSpec, Matchers}

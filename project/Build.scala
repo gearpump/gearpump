@@ -35,6 +35,7 @@ object Build extends sbt.Build {
   val kafkaVersion = "0.8.2.1"
   val stormVersion = "0.9.3"
   val slf4jVersion = "1.7.7"
+  val gsCollectionsVersion = "6.2.0"
   
   val scalaVersionMajor = "scala-2.11"
   val scalaVersionNumber = "2.11.5"
@@ -59,7 +60,8 @@ object Build extends sbt.Build {
           "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
           "bintray/non" at "http://dl.bintray.com/non/maven",
           "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
-          "clockfly" at "http://dl.bintray.com/clockfly/maven"
+          "clockfly" at "http://dl.bintray.com/clockfly/maven",
+          "vincent" at "http://dl.bintray.com/fvunicorn/maven"
         ),
         addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
     ) ++
@@ -140,18 +142,16 @@ object Build extends sbt.Build {
 
   val streamingDependencies = Seq(
     libraryDependencies ++= Seq(
-      "com.goldmansachs" % "gs-collections-api" % "6.2.0",
-      "com.goldmansachs" % "gs-collections" % "6.2.0"
+      "com.github.intel-hadoop" % "gearpump-shaded-gs-collections" % gsCollectionsVersion
     )
   )
 
   val coreDependencies = Seq(
         libraryDependencies ++= Seq(
-        "com.codahale.metrics" % "metrics-core" % codahaleVersion,
-        "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
+        "com.github.intel-hadoop" % "gearpump-shaded-metrics-graphite" % codahaleVersion,
         "org.slf4j" % "slf4j-api" % slf4jVersion,
         "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-        "com.google.guava" % "guava" % guavaVersion,
+        "com.github.intel-hadoop" % "gearpump-shaded-guava" % guavaVersion,
         "commons-lang" % "commons-lang" % commonsLangVersion,
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
         "com.typesafe.akka" %% "akka-remote" % akkaVersion,
@@ -247,7 +247,6 @@ object Build extends sbt.Build {
         // On windows, it may report shell error "command line too long"
         packExpandedClasspath := false,
         packExtraClasspath := Map(
-
           "gear" -> daemonClassPath,
           "local" -> daemonClassPath,
           "master" -> daemonClassPath,

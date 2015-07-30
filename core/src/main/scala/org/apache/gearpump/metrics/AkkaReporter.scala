@@ -21,10 +21,10 @@ package org.apache.gearpump.metrics
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import com.codahale.metrics._
+import io.gearpump.codahale.metrics._
 import org.slf4j.Marker
 import java.util.{SortedMap => JavaSortedMap}
-import com.codahale.metrics.{Gauge => CodaGauge, Counter => CodaCounter, Histogram => CodaHistogram, Meter => CodaMeter, Timer => CodaTimer}
+import io.gearpump.codahale.metrics.{Gauge => CodaGauge, Counter => CodaCounter, Histogram => CodaHistogram, Meter => CodaMeter, Timer => CodaTimer}
 import scala.util.Try
 import org.apache.gearpump.util.LogUtil
 
@@ -65,14 +65,14 @@ class AkkaReporter(
       val scounters = collection.SortedMap(counters.toSeq: _*)
       scounters.foreach(pair => {
         import org.apache.gearpump.metrics.Metrics._
-        val (key, value: com.codahale.metrics.Counter) = pair
+        val (key, value: CodaCounter) = pair
         system.eventStream.publish(Counter(key, value.getCount))
       })
 
       val shistograms = collection.SortedMap(histograms.toSeq: _*)
       shistograms.foreach(pair => {
         import org.apache.gearpump.metrics.Metrics._
-        val (key, value: com.codahale.metrics.Histogram) = pair
+        val (key, value: CodaHistogram) = pair
         val s = value.getSnapshot
         system.eventStream.publish(
           Histogram(
@@ -85,7 +85,7 @@ class AkkaReporter(
       val smeters = collection.SortedMap(meters.toSeq: _*)
       smeters.foreach(pair => {
         import org.apache.gearpump.metrics.Metrics._
-        val (key, value: com.codahale.metrics.Meter) = pair
+        val (key, value: CodaMeter) = pair
         system.eventStream.publish(
           Meter(key,
             value.getCount,
@@ -99,7 +99,7 @@ class AkkaReporter(
       val stimers = collection.SortedMap(timers.toSeq: _*)
       stimers.foreach(pair => {
         import org.apache.gearpump.metrics.Metrics._
-        val (key, value: com.codahale.metrics.Timer) = pair
+        val (key, value: CodaTimer) = pair
         val s = value.getSnapshot
         system.eventStream.publish(
           Timer(key,

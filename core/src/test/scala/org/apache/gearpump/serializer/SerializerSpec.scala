@@ -19,7 +19,6 @@
 package org.apache.gearpump.serializer
 
 import akka.actor.{ActorSystem, ExtendedActorSystem}
-import com.codahale.metrics.{Counter => CodaHaleCounter, Histogram => CodaHaleHistogram, Meter => CodaHaleMeter}
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
