@@ -24,8 +24,9 @@ import akka.actor.Actor
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.ClientToMaster.{ QueryHistoryMetrics}
 import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
-import org.apache.gearpump.metrics.Metrics.{Counter, Histogram, MetricType, Meter}
+import org.apache.gearpump.metrics.Metrics._
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.{HistoryMetricsConfig, MetricsStore}
+import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -41,7 +42,10 @@ class HistoryMetricsService(appId: Int, config: HistoryMetricsConfig) extends Ac
 
   def receive: Receive = metricHandler orElse commandHandler
 
+  import scala.concurrent.duration._
   def metricHandler: Receive = {
+    case ReportMetrics =>
+      sender ! DemandMoreMetrics(self)
     case metrics: MetricType =>
       val name = metrics.name
       if (metricsStore.contains(name)) {

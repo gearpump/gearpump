@@ -18,153 +18,63 @@
 
 package org.apache.gearpump.metrics
 
-import java.util.concurrent.TimeUnit
+import akka.actor.{ActorRef, ActorSystem}
+import org.apache.gearpump.metrics.Metrics.{Histogram => HistogramData, Meter => MeterData, Counter => CounterData}
+import io.gearpump.codahale.metrics.MetricRegistry
 
 import akka.actor.ActorSystem
-import io.gearpump.codahale.metrics._
 import org.slf4j.Marker
 import java.util.{SortedMap => JavaSortedMap}
 import io.gearpump.codahale.metrics.{Gauge => CodaGauge, Counter => CodaCounter, Histogram => CodaHistogram, Meter => CodaMeter, Timer => CodaTimer}
 import scala.util.Try
+import org.apache.gearpump.metrics.MetricsReporterService.ReportTo
 import org.apache.gearpump.util.LogUtil
+import scala.collection.JavaConverters._
 
 /**
  * A reporter class for logging metrics values to a remote actor periodically
  */
 class AkkaReporter(
     system: ActorSystem,
-    registry: MetricRegistry,
-    marker: Marker,
-    rateUnit:TimeUnit,
-    durationUnit:TimeUnit,
-    filter: MetricFilter)
-  extends ScheduledReporter(registry, "akka-reporter", filter, rateUnit, durationUnit) {
-
+    registry: MetricRegistry)
+  extends ReportTo{
   private val LOG = LogUtil.getLogger(getClass)
   LOG.info("Start Metrics AkkaReporter")
 
-  override def report(
-    gauges: JavaSortedMap[String, CodaGauge[_]],
-    counters: JavaSortedMap[String, CodaCounter],
-    histograms: JavaSortedMap[String, CodaHistogram],
-    meters: JavaSortedMap[String, CodaMeter],
-    timers: JavaSortedMap[String, CodaTimer]): Unit = {
+  override def report(to: ActorRef): Unit = {
+    val counters = registry.getCounters()
+    val histograms = registry.getHistograms()
+    val meters = registry.getMeters()
 
-    Try{
+    counters.entrySet().asScala.foreach { pair =>
+      to ! CounterData(pair.getKey, pair.getValue.getCount)
+    }
 
-      import scala.collection.JavaConversions._
+    histograms.entrySet().asScala.foreach { pair =>
+      val key = pair.getKey
+      val value = pair.getValue
+      val s = value.getSnapshot
+      to ! HistogramData(
+        key, value.getCount, s.getMin, s.getMax, s.getMean,
+        s.getStdDev, s.getMedian, s.get75thPercentile,
+        s.get95thPercentile, s.get98thPercentile,
+        s.get99thPercentile, s.get999thPercentile)
+    }
 
-      //TODO: depends on Gauge refactory. @see Metrics.scala
-//      val sgauges = collection.SortedMap(gauges.toSeq: _*)
-//      sgauges.foreach(pair => {
-//        import org.apache.gearpump.metrics.Metrics._
-//        val (key, value) = pair
-//        system.eventStream.publish(Gauge(key, value))
-//      })
-
-      val scounters = collection.SortedMap(counters.toSeq: _*)
-      scounters.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
-        val (key, value: CodaCounter) = pair
-        system.eventStream.publish(Counter(key, value.getCount))
-      })
-
-      val shistograms = collection.SortedMap(histograms.toSeq: _*)
-      shistograms.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
-        val (key, value: CodaHistogram) = pair
-        val s = value.getSnapshot
-        system.eventStream.publish(
-          Histogram(
-            key, value.getCount, s.getMin, s.getMax, s.getMean,
-            s.getStdDev, s.getMedian, s.get75thPercentile,
-            s.get95thPercentile, s.get98thPercentile,
-            s.get99thPercentile, s.get999thPercentile))
-      })
-
-      val smeters = collection.SortedMap(meters.toSeq: _*)
-      smeters.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
-        val (key, value: CodaMeter) = pair
-        system.eventStream.publish(
-          Meter(key,
-            value.getCount,
-            convertRate(value.getMeanRate),
-            convertRate(value.getOneMinuteRate),
-            convertRate(value.getFiveMinuteRate),
-            convertRate(value.getFifteenMinuteRate),
-            getRateUnit))
-      })
-
-      val stimers = collection.SortedMap(timers.toSeq: _*)
-      stimers.foreach(pair => {
-        import org.apache.gearpump.metrics.Metrics._
-        val (key, value: CodaTimer) = pair
-        val s = value.getSnapshot
-        system.eventStream.publish(
-          Timer(key,
-            value.getCount,
-            convertDuration(s.getMin),
-            convertDuration(s.getMax),
-            convertDuration(s.getMean),
-            convertDuration(s.getStdDev),
-            convertDuration(s.getMedian),
-            convertDuration(s.get75thPercentile),
-            convertDuration(s.get95thPercentile),
-            convertDuration(s.get98thPercentile),
-            convertDuration(s.get99thPercentile),
-            convertDuration(s.get999thPercentile),
-            convertRate(value.getMeanRate),
-            convertRate(value.getOneMinuteRate),
-            convertRate(value.getFiveMinuteRate),
-            convertRate(value.getFifteenMinuteRate),
-            getRateUnit,
-            getDurationUnit))
-      })
-    }.failed.map { ex =>
-      LOG.error("failed to report metrics", ex)
+    meters.entrySet().asScala.foreach{pair =>
+      val key = pair.getKey
+      val value = pair.getValue
+      to ! MeterData(key,
+        value.getCount,
+        value.getMeanRate,
+        value.getOneMinuteRate,
+        value.getFiveMinuteRate,
+        value.getFifteenMinuteRate,
+        getRateUnit)
     }
   }
 
-  override def getRateUnit: String = {
-    "events/" + super.getRateUnit
-  }
-}
-
-object AkkaReporter {
-  case class Builder(
-      registry: MetricRegistry,
-      marker: Marker,
-      var rateUnit: TimeUnit,
-      var durationUnit: TimeUnit,
-      var flter: MetricFilter) {
-
-    def build(system: ActorSystem) = {
-      new AkkaReporter(system, registry, marker, rateUnit, durationUnit, flter)
-    }
-
-    def convertRatesTo(ru: TimeUnit) = {
-      this.rateUnit = ru
-      this
-    }
-
-    def convertDurationsTo(du: TimeUnit) = {
-      this.durationUnit = du
-      this
-    }
-
-    def filter(f: MetricFilter) = {
-      this.flter = f
-      this
-    }
-  }
-
-  object Builder {
-    def apply(registry: MetricRegistry): Builder = {
-      Builder(registry, null, TimeUnit.SECONDS, TimeUnit.MILLISECONDS, MetricFilter.ALL)
-    }
-  }
-  def forRegistry(registry: MetricRegistry): Builder = {
-    Builder(registry)
+  def getRateUnit: String = {
+    "events/s"
   }
 }
