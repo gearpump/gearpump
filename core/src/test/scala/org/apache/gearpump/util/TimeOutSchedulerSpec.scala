@@ -41,7 +41,7 @@ class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with I
       testActor.sendMsgToReply()
       mockActor.expectMsg(Echo)
       testActor.sendMsgToIgnore()
-      mockActor.expectMsg(10 seconds, MessageTimeOut)
+      mockActor.expectMsg(30 seconds, MessageTimeOut)
     }
   }
 }
