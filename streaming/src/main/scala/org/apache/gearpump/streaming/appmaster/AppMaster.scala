@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTa
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.LastFailure
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.metrics.Metrics.MetricType
+import org.apache.gearpump.metrics.Metrics.{ReportMetrics, MetricType}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, ServiceNotAvailableException}
@@ -62,8 +62,21 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private var taskManager: Option[ActorRef] = None
   private var clockService: Option[ActorRef] = None
-
+  private val systemConfig = context.system.settings.config
   private var lastFailure = LastFailure(0L, null)
+
+  private val getHistoryMetricsConfig: HistoryMetricsConfig = {
+    val historyHour = systemConfig.getInt(GEARPUMP_METRIC_RETAIN_HISTORY_DATA_HOURS)
+    val historyInterval = systemConfig.getInt(GEARPUMP_RETAIN_HISTORY_DATA_INTERVAL_MS)
+
+    val recentSeconds = systemConfig.getInt(GEARPUMP_RETAIN_RECENT_DATA_SECONDS)
+    val recentInterval = systemConfig.getInt(GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS)
+    HistoryMetricsConfig(historyHour, historyInterval, recentSeconds, recentInterval)
+  }
+
+  private val historyMetricsService = {
+    context.actorOf(Props(new HistoryMetricsService(appId, getHistoryMetricsConfig)))
+  }
 
   private val executorManager: ActorRef =
     context.actorOf(ExecutorManager.props(userConfig, appContext, app.clusterConfig, app.name),
@@ -76,20 +89,6 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     taskManager = Some(context.actorOf(Props(new TaskManager(appContext.appId, dagManager,
       taskScheduler, executorManager, clockService.get, self, app.name))))
   }
-
-  private def getHistoryMetricsConfig: HistoryMetricsConfig = {
-    val historyHour = context.system.settings.config.getInt(GEARPUMP_METRIC_RETAIN_HISTORY_DATA_HOURS)
-    val historyInterval = context.system.settings.config.getInt(GEARPUMP_RETAIN_HISTORY_DATA_INTERVAL_MS)
-
-    val recentSeconds = context.system.settings.config.getInt(GEARPUMP_RETAIN_RECENT_DATA_SECONDS)
-    val recentInterval = context.system.settings.config.getInt(GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS)
-    HistoryMetricsConfig(historyHour, historyInterval, recentSeconds, recentInterval)
-  }
-
-  private val historyMetricsService = {
-    context.actorOf(Props(new HistoryMetricsService(appId, getHistoryMetricsConfig)))
-  }
-  actorSystem.eventStream.subscribe(historyMetricsService, classOf[MetricType])
 
   override def receive : Receive =
       taskMessageHandler orElse
@@ -108,8 +107,6 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case messageLoss: MessageLoss =>
       lastFailure = LastFailure(System.currentTimeMillis(), messageLoss.cause)
       taskManager.foreach(_ forward messageLoss)
-    case metrics: MetricType =>
-      actorSystem.eventStream.publish(metrics)
     case lookupTask: LookupTaskActorRef =>
       taskManager.foreach(_ forward lookupTask)
   }
@@ -117,6 +114,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   def executorMessageHandler: Receive = {
     case register: RegisterExecutor =>
       executorManager forward register
+    case ReportMetrics =>
+      historyMetricsService forward ReportMetrics
   }
 
   def appMasterService: Receive = {
@@ -157,9 +156,10 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       appMasterDataDetail.map{appData =>
         client ! appData
       }
-    case appMasterMetricsRequest: AppMasterMetricsRequest =>
-      val client = sender()
-      actorSystem.eventStream.subscribe(client, classOf[MetricType])
+// TODO: WebSocket is buggy and disabled.
+//    case appMasterMetricsRequest: AppMasterMetricsRequest =>
+//      val client = sender()
+//      actorSystem.eventStream.subscribe(client, classOf[MetricType])
     case query: QueryHistoryMetrics =>
       historyMetricsService forward query
     case getStalling: GetStallingTasks =>

@@ -22,6 +22,8 @@ import akka.actor.SupervisorStrategy.{Resume, Stop}
 import akka.actor._
 import org.apache.gearpump.cluster.MasterToAppMaster.MessageLoss
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
+import org.apache.gearpump.metrics.Metrics.{ReportMetrics, DemandMoreMetrics}
+import org.apache.gearpump.metrics.{Metrics, MetricsReporterService}
 import org.apache.gearpump.serializer.KryoPool
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
@@ -30,6 +32,7 @@ import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskArgume
 import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import org.apache.gearpump.streaming.task.{Subscriber, TaskId}
 import org.apache.gearpump.transport.{Express, HostPort}
+import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
 
@@ -57,8 +60,16 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   context.watch(appMaster)
 
   private var tasks = Map.empty[TaskId, ActorRef]
+  val systemConfig = context.system.settings.config
 
   val express = Express(context.system)
+
+  val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
+
+  if (metricsEnabled) {
+    val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
+    appMaster.tell(ReportMetrics, metricsReportService)
+  }
 
   def receive : Receive = appMasterMsgHandler
 

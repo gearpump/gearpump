@@ -55,7 +55,7 @@ class TaskActor(
 
   //metrics
   private val metricName = s"app${appId}.processor${taskId.processorId}.task${taskId.index}"
-  private val receiveLatency = Metrics(context.system).histogram(s"$metricName.receiveLatency")
+  private val receiveLatency = Metrics(context.system).histogram(s"$metricName.receiveLatency", sampleRate = 1)
   private val processTime = Metrics(context.system).histogram(s"$metricName.processTime")
   private val sendThroughput = Metrics(context.system).meter(s"$metricName.sendThroughput")
   private val receiveThroughput = Metrics(context.system).meter(s"$metricName.receiveThroughput")
@@ -120,7 +120,6 @@ class TaskActor(
     val register = RegisterTask(taskId, executorId, local)
     LOG.info(s"$register")
     sendMsgWithTimeOutCallBack(appMaster, register, registerTaskTimout, registerTaskTimeOut())
-    system.eventStream.subscribe(taskContextData.appMaster, classOf[MetricType])
     context.become(waitForStartClock orElse stashMessages)
   }
 

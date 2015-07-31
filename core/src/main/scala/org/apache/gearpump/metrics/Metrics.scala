@@ -23,10 +23,12 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import io.gearpump.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import io.gearpump.codahale.metrics.{Slf4jReporter, MetricFilter, MetricRegistry}
+import io.gearpump.codahale.metrics.{MetricFilter, MetricRegistry, ScheduledReporter, Slf4jReporter}
+import org.apache.gearpump.metrics
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
+import scala.concurrent.duration._
 class Metrics(sampleRate: Int) extends Extension {
 
   val registry = new MetricRegistry()
@@ -36,6 +38,10 @@ class Metrics(sampleRate: Int) extends Extension {
   }
 
   def histogram(name : String) = {
+    new Histogram(name, registry.histogram(name), sampleRate)
+  }
+
+  def histogram(name : String, sampleRate: Int) = {
     new Histogram(name, registry.histogram(name), sampleRate)
   }
 
@@ -99,82 +105,20 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
   //TODO: Refactor Gauge to remove dependency on ClassTag[T]
   //case class Gauge[T:ClassTag](name: String, value: T) extends MetricType
 
+  case object ReportMetrics
+
+  case class DemandMoreMetrics(subscriber: ActorRef)
+
   override def get(system: ActorSystem): Metrics = super.get(system)
 
   override def lookup = Metrics
 
-  override def createExtension(system: ExtendedActorSystem): Metrics = Metrics(system)
-
-  def apply(system: ExtendedActorSystem): Metrics = {
-
+  override def createExtension(system: ExtendedActorSystem): Metrics = {
     val metricsEnabled = system.settings.config.getBoolean(GEARPUMP_METRIC_ENABLED)
     LOG.info(s"Metrics is enabled...,  $metricsEnabled")
     val sampleRate = system.settings.config.getInt(GEARPUMP_METRIC_SAMPLE_RATE)
-
     if (metricsEnabled) {
-
       val meters = new Metrics(sampleRate)
-
-      val reportInterval = system.settings.config.getInt(GEARPUMP_METRIC_REPORT_INTERVAL)
-
-      def startGraphiteReporter = {
-        val graphiteHost = system.settings.config.getString(GEARPUMP_METRIC_GRAPHITE_HOST)
-        val graphitePort = system.settings.config.getInt(GEARPUMP_METRIC_GRAPHITE_PORT)
-
-        val graphite = new Graphite(new InetSocketAddress(graphiteHost, graphitePort))
-
-        val reporter = GraphiteReporter.forRegistry(meters.registry)
-          .prefixedWith(s"host${system.provider.getDefaultAddress.host.get}".replace(".", "_"))
-          .convertRatesTo(TimeUnit.SECONDS)
-          .convertDurationsTo(TimeUnit.MILLISECONDS)
-          .filter(MetricFilter.ALL)
-          .build(graphite)
-
-        LOG.info(s"reporting to $graphiteHost, $graphitePort")
-        reporter
-      }
-
-      def startSlf4jReporter = {
-        Slf4jReporter.forRegistry(meters.registry)
-          .convertRatesTo(TimeUnit.SECONDS)
-          .convertDurationsTo(TimeUnit.MILLISECONDS)
-          .filter(MetricFilter.ALL)
-          .outputTo(LOG)
-          .build()
-      }
-
-      def startAkkaReporter = {
-        AkkaReporter.forRegistry(meters.registry)
-          .convertRatesTo(TimeUnit.SECONDS)
-          .convertDurationsTo(TimeUnit.MILLISECONDS)
-          .filter(MetricFilter.ALL)
-          .build(system)
-      }
-
-      val reporterType = system.settings.config.getString(GEARPUMP_METRIC_REPORTER)
-
-      LOG.info(s"Metrics reporter is enabled, using $reporterType reporter")
-
-      val reporter = reporterType match {
-        case "graphite" => startGraphiteReporter
-        case "logfile" => startSlf4jReporter
-        case "akka" => startAkkaReporter
-        case other =>
-          LOG.error(s"Metrics reporter will be disabled, as we cannot recognize reporter: $other")
-          null
-      }
-
-      Option(reporter).foreach { reporter =>
-        // do a initial metrics report
-        reporter.report()
-
-        // set the timer to report on interval
-        reporter.start(reportInterval, TimeUnit.MILLISECONDS)
-
-        system.registerOnTermination(new Runnable {
-          override def run = reporter.stop()
-        })
-      }
       meters
     } else {
       new DummyMetrics
@@ -182,55 +126,25 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
   }
 
   class DummyMetrics extends Metrics(1) {
-
-    override def meter(name : String) = {
-      DummyMetrics.meter
+    private val meter = new metrics.Meter("", null) {
+      override def mark() = Unit
+      override  def mark(n: Long) = Unit
+      override def getOneMinuteRate(): Double = 0
     }
 
-    override def histogram(name : String) = {
-      DummyMetrics.histogram
+    private val histogram = new metrics.Histogram("", null) {
+      override def update(value: Long) = Unit
+      override def getMean() : Double = 0
+      override def getStdDev() : Double = 0
     }
 
-    override def counter(name : String) = {
-      DummyMetrics.counter
-    }
-  }
-
-  object DummyMetrics {
-    import org.apache.gearpump._
-    val meter = new metrics.Meter("", null) {
-      override def mark() {
-      }
-
-      override  def mark(n: Long) {
-      }
-
-      override def getOneMinuteRate() : Double = {
-        0
-      }
+    private val counter = new metrics.Counter("", null) {
+      override def inc() = Unit
+      override def inc(n: Long) = Unit
     }
 
-    val histogram = new metrics.Histogram("", null) {
-
-      override def update(value: Long) {
-      }
-
-      override def getMean() : Double = {
-        0
-      }
-
-      override def getStdDev() : Double = {
-        0
-      }
-    }
-
-    val counter = new metrics.Counter("", null) {
-
-      override def inc() {
-      }
-
-      override def inc(n: Long) {
-      }
-    }
+    override def meter(name : String) =  meter
+    override def histogram(name : String) = histogram
+    override def counter(name : String) = counter
   }
 }
