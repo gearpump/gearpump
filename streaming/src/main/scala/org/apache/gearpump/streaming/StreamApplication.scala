@@ -21,16 +21,15 @@ package org.apache.gearpump.streaming
 import akka.actor.ActorSystem
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
-import org.apache.gearpump.partitioner.{PartitionerObject, PartitionerDescription, HashPartitioner, Partitioner}
+import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription, PartitionerObject}
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.task.Task
-import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Graph, ReferenceEqual}
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-trait Processor[+T <: Task] {
+trait Processor[+T <: Task] extends ReferenceEqual {
 
   def parallelism: Int
 
