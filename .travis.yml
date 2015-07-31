@@ -15,7 +15,7 @@ script:
   elif [[ $TRAVIS_BRANCH == "master" ]];
     then sbt clean publish; 
   elif [[ $TRAVIS_TAG != "" ]];
-    then sbt clean assembly packArchive travis_deploy;
+    then sbt clean assembly packArchive;
   fi  
 jdk:
 - oraclejdk7
@@ -38,7 +38,8 @@ deploy:
   skip_cleanup: true
   api_key:
     secure: NYY003Bum6aL5h5Au8nCEY51lnDcsCErvmfzpIh0CWNY4UKnADSXkJPdureAf3OR7eMFmQxMi1rL2MQtOjlCWgaPO4TmEJrXB3vMZTTyj1COst5WIQV8S/BbgDzKFEP9zuRNbMXdRJqf0rEhIrKPagXkOTDaGNijmjCCh5y62M4=
-  file: target/binary.gearpump.tar.gz
+  file_glob: true
+  file: output/target/gearpump-*.zip  
   on:
     repo: intel-hadoop/gearpump
     tags: true
