@@ -268,13 +268,13 @@ object Build extends sbt.Build {
     id = "gearpump-daemon",
     base = file("daemon"),
     settings = commonSettings ++ daemonDependencies
-  ) dependsOn(core % "test->test;compile->compile")
+  ) dependsOn(core % "test->test; provided")
 
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
     settings = commonSettings ++ streamingDependencies
-  )  dependsOn(core % "test->test;compile->compile", daemon % "test->test")
+  )  dependsOn(core % "test->test; provided", daemon % "test->test")
 
   lazy val external_kafka = Project(
     id = "gearpump-external-kafka",
@@ -290,7 +290,7 @@ object Build extends sbt.Build {
           ("org.apache.kafka" %% "kafka" % kafkaVersion classifier("test")) % "test"
         )
       )
-  ) dependsOn (streaming % "provided", dsl % "provided")
+  ) dependsOn (streaming % "provided", dsl % "provided", core % "provided")
 
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
@@ -305,7 +305,7 @@ object Build extends sbt.Build {
         ),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn(streaming % "test->test; provided", external_kafka)
+  ) dependsOn(streaming % "test->test; provided", external_kafka, core % "provided")
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
@@ -320,7 +320,7 @@ object Build extends sbt.Build {
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn (streaming % "test->test", streaming % "provided")
+  ) dependsOn (streaming % "test->test; provided", core % "provided")
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",
@@ -335,7 +335,7 @@ object Build extends sbt.Build {
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.sol.SOL"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn (streaming % "test->test", streaming % "provided")
+  ) dependsOn (streaming % "test->test; provided", core % "provided")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
@@ -350,7 +350,7 @@ object Build extends sbt.Build {
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.wordcount.WordCount"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn (streaming % "test->test", streaming % "provided")
+  ) dependsOn (streaming % "test->test; provided", core % "provided")
 
   lazy val stockcrawler = Project(
     id = "gearpump-examples-stockcrawler",
@@ -369,7 +369,7 @@ object Build extends sbt.Build {
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.stock.main.Stock"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn (streaming % "test->test", streaming % "provided", external_kafka  % "test->test; provided")
+  ) dependsOn (streaming % "test->test; provided", core % "provided", external_kafka  % "test->test; provided")
 
   lazy val complexdag = Project(
     id = "gearpump-examples-complexdag",
@@ -384,7 +384,7 @@ object Build extends sbt.Build {
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.complexdag.Dag"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn (streaming % "test->test", streaming % "provided")
+  ) dependsOn (streaming % "test->test; provided", core % "provided")
 
   lazy val transport = Project(
     id = "gearpump-examples-transport",
@@ -403,7 +403,7 @@ object Build extends sbt.Build {
         mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.transport.Transport"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
       )
-  ) dependsOn (streaming % "test->test", streaming % "provided")
+  ) dependsOn (streaming % "test->test; provided", core % "provided")
 
   lazy val examples = Project(
     id = "gearpump-examples",
@@ -441,7 +441,7 @@ object Build extends sbt.Build {
           "org.webjars.bower" % "vis" % "4.5.1"
         ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
       )
-  ) dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile")
+  ) dependsOn(streaming % "test->test; provided", daemon % "test->test; provided", core % "provided")
 
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
@@ -461,7 +461,7 @@ object Build extends sbt.Build {
         "commons-io" % "commons-io" % commonsIOVersion
       )
     )
-  ) dependsOn(daemon % "test->test;compile->compile")
+  ) dependsOn(daemon % "test->test; provided", core % "provided")
 
   lazy val storm = Project(
     id = "gearpump-experiments-storm",
@@ -513,8 +513,7 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn (streaming % "test->test; provided")
-
+  ) dependsOn (streaming % "test->test; provided", core % "provided")
 
   lazy val yarn = Project(
     id = "gearpump-experiments-yarn",
@@ -570,19 +569,19 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         ) ++ hadoopDependency
       )
-  ) dependsOn(services % "test->test;compile->compile", core % "provided", services % "provided")
+  ) dependsOn(services % "test->test; provided", core % "provided", daemon % "provided")
 
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",
     base = file("experiments/dsl"),
     settings = commonSettings
-  ) dependsOn(streaming % "test->test;compile->compile")
+  ) dependsOn(streaming % "test->test; provided", core % "provided")
   
   lazy val pagerank = Project(
     id = "gearpump-experiments-pagerank",
     base = file("experiments/pagerank"),
     settings = commonSettings
-  ) dependsOn(streaming % "test->test;compile->compile")
+  ) dependsOn(streaming % "test->test; provided", core % "provided")
 
   lazy val external_hbase = Project(
     id = "gearpump-external-hbase",
@@ -625,7 +624,7 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn(streaming % "provided", dsl)
+  ) dependsOn(streaming % "provided", core % "provided", dsl)
 
   lazy val state = Project(
     id = "gearpump-experiments-state",
@@ -641,5 +640,5 @@ object Build extends sbt.Build {
           "org.mockito" % "mockito-core" % mockitoVersion % "test"
         )
       )
-  ) dependsOn(streaming % "test->test; provided", external_kafka % "test->test; provided")
+  ) dependsOn(streaming % "test->test; provided", external_kafka % "test->test; provided", core % "provided")
 }
