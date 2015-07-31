@@ -4,21 +4,17 @@ import sbt.Keys._
 import sbt._
 import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin._
-import xerial.sbt.Pack._
 import xerial.sbt.Sonatype._
 
-import scala.collection.immutable.Map.WithDefault
+import BuildExample.examples
+import Pack.packProject
 
 object Build extends sbt.Build {
-  class DefaultValueMap[+B](value : B) extends WithDefault[String, B](null, (key) => value) {
-    override def get(key: String) = Some(value)
-  }
-
   /**
    * deploy can recognize the path
    */
   val travis_deploy = taskKey[Unit]("use this after sbt assembly packArchive, it will rename the package so that travis deploy can find the package.")
-  
+
   val akkaVersion = "2.3.6"
   val kryoVersion = "0.3.2"
   val clouderaVersion = "2.6.0-cdh5.4.2"
@@ -49,6 +45,9 @@ object Build extends sbt.Build {
   val scalazVersion = "7.1.1"
   val algebirdVersion = "0.9.0"
   val chillVersion = "0.6.0"
+
+  override def projects: Seq[Project] = (super.projects.toList ++ BuildExample.projects.toList
+      ++ Pack.projects.toList).toSeq
 
   val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
@@ -190,73 +189,8 @@ object Build extends sbt.Build {
           new File(packagePath).renameTo(new File(target))
         }
       )
-  ).aggregate(core, daemon, streaming, fsio, examples_kafka, sol, wordcount, complexdag, services, external_kafka, stockcrawler,
-      transport, examples, distributedshell, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state)
-
-  val daemonClassPath = Seq(
-    "${PROG_HOME}/conf",
-    "${PROG_HOME}/lib/daemon/*"
-  )
-
-  val serviceClassPath = daemonClassPath ++ Seq(
-    "${PROG_HOME}/lib/services/*",
-    "${PROG_HOME}/dashboard"
-  )
-
-  val yarnClassPath = serviceClassPath ++ Seq(
-    "${PROG_HOME}/lib/yarn/*",
-    "/etc/hadoop/conf",
-    "/etc/hbase/conf"
-  )
-
-  val stormClassPath = daemonClassPath ++ Seq(
-    "${PROG_HOME}/lib/storm/*"
-  )
-
-  lazy val packProject = Project(
-    id = "gearpump-pack",
-    base = file("output"),
-    settings = commonSettings ++
-      packSettings ++
-      Seq(
-        packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
-          "local" -> "org.apache.gearpump.cluster.main.Local",
-          "master" -> "org.apache.gearpump.cluster.main.Master",
-          "worker" -> "org.apache.gearpump.cluster.main.Worker",
-          "services" -> "org.apache.gearpump.services.main.Services",
-          "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client",
-          "storm" -> "org.apache.gearpump.experiments.storm.StormRunner"
-        ),
-        packJvmOpts := Map(
-          "local" -> Seq("-server", "-DlogFilename=local", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-          "master" -> Seq("-server", "-DlogFilename=master", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-          "worker" -> Seq("-server", "-DlogFilename=worker", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-          "services" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost")
-        ),
-        packLibDir := Map(
-          daemon.id -> "lib/daemon",
-          services.id -> "lib/services",
-          storm.id -> "lib/storm",
-          yarn.id -> "lib/yarn"),
-        packExclude := Seq(thisProjectRef.value.project),
-        packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
-        packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
-        packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
-
-        // The classpath should not be expanded. Otherwise, the classpath maybe too long.
-        // On windows, it may report shell error "command line too long"
-        packExpandedClasspath := false,
-        packExtraClasspath := Map(
-          "gear" -> daemonClassPath,
-          "local" -> daemonClassPath,
-          "master" -> daemonClassPath,
-          "worker" -> daemonClassPath,
-          "services" -> serviceClassPath,
-          "yarnclient" -> yarnClassPath,
-          "storm" -> stormClassPath
-        )
-      )
-  ).dependsOn(core, streaming, services, yarn, storm, dsl)//, state)
+  ).aggregate(core, daemon, streaming,  services, external_kafka,
+      examples, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -268,13 +202,13 @@ object Build extends sbt.Build {
     id = "gearpump-daemon",
     base = file("daemon"),
     settings = commonSettings ++ daemonDependencies
-  ) dependsOn(core % "test->test; provided")
+  ) dependsOn(core % "test->test; compile->compile")
 
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
     settings = commonSettings ++ streamingDependencies
-  )  dependsOn(core % "test->test; provided", daemon % "test->test")
+  )  dependsOn(core % "test->test; compile->compile", daemon % "test->test")
 
   lazy val external_kafka = Project(
     id = "gearpump-external-kafka",
@@ -284,133 +218,11 @@ object Build extends sbt.Build {
         libraryDependencies ++= Seq(
           "org.apache.kafka" %% "kafka" % kafkaVersion,
           "com.twitter" %% "bijection-core" % bijectionVersion,
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test",
           ("org.apache.kafka" %% "kafka" % kafkaVersion classifier("test")) % "test"
         )
       )
-  ) dependsOn (streaming % "provided", dsl % "provided", core % "provided")
+  ) dependsOn (streaming % "test->test; provided", dsl % "provided")
 
-  lazy val examples_kafka = Project(
-    id = "gearpump-examples-kafka",
-    base = file("examples/streaming/kafka"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test",
-          "junit" % "junit" % junitVersion % "test"
-        ),
-        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
-      )
-  ) dependsOn(streaming % "test->test; provided", external_kafka, core % "provided")
-
-  lazy val fsio = Project(
-    id = "gearpump-examples-fsio",
-    base = file("examples/streaming/fsio"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        ) ++ hadoopDependency,
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
-        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
-      )
-  ) dependsOn (streaming % "test->test; provided", core % "provided")
-
-  lazy val sol = Project(
-    id = "gearpump-examples-sol",
-    base = file("examples/streaming/sol"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.sol.SOL"),
-        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
-      )
-  ) dependsOn (streaming % "test->test; provided", core % "provided")
-
-  lazy val wordcount = Project(
-    id = "gearpump-examples-wordcount",
-    base = file("examples/streaming/wordcount"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.wordcount.WordCount"),
-        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
-      )
-  ) dependsOn (streaming % "test->test; provided", core % "provided")
-
-  lazy val stockcrawler = Project(
-    id = "gearpump-examples-stockcrawler",
-    base = file("examples/streaming/stockcrawler"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "io.spray" %%  "spray-can"       % sprayVersion,
-          "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
-          "com.lihaoyi" %% "upickle" % upickleVersion,
-          "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
-          "net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
-          "joda-time" % "joda-time" % "2.7",
-          "io.spray" %%  "spray-json"    % sprayJsonVersion
-        ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.stock.main.Stock"),
-        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
-      )
-  ) dependsOn (streaming % "test->test; provided", core % "provided", external_kafka  % "test->test; provided")
-
-  lazy val complexdag = Project(
-    id = "gearpump-examples-complexdag",
-    base = file("examples/streaming/complexdag"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test"
-        ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.complexdag.Dag"),
-        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
-      )
-  ) dependsOn (streaming % "test->test; provided", core % "provided")
-
-  lazy val transport = Project(
-    id = "gearpump-examples-transport",
-    base = file("examples/streaming/transport"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test",
-          "io.spray" %%  "spray-can"       % sprayVersion,
-          "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
-          "io.spray" %%  "spray-json"    % sprayJsonVersion,
-          "com.lihaoyi" %% "upickle" % upickleVersion
-        ),
-        mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.transport.Transport"),
-        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
-      )
-  ) dependsOn (streaming % "test->test; provided", core % "provided")
-
-  lazy val examples = Project(
-    id = "gearpump-examples",
-    base = file("examples"),
-    settings = commonSettings
-  ) dependsOn (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
-  
   lazy val services = Project(
     id = "gearpump-services",
     base = file("services"),
@@ -423,7 +235,6 @@ object Build extends sbt.Build {
           "io.spray" %%  "spray-json"    % sprayJsonVersion,
           "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
             exclude("com.typesafe.akka", "akka-actor_2.11"),
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
           "org.webjars" % "angularjs" % "1.4.3", // We stick on 1.3.x until angular-ui-select works
           "org.webjars" % "bootstrap" % "3.3.5",
           "com.lihaoyi" %% "upickle" % upickleVersion,
@@ -441,27 +252,9 @@ object Build extends sbt.Build {
           "org.webjars.bower" % "vis" % "4.5.1"
         ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
       )
-  ) dependsOn(streaming % "test->test; provided", daemon % "test->test; provided", core % "provided")
+  ) dependsOn(streaming % "test->test; compile->compile", daemon % "test->test; compile->compile")
 
-  lazy val distributedshell = Project(
-    id = "gearpump-examples-distributedshell",
-    base = file("examples/distributedshell"),
-    settings = commonSettings ++ myAssemblySettings ++
-      Seq(
-        target in assembly := baseDirectory.value.getParentFile / "target" / scalaVersionMajor
-      )
-  ) dependsOn(core % "test->test", core % "provided")
-
-  lazy val distributeservice = Project(
-    id = "gearpump-experiments-distributeservice",
-    base = file("experiments/distributeservice"),
-    settings = commonSettings ++ Seq(
-      libraryDependencies ++= Seq(
-        "commons-lang" % "commons-lang" % commonsLangVersion,
-        "commons-io" % "commons-io" % commonsIOVersion
-      )
-    )
-  ) dependsOn(daemon % "test->test; provided", core % "provided")
+  lazy val distributeservice = BuildExample.distributeservice
 
   lazy val storm = Project(
     id = "gearpump-experiments-storm",
@@ -469,30 +262,20 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          //"commons-lang" % "commons-lang" % commonsLangVersion,
           "commons-io" % "commons-io" % commonsIOVersion,
           "org.apache.storm" % "storm-core" % stormVersion
+            exclude("clj-stacktrace", "clj-stacktrace")
             exclude("ch.qos.logback", "logback-classic")
             exclude("ch.qos.logback", "logback-core")
-            exclude("clj-stacktrace", "clj-stacktrace")
             exclude("clj-time", "clj-time")
             exclude("clout", "clout")
             exclude("compojure", "compojure")
-            exclude("com.esotericsoftware.kryo", "kryo")
-            exclude("com.esotericsoftware.minlog", "minlog")
-            exclude("com.esotericsoftware.reflectasm", "reflectasm")
             exclude("com.googlecode.disruptor", "disruptor")
             exclude("com.twitter", "carbonite")
-            exclude("com.twitter", "chill-java")
-            exclude("commons-codec", "commons-codec")
-            exclude("commons-fileupload", "commons-fileupload")
-            exclude("commons-logging", "commons-logging")
             exclude("hiccup", "hiccup")
             exclude("javax.servlet", "servlet-api")
-            exclude("jgrapht", "jgrapht-core")
             exclude("jline", "jline")
             exclude("joda-time", "joda-time")
-            exclude("org.apache.commons", "commons-exec")
             exclude("org.clojure", "core.incubator")
             exclude("org.clojure", "math.numeric-tower")
             exclude("org.clojure", "tools.logging")
@@ -500,20 +283,15 @@ object Build extends sbt.Build {
             exclude("org.clojure", "tools.macro")
             exclude("org.mortbay.jetty", "jetty-util")
             exclude("org.mortbay.jetty", "jetty")
-            exclude("org.objenisis", "objenisis")
             exclude("org.ow2.asm", "asm")
             exclude("org.slf4j", "log4j-over-slf4j")
-            exclude("org.slf4j", "slf4j-api")
             exclude("ring", "ring-core")
             exclude("ring", "ring-devel")
             exclude("ring", "ring-jetty-adapter")
-            exclude("ring", "ring-servlet"),
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+            exclude("ring", "ring-servlet")
         )
       )
-  ) dependsOn (streaming % "test->test; provided", core % "provided")
+  ) dependsOn (streaming % "test->test; compile->compile")
 
   lazy val yarn = Project(
     id = "gearpump-experiments-yarn",
@@ -521,67 +299,27 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
-        ("org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion).
-            exclude("org.mortbay.jetty", "jetty-util")
-            exclude("org.mortbay.jetty", "jetty")
-            exclude("tomcat", "jasper-runtime"),
-          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion
-            exclude("com.google.guava", "guava")
-            exclude("com.google.protobuf", "protobuf-java")
-            exclude("commons-lang", "commons-lang")
-            exclude("commons-logging", "commons-logging")
-            exclude("org.apache.hadoop", "hadoop-annotations"),
-          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion
-            exclude("com.google.guava", "guava")
-            exclude("com.sun.jersey", "jersey-client")
-            exclude("commons-cli", "commons-cli")
-            exclude("commons-lang", "commons-lang")
-            exclude("commons-logging", "commons-logging")
-            exclude("log4j", "log4j")
-            exclude("org.apache.hadoop", "hadoop-annotations")
-            exclude("org.mortbay.jetty", "jetty-util")
-            exclude("org.apache.hadoop", "hadoop-yarn-api")
-            exclude("org.apache.hadoop", "hadoop-yarn-common"),
-          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion
-            exclude("com.google.guava", "guava")
-            exclude("com.google.inject.extensions", "guice-servlet")
-            exclude("com.google.inject", "guice")
-            exclude("com.google.protobuf", "protobuf-java")
-            exclude("com.sun.jersey.contribs", "jersey.guice")
-            exclude("com.sun.jersey", "jersey-core")
-            exclude("com.sun.jersey", "jersey-json")
-            exclude("commons-cli", "commons-cli")
-            exclude("commons-codec", "commons-codec")
-            exclude("commons-io", "commons-io")
-            exclude("commons-lang", "commons-lang")
-            exclude("commons-logging", "commons-logging")
-            exclude("javax.servlet", "servlet-api")
-            exclude("javax.xml.bind", "jaxb-api")
-            exclude("log4j", "log4j")
-            exclude("org.apache.commons", "commons-compress")
-            exclude("org.apache.hadoop", "hadoop-annotations")
-            exclude("org.codehaus.jackson", "jackson-core-asl")
-            exclude("org.codehaus.jackson", "jackson-jaxrs")
-            exclude("org.codehaus.jackson", "jackson-mapper-asl")
-            exclude("org.codehaus.jackson", "jackson-xc")
-            exclude("org.slf4j", "slf4j-api"),
+          "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         ) ++ hadoopDependency
       )
-  ) dependsOn(services % "test->test; provided", core % "provided", daemon % "provided")
+  ) dependsOn(services % "test->test; compile->compile")
 
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",
     base = file("experiments/dsl"),
     settings = commonSettings
-  ) dependsOn(streaming % "test->test; provided", core % "provided")
+  ) dependsOn(streaming % "test->test; compile->compile")
   
   lazy val pagerank = Project(
     id = "gearpump-experiments-pagerank",
     base = file("experiments/pagerank"),
     settings = commonSettings
-  ) dependsOn(streaming % "test->test; provided", core % "provided")
+  ) dependsOn(streaming % "test->test; provided")
 
   lazy val external_hbase = Project(
     id = "gearpump-external-hbase",
@@ -608,6 +346,7 @@ object Build extends sbt.Build {
             exclude("log4j", "log4j")
             exclude("org.apache.zookeeper", "zookeeper")
             exclude("org.codehaus.jackson", "jackson-mapper-asl"),
+          "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion,
           "org.apache.hbase" % "hbase-common" % clouderaHBaseVersion
             exclude("com.github.stephenc.findbugs", "findbugs-annotations")
             exclude("com.google.guava", "guava")
@@ -617,14 +356,10 @@ object Build extends sbt.Build {
             exclude("commons-lang", "commons-lang")
             exclude("commons-logging", "commons-logging")
             exclude("junit", "junit")
-            exclude("log4j", "log4j"),
-          "org.scalaz" %% "scalaz-core" % scalazVersion,
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+            exclude("log4j", "log4j")
         )
       )
-  ) dependsOn(streaming % "provided", core % "provided", dsl)
+  ) dependsOn(streaming % "test->test; provided", dsl % "provided")
 
   lazy val state = Project(
     id = "gearpump-experiments-state",
@@ -634,11 +369,8 @@ object Build extends sbt.Build {
         libraryDependencies ++= Seq(
           "com.twitter" %% "bijection-core" % bijectionVersion,
           "com.twitter" %% "algebird-core" % algebirdVersion,
-          "com.twitter" %% "chill-bijection" % chillVersion,
-          "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-          "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
-          "org.mockito" % "mockito-core" % mockitoVersion % "test"
+          "com.twitter" %% "chill-bijection" % chillVersion
         )
       )
-  ) dependsOn(streaming % "test->test; provided", external_kafka % "test->test; provided", core % "provided")
+  ) dependsOn(streaming % "test->test; compile->compile", external_kafka % "test->test; provided")
 }

@@ -4,7 +4,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
 
 resolvers += Resolver.url("fvunicorn", url("http://dl.bintray.com/fvunicorn/sbt-plugins"))(Resolver.ivyStylePatterns)
 
-addSbtPlugin("io.gearpump.sbt" % "sbt-pack" % "0.7.5")
+addSbtPlugin("io.gearpump.sbt" % "sbt-pack" % "0.7.6")
 
 addSbtPlugin("de.johoop" % "jacoco4sbt" % "2.1.6")
 
