@@ -18,16 +18,14 @@
 
 package org.apache.gearpump.streaming.examples.sol
 
-import org.apache.gearpump.cluster.ClientToMaster.{ShutdownApplication, SubmitApplication}
-import org.apache.gearpump.cluster.MasterToClient.{ShutdownApplicationResult, SubmitApplicationResult}
+import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
+import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
-import org.apache.gearpump.util.Util
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, Matchers, PropSpec}
-
-import scala.util.{Success, Try}
+import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 
 import scala.concurrent.Future
+import scala.util.Success
 
 class SOLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
   override def beforeAll {
@@ -46,7 +44,7 @@ class SOLSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
       "-streamProducer", "1",
       "-streamProcessor", "1",
       "-bytesPerMessage", "100",
-      "-stages", "2")
+      "-stages", "10")
 
     val args = {
       Table(
