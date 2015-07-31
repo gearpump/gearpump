@@ -20,8 +20,8 @@ package org.apache.gearpump.streaming.state.system.impl
 
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.state.system.api.{CheckpointStore, CheckpointStoreFactory}
 import org.apache.gearpump.streaming.task.TaskContext
+import org.apache.gearpump.streaming.transaction.api.{CheckpointStoreFactory, CheckpointStore}
 
 /**
  * an in memory store provided for test
@@ -30,11 +30,11 @@ import org.apache.gearpump.streaming.task.TaskContext
 class InMemoryCheckpointStore extends CheckpointStore {
   private var checkpoints = Map.empty[TimeStamp, Array[Byte]]
 
-  override def write(timestamp: TimeStamp, checkpoint: Array[Byte]): Unit = {
+  override def persist(timestamp: TimeStamp, checkpoint: Array[Byte]): Unit = {
     checkpoints += timestamp -> checkpoint
   }
 
-  override def read(timestamp: TimeStamp): Option[Array[Byte]] = {
+  override def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
     checkpoints.get(timestamp)
   }
 
