@@ -5,7 +5,7 @@
 'use strict';
 angular.module('dashboard.apps.appmaster')
 
-  .controller('AppDagCtrl', ['$scope', '$timeout', '$interval', '$filter', '$modal', 'conf', 'dagStyle', function($scope, $timeout, $interval, $filter, $modal, conf, dagStyle) {
+  .controller('AppDagCtrl', ['$scope', '$filter', '$modal', 'conf', 'dagStyle', function($scope, $filter, $modal, conf, dagStyle) {
 
     var editDagDialog = $modal({
       templateUrl: "views/apps/app/editdag.html",
@@ -48,34 +48,25 @@ angular.module('dashboard.apps.appmaster')
       }
     };
 
-    function removeDeadNodes(visNodes, dagNodes) {
-      var ids = visNodes.getIds().filter(function (id) {
-        return !(id in dagNodes);
+    function removeDeadElements(visDataSet, aliveElementIds) {
+      var ids = visDataSet.getIds().filter(function(id) {
+        return !(id in aliveElementIds);
       });
       if (ids.length) {
-        visNodes.remove(ids);
+        // Batch removal is faster
+        visDataSet.remove(ids);
       }
     }
 
-    function removeDeadEdges(visEdges, dagEdges) {
-      var ids = visEdges.getIds().filter(function(id) {
-        return !(id in dagEdges);
-      });
-      if (ids.length) {
-        visEdges.remove(ids);
-      }
-    };
-
-    var updateVisGraphNodes = function(visNodes, data) {
+    function updateVisGraphNodes(visNodes, data) {
       data.weights[-1] = 0; // weight range from 0 to max weight
       var suggestRadius = _rangeMapper(data.weights, dagStyle.nodeRadiusRange());
       var diff = [];
 
-      angular.forEach(data.processors, function (processor, key) {
-        var processorId = parseInt(key);
-        var label = '[' + processorId + '] ' + (processor.description ?
-          processor.description : $filter('lastPart')(processor.taskClass));
-        var weight = parseInt(data.weights[processorId]);
+      angular.forEach(data.processors, function (processor, processorId) {
+        var label = '[' + processorId + '] ' +
+          (processor.description || $filter('lastPart')(processor.taskClass));
+        var weight = data.weights[processorId];
         var hierarchyLevels = data.hierarchyLevels[processorId];
         var visNode = visNodes.get(processorId);
         var newVisRadius = d3.round(suggestRadius(weight), 1);
@@ -83,9 +74,8 @@ angular.module('dashboard.apps.appmaster')
         if (!visNode || visNode.label !== label || visNode.size !== newVisRadius ||
           (visNode.color && visNode.color !== newColor)) {
           diff.push({
-            id: processorId,
+            id: processorId, level: hierarchyLevels, // once created, the hierarchy level will not change
             label: label,
-            level: hierarchyLevels,
             size: newVisRadius,
             color: newColor
           });
@@ -94,9 +84,9 @@ angular.module('dashboard.apps.appmaster')
       if (diff.length) {
         visNodes.update(diff);
       }
-    };
+    }
 
-    var updateVisGraphEdges = function(visEdges, data) {
+    function updateVisGraphEdges(visEdges, data) {
       data.bandwidths[-1] = 0; // bandwidth range from 0 to max bandwidth
       var suggestWidth = _rangeMapper(data.bandwidths, dagStyle.edgeWidthRange());
       var suggestArrowSize = _rangeMapper(data.bandwidths, dagStyle.edgeArrowSizeRange());
@@ -104,7 +94,7 @@ angular.module('dashboard.apps.appmaster')
       var diff = [];
 
       angular.forEach(data.edges, function (edge, edgeId) {
-        var bandwidth = parseInt(data.bandwidths[edgeId]);
+        var bandwidth = data.bandwidths[edgeId];
         var visEdge = visEdges.get(edgeId);
         var newVisWidth = d3.round(suggestWidth(bandwidth), 1);
         if (!visEdge || visEdge.width !== newVisWidth) {
@@ -114,15 +104,11 @@ angular.module('dashboard.apps.appmaster')
             hoverWidth: 0/*delta*/,
             selectionWidth: 0/*delta*/,
             arrows: {
-              to: {
-                scaleFactor: d3.round(suggestArrowSize(bandwidth), 1)
-              }
+              to: {scaleFactor: d3.round(suggestArrowSize(bandwidth), 1)}
             },
-            color: angular.merge (
-                {
-                  opacity: d3.round(suggestOpacity(bandwidth), 1)
-                },
-                dagStyle.edgeColorSet(bandwidth > 0)
+            color: angular.merge ({
+                opacity: d3.round(suggestOpacity(bandwidth), 1)
+              }, dagStyle.edgeColorSet(bandwidth > 0)
             )
           });
         }
@@ -130,7 +116,7 @@ angular.module('dashboard.apps.appmaster')
       if (diff.length) {
         visEdges.update(diff);
       }
-    };
+    }
 
     $scope.updateMetricsCounter = function () {
       $scope.receivedMessages = $scope.streamingDag.getReceivedMessages();
@@ -139,29 +125,31 @@ angular.module('dashboard.apps.appmaster')
       $scope.receiveLatency = $scope.streamingDag.getReceiveLatency();
     };
 
-    var timeoutPromise;
-    $scope.$on('$destroy', function () {
-      $timeout.cancel(timeoutPromise);
-    });
-
     /** Redraw VisGraph on demand */
-    var redrawVisGraph = function () {
+    function redrawVisGraph(dagData) {
       var visNodes = $scope.visgraph.data.nodes;
       var visEdges = $scope.visgraph.data.edges;
-      var dagData = $scope.streamingDag.getCurrentDag();
       visNodes.setOptions({queue: true});
       visEdges.setOptions({queue: true});
-      removeDeadNodes(visNodes, dagData.processors);
-      removeDeadEdges(visEdges, dagData.edges);
-      updateVisGraphNodes(visNodes, dagData);
-      updateVisGraphEdges(visEdges, dagData);
-      visNodes.setOptions({queue: false});
-      visEdges.setOptions({queue: false});
+      try {
+        removeDeadElements(visNodes, dagData.processors);
+        removeDeadElements(visEdges, dagData.edges);
+        updateVisGraphNodes(visNodes, dagData);
+        updateVisGraphEdges(visEdges, dagData);
+      } finally {
+        visNodes.setOptions({queue: false});
+        visEdges.setOptions({queue: false});
+      }
+    }
 
+    $scope.$watchCollection('streamingDag', function(val) {
+      $scope.dagData = val.getCurrentDag();
       $scope.updateMetricsCounter();
-      timeoutPromise = $timeout(redrawVisGraph, conf.updateVisDagInterval);
-    };
-    redrawVisGraph();
+    });
+
+    $scope.$watchCollection('dagData', function(val) {
+      redrawVisGraph(val);
+    });
 
     function _rangeMapper(dict, range) {
       var values = d3.values(dict);
