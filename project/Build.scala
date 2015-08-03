@@ -189,8 +189,8 @@ object Build extends sbt.Build {
           new File(packagePath).renameTo(new File(target))
         }
       )
-  ).aggregate(core, daemon, streaming,  services, external_kafka,
-      examples, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state)
+  ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
+      examples, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state_api)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -221,7 +221,7 @@ object Build extends sbt.Build {
           ("org.apache.kafka" %% "kafka" % kafkaVersion classifier("test")) % "test"
         )
       )
-  ) dependsOn (streaming % "test->test; provided", dsl % "provided")
+  ) dependsOn (state_api % "test->test; provided", dsl % "provided")
 
   lazy val services = Project(
     id = "gearpump-services",
@@ -361,16 +361,33 @@ object Build extends sbt.Build {
       )
   ) dependsOn(streaming % "test->test; provided", dsl % "provided")
 
-  lazy val state = Project(
+  lazy val state_api = Project(
     id = "gearpump-experiments-state",
     base = file("experiments/state"),
+    settings = commonSettings
+  ) dependsOn(streaming % "test->test; compile->compile")
+
+  lazy val external_monoid = Project(
+    id = "gearpump-external-monoid",
+    base = file("external/monoid"),
     settings = commonSettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "com.twitter" %% "bijection-core" % bijectionVersion,
-          "com.twitter" %% "algebird-core" % algebirdVersion,
-          "com.twitter" %% "chill-bijection" % chillVersion
+        Seq(
+          libraryDependencies ++= Seq(
+            "com.twitter" %% "algebird-core" % algebirdVersion
+          )
         )
-      )
-  ) dependsOn(streaming % "test->test; compile->compile", external_kafka % "test->test; provided")
+  ) dependsOn(state_api % "provided")
+
+  lazy val external_serializer = Project(
+    id = "gearpump-external-serializer",
+    base = file("external/serializer"),
+    settings = commonSettings ++
+        Seq(
+          libraryDependencies ++= Seq(
+            "com.twitter" %% "chill-bijection" % chillVersion
+              exclude("com.esotericsoftware.kryo", "kyro")
+              exclude("com.esotericsoftware.minlog", "minlog")
+          )
+        )
+  ) dependsOn(state_api % "provided")
 }

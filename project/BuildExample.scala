@@ -1,7 +1,7 @@
 import sbt.Keys._
 import sbt._
-import sbtassembly.Plugin.AssemblyKeys._
 import Build._
+import sbtassembly.Plugin.AssemblyKeys._
 
 object BuildExample extends sbt.Build {
 
@@ -9,7 +9,7 @@ object BuildExample extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings
-  ) aggregate (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport)
+  ) aggregate (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport, examples_state)
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
@@ -115,4 +115,12 @@ object BuildExample extends sbt.Build {
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
         )
   ) dependsOn (streaming % "test->test; provided", external_kafka % "test->test")
+
+  lazy val examples_state = Project(
+    id = "gearpump-examples-state",
+    base = file("examples/streaming/state"),
+    settings = commonSettings ++ myAssemblySettings ++ Seq(
+      target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+    )
+  ) dependsOn (state_api % "test->test; provided", external_kafka, external_monoid, external_serializer)
 }
