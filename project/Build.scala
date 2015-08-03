@@ -249,7 +249,7 @@ object Build extends sbt.Build {
           "org.webjars" % "select2" % "3.5.2",
           "org.webjars" % "select2-bootstrap-css" % "1.4.6",
           "org.webjars.bower" % "ng-file-upload" % "5.0.9",
-          "org.webjars.bower" % "vis" % "4.5.1"
+          "org.webjars.bower" % "vis" % "4.7.0"
         ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
       )
   ) dependsOn(streaming % "test->test; compile->compile", daemon % "test->test; compile->compile")

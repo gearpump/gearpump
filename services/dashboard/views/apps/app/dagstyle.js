@@ -10,15 +10,17 @@ angular.module('dashboard.apps.appmaster')
     var maxNodeRadius = 16;
     return {
       newOptions: function (flags) {
-        var verticalMargin = 30;
+        var verticalMargin = 28;
         var levelDistance = 85;
+        var chartMinHeight = 220;
         return {
           autoResize: true, // The network will automatically detect size changes and redraw itself accordingly
           interaction: {
             hover: true
           },
           width: '100%',
-          height: (maxNodeRadius * (flags.depth + 1) + levelDistance * flags.depth + verticalMargin * 2) + 'px',
+          height: Math.max(chartMinHeight,
+            (maxNodeRadius * (flags.depth + 1) + levelDistance * flags.depth + verticalMargin * 2)) + 'px',
           layout: {
             hierarchical: {
               sortMethod: 'hubsize',
@@ -85,14 +87,15 @@ angular.module('dashboard.apps.appmaster')
         return [0.4, 1];
       },
       edgeColorSet: function (alive) {
-        if (!alive) {
-          return {
-            color: 'rgb(195,195,195)',
-            hover: 'rgb(166,166,166)',
-            highlight: 'rgb(166,166,166)'
-          };
-        }
-        // use built-in color set for alive nodes
+        return alive ? {
+          color: '#2B7CE9',
+          hover: '#2B7CE9',
+          highlight: '#2B7CE9'
+        } : {
+          color: 'rgb(195,195,195)',
+          hover: 'rgb(166,166,166)',
+          highlight: 'rgb(166,166,166)'
+        };
       }
     };
   })
