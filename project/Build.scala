@@ -2,6 +2,9 @@ import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import sbt.Keys._
 import sbt._
+import org.scalajs.sbtplugin.ScalaJSPlugin
+import ScalaJSPlugin._
+import ScalaJSPlugin.autoImport._
 import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin._
 import xerial.sbt.Sonatype._
@@ -46,10 +49,13 @@ object Build extends sbt.Build {
   val algebirdVersion = "0.9.0"
   val chillVersion = "0.6.0"
 
+  val distDirectory = "output"
+  val distDashboardDirectory = s"${distDirectory}/target/pack/dashboard"
+
   override def projects: Seq[Project] = (super.projects.toList ++ BuildExample.projects.toList
       ++ Pack.projects.toList).toSeq
 
-  val commonSettings = Defaults.defaultSettings ++ Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
+  val commonSettings = Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
     Seq(
         resolvers ++= Seq(
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
@@ -183,7 +189,7 @@ object Build extends sbt.Build {
     settings = commonSettings ++
       Seq(
         travis_deploy := {
-          val packagePath = s"output/target/gearpump-pack-${version.value}.tar.gz"
+          val packagePath = s"${distDirectory}/target/gearpump-pack-${version.value}.tar.gz"
           val target = s"target/binary.gearpump.tar.gz"
           println(s"[Travis-Deploy] Move file $packagePath to $target")
           new File(packagePath).renameTo(new File(target))
@@ -223,36 +229,79 @@ object Build extends sbt.Build {
       )
   ) dependsOn (state_api % "test->test; provided", dsl % "provided")
 
-  lazy val services = Project(
-    id = "gearpump-services",
-    base = file("services"),
-    settings = commonSettings  ++ 
-      Seq(
-        libraryDependencies ++= Seq(
-          "io.spray" %%  "spray-testkit"   % sprayVersion % "test",
-          "io.spray" %%  "spray-httpx"     % sprayVersion,
-          "io.spray" %%  "spray-client"    % sprayVersion,
-          "io.spray" %%  "spray-json"    % sprayJsonVersion,
-          "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
-            exclude("com.typesafe.akka", "akka-actor_2.11"),
-          "org.webjars" % "angularjs" % "1.4.3", // We stick on 1.3.x until angular-ui-select works
-          "org.webjars" % "bootstrap" % "3.3.5",
-          "com.lihaoyi" %% "upickle" % upickleVersion,
-          "org.webjars" % "d3js" % "3.5.5",
-          "org.webjars" % "momentjs" % "2.10.3",
-          "org.webjars.bower" % "angular-loading-bar" % "0.8.0",
-          "org.webjars.bower" % "angular-smart-table" % "2.1.1",
-          "org.webjars.bower" % "angular-motion" % "0.4.2",
-          "org.webjars.bower" % "bootstrap-additions" % "0.3.1",
-          "org.webjars.bower" % "angular-strap" % "2.3.1",
-          "org.webjars.bower" % "angular-ui-select" % "0.12.0",
-          "org.webjars" % "select2" % "3.5.2",
-          "org.webjars" % "select2-bootstrap-css" % "1.4.6",
-          "org.webjars.bower" % "ng-file-upload" % "5.0.9",
-          "org.webjars.bower" % "vis" % "4.7.0"
-        ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3"))
-      )
-  ) dependsOn(streaming % "test->test; compile->compile", daemon % "test->test; compile->compile")
+  lazy val services = Project(id = "gearpump-services", base = file("services")).
+    settings(commonSettings: _*).
+    settings(compile in Compile <<= (compile in Compile) dependsOn (compile in (serviceJVM, Compile))).
+    aggregate(serviceJS, serviceJVM).
+    dependsOn(serviceJVM % "test->test;compile->compile", 
+      streaming % "test->test;compile->compile", 
+      daemon % "test->test;compile->compile"
+    )
+
+  lazy val service = crossProject.in(file("services")).
+    settings(commonSettings: _*).
+    jvmSettings(jvmSettings: _*). 
+    jsSettings(jsSettings: _*)
+
+  lazy val js2jvmSettings = Seq(fastOptJS, fullOptJS, packageJSDependencies) map { packageJSKey =>
+    crossTarget in(serviceJS, Compile, packageJSKey) := file(distDashboardDirectory)
+  }
+
+  lazy val serviceJVM: Project = service.jvm.
+    settings(js2jvmSettings: _*).
+    settings(compile in Compile <<= (compile in Compile) dependsOn (fastOptJS in (serviceJS, Compile))).
+    dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile")
+
+  lazy val serviceJS: Project = service.js.
+    dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile")
+
+  lazy val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(
+    "io.spray" %% "spray-testkit" % sprayVersion % "test",
+    "io.spray" %% "spray-httpx" % sprayVersion,
+    "io.spray" %% "spray-client" % sprayVersion,
+    "io.spray" %% "spray-json" % sprayJsonVersion,
+    "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
+      exclude("com.typesafe.akka", "akka-actor_2.11"),
+    "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+    "org.webjars" % "angularjs" % "1.4.3", // We stick on 1.3.x until angular-ui-select works
+    "org.webjars" % "bootstrap" % "3.3.5",
+    "com.lihaoyi" %% "upickle" % upickleVersion,
+    "org.webjars" % "d3js" % "3.5.5",
+    "org.webjars" % "momentjs" % "2.10.3",
+    "org.webjars.bower" % "angular-loading-bar" % "0.8.0",
+    "org.webjars.bower" % "angular-smart-table" % "2.1.1",
+    "org.webjars.bower" % "angular-motion" % "0.4.2",
+    "org.webjars.bower" % "bootstrap-additions" % "0.3.1",
+    "org.webjars.bower" % "angular-strap" % "2.3.1",
+    "org.webjars.bower" % "angular-ui-select" % "0.12.0",
+    "org.webjars" % "select2" % "3.5.2",
+    "org.webjars" % "select2-bootstrap-css" % "1.4.6",
+    "org.webjars.bower" % "ng-file-upload" % "5.0.9",
+    "org.webjars.bower" % "vis" % "4.7.0"
+  ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
+
+  lazy val jsSettings = Seq(
+    scalaVersion := scalaVersionNumber,
+    checksums := Seq(""),
+    requiresDOM := true,
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %%% "upickle" % upickleVersion,
+      "com.lihaoyi" %%% "utest" % "0.3.1"
+    ),
+    scalaJSStage in Global := FastOptStage,
+    testFrameworks += new TestFramework("utest.runner.Framework"),
+    requiresDOM := true,
+    persistLauncher in Compile:= true,
+    persistLauncher in Test:= false,
+    skip in packageJSDependencies := false,
+    scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := ".*gearpump\\.dashboard.*",
+    fastOptJS in Compile := {
+      val fastopt = (fastOptJS in Compile).value
+      //copy shared resources
+      fastopt
+    },
+    relativeSourceMaps := true,
+    jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
 
   lazy val distributeservice = BuildExample.distributeservice
 
@@ -307,7 +356,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         ) ++ hadoopDependency
       )
-  ) dependsOn(services % "test->test; compile->compile")
+  ) dependsOn(serviceJVM % "test->test;compile->compile", core % "provided")
 
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",
