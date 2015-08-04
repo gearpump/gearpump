@@ -17,17 +17,26 @@
  */
 package org.apache.gearpump.external.hbase
 
+import java.io.{IOException, ObjectInputStream, ObjectOutputStream}
+
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.dsl.TypedDataSink
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.task.TaskContext
-import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.client.{HTable, Put}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase.{TableName, HBaseConfiguration}
+import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
 import org.apache.hadoop.hbase.util.Bytes
 
-class HBaseSink(table: HTable) extends DataSink{
+class HBaseSink(tableName: String, @transient var configuration: Configuration) extends DataSink{
+  lazy val connection = ConnectionFactory.createConnection(configuration)
+  lazy val table = connection.getTable(TableName.valueOf(tableName))
 
   override def open(context: TaskContext): Unit = {}
+
+  def this(tableName: String) = {
+    this(tableName, HBaseConfiguration.create())
+  }
 
   def insert(put: Put): Unit = {
     table.put(put)
@@ -39,7 +48,7 @@ class HBaseSink(table: HTable) extends DataSink{
 
   def insert(rowKey: Array[Byte], columnGroup: Array[Byte], columnName: Array[Byte], value: Array[Byte]): Unit = {
     val put = new Put(rowKey)
-    put.add(columnGroup, columnName, value)
+    put.addColumn(columnGroup, columnName, value)
     insert(put)
   }
 
@@ -61,7 +70,18 @@ class HBaseSink(table: HTable) extends DataSink{
   }
 
   def close(): Unit = {
+    connection.close()
     table.close()
+  }
+
+  private def writeObject(out: ObjectOutputStream): Unit = {
+    out.defaultWriteObject()
+    configuration.write(out)
+  }
+
+  private def readObject(in: ObjectInputStream): Unit = {
+    configuration = new Configuration(false)
+    configuration.readFields(in)
   }
 }
 
@@ -70,12 +90,12 @@ object HBaseSink {
   val TABLE_NAME = "hbase.table.name"
   val COLUMN_FAMILY = "hbase.table.column.family"
   val COLUMN_NAME = "hbase.table.column.name"
+
   def apply[T](tableName: String): HBaseSink with TypedDataSink[T] = {
-    val hbaseConf = HBaseConfiguration.create()
-    val table = new HTable(hbaseConf, tableName)
-    new HBaseSink(table) with TypedDataSink[T]
+    new HBaseSink(tableName) with TypedDataSink[T]
   }
-  def apply(table: HTable): HBaseSink = {
-    new HBaseSink(table)
+
+  def apply[T](tableName: String, configuration: Configuration): HBaseSink with TypedDataSink[T] = {
+    new HBaseSink(tableName, configuration) with TypedDataSink[T]
   }
 }
