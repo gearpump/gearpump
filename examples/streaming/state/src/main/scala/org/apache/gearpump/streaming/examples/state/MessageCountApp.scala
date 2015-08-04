@@ -1,0 +1,64 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.gearpump.streaming.examples.state
+
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
+import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.examples.state.processor.{CountProcessor, NumberGeneratorProcessor}
+import org.apache.gearpump.streaming.kafka.KafkaCheckpointStore
+import org.apache.gearpump.streaming.kafka.lib.KafkaUtil
+import org.apache.gearpump.streaming.state.impl.PersistentStateConfig
+import org.apache.gearpump.streaming.{Processor, StreamApplication}
+import org.apache.gearpump.util.{AkkaApp, Graph}
+import org.apache.gearpump.util.Graph._
+
+object MessageCountApp extends AkkaApp with ArgumentsParser {
+
+  override val options: Array[(String, CLIOption[Any])] = Array(
+    "gen" -> CLIOption("<how many gen tasks>", required = false, defaultValue = Some(1)),
+    "count" -> CLIOption("<how mange count tasks", required = false, defaultValue = Some(1))
+  )
+
+  def application(config: ParseResult)(implicit system: ActorSystem) : StreamApplication = {
+    val gen = Processor[NumberGeneratorProcessor](config.getInt("gen"))
+    val count = Processor[CountProcessor](config.getInt("count"))
+    val stateConfig = new PersistentStateConfig(ConfigFactory.parseResources("state.conf"))
+    val userConfig = UserConfig.empty
+      .withValue(PersistentStateConfig.NAME, stateConfig)
+      .withValue(KafkaCheckpointStore.PRODUCER_CONFIG, KafkaUtil.buildProducerConfig("localhost:9092"))
+      .withValue(KafkaCheckpointStore.CONSUMER_CONFIG, KafkaUtil.buildConsumerConfig("localhost:2181"))
+
+    val partitioner = new HashPartitioner()
+    val app = StreamApplication("MessageCount", Graph(gen ~ partitioner ~> count), userConfig)
+    app
+  }
+
+  def main(akkaConf: Config, args: Array[String]): Unit = {
+
+    val config = parse(args)
+    val context = ClientContext(akkaConf)
+    implicit val system = context.system
+    val appId = context.submit(application(config))
+    context.close()
+  }
+}

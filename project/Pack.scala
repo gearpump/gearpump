@@ -69,5 +69,5 @@ object Pack extends sbt.Build {
             "storm" -> stormClassPath
           )
         )
-  ).dependsOn(core, streaming, services, yarn, storm, dsl)//, state)
+  ).dependsOn(core, streaming, services, yarn, storm, dsl, state_api)
 }
