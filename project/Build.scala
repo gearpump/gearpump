@@ -186,7 +186,10 @@ object Build extends sbt.Build {
           val packagePath = s"output/target/gearpump-pack-${version.value}.tar.gz"
           val target = s"target/binary.gearpump.tar.gz"
           println(s"[Travis-Deploy] Move file $packagePath to $target")
-          new File(packagePath).renameTo(new File(target))
+          val file = new File(packagePath)
+          val targetFile = new File(target)
+          targetFile.getParentFile.mkdirs()
+          file.renameTo(targetFile)
         }
       )
   ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
