@@ -13,10 +13,7 @@ import BuildExample.examples
 import Pack.packProject
 
 object Build extends sbt.Build {
-  /**
-   * deploy can recognize the path
-   */
-  val travis_deploy = taskKey[Unit]("use this after sbt assembly packArchive, it will rename the package so that travis deploy can find the package.")
+
 
   val akkaVersion = "2.3.6"
   val kryoVersion = "0.3.2"
@@ -185,15 +182,7 @@ object Build extends sbt.Build {
   lazy val root = Project(
     id = "gearpump",
     base = file("."),
-    settings = commonSettings ++
-      Seq(
-        travis_deploy := {
-          val packagePath = s"${distDirectory}/target/gearpump-pack-${version.value}.tar.gz"
-          val target = s"target/binary.gearpump.tar.gz"
-          println(s"[Travis-Deploy] Move file $packagePath to $target")
-          new File(packagePath).renameTo(new File(target))
-        }
-      )
+    settings = commonSettings
   ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
       examples, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state_api)
 
