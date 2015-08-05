@@ -22,9 +22,7 @@ import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
 
 @JSExport
-object DashboardApp extends JSApp {
-  override def main(): Unit = {
-  }
+object DashboardApp {
 }
 
 
