@@ -11,12 +11,14 @@ import xerial.sbt.Sonatype._
 
 import BuildExample.examples
 import Pack.packProject
-
+import org.scalajs.sbtplugin.cross.CrossProject
 object Build extends sbt.Build {
   /**
    * deploy can recognize the path
    */
   val travis_deploy = taskKey[Unit]("use this after sbt assembly packArchive, it will rename the package so that travis deploy can find the package.")
+
+  val copySharedSourceFiles = TaskKey[Unit]("copied shared services source code")
 
   val akkaVersion = "2.3.6"
   val kryoVersion = "0.3.2"
@@ -50,7 +52,6 @@ object Build extends sbt.Build {
   val chillVersion = "0.6.0"
 
   val distDirectory = "output"
-  val distDashboardDirectory = s"${distDirectory}/target/pack/dashboard"
 
   override def projects: Seq[Project] = (super.projects.toList ++ BuildExample.projects.toList
       ++ Pack.projects.toList).toSeq
@@ -229,32 +230,23 @@ object Build extends sbt.Build {
       )
   ) dependsOn (state_api % "test->test; provided", dsl % "provided")
 
-  lazy val services = Project(id = "gearpump-services", base = file("services")).
-    settings(commonSettings: _*).
-    settings(compile in Compile <<= (compile in Compile) dependsOn (compile in (serviceJVM, Compile))).
-    aggregate(serviceJS, serviceJVM).
-    dependsOn(serviceJVM % "test->test;compile->compile", 
-      streaming % "test->test;compile->compile", 
-      daemon % "test->test;compile->compile"
+  lazy val services_full = CrossProject("gearpump-services", file("services"), CrossType.Full).
+    settings(
+      publish := {},
+      publishLocal := {}
     )
 
-  lazy val service = crossProject.in(file("services")).
-    settings(commonSettings: _*).
-    jvmSettings(jvmSettings: _*). 
-    jsSettings(jsSettings: _*)
+  val distDashboardDirectory = s"${distDirectory}/target/pack/dashboard/views/scalajs"
 
-  lazy val js2jvmSettings = Seq(fastOptJS, fullOptJS, packageJSDependencies) map { packageJSKey =>
-    crossTarget in(serviceJS, Compile, packageJSKey) := file(distDashboardDirectory)
-  }
+  lazy val serviceJS: Project = services_full.js.settings(serviceJSSettings: _*)
 
-  lazy val serviceJVM: Project = service.jvm.
-    settings(js2jvmSettings: _*).
+  lazy val services: Project = services_full.jvm.
+    settings(serviceJvmSettings: _*).
     settings(compile in Compile <<= (compile in Compile) dependsOn (fastOptJS in (serviceJS, Compile))).
     dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile")
 
-  lazy val serviceJS: Project = service.js
-
-  lazy val jvmSettings = commonSettings ++ Seq(libraryDependencies ++= Seq(
+  lazy val serviceJvmSettings = commonSettings ++ Seq(
+    libraryDependencies ++= Seq(
     "io.spray" %% "spray-testkit" % sprayVersion % "test",
     "io.spray" %% "spray-httpx" % sprayVersion,
     "io.spray" %% "spray-client" % sprayVersion,
@@ -279,7 +271,7 @@ object Build extends sbt.Build {
     "org.webjars.bower" % "vis" % "4.7.0"
   ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
 
-  lazy val jsSettings = Seq(
+  lazy val serviceJSSettings = Seq(
     scalaVersion := scalaVersionNumber,
     checksums := Seq(""),
     requiresDOM := true,
@@ -290,15 +282,18 @@ object Build extends sbt.Build {
     scalaJSStage in Global := FastOptStage,
     testFrameworks += new TestFramework("utest.runner.Framework"),
     requiresDOM := true,
-    persistLauncher in Compile:= true,
+    persistLauncher in Compile:= false,
     persistLauncher in Test:= false,
     skip in packageJSDependencies := false,
     scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := ".*gearpump\\.dashboard.*",
-    fastOptJS in Compile := {
-      val fastopt = (fastOptJS in Compile).value
-      //copy shared resources
-      fastopt
+
+    copySharedSourceFiles := {
+      println(s"Copy shared source code to project services...")
     },
+
+    artifactPath in fastOptJS in Compile := new java.io.File(distDashboardDirectory, moduleName.value + "-fastopt.js"),
+    fastOptJS in Compile <<= (fastOptJS in Compile).dependsOn(copySharedSourceFiles),
+
     relativeSourceMaps := true,
     jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
 
@@ -355,7 +350,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         ) ++ hadoopDependency
       )
-  ) dependsOn(serviceJVM % "test->test;compile->compile", core % "provided")
+  ) dependsOn(services % "test->test;compile->compile", core % "provided")
 
   lazy val dsl = Project(
     id = "gearpump-experiments-dsl",

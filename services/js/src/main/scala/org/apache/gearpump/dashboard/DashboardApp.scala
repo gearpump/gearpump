@@ -26,5 +26,3 @@ object DashboardApp extends JSApp {
   override def main(): Unit = {
   }
 }
-
-
