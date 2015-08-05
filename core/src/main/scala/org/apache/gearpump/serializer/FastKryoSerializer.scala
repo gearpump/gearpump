@@ -19,18 +19,18 @@
 package org.apache.gearpump.serializer
 
 import akka.actor.ExtendedActorSystem
-import com.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
-import com.romix.akka.serialization.kryo.KryoSerializer
+import io.gearpump.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
+import io.gearpump.romix.serialization.kryo.KryoSerializerWrapper
 import org.apache.gearpump.serializer.FastKryoSerializer.KryoSerializationException
 import org.apache.gearpump.util.LogUtil
-import org.objenesis.strategy.StdInstantiatorStrategy
+import io.gearpump.objenesis.strategy.StdInstantiatorStrategy
 
 class FastKryoSerializer(system: ExtendedActorSystem) {
 
   private val LOG = LogUtil.getLogger(getClass)
   private val config = system.settings.config
 
-  private val kryoSerializer = new KryoSerializer(system).serializer
+  private val kryoSerializer = new KryoSerializerWrapper(system)
   private val kryo = kryoSerializer.kryo
   val strategy = new DefaultInstantiatorStrategy
   strategy.setFallbackInstantiatorStrategy(new StdInstantiatorStrategy)

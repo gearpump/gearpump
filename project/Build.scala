@@ -163,8 +163,7 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
         "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
-        "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion
-          exclude("net.jpountz.lz4", "lz4"),
+        "com.github.intel-hadoop" % "gearpump-shaded-akka-kryo" % kryoVersion,
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",

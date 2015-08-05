@@ -19,8 +19,8 @@
 package org.apache.gearpump.serializer
 
 import akka.actor.{ActorSystem, ExtendedActorSystem}
-import com.esotericsoftware.kryo.io.{Input, Output}
-import com.esotericsoftware.kryo.{Kryo, Serializer}
+import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
+import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.serializer.SerializerSpec._

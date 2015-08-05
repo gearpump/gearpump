@@ -17,14 +17,14 @@
  */
 package org.apache.gearpump.streaming
 
-import com.esotericsoftware.kryo.Kryo
+import io.gearpump.esotericsoftware.kryo.Kryo
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.serializer.GearpumpSerialization
 import org.apache.gearpump.streaming.task._
 import org.scalatest.{Matchers, WordSpec}
 
-import com.esotericsoftware.kryo.io.{Input, Output}
+import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
 
 class MessageSerializerSpec extends WordSpec with Matchers {
   val kryo = new Kryo
