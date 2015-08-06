@@ -1,7 +1,7 @@
 import sbt.Keys._
 import sbt._
-import Build._
 import sbtassembly.Plugin.AssemblyKeys._
+import Build._
 
 object BuildExample extends sbt.Build {
 
@@ -120,7 +120,10 @@ object BuildExample extends sbt.Build {
     id = "gearpump-examples-state",
     base = file("examples/streaming/state"),
     settings = commonSettings ++ myAssemblySettings ++ Seq(
+      libraryDependencies ++= Seq(
+        "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion
+      ),
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
     )
-  ) dependsOn (state_api % "test->test; provided", external_kafka, external_monoid, external_serializer)
+  ) dependsOn (state_api % "test->test; provided", external_hadoopfs, external_monoid, external_serializer)
 }

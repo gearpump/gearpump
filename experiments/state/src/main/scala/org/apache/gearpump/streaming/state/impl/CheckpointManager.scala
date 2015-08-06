@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.state.impl
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.state.api.CheckpointStore
+import org.apache.gearpump.streaming.transaction.api.CheckpointStore
 
 
 class CheckpointManager(checkpointInterval: Long,
@@ -32,11 +32,11 @@ class CheckpointManager(checkpointInterval: Long,
   def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
     lastCheckpointTime = timestamp
     checkpointTime = lastCheckpointTime + checkpointInterval
-    checkpointStore.read(timestamp)
+    checkpointStore.recover(timestamp)
   }
 
   def checkpoint(timestamp: TimeStamp, checkpoint: Array[Byte]): Unit = {
-    checkpointStore.write(timestamp, checkpoint)
+    checkpointStore.persist(timestamp, checkpoint)
     lastCheckpointTime = checkpointTime
     updateCheckpointTime()
   }

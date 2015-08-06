@@ -16,36 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.state.impl
+package org.apache.gearpump.streaming.transaction.api
 
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.TaskContext
-import org.apache.gearpump.streaming.transaction.api.{CheckpointStoreFactory, CheckpointStore}
 
 /**
- * an in memory store provided for test
- * should not be used in real cases
+ * CheckpointStore persistently stores mapping of timestamp to checkpoint
+ * it's possible that two checkpoints have the same timestamp
+ * CheckpointStore needs to handle this either during write or read
  */
-class InMemoryCheckpointStore extends CheckpointStore {
-  private var checkpoints = Map.empty[TimeStamp, Array[Byte]]
+trait CheckpointStore {
 
-  override def persist(timestamp: TimeStamp, checkpoint: Array[Byte]): Unit = {
-    checkpoints += timestamp -> checkpoint
-  }
+  def persist(timeStamp: TimeStamp, checkpoint: Array[Byte]): Unit
 
-  override def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
-    checkpoints.get(timestamp)
-  }
+  def recover(timestamp: TimeStamp): Option[Array[Byte]]
 
-  override def close(): Unit = {
-    checkpoints = Map.empty[TimeStamp, Array[Byte]]
-  }
-
+  def close(): Unit
 }
 
-class InMemoryCheckpointStoreFactory extends CheckpointStoreFactory {
-  override def getCheckpointStore(conf: UserConfig, taskContext: TaskContext): CheckpointStore = {
-    new InMemoryCheckpointStore
-  }
+trait CheckpointStoreFactory extends java.io.Serializable {
+  def getCheckpointStore(conf: UserConfig, taskContext: TaskContext): CheckpointStore
 }
+

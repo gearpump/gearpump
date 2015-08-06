@@ -1,10 +1,8 @@
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import sbt.Keys._
 import sbt._
-import org.scalajs.sbtplugin.ScalaJSPlugin
-import ScalaJSPlugin._
-import ScalaJSPlugin.autoImport._
 import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin._
 import xerial.sbt.Sonatype._
@@ -128,6 +126,8 @@ object Build extends sbt.Build {
       exclude("tomcat", "jasper-runtime")
       exclude("commons-beanutils", "commons-beanutils-core")
       exclude("commons-beanutils", "commons-beanutils")
+      exclude("asm", "asm")
+      exclude("org.ow2.asm", "asm")
   )
 
   val daemonDependencies = Seq(
@@ -185,7 +185,7 @@ object Build extends sbt.Build {
     base = file("."),
     settings = commonSettings
   ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
-      examples, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state_api)
+      examples, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state_api, external_hadoopfs)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -208,7 +208,7 @@ object Build extends sbt.Build {
   lazy val external_kafka = Project(
     id = "gearpump-external-kafka",
     base = file("external/kafka"),
-    settings = commonSettings ++ myAssemblySettings ++
+    settings = commonSettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.kafka" %% "kafka" % kafkaVersion,
@@ -421,4 +421,13 @@ object Build extends sbt.Build {
           )
         )
   ) dependsOn(state_api % "provided")
+
+  lazy val external_hadoopfs = Project(
+    id = "gearpump-external-hadoopfs",
+    base = file("external/hadoopfs"),
+    settings = commonSettings ++
+        Seq(
+          libraryDependencies ++= hadoopDependency
+        )
+  ) dependsOn(state_api % "test->test; provided")
 }
