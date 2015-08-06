@@ -78,7 +78,11 @@ private[appmaster] class TaskManager(
     (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
   }
 
-  private var startClock: Future[TimeStamp] = getMinClock
+  private def getStartClock: Future[TimeStamp] = {
+    (clockService ? GetStartClock).asInstanceOf[Future[StartClock]].map(_.clock)
+  }
+
+  private var startClock: Future[TimeStamp] = getStartClock
 
   private val startTasks: StateFunction = {
     case Event(executor: ExecutorStarted, state) =>
@@ -275,7 +279,7 @@ private[appmaster] class TaskManager(
       self ! CheckApplicationReady
 
       // Use new Start Clock so that we recover at timepoint we fails.
-      startClock = getMinClock
+      startClock = getStartClock
       LOG.info(s"goto state Recovery(recoverDag = $recoverDagVersion)...")
 
     case _ -> DynamicDAG =>

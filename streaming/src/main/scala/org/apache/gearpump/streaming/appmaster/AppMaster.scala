@@ -21,10 +21,10 @@ package org.apache.gearpump.streaming.appmaster
 import akka.actor._
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.LastFailure
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.metrics.Metrics.{ReportMetrics, MetricType}
+import org.apache.gearpump.metrics.Metrics.ReportMetrics
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, ServiceNotAvailableException}
@@ -36,7 +36,7 @@ import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{ActorUtil, Graph, LogUtil}
+import org.apache.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
@@ -109,6 +109,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       taskManager.foreach(_ forward messageLoss)
     case lookupTask: LookupTaskActorRef =>
       taskManager.foreach(_ forward lookupTask)
+    case checkpoint: ReportCheckpointClock =>
+      clockService.foreach(_ forward checkpoint)
   }
 
   def executorMessageHandler: Receive = {

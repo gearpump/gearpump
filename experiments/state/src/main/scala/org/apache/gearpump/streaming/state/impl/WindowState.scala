@@ -76,10 +76,10 @@ class WindowState[T](group: Group[T],
     }
   }
 
-  override def update(timestamp: TimeStamp, t: T, checkpointTime: TimeStamp): Unit = {
+  override def update(timestamp: TimeStamp, t: T): Unit = {
     val (startTime, endTime) = window.range
     if (timestamp >= startTime && timestamp < endTime) {
-      updateState(timestamp, t, checkpointTime)
+      updateState(timestamp, t)
     }
 
     updateIntervalStates(timestamp, t, checkpointTime)
@@ -106,13 +106,13 @@ class WindowState[T](group: Group[T],
     }
   }
 
-  override def checkpoint(checkpointTime: TimeStamp): Array[Byte] = {
+  override def checkpoint(): Array[Byte] = {
     left = group.plus(left, right)
     right = group.zero
 
     val states = getIntervalStates(window.range._1, checkpointTime)
     lastCheckpointTime = checkpointTime
-    LOG.debug(s"checkpoint ($checkpointTime, $states) at $checkpointTime")
+    LOG.debug(s"checkpoint time: $checkpointTime; checkpoint value: ($checkpointTime, $states)")
     serializer.serialize(states)
   }
 

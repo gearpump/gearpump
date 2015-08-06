@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.examples.state.processor
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.monoid.AlgebirdMonoid
 import org.apache.gearpump.streaming.serializer.ChillSerializer
-import org.apache.gearpump.streaming.state.api.{PersistentState, PersistentTask}
+import org.apache.gearpump.streaming.state.api.{PersistentTask, PersistentState}
 import org.apache.gearpump.streaming.state.impl.NonWindowState
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.{Message, TimeStamp}
@@ -34,8 +34,8 @@ class CountProcessor(taskContext: TaskContext, conf: UserConfig)
     new NonWindowState[Long](new AlgebirdMonoid(longMonoid), new ChillSerializer[Long])
   }
 
-  override def processMessage(state: PersistentState[Long], message: Message, checkpointTime: TimeStamp): Unit = {
-    state.update(message.timestamp, 1L, checkpointTime)
+  override def processMessage(state: PersistentState[Long], message: Message): Unit = {
+    state.update(message.timestamp, 1L)
   }
 }
 

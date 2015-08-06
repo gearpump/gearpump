@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.state.system.impl
+package org.apache.gearpump.streaming.state.impl
 
 object PersistentStateConfig {
 
+  val STATE_CHECKPOINT_ENABLE = "state.checkpoint.enable"
   val STATE_CHECKPOINT_INTERVAL_MS = "state.checkpoint.interval.ms"
   val STATE_CHECKPOINT_STORE_FACTORY = "state.checkpoint.store.factory"
   val STATE_WINDOW_SIZE = "state.window.size"

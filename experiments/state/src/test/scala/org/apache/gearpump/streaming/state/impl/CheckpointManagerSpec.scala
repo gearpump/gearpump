@@ -40,6 +40,7 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
         checkpointManager.recover(timestamp)
 
         verify(checkpointStore).recover(timestamp)
+        checkpointManager.getCheckpointTime - timestamp should be <= checkpointInterval
     }
   }
 
@@ -82,7 +83,7 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
         checkpointManager.checkpoint(checkpointTime, Array.empty[Byte])
         verify(checkpointStore).persist(MockitoMatchers.eq(checkpointTime),
           MockitoMatchers.anyObject[Array[Byte]]())
-        val newCheckpointTime = checkpointManager.getCheckpointTime
+        val newCheckpointTime = checkpointManager.updateCheckpointTime()
         maxTimestamp should (be < newCheckpointTime and be >= (newCheckpointTime - checkpointInterval))
     }
   }

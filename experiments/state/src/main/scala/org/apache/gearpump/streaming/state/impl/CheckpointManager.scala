@@ -30,15 +30,13 @@ class CheckpointManager(checkpointInterval: Long,
   private var lastCheckpointTime = 0L
 
   def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
-    lastCheckpointTime = timestamp
-    checkpointTime = lastCheckpointTime + checkpointInterval
+    checkpointTime = (timestamp / checkpointInterval + 1) * checkpointInterval
     checkpointStore.recover(timestamp)
   }
 
   def checkpoint(timestamp: TimeStamp, checkpoint: Array[Byte]): Unit = {
     checkpointStore.persist(timestamp, checkpoint)
     lastCheckpointTime = checkpointTime
-    updateCheckpointTime()
   }
 
   def update(messageTime: TimeStamp): Unit = {
@@ -51,10 +49,11 @@ class CheckpointManager(checkpointInterval: Long,
 
   def getCheckpointTime: TimeStamp = checkpointTime
 
-  private def updateCheckpointTime(): Unit = {
+  def updateCheckpointTime(): TimeStamp = {
     if (maxMessageTime >= checkpointTime) {
       checkpointTime += (1 + (maxMessageTime - checkpointTime) / checkpointInterval) * checkpointInterval
     }
+    checkpointTime
   }
 
   def close(): Unit = {

@@ -19,14 +19,14 @@
 package org.apache.gearpump.streaming.examples.state.processor
 
 import com.twitter.algebird.{AveragedGroup, AveragedValue}
+import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.monoid.AlgebirdGroup
 import org.apache.gearpump.streaming.serializer.ChillSerializer
-import org.apache.gearpump.streaming.state.api.{PersistentTask, PersistentState}
-import org.apache.gearpump.streaming.state.impl.{Window, WindowConfig, WindowState, Interval}
+import org.apache.gearpump.streaming.state.api.{PersistentState, PersistentTask}
+import org.apache.gearpump.streaming.state.impl.{Interval, Window, WindowConfig, WindowState}
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.LogUtil
-import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
 import scala.collection.immutable.TreeMap
@@ -46,8 +46,8 @@ class WindowAverageProcessor(taskContext : TaskContext, conf: UserConfig)
   }
 
   override def processMessage(state: PersistentState[AveragedValue],
-                              message: Message, checkpointTime: TimeStamp): Unit = {
+                              message: Message): Unit = {
     val value = AveragedValue(message.msg.asInstanceOf[String].toLong)
-    state.update(message.timestamp, value, checkpointTime)
+    state.update(message.timestamp, value)
   }
 }

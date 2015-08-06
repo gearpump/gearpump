@@ -83,7 +83,7 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
         when(monoid.zero).thenReturn(zero, Nil: _*)
         when(monoid.plus(left, right)).thenReturn(plus, Nil: _*)
         when(monoid.plus(plus, zero)).thenReturn(plus, Nil: _*)
-        state.checkpoint(checkpointTime)
+        state.checkpoint()
 
         verify(serializer).serialize(left)
         state.left shouldBe plus
@@ -114,14 +114,16 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
 
         when(monoid.plus(zero, left)).thenReturn(left, Nil: _*)
         when(monoid.plus(left, zero)).thenReturn(left, Nil: _*)
-        state.update(checkpointTime - 1, left, checkpointTime)
+        state.setNextCheckpointTime(checkpointTime)
+        state.update(checkpointTime - 1, left)
         state.left shouldBe left
         state.right shouldBe zero
         state.get shouldBe Some(left)
 
         when(monoid.plus(zero, right)).thenReturn(right, Nil: _*)
         when(monoid.plus(left, right)).thenReturn(plus, Nil: _*)
-        state.update(checkpointTime + 1, right, checkpointTime)
+        state.setNextCheckpointTime(checkpointTime)
+        state.update(checkpointTime + 1, right)
         state.left shouldBe left
         state.right shouldBe right
         state.get shouldBe Some(plus)
