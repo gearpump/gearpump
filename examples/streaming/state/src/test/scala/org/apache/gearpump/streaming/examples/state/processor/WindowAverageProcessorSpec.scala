@@ -20,12 +20,13 @@ package org.apache.gearpump.streaming.examples.state.processor
 
 import akka.actor.ActorSystem
 import com.twitter.algebird.AveragedValue
-import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.state.impl.{WindowConfig, PersistentStateConfig}
+import org.apache.gearpump.streaming.state.impl.{InMemoryCheckpointStoreFactory, WindowConfig}
+import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
 import org.apache.gearpump.streaming.task.StartTime
+import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
@@ -44,17 +45,12 @@ class WindowAverageProcessorSpec extends PropSpec with PropertyChecks with Match
       (data: Long, num: Long) =>
         val windowSize = num
         val windowStep = num
-        val stateConfig = new PersistentStateConfig(ConfigFactory.parseString(
-          s"""state {
-            checkpoint {
-              interval = $num # milliseconds
-              store.factory = org.apache.gearpump.streaming.state.impl.InMemoryCheckpointStoreFactory
-            }
-          }""".stripMargin
-        ))
+
         val conf = UserConfig.empty
-          .withValue(PersistentStateConfig.NAME, stateConfig)
-          .withValue(WindowConfig.NAME, WindowConfig(windowSize, windowStep))
+            .withLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS, num)
+            .withValue[CheckpointStoreFactory](PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY, new InMemoryCheckpointStoreFactory)
+
+            .withValue(WindowConfig.NAME, WindowConfig(windowSize, windowStep))
 
         val windowAverage = new WindowAverageProcessor(taskContext, conf)
 
