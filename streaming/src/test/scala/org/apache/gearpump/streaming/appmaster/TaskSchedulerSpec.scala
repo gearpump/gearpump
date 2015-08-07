@@ -19,14 +19,13 @@ package org.apache.gearpump.streaming.appmaster
 
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{UserConfig, ClusterConfig}
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
-import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
+import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
+import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.appmaster.TaskLocator.Localities
-import org.apache.gearpump.streaming.appmaster.TaskSchedulerSpec.{TestTask2, TestTask1}
-import org.apache.gearpump.streaming.task.{TaskId, StartTime, TaskContext, Task}
+import org.apache.gearpump.streaming.appmaster.TaskSchedulerSpec.{TestTask1, TestTask2}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
-import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 import org.scalatest.{Matchers, WordSpec}
@@ -34,8 +33,8 @@ import org.scalatest.{Matchers, WordSpec}
 import scala.collection.mutable.ArrayBuffer
 
 class TaskSchedulerSpec extends WordSpec with Matchers {
-  val task1 = ProcessorDescription(id = 0, classOf[TestTask1].getName, 4)
-  val task2 = ProcessorDescription(id = 1, classOf[TestTask2].getName, 2)
+  val task1 = ProcessorDescription(id = 0, taskClass = classOf[TestTask1].getName, parallelism = 4)
+  val task2 = ProcessorDescription(id = 1, taskClass = classOf[TestTask2].getName, parallelism = 2)
 
   val dag = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
 
@@ -95,8 +94,6 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
     }
 
     "schedule task fairly" in {
-
-      import org.apache.gearpump.streaming.Constants.GEARPUMP_STREAMING_LOCALITIES
       val appName = "app"
       val taskScheduler = new TaskSchedulerImpl(appId = 0, appName, config)
 

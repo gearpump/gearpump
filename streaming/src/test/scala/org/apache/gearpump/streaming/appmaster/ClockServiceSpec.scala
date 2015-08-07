@@ -38,8 +38,8 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
   def this() = this(ActorSystem("ClockServiceSpec", TestUtil.DEFAULT_CONFIG))
 
   val hash = Partitioner[HashPartitioner]
-  val task1 = ProcessorDescription(id = 0, classOf[TaskActor].getName, 1)
-  val task2 = ProcessorDescription(id = 1, classOf[TaskActor].getName, 1)
+  val task1 = ProcessorDescription(id = 0, taskClass = classOf[TaskActor].getName, parallelism = 1)
+  val task2 = ProcessorDescription(id = 1, taskClass = classOf[TaskActor].getName, parallelism = 1)
   val dag = DAG(Graph(task1 ~ hash ~> task2))
 
   override def afterAll {
@@ -86,9 +86,9 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       clockService.tell(UpdateClock(TaskId(0, 0), 200), task.ref)
       task.expectMsgType[UpstreamMinClock]
 
-      val task3 = ProcessorDescription(id = 3, classOf[TaskActor].getName, 1)
-      val task4 = ProcessorDescription(id = 4, classOf[TaskActor].getName, 1)
-      val task5 = ProcessorDescription(id = 5, classOf[TaskActor].getName, 1)
+      val task3 = ProcessorDescription(id = 3, taskClass = classOf[TaskActor].getName, parallelism = 1)
+      val task4 = ProcessorDescription(id = 4, taskClass = classOf[TaskActor].getName, parallelism = 1)
+      val task5 = ProcessorDescription(id = 5, taskClass = classOf[TaskActor].getName, parallelism = 1)
       val dagAddMiddleNode = DAG(Graph(
         task1 ~ hash ~> task2,
         task1 ~ hash ~> task3,
@@ -179,10 +179,10 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
   "HealthChecker" should {
     "report stalling if the clock is not advancing" in {
       val healthChecker = new HealthChecker(stallingThresholdSeconds = 1)
-      val source = ProcessorDescription(id = 0, null, parallelism = 1)
+      val source = ProcessorDescription(id = 0, taskClass = null, parallelism = 1)
       val sourceClock = new ProcessorClock(0, 1)
       sourceClock.init(0L)
-      val sink = ProcessorDescription(id = 1, null, parallelism = 1)
+      val sink = ProcessorDescription(id = 1, taskClass = null, parallelism = 1)
       val sinkClock = new ProcessorClock(1, 1)
       sinkClock.init(0L)
       val graph = Graph.empty[ProcessorDescription, PartitionerDescription]

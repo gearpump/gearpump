@@ -56,7 +56,7 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val executorContext = ExecutorContext(executorId, workerInfo, appId, "app", appMaster.ref, Resource(2))
     val taskLauncher = mock(classOf[ITaskLauncher])
     val executor = system.actorOf(Props(new Executor(executorContext, userConf, taskLauncher)))
-    val processor = ProcessorDescription(id = 0, classOf[MockTask].getName, parallelism = 2)
+    val processor = ProcessorDescription(id = 0, taskClass = classOf[MockTask].getName, parallelism = 2)
     val taskIds = List(TaskId(0, 0), TaskId(0, 1))
     val launchTasks = LaunchTasks(taskIds, dagVersion = 0,  processor, List.empty[Subscriber])
 

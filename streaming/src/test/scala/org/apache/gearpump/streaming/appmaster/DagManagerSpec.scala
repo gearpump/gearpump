@@ -18,27 +18,23 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.ActorSystem
-import akka.testkit.TestKit
-import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.partitioner.{PartitionerDescription, HashPartitioner, Partitioner}
-import org.apache.gearpump.streaming.appmaster.DagManager.{NewDAGDeployed, DAGOperationFailed, DAGOperationSuccess, ReplaceProcessor, WatchChange, LatestDAG, TaskLaunchData, GetTaskLaunchData, GetLatestDAG}
-import org.apache.gearpump.streaming.{LifeTime, StreamApplication, DAG, ProcessorDescription}
-import org.apache.gearpump.streaming.task.{Subscriber, TaskActor}
-import org.apache.gearpump.util.Graph
-import org.scalatest.{FlatSpec, BeforeAndAfterAll, Matchers, WordSpec}
-import akka.actor.Props
-import org.apache.gearpump.cluster.UserConfig
+import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import org.apache.gearpump.cluster.{TestUtil, UserConfig}
+import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperationFailed, DAGOperationSuccess, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}
+import org.apache.gearpump.streaming.task.{Subscriber, TaskActor}
+import org.apache.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, StreamApplication}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 
 class DagManagerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   val hash = Partitioner[HashPartitioner]
-  val task1 = ProcessorDescription(id = 1, classOf[TaskActor].getName, 1)
-  val task2 = ProcessorDescription(id = 2, classOf[TaskActor].getName, 1)
+  val task1 = ProcessorDescription(id = 1, taskClass = classOf[TaskActor].getName, parallelism = 1)
+  val task2 = ProcessorDescription(id = 2, taskClass = classOf[TaskActor].getName, parallelism = 1)
   val graph = Graph(task1 ~ hash ~> task2)
   val dag = DAG(graph)
   implicit var system: ActorSystem = null

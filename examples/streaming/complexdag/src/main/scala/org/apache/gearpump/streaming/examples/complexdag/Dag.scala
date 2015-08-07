@@ -18,17 +18,15 @@
 
 package org.apache.gearpump.streaming.examples.complexdag
 
-import com.typesafe.config.Config
-import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
+import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.task.TaskContext
-import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
+import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph.{Node => GraphNode}
 import org.apache.gearpump.util.{AkkaApp, Graph, LogUtil}
 import org.slf4j.Logger
-import org.apache.gearpump.streaming.task.Task
 
 /*
  digraph flow {
@@ -83,22 +81,23 @@ object Dag extends AkkaApp with ArgumentsParser {
     val sink_2 = Processor[Sink_2](1)
     val sink_3 = Processor[Sink_3](1)
     val sink_4 = Processor[Sink_4](1)
+    val partitioner = new HashPartitioner
     val app = StreamApplication("dag", Graph(
-      source_0  ~> sink_1,
-      source_0  ~> sink_2,
-      source_0  ~> node_2,
-      source_0  ~> node_3,
-      source_0  ~> node_1,
-      source_0  ~> sink_0,
-      node_2  ~> node_3,
-      node_1  ~> node_3,
-      node_1  ~> sink_3,
-      node_1  ~> node_4,
-      source_1  ~> sink_4,
-      source_1  ~> node_0,
-      node_3  ~> sink_3,
-      node_4  ~> sink_3,
-      node_0  ~> sink_3
+      source_0 ~ partitioner ~> sink_1,
+      source_0 ~ partitioner ~> sink_2,
+      source_0 ~ partitioner ~> node_2,
+      source_0 ~ partitioner ~> node_3,
+      source_0 ~ partitioner ~> node_1,
+      source_0 ~ partitioner ~> sink_0,
+      node_2 ~ partitioner ~> node_3,
+      node_1 ~ partitioner ~> node_3,
+      node_1 ~ partitioner ~> sink_3,
+      node_1 ~ partitioner ~> node_4,
+      source_1 ~ partitioner ~> sink_4,
+      source_1 ~ partitioner ~> node_0,
+      node_3 ~ partitioner ~> sink_3,
+      node_4 ~ partitioner ~> sink_3,
+      node_0 ~ partitioner ~> sink_3
     ), UserConfig.empty)
     app
   }

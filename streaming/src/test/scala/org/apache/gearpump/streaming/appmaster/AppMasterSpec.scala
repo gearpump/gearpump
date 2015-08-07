@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, Props}
 import akka.testkit.{TestActorRef, TestProbe}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.AppMasterToMaster._
@@ -26,21 +26,18 @@ import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated}
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, AppMasterRuntimeEnvironment}
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
 import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
+import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
-import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
+import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{StreamApplication, ProcessorDescription}
-import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
+import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.util.{ActorUtil, Graph}
 import org.scalatest._
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import org.apache.gearpump.streaming.Processor
 
 class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config = TestUtil.DEFAULT_CONFIG
@@ -52,6 +49,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   val resource = Resource(1)
   val taskDescription1 = Processor[TaskA](2)
   val taskDescription2 = Processor[TaskB](2)
+  val partitioner = new HashPartitioner
   var conf: UserConfig = null
 
   var mockTask: TestProbe = null
@@ -77,7 +75,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     implicit val system = getActorSystem
     conf = UserConfig.empty.withValue(AppMasterSpec.MASTER, mockMaster.ref)
     appMasterContext = AppMasterContext(appId, "test", resource, None, mockMaster.ref, appMasterRuntimeInfo)
-    val streamApp = StreamApplication("test", Graph(taskDescription1  ~> taskDescription2), conf)
+    val graph = Graph(taskDescription1 ~ partitioner ~> taskDescription2)
+    val streamApp = StreamApplication("test", graph, conf)
     appDescription = Application.ApplicationToAppDescription(streamApp)
     import scala.concurrent.duration._
     mockMasterProxy = getActorSystem.actorOf(

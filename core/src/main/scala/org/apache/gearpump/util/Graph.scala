@@ -17,7 +17,6 @@
  */
 
 package org.apache.gearpump.util
-import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.language.implicitConversions
 
