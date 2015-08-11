@@ -1,0 +1,2 @@
+org.apache.gearpump.jarstore.local.LocalJarStoreService
+org.apache.gearpump.jarstore.dfs.DFSJarStoreService

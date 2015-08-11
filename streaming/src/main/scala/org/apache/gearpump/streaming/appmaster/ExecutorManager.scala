@@ -77,7 +77,7 @@ private[appmaster] class ExecutorManager(
       import executorSystem.{address, executorSystemId, resource => executorResource, worker}
 
       val executorId = executorSystemId
-      val executorContext = ExecutorContext(executorId, worker, appId, appName, appMaster =  context.parent, executorResource)
+      val executorContext = ExecutorContext(executorId, worker, appId, appName, appMaster = context.parent, executorResource)
 
       //start executor
       val executor = context.actorOf(executorFactory(executorContext, userConfig, address, executorId),

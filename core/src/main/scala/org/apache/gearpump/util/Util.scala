@@ -19,6 +19,7 @@
 package org.apache.gearpump.util
 
 import java.io.File
+import java.net.URI
 import java.net.ServerSocket
 import com.typesafe.config.Config
 import org.apache.gearpump.transport.HostPort
@@ -29,6 +30,7 @@ import scala.util.Try
 
 object Util {
   val LOG = LogUtil.getLogger(getClass)
+  private val defaultUri = new URI("file:///")
   private val appNamePattern = "^[a-zA-Z_][a-zA-Z0-9_]+$".r.pattern
 
   def validApplicationName(appName: String): Boolean = {
@@ -60,6 +62,29 @@ object Util {
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
     }
     masters.toList
+  }
+
+  def resolvePath(path: String): String = {
+    val uri = new URI(path)
+    if(uri.getScheme == null && uri.getFragment == null) {
+      val absolutePath = new File(path).getCanonicalPath
+      "file://" + absolutePath
+    } else {
+      path
+    }
+  }
+
+  def isLocalPath(path: String): Boolean = {
+    val uri = new URI(path)
+    val scheme = uri.getScheme
+    val authority = uri.getAuthority
+    if (scheme == null && authority == null) {
+      true
+    } else if (scheme == defaultUri.getScheme) {
+      true
+    } else {
+      false
+    }
   }
 
   def randInt: Int = {

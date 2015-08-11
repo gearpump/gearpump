@@ -23,8 +23,7 @@ import java.io.File
 import akka.actor.{Actor, Props, Stash}
 import akka.pattern.{ask, pipe}
 import org.apache.gearpump.util.FileUtils
-import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
-import org.apache.gearpump.jarstore.JarFileContainer
+import org.apache.gearpump.cluster.ClientToMaster.{JarStoreServerAddress, GetJarStoreServer}
 import org.apache.gearpump.util.{Constants, FileServer, LogUtil}
 import org.slf4j.Logger
 
@@ -54,25 +53,7 @@ class LocalJarStore(rootDirPath : String) extends Actor with Stash {
   }
 
   def listen(port : Int) : Receive = {
-    case GetJarFileContainer =>
-      val name = Math.abs((new java.util.Random()).nextLong()).toString
-      sender ! new LocalJarFileContainer(s"http://$host:$port/$name")
-  }
-}
-
-class LocalJarFileContainer(url : String) extends JarFileContainer {
-  private def LOG: Logger = LogUtil.getLogger(getClass)
-  def copyFromLocal(localFile : File) : Unit = {
-    LOG.info(s"Copying from local file: ${localFile.getAbsolutePath} to $url")
-    val bytes = FileUtils.readFileToByteArray(localFile)
-    val client = FileServer.newClient
-    client.save(url, bytes)
-  }
-
-  def copyToLocalFile(localFile : File) : Unit = {
-    LOG.info(s"Copying to local file: ${localFile.getAbsolutePath} from $url")
-    val client = FileServer.newClient
-    val bytes = client.get(url).get
-    FileUtils.writeByteArrayToFile(localFile, bytes)
+    case GetJarStoreServer =>
+      sender ! JarStoreServerAddress(s"http://$host:$port/")
   }
 }

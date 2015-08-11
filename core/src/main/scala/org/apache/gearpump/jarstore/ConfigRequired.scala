@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,20 +18,13 @@
 
 package org.apache.gearpump.jarstore
 
-import akka.actor.Props
-import org.apache.gearpump.jarstore.dfs.DFSJarStore
-import org.apache.gearpump.jarstore.local.LocalJarStore
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{FlatSpec, Matchers}
+import akka.actor.ActorSystem
+import com.typesafe.config.Config
 
-class JarStoreSpec extends FlatSpec with Matchers with MockitoSugar {
+trait ConfigRequired {
+  def init(config: Config)
+}
 
-  "JarStore" should "return correct Props according to the file path" in {
-    val localPath1 = "/root/file"
-    val localPath2 = "file:///root/file"
-    val dfsPath = "hdfs://root/file"
-    assert(JarStore.props(localPath1).equals(Props(classOf[LocalJarStore], localPath1)))
-    assert(JarStore.props(localPath2).equals(Props(classOf[LocalJarStore], localPath2)))
-    assert(JarStore.props(dfsPath).equals(Props(classOf[DFSJarStore], dfsPath)))
-  }
+trait ActorSystemRequired {
+  def init(actorSystem: ActorSystem)
 }

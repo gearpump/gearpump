@@ -70,7 +70,7 @@ object BuildExample extends sbt.Build {
           target in assembly := baseDirectory.value.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
-  ) dependsOn(core % "test->test; provided")
+  ) dependsOn(daemon % "test->test; provided")
 
   lazy val distributeservice = Project(
     id = "gearpump-experiments-distributeservice",
