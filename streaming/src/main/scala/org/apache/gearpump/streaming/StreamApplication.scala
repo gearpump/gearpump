@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
+import org.apache.gearpump.cluster._
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription, PartitionerObject}
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.task.Task
@@ -81,7 +81,13 @@ class StreamApplication(override val name : String,  inputUserConfig: UserConfig
   }
 }
 
-case class ProcessorDescription(id: ProcessorId, taskClass: String, parallelism : Int, description: String = "", taskConf: UserConfig = null, life: LifeTime = LifeTime.Immortal) extends ReferenceEqual
+case class ProcessorDescription(
+    id: ProcessorId,
+    taskClass: String,
+    parallelism : Int,
+    description: String = "",
+    taskConf: UserConfig = null,
+    life: LifeTime = LifeTime.Immortal) extends ReferenceEqual
 
 object StreamApplication {
 

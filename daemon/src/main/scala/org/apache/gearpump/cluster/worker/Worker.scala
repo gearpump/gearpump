@@ -36,6 +36,7 @@ import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.worker.Worker._
+import org.apache.gearpump.jarstore.{ActorSystemRequired, ConfigRequired, JarStoreService}
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -60,6 +61,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
   private var executorNameToActor = Map.empty[String, ActorRef]
+  private val jarStoreService = JarStoreService.get(systemConfig)
+  jarStoreService match {
+    case needConfig: ConfigRequired => needConfig.init(systemConfig)
+    case needSystem: ActorSystemRequired => needSystem.init(context.system)
+  }
 
   private val ioPool = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 
@@ -108,7 +114,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       } else {
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
-        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo, ioPool))
+        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo, ioPool, jarStoreService))
         executorNameToActor += actorName ->executor
 
         resource = resource - launch.resource
@@ -217,16 +223,15 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     LOG.info(s"Worker is going down....")
     ioPool.shutdown()
     context.system.shutdown()
+    jarStoreService.close()
   }
 }
-
-import scala.concurrent.ExecutionContextExecutor
 
 private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
 
-  class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo, ioPool: ExecutionContext) extends Actor {
+  class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo, ioPool: ExecutionContext, jarStoreService: JarStoreService) extends Actor {
 
     val config = context.system.settings.config
     private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
@@ -259,7 +264,7 @@ private[cluster] object Worker {
       val process = Future {
         val jarPath = ctx.jar.map { appJar =>
           val tempFile = File.createTempFile(appJar.name, ".jar")
-          appJar.container.copyToLocalFile(tempFile)
+          jarStoreService.copyToLocalFile(tempFile, appJar.filePath)
           val file = new URL("file:" + tempFile)
           file.getFile
         }

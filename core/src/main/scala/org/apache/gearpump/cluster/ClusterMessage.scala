@@ -41,7 +41,9 @@ object ClientToMaster {
 
   case class ResolveWorkerId(workerId: Int)
 
-  case object GetJarFileContainer
+  case object GetJarStoreServer
+
+  case class JarStoreServerAddress(url: String)
 
   case class QueryAppMasterConfig(appId: Int)
 

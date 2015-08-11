@@ -24,12 +24,12 @@ import akka.pattern.ask
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.typesafe.config.{ConfigFactory, Config}
-import org.apache.gearpump.cluster.ClientToMaster.GetJarFileContainer
+import org.apache.gearpump.cluster.ClientToMaster.GetJarStoreServer
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.cluster.MasterToClient.ReplayApplicationResult
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.jarstore.JarFileContainer
+import org.apache.gearpump.jarstore.{ActorSystemRequired, ConfigRequired, FilePath, JarStoreService}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger
@@ -37,7 +37,6 @@ import org.slf4j.Logger
 import scala.collection.JavaConversions._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Success, Try}
 
 //TODO: add interface to query master here
 class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[ActorRef]) {
@@ -49,9 +48,12 @@ class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[Act
   implicit val system = sys.getOrElse(ActorSystem(s"client${Util.randInt}" , config))
   LOG.info(s"Starting system ${system.name}")
 
-  import system.dispatcher
-
   private val master = _master.getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
+  private val jarStoreService = JarStoreService.get(config)
+  jarStoreService match {
+    case needConfig: ConfigRequired => needConfig.init(config)
+    case needSystem: ActorSystemRequired => needSystem.init(system)
+  }
 
   LOG.info(s"Creating master proxy ${master} for master list: $masters")
 
@@ -124,19 +126,16 @@ class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[Act
 
   def close() : Unit = {
     LOG.info(s"Shutting down system ${system.name}")
+    jarStoreService.close()
     system.shutdown()
   }
 
   private def loadFile(jarPath : String) : AppJar = {
     val jarFile = new java.io.File(jarPath)
+    val path = FilePath(Math.abs(new java.util.Random().nextLong()).toString)
 
-    val uploadFile = (master ? GetJarFileContainer).asInstanceOf[Future[JarFileContainer]]
-      .map {container =>
-      container.copyFromLocal(new java.io.File(jarPath))
-      AppJar(jarFile.getName, container)
-    }
-
-    Await.result(uploadFile, Duration(15, TimeUnit.SECONDS))
+    jarStoreService.copyFromLocal(jarFile, path)
+    AppJar(jarFile.getName, path)
   }
 
   private def checkAndAddNamePrefix(appName: String, namePrefix: String) : String = {

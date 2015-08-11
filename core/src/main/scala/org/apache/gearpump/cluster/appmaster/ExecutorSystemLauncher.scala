@@ -85,8 +85,6 @@ class ExecutorSystemLauncher (appId: Int, session: Session) extends Actor {
 
 private[appmaster]
 object ExecutorSystemLauncher {
-
-
   case class LaunchExecutorSystem(worker: WorkerInfo, systemId: Int, resource: Resource)
 
   case class LaunchExecutorSystemSuccess(system: ExecutorSystem, session: Session)

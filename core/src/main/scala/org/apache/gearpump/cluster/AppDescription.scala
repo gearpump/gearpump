@@ -22,7 +22,7 @@ import akka.actor.{Actor, ActorRef, ActorSystem}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.jarstore.JarFileContainer
+import org.apache.gearpump.jarstore.FilePath
 
 import scala.reflect.ClassTag
 
@@ -84,9 +84,9 @@ case class AppMasterContext(appId : Int, username : String,
  * Jar file container in the cluster
  *
  * @param name: A meaningful name to represent this jar
- * @param container: Where the jar file is stored.
+ * @param filePath: Where the jar file is stored.
  */
-case class AppJar(name: String, container: JarFileContainer)
+case class AppJar(name: String, filePath: FilePath)
 
 
 /**

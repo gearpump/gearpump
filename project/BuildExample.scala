@@ -64,7 +64,7 @@ object BuildExample extends sbt.Build {
         Seq(
           target in assembly := baseDirectory.value.getParentFile / "target" / scalaVersionMajor
         )
-  ) dependsOn(core % "test->test; provided")
+  ) dependsOn(daemon % "test->test; provided")
 
   lazy val distributeservice = Project(
     id = "gearpump-experiments-distributeservice",
