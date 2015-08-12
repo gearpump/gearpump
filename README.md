@@ -1,6 +1,6 @@
-## GearPump [![Build Status](https://travis-ci.org/intel-hadoop/gearpump.svg?branch=master)](https://travis-ci.org/intel-hadoop/gearpump?branch=master) [![codecov.io](https://codecov.io/github/intel-hadoop/gearpump/coverage.svg?branch=master)](https://codecov.io/github/intel-hadoop/gearpump?branch=master) 
+## GearPump [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master) 
  
-[![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](https://github.com/intel-hadoop/gearpump/releases)
+[![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](https://github.com/gearpump/gearpump/releases)
  
 GearPump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
@@ -13,11 +13,11 @@ pump	that	consists of	only	two	gears,	but	is	very	powerful at	streaming water.
 
 We model streaming within the Akka actor hierarchy.
 
-![](https://raw.githubusercontent.com/intel-hadoop/gearpump/master/doc/actor_hierarchy.png)
+![](https://raw.githubusercontent.com/gearpump/gearpump/master/doc/actor_hierarchy.png)
 
 Per initial benchmarks we are able to process 11 million messages/second (100 bytes per message) with a 17ms latency on a 4-node cluster.
 
-![](https://raw.githubusercontent.com/intel-hadoop/gearpump/master/doc/dashboard.png)
+![](https://raw.githubusercontent.com/gearpump/gearpump/master/doc/dashboard.png)
 
 For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/site/0.3/performance/)
 
@@ -38,7 +38,7 @@ Check guide [Get Started](http://www.gearpump.io/site/0.3/getstarted/)
 1). Clone the GearPump repository
 
 ```bash
-  git clone https://github.com/intel-hadoop/gearpump.git
+  git clone https://github.com/gearpump/gearpump.git
   cd gearpump
 ```
 
@@ -91,7 +91,7 @@ Check [Maven settings](http://www.gearpump.io/site/downloads/downloads/#maven)
 
 - Document site [gearpump.io](http://gearpump.io)
 - User List: [gearpump-user](https://groups.google.com/forum/#!forum/gearpump-user).
-- Report issues: [issue tracker](https://github.com/intel-hadoop/gearpump/issues)
+- Report issues: [issue tracker](https://github.com/gearpump/gearpump/issues)
 
 ## Contributors (time order)
 
