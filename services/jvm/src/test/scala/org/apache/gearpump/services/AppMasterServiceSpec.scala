@@ -22,10 +22,11 @@ import akka.actor.ActorRef
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.cluster.AppMasterToMaster.GeneralAppMasterDataDetail
+import org.apache.gearpump.cluster.AppMasterToMaster.GeneralAppMasterSummary
 import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.cluster.MasterToClient._
+import org.apache.gearpump.streaming.executor.Executor.{ExecutorConfig, QueryExecutorConfig, ExecutorSummary, GetExecutorSummary}
 import org.apache.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
@@ -47,7 +48,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
     new AutoPilot {
       def run(sender: ActorRef, msg: Any) = msg match {
         case AppMasterDataDetailRequest(appId) =>
-          sender ! GeneralAppMasterDataDetail(appId)
+          sender ! GeneralAppMasterSummary(appId)
           KeepRunning
         case QueryHistoryMetrics(appId, path, _) =>
           sender ! HistoryMetrics(appId, path, List.empty[HistoryMetricsItem])
@@ -55,6 +56,13 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
         case GetLastFailure(appId) =>
           sender ! failure
           KeepRunning
+        case GetExecutorSummary(0) =>
+          sender ! ExecutorSummary.empty
+          KeepRunning
+        case QueryExecutorConfig(0) =>
+          sender ! ExecutorConfig(system.settings.config)
+          KeepRunning
+
       }
     }
   }
@@ -116,6 +124,25 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
       assert(config.isSuccess)
     }
   }
+
+  it should "return config for executor " in {
+    implicit val customTimeout = RouteTestTimeout(15.seconds)
+    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0/config") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
+      val responseBody = response.entity.asString
+      val config = Try(ConfigFactory.parseString(responseBody))
+      assert(config.isSuccess)
+    }
+  }
+
+  it should "return return executor summary" in {
+    implicit val customTimeout = RouteTestTimeout(15.seconds)
+    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
+      val responseBody = response.entity.asString
+      val executorSummary = read[ExecutorSummary](responseBody)
+      assert(executorSummary.id == 0)
+    }
+  }
+
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)

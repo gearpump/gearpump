@@ -18,11 +18,12 @@
 
 package org.apache.gearpump.services.util
 
+import akka.actor.{ActorSystem, ActorRef}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics.{Counter, MetricType}
 import org.apache.gearpump.streaming.appmaster.DagManager.ReplaceProcessor
 import org.apache.gearpump.streaming.{ProcessorDescription, ProcessorId}
-import org.apache.gearpump.streaming.appmaster.StreamingAppMasterDataDetail
+import org.apache.gearpump.streaming.appmaster.{ProcessorSummary, StreamAppMasterSummary}
 import org.apache.gearpump.util.{Graph}
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import upickle.default.{read, write}
@@ -56,13 +57,13 @@ class UpickleSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   }
 
   "StreamingAppMasterDataDetail" should "serialize and deserialize with upickle correctly" in {
-    val app = new StreamingAppMasterDataDetail(appId = 0,
-      processors = Map.empty[ProcessorId, ProcessorDescription],
+    val app = new StreamAppMasterSummary(appId = 0,
+      processors = Map.empty[ProcessorId, ProcessorSummary],
       processorLevels = Map.empty[ProcessorId, Int]
     )
 
     val serialized = write(app)
-    val deserialized = read[StreamingAppMasterDataDetail](serialized)
+    val deserialized = read[StreamAppMasterSummary](serialized)
     assert(deserialized == app)
   }
 }

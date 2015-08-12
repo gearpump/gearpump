@@ -55,7 +55,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
   private var allocatedResources = Map[ActorRef, Resource]()
-  private var executorsInfo = Map[ActorRef, ExecutorInfo]()
+  private var executorsInfo = Map[ActorRef, ExecutorSlots]()
   private var id = -1
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
@@ -115,7 +115,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         allocatedResources = allocatedResources + (executor -> launch.resource)
 
         reportResourceToMaster
-        executorsInfo += executor -> ExecutorInfo(launch.appId, launch.executorId, launch.resource.slots)
+        executorsInfo += executor ->
+          ExecutorSlots(launch.appId, launch.executorId, launch.resource.slots)
         context.watch(executor)
       }
     case UpdateResourceFailed(reason, ex) =>
@@ -126,8 +127,8 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     case GetWorkerData(workerId) =>
       val aliveFor = System.currentTimeMillis() - createdTime
       val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
-      val userDir = System.getProperty("user.dir");
-      sender ! WorkerData(WorkerDescription(id, "active", address,
+      val userDir = System.getProperty("user.dir")
+      sender ! WorkerData(WorkerSummary(id, "active", address,
         aliveFor, logDir, executorsInfo.values.toArray, totalSlots, resource.slots, userDir))
     case ChangeExecutorResource(appId, executorId, usedResource) =>
       for (executor <- executorActorRef(appId, executorId);

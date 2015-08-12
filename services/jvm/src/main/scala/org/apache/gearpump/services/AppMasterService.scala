@@ -19,7 +19,7 @@
 package org.apache.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
-import org.apache.gearpump.cluster.AppMasterToMaster.{GeneralAppMasterDataDetail, AppMasterDataDetail}
+import org.apache.gearpump.cluster.AppMasterToMaster.{GeneralAppMasterSummary, AppMasterSummary}
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.cluster.MasterToClient._
@@ -27,7 +27,8 @@ import org.apache.gearpump.services.AppMasterService.Status
 import org.apache.gearpump.services.util.UpickleUtil._
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
 import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperation, DAGOperationResult}
-import org.apache.gearpump.streaming.appmaster.StreamingAppMasterDataDetail
+import org.apache.gearpump.streaming.appmaster.StreamAppMasterSummary
+import org.apache.gearpump.streaming.executor.Executor.{ExecutorConfig, QueryExecutorConfig, ExecutorSummary, GetExecutorSummary}
 import org.apache.gearpump.util.ActorUtil.{askActor, askAppMaster}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import spray.routing.HttpService
@@ -90,6 +91,27 @@ trait AppMasterService extends HttpService {
             failWith(ex)
         }
       } ~
+      pathPrefix("executor" / IntNumber) { executorId =>
+        path("config") {
+          onComplete(askAppMaster[ExecutorConfig](master, appId, QueryExecutorConfig(executorId))) {
+            case Success(value) =>
+              val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+              complete(config)
+            case Failure(ex) =>
+              failWith(ex)
+          }
+        } ~
+        pathEnd {
+          get {
+            onComplete(askAppMaster[ExecutorSummary](master, appId, GetExecutorSummary(executorId))) {
+              case Success(value) =>
+                complete(write(value))
+              case Failure(ex) =>
+                failWith(ex)
+            }
+          }
+        }
+      } ~
       path("metrics" / RestPath ) { path =>
         parameter("readLatest" ? "false") { readLatestInput =>
           val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
@@ -109,12 +131,12 @@ trait AppMasterService extends HttpService {
             val request = AppMasterDataDetailRequest(appId)
             detailValue match {
               case true =>
-                onComplete(askAppMaster[AppMasterDataDetail](master, appId, request)) {
+                onComplete(askAppMaster[AppMasterSummary](master, appId, request)) {
                   case Success(value) =>
                     value match {
-                      case data: GeneralAppMasterDataDetail =>
+                      case data: GeneralAppMasterSummary =>
                         complete(write(data))
-                      case data: StreamingAppMasterDataDetail =>
+                      case data: StreamAppMasterSummary =>
                         complete(write(data))
                     }
                   case Failure(ex) =>
