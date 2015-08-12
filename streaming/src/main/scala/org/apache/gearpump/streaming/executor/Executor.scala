@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming.executor
 
 import akka.actor.SupervisorStrategy.{Resume, Stop}
 import akka.actor._
+import com.typesafe.config.Config
 import org.apache.gearpump.cluster.MasterToAppMaster.MessageLoss
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.metrics.Metrics.{ReportMetrics, DemandMoreMetrics}
@@ -27,8 +28,9 @@ import org.apache.gearpump.metrics.{Metrics, MetricsReporterService}
 import org.apache.gearpump.serializer.KryoPool
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
+import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
-import org.apache.gearpump.streaming.executor.Executor.{RestartTasks, TaskArgumentStore, TaskLocationReady, TaskStopped}
+import org.apache.gearpump.streaming.executor.Executor._
 import org.apache.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import org.apache.gearpump.streaming.task.{Subscriber, TaskId}
 import org.apache.gearpump.transport.{Express, HostPort}
@@ -50,6 +52,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   import executorContext.{appId, appMaster, executorId, resource, worker}
 
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
+
+  private val address = ActorUtil.getFullPath(context.system, self.path)
 
   private val kryoPool =  new KryoPool(context.system.asInstanceOf[ExtendedActorSystem])
 
@@ -152,6 +156,14 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         task._2 ! PoisonPill
       }
       context.become(restartingTask(dagVersion, remain = tasks.keys.size, restarted = Map.empty[TaskId, ActorRef]))
+
+    case get: GetExecutorSummary =>
+      val logFile = LogUtil.applicationLogDir(systemConfig)
+      val processorTasks = tasks.keySet.groupBy(_.processorId).mapValues(_.toList).view.force
+      sender ! ExecutorSummary(executorId, worker.workerId, address, logFile.getAbsolutePath, "active", tasks.size, processorTasks)
+
+    case query: QueryExecutorConfig =>
+      sender ! ExecutorConfig(systemConfig)
   }
 
   def restartingTask(dagVersion: Int, remain: Int, restarted: Map[TaskId, ActorRef]): Receive = terminationWatch orElse {
@@ -219,4 +231,25 @@ object Executor {
   }
 
   case class TaskStopped(task: ActorRef)
+
+  case class ExecutorSummary(
+    id: Int,
+    workerId: Int,
+    actorPath: String,
+    logFile: String,
+    status: String,
+    taskCount: Int,
+    tasks: Map[ProcessorId, List[TaskId]]
+  )
+
+  object ExecutorSummary {
+    def empty: ExecutorSummary = ExecutorSummary(0, 0, "", "", "", 1, null)
+  }
+
+  case class GetExecutorSummary(executorId: Int)
+
+  case class QueryExecutorConfig(executorId: Int)
+
+  case class ExecutorConfig(config: Config)
+
 }

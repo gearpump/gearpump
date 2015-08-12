@@ -33,13 +33,15 @@ abstract class MonoidState[T](monoid: Monoid[T]) extends PersistentState[T] {
   // right state updated by message after checkpoint time
   private[state] var right: T = monoid.zero
 
+  protected var checkpointTime = Long.MaxValue
+
   override def get: Option[T] = Option(monoid.plus(left, right))
 
-  override def update(timestamp: TimeStamp, t: T, checkpointTime: TimeStamp): Unit = {
-    updateState(timestamp, t, checkpointTime)
+  override def setNextCheckpointTime(nextCheckpointTime: TimeStamp): Unit = {
+    checkpointTime = nextCheckpointTime
   }
 
-  protected def updateState(timestamp: TimeStamp, t: T, checkpointTime: TimeStamp): Unit = {
+  protected def updateState(timestamp: TimeStamp, t: T): Unit = {
     if (timestamp < checkpointTime) {
       left = monoid.plus(left, t)
     } else {

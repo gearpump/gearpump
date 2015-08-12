@@ -52,7 +52,7 @@ class HadoopCheckpointStoreFactory(
 
   override def getCheckpointStore(conf: UserConfig, taskContext: TaskContext): CheckpointStore = {
     import taskContext.{appId, taskId}
-    val dirPath = new Path(s"$dir-v$VERSION", s"app$appId-task${taskId.processorId}_${taskId.index}")
+    val dirPath = new Path(dir + Path.SEPARATOR + s"v$VERSION", s"app$appId-task${taskId.processorId}_${taskId.index}")
     val fs = HadoopUtil.getFileSystemForPath(dirPath, hadoopConfig)
     new HadoopCheckpointStore(dirPath, fs, hadoopConfig, rotation)
   }

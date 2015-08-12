@@ -24,26 +24,23 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.partitioner.{PartitionerDescription, HashPartitioner, Partitioner}
-import org.apache.gearpump.streaming.AppMasterToExecutor.{Start, LaunchTasks}
-import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAGSuccess, ChangeToNewDAG}
-import org.apache.gearpump.streaming.appmaster.DagManager.{NewDAGDeployed, GetTaskLaunchData, WatchChange, LatestDAG, GetLatestDAG, TaskLaunchData}
-import org.apache.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
-import org.apache.gearpump.streaming.executor.Executor
-import Executor.RestartTasks
+import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
+import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
+import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
+import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
 import org.apache.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
+import org.apache.gearpump.streaming.executor.Executor.RestartTasks
 import org.apache.gearpump.streaming.task._
-import org.apache.gearpump.streaming.{LifeTime, DAG, ProcessorDescription}
+import org.apache.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
-import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-import org.mockito.Matchers._
 
 class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
@@ -202,8 +199,8 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val registerTask1 = executorManager.expectMsgPF()(launchTaskMatch)
     executorManager.reply(registerTask1)
 
-    // taskmanager should return the latest clock to task(0,0)
-    clockService.expectMsg(GetLatestMinClock)
+    // taskmanager should return the latest start clock to task(0,0)
+    clockService.expectMsg(GetStartClock)
 
     val registerTask2 = executorManager.expectMsgPF()(launchTaskMatch)
     executorManager.reply(registerTask2)

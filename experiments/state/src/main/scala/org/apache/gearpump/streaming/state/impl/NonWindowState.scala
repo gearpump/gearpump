@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.state.impl
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.state.api.{Monoid, Serializer, MonoidState}
+import org.apache.gearpump.streaming.state.api.{Monoid, MonoidState, Serializer}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -31,17 +31,19 @@ object NonWindowState {
  * a MonoidState storing non-window state
  */
 class NonWindowState[T](monoid: Monoid[T], serializer: Serializer[T]) extends MonoidState[T](monoid) {
+  import org.apache.gearpump.streaming.state.impl.NonWindowState._
 
   override def recover(timestamp: TimeStamp, bytes: Array[Byte]): Unit = {
     serializer.deserialize(bytes).foreach(left = _)
   }
 
-  override def update(timestamp: TimeStamp, t: T, checkpointTime: TimeStamp): Unit = {
-    updateState(timestamp, t, checkpointTime)
+  override def update(timestamp: TimeStamp, t: T): Unit = {
+    updateState(timestamp, t)
   }
 
-  override def checkpoint(checkpointTime: TimeStamp): Array[Byte] = {
+  override def checkpoint(): Array[Byte] = {
     val serialized = serializer.serialize(left)
+    LOG.debug(s"checkpoint time: $checkpointTime; checkpoint value: ($checkpointTime, $left)")
     left = monoid.plus(left, right)
     right = monoid.zero
     serialized

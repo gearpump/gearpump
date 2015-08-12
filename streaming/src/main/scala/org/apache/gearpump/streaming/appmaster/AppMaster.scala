@@ -21,22 +21,26 @@ package org.apache.gearpump.streaming.appmaster
 import akka.actor._
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, AppMasterMetricsRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.LastFailure
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.metrics.Metrics.ReportMetrics
+import org.apache.gearpump.cluster.appmaster.WorkerInfo
+import org.apache.gearpump.cluster.worker.ExecutorSlots
 import org.apache.gearpump.metrics.Metrics.{ReportMetrics, MetricType}
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
-import org.apache.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, ServiceNotAvailableException}
+import org.apache.gearpump.streaming.appmaster.AppMaster.{ExecutorBrief, AllocateResourceTimeOut, LookupTaskActorRef, ServiceNotAvailableException}
 import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
-import org.apache.gearpump.streaming.appmaster.ExecutorManager.GetExecutorPathList
+import org.apache.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, GetExecutorInfo}
 import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.appmaster.TaskManager.{GetTaskList, TaskList}
+import org.apache.gearpump.streaming.executor.Executor.{QueryExecutorConfig, GetExecutorSummary}
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{ActorUtil, Graph, LogUtil}
+import org.apache.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
@@ -109,6 +113,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       taskManager.foreach(_ forward messageLoss)
     case lookupTask: LookupTaskActorRef =>
       taskManager.foreach(_ forward lookupTask)
+    case checkpoint: ReportCheckpointClock =>
+      clockService.foreach(_ forward checkpoint)
   }
 
   def executorMessageHandler: Receive = {
@@ -122,7 +128,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.debug(s"AppMaster got AppMasterDataDetailRequest for $appId ")
 
-      val executorsFuture = getExecutorMap
+      val executorsFuture = executorBrief
       val clockFuture = getMinClock
       val taskFuture = getTaskList
       val dagFuture = getDAG
@@ -134,10 +140,25 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       } yield {
         val graph = dag.graph
 
-        StreamingAppMasterDataDetail(
+        val userDir = System.getProperty("user.dir")
+        val logFile = LogUtil.applicationLogDir(actorSystem.settings.config)
+
+        val executorToTasks = tasks.tasks.groupBy(_._2).mapValues {_.keys.toList}
+
+        val processors = dag.processors.map { kv =>
+          val processor = kv._2
+          import processor._
+          val tasks = executorToTasks.map { kv =>
+            (kv._1, TaskCount(kv._2.count(_.processorId == id)))
+          }.filter(_._2.count != 0)
+          (id,
+          ProcessorSummary(id, taskClass, parallelism, description, taskConf, life, tasks.keys.toList, tasks))
+        }
+
+        StreamAppMasterSummary(
           appId,
           app.name,
-          dag.processors,
+          processors,
           graph.vertexHierarchyLevelMap(),
           graph.mapEdge {(node1, edge, node2) =>
             edge.partitionerFactory.name
@@ -145,10 +166,13 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
           address,
           clock,
           executors,
-          tasks.tasks,
           status = MasterToAppMaster.AppMasterActive,
           startTime = startTime,
-          user = username)
+          user = username,
+          appType = "streaming",
+          homeDirectory = userDir,
+          logFile = logFile.getAbsolutePath
+        )
       }
 
       val client = sender()
@@ -168,6 +192,20 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       dagManager forward replaceDAG
     case GetLastFailure(_) =>
       sender ! lastFailure
+    case  get@ GetExecutorSummary(executorId) =>
+      val client = sender
+      ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
+        map.get(executorId).foreach{ executor =>
+          executor.executor.tell(get, client)
+        }
+      }
+    case query@ QueryExecutorConfig(executorId) =>
+      val client = sender
+      ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
+        map.get(executorId).foreach{ executor =>
+          executor.executor.tell(query, client)
+        }
+      }
    }
 
   def recover: Receive = {
@@ -186,9 +224,14 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     }
   }
 
-  private def getExecutorMap = {
-    (executorManager ? GetExecutorPathList).asInstanceOf[Future[List[ActorPath]]].map{
-      list => list.map(path => (Integer.parseInt(path.name), path.toString)).toMap
+  private def executorBrief: Future[List[ExecutorBrief]] = {
+    ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { infos =>
+      infos.values.map { info =>
+        ExecutorBrief(info.executorId,
+          info.executor.path.toSerializationFormat,
+          info.worker.workerId,
+          "active")
+      }.toList
     }
   }
 
@@ -214,4 +257,6 @@ object AppMaster {
   case class TaskActorRef(task: ActorRef)
 
   class ServiceNotAvailableException(reason: String) extends Exception(reason)
+
+  case class ExecutorBrief(executorId: ExecutorId, executor: String, workerId: Int, status: String)
 }

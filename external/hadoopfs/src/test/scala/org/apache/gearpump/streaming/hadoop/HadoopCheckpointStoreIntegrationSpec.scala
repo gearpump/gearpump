@@ -44,10 +44,11 @@ class HadoopCheckpointStoreIntegrationSpec extends PropSpec with PropertyChecks 
       when(taskContext.taskId).thenReturn(TaskId(0, 0))
 
       val rootDirName = "test"
-      val rootDir = new Path(s"$rootDirName-v${HadoopCheckpointStoreFactory.VERSION}")
+      val rootDir = new Path(rootDirName + Path.SEPARATOR + s"v${HadoopCheckpointStoreFactory.VERSION}")
       val subDir = new Path(rootDir, "app0-task0_0")
 
       val fs = HadoopUtil.getFileSystemForPath(rootDir, hadoopConfig)
+      fs.delete(rootDir, true)
       fs.exists(rootDir) shouldBe false
 
       val checkpointStoreFactory = new HadoopCheckpointStoreFactory(

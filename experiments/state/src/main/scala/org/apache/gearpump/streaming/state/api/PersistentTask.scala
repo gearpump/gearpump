@@ -19,9 +19,8 @@
 package org.apache.gearpump.streaming.state.api
 
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.state.impl.CheckpointManager
-import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.state.impl.{PersistentStateConfig, CheckpointManager}
+import org.apache.gearpump.streaming.task.{ReportCheckpointClock, StartTime, Task, TaskContext}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import org.apache.gearpump.{Message, TimeStamp}
 
@@ -56,7 +55,7 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
    * subclass should override this method to specify how a
    * new message should update state
    */
-  def processMessage(state: PersistentState[T], message: Message, checkpointTime: TimeStamp): Unit
+  def processMessage(state: PersistentState[T], message: Message): Unit
 
   val state = persistentState
 
@@ -65,23 +64,33 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
     checkpointManager
       .recover(timestamp)
       .foreach(state.recover(timestamp, _))
+    state.setNextCheckpointTime(checkpointManager.getCheckpointTime)
+    reportCheckpointClock(timestamp)
   }
 
   final override def onNext(message: Message): Unit = {
     val checkpointTime = checkpointManager.getCheckpointTime
 
-    processMessage(state, message, checkpointTime)
+    processMessage(state, message)
 
     checkpointManager.update(message.timestamp)
     val upstreamMinClock = taskContext.upstreamMinClock
     if (checkpointManager.shouldCheckpoint(upstreamMinClock)) {
-      val serialized = state.checkpoint(checkpointTime)
+      val serialized = state.checkpoint()
       checkpointManager.checkpoint(checkpointTime, serialized)
+      reportCheckpointClock(checkpointTime)
+
+      val nextCheckpointTime = checkpointManager.updateCheckpointTime()
+      state.setNextCheckpointTime(nextCheckpointTime)
     }
   }
 
   final override def onStop(): Unit = {
     checkpointManager.close()
+  }
+
+  private def reportCheckpointClock(timestamp: TimeStamp): Unit = {
+    taskContext.appMaster ! ReportCheckpointClock(taskContext.taskId, timestamp)
   }
 }
 

@@ -31,7 +31,7 @@ import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, SubmitApplicati
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.AppSubmitter
-import org.apache.gearpump.cluster.worker.WorkerDescription
+import org.apache.gearpump.cluster.worker.{WorkerSummary}
 import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
 import org.apache.gearpump.streaming.StreamApplication
 import org.apache.gearpump.streaming.appmaster.SubmitApplicationRequest
@@ -75,7 +75,7 @@ trait MasterService extends HttpService {
       path("workerlist") {
         def future = askActor[WorkerList](master, GetAllWorkers).flatMap { workerList =>
           val workers = workerList.workers
-          val workerDataList = List.empty[WorkerDescription]
+          val workerDataList = List.empty[WorkerSummary]
 
           Future.fold(workers.map { workerId =>
             askWorker[WorkerData](master, workerId, GetWorkerData(workerId))
@@ -84,7 +84,7 @@ trait MasterService extends HttpService {
           }
         }
         onComplete(future) {
-          case Success(result: List[WorkerDescription]) => complete(write(result))
+          case Success(result: List[WorkerSummary]) => complete(write(result))
           case Failure(ex) => failWith(ex)
         }
       } ~

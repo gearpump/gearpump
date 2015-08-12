@@ -42,7 +42,7 @@ class WindowAverageAppSpec extends PropSpec with PropertyChecks with Matchers wi
     val requiredArgs = Array.empty[String]
     val optionalArgs = Array(
       "-gen", "2",
-      "-count", "2",
+      "-window", "2",
       "-window_size", "5000",
       "-window_step", "5000"
     )
