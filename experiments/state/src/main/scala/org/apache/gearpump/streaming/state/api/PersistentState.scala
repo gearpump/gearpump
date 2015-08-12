@@ -39,13 +39,19 @@ trait PersistentState[T] {
    * update state on a new message
    * this is invoked by user
    */
-  def update(timestamp: TimeStamp, t: T, checkpointTime: TimeStamp): Unit
+  def update(timestamp: TimeStamp, t: T): Unit
+
+  /**
+   * set next checkpoint time
+   * should be invoked by the framework
+   */
+  def setNextCheckpointTime(timeStamp: TimeStamp): Unit
 
   /**
    * get a binary snapshot of state
    * usually invoked by the framework
    */
-  def checkpoint(checkpointTime: TimeStamp): Array[Byte]
+  def checkpoint(): Array[Byte]
 
   /**
    * unwrap the raw value of state

@@ -109,7 +109,8 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       state.right = right
       state.updateIntervalStates(checkpointTime, right, checkpointTime)
 
-      state.checkpoint(checkpointTime)
+      state.setNextCheckpointTime(checkpointTime)
+      state.checkpoint()
 
       state.left shouldBe plus
       state.right shouldBe zero
@@ -148,7 +149,8 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
 
       // time < checkpointTime
       // update left in current window
-      state.update(start, left, checkpointTime)
+      state.setNextCheckpointTime(checkpointTime)
+      state.update(start, left)
 
       verify(window).update(0L)
       state.left shouldBe left
@@ -166,7 +168,8 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
 
       // time >= checkpointTime
       // update right in current window
-      state.update(checkpointTime, right, checkpointTime)
+      state.setNextCheckpointTime(checkpointTime)
+      state.update(checkpointTime, right)
 
       verify(window, times(2)).update(0L)
       state.left shouldBe left
@@ -185,7 +188,8 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       when(group.plus(right, right)).thenReturn(plus, Nil: _*)
       when(group.plus(zero, plus)).thenReturn(plus, Nil: _*)
 
-      state.update(end, right, checkpointTime)
+      state.setNextCheckpointTime(checkpointTime)
+      state.update(end, right)
 
       verify(window).slideOneStep()
       verify(window).update(checkpointTime)

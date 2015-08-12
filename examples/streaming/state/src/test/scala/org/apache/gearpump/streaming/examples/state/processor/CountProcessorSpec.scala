@@ -19,12 +19,12 @@
 package org.apache.gearpump.streaming.examples.state.processor
 
 import akka.actor.ActorSystem
+import akka.testkit.TestProbe
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.state.impl.InMemoryCheckpointStoreFactory
-import org.apache.gearpump.streaming.state.system.impl.PersistentStateConfig
-import org.apache.gearpump.streaming.task.StartTime
+import org.apache.gearpump.streaming.state.impl.{PersistentStateConfig, InMemoryCheckpointStoreFactory}
+import org.apache.gearpump.streaming.task.{ReportCheckpointClock, StartTime}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -44,10 +44,17 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
       (data: Long, num: Long) =>
 
         val conf = UserConfig.empty
+          .withBoolean(PersistentStateConfig.STATE_CHECKPOINT_ENABLE, true)
           .withLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS, num)
           .withValue[CheckpointStoreFactory](PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY, new InMemoryCheckpointStoreFactory)
         val count = new CountProcessor(taskContext, conf)
+
+        val appMaster = TestProbe()(system)
+        when(taskContext.appMaster).thenReturn(appMaster.ref)
+
         count.onStart(StartTime(0L))
+        appMaster.expectMsg(ReportCheckpointClock(taskContext.taskId, 0L))
+
         for (i <- 1L to num) {
           when(taskContext.upstreamMinClock).thenReturn(0L)
           count.onNext(Message("" + data, 0L))
@@ -57,9 +64,12 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
 
         when(taskContext.upstreamMinClock).thenReturn(num)
         count.onNext(Message("" + data, num))
+        appMaster.expectMsg(ReportCheckpointClock(taskContext.taskId, num))
+
 
         count.state.get shouldBe Some(num + 1)
-        system.shutdown()
     }
+
+    system.shutdown()
   }
 }

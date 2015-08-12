@@ -25,13 +25,12 @@ import akka.actor._
 import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.metrics.Metrics
-import org.apache.gearpump.metrics.Metrics.MetricType
-import org.apache.gearpump.serializer.{SerializerPool, KryoPool}
+import org.apache.gearpump.serializer.SerializerPool
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.ProcessorId
 import org.apache.gearpump.streaming.executor.Executor.TaskLocationReady
-import org.apache.gearpump.util.{ActorUtil, LogUtil, TimeOutScheduler, Util}
+import org.apache.gearpump.util.{LogUtil, TimeOutScheduler}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
@@ -46,9 +45,9 @@ class TaskActor(
 
   def serializerPool: SerializerPool = inputSerializerPool
 
+  import org.apache.gearpump.streaming.Constants._
   import org.apache.gearpump.streaming.task.TaskActor._
   import taskContextData._
-  import org.apache.gearpump.streaming.Constants.{_}
   val config = context.system.settings.config
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
@@ -67,8 +66,9 @@ class TaskActor(
   private var life = taskContextData.life
 
   //latency probe
-  import scala.concurrent.duration._
   import context.dispatcher
+
+  import scala.concurrent.duration._
   final val LATENCY_PROBE_INTERVAL = FiniteDuration(1, TimeUnit.SECONDS)
 
   // clock report interval
@@ -129,7 +129,7 @@ class TaskActor(
   }
 
   def minClockAtCurrentTask: TimeStamp = {
-    this.subscriptions.foldLeft(task.stateClock.getOrElse(Long.MaxValue)){ (clock, subscription) =>
+    this.subscriptions.foldLeft(Long.MaxValue){ (clock, subscription) =>
       Math.min(clock, subscription._2.minClock)
     }
   }
