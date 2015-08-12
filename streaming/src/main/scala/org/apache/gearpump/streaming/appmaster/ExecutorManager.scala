@@ -103,8 +103,8 @@ private[appmaster] class ExecutorManager(
       val executor = executors.get(executorId)
       executor.foreach(_.executor forward msg)
 
-    case GetExecutorPathList =>
-      sender ! context.children.map(_.path).toList
+    case GetExecutorInfo =>
+      sender ! executors
 
     // update resource usage, so that reclaim unused resource.
     case ExecutorResourceUsageSummary(resources) =>
@@ -139,7 +139,7 @@ private[appmaster] object ExecutorManager {
 
   case class UniCast(executorId: Int, msg: Any)
 
-  case object GetExecutorPathList
+  case object GetExecutorInfo
 
   case class ExecutorStarted(executorId: Int, resource: Resource, workerId: Int)
   case class ExecutorStopped(executorId: Int)

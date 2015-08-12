@@ -19,26 +19,42 @@
 package org.apache.gearpump.streaming.appmaster
 
 import org.apache.gearpump._
-import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterDataDetail
-import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterSummary
+import org.apache.gearpump.cluster.{UserConfig, MasterToAppMaster}
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterStatus
 import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription, Partitioner}
 import org.apache.gearpump.streaming._
+import org.apache.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
+import org.apache.gearpump.streaming.appmaster.ExecutorManager.ExecutorInfo
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
 
-case class StreamingAppMasterDataDetail(
+case class StreamAppMasterSummary(
     appId: Int,
     appName: String = null,
-    processors: Map[ProcessorId, ProcessorDescription],
+    processors: Map[ProcessorId, ProcessorSummary],
     // hiearachy level for each processor
     processorLevels: Map[ProcessorId, Int],
     dag: Graph[ProcessorId, String] = null,
     actorPath: String = null,
     clock: TimeStamp = 0,
-    executors: Map[ExecutorId, String] = null,
-    tasks: Map[TaskId, ExecutorId] = null,
+    executors: List[ExecutorBrief] = null,
     status: AppMasterStatus = MasterToAppMaster.AppMasterActive,
     startTime: TimeStamp = 0L,
-    user: String = null)
-  extends AppMasterDataDetail
+    user: String = null,
+    appType: String = "streaming",
+    homeDirectory: String,
+    logFile: String)
+  extends AppMasterSummary
+
+case class TaskCount(count: Int)
+
+case class ProcessorSummary(
+    id: ProcessorId,
+    taskClass: String,
+    parallelism : Int,
+    description: String,
+    taskConf: UserConfig,
+    life: LifeTime,
+    executors: List[ExecutorId],
+    taskCount: Map[ExecutorId, TaskCount])

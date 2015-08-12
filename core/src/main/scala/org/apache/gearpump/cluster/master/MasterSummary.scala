@@ -15,22 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.cluster.worker
-import akka.actor.ActorRef
+package org.apache.gearpump.cluster.master
 
-case class WorkerDescription(
-    workerId: Int,
-    state: String,
-    actorPath: String,
-    aliveFor: Long,
-    logFile: String,
-    executors: Array[ExecutorInfo],
-    totalSlots: Int,
-    availableSlots: Int,
-    homeDirectory: String)
-
-object WorkerDescription{
-  def empty = WorkerDescription(-1, "", "", 0L, "", Array.empty[ExecutorInfo], 0, 0, "")
+object MasterStatus {
+  type Type = String
+  val Synced = "synced"
+  val UnSynced = "unsynced"
 }
 
-case class ExecutorInfo(appId: Int, executorId: Int, slots: Int)
+case class MasterSummary(
+  leader: (String, Int),
+  cluster: List[(String, Int)],
+  aliveFor: Long,
+  logFile: String,
+  jarStore: String,
+  masterStatus: MasterStatus.Type,
+  homeDirectory: String,
+  activities: List[MasterActivity])
+
+case class MasterActivity(time: Long, event: String)
