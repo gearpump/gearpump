@@ -17,27 +17,23 @@
 */
 package org.apache.gearpump.streaming.task
 
-import akka.actor.{ExtendedActorSystem, Actor, ActorRef, Props, ActorSystem}
+import akka.actor.{ExtendedActorSystem, Props}
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{ExecutorContext, MasterHarness, UserConfig, TestUtil}
-import org.apache.gearpump.partitioner.{ Partitioner, HashPartitioner}
-import org.apache.gearpump.serializer.SerializerPool
-import org.apache.gearpump.streaming.AppMasterToExecutor.{TaskChanged, ChangeTask, TaskRejected, MsgLostException, RegisterTaskFailedException, Start}
-import org.apache.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
+import org.apache.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
+import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
+import org.apache.gearpump.serializer.{FastKryoSerializer, SerializerPool}
+import org.apache.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, RegisterTaskFailedException, Start, TaskChanged, TaskRejected}
+import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import org.apache.gearpump.streaming.task.TaskActorSpec.TestTask
-import org.apache.gearpump.streaming.{LifeTime, DAG, ProcessorDescription}
+import org.apache.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import org.apache.gearpump.transport.Express
-import org.apache.gearpump.util.Graph
-import org.scalatest.{WordSpec, Matchers, BeforeAndAfterEach}
 import org.apache.gearpump.util.Graph._
-import org.mockito.Mockito.{mock, when, verify, times}
-import org.apache.gearpump.util.Util
+import org.apache.gearpump.util.{Graph, Util}
 import org.mockito.Matchers._
-import org.scalatest.{Matchers}
-import org.scalatest.mock.MockitoSugar
-import org.apache.gearpump.serializer.FastKryoSerializer
+import org.mockito.Mockito.{mock, times, verify, when}
+import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 
 
 class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
@@ -48,8 +44,8 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     withFallback(TestUtil.DEFAULT_CONFIG)
 
   val appId = 0
-  val task1 = ProcessorDescription(id = 0, classOf[TestTask].getName, 1)
-  val task2 = ProcessorDescription(id = 1, classOf[TestTask].getName, 1)
+  val task1 = ProcessorDescription(id = 0, taskClass = classOf[TestTask].getName, parallelism = 1)
+  val task2 = ProcessorDescription(id = 1, taskClass = classOf[TestTask].getName, parallelism = 1)
   val dag: DAG = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
   val taskId1 = TaskId(0, 0)
   val taskId2 = TaskId(1, 0)
@@ -138,7 +134,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
       testActor.tell(msg, testActor)
 
-      verify(mockTask, times(1)).onNext(msg);
+      verify(mockTask, times(1)).onNext(msg)
     }
   }
 

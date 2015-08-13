@@ -23,13 +23,12 @@ import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
+import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.stock.StockMarket.ServiceHour
 import org.apache.gearpump.streaming.examples.stock._
-import org.apache.gearpump.streaming.task.Task
-import org.apache.gearpump.streaming.{Processor, StreamApplication, ProcessorDescription}
+import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.Graph.{Path, Node}
+import org.apache.gearpump.util.Graph.Node
 import org.apache.gearpump.util.{AkkaApp, Graph, LogUtil}
 import org.slf4j.Logger
 
@@ -55,9 +54,12 @@ object Stock extends AkkaApp with ArgumentsParser {
     Console.println(s"Successfully fetched stock id for ${stocks.length} stocks")
 
     val userConfig = UserConfig.empty.withValue("StockId", stocks).withValue[StockMarket](classOf[StockMarket].getName, stockMarket)
+    val partitioner = new HashPartitioner
 
-    val app = StreamApplication("stock_direct_analyzer",
-      Graph(crawler ~> analyzer, queryServer), userConfig
+    val p1 = crawler ~ partitioner ~> analyzer
+    val p2 = Node(queryServer)
+    val graph = Graph(p1, p2)
+    val app = StreamApplication("stock_direct_analyzer", graph, userConfig
       )
     app
   }

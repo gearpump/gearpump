@@ -20,12 +20,10 @@ package org.apache.gearpump.streaming.examples.transport
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
-import org.apache.gearpump.streaming.task.Task
+import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
-import org.apache.gearpump.util.{AkkaApp, Graph}
 import org.apache.gearpump.util.Graph._
-import com.typesafe.config.Config
+import org.apache.gearpump.util.{AkkaApp, Graph}
 
 object Transport extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -44,12 +42,13 @@ object Transport extends AkkaApp with ArgumentsParser {
     val source = Processor[DataSource](sourceNum)
     val inspector = Processor[VelocityInspector](inspectorNum)
     val queryServer = Processor[QueryServer](1)
+    val partitioner = new HashPartitioner
 
     val userConfig = UserConfig.empty.withInt(DataSource.VEHICLE_NUM, vehicleNum).
       withInt(DataSource.MOCK_CITY_SIZE, citysize).
       withInt(VelocityInspector.OVER_DRIVE_THRESHOLD, threshold).
       withInt(VelocityInspector.FAKE_PLATE_THRESHOLD, 200)
-    StreamApplication("transport", Graph(source ~> inspector, queryServer), userConfig)
+    StreamApplication("transport", Graph(source ~ partitioner ~> inspector, Node(queryServer)), userConfig)
   }
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {

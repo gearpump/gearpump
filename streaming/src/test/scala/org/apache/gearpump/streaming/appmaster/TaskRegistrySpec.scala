@@ -18,13 +18,10 @@
 
 package org.apache.gearpump.streaming.appmaster
 import org.apache.gearpump.cluster.scheduler.Resource
-import org.apache.gearpump.streaming.appmaster.TaskRegistry.{TaskLocations, TaskLocation, Reject, Accept}
-import org.apache.gearpump.streaming.task.{ TaskId}
+import org.apache.gearpump.streaming.appmaster.TaskRegistry.{Accept, Reject, TaskLocation, TaskLocations}
+import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.transport.HostPort
-import org.apache.gearpump.util.LogUtil
-import org.scalatest.{FlatSpec, BeforeAndAfterEach, Matchers, WordSpec}
-import org.slf4j.Logger
-import org.apache.gearpump.streaming.appmaster.ExecutorManager.ExecutorResourceUsageSummary
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 class TaskRegistrySpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   it should "maintain registered tasks" in {
@@ -32,7 +29,7 @@ class TaskRegistrySpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val task1 = TaskId(0, 1)
     val task2 = TaskId(0, 2)
 
-    val register = new TaskRegistry(appId = 0, List(task0, task1, task2))
+    val register = new TaskRegistry(appId = 0, expectedTasks = List(task0, task1, task2))
     val host1 = HostPort("127.0.0.1:3000")
     val host2 = HostPort("127.0.0.1:3001")
 

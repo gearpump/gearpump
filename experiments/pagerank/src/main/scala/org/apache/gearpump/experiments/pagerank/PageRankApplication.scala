@@ -19,7 +19,8 @@ package org.apache.gearpump.experiments.pagerank
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
-import org.apache.gearpump.experiments.pagerank.PageRankApplication.{NodeWithTaskId}
+import org.apache.gearpump.experiments.pagerank.PageRankApplication.NodeWithTaskId
+import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph
@@ -37,8 +38,7 @@ import org.apache.gearpump.util.Graph.Node
  * @param dag  the page rank graph
  * @tparam T
  */
-class PageRankApplication[T] (override val name : String,  iteration: Int, delta: Double, dag: Graph[T, Nothing
-  ])
+class PageRankApplication[T] (override val name : String,  iteration: Int, delta: Double, dag: Graph[T, _])
   extends Application {
 
   override def appMaster: Class[_ <: ApplicationMaster] = classOf[AppMaster]
@@ -61,8 +61,9 @@ class PageRankApplication[T] (override val name : String,  iteration: Int, delta
 
     val controller = Processor[PageRankController](1)
     val pageRankWorker = Processor[PageRankWorker](taskCount)
+    val partitioner = new HashPartitioner
 
-    val app = StreamApplication(name, Graph(controller ~> pageRankWorker), userConfig)
+    val app = StreamApplication(name, Graph(controller ~ partitioner ~> pageRankWorker), userConfig)
     app.userConfig
   }
 }

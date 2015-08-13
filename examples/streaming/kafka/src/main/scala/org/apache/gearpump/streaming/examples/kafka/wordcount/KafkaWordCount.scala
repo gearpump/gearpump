@@ -19,10 +19,10 @@
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
 import akka.actor.ActorSystem
-import com.typesafe.config.Config
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
+import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.kafka._
 import org.apache.gearpump.streaming.sink.DataSinkProcessor
 import org.apache.gearpump.streaming.source.DataSourceProcessor
@@ -56,7 +56,8 @@ object KafkaWordCount extends AkkaApp with ArgumentsParser {
     val sum = Processor[Sum](sumNum)
     val sink = new KafkaSink("topic2", "localhost:9092")
     val sinkProcessor = DataSinkProcessor(sink, sinkNum)
-    val computation = sourceProcessor ~> split ~> sum ~> sinkProcessor
+    val partitioner = new HashPartitioner
+    val computation = sourceProcessor ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> sinkProcessor
     val app = StreamApplication("KafkaWordCount", Graph(computation), appConfig)
     app
   }

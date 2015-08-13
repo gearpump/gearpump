@@ -26,7 +26,7 @@ object Pack extends sbt.Build {
 
   lazy val packProject = Project(
     id = "gearpump-pack",
-    base = file("output"),
+    base = file(s"$distDirectory"),
     settings = commonSettings ++
         packSettings ++
         Seq(
@@ -54,7 +54,7 @@ object Pack extends sbt.Build {
           packExclude := Seq(thisProjectRef.value.project),
           packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
           packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
-          packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / scalaVersionMajor -> "examples"),
+          packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / CrossVersion.binaryScalaVersion(scalaVersion.value) -> "examples"),
 
           // The classpath should not be expanded. Otherwise, the classpath maybe too long.
           // On windows, it may report shell error "command line too long"

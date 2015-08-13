@@ -1,7 +1,7 @@
 import sbt.Keys._
 import sbt._
-import sbtassembly.Plugin.AssemblyKeys._
 import Build._
+import sbtassembly.Plugin.AssemblyKeys._
 
 object BuildExample extends sbt.Build {
 
@@ -17,7 +17,8 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ myAssemblySettings ++
         Seq(
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.wordcount.WordCount"),
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
   ) dependsOn (streaming % "test->test; provided")
 
@@ -27,7 +28,9 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ myAssemblySettings ++
         Seq(
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.sol.SOL"),
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
+
         )
   ) dependsOn (streaming % "test->test; provided")
 
@@ -37,7 +40,8 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ myAssemblySettings ++
         Seq(
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.complexdag.Dag"),
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
   ) dependsOn (streaming % "test->test; provided")
 
@@ -53,7 +57,8 @@ object BuildExample extends sbt.Build {
             "com.lihaoyi" %% "upickle" % upickleVersion
           ),
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.transport.Transport"),
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
   ) dependsOn (streaming % "test->test; provided")
 
@@ -62,18 +67,22 @@ object BuildExample extends sbt.Build {
     base = file("examples/distributedshell"),
     settings = commonSettings ++ myAssemblySettings ++
         Seq(
-          target in assembly := baseDirectory.value.getParentFile / "target" / scalaVersionMajor
+          target in assembly := baseDirectory.value.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
   ) dependsOn(core % "test->test; provided")
 
   lazy val distributeservice = Project(
     id = "gearpump-experiments-distributeservice",
     base = file("experiments/distributeservice"),
-    settings = commonSettings ++ Seq(
-      libraryDependencies ++= Seq(
-        "commons-lang" % "commons-lang" % commonsLangVersion,
-        "commons-io" % "commons-io" % commonsIOVersion
-      )
+    settings = commonSettings ++ myAssemblySettings ++
+        Seq(
+          libraryDependencies ++= Seq(
+            "commons-lang" % "commons-lang" % commonsLangVersion,
+            "commons-io" % "commons-io" % commonsIOVersion
+          ),
+          target in assembly := baseDirectory.value.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
     )
   ) dependsOn(daemon % "test->test; provided")
 
@@ -84,7 +93,8 @@ object BuildExample extends sbt.Build {
         Seq(
           libraryDependencies ++= hadoopDependency,
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
   ) dependsOn (streaming % "test->test; provided")
 
@@ -93,7 +103,8 @@ object BuildExample extends sbt.Build {
     base = file("examples/streaming/kafka"),
     settings = commonSettings ++ myAssemblySettings ++
         Seq(
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
   ) dependsOn(streaming % "test->test; provided", external_kafka)
 
@@ -112,7 +123,8 @@ object BuildExample extends sbt.Build {
             "io.spray" %%  "spray-json"    % sprayJsonVersion
           ),
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.stock.main.Stock"),
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
   ) dependsOn (streaming % "test->test; provided", external_kafka % "test->test")
 
@@ -123,7 +135,8 @@ object BuildExample extends sbt.Build {
       libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion
       ),
-      target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" / scalaVersionMajor
+      target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+          CrossVersion.binaryScalaVersion(scalaVersion.value)
     )
   ) dependsOn (state_api % "test->test; provided", external_hadoopfs, external_monoid, external_serializer)
 }

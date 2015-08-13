@@ -2,25 +2,22 @@ language:
 - java
 - scala
 sudo: false
-before_script:
-- mkdir -p $HOME/.sbt/launchers/0.13.5/
-- curl -L -o $HOME/.sbt/launchers/0.13.5/sbt-launch.jar http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.5/sbt-launch.jar
-script: 
+script:
 - echo "TRAVIS_PULL_REQUEST" $TRAVIS_PULL_REQUEST
 - echo "TRAVIS_BRANCH" $TRAVIS_BRANCH
 - echo "TRAVIS_TAG" $TRAVIS_TAG
 - echo "repo" $TRAVIS_REPO_SLUG
 - if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]];
-    then sbt clean coverage test;  
+    then sbt clean coverage +test;
   elif [[ $TRAVIS_BRANCH == "master" ]];
-    then sbt clean publish; 
+    then sbt clean +publish;
   elif [[ $TRAVIS_TAG != "" ]];
-    then sbt clean assembly packArchive;
+    then sbt clean +assembly +packArchive;
   fi  
 jdk:
 - oraclejdk7
 scala:
-- 2.11.4
+- 2.11.5
 cache:
   directories:
   - $HOME/.m2

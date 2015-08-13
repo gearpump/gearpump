@@ -111,7 +111,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     this.processorClocks = clocks.toArray.map(_._2)
 
     this.checkpointClocks = dag.processors.filter { case (_, processor) =>
-        Option(processor.taskConf).exists(_.getBoolean("state.checkpoint.enable").contains(true))
+        Option(processor.taskConf).exists(_.getBoolean("state.checkpoint.enable").exists(_ == true))
     }.flatMap { case (id, processor) =>
       (0 until processor.parallelism).map(TaskId(id, _) -> Vector.empty[TimeStamp])
     }
