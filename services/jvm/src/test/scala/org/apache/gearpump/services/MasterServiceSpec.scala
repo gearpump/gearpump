@@ -28,7 +28,7 @@ import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterDa
 import org.apache.gearpump.cluster.ClientToMaster.{QueryMasterConfig, ResolveWorkerId, SubmitApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, WorkerList}
 import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, ResolveWorkerIdResult, SubmitApplicationResult, SubmitApplicationResultValue}
-import org.apache.gearpump.cluster.worker.WorkerDescription
+import org.apache.gearpump.cluster.worker.WorkerSummary
 import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.appmaster.SubmitApplicationRequest
 import org.apache.gearpump.util.{Constants, Graph}
@@ -53,7 +53,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
     new AutoPilot {
       def run(sender: ActorRef, msg: Any) = msg match {
         case GetWorkerData(workerId) =>
-          sender ! WorkerData(WorkerDescription.empty.copy(state = "active", workerId = workerId))
+          sender ! WorkerData(WorkerSummary.empty.copy(state = "active", workerId = workerId))
           KeepRunning
       }
     }
@@ -112,7 +112,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
     Get(s"/api/$REST_VERSION/master/workerlist") ~> masterRoute ~> check {
       //check the type
       val workerListJson = response.entity.asString
-      val workers = read[List[WorkerDescription]](workerListJson)
+      val workers = read[List[WorkerSummary]](workerListJson)
       assert(workers.size > 0)
       workers.foreach { worker =>
         worker.state shouldBe "active"

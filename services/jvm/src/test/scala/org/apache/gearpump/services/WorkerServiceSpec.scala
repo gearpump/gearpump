@@ -25,7 +25,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import org.apache.gearpump.cluster.ClientToMaster.{QueryWorkerConfig, ResolveWorkerId}
 import org.apache.gearpump.cluster.MasterToClient.{ResolveWorkerIdResult, WorkerConfig}
-import org.apache.gearpump.cluster.worker.WorkerDescription
+import org.apache.gearpump.cluster.worker.WorkerSummary
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import spray.testkit.ScalatestRouteTest
 
@@ -41,7 +41,7 @@ class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest with WorkerServ
     new AutoPilot {
       def run(sender: ActorRef, msg: Any) = msg match {
         case GetWorkerData(appId) =>
-          sender ! WorkerData(WorkerDescription.empty)
+          sender ! WorkerData(WorkerSummary.empty)
           KeepRunning
         case QueryWorkerConfig(appId) =>
           sender ! WorkerConfig(null)

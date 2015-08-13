@@ -30,7 +30,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterDataDetailRequest
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.stock.QueryServer.WebServer
 import org.apache.gearpump.streaming.{ProcessorId, ProcessorDescription}
-import org.apache.gearpump.streaming.appmaster.StreamingAppMasterDataDetail
+import org.apache.gearpump.streaming.appmaster.{ProcessorSummary, StreamAppMasterSummary}
 import org.apache.gearpump.streaming.task.{TaskId, StartTime, Task, TaskContext}
 import akka.pattern.ask
 import spray.can.Http
@@ -47,7 +47,7 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
 
   import ExecutionContext.Implicits.global
 
-  var analyzer: (ProcessorId, ProcessorDescription) = null
+  var analyzer: (ProcessorId, ProcessorSummary) = null
   implicit val timeOut = akka.util.Timeout(3, TimeUnit.SECONDS)
 
   override def onStart(startTime: StartTime): Unit = {
@@ -62,7 +62,7 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
   override def receiveUnManagedMessage: Receive = messageHandler
 
   def messageHandler: Receive = {
-    case detail: StreamingAppMasterDataDetail =>
+    case detail: StreamAppMasterSummary =>
       analyzer = detail.processors.find { kv =>
         val (processorId, processor) = kv
         processor.taskClass == classOf[Analyzer].getName

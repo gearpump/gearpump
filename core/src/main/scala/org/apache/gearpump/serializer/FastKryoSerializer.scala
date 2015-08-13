@@ -64,7 +64,7 @@ class FastKryoSerializer(system: ExtendedActorSystem) {
           |the serializer for a single streaming application, you need to create
           |a file under conf/ named application.conf, and add the above configuration
           |into application.conf. To verify whether the configuration is effective,
-          |you can browser your UI http://{UI Server Host}:8090/api/v1.0/config/app/{appId},
+          |you can browser your UI http://{UI Server Host}:8090/api/v1.0/app/{appId}/config,
           |and check whether your custom serializer is added.
         """.stripMargin
 

@@ -122,7 +122,18 @@ private[cluster] class Master extends Actor with Stash {
       val aliveFor = System.currentTimeMillis() - birth
       val logFileDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
       val userDir = System.getProperty("user.dir");
-      val masterDescription = MasterDescription(hostPort.toTuple, getMasterClusterList.map(_.toTuple), aliveFor, logFileDir, jarStoreRootPath, MasterStatus.Synced, userDir)
+
+      val masterDescription =
+        MasterSummary(
+          hostPort.toTuple,
+          getMasterClusterList.map(_.toTuple),
+          aliveFor,
+          logFileDir,
+          jarStoreRootPath,
+          MasterStatus.Synced,
+          userDir,
+          List.empty[MasterActivity])
+
       sender ! MasterData(masterDescription)
 
     case invalidAppMaster: InvalidAppMaster =>
