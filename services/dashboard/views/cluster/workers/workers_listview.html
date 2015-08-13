@@ -2,7 +2,7 @@
   <!-- control toolbar -->
   <div class="row">
     <div class="col-md-9">
-      <span class="table-caption-ext">Applications</span>
+      <span class="table-caption-ext">Worker Instances</span>
     </div>
     <div class="col-md-3 hidden-sm hidden-xs pull-right">
       <searchbox ng-model="search" placeholder="Search Anything"></searchbox>
@@ -13,9 +13,9 @@
 
 <div class="col-md-12">
   <sortable-table
-    columns-bind="appsTable.cols"
-    records-bind="appsTable.rows"
+    columns-bind="workersTable.cols"
+    records-bind="workersTable.rows"
     search-bind="search"
-    pagination="10">
+    pagination="5">
   </sortable-table>
 </div>

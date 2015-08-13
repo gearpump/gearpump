@@ -1,0 +1,125 @@
+/*
+ * dashing (assembled widgets)
+ * @version v0.0.8
+ * @link https://github.com/stanleyxu2005/dashing
+ * @license Apache License 2.0, see accompanying LICENSE file
+ */
+.cm-container {
+  position: relative;
+  visibility: hidden;
+  width: 0;
+  height: 0;
+}
+.metrics {
+  white-space: nowrap;
+}
+.metrics .metrics-caption {
+  font-size: 1.15em;
+  font-weight: 500;
+}
+.metrics .metrics-value {
+  margin-top: 1px;
+  margin-bottom: 2px;
+}
+.metrics .metrics-sub-text {
+  display: block;
+  color: #a8a8a8;
+}
+.metrics-thicker-bottom {
+  display: block;
+  padding-bottom: 12px;
+}
+.progress-tiny {
+  height: 3px;
+  background-color: #ebebeb;
+  padding: 0;
+  margin: 1px 0 0 0;
+}
+.remark-icon {
+  color: #bbb;
+}
+.remark-icon:hover {
+  color: #888;
+}
+.label-lg {
+  font-size: .85em;
+  font-weight: 400;
+  padding: 3px 5px 4px;
+}
+th[st-sort] {
+  cursor: pointer;
+}
+th[st-sort]:not(.text-right):after,
+th[st-sort].text-right:before {
+    content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAICAYAAAArzdW1AAAAFUlEQVR4nGP8//8/AyHARFDFsFcEAHkjAw3jrppVAAAAAElFTkSuQmCC);
+}
+th[st-sort]:not(.text-right):after {
+  padding-left: 0;
+}
+th[st-sort].text-right:before {
+  padding-right: 3px;
+}
+th[st-sort].st-sort-ascent:not(.text-right):after,
+th[st-sort].st-sort-ascent.text-right:before {
+  content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAICAIAAACkr0LiAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABhSURBVBhXY/z//z8DDsAEpbEBhNylR/9c2r4ASSgfLnfn5b/qVd/c9VmBJJANEWQA2nf7xV+f7s/bL/4GsoEkkA0UAbkDiCMmf4FIQACQDRQBMkByn7+DxZAARAS3HxgYAOtLYN8FnkguAAAAAElFTkSuQmCC);
+}
+th[st-sort].st-sort-descent:not(.text-right):after,
+th[st-sort].st-sort-descent.text-right:before {
+  content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAICAIAAACkr0LiAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABgSURBVBhXY/z//z8DDsAExF9+QNgIABEByaXO+brj0h8QDwyAbKAIiAU08/aLvz7dn7df/A1kA0kgGygCsguIgQAi3bXlB1wCCKByQHDx4V/n1s9AEsr//5+QO7EDBgYAc+haKbT8GukAAAAASUVORK5CYII=);
+}
+th .unit {
+  color: #888;
+  display: block;
+  font-size: 1em;
+  font-weight: 400;
+}
+.nav-tabs {
+  margin-bottom: 30px !important;
+  border-bottom: 2px solid rgba(0, 39, 59, .1);
+}
+.nav-tabs-underlined > li {
+  margin-bottom: -2px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+.nav-tabs-underlined > li:first-of-type {
+  margin-left: 0;
+}
+.nav-tabs-underlined > li > a {
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+  padding-bottom: 5px !important;
+  border-width: 2px 0;
+  border-style: solid;
+  border-color: transparent;
+  border-radius: 0;
+  color: #777;
+}
+.nav-tabs-underlined > li > a:hover,
+.nav-tabs-underlined > li > a:focus {
+  background-color: transparent;
+  border-top-color: transparent;
+}
+.nav-tabs-underlined > li > a:hover {
+  color: #333;
+  border-bottom-color: rgba(0, 39, 59, .15);
+}
+.nav-tabs-underlined > li > a:active {
+  color: #dd4b39;
+}
+.nav-tabs-underlined > li > a:focus {
+  color: #000;
+  outline: 0;
+}
+.nav-tabs-underlined > li.active > a,
+.nav-tabs-underlined > li.active > a:hover,
+.nav-tabs-underlined > li.active > a:focus {
+  color: #dd4b39;
+  border: 0 solid transparent;
+}
+.nav-tabs-underlined .active {
+  border-width: 2px 0;
+  border-style: solid;
+  border-color: transparent;
+  border-bottom-color: #dd4b39;
+}

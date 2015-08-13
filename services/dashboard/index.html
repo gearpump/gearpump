@@ -1,131 +1,101 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="dashboard">
+<html lang="en">
 <head>
   <!-- Standard Meta -->
   <meta charset="utf-8"/>
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 
   <!-- Site Properties -->
   <title>Dashboard</title>
-  <meta name="description" content=""/>
 
   <!-- Static Resources -->
   <link rel="stylesheet" href="webjars/bootstrap/3.3.5/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="webjars/bootstrap-additions/0.3.1/dist/bootstrap-additions.min.css"/>
+  <link rel="stylesheet" href="webjars/font-awesome/4.4.0/css/font-awesome.min.css"/>
+  <link rel="stylesheet" href="webjars/select2-bootstrap-css/1.4.6/select2-bootstrap.css"/>
   <link rel="stylesheet" href="webjars/angular-motion/0.4.2/dist/angular-motion.min.css"/>
   <link rel="stylesheet" href="webjars/angular-loading-bar/0.8.0/build/loading-bar.min.css"/>
+  <!-- decorate angular-ui-select with the following two stylesheets (stick with the version!) -->
   <link rel="stylesheet" href="webjars/angular-ui-select/0.12.0/dist/select.min.css"/>
   <link rel="stylesheet" href="webjars/select2/3.5.2/select2.css"/>
   <link rel="stylesheet" href="webjars/select2-bootstrap-css/1.4.6/select2-bootstrap.css"/>
   <link rel="stylesheet" href="webjars/vis/4.7.0/dist/vis.min.css"/>
-  <!-- TODO: Minimize as one for production server -->
-  <link rel="stylesheet" href="styles/fonts/lato/loader.css"/>
+
+  <!-- Manually build/maintained libraries -->
+  <link rel="stylesheet" href="vendors/dashing/0.0.8/dashing.min.css"/>
+
+  <!-- Site styles -->
+  <link rel="stylesheet" href="styles/fonts/roboto/roboto.css"/>
+  <!--<link rel="stylesheet" href="styles/fonts/lato/lato.css"/>-->
   <link rel="stylesheet" href="styles/bootstrap-override.css"/>
-  <link rel="stylesheet" href="styles/bootstrap-doc.css"/>
+  <link rel="stylesheet" href="styles/bootstrap-doc.css"/><!-- todo: should be absorbed -->
   <link rel="stylesheet" href="styles/dashboard.css"/>
 </head>
 
-<body ng-controller="DashboardCtrl">
-
-<!-- Navigation -->
-<nav class="navbar navbar-inverse navbar-fixed-top">
+<body>
+<!-- app -->
+<div ng-app="dashboard">
+  <!-- header and footer are defined in views/landing -->
+  <header></header>
+  <breadcrumbs></breadcrumbs>
   <div class="container-fluid">
-    <div class="navbar-header">
-      <a class="navbar-brand" href="#/">Gearpump
-        <span class="label label-primary" ng-bind="version"></span></a>
-    </div>
-    <div class="collapse navbar-collapse">
-      <ul class="nav navbar-nav">
-        <li ng-repeat="link in links track by $index" ng-class="{active:navClass(link.url)}">
-          <a ng-href="{{link.url}}"><span ng-class="link.iconClass"></span>
-            <span ng-bind="link.label"></span></a>
-        </li>
-        <!--
-        <li>
-          <a href="//gearpump.io" title="View official website">
-            <span class="glyphicon glyphicon-book"></span>
-            gearpump.io
-          </a>
-        </li>
-        <li>
-          <div>
-          <iframe class="github" src="//ghbtns.com/github-btn.html?user=intel-hadoop&amp;repo=gearpump&amp;type=watch&amp;count=true" allowtransparency="true" frameborder="0" scrolling="0" width="100" height="20"></iframe>
-        </div></li>-->
-      </ul>
-    </div>
+    <!--<div class="col-md-2" role="sidebar"-->
+    <!--ng-include src="'views/landing/sidebar.html'"></div>-->
+    <div class="row" ui-view></div>
   </div>
-</nav>
-
-<!-- Content -->
-<div class="container-fluid">
-
-  <!-- Breadcrumb as navigation -->
-  <ol class="breadcrumb breadcrumb-sm">
-    <li ng-repeat="breadcrumb in breadcrumbs.get() track by breadcrumb.path" ng-class="{active:$last}">
-      <a ng-if="!$last" ng-href="#{{breadcrumb.path}}" ng-bind="breadcrumb.label"></a>
-      <span ng-if="$last" ng-bind="breadcrumb.label"></span>
-    </li>
-  </ol>
-
-  <!-- Main content -->
-  <div class="container-fluid" id="main">
-    <ng-view></ng-view>
-  </div>
-
+  <footer></footer>
 </div>
-
-<!-- Footer -->
-<footer class="navbar navbar-default navbar-fixed-bottom">
-  <div class="container-fluid">
-    <span class="navbar-text">
-      Project site <a href="//gearpump.io" target="_blank">gearpump.io</a>
-    </span>
-  </div>
-</footer>
+<!-- end of app -->
 
 <!-- Static Resources -->
 <script src="webjars/angularjs/1.4.3/angular.min.js"></script>
 <script src="webjars/angularjs/1.4.3/angular-animate.min.js"></script>
-<script src="webjars/angularjs/1.4.3/angular-route.min.js"></script>
+<script src="webjars/angularjs/1.4.3/angular-sanitize.min.js"></script>
 <script src="webjars/angular-loading-bar/0.8.0/build/loading-bar.min.js"></script>
-<script src="webjars/angular-smart-table/2.1.1/dist/smart-table.min.js"></script>
+<script src="webjars/angular-ui-router/0.2.15/angular-ui-router.min.js"></script>
 <script src="webjars/angular-strap/2.3.1/dist/angular-strap.min.js"></script>
 <script src="webjars/angular-strap/2.3.1/dist/angular-strap.tpl.min.js"></script>
 <script src="webjars/angular-ui-select/0.12.0/dist/select.min.js"></script>
+<script src="webjars/angular-smart-table/2.1.1/dist/smart-table.min.js"></script>
 <script src="webjars/d3js/3.5.5/d3.min.js"></script>
 <script src="webjars/momentjs/2.10.3/min/moment.min.js"></script>
+<script src="webjars/underscorejs/1.8.3/underscore-min.js"></script>
+<script src="webjars/vis/4.7.0/dist/vis.min.js"></script>
 <script src="webjars/ng-file-upload/5.0.9/ng-file-upload-shim.min.js"></script>
 <script src="webjars/ng-file-upload/5.0.9/ng-file-upload.min.js"></script>
-<script src="webjars/vis/4.7.0/dist/vis.min.js"></script>
-<script src="shared/vendors/echarts/2.2.5-mod/echarts-all.js"></script>
-<script src="shared/vendors/ng-breadcrumbs/ng-breadcrumbs.min.js"></script>
-<script src="shared/filters/readable.js"></script>
-<script src="shared/directives/angular-future.js"></script>
-<script src="shared/directives/echartfactory.js"></script>
-<script src="shared/directives/echarts.js"></script>
-<script src="shared/directives/explanationicon.js"></script>
-<script src="shared/directives/metricscard.js"></script>
-<script src="shared/directives/tabset.js"></script>
-<script src="shared/directives/visgraph.js"></script>
-<!-- TODO: Minimize as one for production server -->
-<script src="views/dashboard.js"></script>
-<script src="views/util.js"></script>
-<script src="views/services/restapi.js"></script>
-<script src="views/services/streamingservice.js"></script>
-<script src="views/model/metrics.js"></script>
-<script src="views/model/streamingdag.js"></script>
-<script src="views/cluster/master.js"></script>
-<script src="views/cluster/workers/workers.js"></script>
+
+<!-- Manually build/maintained libraries -->
+<script src="vendors/echarts/2.2.7-custom/echarts-all.js"></script>
+<script src="vendors/dashing/0.0.8/dashing.js"></script>
+
+<!-- Application -->
+<script src="dashboard.js"></script>
+<script src="services/models/models.js"></script>
+<script src="services/models/metrics.js"></script>
+<script src="services/models/streaming_dag.js"></script>
+<script src="services/locator.js"></script>
+<script src="services/restapi.js"></script>
+<script src="views/landing/breadcrumbs.js"></script>
+<script src="views/landing/header.js"></script>
+<script src="views/cluster/master/master.js"></script>
+<script src="views/cluster/workers/workers_listview.js"></script>
+<script src="views/cluster/workers/worker/worker.js"></script>
 <script src="views/apps/apps.js"></script>
-<script src="views/apps/submit.js"></script>
-<script src="views/apps/app/appmaster.js"></script>
-<script src="views/apps/app/appstatus.js"></script>
-<script src="views/apps/app/appdag.js"></script>
-<script src="views/apps/app/appprocessor.js"></script>
-<script src="views/apps/app/appmetrics.js"></script>
-<script src="views/apps/app/dagstyle.js"></script>
-<script src="views/apps/app/editdag.js"></script>
+<script src="views/apps/app/app.js"></script>
+<script src="views/apps/app/overview.js"></script>
+<script src="views/apps/app/executors_table.js"></script>
+<script src="views/apps/streamingapp/vis/network.js"></script>
+<script src="views/apps/streamingapp/vis/network_style.js"></script>
+<script src="views/apps/streamingapp/streamingapp.js"></script>
+<script src="views/apps/streamingapp/overview.js"></script>
+<script src="views/apps/streamingapp/metrics_charts.js"></script>
+<script src="views/apps/streamingapp/dag.js"></script>
+<script src="views/apps/streamingapp/dag_edit.js"></script>
+<script src="views/apps/streamingapp/processor.js"></script>
+<script src="views/apps/streamingapp/processor_task_charts.js"></script>
+<script src="views/apps/streamingapp/executor.js"></script>
+<script src="views/apps/streamingapp/metrics.js"></script>
 
 </body>
 </html>
