@@ -2,64 +2,89 @@
  * Licensed under the Apache License, Version 2.0
  * See accompanying LICENSE file.
  */
-'use strict';
-angular.module('dashboard.apps', [])
 
-  .config(['$routeProvider', function ($routeProvider) {
-    $routeProvider
-      .when('/apps', {
-        label: 'Applications',
-        templateUrl: 'views/apps/apps.html',
-        controller: 'AppsCtrl'
+angular.module('dashboard')
+
+  .config(['$stateProvider',
+    function($stateProvider) {
+      'use strict';
+
+      $stateProvider
+        .state('apps', {
+          url: '/apps',
+          templateUrl: 'views/apps/apps.html',
+          controller: 'AppsCtrl',
+          resolve: {
+            modelApps: ['models', function(models) {
+              return models.$get.apps();
+            }]
+          }
+        });
+    }])
+
+  .controller('AppsCtrl', ['$scope', '$modal', '$sortableTableBuilder', 'modelApps',
+    function($scope, $modal, $stb, modelApps) {
+      'use strict';
+
+      var submitWindow = $modal({
+        templateUrl: "views/apps/submit/submit.html",
+        backdrop: 'static',
+        keyboard: false /* https://github.com/mgcrea/angular-strap/issues/1779 */,
+        show: false
       });
-  }])
 
-  .controller('AppsCtrl', ['$scope', '$location', '$modal', 'restapi', 'util',
-    function ($scope, $location, $modal, restapi, util) {
+      $scope.openSubmitDialog = function() {
+        submitWindow.$promise.then(submitWindow.show);
+      };
 
-    var submitWindow = $modal({
-      templateUrl: "views/apps/submit.html",
-      backdrop: 'static',
-      keyboard: false /* https://github.com/mgcrea/angular-strap/issues/1779 */,
-      show: false
-    });
+      $scope.appsTable = {
+        cols: [
+          $stb.indicator().key('state').canSort('state.condition+"_"+submissionTime').styleClass('td-no-padding').done(),
+          $stb.link('ID').key('id').canSort().done(),
+          $stb.link('Name').key('name').canSort('name.text').styleClass('col-md-2').done(),
+          $stb.datetime('Submission Time').key('submissionTime').canSort().sortDefaultDescent().styleClass('col-md-1').done(),
+          $stb.datetime('Start Time').key('startTime').canSort().styleClass('col-md-1').done(),
+          $stb.datetime('Stop Time').key('stopTime').canSort().styleClass('col-md-1').done(),
+          $stb.text('User').key('user').canSort().styleClass('col-md-2').done(),
+          $stb.text('Location').key('location').canSort()
+            .help('The location where application master is running at')
+            .styleClass('col-md-2 hidden-sm hidden-xs').done(),
+          $stb.button('Actions').key(['view', 'kill', 'restart']).styleClass('col-md-3').done()
+        ],
+        rows: null
+      };
 
-    $scope.openSubmitDialog = function() {
-      submitWindow.$promise.then(submitWindow.show);
-    };
-
-    $scope.operationDenied = {};
-    $scope.view = function (id) {
-      $location.path("/apps/app/" + id);
-    };
-    $scope.restart = function (id) {
-      $scope.operationDenied[id] = true;
-      restapi.restartAppAsync(id).finally(function() {
-        delete $scope.operationDenied[id];
-      });
-    };
-    $scope.kill = function (id) {
-      restapi.killApp(id);
-    };
-
-    restapi.subscribe('/master/applist', $scope,
-      function (data) {
-        // TODO: Serde AppMastersData (#458)
-        var masters = data.appMasters;
-        $scope.apps = masters.map(function (app) {
+      function updateTable(apps) {
+        $scope.appsTable.rows = _.map(apps, function(app) {
           return {
-            active: app.status === 'active',
-            appMasterPath: app.appMasterPath,
-            finishTime: util.stringToDateTime(app.finishTime),
-            id: app.appId,
-            name: app.appName,
-            startTime: util.stringToDateTime(app.startTime),
-            submissionTime: util.stringToDateTime(app.submissionTime),
-            status: app.status,
+            id: {href: app.pageUrl, text: app.appId},
+            name: {href: app.pageUrl, text: app.appName},
+            state: {tooltip: app.status, condition: app.isRunning ? 'good' : '', shape: 'stripe'},
+            location: app.location,
             user: app.user,
-            workerPath: app.workerPath
+            submissionTime: app.submissionTime,
+            startTime: app.startTime,
+            stopTime: app.finishTime || '-',
+            view: {href: app.pageUrl, text: 'Details', class: 'btn-xs btn-primary', hide: !app.isRunning},
+            kill: {
+              text: 'Kill', class: 'btn-xs', hide: !app.isRunning,
+              click: function() {
+                app.terminate();
+              }
+            },
+            restart: {
+              text: 'Restart', class: 'btn-xs', hide: !app.isRunning,
+              click: function() {
+                app.restart();
+              }
+            }
           };
         });
+      }
+
+      updateTable(modelApps.$data());
+      modelApps.$subscribe($scope, function(apps) {
+        updateTable(apps);
       });
-  }])
+    }])
 ;

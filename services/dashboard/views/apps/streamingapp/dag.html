@@ -1,0 +1,48 @@
+<div class="col-md-8">
+  <div class="panel panel-sm panel-default">
+    <div class="panel-heading">DAG</div>
+    <div class="panel-body">
+      <div class="cm-container" id="dag-node-menu"
+           bs-dropdown html="true"
+           template-url="views/apps/streamingapp/popups/processor_menu.html"></div>
+      <vis-network
+        data="visGraph.data"
+        options="visGraph.options"
+        events="visGraph.events">
+      </vis-network>
+    </div>
+  </div>
+</div>
+
+<div class="col-md-4">
+  <!-- todo: maybe share the controller with metrics_charts.js -->
+  <div class="panel">
+    <metrics
+      caption="Message Receive Throughput"
+      help="Messages received from external data source"
+      value="{{currentMessageReceiveRate|number:0}}"
+      unit="msg/s"
+      sub-text="Total messages received: {{totalReceivedMessages|number:0}}"></metrics>
+  </div>
+  <div class="panel">
+    <metrics
+      caption="Message Send Throughput"
+      help="Messages sent to external data sink"
+      value="{{currentMessageSendRate|number:0}}"
+      unit="msg/s"
+      sub-text="Total messages sent: {{totalSentMessages|number:0}}"></metrics>
+  </div>
+  <div class="panel">
+    <metrics
+      caption="Average Message Processing Time"
+      help="Time from message is received to message is sent"
+      value="{{averageProcessingTime|number:3}}"
+      unit="ms"></metrics>
+  </div>
+  <div class="panel">
+    <metrics
+      caption="Average Message Receive Latency"
+      value="{{averageTaskReceiveLatency|number:3}}"
+      unit="ms"></metrics>
+  </div>
+</div>

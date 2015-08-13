@@ -3,242 +3,72 @@
  * See accompanying LICENSE file.
  */
 
-/**
- * Extra Bootstrap styles
- */
-.breadcrumb-sm {
-  font-size: 0.9em;
-  background-color: transparent;
-  margin-bottom: 8px;
+/* Reset to use specified fonts */
+* {
+  font-family: lato, roboto, 'helvetica neue', 'segoe ui', arial, helvetica, sans-serif;
 }
 
-.progress-tiny {
-  height: 3px;
-  border-style: none;
-  background-color: rgb(235, 235, 235);
-  padding: 0;
-  margin: 1px 0 0 0;
+/* Set default font size (depends on the font face) */
+body, .form-control {
+  font-size: 13px;
 }
 
-.progress-bar-blue {
-  background-color: rgb(66, 139, 202);
-  background-image: none;
+/* bolder text */
+.bold {
+  font-weight: 500;
 }
 
-.progress-bar-yellow {
-  background-color: rgb(240, 173, 79);
-  background-image: none;
+.actor-path {
+  word-break: break-all;
 }
-
-.progress-bar-red {
-  background-color: rgb(202, 24, 30);
-  background-image: none;
-}
-
-.panel-heading, .panel-footer {
-  padding-top: 4px;
-  padding-bottom: 4px;
-  text-transform: uppercase;
-  font-size: 0.85em;
-}
-
-.navbar-brand {
-  color: #fff !important;
-  font-weight: bold;
-}
-
-.table tbody > tr > td.vert-align {
-  vertical-align: middle;
-}
-
-/**
- * Application specific styles
- */
-body {
-  padding-top: 60px; /*equals navbar height*/
-}
-
-a, a:hover, a:active, a:visited {
-  text-decoration: none !important;
-}
-
-.table-two-column td:first-child {
-  text-align: right;
-  font-size: 0.85em;
-  /*text-transform: uppercase;*/
-  font-weight: bold;
-}
-
-.table-striped tr:first-child td {
-  border-top-style: none;
-}
-
-.table-xs {
-  font-size: 0.85em;
-}
-
-/**
- *.table-complex-details
- */
-.table-complex-details {
-  margin: 6px;
-}
-
-.table-complex-details td {
-  padding: 3px 6px 3px 6px;
-}
-
-.table-complex-details td:first-child {
-  text-align: right;
-  font-size: 0.85em;
-  /*text-transform: uppercase;*/
-  font-weight: bold;
-}
-
-/**
- * Sort arrows
- */
-/**
- * Sort arrows for smart-table
- */
-th[st-sort] {
-  cursor: pointer;
-}
-
-th[st-sort]:not(.text-right):after,
-th[st-sort].text-right:before {
-  /* 9x8 transparent png */
-  content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAICAYAAAArzdW1AAAAFUlEQVR4nGP8//8/AyHARFDFsFcEAHkjAw3jrppVAAAAAElFTkSuQmCC);
-}
-
-th[st-sort]:not(.text-right):after {
-  padding-left: 2px;
-}
-
-th[st-sort].text-right:before {
-  padding-right: 6px;
-}
-
-th.st-sort-ascent:not(.text-right):after,
-th.st-sort-ascent.text-right:before {
-  content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAICAIAAACkr0LiAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABhSURBVBhXY/z//z8DDsAEpbEBhNylR/9c2r4ASSgfLnfn5b/qVd/c9VmBJJANEWQA2nf7xV+f7s/bL/4GsoEkkA0UAbkDiCMmf4FIQACQDRQBMkByn7+DxZAARAS3HxgYAOtLYN8FnkguAAAAAElFTkSuQmCC);
-}
-
-th.st-sort-descent:not(.text-right):after,
-th.st-sort-descent.text-right:before {
-  content: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAICAIAAACkr0LiAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABgSURBVBhXY/z//z8DDsAExF9+QNgIABEByaXO+brj0h8QDwyAbKAIiAU08/aLvz7dn7df/A1kA0kgGygCsguIgQAi3bXlB1wCCKByQHDx4V/n1s9AEsr//5+QO7EDBgYAc+haKbT8GukAAAAASUVORK5CYII=);
-}
-
-/**
- * Search box styling
- */
-input[st-search] {
-  width: 100%;
-  padding-left: 3px;
-  padding-top: 3px;
-  font-weight: 400;
-}
-
-/**
- * Underlined tabset style (Similar to Google's comment system)
- */
-
-.nav-tabs {
-  margin-bottom: 30px !important;
-  border-bottom: 1px solid rgba(0, 39, 59, .1);
-}
-
-.nav-tabs-underlined > li {
-  margin-bottom: -1px;
-  margin-left: 10px;
-  margin-right: 10px;
-}
-
-.nav-tabs-underlined > li:first-of-type {
-  margin-left: 0;
-}
-
-.nav-tabs-underlined > li > a {
-  padding-left: 2px !important;
-  padding-right: 2px !important;
-  padding-bottom: 5px !important;
-  border: 1px solid transparent;
-  border-width: 1px 0;
-  border-radius: 0;
-  color: #777;
-  font-size: 0.85em;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.nav-tabs-underlined > li > a:hover,
-.nav-tabs-underlined > li > a:focus {
-  background-color: transparent;
-  border-top-color: transparent;
-}
-
-.nav-tabs-underlined > li > a:hover {
-  color: #333;
-  border-bottom-color: rgba(0, 39, 59, .15);
-}
-
-.nav-tabs-underlined > li > a:active {
-  color: #dd4b39;
-}
-
-.nav-tabs-underlined > li > a:focus {
-  color: #000;
-  outline: 0;
-}
-
-.nav-tabs-underlined > li.active > a,
-.nav-tabs-underlined > li.active > a:hover,
-.nav-tabs-underlined > li.active > a:focus {
-  color: #dd4b39;
-  border: 0 solid transparent;
-}
-
-.nav-tabs-underlined .active {
-  border: 1px solid transparent;
-  border-width: 1px 0;
-  border-bottom-color: #dd4b39;
-}
-
 /*
- * Metrics card widget
- */
-.metrics-title {
-  margin-bottom: 6px;
-  text-transform: uppercase;
+body {
+  background-color: #f4f4f4;
 }
+*/
 
-.metrics-explanation {
-  color: #ccc;
-  margin-left: 4px;
-}
 
-.metrics-explanation:hover {
-  color: #888;
-}
-
-.metrics-value {
-  margin-top: 0;
-}
-
-div.metrics {
-  padding-bottom: 10px;
-}
-
-/**
- * pagination
- */
-.pagination a:hover {
-  cursor: pointer;
+/* Translate the first letter of a angular-route-segment segment capitalized */
+.breadcrumb > li {
+  text-transform: capitalize;
 }
 
 /* ui-select input control should align with grid */
 * [theme="select2"] {
   width: 100%;
+}
+
+/* Dashing default chart widgets does not have padding */
+.dashing-chart-container {
+  padding-bottom: 20px;
+  padding-top: 10px;
+}
+
+/* For dashing widget "indicator" shape="stripe", need to remove parent element padding (2 rules) */
+th.td-no-padding  {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+td.td-no-padding  {
+  padding: 0 !important;
+}
+
+/* todo: experimental style for tooltip panel */
+.tooltip-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  display: none;
+  float: left;
+  min-width: 160px;
+  background-color: #000;
+  opacity: .75;
+  color: #fff;
+  padding: 5px 15px;
+  cursor: default;
+  border-radius: 2px;
 }
 
 /**
@@ -257,12 +87,4 @@ div.metrics {
 @keyframes spin {
   from { transform: scale(1) rotate(0deg);}
   to { transform: scale(1) rotate(360deg);}
-}
-
-/* Invisible context menu container */
-.cm-container {
-  position: relative;
-  visibility: hidden;
-  width: 0;
-  height: 0;
 }

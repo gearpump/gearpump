@@ -1,0 +1,21 @@
+<div class="col-md-12">
+  <!-- control toolbar -->
+  <div class="row">
+    <div class="col-md-9">
+      <span class="table-caption-ext">Worker Instances</span>
+    </div>
+    <div class="col-md-3 hidden-sm hidden-xs pull-right">
+      <searchbox ng-model="search" placeholder="Search Anything"></searchbox>
+    </div>
+  </div>
+  <!-- end of control toolbar -->
+</div>
+
+<div class="col-md-12">
+  <sortable-table
+    columns-bind="workersTable.cols"
+    records-bind="workersTable.rows"
+    search-bind="search"
+    pagination="5">
+  </sortable-table>
+</div>
