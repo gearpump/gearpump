@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import io.gearpump.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import io.gearpump.codahale.metrics.{MetricFilter, MetricRegistry, ScheduledReporter, Slf4jReporter}
+import io.gearpump.codahale.metrics._
 import org.apache.gearpump.metrics
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
@@ -48,6 +48,10 @@ class Metrics(sampleRate: Int) extends Extension {
   def counter(name : String) = {
     new Counter(name, registry.counter(name), sampleRate)
   }
+
+  def register(set: MetricSet): Unit = {
+    registry.registerAll(set)
+  }
 }
 
 object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
@@ -60,21 +64,23 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
   }
 
   object MetricType {
-    def unapply(obj: MetricType): Option[(Histogram, Counter, Meter, Timer)] = {
+    def unapply(obj: MetricType): Option[(Histogram, Counter, Meter, Timer, Gauge)] = {
       obj match {
-        case x: Histogram => Some((x, null, null, null))
-        case x: Counter => Some((null, x, null, null))
-        case x: Meter => Some((null, null, x, null))
-        case x: Timer => Some((null, null, null, x))
+        case x: Histogram => Some((x, null, null, null, null))
+        case x: Counter => Some((null, x, null, null, null))
+        case x: Meter => Some((null, null, x, null, null))
+        case x: Timer => Some((null, null, null, x, null))
+        case g: Gauge => Some((null, null, null, null, g))
       }
     }
 
-    def apply(h: Histogram, c: Counter, m: Meter, t: Timer): MetricType = {
+    def apply(h: Histogram, c: Counter, m: Meter, t: Timer, g: Gauge): MetricType = {
       val result =
         if (h != null) h
         else if (c != null) c
         else if (m != null) m
         else if (t != null) t
+        else if (g != null) g
         else null
       result
     }
@@ -102,8 +108,7 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
       rateUnit: String, durationUnit: String)
     extends MetricType
 
-  //TODO: Refactor Gauge to remove dependency on ClassTag[T]
-  //case class Gauge[T:ClassTag](name: String, value: T) extends MetricType
+  case class Gauge(name: String, value: Long) extends MetricType
 
   case object ReportMetrics
 
@@ -126,6 +131,8 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
   }
 
   class DummyMetrics extends Metrics(1) {
+    override def register(set: MetricSet) = Unit
+
     private val meter = new metrics.Meter("", null) {
       override def mark() = Unit
       override  def mark(n: Long) = Unit

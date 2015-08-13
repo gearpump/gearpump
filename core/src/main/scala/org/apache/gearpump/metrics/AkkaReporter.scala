@@ -19,7 +19,7 @@
 package org.apache.gearpump.metrics
 
 import akka.actor.{ActorRef, ActorSystem}
-import org.apache.gearpump.metrics.Metrics.{Histogram => HistogramData, Meter => MeterData, Counter => CounterData}
+import org.apache.gearpump.metrics.Metrics.{Histogram => HistogramData, Meter => MeterData, Counter => CounterData, Gauge => GaugeData}
 import io.gearpump.codahale.metrics.MetricRegistry
 
 import akka.actor.ActorSystem
@@ -45,6 +45,7 @@ class AkkaReporter(
     val counters = registry.getCounters()
     val histograms = registry.getHistograms()
     val meters = registry.getMeters()
+    val gauges = registry.getGauges()
 
     counters.entrySet().asScala.foreach { pair =>
       to ! CounterData(pair.getKey, pair.getValue.getCount)
@@ -72,9 +73,14 @@ class AkkaReporter(
         value.getFifteenMinuteRate,
         getRateUnit)
     }
+
+    gauges.entrySet().asScala.foreach {kv =>
+      val value = kv.getValue.asInstanceOf[CodaGauge[Number]].getValue.longValue()
+      to ! GaugeData(kv.getKey, value)
+    }
   }
 
-  def getRateUnit: String = {
+  private def getRateUnit: String = {
     "events/s"
   }
 }

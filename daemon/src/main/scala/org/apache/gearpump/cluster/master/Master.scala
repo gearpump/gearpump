@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.cluster.master
 
+import java.lang.management.ManagementFactory
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
@@ -34,8 +35,11 @@ import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated, _}
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import org.apache.gearpump.jarstore.{JarFileContainerWrapper, JarFileContainer, JarStore}
+import org.apache.gearpump.metrics.Metrics.ReportMetrics
+import org.apache.gearpump.metrics.{MetricsReporterService, Metrics, JvmMetricsSet}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.util._
 import org.slf4j.Logger
 
@@ -61,6 +65,11 @@ private[cluster] class Master extends Actor with Stash {
 
   private val birth = System.currentTimeMillis()
 
+  private var nextWorkerId = 0
+
+  // register jvm metrics
+  Metrics(context.system).register(new JvmMetricsSet(s"master"))
+
   LOG.info("master is started at " + ActorUtil.getFullPath(context.system, self.path) + "...")
 
   val jarStoreRootPath = systemConfig.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH)
@@ -68,25 +77,35 @@ private[cluster] class Master extends Actor with Stash {
 
   private val hostPort = HostPort(ActorUtil.getSystemAddress(context.system).hostPort)
 
+  val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
+  val historyMetricsService = if (metricsEnabled) {
+    val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
+    val historyMetricsService = {
+      context.actorOf(Props(new HistoryMetricsService("master", getHistoryMetricsConfig)))
+    }
+
+    val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
+    historyMetricsService.tell(ReportMetrics, metricsReportService)
+    Some(historyMetricsService)
+  } else {
+    None
+  }
+
   override def receive : Receive = workerMsgHandler orElse
     appMasterMsgHandler orElse
     clientMsgHandler orElse
+    metricsService orElse
     jarStoreService orElse
     terminationWatch orElse
     disassociated orElse
     ActorUtil.defaultMsgHandler(self)
 
-  final val undefinedUid = 0
-  @tailrec final def newUid(): Int = {
-    val uid = Util.randInt
-    if (uid == undefinedUid) newUid()
-    else uid
-  }
-
   def workerMsgHandler : Receive = {
     case RegisterNewWorker =>
-      val workerId = newUid()
+      val workerId = nextWorkerId
+      nextWorkerId += 1
       self forward RegisterWorker(workerId)
+
     case RegisterWorker(id) =>
       context.watch(sender())
       sender ! WorkerRegistered(id, MasterInfo(self, birth))
@@ -104,6 +123,11 @@ private[cluster] class Master extends Actor with Stash {
       (jarStore ? GetJarFileContainer).asInstanceOf[Future[JarFileContainer]].map{container =>
         client ! new JarFileContainerWrapper(container)
       }
+  }
+
+  def metricsService : Receive = {
+    case query: QueryHistoryMetrics =>
+      historyMetricsService.foreach(_ forward query)
   }
 
   def appMasterMsgHandler : Receive = {
@@ -132,7 +156,8 @@ private[cluster] class Master extends Actor with Stash {
           jarStoreRootPath,
           MasterStatus.Synced,
           userDir,
-          List.empty[MasterActivity])
+          List.empty[MasterActivity],
+          jvmName = ManagementFactory.getRuntimeMXBean().getName())
 
       sender ! MasterData(masterDescription)
 

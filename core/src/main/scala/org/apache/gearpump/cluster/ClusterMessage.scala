@@ -49,7 +49,7 @@ object ClientToMaster {
 
   case object QueryMasterConfig
 
-  case class QueryHistoryMetrics(appId: Int, path: String, readLatest: Boolean = false)
+  case class QueryHistoryMetrics(path: String, readLatest: Boolean = false)
 
   case class GetStallingTasks(appId: Int)
 
@@ -73,7 +73,7 @@ object MasterToClient {
 
   case class HistoryMetricsItem(time: TimeStamp, value: MetricType)
 
-  case class HistoryMetrics(appId: Int, path: String, metrics: List[HistoryMetricsItem])
+  case class HistoryMetrics(path: String, metrics: List[HistoryMetricsItem])
 
   case class LastFailure(time: TimeStamp, error: String)
 }

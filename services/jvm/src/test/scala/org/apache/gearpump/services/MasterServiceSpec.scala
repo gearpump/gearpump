@@ -25,9 +25,9 @@ import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
-import org.apache.gearpump.cluster.ClientToMaster.{QueryMasterConfig, ResolveWorkerId, SubmitApplication}
+import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ResolveWorkerId, SubmitApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, WorkerList}
-import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, ResolveWorkerIdResult, SubmitApplicationResult, SubmitApplicationResultValue}
+import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.cluster.worker.WorkerSummary
 import org.apache.gearpump.streaming.ProcessorDescription
 import org.apache.gearpump.streaming.appmaster.SubmitApplicationRequest
@@ -55,6 +55,9 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
         case GetWorkerData(workerId) =>
           sender ! WorkerData(WorkerSummary.empty.copy(state = "active", workerId = workerId))
           KeepRunning
+        case QueryHistoryMetrics(path, _) =>
+          sender ! HistoryMetrics(path, List.empty[HistoryMetricsItem])
+          KeepRunning
       }
     }
   }
@@ -74,6 +77,9 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
           KeepRunning
         case ResolveWorkerId(0) =>
           sender ! ResolveWorkerIdResult(Success(mockWorker.ref))
+          KeepRunning
+        case QueryHistoryMetrics(path, _) =>
+          sender ! HistoryMetrics(path, List.empty[HistoryMetricsItem])
           KeepRunning
         case QueryMasterConfig =>
           sender ! MasterConfig(null)
@@ -140,6 +146,15 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
     val mfd = MultipartFormData(Seq(BodyPart(tempfile, "file")))
     Post(s"/api/$REST_VERSION/master/submitapp", mfd) ~> masterRoute ~> check {
       assert(response.status.intValue == 500)
+    }
+  }
+
+  "MetricsQueryService" should "return history metrics" in {
+    implicit val customTimeout = RouteTestTimeout(15.seconds)
+    (Get(s"/api/$REST_VERSION/master/metrics/master") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
+      val responseBody = response.entity.asString
+      val config = Try(ConfigFactory.parseString(responseBody))
+      assert(config.isSuccess)
     }
   }
 

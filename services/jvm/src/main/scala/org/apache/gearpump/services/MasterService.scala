@@ -25,9 +25,9 @@ import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.config.Config
 import org.apache.gearpump.util.FileUtils
 import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
-import org.apache.gearpump.cluster.ClientToMaster.QueryMasterConfig
+import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
-import org.apache.gearpump.cluster.MasterToClient.{MasterConfig, SubmitApplicationResultValue}
+import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig, SubmitApplicationResultValue}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.AppSubmitter
@@ -35,7 +35,7 @@ import org.apache.gearpump.cluster.worker.{WorkerSummary}
 import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
 import org.apache.gearpump.streaming.StreamApplication
 import org.apache.gearpump.streaming.appmaster.SubmitApplicationRequest
-import org.apache.gearpump.util.ActorUtil.{askActor, askWorker}
+import org.apache.gearpump.util.ActorUtil._
 import org.apache.gearpump.util.Constants.GEARPUMP_APP_JAR
 import org.apache.gearpump.util.{Constants, Util}
 import spray.http.{BodyPart, MediaTypes, MultipartFormData}
@@ -44,7 +44,7 @@ import spray.routing.HttpService
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 import org.apache.gearpump.services.util.UpickleUtil._
 
 trait MasterService extends HttpService {
@@ -95,6 +95,18 @@ trait MasterService extends HttpService {
             complete(config)
           case Failure(ex) =>
             failWith(ex)
+        }
+      } ~
+      path("metrics" / RestPath ) { path =>
+        parameter("readLatest" ? "false") { readLatestInput =>
+          val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
+          val query = QueryHistoryMetrics(path.head.toString, readLatest)
+          onComplete(askActor[HistoryMetrics](master, query)) {
+            case Success(value) =>
+              complete(write(value))
+            case Failure(ex) =>
+              failWith(ex)
+          }
         }
       } ~
       path("submitapp") {
