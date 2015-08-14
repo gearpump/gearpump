@@ -20,16 +20,16 @@ package org.apache.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
 import org.apache.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
-import org.apache.gearpump.cluster.ClientToMaster.QueryWorkerConfig
-import org.apache.gearpump.cluster.MasterToClient.WorkerConfig
-import org.apache.gearpump.util.ActorUtil.askWorker
+import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
+import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, WorkerConfig}
+import org.apache.gearpump.util.ActorUtil._
 import org.apache.gearpump.util.LogUtil
 import spray.routing
 import spray.routing.HttpService
 import spray.routing.directives.OnCompleteFutureMagnet._
 
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 trait WorkerService extends HttpService {
 
@@ -59,6 +59,18 @@ trait WorkerService extends HttpService {
             complete(config)
           case Failure(ex) =>
             failWith(ex)
+        }
+      } ~
+      path("metrics" / RestPath ) { path =>
+        parameter("readLatest" ? "false") { readLatestInput =>
+          val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
+          val query = QueryHistoryMetrics(path.head.toString, readLatest)
+          onComplete(askWorker[HistoryMetrics](master, workerId, query)) {
+            case Success(value) =>
+              complete(write(value))
+            case Failure(ex) =>
+              failWith(ex)
+          }
         }
       }
     }

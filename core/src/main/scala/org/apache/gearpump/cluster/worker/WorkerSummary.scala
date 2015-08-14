@@ -27,10 +27,11 @@ case class WorkerSummary(
     executors: Array[ExecutorSlots],
     totalSlots: Int,
     availableSlots: Int,
-    homeDirectory: String)
+    homeDirectory: String,
+    jvmName: String)
 
 object WorkerSummary{
-  def empty = WorkerSummary(-1, "", "", 0L, "", Array.empty[ExecutorSlots], 0, 0, "")
+  def empty = WorkerSummary(-1, "", "", 0L, "", Array.empty[ExecutorSlots], 0, 0, "", jvmName = "")
 }
 
 case class ExecutorSlots(appId: Int, executorId: Int, slots: Int)

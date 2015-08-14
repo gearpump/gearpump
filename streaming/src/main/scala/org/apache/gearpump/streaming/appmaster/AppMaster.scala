@@ -24,6 +24,7 @@ import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTa
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.LastFailure
 import org.apache.gearpump.cluster._
+import org.apache.gearpump.metrics.{Metrics, MetricsReporterService, JvmMetricsSet}
 import org.apache.gearpump.metrics.Metrics.ReportMetrics
 import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.worker.ExecutorSlots
@@ -33,7 +34,8 @@ import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{ExecutorBrief, AllocateResourceTimeOut, LookupTaskActorRef, ServiceNotAvailableException}
 import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, GetExecutorInfo}
-import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.HistoryMetricsConfig
+import org.apache.gearpump.util.{HistoryMetricsService, ActorUtil, LogUtil}
+import HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.appmaster.TaskManager.{GetTaskList, TaskList}
 import org.apache.gearpump.streaming.executor.Executor.{QueryExecutorConfig, GetExecutorSummary}
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
@@ -69,17 +71,22 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   private val systemConfig = context.system.settings.config
   private var lastFailure = LastFailure(0L, null)
 
-  private val getHistoryMetricsConfig: HistoryMetricsConfig = {
-    val historyHour = systemConfig.getInt(GEARPUMP_METRIC_RETAIN_HISTORY_DATA_HOURS)
-    val historyInterval = systemConfig.getInt(GEARPUMP_RETAIN_HISTORY_DATA_INTERVAL_MS)
+  private val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
 
-    val recentSeconds = systemConfig.getInt(GEARPUMP_RETAIN_RECENT_DATA_SECONDS)
-    val recentInterval = systemConfig.getInt(GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS)
-    HistoryMetricsConfig(historyHour, historyInterval, recentSeconds, recentInterval)
-  }
+  val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
 
-  private val historyMetricsService = {
-    context.actorOf(Props(new HistoryMetricsService(appId, getHistoryMetricsConfig)))
+  private val historyMetricsService = if (metricsEnabled) {
+    // register jvm metrics
+    Metrics(context.system).register(new JvmMetricsSet(s"app${appId}.appmaster"))
+
+    val historyMetricsService = context.actorOf(Props(new HistoryMetricsService(s"app$appId", getHistoryMetricsConfig)))
+
+    val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
+    historyMetricsService.tell(ReportMetrics, metricsReportService)
+
+    Some(historyMetricsService)
+  } else {
+    None
   }
 
   private val executorManager: ActorRef =
@@ -121,7 +128,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case register: RegisterExecutor =>
       executorManager forward register
     case ReportMetrics =>
-      historyMetricsService forward ReportMetrics
+      historyMetricsService.foreach(_ forward ReportMetrics)
   }
 
   def appMasterService: Receive = {
@@ -184,7 +191,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 //      val client = sender()
 //      actorSystem.eventStream.subscribe(client, classOf[MetricType])
     case query: QueryHistoryMetrics =>
-      historyMetricsService forward query
+      historyMetricsService.foreach(_ forward query)
     case getStalling: GetStallingTasks =>
       clockService.foreach(_ forward getStalling)
     case replaceDAG: ReplaceProcessor =>

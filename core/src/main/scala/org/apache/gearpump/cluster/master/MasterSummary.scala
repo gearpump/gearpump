@@ -31,6 +31,7 @@ case class MasterSummary(
   jarStore: String,
   masterStatus: MasterStatus.Type,
   homeDirectory: String,
-  activities: List[MasterActivity])
+  activities: List[MasterActivity],
+  jvmName: String)
 
 case class MasterActivity(time: Long, event: String)

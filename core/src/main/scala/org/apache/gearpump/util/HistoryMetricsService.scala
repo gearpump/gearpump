@@ -16,33 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.appmaster
+package org.apache.gearpump.util
 
 import java.util
 
 import akka.actor.Actor
+import com.typesafe.config.Config
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.ClientToMaster.{ QueryHistoryMetrics}
+import org.apache.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
 import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
 import org.apache.gearpump.metrics.Metrics._
-import org.apache.gearpump.streaming.appmaster.HistoryMetricsService.{HistoryMetricsConfig, MetricsStore}
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.LogUtil
+import org.apache.gearpump.util.HistoryMetricsService.{MetricsStore, HistoryMetricsConfig}
 import org.slf4j.Logger
 
 import scala.collection.mutable.ListBuffer
 
 /**
  * Metrics service to serve history metrics data
- * @param appId
  */
-class HistoryMetricsService(appId: Int, config: HistoryMetricsConfig) extends Actor {
-  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
+class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends Actor {
+  private val LOG: Logger = LogUtil.getLogger(getClass, name = name)
   private var metricsStore = Map.empty[String, MetricsStore]
 
   def receive: Receive = metricHandler orElse commandHandler
-
-  import scala.concurrent.duration._
   def metricHandler: Receive = {
     case ReportMetrics =>
       sender ! DemandMoreMetrics(self)
@@ -86,8 +83,8 @@ class HistoryMetricsService(appId: Int, config: HistoryMetricsConfig) extends Ac
   def commandHandler: Receive = {
 
     //path accept syntax ? *, ? will match one char, * will match at least one char
-    case QueryHistoryMetrics(appId, inputPath, readLatest) =>
-      sender ! HistoryMetrics(appId, inputPath, fetchMetricsHistory(inputPath, readLatest))
+    case QueryHistoryMetrics(inputPath, readLatest) =>
+      sender ! HistoryMetrics(inputPath, fetchMetricsHistory(inputPath, readLatest))
    }
 }
 
@@ -130,7 +127,7 @@ object HistoryMetricsService {
         case histogram: Histogram => new HistogramMetricsStore(config)
         case meter: Meter => new MeterMetricsStore(config)
         case counter: Counter => new CounterMetricsStore(config)
-        case _ => null //NOT supported
+        case gauge: Gauge => new GaugeMetricsStore(config)
       }
     }
   }
@@ -265,6 +262,17 @@ object HistoryMetricsService {
       retainRecentDataSeconds: Int,
       retainRecentDataIntervalMs: Int)
 
+  object HistoryMetricsConfig {
+    def apply(config: Config): HistoryMetricsConfig = {
+      val historyHour = config.getInt(GEARPUMP_METRIC_RETAIN_HISTORY_DATA_HOURS)
+      val historyInterval = config.getInt(GEARPUMP_RETAIN_HISTORY_DATA_INTERVAL_MS)
+
+      val recentSeconds = config.getInt(GEARPUMP_RETAIN_RECENT_DATA_SECONDS)
+      val recentInterval = config.getInt(GEARPUMP_RETAIN_RECENT_DATA_INTERVAL_MS)
+      HistoryMetricsConfig(historyHour, historyInterval, recentSeconds, recentInterval)
+    }
+  }
+
   class HistogramMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
 
     private val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
@@ -332,6 +340,33 @@ object HistoryMetricsService {
     override def add(inputMetrics: MetricType): Unit = {
       history.add(inputMetrics)
       recent.add(inputMetrics)
+    }
+
+    override def read: List[HistoryMetricsItem] = {
+      history.read ++ recent.read
+    }
+
+    override def readLatest: List[HistoryMetricsItem] = {
+      recent.readLatest
+    }
+  }
+
+  class GaugeMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
+
+    private val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
+      left.value.asInstanceOf[Gauge].value > right.value.asInstanceOf[Gauge].value
+
+    private val history = new MinMaxMetricsStore(
+      config.retainHistoryDataHours * 3600 * 1000 / config.retainHistoryDataIntervalMs,
+      config.retainHistoryDataIntervalMs, compartor)
+
+    private val recent = new SingleValueMetricsStore(
+      config.retainRecentDataSeconds * 1000 / config.retainRecentDataIntervalMs,
+      config.retainRecentDataIntervalMs)
+
+    override def add(inputMetrics: MetricType): Unit = {
+      recent.add(inputMetrics)
+      history.add(inputMetrics)
     }
 
     override def read: List[HistoryMetricsItem] = {

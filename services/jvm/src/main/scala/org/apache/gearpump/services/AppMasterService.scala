@@ -115,7 +115,7 @@ trait AppMasterService extends HttpService {
       path("metrics" / RestPath ) { path =>
         parameter("readLatest" ? "false") { readLatestInput =>
           val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
-          val query = QueryHistoryMetrics(appId, path.head.toString, readLatest)
+          val query = QueryHistoryMetrics(path.head.toString, readLatest)
           onComplete(askAppMaster[HistoryMetrics](master, appId, query)) {
             case Success(value) =>
               complete(write(value))

@@ -18,13 +18,15 @@
 
 package org.apache.gearpump.streaming.executor
 
+import java.lang.management.ManagementFactory
+
 import akka.actor.SupervisorStrategy.{Resume, Stop}
 import akka.actor._
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.MasterToAppMaster.MessageLoss
 import org.apache.gearpump.cluster.{ExecutorContext, UserConfig}
 import org.apache.gearpump.metrics.Metrics.{ReportMetrics, DemandMoreMetrics}
-import org.apache.gearpump.metrics.{Metrics, MetricsReporterService}
+import org.apache.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import org.apache.gearpump.serializer.KryoPool
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
@@ -71,6 +73,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
 
   if (metricsEnabled) {
+    // register jvm metrics
+    Metrics(context.system).register(new JvmMetricsSet(s"app${appId}.executor${executorId}"))
+
     val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
     appMaster.tell(ReportMetrics, metricsReportService)
   }
@@ -160,7 +165,15 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     case get: GetExecutorSummary =>
       val logFile = LogUtil.applicationLogDir(systemConfig)
       val processorTasks = tasks.keySet.groupBy(_.processorId).mapValues(_.toList).view.force
-      sender ! ExecutorSummary(executorId, worker.workerId, address, logFile.getAbsolutePath, "active", tasks.size, processorTasks)
+      sender ! ExecutorSummary(
+        executorId,
+        worker.workerId,
+        address,
+        logFile.getAbsolutePath,
+        "active",
+        tasks.size,
+        processorTasks,
+        jvmName = ManagementFactory.getRuntimeMXBean().getName())
 
     case query: QueryExecutorConfig =>
       sender ! ExecutorConfig(systemConfig)
@@ -239,11 +252,12 @@ object Executor {
     logFile: String,
     status: String,
     taskCount: Int,
-    tasks: Map[ProcessorId, List[TaskId]]
+    tasks: Map[ProcessorId, List[TaskId]],
+    jvmName: String
   )
 
   object ExecutorSummary {
-    def empty: ExecutorSummary = ExecutorSummary(0, 0, "", "", "", 1, null)
+    def empty: ExecutorSummary = ExecutorSummary(0, 0, "", "", "", 1, null, jvmName = "")
   }
 
   case class GetExecutorSummary(executorId: Int)
