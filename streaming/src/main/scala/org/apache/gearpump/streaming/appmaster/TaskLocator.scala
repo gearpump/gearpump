@@ -24,7 +24,7 @@ import scala.util.Try
 import scala.collection.JavaConverters._
 
 class TaskLocator(appName: String, config: Config) {
-  private var taskLocalities: Map[TaskId, Locality] = loadTaskLocalities(config)
+  private val taskLocalities: Map[TaskId, Locality] = loadTaskLocalities(config)
 
   def locateTask(taskId: TaskId) : Locality = {
     taskLocalities.getOrElse(taskId, NonLocality)

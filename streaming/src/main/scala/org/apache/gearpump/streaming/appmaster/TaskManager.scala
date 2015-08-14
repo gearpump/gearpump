@@ -271,7 +271,6 @@ private[appmaster] class TaskManager(
       dagManager ! GetLatestDAG
       LOG.info(s"goto state ApplicationReady(dag = ${newDagVersion})...")
 
-
     case _ -> Recovery =>
       val recoverDagVersion = nextStateData.dag.version
       executorManager ! BroadCast(RestartTasks(recoverDagVersion))
