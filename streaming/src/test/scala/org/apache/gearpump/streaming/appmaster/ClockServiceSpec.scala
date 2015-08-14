@@ -128,8 +128,8 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       expectMsg(StartClock(200L))
 
       val conf = UserConfig.empty.withBoolean("state.checkpoint.enable", true)
-      val task3 = ProcessorDescription(id = 3, classOf[TaskActor].getName, 1, taskConf = conf)
-      val task4 = ProcessorDescription(id = 4, classOf[TaskActor].getName, 1, taskConf = conf)
+      val task3 = ProcessorDescription(id = 3, taskClass = classOf[TaskActor].getName, parallelism = 1, taskConf = conf)
+      val task4 = ProcessorDescription(id = 4, taskClass = classOf[TaskActor].getName, parallelism = 1, taskConf = conf)
       val dagWithStateTasks = DAG(Graph(
         task1 ~ hash ~> task2,
         task1 ~ hash ~> task3,
