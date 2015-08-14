@@ -1,2 +1,2 @@
-version in ThisBuild := s"0.4.3-SNAPSHOT_${scalaVersion.value}"
+version in ThisBuild := s"0.4.3-SNAPSHOT"
 
