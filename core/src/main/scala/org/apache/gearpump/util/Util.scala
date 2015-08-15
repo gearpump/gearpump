@@ -67,7 +67,7 @@ object Util {
   def resolvePath(path: String): String = {
     val uri = new URI(path)
     if(uri.getScheme == null && uri.getFragment == null) {
-      val absolutePath = new File(path).getCanonicalPath
+      val absolutePath = new File(path).getCanonicalPath.replaceAll("\\\\", "/")
       "file://" + absolutePath
     } else {
       path
