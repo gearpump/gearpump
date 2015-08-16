@@ -133,7 +133,8 @@ private[appmaster] class TaskManager(
       val status = register.registerTask(taskId, TaskLocation(executorId, host))
       if (status == Accept) {
         LOG.info(s"RegisterTask($taskId) TaskLocation: $host, Executor: $executorId")
-        startClock.map(client ! Start(_, ids.newSessionId))
+        val sessionId = ids.newSessionId
+        startClock.map(client ! Start(_, sessionId))
         checkApplicationReady(state)
       } else {
         sender ! TaskRejected
@@ -353,17 +354,12 @@ private [appmaster] object TaskManager {
 
 
   class SessionIdFactory {
-    private val ids = new util.HashSet[Int]()
+    private var nextSessionId = 1
 
-    @tailrec
     final def newSessionId: Int = {
-      val id = Util.randInt
-      if (ids.contains(id)) {
-        newSessionId
-      } else {
-        ids.add(id)
-        id
-      }
+      val sessionId = nextSessionId
+      nextSessionId += 1
+      sessionId
     }
   }
 }

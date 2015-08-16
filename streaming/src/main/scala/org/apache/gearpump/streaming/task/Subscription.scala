@@ -159,7 +159,7 @@ class Subscription(
         pendingMessageCount(ack.taskId.index) = (messageCount(ack.taskId.index) - ack.seq).toShort
         updateMaxPendingCount()
       } else {
-        LOG.error(s"Failed! Some messages sent from actor ${taskId} to ${taskId} are lost, try to replay...")
+        LOG.error(s"Failed! received ack: $ack, received: ${ack.actualReceivedNum}, sent: ${ack.seq}, try to replay...")
         throw new MsgLostException
       }
     }
