@@ -13,12 +13,13 @@ on Gearpump. This documentation illustrates how to do so in a local Gearpump clu
   2. submit a topology from storm-starter
 
   ```bash
-    bin/storm -jar storm-starter-${STORM_VERSION}.jar storm.starter.ExclamationTopology exclamation -storm_config storm.yaml
+    bin/storm -jar storm-starter-${STORM_VERSION}.jar storm.starter.ExclamationTopology exclamation -config storm.yaml
   
   ```
   
   Users are able to configure their applications through following options. 
-   * `jar` for user to set the path of a storm application jar
+   * `jar` - set the path of a storm application jar
+   * `config` - submit a customized configuration file
   
   That's it. Check the dashboard and you should see data flowing from `StormProducer` to `StormProcessor`.
 
