@@ -58,10 +58,6 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     (context, serverPort, localHost)
   }
 
-  def unregisterLocalActor(id : Long) : Unit = {
-    localActorMap.sendOff(_ - id)
-  }
-
   def startClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
     val clientsToClose = remoteClientMap.get().filterKeys(!hostPorts.contains(_)).keySet
     closeClients(clientsToClose)
@@ -87,10 +83,10 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     }
   }
 
-  def registerLocalActor(id : Long, actor: ActorRef): Unit = {
+  def registerLocalActor(id : Long, actor: ActorRef): Future[HostPort] = {
     LOG.info(s"RegisterLocalActor: $id, actor: ${actor.path.name}")
     init
-    localActorMap.sendOff(_ + (id -> actor))
+    localActorMap.alterOff(_ + (id -> actor)).map(_ => localHost)
   }
 
   def lookupLocalActor(id: Long) = localActorMap.get().get(id)

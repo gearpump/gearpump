@@ -155,11 +155,22 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       }
     case RestartTasks(dagVersion) =>
       LOG.info(s"Executor received restart tasks")
-      express.remoteAddressMap.send(Map.empty[Long, HostPort])
 
+      // cleanup remote adress mapping
+      express.remoteAddressMap.send(Map.empty[Long, HostPort])
       tasks.foreach { task =>
-        task._2 ! PoisonPill
+        //clean up local address mapping
+        express.localActorMap.send(map => map - TaskId.toLong(task._1))
       }
+
+      for (remote <- express.remoteAddressMap.future();
+        local <- express.localActorMap.future()) {
+        // only kill task after cleanup local and remote location registration.
+        tasks.foreach { task =>
+          task._2 ! PoisonPill
+        }
+      }
+
       context.become(restartingTask(dagVersion, remain = tasks.keys.size, restarted = Map.empty[TaskId, ActorRef]))
 
     case get: GetExecutorSummary =>
