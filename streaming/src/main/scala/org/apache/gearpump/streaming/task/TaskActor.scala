@@ -58,7 +58,6 @@ class TaskActor(
   private val processTime = Metrics(context.system).histogram(s"$metricName.processTime")
   private val sendThroughput = Metrics(context.system).meter(s"$metricName.sendThroughput")
   private val receiveThroughput = Metrics(context.system).meter(s"$metricName.receiveThroughput")
-
   private val registerTaskTimout = config.getLong(GEARPUMP_STREAMING_REGISTER_TASK_TIMEOUT_MS)
   private val maxPendingMessageCount = config.getInt(GEARPUMP_STREAMING_MAX_PENDING_MESSAGE_COUNT)
   private val ackOnceEveryMessageCount =  config.getInt(GEARPUMP_STREAMING_ACK_ONCE_EVERY_MESSAGE_COUNT)
@@ -85,9 +84,6 @@ class TaskActor(
   // unknown sources
   private val securityChecker  = new SecurityChecker(taskId, self)
   private[task] var sessionId = NONE_SESSION
-
-  //report to appMaster with my address
-  express.registerLocalActor(TaskId.toLong(taskId), self)
 
   final def receive : Receive = null
 
@@ -118,10 +114,13 @@ class TaskActor(
   }
 
   final override def preStart() : Unit = {
-
-    val register = RegisterTask(taskId, executorId, local)
-    LOG.info(s"$register")
-    sendMsgWithTimeOutCallBack(appMaster, register, registerTaskTimout, registerTaskTimeOut())
+    //report to appMaster with my address
+    val local = express.registerLocalActor(TaskId.toLong(taskId), self)
+    local.foreach { local =>
+      val register = RegisterTask(taskId, executorId, local)
+      LOG.info(s"$register")
+      sendMsgWithTimeOutCallBack(appMaster, register, registerTaskTimout, registerTaskTimeOut())
+    }
     context.become(waitForStartClock orElse stashMessages)
   }
 
