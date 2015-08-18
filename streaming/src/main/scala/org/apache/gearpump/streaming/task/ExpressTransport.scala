@@ -31,7 +31,6 @@ trait ExpressTransport {
   final val express = Express(context.system)
   implicit val system = context.system.asInstanceOf[ExtendedActorSystem]
 
-  final def local = express.localHost
   lazy val sourceId = TaskId.toLong(taskId)
 
   lazy val sessionRef: ActorRef = {

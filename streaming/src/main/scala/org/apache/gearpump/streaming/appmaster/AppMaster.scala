@@ -58,6 +58,9 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   val startTime: TimeStamp = System.currentTimeMillis()
 
+  private val userDir = System.getProperty("user.dir")
+  private val logFile = LogUtil.applicationLogDir(actorSystem.settings.config)
+
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username, app: $app xxxxxxxxxxxxxxxxx")
   LOG.info(s"AppMaster actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
@@ -146,10 +149,6 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
         dag <- dagFuture
       } yield {
         val graph = dag.graph
-
-        val userDir = System.getProperty("user.dir")
-        val logFile = LogUtil.applicationLogDir(actorSystem.settings.config)
-
         val executorToTasks = tasks.tasks.groupBy(_._2).mapValues {_.keys.toList}
 
         val processors = dag.processors.map { kv =>
