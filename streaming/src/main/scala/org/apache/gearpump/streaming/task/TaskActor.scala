@@ -88,6 +88,7 @@ class TaskActor(
   final def receive : Receive = null
 
   private var taskLocationReady = false
+  private var receivedStart = false
 
   task.setTaskActor(this)
 
@@ -170,40 +171,50 @@ class TaskActor(
     }
   }
 
+
   def waitForStartClock : Receive = {
     case TaskRejected =>
       LOG.info(s"Task $taskId is rejected by AppMaster, shutting down myself...")
       context.stop(self)
     case start@ Start(clock, sessionId) =>
       this.sessionId = sessionId
-
       LOG.info(s"received $start")
-
       this.upstreamMinClock = clock
+      this.receivedStart = true
 
-      subscriptions = subscribers.map { subscriber =>
-        (subscriber.processorId ,
-          new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
-            maxPendingMessageCount, ackOnceEveryMessageCount))
+      if (receivedStart && taskLocationReady) {
+        init
       }
 
-      subscriptions.foreach(_._2.start)
-
-      // clean up history message in the queue
-      doHandleMessage()
-
-      // Put this as the last step so that the subscription is already initialized.
-      // Message sending in current Task before onStart will not be delivered to
-      // target
-      onStart(new StartTime(clock))
-
-      if (taskLocationReady) {
-        self ! TaskLocationReady
-      }
-
-      context.become(handleMessages(doHandleMessage))
     case TaskLocationReady =>
       this.taskLocationReady = true
+      if (receivedStart && taskLocationReady) {
+        init
+      }
+  }
+
+  private def init: Unit = {
+    subscriptions = subscribers.map { subscriber =>
+      (subscriber.processorId ,
+        new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
+          maxPendingMessageCount, ackOnceEveryMessageCount))
+    }
+
+    subscriptions.foreach(_._2.start)
+
+    // clean up history message in the queue
+    doHandleMessage()
+
+    // Put this as the last step so that the subscription is already initialized.
+    // Message sending in current Task before onStart will not be delivered to
+    // target
+    onStart(new StartTime(upstreamMinClock))
+
+    sendLater.sendAllPendingMsgs()
+    LOG.info("TaskLocationReady, sending GetUpstreamMinClock to AppMaster ")
+    appMaster ! GetUpstreamMinClock(taskId)
+
+    context.become(handleMessages(doHandleMessage))
   }
 
   def stashMessages: Receive = handleMessages(() => Unit)
@@ -239,11 +250,6 @@ class TaskActor(
       context.system.scheduler.scheduleOnce(CLOCK_REPORT_INTERVAL) {
         appMaster ! update
       }
-    case TaskLocationReady =>
-      sendLater.sendAllPendingMsgs()
-      LOG.info("TaskLocationReady, sending GetUpstreamMinClock to AppMaster ")
-      appMaster ! GetUpstreamMinClock(taskId)
-
 
     case ChangeTask(_, dagVersion, life, subscribers) =>
       this.life = life
