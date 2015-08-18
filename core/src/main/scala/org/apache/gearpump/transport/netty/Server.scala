@@ -29,7 +29,7 @@ import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
-import scala.collection.immutable.LongMap
+import scala.collection.immutable.{IntMap, LongMap}
 import scala.concurrent.Future
 
 class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, deserializeFlag : Boolean) extends Actor {
@@ -69,9 +69,9 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
 
           if (deserializeFlag) {
             val msg = serializer.deserialize(taskMessage.message())
-            actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask(), taskMessage.sessionId()))
+            actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sessionId()))
           } else {
-            actor.get.tell(taskMessage, taskIdActorRefTranslation.translateToActorRef(taskMessage.sourceTask(), taskMessage.sessionId()))
+            actor.get.tell(taskMessage, taskIdActorRefTranslation.translateToActorRef(taskMessage.sessionId()))
           }
         }
       }
@@ -89,18 +89,6 @@ object Server {
   // As we must use actorFor() which is deprecated,
   // according to the advice https://issues.scala-lang.org/browse/SI-7934,
   // use a helper object to bypass this deprecation warning.
-  @deprecated("", "")
-  private def fakeActorRefForTask(context: ActorContext, taskId: Long, sessonId : Int): ActorRef = {
-    context.system.actorFor(s"/session#${sessonId}")
-  }
-  object FakeActorRefForTaskHelper {
-    @deprecated("", "")
-    class  Helper {
-      def fakeActorRefForTaskForwarder(context: ActorContext, taskId: Long, sessonId : Int) = fakeActorRefForTask(context, taskId, sessonId)
-    }
-    object Helper extends Helper
-  }
-
   class ServerPipelineFactory(server: ActorRef) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
       val pipeline: ChannelPipeline = Channels.pipeline
@@ -132,14 +120,14 @@ object Server {
   }
 
   class TaskIdActorRefTranslation(context: ActorContext) {
-    private var taskIdtoActorRef = LongMap.empty[ActorRef]
+    private var taskIdtoActorRef = IntMap.empty[ActorRef]
 
-    def translateToActorRef(taskId: Long, sessionId : Int): ActorRef = {
-      if(!taskIdtoActorRef.contains(taskId)){
-        val actorRef = FakeActorRefForTaskHelper.Helper.fakeActorRefForTaskForwarder(context, taskId, sessionId)
-        taskIdtoActorRef += taskId -> actorRef
+    def translateToActorRef(sessionId : Int): ActorRef = {
+      if(!taskIdtoActorRef.contains(sessionId)){
+        val actorRef = context.system.actorFor(s"/session#$sessionId")
+        taskIdtoActorRef += sessionId -> actorRef
       }
-      taskIdtoActorRef.get(taskId).get
+      taskIdtoActorRef.get(sessionId).get
     }
 
   }
