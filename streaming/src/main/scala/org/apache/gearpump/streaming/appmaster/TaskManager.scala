@@ -18,8 +18,6 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import java.util
-
 import akka.actor._
 import akka.pattern.ask
 import org.apache.gearpump.cluster.MasterToAppMaster.{MessageLoss, ReplayFromTimestampWindowTrailingEdge}
@@ -39,15 +37,13 @@ import org.apache.gearpump.streaming.{DAG, ExecutorId, ProcessorId}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
-import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import org.apache.gearpump.util.Util
 
 private[appmaster] class TaskManager(
     appId: Int,
     dagManager: ActorRef,
-    taskScheduler: TaskScheduler,
+    subDAGManager: SubDAGManager,
     executorManager: ActorRef,
     clockService: ActorRef,
     appMaster: ActorRef,
@@ -64,13 +60,11 @@ private[appmaster] class TaskManager(
   implicit val actorSystem = context.system
   import context.dispatcher
 
-
   self ! Initialize
   startWith(Uninitialized, null)
 
   dagManager ! WatchChange(watcher = self)
   executorManager ! SetTaskManager(self)
-
 
   import org.apache.gearpump.TimeStamp
 
@@ -86,7 +80,8 @@ private[appmaster] class TaskManager(
 
   private val startTasks: StateFunction = {
     case Event(executor: ExecutorStarted, state) =>
-      val taskIds = taskScheduler.schedule(executor.workerId, executor.executorId, executor.resource)
+      import executor.{boundedJar, workerId, executorId, resource}
+      val taskIds = subDAGManager.scheduleTask(boundedJar.get, workerId, executorId, resource)
       LOG.info(s"Executor $executor has been started, start to schedule tasks: ${taskIds.mkString(",")}")
 
       taskIds.groupBy(_.processorId).foreach { pair =>
@@ -99,8 +94,8 @@ private[appmaster] class TaskManager(
       stay
     case Event(ExecutorStopped(executorId), _) =>
       if(executorRestartPolicy.allowRestartExecutor(executorId)) {
-        val newResourceRequests = taskScheduler.executorFailed(executorId)
-        executorManager ! StartExecutors(newResourceRequests)
+        val resourceRequestDetail = subDAGManager.executorFailed(executorId)
+        executorManager ! StartExecutors(resourceRequestDetail.requests, resourceRequestDetail.jar)
       } else {
         LOG.error(s"Executor restarted too many times")
       }
@@ -235,9 +230,13 @@ private[appmaster] class TaskManager(
         stay
       } else {
         val dagDiff = migrate(state.dag, newDag)
-        taskScheduler.setDAG(newDag)
-        val resourceRequests = taskScheduler.getResourceRequests()
-        executorManager ! StartExecutors(resourceRequests)
+        subDAGManager.setDag(newDag)
+        val resourceRequestsDetails = subDAGManager.getRequestDetails()
+        resourceRequestsDetails.foreach{ detail =>
+          if(detail.requests.length > 0 && detail.requests.exists(!_.resource.isEmpty)){
+            executorManager ! StartExecutors(detail.requests, detail.jar)
+          }
+        }
 
         var modifiedTasks = List.empty[TaskId]
         for (processorId <- (dagDiff.modifiedProcessors ++ dagDiff.impactedUpstream)) {
@@ -275,7 +274,7 @@ private[appmaster] class TaskManager(
     case _ -> Recovery =>
       val recoverDagVersion = nextStateData.dag.version
       executorManager ! BroadCast(RestartTasks(recoverDagVersion))
-      taskScheduler.setDAG(nextStateData.dag)
+      subDAGManager.setDag(nextStateData.dag)
       self ! CheckApplicationReady
 
       // Use new Start Clock so that we recover at timepoint we fails.

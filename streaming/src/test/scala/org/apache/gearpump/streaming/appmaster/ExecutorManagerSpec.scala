@@ -27,6 +27,7 @@ import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import org.apache.gearpump.jarstore.FilePath
 import org.apache.gearpump.streaming.ExecutorId
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
@@ -58,7 +59,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
 
     val username = "user"
     val appName = "app"
-    val appJar = None
+    val appJar = Some(AppJar("for_test", FilePath("path")))
 
     val appMasterContext = AppMasterContext(appId, username, null, appJar, master.ref, null)
 
@@ -72,7 +73,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val resourceRequest = Array(ResourceRequest(resource))
 
     //start executors
-    taskManager.send(executorManager, StartExecutors(resourceRequest))
+    taskManager.send(executorManager, StartExecutors(resourceRequest, appJar.get))
 
     //ask master to start executor systems
     import scala.concurrent.duration._
@@ -105,7 +106,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val workerInfo = WorkerInfo(workerId, worker.ref)
     val executorSystem = ExecutorSystem(0, null, executorSystemDaemon.ref,
       resource, workerInfo)
-    master.reply(ExecutorSystemStarted(executorSystem))
+    master.reply(ExecutorSystemStarted(executorSystem, None))
     import scala.concurrent.duration._
     val bindLifeWith = executorSystemDaemon.receiveOne(3 seconds).asInstanceOf[BindLifeCycle]
     val proxyExecutor = bindLifeWith.actor

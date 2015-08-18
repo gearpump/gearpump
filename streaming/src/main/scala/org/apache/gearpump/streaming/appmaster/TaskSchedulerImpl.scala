@@ -80,9 +80,7 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
   // find the locality of the tasks
   private val taskLocator = new TaskLocator(appName, config)
 
-
   override def setDAG(dag: DAG): Unit = {
-
     val taskMap = tasks.map(_.taskId).zip(tasks).toMap
 
     tasks = dag.tasks.sortBy(_.index).map { taskId =>
@@ -102,7 +100,6 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
     var workersResourceRequest = Map.empty[Int, Resource]
 
     tasks.filter(_.allocation == null).foreach{task =>
-
       task.preferLocality match {
         case WorkerLocality(workerId) =>
           val current = workersResourceRequest.getOrElse(workerId, Resource.empty)
@@ -125,9 +122,7 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
   }
 
   override def schedule(workerId : Int, executorId: Int, resource: Resource) : List[TaskId] = {
-
     var scheduledTasks = List.empty[TaskId]
-
     val location = Location(workerId, executorId)
     // schedule tasks for specific worker
     scheduledTasks ++= scheduleTasksForLocality(resource, location,
@@ -135,12 +130,10 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
 
     // schedule tasks without specific location preference
     scheduledTasks ++= scheduleTasksForLocality(resource - Resource(scheduledTasks.length), location, (locality) => true)
-
     scheduledTasks
   }
 
   private def scheduleTasksForLocality(resource: Resource, resourceLocation: Location, matcher: (Locality) => Boolean): List[TaskId] = {
-
     var scheduledTasks = List.empty[TaskId]
     var index = 0
     var remain = resource.slots
@@ -157,11 +150,9 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
   }
 
   override def executorFailed(executorId: Int) : Array[ResourceRequest] = {
-
     val failedTasks = tasks.filter { status =>
       status.allocation != null && status.allocation.executorId == executorId
     }
-
     // clean the location of failed tasks
     failedTasks.foreach(_.allocation = null)
 

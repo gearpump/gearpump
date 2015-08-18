@@ -25,16 +25,14 @@ import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest
 import org.apache.gearpump.cluster.MasterToClient.LastFailure
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.metrics.{Metrics, MetricsReporterService, JvmMetricsSet}
-import org.apache.gearpump.metrics.Metrics.ReportMetrics
-import org.apache.gearpump.cluster.appmaster.WorkerInfo
-import org.apache.gearpump.cluster.worker.ExecutorSlots
 import org.apache.gearpump.metrics.Metrics.{ReportMetrics, MetricType}
+import org.apache.gearpump.partitioner.PartitionerDescription
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster.{ExecutorBrief, AllocateResourceTimeOut, LookupTaskActorRef, ServiceNotAvailableException}
 import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, GetExecutorInfo}
-import org.apache.gearpump.util.{HistoryMetricsService, ActorUtil, LogUtil}
+import org.apache.gearpump.util._
 import HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.streaming.appmaster.TaskManager.{GetTaskList, TaskList}
 import org.apache.gearpump.streaming.executor.Executor.{QueryExecutorConfig, GetExecutorSummary}
@@ -42,7 +40,6 @@ import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.util.ActorPathUtil
 import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
@@ -64,7 +61,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
 
-  private val dagManager = context.actorOf(Props(new DagManager(appContext.appId, userConfig)))
+  private val dagManager = context.actorOf(Props(new DagManager(appContext.appId, userConfig,
+    Some(getUpdatedDAG()))))
 
   private var taskManager: Option[ActorRef] = None
   private var clockService: Option[ActorRef] = None
@@ -95,10 +93,10 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   for (dag <- getDAG) {
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
     clockService = Some(context.actorOf(Props(new ClockService(dag, store))))
-    val taskScheduler = new TaskSchedulerImpl(appId, app.name, context.system.settings.config)
+    val subDAGManager = new SubDAGManager(appId, app.name, systemConfig)
 
     taskManager = Some(context.actorOf(Props(new TaskManager(appContext.appId, dagManager,
-      taskScheduler, executorManager, clockService.get, self, app.name))))
+      subDAGManager, executorManager, clockService.get, self, app.name))))
   }
 
   override def receive : Receive =
@@ -252,6 +250,15 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private def getDAG: Future[DAG] = {
     (dagManager ? GetLatestDAG).asInstanceOf[Future[LatestDAG]].map(_.dag)
+  }
+
+  private def getUpdatedDAG(): DAG = {
+    val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
+    val updated = dag.processors.map{ idAndProcessor =>
+      val (id, processor) = idAndProcessor
+      (id, processor.copy(jar = appContext.appJar.get))
+    }
+    DAG(dag.version, updated, dag.graph)
   }
 }
 

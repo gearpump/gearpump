@@ -29,6 +29,7 @@ import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
+import org.apache.gearpump.jarstore.FilePath
 import org.apache.gearpump.partitioner.{Partitioner, HashPartitioner}
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.streaming.task._
@@ -74,7 +75,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
     implicit val system = getActorSystem
     conf = UserConfig.empty.withValue(AppMasterSpec.MASTER, mockMaster.ref)
-    appMasterContext = AppMasterContext(appId, "test", resource, None, mockMaster.ref, appMasterRuntimeInfo)
+    val mockJar = AppJar("for_test", FilePath("path"))
+    appMasterContext = AppMasterContext(appId, "test", resource, Some(mockJar), mockMaster.ref, appMasterRuntimeInfo)
     val graph = Graph(taskDescription1 ~ partitioner ~> taskDescription2)
     val streamApp = StreamApplication("test", graph, conf)
     appDescription = Application.ApplicationToAppDescription(streamApp)

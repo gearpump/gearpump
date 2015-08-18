@@ -78,7 +78,11 @@ class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends A
         sender ! taskLaunchData(dag, processorId, context)
       }
     case ReplaceProcessor(oldProcessorId, inputNewProcessor) =>
-      val newProcessor = inputNewProcessor.copy(id = nextProcessorId)
+      var newProcessor = inputNewProcessor.copy(id = nextProcessorId)
+      if (inputNewProcessor.jar == null){
+        val oldJar = dags.last.processors.get(oldProcessorId).get
+        newProcessor = newProcessor.copy(jar = oldJar.jar)
+      }
       if (dags.length > 1) {
         sender !  DAGOperationFailed("We are in the process of handling previous dynamic dag change")
       } else {

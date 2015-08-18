@@ -43,7 +43,7 @@ class DistShellAppMaster(appContext : AppMasterContext, app : AppDescription) ex
   }
 
   override def receive: Receive = {
-    case ExecutorSystemStarted(executorSystem) =>
+    case ExecutorSystemStarted(executorSystem, _) =>
       import executorSystem.{address, resource => executorResource, worker}
       val executorContext = ExecutorContext(currentExecutorId, worker, appId, app.name, self, executorResource)
       //start executor

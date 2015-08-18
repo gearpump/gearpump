@@ -46,13 +46,11 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
     executorSystemLauncher: (Int, Session) => Props) extends Actor {
 
   private val LOG = LogUtil.getLogger(getClass, app = appId)
-
   implicit val timeout = Constants.FUTURE_TIMEOUT
   implicit val actorSystem = context.system
   var currentSystemId = 0
 
-
-  var resourceAgents = Map.empty[ActorRef, ActorRef]
+  var resourceAgents = Map.empty[Session, ActorRef]
 
   def receive: Receive = clientCommands orElse resourceAllocationMessageHandler orElse executorSystemMessageHandler
 
@@ -62,8 +60,8 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
       val requestor = sender()
       val executorSystemConfig = start.executorSystemConfig
       val session  = Session(requestor, executorSystemConfig)
-      val agent = resourceAgents.getOrElse(requestor, context.actorOf(Props(new ResourceAgent(masterProxy, session))))
-      resourceAgents = resourceAgents + (sender -> agent)
+      val agent = resourceAgents.getOrElse(session, context.actorOf(Props(new ResourceAgent(masterProxy, session))))
+      resourceAgents = resourceAgents + (session -> agent)
 
       start.resources.foreach {resource =>
         agent ! RequestResource(appId, resource)
@@ -92,7 +90,7 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
       }
     case ResourceAllocationTimeOut(session) =>
       if (isSessionAlive(session)) {
-        resourceAgents = resourceAgents - (session.requestor)
+        resourceAgents = resourceAgents - session
         session.requestor ! StartExecutorSystemTimeout
       }
   }
@@ -102,7 +100,7 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
       if (isSessionAlive(session)) {
         LOG.info("LaunchExecutorSystemSuccess, send back to " + session.requestor)
         system.bindLifeCycleWith(self)
-        session.requestor ! ExecutorSystemStarted(system)
+        session.requestor ! ExecutorSystemStarted(system, session.executorSystemJvmConfig.jar)
       } else {
         LOG.error("We get a ExecutorSystem back, but resource requestor is no longer valid. Will shutdown the allocated system")
         system.shutdown
@@ -116,19 +114,19 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
     case LaunchExecutorSystemRejected(resource, reason, session) =>
       if (isSessionAlive(session)) {
         LOG.error(s"Failed to launch executor system, due to $reason, will ask master to allocate new resources $resource")
-        resourceAgents.get(session.requestor).map(_ ! RequestResource(appId, ResourceRequest(resource)))
+        resourceAgents.get(session).map(_ ! RequestResource(appId, ResourceRequest(resource)))
       }
   }
 
   private def isSessionAlive(session: Session): Boolean = {
-    Option(session).flatMap(session => resourceAgents.get(session.requestor)).nonEmpty
+    Option(session).flatMap(session => resourceAgents.get(session)).nonEmpty
   }
 }
 
 object ExecutorSystemScheduler {
 
   case class StartExecutorSystems(resources: Array[ResourceRequest], executorSystemConfig: ExecutorSystemJvmConfig)
-  case class ExecutorSystemStarted(system: ExecutorSystem)
+  case class ExecutorSystemStarted(system: ExecutorSystem, boundedJar: Option[AppJar])
   case class StopExecutorSystem(system: ExecutorSystem)
   case object StartExecutorSystemTimeout
 

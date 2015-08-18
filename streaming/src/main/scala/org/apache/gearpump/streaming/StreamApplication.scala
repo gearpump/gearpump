@@ -87,7 +87,8 @@ case class ProcessorDescription(
     parallelism : Int,
     description: String = "",
     taskConf: UserConfig = null,
-    life: LifeTime = LifeTime.Immortal) extends ReferenceEqual
+    life: LifeTime = LifeTime.Immortal,
+    jar: AppJar = null) extends ReferenceEqual
 
 object StreamApplication {
 
