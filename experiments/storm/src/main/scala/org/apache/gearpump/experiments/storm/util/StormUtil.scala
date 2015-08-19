@@ -18,19 +18,13 @@
 
 package org.apache.gearpump.experiments.storm.util
 
-import java.io.{File, FileOutputStream, IOException}
-import java.util.jar.JarFile
 import java.util.{HashMap => JHashMap, List => JList, Map => JMap}
 
 import akka.actor.ActorSystem
 import backtype.storm.generated.{ComponentCommon, StormTopology}
-import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.{TupleImpl, Tuple, Fields}
+import backtype.storm.tuple.Fields
 import backtype.storm.utils.Utils
-import clojure.lang.Atom
-import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming._
 import org.apache.gearpump.util.LogUtil
 import org.json.simple.JSONValue
 

@@ -18,15 +18,15 @@
 
 package org.apache.gearpump.experiments.storm.producer
 
-import backtype.storm.generated.SpoutSpec
-import backtype.storm.spout.{ShellSpout, ISpout, SpoutOutputCollector}
-import backtype.storm.utils.Utils
 import java.util.{List => JList}
+
+import backtype.storm.generated.SpoutSpec
+import backtype.storm.spout.{ISpout, ShellSpout, SpoutOutputCollector}
+import backtype.storm.utils.Utils
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.util.{TopologyContextBuilder, StormTuple, GraphBuilder}
+import org.apache.gearpump.experiments.storm.util.{GraphBuilder, StormOutputCollector, TopologyContextBuilder}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
-import scala.collection.JavaConversions._
 
 private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
@@ -42,18 +42,17 @@ private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
       .getOrElse(throw new RuntimeException(s"Storm spout spec not found for processor $pid"))
   private val spout = Utils.getSetComponentObject(spoutSpec.get_spout_object()).asInstanceOf[ISpout]
   private val topologyContextBuilder = TopologyContextBuilder(topology, stormConfig, multiLang = spout.isInstanceOf[ShellSpout])
+  private val collector = new StormOutputCollector(taskContext, pid, spoutId)
 
   override def onStart(startTime: StartTime): Unit = {
     val topologyContext = topologyContextBuilder.buildContext(pid, spoutId)
-    val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
-      taskContext.output(Message(StormTuple(tuple.toList, pid, spoutId, streamId)))
-    }
-    val delegate = new StormSpoutOutputCollector(outputFn)
+    val delegate = new StormSpoutOutputCollector(collector)
     spout.open(stormConfig, topologyContext, new SpoutOutputCollector(delegate))
     self ! Message("start")
   }
 
   override def onNext(msg: Message): Unit = {
+    collector.setTimestamp(System.currentTimeMillis())
     spout.nextTuple()
     self ! Message("Continue")
   }

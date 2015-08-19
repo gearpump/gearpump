@@ -18,23 +18,20 @@
 
 package org.apache.gearpump.experiments.storm.processor
 
-import java.util.{Collection => JCollection, List => JList, ArrayList => JArrayList}
+import java.util.{ArrayList => JArrayList, Collection => JCollection, List => JList}
 
 import backtype.storm.task.IOutputCollector
 import backtype.storm.tuple.Tuple
-import org.apache.gearpump.util.LogUtil
-import org.slf4j.Logger
+import org.apache.gearpump.experiments.storm.util.StormOutputCollector
 
-private[storm] class StormBoltOutputCollector(outputFn: (String, JList[AnyRef]) => Unit) extends IOutputCollector {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
+private[storm] class StormBoltOutputCollector(collector: StormOutputCollector) extends IOutputCollector {
 
   override def emit(streamId: String, anchors: JCollection[Tuple], tuple: JList[AnyRef]): JList[Integer] = {
-    outputFn(streamId, tuple)
-    new JArrayList[Integer](0)
+    collector.emit(streamId, tuple)
   }
 
-  override def emitDirect(i: Int, s: String, collection: JCollection[Tuple], list: JList[AnyRef]): Unit = {
-    LOG.error("emit direct not supported")
+  override def emitDirect(taskId: Int, streamId: String, anchors: JCollection[Tuple], tuple: JList[AnyRef]): Unit = {
+    collector.emitDirect(taskId, streamId, tuple)
   }
 
   override def fail(tuple: Tuple): Unit = {}

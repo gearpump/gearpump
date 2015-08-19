@@ -43,9 +43,9 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
   property("StormProcessor should work") {
     implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
     val topology = TopologyUtil.getTestTopology
-    val componentToStreamFields = getComponentToStreamFields(topology)
     val graphBuilder = new GraphBuilder()
     val processorGraph = graphBuilder.build(topology)
+    val componentToStreamFields = getComponentToStreamFields(topology)
 
     var processorIdIndex = 0
     val processorDescriptionGraph = processorGraph.mapVertex { processor =>
@@ -82,9 +82,10 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
             when(taskContext.taskId).thenReturn(TaskId(pid, 0))
             val stormProcessor = new StormProcessor(taskContext, procDesc.taskConf.withConfig(userConfig))
             stormProcessor.onStart(StartTime(0))
-            val values = List.fill(componentToStreamFields.get(scid).size)(field)
+            val fields = componentToStreamFields.get(scid).get(streamId.get_streamId())
+            val values = List.fill(fields.size)(field)
             val stormTuple = StormTuple(values, spid, scid, streamId.get_streamId())
-            stormProcessor.onNext(Message(stormTuple))
+            stormProcessor.onNext(Message(stormTuple, System.currentTimeMillis()))
             verify(taskContext).output(anyObject())
           }
         }

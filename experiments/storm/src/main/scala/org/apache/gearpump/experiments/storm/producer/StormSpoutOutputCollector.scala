@@ -21,15 +21,12 @@ package org.apache.gearpump.experiments.storm.producer
 import java.util.{ArrayList => JArrayList, List => JList}
 
 import backtype.storm.spout.ISpoutOutputCollector
-import org.apache.gearpump.util.LogUtil
-import org.slf4j.Logger
+import org.apache.gearpump.experiments.storm.util.StormOutputCollector
 
-private[storm] class StormSpoutOutputCollector(outputFn: (String, JList[AnyRef]) => Unit) extends ISpoutOutputCollector {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
+private[storm] class StormSpoutOutputCollector(collector: StormOutputCollector) extends ISpoutOutputCollector {
 
   override def emit(streamId: String, values: JList[AnyRef], messageId: scala.Any): JList[Integer] = {
-    outputFn(streamId, values)
-    new JArrayList[Integer](0)
+    collector.emit(streamId, values)
   }
 
   override def reportError(throwable: Throwable): Unit = {
@@ -37,6 +34,6 @@ private[storm] class StormSpoutOutputCollector(outputFn: (String, JList[AnyRef])
   }
 
   override def emitDirect(taskId: Int, streamId: String, values: JList[AnyRef], messageId: scala.Any): Unit = {
-    LOG.error("emit direct not supported")
+    collector.emitDirect(taskId, streamId, values)
   }
 }

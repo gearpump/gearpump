@@ -18,19 +18,18 @@
 
 package org.apache.gearpump.experiments.storm.util
 
-import java.io.{FileOutputStream, IOException, File}
+import java.io.{File, FileOutputStream, IOException}
 import java.util.jar.JarFile
-import java.util.{List => JList, LinkedList => JLinkedList, Map => JMap, HashMap => JHashMap}
+import java.util.{HashMap => JHashMap, LinkedList => JLinkedList, List => JList, Map => JMap}
 
-import backtype.storm.generated.{ComponentCommon, StormTopology}
+import backtype.storm.generated.StormTopology
 import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.Fields
 import clojure.lang.Atom
-import org.apache.commons.io.{IOUtils, FileUtils}
+import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
+
 import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
 
 object TopologyContextBuilder {
   private val LOG: Logger = LogUtil.getLogger(classOf[TopologyContextBuilder])
