@@ -12,7 +12,7 @@ script:
   elif [[ $TRAVIS_BRANCH == "master" ]];
     then sbt clean +publish;
   elif [[ $TRAVIS_TAG != "" ]];
-    then sbt clean +assembly +packArchive;
+    then sbt clean +assembly +packArchiveZip;
   fi  
 jdk:
 - oraclejdk7

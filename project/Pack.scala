@@ -27,7 +27,7 @@ object Pack extends sbt.Build {
   lazy val packProject = Project(
     id = "gearpump-pack",
     base = file(s"$distDirectory"),
-    settings = commonSettings ++
+    settings = commonSettings ++ noPublish  ++
         packSettings ++
         Seq(
           packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
@@ -67,7 +67,10 @@ object Pack extends sbt.Build {
             "services" -> serviceClassPath,
             "yarnclient" -> yarnClassPath,
             "storm" -> stormClassPath
-          )
+          ),
+
+          packArchivePrefix := name.value + "-" + scalaVersion.value
+
         )
-  ).dependsOn(core, streaming, services, yarn, storm, Build.dsl, state_api)
+  ).dependsOn(core, streaming, services, yarn, storm)
 }

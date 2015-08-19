@@ -8,13 +8,13 @@ object BuildExample extends sbt.Build {
   lazy val examples = Project(
     id = "gearpump-examples",
     base = file("examples"),
-    settings = commonSettings
-  ) aggregate (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport, examples_state)
+    settings = commonSettings ++ noPublish
+  ) aggregate (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
     base = file("examples/streaming/wordcount"),
-    settings = commonSettings ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.wordcount.WordCount"),
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
@@ -25,7 +25,7 @@ object BuildExample extends sbt.Build {
   lazy val sol = Project(
     id = "gearpump-examples-sol",
     base = file("examples/streaming/sol"),
-    settings = commonSettings ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.sol.SOL"),
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
@@ -37,7 +37,7 @@ object BuildExample extends sbt.Build {
   lazy val complexdag = Project(
     id = "gearpump-examples-complexdag",
     base = file("examples/streaming/complexdag"),
-    settings = commonSettings ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.complexdag.Dag"),
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
@@ -48,7 +48,7 @@ object BuildExample extends sbt.Build {
   lazy val transport = Project(
     id = "gearpump-examples-transport",
     base = file("examples/streaming/transport"),
-    settings = commonSettings ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           libraryDependencies ++= Seq(
             "io.spray" %%  "spray-can"       % sprayVersion,
@@ -65,7 +65,7 @@ object BuildExample extends sbt.Build {
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
     base = file("examples/distributedshell"),
-    settings = commonSettings ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           target in assembly := baseDirectory.value.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -73,9 +73,9 @@ object BuildExample extends sbt.Build {
   ) dependsOn(daemon % "test->test; provided")
 
   lazy val distributeservice = Project(
-    id = "gearpump-experiments-distributeservice",
-    base = file("experiments/distributeservice"),
-    settings = commonSettings ++ myAssemblySettings ++
+    id = "gearpump-examples-distributeservice",
+    base = file("examples/distributeservice"),
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           libraryDependencies ++= Seq(
             "commons-lang" % "commons-lang" % commonsLangVersion,
@@ -89,7 +89,7 @@ object BuildExample extends sbt.Build {
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
     base = file("examples/streaming/fsio"),
-    settings = commonSettings ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           libraryDependencies ++= hadoopDependency,
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
@@ -101,7 +101,7 @@ object BuildExample extends sbt.Build {
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
     base = file("examples/streaming/kafka"),
-    settings = commonSettings ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -111,7 +111,7 @@ object BuildExample extends sbt.Build {
   lazy val stockcrawler = Project(
     id = "gearpump-examples-stockcrawler",
     base = file("examples/streaming/stockcrawler"),
-    settings = commonSettings ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           libraryDependencies ++= Seq(
             "io.spray" %%  "spray-can"       % sprayVersion,
@@ -131,12 +131,18 @@ object BuildExample extends sbt.Build {
   lazy val examples_state = Project(
     id = "gearpump-examples-state",
     base = file("examples/streaming/state"),
-    settings = commonSettings ++ myAssemblySettings ++ Seq(
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion
       ),
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
     )
-  ) dependsOn (state_api % "test->test; provided", external_hadoopfs, external_monoid, external_serializer)
+  ) dependsOn (streaming % "test->test; provided", external_hadoopfs, external_monoid, external_serializer)
+
+  lazy val pagerank = Project(
+    id = "gearpump-examples-pagerank",
+    base = file("examples/pagerank"),
+    settings = commonSettings ++ noPublish
+  ) dependsOn(streaming % "test->test; provided")
 }
