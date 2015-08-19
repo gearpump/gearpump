@@ -119,6 +119,12 @@ object Build extends sbt.Build {
     }
   )
 
+  val noPublish = Seq(
+    publish := {},
+    publishLocal := {},
+    publishArtifact := false
+  )
+
   val hadoopDependency = Seq(
     ("org.apache.hadoop" % "hadoop-common" % clouderaVersion).
       exclude("org.mortbay.jetty", "jetty-util")
@@ -184,9 +190,9 @@ object Build extends sbt.Build {
   lazy val root = Project(
     id = "gearpump",
     base = file("."),
-    settings = commonSettings
+    settings = commonSettings ++ noPublish
   ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
-      examples, distributeservice, storm, yarn, dsl, pagerank, external_hbase, packProject, state_api, external_hadoopfs)
+      examples, storm, yarn, external_hbase, packProject, external_hadoopfs)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -197,7 +203,7 @@ object Build extends sbt.Build {
   lazy val daemon = Project(
     id = "gearpump-daemon",
     base = file("daemon"),
-    settings = commonSettings ++ daemonDependencies
+    settings = commonSettings ++ noPublish ++ daemonDependencies
   ) dependsOn(core % "test->test; compile->compile")
 
   lazy val streaming = Project(
@@ -217,7 +223,7 @@ object Build extends sbt.Build {
           ("org.apache.kafka" %% "kafka" % kafkaVersion classifier("test")) % "test"
         )
       )
-  ) dependsOn (state_api % "test->test; provided", dsl % "provided")
+  ) dependsOn (streaming % "test->test; provided")
 
   lazy val services_full = CrossProject("gearpump-services", file("services"), CrossType.Full).
     settings(
@@ -234,7 +240,7 @@ object Build extends sbt.Build {
     settings(compile in Compile <<= (compile in Compile) dependsOn (fastOptJS in (serviceJS, Compile))).
     dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile")
 
-  lazy val serviceJvmSettings = commonSettings ++ Seq(
+  lazy val serviceJvmSettings = commonSettings ++ noPublish ++ Seq(
     libraryDependencies ++= Seq(
     "io.spray" %% "spray-testkit" % sprayVersion % "test",
     "io.spray" %% "spray-httpx" % sprayVersion,
@@ -287,12 +293,10 @@ object Build extends sbt.Build {
     relativeSourceMaps := true,
     jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
 
-  lazy val distributeservice = BuildExample.distributeservice
-
   lazy val storm = Project(
     id = "gearpump-experiments-storm",
     base = file("experiments/storm"),
-    settings = commonSettings ++
+    settings = commonSettings ++ noPublish ++
       Seq(
         libraryDependencies ++= Seq(
           "commons-io" % "commons-io" % commonsIOVersion,
@@ -329,7 +333,7 @@ object Build extends sbt.Build {
   lazy val yarn = Project(
     id = "gearpump-experiments-yarn",
     base = file("experiments/yarn"),
-    settings = commonSettings ++
+    settings = commonSettings ++ noPublish ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion,
@@ -341,18 +345,6 @@ object Build extends sbt.Build {
         ) ++ hadoopDependency
       )
   ) dependsOn(services % "test->test;compile->compile", core % "provided")
-
-  lazy val dsl = Project(
-    id = "gearpump-experiments-dsl",
-    base = file("experiments/dsl"),
-    settings = commonSettings
-  ) dependsOn(streaming % "test->test; compile->compile")
-  
-  lazy val pagerank = Project(
-    id = "gearpump-experiments-pagerank",
-    base = file("experiments/pagerank"),
-    settings = commonSettings
-  ) dependsOn(streaming % "test->test; provided")
 
   lazy val external_hbase = Project(
     id = "gearpump-external-hbase",
@@ -392,13 +384,7 @@ object Build extends sbt.Build {
             exclude("log4j", "log4j")
         )
       )
-  ) dependsOn(streaming % "test->test; provided", dsl % "provided")
-
-  lazy val state_api = Project(
-    id = "gearpump-experiments-state",
-    base = file("experiments/state"),
-    settings = commonSettings
-  ) dependsOn(streaming % "test->test; compile->compile")
+  ) dependsOn(streaming % "test->test; provided")
 
   lazy val external_monoid = Project(
     id = "gearpump-external-monoid",
@@ -409,7 +395,7 @@ object Build extends sbt.Build {
             "com.twitter" %% "algebird-core" % algebirdVersion
           )
         )
-  ) dependsOn(state_api % "provided")
+  ) dependsOn(streaming % "provided")
 
   lazy val external_serializer = Project(
     id = "gearpump-external-serializer",
@@ -422,7 +408,7 @@ object Build extends sbt.Build {
               exclude("com.esotericsoftware.minlog", "minlog")
           )
         )
-  ) dependsOn(state_api % "provided")
+  ) dependsOn(streaming % "provided")
 
   lazy val external_hadoopfs = Project(
     id = "gearpump-external-hadoopfs",
@@ -431,5 +417,5 @@ object Build extends sbt.Build {
         Seq(
           libraryDependencies ++= hadoopDependency
         )
-  ) dependsOn(state_api % "test->test; provided")
+  ) dependsOn(streaming % "test->test; provided")
 }

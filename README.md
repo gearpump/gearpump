@@ -45,9 +45,9 @@ Check guide [Get Started](http://www.gearpump.io/site/0.3/getstarted/)
 2). Build package
 
 ```bash
-  ## Please use scala 2.11
+  ## Please use scala 2.11 or 2.10
   ## The target package path: target/gearpump-$VERSION.tar.gz
-  sbt clean assembly packArchive ## Or use: sbt clean assembly pack-archive
+  sbt clean assembly +packArchiveZip ## Or use: sbt clean assembly pack-archive
 ```
 
   After the build, there will be a package file gearpump-${version}.tar.gz generated under target/ folder.
