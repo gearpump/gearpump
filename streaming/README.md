@@ -99,7 +99,7 @@ val context = ClientContext(master)
     context.close()
 ```
 
-For the full example, please check https://github.com/intel-hadoop/gearpump/tree/master/experiments/dsl/src/main/scala/org/apache/gearpump/streaming/dsl/example
+For the full example, please check https://github.com/intel-hadoop/gearpump/tree/master/experiments/dsl/src/main/scala/io.gearpump/streaming/dsl/example
 
 
 Run an example
@@ -112,5 +112,5 @@ bin\local
 bin\services
 
 # start example topology
-bin\gear org.apache.gearpump.streaming.dsl.example.WordCount
+bin\gear io.gearpump.streaming.dsl.example.WordCount
 ```
