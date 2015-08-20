@@ -73,12 +73,7 @@ object LogUtil {
   def loadConfiguration(config : Config, processType : ProcessType.ProcessType) : Unit = {
     //set log file name
     val propName = s"gearpump.${processType.toString.toLowerCase}.log.file"
-
-    val props = new Properties()
-    val log4jConfStream = getClass().getClassLoader.getResourceAsStream("log4j.properties")
-    if(log4jConfStream!=null) {
-      props.load(log4jConfStream)
-    }
+    val props = loadConfiguration
 
     props.setProperty("gearpump.log.file", "${" + propName + "}")
 
@@ -99,6 +94,21 @@ object LogUtil {
   def daemonLogDir(config: Config): File = {
     val dir = config.getString(Constants.GEARPUMP_LOG_DAEMON_DIR)
     new File(dir)
+  }
+
+  def verboseLogToConsole: Unit = {
+    val props = loadConfiguration
+    props.setProperty("log4j.rootLogger", "INFO,console")
+    PropertyConfigurator.configure(props)
+  }
+
+  private def loadConfiguration: Properties = {
+    val props = new Properties()
+    val log4jConfStream = getClass().getClassLoader.getResourceAsStream("log4j.properties")
+    if(log4jConfStream!=null) {
+      props.load(log4jConfStream)
+    }
+    props
   }
 
   private def jvmName : String = {
