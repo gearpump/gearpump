@@ -183,12 +183,16 @@ object MasterService {
 
     try {
       val masters = sysConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
-      val master = masters.head
+      val mastersOption = masters.zipWithIndex.map{kv =>
+        val (master, index) = kv
+        s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.${index}=${master.host}:${master.port}"
+      }.toArray
+
       val hostname = sysConfig.getString(Constants.GEARPUMP_HOSTNAME)
       var options = Array(
-        s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${master.host}:${master.port}",
         s"-D${Constants.GEARPUMP_HOSTNAME}=$hostname"
-      )
+      ) ++ mastersOption
+
       if (userConfData.isDefined) {
         FileUtils.writeByteArrayToFile(userConf, userConfData.get)
         options :+= s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=${userConf.getPath}"
