@@ -103,7 +103,7 @@ angular.module('dashboard.restapi', [])
       /** Replace a dag processor at runtime */
       replaceDagProcessor: function(files, formFormNames, appId, oldProcessorId, newProcessorDescription, onComplete) {
         var args = {
-            "$type": 'org.apache.gearpump.streaming.appmaster.DagManager.ReplaceProcessor',
+            "$type": 'io.gearpump.streaming.appmaster.DagManager.ReplaceProcessor',
             oldProcessorId: oldProcessorId,
             newProcessorDescription: angular.merge({
               id: oldProcessorId

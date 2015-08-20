@@ -36,13 +36,13 @@ object Pack extends sbt.Build {
     settings = commonSettings ++ noPublish  ++
         packSettings ++
         Seq(
-          packMain := Map("gear" -> "org.apache.gearpump.cluster.main.Gear",
-            "local" -> "org.apache.gearpump.cluster.main.Local",
-            "master" -> "org.apache.gearpump.cluster.main.Master",
-            "worker" -> "org.apache.gearpump.cluster.main.Worker",
-            "services" -> "org.apache.gearpump.services.main.Services",
-            "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client",
-            "storm" -> "org.apache.gearpump.experiments.storm.StormRunner"
+          packMain := Map("gear" -> "io.gearpump.cluster.main.Gear",
+            "local" -> "io.gearpump.cluster.main.Local",
+            "master" -> "io.gearpump.cluster.main.Master",
+            "worker" -> "io.gearpump.cluster.main.Worker",
+            "services" -> "io.gearpump.services.main.Services",
+            "yarnclient" -> "io.gearpump.experiments.yarn.client.Client",
+            "storm" -> "io.gearpump.experiments.storm.StormRunner"
           ),
           packJvmOpts := Map(
             "local" -> Seq("-server", "-DlogFilename=local", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
