@@ -37,7 +37,8 @@ import scala.collection.JavaConverters._
 object StormRunner extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "jar" -> CLIOption[String]("<storm jar>", required = true),
-    "config" -> CLIOption[String]("<storm config path>", required = false))
+    "config" -> CLIOption[String]("<storm config path>", required = false),
+    "verbose" -> CLIOption("<print verbose log on console>", required = false, defaultValue = Some(false)))
 
   override val remainArgs = Array("topology_name")
 
@@ -45,6 +46,11 @@ object StormRunner extends AkkaApp with ArgumentsParser {
 
     val akkaConf = addStormClassPath(inputAkkaConf)
     val config = parse(args)
+
+    val verbose = config.getBoolean("verbose")
+    if (verbose) {
+      LogUtil.verboseLogToConsole
+    }
 
     val jar = config.getString("jar")
     val topology = config.remainArgs(0)

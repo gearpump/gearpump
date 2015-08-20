@@ -57,7 +57,7 @@ trait ClientAPI {
   def submit(): Try[ApplicationId]
 }
 
-class Client(configuration:AppConfig, yarnConf: YarnConfiguration, yarnClient: YarnClient,
+class Client(configuration: AppConfig, yarnConf: YarnConfiguration, yarnClient: YarnClient,
              containerLaunchContext: (String) => ContainerLaunchContext, fileSystem: FileSystem) extends ClientAPI {
   import org.apache.gearpump.experiments.yarn.Constants._
   import org.apache.gearpump.experiments.yarn.client.Client._
@@ -254,11 +254,17 @@ object Client extends App with ArgumentsParser {
     "jars" -> CLIOption[String]("<AppMaster jar directory>", required = false),
     "version" -> CLIOption[String]("<gearpump version, we allow multiple gearpump version to co-exist on yarn>", required = true),
     "main" -> CLIOption[String]("<AppMaster main class>", required = false),
-    "config" ->CLIOption[String]("<Config file path>", required = true)
+    "config" ->CLIOption[String]("<Config file path>", required = true),
+    "verbose" -> CLIOption("<print verbose log on console>", required = false, defaultValue = Some(false))
   )
 
   val parseResult: ParseResult = parse(args)
   val config = ConfigFactory.parseFile(new File(parseResult.getString("config")))
+
+  val verbose = parseResult.getBoolean("verbose")
+  if (verbose) {
+    LogUtil.verboseLogToConsole
+  }
 
   def apply(appConfig: AppConfig  = new AppConfig(parseResult, config), conf: YarnConfiguration  = new YarnConfiguration,
             client: YarnClient  = YarnClient.createYarnClient) = {
