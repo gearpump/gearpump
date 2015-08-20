@@ -18,29 +18,42 @@
 
 package org.apache.gearpump.services
 
+import java.io.File
+
 import akka.actor.{ActorRef, ActorSystem}
+import org.apache.gearpump.cluster.AppJar
 import org.apache.gearpump.cluster.AppMasterToMaster.{GeneralAppMasterSummary, AppMasterSummary}
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.cluster.MasterToClient._
+import org.apache.gearpump.jarstore.{FilePath, ActorSystemRequired, ConfigRequired, JarStoreService}
 import org.apache.gearpump.services.AppMasterService.Status
-import org.apache.gearpump.services.util.UpickleUtil._
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
-import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperation, DAGOperationResult}
+import org.apache.gearpump.streaming.appmaster.DagManager._
 import org.apache.gearpump.streaming.appmaster.StreamAppMasterSummary
 import org.apache.gearpump.streaming.executor.Executor.{ExecutorConfig, QueryExecutorConfig, ExecutorSummary, GetExecutorSummary}
 import org.apache.gearpump.util.ActorUtil.{askActor, askAppMaster}
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{FileUtils, Constants, LogUtil}
+import spray.http.{MediaTypes, MultipartFormData}
 import spray.routing.HttpService
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 import upickle.default.{write, read}
+import AppMasterService._
 
 trait AppMasterService extends HttpService {
-
   def master: ActorRef
 
   implicit val system: ActorSystem
+
+  lazy val jarStoreService = {
+    val service = JarStoreService.get(system.settings.config)
+    service match {
+      case needConfig: ConfigRequired => needConfig.init(system.settings.config)
+      case needSystem: ActorSystemRequired => needSystem.init(system)
+    }
+    service
+  }
 
   def appMasterRoute = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -48,12 +61,25 @@ trait AppMasterService extends HttpService {
     pathPrefix("api" / s"$REST_VERSION" / "appmaster" / IntNumber ) { appId =>
       path("dynamicdag") {
         post {
-          entity(as[String]) { entity =>
-            val dagOperation = read[DAGOperation](entity)
-            onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
-              case Success(value) =>
-                complete(write(value))
-              case Failure(ex) => failWith(ex)
+          anyParams('args.as[Option[String]]) { (args) =>
+            respondWithMediaType(MediaTypes.`application/json`) {
+              entity(as[MultipartFormData]) { entity =>
+                val jar = MasterService.findFormDataOption(entity.fields, "jar")
+                val msg = java.net.URLDecoder.decode(args.get)
+                var dagOperation = read[DAGOperation](msg)
+                if(jar.nonEmpty) {
+                  dagOperation match {
+                    case replace: ReplaceProcessor =>
+                      val description = replace.newProcessorDescription.copy(jar = uploadJar(jar.get, jarStoreService))
+                      dagOperation = replace.copy(newProcessorDescription = description)
+                  }
+                }
+                onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
+                  case Success(value) =>
+                    complete(write(value))
+                  case Failure(ex) => failWith(ex)
+                }
+              }
             }
           }
         }
@@ -183,4 +209,12 @@ trait AppMasterService extends HttpService {
 
 object AppMasterService {
   case class Status(success: Boolean, reason: String = null)
+
+  def uploadJar(jarData: Array[Byte], jarStoreService: JarStoreService): AppJar = {
+    val jarFile = File.createTempFile("gearpump_userapp_", "")
+    FileUtils.writeByteArrayToFile(jarFile, jarData)
+    val remotePath = FilePath(Math.abs(new java.util.Random().nextLong()).toString)
+    jarStoreService.copyFromLocal(jarFile, remotePath)
+    AppJar(jarFile.getName, remotePath)
+  }
 }

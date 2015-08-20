@@ -23,7 +23,8 @@ import akka.testkit.TestProbe
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
-import org.apache.gearpump.cluster.{TestUtil, UserConfig}
+import org.apache.gearpump.cluster.{AppJar, TestUtil, UserConfig}
+import org.apache.gearpump.jarstore.FilePath
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
 import org.apache.gearpump.streaming.AppMasterToExecutor.LaunchTasks
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterTask
@@ -31,6 +32,7 @@ import org.apache.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
 import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
+import org.apache.gearpump.streaming.appmaster.SubDAGManager.ResourceRequestDetail
 import org.apache.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
 import org.apache.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
 import org.apache.gearpump.streaming.executor.Executor.RestartTasks
@@ -49,8 +51,9 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   val task1Class = classOf[Task1].getName
   val task2Class = classOf[Task2].getName
 
-  val task1 = ProcessorDescription(id = 0, taskClass = task1Class, parallelism = 1)
-  val task2 = ProcessorDescription(id = 1, taskClass = task2Class, parallelism = 1)
+  val mockJar = AppJar("jar_for_test", FilePath("path"))
+  val task1 = ProcessorDescription(id = 0, taskClass = task1Class, parallelism = 1, jar = mockJar)
+  val task2 = ProcessorDescription(id = 1, taskClass = task2Class, parallelism = 1, jar = mockJar)
 
   val dag: DAG = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
   val dagVersion = 0
@@ -77,8 +80,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     import env._
 
     val resourceRequest = Array(ResourceRequest(resource, workerId))
-    when(scheduler.executorFailed(executorId)).thenReturn(resourceRequest)
-
+    when(scheduler.executorFailed(executorId)).thenReturn(ResourceRequestDetail(mockJar, resourceRequest))
 
     taskManager ! ExecutorStopped(executorId)
 
@@ -87,7 +89,8 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     executorManager.expectMsg(BroadCast(RestartTasks(dagVersion)))
 
     // ask for new executors
-    val returned = executorManager.expectMsg(StartExecutors(resourceRequest))
+    val returned = executorManager.receiveN(1).head.asInstanceOf[StartExecutors]
+    assert(returned.resources.deep == resourceRequest.deep)
     executorManager.reply(StartExecutorsTimeOut)
 
     // TaskManager cannot handle the TimeOut error itself, escalate to appmaster.
@@ -141,7 +144,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val appMaster = TestProbe()
     val executor = TestProbe()
 
-    val scheduler = mock(classOf[TaskScheduler])
+    val scheduler = mock(classOf[SubDAGManager])
 
     val dagManager = TestProbe()
 
@@ -155,23 +158,22 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     executorManager.expectMsgType[ExecutorResourceUsageSummary]
     dagManager.expectMsgType[NewDAGDeployed]
 
+    // step2: Get Additional Resource Request
+    when(scheduler.getRequestDetails())
+        .thenReturn(Array(ResourceRequestDetail(mockJar, Array(ResourceRequest(resource)))))
 
-    // step2: DAG changed. Start transit from ApplicationReady -> DynamicDAG
+    // step3: DAG changed. Start transit from ApplicationReady -> DynamicDAG
     dagManager.expectMsg(GetLatestDAG)
     dagManager.reply(LatestDAG(dag))
-
-    // step3: Get Additional Resource Request
-    when(scheduler.getResourceRequests())
-      .thenReturn(Array(ResourceRequest(resource)))
 
     // step4: Start remote Executors.
     executorManager.expectMsgType[StartExecutors]
 
-    when(scheduler.schedule(workerId, executorId, resource))
+    when(scheduler.scheduleTask(mockJar, workerId, executorId, resource))
       .thenReturn(List(TaskId(0, 0), TaskId(1, 0)))
 
     // step5: Executor is started.
-    executorManager.reply(ExecutorStarted(executorId, resource, workerId))
+    executorManager.reply(ExecutorStarted(executorId, resource, workerId, Some(mockJar)))
 
     // step6: Prepare to start Task. First GetTaskLaunchData.
     val taskLaunchData: PartialFunction[Any, TaskLaunchData] = {
@@ -193,7 +195,6 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
         Console.println("Launch Task " + launch.processorDescription.id)
         RegisterTask(launch.taskId.head, executorId, HostPort("127.0.0.1:3000"))
     }
-
 
     // step8: Task is started. registerTask.
     val registerTask1 = executorManager.expectMsgPF()(launchTaskMatch)
@@ -230,7 +231,7 @@ object TaskManagerSpec {
     appMaster: TestProbe,
     executor: TestProbe,
     taskManager: ActorRef,
-    scheduler: TaskScheduler)
+    scheduler: SubDAGManager)
 
   class Task1(taskContext : TaskContext, userConf : UserConfig)
     extends Task(taskContext, userConf) {

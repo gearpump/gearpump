@@ -22,11 +22,12 @@ import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
-import org.apache.gearpump.cluster.TestUtil
+import org.apache.gearpump.cluster.{ExecutorJVMConfig, AppJar, TestUtil}
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemLauncher._
-import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemStarted, Session, StartExecutorSystemTimeout, StartExecutorSystems}
+import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler._
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemSchedulerSpec.{ExecutorSystemLauncherStarted, MockExecutorSystemLauncher}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
+import org.apache.gearpump.jarstore.FilePath
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
 import scala.concurrent.duration._
@@ -36,7 +37,9 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
   val workerId = 0
   val resource = Resource(1)
   val resourceRequest = ResourceRequest(resource)
-  val start =  StartExecutorSystems(Array(resourceRequest), null)
+  val mockJar = AppJar("for_test", FilePath("PATH"))
+  val emptyJvmConfig = ExecutorSystemJvmConfig(Array.empty, Array.empty, Some(mockJar), "")
+  val start = StartExecutorSystems(Array(resourceRequest), emptyJvmConfig)
 
   implicit var system: ActorSystem = null
   var worker:TestProbe = null
@@ -88,7 +91,7 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
     val executorSystemProbe = TestProbe()
     val executorSystem = ExecutorSystem(systemId, null, executorSystemProbe.ref, resource, workerInfo)
     launcher.reply(LaunchExecutorSystemSuccess(executorSystem, session))
-    client.expectMsg(ExecutorSystemStarted(executorSystem))
+    client.expectMsg(ExecutorSystemStarted(executorSystem, Some(mockJar)))
   }
 
   it should "report failure when resource cannot be allocated" in {

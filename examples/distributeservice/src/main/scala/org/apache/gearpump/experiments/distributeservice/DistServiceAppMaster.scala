@@ -52,7 +52,7 @@ class DistServiceAppMaster(appContext : AppMasterContext, app : AppDescription) 
   (server ? FileServer.GetPort).asInstanceOf[Future[FileServer.Port]] pipeTo self
 
   override def receive: Receive = {
-    case ExecutorSystemStarted(executorSystem) =>
+    case ExecutorSystemStarted(executorSystem, _) =>
       import executorSystem.{address, resource => executorResource, worker}
       val executorContext = ExecutorContext(currentExecutorId, worker, appId, app.name, self, executorResource)
       //start executor

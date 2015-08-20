@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
-import org.apache.gearpump.cluster.{AppMasterContext, ExecutorContext, UserConfig}
+import org.apache.gearpump.cluster.{AppJar, AppMasterContext, ExecutorContext, UserConfig}
 import org.apache.gearpump.streaming.ExecutorId
 import org.apache.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import org.apache.gearpump.streaming.appmaster.ExecutorManager._
@@ -71,19 +71,19 @@ private[appmaster] class ExecutorManager(
   }
 
   def service: Receive = {
-    case StartExecutors(resources) =>
-      masterProxy ! StartExecutorSystems(resources, getExecutorJvmConfig)
-    case ExecutorSystemStarted(executorSystem) =>
+    case StartExecutors(resources, jar) =>
+      masterProxy ! StartExecutorSystems(resources, getExecutorJvmConfig(Some(jar)))
+    case ExecutorSystemStarted(executorSystem, boundedJar) =>
       import executorSystem.{address, executorSystemId, resource => executorResource, worker}
 
       val executorId = executorSystemId
       val executorContext = ExecutorContext(executorId, worker, appId, appName, appMaster = context.parent, executorResource)
+      executors += executorId -> ExecutorInfo(executorId, null, worker, boundedJar)
 
       //start executor
       val executor = context.actorOf(executorFactory(executorContext, userConfig, address, executorId),
         executorId.toString)
       executorSystem.bindLifeCycleWith(executor)
-
     case StartExecutorSystemTimeout =>
       taskManager ! StartExecutorsTimeOut
 
@@ -91,8 +91,9 @@ private[appmaster] class ExecutorManager(
       LOG.info(s"executor $executorId has been launched")
       //watch for executor termination
       context.watch(executor)
-      executors += executorId -> ExecutorInfo(executorId, executor, worker)
-      taskManager ! ExecutorStarted(executorId, resource, worker.workerId)
+      val executorInfo = executors.get(executorId).get
+      executors += executorId -> executorInfo.copy(executor = executor)
+      taskManager ! ExecutorStarted(executorId, resource, worker.workerId, executorInfo.boundedJar)
 
     case BroadCast(msg) =>
       LOG.info(s"Broadcast ${msg.getClass.getSimpleName} to all executors")
@@ -126,22 +127,23 @@ private[appmaster] class ExecutorManager(
         case scala.util.Failure(ex) => LOG.error(s"failed to get the executor Id from path string ${actor.path}" , ex)
       }
   }
-  private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
+
+  private def getExecutorJvmConfig(jar: Option[AppJar]): ExecutorSystemJvmConfig = {
     val executorAkkaConfig = clusterConfig
     val jvmSetting = Util.resolveJvmSetting(executorAkkaConfig.withFallback(systemConfig)).executor
-    ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs, appJar, username, executorAkkaConfig)
+    ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs, jar, username, executorAkkaConfig)
   }
 }
 
 private[appmaster] object ExecutorManager {
-  case class StartExecutors(resources: Array[ResourceRequest])
+  case class StartExecutors(resources: Array[ResourceRequest], jar: AppJar)
   case class BroadCast(msg: Any)
 
   case class UniCast(executorId: Int, msg: Any)
 
   case object GetExecutorInfo
 
-  case class ExecutorStarted(executorId: Int, resource: Resource, workerId: Int)
+  case class ExecutorStarted(executorId: Int, resource: Resource, workerId: Int, boundedJar: Option[AppJar])
   case class ExecutorStopped(executorId: Int)
 
   case class SetTaskManager(taskManager: ActorRef)
@@ -162,5 +164,5 @@ private[appmaster] object ExecutorManager {
 
   case class ExecutorResourceUsageSummary(resources: Map[ExecutorId, Resource])
 
-  case class ExecutorInfo(executorId: ExecutorId, executor: ActorRef, worker: WorkerInfo)
+  case class ExecutorInfo(executorId: ExecutorId, executor: ActorRef, worker: WorkerInfo, boundedJar: Option[AppJar])
 }
