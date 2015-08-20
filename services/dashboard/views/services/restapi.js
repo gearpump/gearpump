@@ -101,8 +101,7 @@ angular.module('dashboard.restapi', [])
       },
 
       /** Replace a dag processor at runtime */
-      replaceDagProcessor: function(appId, oldProcessorId, newProcessorDescription, onComplete) {
-        var url = conf.restapiRoot + '/appmaster/' + appId + '/dynamicdag';
+      replaceDagProcessor: function(files, formFormNames, appId, oldProcessorId, newProcessorDescription, onComplete) {
         var args = {
             "$type": 'org.apache.gearpump.streaming.appmaster.DagManager.ReplaceProcessor',
             oldProcessorId: oldProcessorId,
@@ -110,7 +109,21 @@ angular.module('dashboard.restapi', [])
               id: oldProcessorId
             }, newProcessorDescription)
           };
-        $http.post(url, args).then(function (response) {
+        var params = '?args=' + encodeURIComponent(JSON.stringify(args));
+        var url = conf.restapiRoot + '/appmaster/' + appId + '/dynamicdag' + params;
+        var filtered = files.filter(function(f){return f != undefined && f !== null});
+        var upload;
+        if(filtered.length > 0) {
+          upload = Upload.upload({
+            url: url,
+            method: 'POST',
+            file: filtered,
+            fileFormDataName: formFormNames
+          });
+        } else {
+          upload = $http.post(url);
+        }
+        upload.then(function (response) {
           if (onComplete) {
             onComplete({success: true});
           }

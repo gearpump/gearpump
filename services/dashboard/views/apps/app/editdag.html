@@ -17,6 +17,25 @@
 
         <form name="form">
           <div class="row" style="padding:12px 30px">
+            <div ng-hide="changeParallelismOnly" class="form-group-compact-h">
+              <div class="col-sm-3">
+                <label for="opt1" class="control-label">Processor File</label>
+              </div>
+              <div class="col-sm-6">
+                <input type="text" class="form-control input-sm" id="opt1" readonly
+                       ng-value="filenames.jar" />
+              </div>
+              <div>
+                <button type="button" class="btn btn-primary btn-sm"
+                        ngf-select ng-model="jar" ngf-accept="'.jar'">
+                  <span class="glyphicon glyphicon-folder-open"></span>
+                </button>
+                <button type="button" class="btn btn-sm"
+                        ng-disabled="!filenames.jar" ng-click="clear('jar')">
+                  <span class="glyphicon glyphicon-trash"></span>
+                </button>
+              </div>
+            </div>
             <div ng-hide="changeParallelismOnly"
                  class="form-group-compact-h" ng-class="{'has-error':!validTaskClass}">
               <div class="col-md-3 control-label-box">

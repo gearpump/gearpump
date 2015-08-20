@@ -7,6 +7,8 @@ angular.module('dashboard.apps.appmaster')
 
   .controller('EditDagCtrl', ['$scope', 'restapi',
     function($scope, restapi) {
+      $scope.files = {};
+      $scope.filenames = {};
       var options = $scope.modifyOptions || {};
       $scope.changeParallelismOnly = options.parallelism;
       var dagData = $scope.streamingDag.getCurrentDag();
@@ -15,6 +17,22 @@ angular.module('dashboard.apps.appmaster')
       $scope.taskClass = processor.taskClass;
       $scope.description = processor.description;
       $scope.parallelism = processor.parallelism;
+
+      ['jar'].forEach(function(name) {
+        $scope.files[name] = null;
+        $scope.filenames[name] = null;
+        $scope.$watch(name, function(val) {
+          if (val != null && val.length) {
+            $scope.files[name] = val[0];
+            $scope.filenames[name] = val[0].name;
+          }
+        });
+      })
+
+      $scope.clear = function(name) {
+        $scope.files[name] = null;
+        $scope.filenames[name] = null;
+      };
 
       $scope.fillDefaultTime = function() {
         if (!$scope.transitTime) {
@@ -45,6 +63,8 @@ angular.module('dashboard.apps.appmaster')
       };
 
       $scope.submit = function() {
+        var files = [$scope.files.jar];
+        var fileFormNames = ['jar'];
         var newProcessor = {
           taskClass: $scope.taskClass,
           description: $scope.description,
@@ -58,7 +78,7 @@ angular.module('dashboard.apps.appmaster')
             death: "9223372036854775807" /* Long.max */
           }
         };
-        restapi.replaceDagProcessor($scope.app.id, $scope.processorId, newProcessor, function(response) {
+        restapi.replaceDagProcessor(files, fileFormNames, $scope.app.id, $scope.processorId, newProcessor, function(response) {
           $scope.shouldNoticeSubmitFailed = !response.success;
           if (response.success) {
             $scope.$hide();
