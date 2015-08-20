@@ -1,8 +1,15 @@
-Gearpump 0.4.3
+Gearpump 0.4.4
 ==========================
+Highlights:
+----------------
+1. Allow user to change the DAG on the fly by providing a new jar.
+2. Add hadoop storage for Transactional topology
+3. shade environment dependencies jars.
+4. Support scala 2.10 and scala 2.11
 
 Change log:
 ----------------------
+- #1339, metrics typo
 - #1336, verbose log to console
 - #1331, check whether we have duplicate metric before registering.
 - #1330, Worker cannot init when setting HDFS as jarStore
