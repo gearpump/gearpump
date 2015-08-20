@@ -18,22 +18,19 @@
 
 package org.apache.gearpump.experiments.storm.processor
 
-import java.util.concurrent.TimeUnit
-
-import akka.actor.Cancellable
-import backtype.storm.generated.Bolt
-import backtype.storm.task.{ShellBolt, IBolt, OutputCollector}
-import backtype.storm.utils.Utils
 import java.util.{List => JList}
+
+import backtype.storm.generated.Bolt
+import backtype.storm.task.{IBolt, OutputCollector, ShellBolt}
+import backtype.storm.utils.Utils
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.experiments.storm.util.{TopologyContextBuilder, GraphBuilder, StormTuple}
+import org.apache.gearpump.experiments.storm.util.{StormOutputCollector, GraphBuilder, StormTuple, TopologyContextBuilder}
 import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-import scala.concurrent.duration.FiniteDuration
 import scala.collection.JavaConversions._
 
-private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig)
+private[storm] class StormProcessor(taskContext : TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
   import org.apache.gearpump.experiments.storm.util.StormUtil._
 
@@ -47,34 +44,18 @@ private[storm] class StormProcessor (taskContext : TaskContext, conf: UserConfig
   private val bolt = Utils.getSetComponentObject(boltSpec.get_bolt_object()).asInstanceOf[IBolt]
   private val topologyContextBuilder = TopologyContextBuilder(topology, stormConfig,
     multiLang = bolt.isInstanceOf[ShellBolt])
-  private var count = 0
-  private var snapShotTime : Long = System.currentTimeMillis()
-  private var snapShotWordCount : Long = 0
-
-  private var scheduler : Cancellable = null
+  private val outputCollector = new StormOutputCollector(taskContext, pid, boltId)
 
   override def onStart(startTime: StartTime): Unit = {
     val topologyContext = topologyContextBuilder.buildContext(pid, boltId)
-    val outputFn = (streamId: String, tuple: JList[AnyRef]) => {
-      taskContext.output(Message(StormTuple(tuple.toList, pid, boltId, streamId)))
-    }
-    val delegate = new StormBoltOutputCollector(outputFn)
+    val delegate = new StormBoltOutputCollector(outputCollector)
     bolt.prepare(stormConfig, topologyContext, new OutputCollector(delegate))
-    scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(5, TimeUnit.SECONDS))(reportWordCount)
   }
 
   override def onNext(msg: Message): Unit = {
     val stormTuple = msg.msg.asInstanceOf[StormTuple]
+    outputCollector.setTimestamp(msg.timestamp)
     bolt.execute(stormTuple.toTuple(topologyContextBuilder))
-    count += 1
-  }
-
-  private def reportWordCount() : Unit = {
-    val current : Long = System.currentTimeMillis()
-    LOG.info(s"Task ${taskContext.taskId} Throughput: ${(count - snapShotWordCount, (current - snapShotTime) / 1000)} (words, second)")
-    snapShotWordCount = count
-    snapShotTime = current
   }
 
 }

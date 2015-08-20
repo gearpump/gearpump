@@ -29,7 +29,7 @@ object Build extends sbt.Build {
   val upickleVersion = "0.3.4"
   val junitVersion = "4.12"
   val kafkaVersion = "0.8.2.1"
-  val stormVersion = "0.9.3"
+  val stormVersion = "0.9.5"
   val slf4jVersion = "1.7.7"
   val gsCollectionsVersion = "6.2.0"
   
