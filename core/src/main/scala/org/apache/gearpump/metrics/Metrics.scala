@@ -53,7 +53,7 @@ class Metrics(sampleRate: Int) extends Extension {
 
   def register(set: MetricSet): Unit = {
     val names = registry.getNames
-    val metrics = set.getMetrics.asScala.filterKeys {key => !names.contains(names)}
+    val metrics = set.getMetrics.asScala.filterKeys {key => !names.contains(key)}
     metrics.foreach{kv =>
       registry.register(kv._1, kv._2)
     }
