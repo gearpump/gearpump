@@ -6,15 +6,21 @@ import xerial.sbt.Pack._
 object Pack extends sbt.Build {
   val daemonClassPath = Seq(
     "${PROG_HOME}/conf",
-    "${PROG_HOME}/lib/daemon/*"
+    "${PROG_HOME}/lib/daemon/*",
+    "${PROG_HOME}/lib/yarn/*"
   )
 
-  val serviceClassPath = daemonClassPath ++ Seq(
+  val serviceClassPath = Seq(
+    "${PROG_HOME}/conf",
+    "${PROG_HOME}/lib/daemon/*",
     "${PROG_HOME}/lib/services/*",
     "${PROG_HOME}/dashboard"
   )
 
-  val yarnClassPath = serviceClassPath ++ Seq(
+  val yarnClassPath = Seq(
+    "${PROG_HOME}/conf",
+    "${PROG_HOME}/lib/daemon/*",
+    "${PROG_HOME}/lib/services/*",
     "${PROG_HOME}/lib/yarn/*",
     "/etc/hadoop/conf",
     "/etc/hbase/conf"
@@ -67,6 +73,7 @@ object Pack extends sbt.Build {
             "services" -> serviceClassPath,
             "yarnclient" -> yarnClassPath,
             "storm" -> stormClassPath
+
           ),
 
           packArchivePrefix := name.value + "-" + scalaVersion.value

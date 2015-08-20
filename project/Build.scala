@@ -126,18 +126,6 @@ object Build extends sbt.Build {
     publishArtifact := false
   )
 
-  val hadoopDependency = Seq(
-    ("org.apache.hadoop" % "hadoop-common" % clouderaVersion).
-      exclude("org.mortbay.jetty", "jetty-util")
-      exclude("org.mortbay.jetty", "jetty")
-      exclude("org.fusesource.leveldbjni", "leveldbjni-all")
-      exclude("tomcat", "jasper-runtime")
-      exclude("commons-beanutils", "commons-beanutils-core")
-      exclude("commons-beanutils", "commons-beanutils")
-      exclude("asm", "asm")
-      exclude("org.ow2.asm", "asm")
-  )
-
   val daemonDependencies = Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-contrib" % akkaVersion
@@ -147,8 +135,9 @@ object Build extends sbt.Build {
       "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
       "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
       "commons-logging" % "commons-logging" % commonsLoggingVersion,
-      "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion
-    ) ++ hadoopDependency
+      "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
+      "org.apache.hadoop" % "hadoop-common" % clouderaVersion  % "provided"
+    )
   )
 
   val streamingDependencies = Seq(
@@ -185,7 +174,8 @@ object Build extends sbt.Build {
 
   val myAssemblySettings = assemblySettings ++ Seq(
     test in assembly := {},
-    assemblyOption in assembly ~= { _.copy(includeScala = false) }
+    assemblyOption in assembly ~= { _.copy(includeScala = false) },
+    jarName in assembly := { s"${name.value.split("-").last}-${scalaVersion.value}-${version.value}-assembly.jar" }
   )
 
   lazy val root = Project(
@@ -239,7 +229,7 @@ object Build extends sbt.Build {
   lazy val services: Project = services_full.jvm.
     settings(serviceJvmSettings: _*).
     settings(compile in Compile <<= (compile in Compile) dependsOn (fastOptJS in (serviceJS, Compile))).
-    dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile")
+    dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile;provided")
 
   lazy val serviceJvmSettings = commonSettings ++ noPublish ++ Seq(
     libraryDependencies ++= Seq(
@@ -336,12 +326,13 @@ object Build extends sbt.Build {
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-common" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
-        ) ++ hadoopDependency
+        )
       )
   ) dependsOn(services % "test->test;compile->compile", core % "provided")
 
@@ -414,7 +405,9 @@ object Build extends sbt.Build {
     base = file("external/hadoopfs"),
     settings = commonSettings ++
         Seq(
-          libraryDependencies ++= hadoopDependency
+          libraryDependencies ++= Seq(
+            "org.apache.hadoop" % "hadoop-common" % clouderaVersion  % "provided"
+          )
         )
   ) dependsOn(streaming % "test->test; provided")
 }

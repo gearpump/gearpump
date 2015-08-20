@@ -48,7 +48,7 @@ object BuildExample extends sbt.Build {
   lazy val transport = Project(
     id = "gearpump-examples-transport",
     base = file("examples/streaming/transport"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ 
         Seq(
           libraryDependencies ++= Seq(
             "io.spray" %%  "spray-can"       % sprayVersion,
@@ -75,7 +75,7 @@ object BuildExample extends sbt.Build {
   lazy val distributeservice = Project(
     id = "gearpump-examples-distributeservice",
     base = file("examples/distributeservice"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ 
         Seq(
           libraryDependencies ++= Seq(
             "commons-lang" % "commons-lang" % commonsLangVersion,
@@ -89,9 +89,19 @@ object BuildExample extends sbt.Build {
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
     base = file("examples/streaming/fsio"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++
         Seq(
-          libraryDependencies ++= hadoopDependency,
+          libraryDependencies ++= Seq(
+            "org.apache.hadoop" % "hadoop-common" % clouderaVersion
+              exclude("org.mortbay.jetty", "jetty-util")
+              exclude("org.mortbay.jetty", "jetty")
+              exclude("org.fusesource.leveldbjni", "leveldbjni-all")
+              exclude("tomcat", "jasper-runtime")
+              exclude("commons-beanutils", "commons-beanutils-core")
+              exclude("commons-beanutils", "commons-beanutils")
+              exclude("asm", "asm")
+              exclude("org.ow2.asm", "asm")
+          ),
           mainClass in (Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -111,7 +121,7 @@ object BuildExample extends sbt.Build {
   lazy val stockcrawler = Project(
     id = "gearpump-examples-stockcrawler",
     base = file("examples/streaming/stockcrawler"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ 
         Seq(
           libraryDependencies ++= Seq(
             "io.spray" %%  "spray-can"       % sprayVersion,
@@ -133,6 +143,15 @@ object BuildExample extends sbt.Build {
     base = file("examples/streaming/state"),
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       libraryDependencies ++= Seq(
+        "org.apache.hadoop" % "hadoop-common" % clouderaVersion
+          exclude("org.mortbay.jetty", "jetty-util")
+          exclude("org.mortbay.jetty", "jetty")
+          exclude("org.fusesource.leveldbjni", "leveldbjni-all")
+          exclude("tomcat", "jasper-runtime")
+          exclude("commons-beanutils", "commons-beanutils-core")
+          exclude("commons-beanutils", "commons-beanutils")
+          exclude("asm", "asm")
+          exclude("org.ow2.asm", "asm"),
         "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion
       ),
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
