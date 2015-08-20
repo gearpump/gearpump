@@ -29,6 +29,8 @@ import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
+import scala.collection.JavaConverters._
+
 class Metrics(sampleRate: Int) extends Extension {
 
   val registry = new MetricRegistry()
@@ -50,7 +52,11 @@ class Metrics(sampleRate: Int) extends Extension {
   }
 
   def register(set: MetricSet): Unit = {
-    registry.registerAll(set)
+    val names = registry.getNames
+    val metrics = set.getMetrics.asScala.filterKeys {key => !names.contains(names)}
+    metrics.foreach{kv =>
+      registry.register(kv._1, kv._2)
+    }
   }
 }
 
