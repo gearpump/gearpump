@@ -63,7 +63,8 @@ object Build extends sbt.Build {
           "bintray/non" at "http://dl.bintray.com/non/maven",
           "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
           "clockfly" at "http://dl.bintray.com/clockfly/maven",
-          "vincent" at "http://dl.bintray.com/fvunicorn/maven"
+          "vincent" at "http://dl.bintray.com/fvunicorn/maven",
+          "clojars" at "http://clojars.org/repo"
         ),
         addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
     ) ++
@@ -307,8 +308,6 @@ object Build extends sbt.Build {
             exclude("clj-time", "clj-time")
             exclude("clout", "clout")
             exclude("compojure", "compojure")
-            exclude("com.googlecode.disruptor", "disruptor")
-            exclude("com.twitter", "carbonite")
             exclude("hiccup", "hiccup")
             exclude("javax.servlet", "servlet-api")
             exclude("jline", "jline")
