@@ -22,8 +22,11 @@ import backtype.storm.generated.StormTopology
 import backtype.storm.testing.{TestGlobalCount, TestWordCounter, TestWordSpout}
 import backtype.storm.topology.TopologyBuilder
 import backtype.storm.tuple.Fields
+import backtype.storm.utils.Utils
 
 object TopologyUtil {
+  val DEFAULT_STREAM_ID = Utils.DEFAULT_STREAM_ID
+  val DEFAULT_COMPONENT_ID = "component"
 
   def getTestTopology: StormTopology = {
     val topologyBuilder = new TopologyBuilder

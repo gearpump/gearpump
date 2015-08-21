@@ -19,15 +19,13 @@
 package io.gearpump.experiments.storm
 
 import akka.actor.ActorSystem
-import backtype.storm.generated.{Bolt, SpoutSpec, ComponentCommon}
+import backtype.storm.generated.{Bolt, ComponentCommon, SpoutSpec}
 import backtype.storm.utils.Utils
-import io.gearpump.experiments.storm.util.{GraphBuilder, TopologyUtil}
-import io.gearpump.streaming.{ProcessorDescription, Processor, DAG}
 import io.gearpump.cluster.TestUtil
-import io.gearpump.experiments.storm.util.TopologyUtil
-import GraphBuilder._
-import io.gearpump.partitioner.{PartitionerObject, PartitionerDescription}
-import io.gearpump.streaming.ProcessorId
+import io.gearpump.experiments.storm.util.GraphBuilder._
+import io.gearpump.experiments.storm.util.{StormUtil, GraphBuilder, TopologyUtil}
+import io.gearpump.partitioner.{PartitionerDescription, PartitionerObject}
+import io.gearpump.streaming.{DAG, Processor, ProcessorDescription}
 import org.scalatest.{Matchers, WordSpec}
 
 class GraphBuilderSpec extends WordSpec with Matchers {
@@ -39,8 +37,7 @@ class GraphBuilderSpec extends WordSpec with Matchers {
 
     "build Graph from Storm topology" in {
       implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
-      val graphBuilder = new GraphBuilder()
-      val processorGraph = graphBuilder.build(topology)
+      val (processorGraph, _) = GraphBuilder.build(topology)
       processorGraph.vertices.size shouldBe 4
       processorGraph.edges.length shouldBe 3
 
@@ -78,8 +75,7 @@ class GraphBuilderSpec extends WordSpec with Matchers {
     }
 
     "get target components for a source of topology" in {
-      val graphBuilder = new GraphBuilder
-      val targets = graphBuilder.getTargets("2", topology)
+      val targets = StormUtil.getTargets("2", topology)
       targets.contains(Utils.DEFAULT_STREAM_ID)  shouldBe true
       targets.get(Utils.DEFAULT_STREAM_ID).get.contains("3") shouldBe true
       targets.get(Utils.DEFAULT_STREAM_ID).get("3").is_set_fields shouldBe true

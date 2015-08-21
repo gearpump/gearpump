@@ -41,8 +41,8 @@ class StormProducerSpec extends PropSpec with PropertyChecks with Matchers {
   property("StormProducer should work") {
     implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
     val topology = TopologyUtil.getTestTopology
-    val graphBuilder = new GraphBuilder
-    val processorGraph = graphBuilder.build(topology)
+    val graphBuilder = GraphBuilder
+    val (processorGraph, taskToComponent) = graphBuilder.build(topology)
 
 
     var processorIdIndex = 0
@@ -61,6 +61,7 @@ class StormProducerSpec extends PropSpec with PropertyChecks with Matchers {
     val stormConfig = Utils.readStormConfig()
     val userConfig = UserConfig.empty
       .withValue(TOPOLOGY, topology)
+      .withValue(TASK_TO_COMPONENT, taskToComponent)
       .withString(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
 
     val mockTaskActor = TestProbe()

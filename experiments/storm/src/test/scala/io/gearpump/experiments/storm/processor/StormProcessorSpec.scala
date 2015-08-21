@@ -44,8 +44,7 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
   property("StormProcessor should work") {
     implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
     val topology = TopologyUtil.getTestTopology
-    val graphBuilder = new GraphBuilder()
-    val processorGraph = graphBuilder.build(topology)
+    val (processorGraph, taskToComponent) = GraphBuilder.build(topology)
     val componentToStreamFields = getComponentToStreamFields(topology)
 
     var processorIdIndex = 0
@@ -62,6 +61,7 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
     val stormConfig = Utils.readStormConfig()
     val userConfig = UserConfig.empty
       .withValue(TOPOLOGY, topology)
+      .withValue(TASK_TO_COMPONENT, taskToComponent)
       .withString(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
     val fieldGen = Gen.alphaStr
 
@@ -72,6 +72,7 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
         val cid = conf.getString(COMPONENT_ID).getOrElse(
           fail(s"component id not found for processor $pid")
         )
+        val targets = StormUtil.getTargets(cid, topology)
         if (bolts.containsKey(cid)) {
           val bolt = conf.getValue[Bolt](COMPONENT_SPEC).getOrElse(
             fail(s"bolt not found for processor $pid")
@@ -85,9 +86,13 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
             stormProcessor.onStart(StartTime(0))
             val fields = componentToStreamFields.get(scid).get(streamId.get_streamId())
             val values = List.fill(fields.size)(field)
-            val stormTuple = StormTuple(values, spid, scid, streamId.get_streamId())
+            val stormTuple = StormTuple(values, scid, streamId.get_streamId(), 0, Map.empty[String, Int])
             stormProcessor.onNext(Message(stormTuple, System.currentTimeMillis()))
-            verify(taskContext).output(anyObject())
+            if (targets.containsKey(streamId)) {
+              verify(taskContext).output(anyObject())
+            } else {
+              verify(taskContext, times(0)).output(anyObject())
+            }
           }
         }
       }

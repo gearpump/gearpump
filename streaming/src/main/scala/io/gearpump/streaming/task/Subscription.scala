@@ -100,7 +100,7 @@ class Subscription(
   def sendMessage(msg: Message, partition: Int): Int = {
 
     // only send message whose timestamp matches the lifeTime
-    if (life.contains(msg.timestamp)) {
+    if (partition >= 0 && life.contains(msg.timestamp)) {
 
       val targetTask = TaskId(processorId, partition)
       transport.transport(msg, targetTask)

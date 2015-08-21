@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,20 +16,17 @@
  * limitations under the License.
  */
 
-package io.gearpump.experiments.storm.util
+package io.gearpump.experiments.storm.partitioner
 
-import akka.actor.ActorSystem
-import backtype.storm.generated.StormTopology
-import io.gearpump.cluster.{TestUtil, UserConfig}
-import org.scalatest.{Matchers, PropSpec}
+import io.gearpump.Message
+import io.gearpump.experiments.storm.util.StormTuple
+import io.gearpump.partitioner.{Partitioner, UnicastPartitioner}
 
-class StormUtilSpec extends PropSpec with Matchers {
+class StormPartitioner(target: String) extends UnicastPartitioner {
 
-  implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
-
-  property("get storm topology through user config") {
-    val topology = TopologyUtil.getTestTopology
-    val config = UserConfig.empty.withValue[StormTopology](StormUtil.TOPOLOGY, topology)
-    StormUtil.getTopology(config) shouldBe topology
+  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
+    val stormTuple = msg.msg.asInstanceOf[StormTuple]
+    val targetPartitions = stormTuple.targetPartitions
+    targetPartitions.getOrElse(target, Partitioner.UNKNOWN_PARTITION_ID)
   }
 }
