@@ -68,7 +68,8 @@ class AppMasterLauncher(
 
       val appMasterInfo = AppMasterRuntimeInfo(appId, app.name, worker, username,
         submissionTime, config = appMasterAkkaConfig)
-      val appMasterContext = AppMasterContext(appId, username, resource, jar, null, appMasterInfo)
+      val workerInfo = WorkerInfo(workerId, worker)
+      val appMasterContext = AppMasterContext(appId, username, resource, workerInfo, jar, null, appMasterInfo)
       LOG.info(s"Try to launch a executor for AppMaster on worker ${workerId} for app $appId")
       val name = ActorUtil.actorNameForExecutor(appId, executorId)
       val selfPath = ActorUtil.getFullPath(context.system, self.path)
