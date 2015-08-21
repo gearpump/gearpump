@@ -25,8 +25,4 @@ trait AppDataStore {
   def get(key: String) : Future[Any]
 }
 
-object AppDataStore {
-
-}
-
 
