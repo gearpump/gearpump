@@ -1,3 +1,13 @@
+Gearpump 0.5.0
+==========================
+Hihglights:
+----------------
+1. Rename package name to io.gearpump
+
+Change log:
+----------------------
+- #1341, Cannot submit application in UI if one master is killed and another master started
+
 Gearpump 0.4.4
 ==========================
 Highlights:
