@@ -41,7 +41,7 @@ import ExecutorManager.{ExecutorInfo, GetExecutorInfo}
 import io.gearpump.util._
 import HistoryMetricsService.HistoryMetricsConfig
 import TaskManager.{GetTaskList, TaskList}
-import io.gearpump.streaming.executor.Executor.{ExecutorSummary, QueryExecutorConfig, GetExecutorSummary}
+import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, QueryExecutorConfig, GetExecutorSummary}
 import io.gearpump.util.Constants._
 import org.slf4j.Logger
 
@@ -226,9 +226,13 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       }
     case query@ QueryExecutorConfig(executorId) =>
       val client = sender
-      ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
-        map.get(executorId).foreach{ executor =>
-          executor.executor.tell(query, client)
+      if (executorId == -1) {
+         self ! ExecutorConfig(context.system.settings.config)
+      } else {
+        ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
+          map.get(executorId).foreach { executor =>
+            executor.executor.tell(query, client)
+          }
         }
       }
    }
