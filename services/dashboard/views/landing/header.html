@@ -1,0 +1,33 @@
+<nav class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar-header">
+    <a class="navbar-brand" href="#/">GearPump
+      <span class="label label-primary"
+            style="font-size: .6em"
+            ng-bind="version"></span></a>
+  </div>
+  <!--<div class="navbar-header">-->
+  <!--<a class="navbar-brand" href="">-->
+  <!--<span-->
+  <!--class="glyphicon glyphicon-th-large glyphicon-menu-hamburger"-->
+  <!--snap-toggle="left"></span>-->
+  <!--</a>-->
+  <!--</div>-->
+  <div class="collapse navbar-collapse">
+    <ul class="nav navbar-nav" bs-navbar>
+      <li data-match-route="/cluster"><a href="#/cluster">
+        <span class="glyphicon glyphicon-th-large"></span>
+        Cluster</a>
+      </li>
+      <li data-match-route="/apps"><a href="#/apps">
+        <span class="glyphicon glyphicon-tasks"></span>
+        Applications</a></li>
+    </ul>
+    <ul class="nav navbar-nav pull-right">
+      <li>
+        <a href="//github.com/gearpump/gearpump" target="_blank">
+          <i class="fa fa-github"></i>&nbsp;GitHub
+        </a>
+      </li>
+    </ul>
+  </div>
+</nav>

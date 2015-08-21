@@ -1,0 +1,22 @@
+<div class="col-md-6">
+  <h4 ng-if="executor.id === -1">AppMaster</h4>
+  <h4 ng-if="executor.id !== -1">
+    Executor # <span ng-bind="executor.id"></span>
+  </h4>
+  <h5>
+    <span ng-bind="executor.jvmName"></span>
+    <remark tooltip="PID: {{executor.pid}} Hostname: {{executor.hostname}}"></remark>
+  </h5>
+
+  <property-table
+    caption="Overview"
+    props-bind="overviewTable"
+    prop-name-class="col-sm-4 bold"
+    prop-value-class="col-sm-8 actor-path">
+  </property-table>
+</div>
+
+<div class="col-md-6">
+  <div ng-include src="'views/jvm/metrics_charts.html'"
+       ng-controller="JvmMetricsChartsCtrl"></div>
+</div>

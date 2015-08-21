@@ -240,11 +240,12 @@ object Build extends sbt.Build {
     "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
       exclude("com.typesafe.akka", "akka-actor_2.11"),
     "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
-    "org.webjars" % "angularjs" % "1.4.3", // We stick on 1.3.x until angular-ui-select works
+    "org.webjars" % "angularjs" % "1.4.3", "org.webjars" % "angular-ui-router" % "0.2.15",
     "org.webjars" % "bootstrap" % "3.3.5",
     "com.lihaoyi" %% "upickle" % upickleVersion,
     "org.webjars" % "d3js" % "3.5.5",
     "org.webjars" % "momentjs" % "2.10.3",
+    "org.webjars" % "underscorejs" % "1.8.3",
     "org.webjars.bower" % "angular-loading-bar" % "0.8.0",
     "org.webjars.bower" % "angular-smart-table" % "2.1.1",
     "org.webjars.bower" % "angular-motion" % "0.4.2",
@@ -254,7 +255,9 @@ object Build extends sbt.Build {
     "org.webjars" % "select2" % "3.5.2",
     "org.webjars" % "select2-bootstrap-css" % "1.4.6",
     "org.webjars.bower" % "ng-file-upload" % "5.0.9",
-    "org.webjars.bower" % "vis" % "4.7.0"
+    "org.webjars.bower" % "vis" % "4.7.0",
+    "org.webjars" % "font-awesome" % "4.4.0",
+    "org.webjars.npm" % "dashing" % "0.1.2"
   ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
 
   lazy val serviceJSSettings = Seq(

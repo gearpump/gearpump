@@ -3,34 +3,46 @@
  * See accompanying LICENSE file.
  */
 
-* {
-  font-family: lato, 'helvetica neue', 'segoe ui', arial, helvetica, sans-serif;
+/* .navbar-static-top will occupy50px (regarding current font size) */
+body {
+  padding-top: 50px; /*equals navbar height*/
 }
 
+/* Make navbar font more readable */
+.navbar-nav > li {
+  font-weight: 500;
+  font-size: 1.35rem;
+}
+
+/* More distance to the branding logo at left */
 .navbar-nav > li:first-child {
   margin-left: 30px;
 }
 
-#main {
-  margin-bottom: 60px;
+/* A extra small breadcrumb (2 rules) */
+.breadcrumb-sm {
+  margin-bottom: 8px;
 }
 
-.navbar-fixed-bottom > * {
-  background-color: #eee;
+.breadcrumb-sm > li {
+  font-size: 0.9em;
+  font-weight: 500;
+  padding-right: 6px;
 }
 
-.glyphicon {
-  top: 2px;
+/* Alternative breadcrumb style: no rounded corners and shadow on the bottom */
+.breadcrumb-alt {
+  border-radius: 0;
+  box-shadow: 1px 1px 2px #ddd;
 }
 
-.tooltip-inner {
-  max-width: unset;
-  font-size: 12px;
-  padding: 4.5px 10px 5px;
+/* Remove 1px border from stripped table (2 rules) */
+.table-striped tbody > tr:first-child td {
+  border-top: 0 none transparent;
 }
 
-*[bs-tooltip] {
-  cursor: pointer;
+.table-striped thead > tr > th {
+  border-bottom: 0 none transparent;
 }
 
 /* Table header column should not be wrapped */
@@ -38,15 +50,82 @@
   white-space: nowrap;
 }
 
-/* Smaller font for table meta */
-.table thead > tr > th,
+/* Increase the distance of table footer and table body */
 .table tfoot > tr > td {
-  font-size: .9em;
+  padding: 14px 0 0;
+  border-top: 0 solid transparent;
 }
 
-/* Larger table caption */
-.table caption {
-  font-size: 1.15em;
+/* Smaller font for table meta */
+.table thead > tr > th {
+  font-size: .9em;
+  vertical-align: top;
+}
+
+/* Larger table caption (2 rules) */
+.table caption,
+.table-caption-ext {
+  color: #000;
+  font-size: 1.2em;
+  font-weight: 500;
+  padding-bottom: 8px;
+}
+
+.table-caption-ext {
+  display: block;
+}
+
+/* glyphicon in a SPAN might be a bit too high than other SPAN text elements */
+.glyphicon {
+  top: 2px;
+}
+
+/* Tune bootstrap-tooltip look and feel (2 rules) */
+.tooltip-inner {
+  max-width: none;
+  padding: 5px 10px 5px;
+}
+
+*[bs-tooltip] {
+  cursor: pointer;
+}
+
+/* Active nav-tabs element's background color should not be hardcoded as white. */
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:focus,
+.nav-tabs > li.active > a:hover {
+  background-color: transparent;
+}
+
+/* Smaller font size and spacing for dropdown menu (2 rules) */
+.dropdown-menu-sm {
+  font-size: 0.95em;
+}
+
+.dropdown-menu-sm > li > a {
+  padding-left: 10px;
+  cursor: pointer;
+}
+
+/* Draw a shadow around panel */
+.panel-shadowed {
+  background: #fff;
+  box-shadow: 1px 2px 3px #ddd;
+  border-radius: 4px;
+  padding: 12px;
+}
+
+/* Fix visual glitches of indicator icon in an input/search box */
+.form-control-feedback {
+  top: 1px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Reduce panel height for a smaller panel */
+.panel-sm .panel-heading, .panel-sm .panel-footer {
+  padding: 4px 8px 4px 8px;
+  font-size: 0.95em;
 }
 
 /* Make horizontal form group more compact (2 rules) */
@@ -58,14 +137,4 @@
 .form-group-compact-h,
 .form-group-compact-h > * {
   padding: 2px 0 2px 0;
-}
-
-/* Smaller font size and spacing for dropdown menu (2 rules) */
-.dropdown-menu-sm {
-  font-size: 0.95em;
-}
-
-.dropdown-menu-sm > li > a {
-  padding-left: 10px;
-  cursor: pointer;
 }

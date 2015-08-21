@@ -1,63 +1,26 @@
-<div class="row">
-  <div class="col-md-6">
-    <h4 class="pull-left">Applications</h4>
+<div class="col-md-12">
+  <!-- control toolbar -->
+  <div class="row">
+    <div class="col-md-6">
+      <span class="table-caption-ext pull-left">Applications</span>
+      <span class="btn btn-primary btn-xs pull-left"
+            style="margin-left: 6px; color: white"
+            ng-click="openSubmitDialog()">Submit +</span>
+    </div>
+    <div class="col-md-3">
+    </div>
+    <div class="col-md-3 hidden-sm hidden-xs pull-right">
+      <searchbox ng-model="search" placeholder="Search Anything"></searchbox>
+    </div>
   </div>
-  <div class="col-md-6">
-    <button type="button" class="btn btn-primary btn-sm pull-right" ng-click="openSubmitDialog()">
-      Submit Application...</button>
-  </div>
+  <!-- end of control toolbar -->
 </div>
 
-<div ng-if="apps.length===0" class="bs-callout bs-callout-default">
-  <p>No running or completed applications found</p>
+<div class="col-md-12">
+  <sortable-table
+    columns-bind="appsTable.cols"
+    records-bind="appsTable.rows"
+    search-bind="search"
+    pagination="10">
+  </sortable-table>
 </div>
-
-<table ng-if="apps.length>0" st-table="ng" st-safe-src="apps"
-       class="table table-striped table-hover">
-  <caption></caption>
-  <thead>
-  <tr>
-    <th st-sort="id" st-sort-default="reverse">ID</th>
-    <th st-sort="status">Status</th>
-    <th st-sort="name">Name</th>
-    <th st-sort="submissionTime">Submission Time</th>
-    <th st-sort="startTime">Start Time</th>
-    <th st-sort="finishTime">Finish Time</th>
-    <th st-sort="user">User</th>
-    <th st-sort="appMasterPath">Path</th>
-    <th></th>
-  </tr>
-  </thead>
-  <tbody>
-  <tr ng-repeat="app in ng">
-    <td><span ng-bind="app.id"></span></td>
-    <td><span ng-bind="app.status" class="label"
-              ng-class="{'label-success': app.active, 'label-default': !app.active}"></span></td>
-    <td><span ng-bind="app.name"></span></td>
-    <td><span ng-bind="app.submissionTime"></span></td>
-    <td><span ng-bind="app.startTime"></span></td>
-    <td><span ng-bind="app.finishTime"></span></td>
-    <td><span ng-bind="app.user"></span></td>
-    <td><span ng-bind="app.appMasterPath"></span></td>
-    <td class="text-right text-nowrap">
-      <button ng-click="view(app.id)" ng-if="app.active" ng-disabled="operationDenied[app.id]"
-              type="button" class="btn btn-primary btn-xs media-middle vert-align">View Details
-      </button>
-      <button ng-click="restart(app.id)" ng-if="app.active" ng-disabled="operationDenied[app.id]"
-              type="button" class="btn btn-default btn-xs media-middle vert-align">Restart
-      </button>
-      <button ng-click="kill(app.id)" ng-if="app.active" ng-disabled="operationDenied[app.id]"
-              type="button" class="btn btn-default btn-xs media-middle vert-align">Kill
-      </button>
-    </td>
-  </tr>
-  </tbody>
-  <!--
-  <tfoot>
-  <tr>
-    <td colspan="4" class="text-center">
-      <div st-pagination="" st-items-by-page="10" st-displayed-pages="10"></div>
-    </td>
-  </tr>
-  </tfoot>-->
-</table>

@@ -1,0 +1,51 @@
+<div class="row">
+
+  <div class="col-sm-6">
+    <div class="dashing-chart-container">
+      <metrics-sparkline-chart-td
+        caption="Message Send Throughput"
+        help="Messages sent to external data sink"
+        current="{{currentMessageSendRate|number:0}}" unit="msg/s"
+        sub-text="Total Sent: {{totalSentMessages|number}}"
+        options-bind="::sendThroughputChartOptions"
+        datasource-bind="sendThroughputData">
+      </metrics-sparkline-chart-td>
+    </div>
+  </div>
+
+  <div class="col-sm-6">
+    <div class="dashing-chart-container">
+      <metrics-sparkline-chart-td
+        caption="Message Receive Throughput"
+        help="Messages received from external data source"
+        current="{{currentMessageReceiveRate|number:0}}" unit="msg/s"
+        sub-text="Total Received: {{totalReceivedMessages|number}}"
+        options-bind="::receiveThroughputChartOptions"
+        datasource-bind="receiveThroughputData">
+      </metrics-sparkline-chart-td>
+    </div>
+  </div>
+
+  <div class="col-sm-6">
+    <div class="dashing-chart-container">
+      <metrics-sparkline-chart-td
+        caption="Average Message Processing Time"
+        current="{{averageProcessingTime|number:3}}" unit="ms"
+        options-bind="::averageProcessingTimeChartOptions"
+        datasource-bind="averageProcessingTimeData">
+      </metrics-sparkline-chart-td>
+    </div>
+  </div>
+
+  <div class="col-sm-6">
+    <div class="dashing-chart-container">
+      <metrics-sparkline-chart-td
+        caption="Average Message Receive Latency"
+        current="{{averageMessageReceiveLatency|number:3}}" unit="ms"
+        options-bind="::averageMessageReceiveLatencyChartOptions"
+        datasource-bind="averageMessageReceiveLatencyData">
+      </metrics-sparkline-chart-td>
+    </div>
+  </div>
+
+</div>

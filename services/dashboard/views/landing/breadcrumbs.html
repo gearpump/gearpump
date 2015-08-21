@@ -1,0 +1,6 @@
+<ol class="breadcrumb breadcrumb-alt">
+  <li ng-repeat="breadcrumb in breadcrumbs track by $index">
+    <a ng-if="!$last" ng-href="#{{breadcrumb.path}}" ng-bind="breadcrumb.text"></a>
+    <span ng-if="$last" class="active" ng-bind="breadcrumb.text"></span>
+  </li>
+</ol>

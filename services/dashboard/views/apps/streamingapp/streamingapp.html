@@ -1,0 +1,53 @@
+<div class="col-md-12">
+  <div class="row">
+    <div class="col-md-6 col-sm-3 col-xs-6">
+      <h4>
+        <!-- todo: backend api should enforce user application has a readable name! -->
+        <span ng-bind="app.appName"></span>
+        <indicator condition="{{app.isRunning?'good':''}}" tooltip="{{app.status}}"></indicator>
+      </h4>
+      <h5 ng-bind="app.description"></h5>
+    </div>
+    <div class="col-md-2 col-sm-3 col-xs-6">
+      <metrics
+        caption="Application Clock"
+        value="{{app.clock|date:'HH:mm:ss'}}"
+        sub-text="{{app.clock|date:'yyyy/MM/dd'}}"></metrics>
+    </div>
+    <div class="col-md-2 col-sm-3 hidden-xs">
+      <metrics
+        caption="Up Time"
+        help="Running for {{app.aliveFor|duration}}"
+        value="{{(app.aliveFor / 1000 / 3600).toFixed(0)}}" unit="hr"></metrics>
+    </div>
+    <div class="col-md-2 col-sm-3 hidden-xs">
+      <metrics value="{{dag.getNumOfProcessors()}}" unit="processor"></metrics>
+      <metrics value="{{app.executors.length}}" unit="executor"></metrics>
+    </div>
+  </div>
+</div>
+
+<!-- the in-app navigation tabs -->
+<div class="col-md-12">
+  <ul class="nav nav-tabs nav-tabs-underlined" bs-navbar>
+    <li data-match-route="/apps/streamingapp/\d+(/overview)?$">
+      <a href="#/apps/streamingapp/{{app.appId}}">Overview</a>
+    </li>
+    <li data-match-route="/apps/streamingapp/\d+/metrics$">
+      <a href="#/apps/streamingapp/{{app.appId}}/metrics">Metrics</a>
+    </li>
+    <li data-match-route="/apps/streamingapp/\d+/dag$">
+      <a href="#/apps/streamingapp/{{app.appId}}/dag">DAG</a>
+    </li>
+    <!-- following tabs are hidden by default -->
+    <li ng-if="$state.current.name === 'streamingapp.processor'" class="active">
+      <a href="#">Processor</a>
+    </li>
+    <li ng-if="$state.current.name === 'streamingapp.executor'" class="active">
+      <a href="#">Executor</a>
+    </li>
+  </ul>
+</div>
+<!-- end of tabs -->
+
+<div ui-view></div>
