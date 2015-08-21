@@ -227,7 +227,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case query@ QueryExecutorConfig(executorId) =>
       val client = sender
       if (executorId == -1) {
-         self ! ExecutorConfig(context.system.settings.config)
+         sender ! ExecutorConfig(context.system.settings.config)
       } else {
         ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
           map.get(executorId).foreach { executor =>
