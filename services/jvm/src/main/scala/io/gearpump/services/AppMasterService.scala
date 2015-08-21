@@ -119,8 +119,9 @@ trait AppMasterService extends HttpService {
             failWith(ex)
         }
       } ~
-      pathPrefix("executor" / IntNumber) { executorId =>
+      pathPrefix("executor" / Segment) { executorIdString =>
         path("config") {
+          val executorId = Integer.parseInt(executorIdString)
           onComplete(askAppMaster[ExecutorConfig](master, appId, QueryExecutorConfig(executorId))) {
             case Success(value) =>
               val config = Option(value.config).map(_.root.render()).getOrElse("{}")
