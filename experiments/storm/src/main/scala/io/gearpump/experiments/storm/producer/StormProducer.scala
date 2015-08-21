@@ -18,40 +18,25 @@
 
 package io.gearpump.experiments.storm.producer
 
-import backtype.storm.generated.SpoutSpec
-import backtype.storm.spout.{ISpout, ShellSpout, SpoutOutputCollector}
-import backtype.storm.utils.Utils
-import io.gearpump.experiments.storm.util.{TopologyContextBuilder, StormOutputCollector, GraphBuilder, StormUtil}
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
+import io.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpSpout
+import io.gearpump.experiments.storm.util._
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
+private[storm] class StormProducer(taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
   import StormUtil._
 
-  private val topology = getTopology(conf)
-  private val pid = taskContext.taskId.processorId
-
-  private val spoutId = conf.getString(GraphBuilder.COMPONENT_ID)
-      .getOrElse(throw new RuntimeException(s"Storm spout id not found for processor $pid"))
-  private val spoutSpec = conf.getValue[SpoutSpec](GraphBuilder.COMPONENT_SPEC)
-      .getOrElse(throw new RuntimeException(s"Storm spout spec not found for processor $pid"))
-  private val spout = Utils.getSetComponentObject(spoutSpec.get_spout_object()).asInstanceOf[ISpout]
-  private val stormConfig = getStormConfig(conf, spoutSpec.get_common())
-  private val topologyContextBuilder = TopologyContextBuilder(topology, stormConfig, multiLang = spout.isInstanceOf[ShellSpout])
-  private val collector = new StormOutputCollector(taskContext, pid, spoutId)
+  private val gearpumpSpout = getGearpumpStormComponent(taskContext, conf).asInstanceOf[GearpumpSpout]
 
   override def onStart(startTime: StartTime): Unit = {
-    val topologyContext = topologyContextBuilder.buildContext(pid, spoutId)
-    val delegate = new StormSpoutOutputCollector(collector)
-    spout.open(stormConfig, topologyContext, new SpoutOutputCollector(delegate))
+    gearpumpSpout.start(startTime)
     self ! Message("start")
   }
 
   override def onNext(msg: Message): Unit = {
-    collector.setTimestamp(System.currentTimeMillis())
-    spout.nextTuple()
+    gearpumpSpout.next(msg)
     self ! Message("Continue")
   }
 }

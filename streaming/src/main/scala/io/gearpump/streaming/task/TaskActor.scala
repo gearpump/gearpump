@@ -22,17 +22,13 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import io.gearpump.streaming.task.TaskActor._
-import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
-import io.gearpump.streaming.AppMasterToExecutor.TaskRejected
-import io.gearpump.streaming.Constants
-import io.gearpump.streaming.task.TaskActor.{SendAck, SecurityChecker}
 import io.gearpump.cluster.UserConfig
+import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import io.gearpump.metrics.Metrics
 import io.gearpump.serializer.SerializerPool
-import io.gearpump.streaming.AppMasterToExecutor._
+import io.gearpump.streaming.AppMasterToExecutor.{TaskRejected, _}
 import io.gearpump.streaming.ExecutorToAppMaster._
-import io.gearpump.streaming.ProcessorId
+import io.gearpump.streaming.{Constants, ProcessorId}
 import io.gearpump.streaming.executor.Executor.TaskLocationReady
 import io.gearpump.util.{LogUtil, TimeOutScheduler}
 import io.gearpump.{Message, TimeStamp}

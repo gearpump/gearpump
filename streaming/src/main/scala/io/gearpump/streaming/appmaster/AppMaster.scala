@@ -21,32 +21,30 @@ package io.gearpump.streaming.appmaster
 import java.lang.management.ManagementFactory
 
 import akka.actor._
-import io.gearpump.streaming.executor.Executor
-import io.gearpump.streaming.storage.InMemoryAppStoreOnMaster
-import io.gearpump.streaming._
-import io.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
-import io.gearpump.streaming.task._
-import io.gearpump.streaming.util.ActorPathUtil
 import io.gearpump._
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
 import io.gearpump.cluster.MasterToClient.LastFailure
 import io.gearpump.cluster._
-import io.gearpump.metrics.{Metrics, MetricsReporterService, JvmMetricsSet}
-import io.gearpump.metrics.Metrics.{ReportMetrics, MetricType}
+import io.gearpump.metrics.Metrics.ReportMetrics
+import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.partitioner.PartitionerDescription
-import AppMaster.{ExecutorBrief, AllocateResourceTimeOut, LookupTaskActorRef, ServiceNotAvailableException}
-import DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
-import ExecutorManager.{ExecutorInfo, GetExecutorInfo}
+import io.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
+import io.gearpump.streaming._
+import io.gearpump.streaming.appmaster.AppMaster._
+import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
+import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, GetExecutorInfo}
+import io.gearpump.streaming.appmaster.TaskManager.{GetTaskList, TaskList}
+import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
+import io.gearpump.streaming.storage.InMemoryAppStoreOnMaster
+import io.gearpump.streaming.task._
+import io.gearpump.streaming.util.ActorPathUtil
+import io.gearpump.util.Constants.{APPMASTER_DEFAULT_EXECUTOR_ID, _}
+import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util._
-import HistoryMetricsService.HistoryMetricsConfig
-import TaskManager.{GetTaskList, TaskList}
-import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, QueryExecutorConfig, GetExecutorSummary}
-import io.gearpump.util.Constants._
 import org.slf4j.Logger
 
 import scala.concurrent.Future
-import io.gearpump.util.Constants.APPMASTER_DEFAULT_EXECUTOR_ID
 
 class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends ApplicationMaster {
   import app.userConfig
@@ -140,6 +138,12 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       taskManager.foreach(_ forward lookupTask)
     case checkpoint: ReportCheckpointClock =>
       clockService.foreach(_ forward checkpoint)
+    case GetDAG =>
+      val task = sender
+      getDAG.foreach {
+        dag =>
+          task ! dag
+      }
   }
 
   def executorMessageHandler: Receive = {
@@ -302,4 +306,6 @@ object AppMaster {
   class ServiceNotAvailableException(reason: String) extends Exception(reason)
 
   case class ExecutorBrief(executorId: ExecutorId, executor: String, workerId: Int, status: String)
+
+  case object GetDAG
 }

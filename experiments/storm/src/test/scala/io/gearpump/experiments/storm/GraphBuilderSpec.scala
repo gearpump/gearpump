@@ -19,18 +19,15 @@
 package io.gearpump.experiments.storm
 
 import akka.actor.ActorSystem
-import backtype.storm.generated.{Bolt, SpoutSpec, ComponentCommon}
-import backtype.storm.utils.Utils
-import io.gearpump.experiments.storm.util.{GraphBuilder, TopologyUtil}
-import io.gearpump.streaming.{ProcessorDescription, Processor, DAG}
 import io.gearpump.cluster.TestUtil
-import io.gearpump.experiments.storm.util.TopologyUtil
-import GraphBuilder._
-import io.gearpump.partitioner.{PartitionerObject, PartitionerDescription}
-import io.gearpump.streaming.ProcessorId
+import io.gearpump.experiments.storm.topology.GearpumpStormTopology
+import io.gearpump.experiments.storm.util.{GraphBuilder, StormConstants, TopologyUtil}
+import io.gearpump.partitioner.{PartitionerDescription, PartitionerObject}
+import io.gearpump.streaming.{DAG, Processor}
 import org.scalatest.{Matchers, WordSpec}
 
 class GraphBuilderSpec extends WordSpec with Matchers {
+  import StormConstants._
 
   "GraphBuilder" should {
     val topology = TopologyUtil.getTestTopology
@@ -39,8 +36,8 @@ class GraphBuilderSpec extends WordSpec with Matchers {
 
     "build Graph from Storm topology" in {
       implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
-      val graphBuilder = new GraphBuilder()
-      val processorGraph = graphBuilder.build(topology)
+      val gearpumpStormTopology = new GearpumpStormTopology(topology, null)
+      val processorGraph = GraphBuilder.build(gearpumpStormTopology)
       processorGraph.vertices.size shouldBe 4
       processorGraph.edges.length shouldBe 3
 
@@ -58,40 +55,9 @@ class GraphBuilderSpec extends WordSpec with Matchers {
 
       processors foreach { case (pid, procDesc) =>
         val conf = procDesc.taskConf
-        val cid = conf.getString(COMPONENT_ID).getOrElse(
+        conf.getString(STORM_COMPONENT).getOrElse(
           fail(s"component id not found for processor $pid"))
-
-        if (spouts.containsKey(cid)) {
-          val spoutSpec = conf.getValue[SpoutSpec](COMPONENT_SPEC).getOrElse(
-            fail(s"spout spec not found for processor $pid")
-          )
-          spoutSpec shouldBe spouts.get(cid)
-          verifyParallelism(spoutSpec.get_common(), procDesc)
-        } else if (bolts.containsKey(cid)) {
-          val bolt = conf.getValue[Bolt](COMPONENT_SPEC).getOrElse(
-            fail(s"bolt not found for processor $pid")
-          )
-          bolt shouldBe bolts.get(cid)
-          verifyParallelism(bolt.get_common(), procDesc)
-        }
       }
     }
-
-    "get target components for a source of topology" in {
-      val graphBuilder = new GraphBuilder
-      val targets = graphBuilder.getTargets("2", topology)
-      targets.contains(Utils.DEFAULT_STREAM_ID)  shouldBe true
-      targets.get(Utils.DEFAULT_STREAM_ID).get.contains("3") shouldBe true
-      targets.get(Utils.DEFAULT_STREAM_ID).get("3").is_set_fields shouldBe true
-    }
   }
-
-  private def verifyParallelism(componentCommon: ComponentCommon, taskDescription: ProcessorDescription): Unit = {
-    if (componentCommon.get_parallelism_hint() == 0) {
-      taskDescription.parallelism shouldBe 1
-    } else {
-      taskDescription.parallelism shouldBe componentCommon.get_parallelism_hint()
-    }
-  }
-
 }

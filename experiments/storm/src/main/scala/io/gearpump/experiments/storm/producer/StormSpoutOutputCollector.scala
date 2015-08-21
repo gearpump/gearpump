@@ -18,7 +18,7 @@
 
 package io.gearpump.experiments.storm.producer
 
-import java.util.{ArrayList => JArrayList, List => JList}
+import java.util.{List => JList}
 
 import backtype.storm.spout.ISpoutOutputCollector
 import io.gearpump.experiments.storm.util.StormOutputCollector

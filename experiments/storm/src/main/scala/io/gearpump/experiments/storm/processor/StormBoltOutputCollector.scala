@@ -18,7 +18,7 @@
 
 package io.gearpump.experiments.storm.processor
 
-import java.util.{ArrayList => JArrayList, Collection => JCollection, List => JList}
+import java.util.{Collection => JCollection, List => JList}
 
 import backtype.storm.task.IOutputCollector
 import backtype.storm.tuple.Tuple
@@ -34,9 +34,13 @@ private[storm] class StormBoltOutputCollector(collector: StormOutputCollector) e
     collector.emitDirect(taskId, streamId, tuple)
   }
 
-  override def fail(tuple: Tuple): Unit = {}
+  override def fail(tuple: Tuple): Unit = {
+    collector.fail(tuple)
+  }
 
-  override def ack(tuple: Tuple): Unit = {}
+  override def ack(tuple: Tuple): Unit = {
+    collector.ack(tuple)
+  }
 
   override def reportError(throwable: Throwable): Unit = {
     throw throwable

@@ -24,14 +24,14 @@ import akka.actor.{Actor, ActorSystem, Props}
 import backtype.storm.Config
 import backtype.storm.generated.{ClusterSummary, StormTopology, SupervisorSummary, TopologySummary}
 import com.typesafe.config.ConfigValueFactory
-import io.gearpump.experiments.storm.Commands.GetClusterInfo
-import io.gearpump.experiments.storm.util.{GraphBuilder, StormUtil}
-import io.gearpump.streaming.StreamApplication
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import Commands._
-import io.gearpump.util.{Constants, AkkaApp, LogUtil, Util}
+import io.gearpump.experiments.storm.Commands.{GetClusterInfo, _}
+import io.gearpump.experiments.storm.topology.GearpumpStormTopology
+import io.gearpump.experiments.storm.util.{GraphBuilder, StormConstants}
+import io.gearpump.streaming.StreamApplication
+import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 
 import scala.collection.JavaConverters._
 
@@ -112,14 +112,11 @@ object StormRunner extends AkkaApp with ArgumentsParser {
         LOG.info(s"Killed topology $name")
         sender ! AppKilled(name, appId)
       case Submit(name, uploadedJarLocation, jsonConf, topology, options) =>
-        import StormUtil.{STORM_CONFIG, TOPOLOGY}
         topologies += name -> topology
 
-        val graphBuilder = new GraphBuilder
-        val processorGraph = graphBuilder.build(topology)
-        val config = UserConfig.empty
-          .withValue[StormTopology](TOPOLOGY, topology)
-          .withString(STORM_CONFIG, jsonConf)
+        val gearpumpStormTopology = new GearpumpStormTopology(topology, jsonConf)
+        val processorGraph = GraphBuilder.build(gearpumpStormTopology)
+        val config = UserConfig.empty.withValue[StormTopology](StormConstants.STORM_TOPOLOGY, topology)
         val app = StreamApplication("storm", processorGraph, config)
         val appId = clientContext.submit(app, jar)
         applications += name -> appId

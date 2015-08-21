@@ -19,7 +19,7 @@
 package io.gearpump.streaming.task
 
 import io.gearpump.google.common.primitives.Shorts
-import io.gearpump.partitioner.{MulticastPartitioner, UnicastPartitioner}
+import io.gearpump.partitioner.{Partitioner, MulticastPartitioner, UnicastPartitioner}
 import io.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import io.gearpump.streaming.LifeTime
 import io.gearpump.streaming.task.Subscription._
@@ -100,7 +100,7 @@ class Subscription(
   def sendMessage(msg: Message, partition: Int): Int = {
 
     // only send message whose timestamp matches the lifeTime
-    if (life.contains(msg.timestamp)) {
+    if (partition != Partitioner.UNKNOWN_PARTITION_ID && life.contains(msg.timestamp)) {
 
       val targetTask = TaskId(processorId, partition)
       transport.transport(msg, targetTask)

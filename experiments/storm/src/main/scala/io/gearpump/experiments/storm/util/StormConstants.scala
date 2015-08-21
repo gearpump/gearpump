@@ -16,22 +16,14 @@
  * limitations under the License.
  */
 
-package io.gearpump.experiments.storm.partitioner
+package io.gearpump.experiments.storm.util
 
-import io.gearpump.Message
-import org.scalacheck.Gen
-import org.scalatest.{Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
-
-class NoneGroupingPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
-
-  property("NonGroupingPartitioner should return random number in [0, partitionNum)") {
-    val msgGen = Gen.alphaStr.map(Message(_))
-    val partitionNumGen = Gen.chooseNum[Int](1, Int.MaxValue)
-    forAll(msgGen, partitionNumGen) { (msg: Message, partitionNum: Int) =>
-      val partitioner = new NoneGroupingPartitioner
-      partitioner.getPartition(msg, partitionNum) should (be >= 0 and be < partitionNum)
-    }
-  }
-
+object StormConstants {
+  val STORM_COMPONENT = "storm_component"
+  val STORM_TOPOLOGY = "storm_topology"
+  val SYSTEM_COMPONENT_ID = "__system"
+  val SYSTEM_COMPONENT_OUTPUT_FIELDS = "rate_secs"
+  val SYSTEM_TASK_ID: Integer = -1
+  val SYSTEM_TICK_STREAM_ID = "__tick"
+  val TICK_TUPLE_FREQ_SECS = "topology.tick.tuple.freq.secs"
 }
