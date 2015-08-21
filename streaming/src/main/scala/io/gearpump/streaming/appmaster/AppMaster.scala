@@ -18,6 +18,8 @@
 
 package io.gearpump.streaming.appmaster
 
+import java.lang.management.ManagementFactory
+
 import akka.actor._
 import io.gearpump.streaming.executor.Executor
 import io.gearpump.streaming.storage.InMemoryAppStoreOnMaster
@@ -39,7 +41,7 @@ import ExecutorManager.{ExecutorInfo, GetExecutorInfo}
 import io.gearpump.util._
 import HistoryMetricsService.HistoryMetricsConfig
 import TaskManager.{GetTaskList, TaskList}
-import Executor.{QueryExecutorConfig, GetExecutorSummary}
+import io.gearpump.streaming.executor.Executor.{ExecutorSummary, QueryExecutorConfig, GetExecutorSummary}
 import io.gearpump.util.Constants._
 import org.slf4j.Logger
 
@@ -77,9 +79,23 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
 
+  private val userDir = System.getProperty("user.dir")
+  private val logFile = LogUtil.applicationLogDir(actorSystem.settings.config)
+
+  private val appMasterExecutorSummary = ExecutorSummary(
+    APPMASTER_DEFAULT_EXECUTOR_ID,
+    Option(appContext.workerInfo).map(_.workerId).getOrElse(-1),
+    self.path.toString,
+    logFile.getAbsolutePath,
+    status = "Active",
+    taskCount = 0,
+    tasks = Map.empty[ProcessorId, List[TaskId]],
+    jvmName = ManagementFactory.getRuntimeMXBean().getName()
+  )
+
   private val historyMetricsService = if (metricsEnabled) {
     // register jvm metrics
-    Metrics(context.system).register(new JvmMetricsSet(s"app${appId}.appmaster"))
+    Metrics(context.system).register(new JvmMetricsSet(s"app${appId}.executor${APPMASTER_DEFAULT_EXECUTOR_ID}"))
 
     val historyMetricsService = context.actorOf(Props(new HistoryMetricsService(s"app$appId", getHistoryMetricsConfig)))
 
@@ -149,9 +165,6 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       } yield {
         val graph = dag.graph
 
-        val userDir = System.getProperty("user.dir")
-        val logFile = LogUtil.applicationLogDir(actorSystem.settings.config)
-
         val executorToTasks = tasks.tasks.groupBy(_._2).mapValues {_.keys.toList}
 
         val processors = dag.processors.map { kv =>
@@ -202,9 +215,13 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       sender ! lastFailure
     case  get@ GetExecutorSummary(executorId) =>
       val client = sender
-      ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
-        map.get(executorId).foreach{ executor =>
-          executor.executor.tell(get, client)
+      if (executorId == APPMASTER_DEFAULT_EXECUTOR_ID) {
+        client ! appMasterExecutorSummary
+      } else {
+        ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
+          map.get(executorId).foreach { executor =>
+            executor.executor.tell(get, client)
+          }
         }
       }
     case query@ QueryExecutorConfig(executorId) =>
