@@ -44,6 +44,7 @@ import io.gearpump.util.Constants._
 import org.slf4j.Logger
 
 import scala.concurrent.Future
+import io.gearpump.util.Constants.APPMASTER_DEFAULT_EXECUTOR_ID
 
 class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends ApplicationMaster {
   import app.userConfig
@@ -69,6 +70,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   private var clockService: Option[ActorRef] = None
   private val systemConfig = context.system.settings.config
   private var lastFailure = LastFailure(0L, null)
+
+  private val appMasterBrief = ExecutorBrief(APPMASTER_DEFAULT_EXECUTOR_ID, self.path.toString, Option(appContext.workerInfo).map(_.workerId).getOrElse(-1), "active")
 
   private val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
 
@@ -236,7 +239,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
           info.executor.path.toSerializationFormat,
           info.worker.workerId,
           "active")
-      }.toList
+      }.toList :+ appMasterBrief
     }
   }
 

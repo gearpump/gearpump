@@ -77,7 +77,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     implicit val system = getActorSystem
     conf = UserConfig.empty.withValue(AppMasterSpec.MASTER, mockMaster.ref)
     val mockJar = AppJar("for_test", FilePath("path"))
-    appMasterContext = AppMasterContext(appId, "test", resource, Some(mockJar), mockMaster.ref, appMasterRuntimeInfo)
+    appMasterContext = AppMasterContext(appId, "test", resource, null, Some(mockJar), mockMaster.ref, appMasterRuntimeInfo)
     val graph = Graph(taskDescription1 ~ partitioner ~> taskDescription2)
     val streamApp = StreamApplication("test", graph, conf)
     appDescription = Application.ApplicationToAppDescription(streamApp)

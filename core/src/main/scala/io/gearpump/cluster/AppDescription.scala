@@ -76,9 +76,14 @@ abstract class ApplicationMaster extends Actor
  * @param registerData: The AppMaster are required to register this data back to Master by RegisterAppMaster
  *
  */
-case class AppMasterContext(appId : Int, username : String,
-                                  resource : Resource,  appJar : Option[AppJar],
-                                  masterProxy : ActorRef,  registerData : AppMasterRegisterData)
+case class AppMasterContext(
+    appId : Int,
+    username : String,
+    resource : Resource,
+    workerInfo: WorkerInfo,
+    appJar : Option[AppJar],
+    masterProxy : ActorRef,
+    registerData : AppMasterRegisterData)
 
 /**
  * Jar file container in the cluster

@@ -50,7 +50,7 @@ class DistServiceAppMasterSpec extends WordSpec with Matchers with BeforeAndAfte
   "DistService AppMaster" should {
     "responsable for service distributing" in {
       val appMasterInfo = AppMasterRuntimeInfo(appId, "appName", mockWorker1.ref)
-      val appMasterContext = AppMasterContext(appId, userName, resource, appJar, masterProxy, appMasterInfo)
+      val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar, masterProxy, appMasterInfo)
       TestActorRef[DistServiceAppMaster](
         AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription, appMasterContext))
       val registerAppMaster = mockMaster.receiveOne(15 seconds)
