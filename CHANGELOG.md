@@ -1,3 +1,14 @@
+Gearpump 0.6
+==========================
+Highlight: new version UI dashboard.
+
+Change log:
+--------------------
+- #606: ui v2
+- #1352, return appmaster config
+- #1344 fix Master HA bug
+
+
 Gearpump 0.5.0
 ==========================
 Hihglights:
