@@ -23,18 +23,18 @@ import akka.pattern.ask
 import io.gearpump.cluster.AppMasterToMaster.{SaveAppDataFailed, AppDataSaved}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterDataRequest, AppMasterData, AppMastersDataRequest}
 import io.gearpump.cluster.WorkerToAppMaster.ShutdownExecutorFailed
-import io.gearpump.cluster.appmaster.AppMasterRuntimeInfo
 import io.gearpump.cluster.master.InMemoryKVService.{GetKVResult, PutKVSuccess, PutKVResult}
 import io.gearpump.util.{ActorUtil, Util, TimeOutScheduler}
+import io.gearpump.cluster.master.AppManager._
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster._
 import io.gearpump.cluster.MasterToClient._
+import io.gearpump.cluster.master.Master._
 import io.gearpump.cluster.WorkerToAppMaster._
 import io.gearpump.cluster.appmaster.{ApplicationState, AppMasterRuntimeInfo}
 import io.gearpump.cluster.master.InMemoryKVService._
-import io.gearpump.cluster.master.MasterHAService._
 import io.gearpump.util.Constants._
 import io.gearpump.util._
 import org.slf4j.Logger
@@ -46,11 +46,10 @@ import scala.util.{Failure, Success}
 /**
  * AppManager is dedicated part of Master to manager applicaitons
  */
-private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, launcher: AppMasterLauncherFactory) extends Actor with Stash with TimeOutScheduler{
+private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLauncherFactory) extends Actor with Stash with TimeOutScheduler{
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   private val executorId : Int = APPMASTER_DEFAULT_EXECUTOR_ID
-  private val systemconfig = context.system.settings.config
   private val appMasterMaxRetries: Int = 5
   private val appMasterRetryTimeRange: Duration = 20 seconds
 
@@ -58,7 +57,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   implicit val executionContext = context.dispatcher
 
   //next available appId
-  private var appId: Int = 0
+  private var appId: Int = 1
 
   //from appid to appMaster data
   private var appMasterRegistry = Map.empty[Int, (ActorRef, AppMasterRuntimeInfo)]
@@ -70,15 +69,20 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
 
   def receive: Receive = null
 
-  masterHA ! GetMasterState
+  kvService ! GetKV(MASTER_GROUP, MASTER_STATE)
   context.become(waitForMasterState)
 
   def waitForMasterState: Receive = {
-    case MasterState(maxId, state) =>
-      this.appId = maxId + 1
+    case GetKVSuccess(_, result) =>
+      val masterState = result.asInstanceOf[MasterState]
+      if(masterState != null) {
+        this.appId = masterState.maxId + 1
+        this.deadAppMasters = masterState.deadAppMasters
+        this.appMasterRegistry = masterState.appMasterRegistry
+      }
       context.become(receiveHandler)
       unstashAll()
-    case GetMasterStateFailed(ex) =>
+    case GetKVFailed(ex) =>
       LOG.error("Failed to get master state, shutting down master to avoid data corruption...")
       context.parent ! PoisonPill
     case msg =>
@@ -90,7 +94,6 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
     val msg = "Application Manager started. Ready for application submission..."
     System.out.println(msg)
     LOG.info(msg)
-
     clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse workerMessage orElse appDataStoreService orElse terminationWatch
   }
 
@@ -101,29 +104,28 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       if (applicationNameExist(app.name)) {
         client ! SubmitApplicationResult(Failure(new Exception(s"Application name ${app.name} already existed")))
       } else {
-        val appLauncher = context.actorOf(launcher.props(appId, executorId, app, jar, username, context.parent, Some(client)), s"launcher${appId}_${Util.randInt}")
+        context.actorOf(launcher.props(appId, executorId, app, jar, username, context.parent, Some(client)), s"launcher${appId}_${Util.randInt}")
 
         val appState = new ApplicationState(appId, app.name, 0, app, jar, username, null)
         appMasterRestartPolicies += appId -> new RestartPolicy(appMasterMaxRetries, appMasterRetryTimeRange)
-        masterHA ! UpdateMasterState(appState)
+        kvService ! PutKV(appId.toString, APP_STATE, appState)
         appId += 1
       }
 
     case RestartApplication(appId) =>
-      (masterHA ? GetMasterState).asInstanceOf[Future[GetMasterStateResult]].map {
-        case MasterState(maxId, state) =>
-          val appState = state.find(_.appId == appId)
-          if (appState.isDefined) {
-            val appStateData = appState.get
+      (kvService ? GetKV(appId.toString, APP_STATE)).asInstanceOf[Future[GetKVResult]].map {
+        case GetKVSuccess(_, result) =>
+          val appState = result.asInstanceOf[ApplicationState]
+          if (appState != null) {
             LOG.info(s"Shutting down the application (restart), $appId")
             self ! ShutdownApplication(appId)
-            self forward SubmitApplication(appStateData.app, appStateData.jar, appStateData.username)
+            self forward SubmitApplication(appState.app, appState.jar, appState.username)
           } else {
             sender ! SubmitApplicationResult(Failure(
               new Exception(s"Failed to restart, because the application $appId does not exist.")
             ))
           }
-        case GetMasterStateFailed(ex) =>
+        case GetKVFailed(ex) =>
           sender ! SubmitApplicationResult(Failure(
             new Exception(s"Unable to obtain the Master State. Application $appId will not be restarted.")
           ))
@@ -131,7 +133,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
 
     case ShutdownApplication(appId) =>
       LOG.info(s"App Manager Shutting down application $appId")
-      val (appMaster, info) = appMasterRegistry.getOrElse(appId, (null, null))
+      val (_, info) = appMasterRegistry.getOrElse(appId, (null, null))
       Option(info) match {
         case Some(info) =>
           val worker = info.worker
@@ -177,10 +179,10 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
     case QueryAppMasterConfig(appId) =>
       val config =
         if (appMasterRegistry.contains(appId)) {
-          val (appMaster, info) = appMasterRegistry(appId)
+          val (_, info) = appMasterRegistry(appId)
           info.config
         } else if (deadAppMasters.contains(appId)) {
-          val (appMaster, info) = deadAppMasters(appId)
+          val (_, info) = deadAppMasters(appId)
           info.config
         } else {
           null
@@ -189,7 +191,6 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
 
     case appMasterDataRequest: AppMasterDataRequest =>
       val appId = appMasterDataRequest.appId
-
       val (appStatus, appMaster, info) =
         if (appMasterRegistry.contains(appId)) {
           val (appMaster, info) = appMasterRegistry(appId)
@@ -203,11 +204,9 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
 
       appStatus match {
         case AppMasterActive | AppMasterInActive =>
-          val worker = info.worker
           val appMasterPath = ActorUtil.getFullPath(context.system, appMaster.path)
           val workerPath = Option(info.worker).map(
             worker => ActorUtil.getFullPath(context.system, worker.path)).orNull
-
           sender ! AppMasterData(
             appStatus, appId, info.appName, appMasterPath, workerPath,
             info.submissionTime, info.startTime, info.finishTime, info.user)
@@ -236,6 +235,7 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       LOG.info(s"Register AppMaster for app: ${register.appId} $register")
       context.watch(appMaster)
       appMasterRegistry += register.appId -> (appMaster, register)
+      kvService ! PutKV(MASTER_GROUP, MASTER_STATE, MasterState(appId, appMasterRegistry, deadAppMasters))
       sender ! AppMasterRegistered(register.appId)
   }
 
@@ -250,7 +250,6 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       }
     case GetAppData(appId, key) =>
       val client = sender
-
       (kvService ? GetKV(appId.toString, key)).asInstanceOf[Future[GetKVResult]].map {
         case GetKVSuccess(privateKey, value) =>
           client ! GetAppDataResult(key, value)
@@ -270,16 +269,16 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
       }
       if(application.nonEmpty){
         val appId = application.get._1
-        (masterHA ? GetMasterState).asInstanceOf[Future[GetMasterStateResult]].map {
-          case MasterState(maxId, state) =>
-            val appState = state.find(_.appId == appId)
-            if (appState.isDefined) {
+        (kvService ? GetKV(appId.toString, APP_STATE)).asInstanceOf[Future[GetKVResult]].map {
+          case GetKVSuccess(_, result) =>
+            val appState = result.asInstanceOf[ApplicationState]
+            if (appState != null) {
               LOG.info(s"Recovering application, $appId")
-              self ! RecoverApplication(appState.get)
+              self ! RecoverApplication(appState)
             } else {
               LOG.error(s"Cannot find application state for $appId")
             }
-          case GetMasterStateFailed(ex) =>
+          case GetKVFailed(ex) =>
             LOG.error(s"Cannot find master state to recover")
         }
       }
@@ -299,20 +298,30 @@ private[cluster] class AppManager(masterHA : ActorRef, kvService: ActorRef, laun
   case class RecoverApplication(applicationStatus : ApplicationState)
 
   private def cleanApplicationData(appId : Int) : Unit = {
-
     //add the dead app to dead appMaster
-    appMasterRegistry.get(appId).map { pair =>
+    appMasterRegistry.get(appId).foreach { pair =>
       val (appMasterActor, info) = pair
       deadAppMasters += appId -> (appMasterActor, info.copy(finishTime = System.currentTimeMillis()))
     }
 
     appMasterRegistry -= appId
 
-    masterHA ! DeleteMasterState(appId)
+    kvService ! PutKV(MASTER_GROUP, MASTER_STATE, MasterState(this.appId, appMasterRegistry, deadAppMasters))
     kvService ! DeleteKVGroup(appId.toString)
   }
 
   private def applicationNameExist(appName: String): Boolean = {
     appMasterRegistry.values.exists(_._2.appName == appName)
   }
+}
+
+object AppManager {
+  final val APP_STATE = "app_state"
+  //The id is used in KVStore
+  final val MASTER_STATE = "master_state"
+
+  case class MasterState(
+      maxId: Int,
+      appMasterRegistry: Map[Int, (ActorRef, AppMasterRuntimeInfo)],
+      deadAppMasters: Map[Int, (ActorRef, AppMasterRuntimeInfo)])
 }

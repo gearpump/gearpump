@@ -19,18 +19,17 @@
 package io.gearpump.cluster.master
 
 import java.lang.management.ManagementFactory
-import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.remote.DisassociatedEvent
 import com.typesafe.config.Config
-import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster._
 import io.gearpump.cluster.MasterToClient.{ResolveWorkerIdResult, MasterConfig}
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToMaster._
+import io.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVFailed, GetKVSuccess, PutKV}
 import io.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated, _}
 import io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import io.gearpump.metrics.Metrics.ReportMetrics
@@ -42,7 +41,6 @@ import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util._
 import org.slf4j.Logger
 
-import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
@@ -50,6 +48,7 @@ private[cluster] class Master extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private val systemConfig : Config = context.system.settings.config
   private implicit val timeout = Constants.FUTURE_TIMEOUT
+  private val kvService = context.actorOf(Props(new InMemoryKVService()), "kvService")
   // resources and resourceRequests can be dynamically constructed by
   // heartbeat of worker and appmaster when master singleton is migrated.
   // we don't need to persist them in cluster
@@ -63,6 +62,8 @@ private[cluster] class Master extends Actor with Stash {
   private val birth = System.currentTimeMillis()
 
   private var nextWorkerId = 0
+
+  def receive: Receive = null
 
   // register jvm metrics
   Metrics(context.system).register(new JvmMetricsSet(s"master"))
@@ -93,7 +94,25 @@ private[cluster] class Master extends Actor with Stash {
     None
   }
 
-  override def receive : Receive = workerMsgHandler orElse
+  kvService ! GetKV(MASTER_GROUP, WORKER_ID)
+  context.become(waitForNextWorkerId)
+
+  def waitForNextWorkerId: Receive = {
+    case GetKVSuccess(_, result) =>
+      if(result != null) {
+        this.nextWorkerId = result.asInstanceOf[Int]
+      }
+      context.become(receiveHandler)
+      unstashAll()
+    case GetKVFailed(ex) =>
+      LOG.error("Failed to get worker id, shutting down master to avoid data corruption...")
+      context.parent ! PoisonPill
+    case msg =>
+      LOG.info(s"Get message ${msg.getClass.getSimpleName}")
+      stash()
+  }
+
+  def receiveHandler : Receive = workerMsgHandler orElse
     appMasterMsgHandler orElse
     clientMsgHandler orElse
     metricsService orElse
@@ -106,6 +125,7 @@ private[cluster] class Master extends Actor with Stash {
     case RegisterNewWorker =>
       val workerId = nextWorkerId
       nextWorkerId += 1
+      kvService ! PutKV(MASTER_GROUP, WORKER_ID, nextWorkerId)
       self forward RegisterWorker(workerId)
 
     case RegisterWorker(id) =>
@@ -236,16 +256,16 @@ private[cluster] class Master extends Actor with Stash {
     LOG.info(s"master path is $path")
     val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULING_SCHEDULER))
 
-    val masterHA = context.actorOf(Props(new MasterHAService()), "masterHA")
-    val kvService = context.actorOf(Props(new InMemoryKVService()), "kvService")
-
-    appManager = context.actorOf(Props(new AppManager(masterHA, kvService, AppMasterLauncher)), classOf[AppManager].getSimpleName)
+    appManager = context.actorOf(Props(new AppManager(kvService, AppMasterLauncher)), classOf[AppManager].getSimpleName)
     scheduler = context.actorOf(Props(schedulerClass))
     context.system.eventStream.subscribe(self, classOf[DisassociatedEvent])
   }
 }
 
 object Master {
+  final val MASTER_GROUP = "-1"
+
+  final val WORKER_ID = "next_worker_id"
 
   case class WorkerTerminated(workerId: Int)
 
