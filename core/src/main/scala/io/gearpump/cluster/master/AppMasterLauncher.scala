@@ -29,7 +29,7 @@ import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import io.gearpump.cluster._
-import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
+import io.gearpump.cluster.appmaster.{WorkerInfo, AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.ActorSystemBooter._
@@ -68,7 +68,8 @@ class AppMasterLauncher(
 
       val appMasterInfo = AppMasterRuntimeInfo(appId, app.name, worker, username,
         submissionTime, config = appMasterAkkaConfig)
-      val appMasterContext = AppMasterContext(appId, username, resource, jar, null, appMasterInfo)
+      val workerInfo = WorkerInfo(workerId, worker)
+      val appMasterContext = AppMasterContext(appId, username, resource, workerInfo, jar, null, appMasterInfo)
       LOG.info(s"Try to launch a executor for AppMaster on worker ${workerId} for app $appId")
       val name = ActorUtil.actorNameForExecutor(appId, executorId)
       val selfPath = ActorUtil.getFullPath(context.system, self.path)
