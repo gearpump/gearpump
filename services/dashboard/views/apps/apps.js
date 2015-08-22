@@ -15,15 +15,15 @@ angular.module('dashboard')
           templateUrl: 'views/apps/apps.html',
           controller: 'AppsCtrl',
           resolve: {
-            modelApps: ['models', function(models) {
+            apps0: ['models', function(models) {
               return models.$get.apps();
             }]
           }
         });
     }])
 
-  .controller('AppsCtrl', ['$scope', '$modal', '$sortableTableBuilder', 'modelApps',
-    function($scope, $modal, $stb, modelApps) {
+  .controller('AppsCtrl', ['$scope', '$modal', '$sortableTableBuilder', 'apps0',
+    function($scope, $modal, $stb, apps0) {
       'use strict';
 
       var submitWindow = $modal({
@@ -82,8 +82,8 @@ angular.module('dashboard')
         });
       }
 
-      updateTable(modelApps.$data());
-      modelApps.$subscribe($scope, function(apps) {
+      updateTable(apps0.$data());
+      apps0.$subscribe($scope, function(apps) {
         updateTable(apps);
       });
     }])

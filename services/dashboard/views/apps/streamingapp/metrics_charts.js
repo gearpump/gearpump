@@ -23,13 +23,13 @@ angular.module('dashboard')
 
       $scope.sendThroughputChartOptions = angular.merge({
         data: _.map($scope.dag.getHistoricalMessageReceiveThroughput(), function(value, time) {
-          return {x: moment.unix(time).format('HH:mm:ss'), y: value};
+          return {x: moment(Number(time)).format('HH:mm:ss'), y: value};
         })
       }, throughputChartOptions);
 
       $scope.receiveThroughputChartOptions = angular.merge({
         data: _.map($scope.dag.getHistoricalMessageSendThroughput(), function(value, time) {
-          return {x: moment.unix(time).format('HH:mm:ss'), y: value};
+          return {x: moment(Number(time)).format('HH:mm:ss'), y: value};
         })
       }, throughputChartOptions);
 
@@ -42,13 +42,13 @@ angular.module('dashboard')
 
       $scope.averageProcessingTimeChartOptions = angular.merge({
         data: _.map($scope.dag.getHistoricalAverageMessageProcessingTime(), function(value, time) {
-          return {x: moment.unix(time).format('HH:mm:ss'), y: value};
+          return {x: moment(Number(time)).format('HH:mm:ss'), y: value};
         })
       }, durationChartOptions);
 
       $scope.averageMessageReceiveLatencyChartOptions = angular.merge({
         data: _.map($scope.dag.getHistoricalAverageMessageReceiveLatency(), function(value, time) {
-          return {x: moment.unix(time).format('HH:mm:ss'), y: value};
+          return {x: moment(Number(time)).format('HH:mm:ss'), y: value};
         })
       }, durationChartOptions);
 

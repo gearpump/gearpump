@@ -15,18 +15,18 @@ angular.module('dashboard')
           templateUrl: 'views/cluster/master/master.html',
           controller: 'MasterCtrl',
           resolve: {
-            modelMaster: ['models', function(models) {
+            master0: ['models', function(models) {
               return models.$get.master();
             }],
-            modelMetrics: ['$stateParams', 'models', function($stateParams, models) {
+            metrics0: ['$stateParams', 'models', function($stateParams, models) {
               return models.$get.masterMetrics(/*all=*/true);
             }]
           }
         });
     }])
 
-  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder', 'modelMaster', 'modelMetrics',
-    function($scope, $ptb, modelMaster, modelMetrics) {
+  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder', 'master0', 'metrics0',
+    function($scope, $ptb, master0, metrics0) {
       'use strict';
 
       $scope.masterInfoTable = [
@@ -34,33 +34,32 @@ angular.module('dashboard')
         $ptb.text('Master Members').done(),
         $ptb.tag('Status').done(),
         $ptb.duration('Up Time').done(),
-        $ptb.button('Quick Links').done()
+        $ptb.button('Quick Links').values([
+          {href: master0.configLink, text: 'Config', class: 'btn-xs'},
+          {tooltip: master0.homeDirectory, text: 'Home Dir.', class: 'btn-xs'},
+          {tooltip: master0.logFile, text: 'Log Dir.', class: 'btn-xs'},
+          {tooltip: master0.jarStore, text: 'Jar Store', class: 'btn-xs'}
+        ]).done()
       ];
 
       function updateSummaryTable(master) {
-        angular.merge($scope.masterInfoTable, [
-          {value: master.leader},
-          {values: master.cluster},
-          {value: {text: master.masterStatus, condition: master.isHealthy ? 'good' : 'concern'}},
-          {value: master.aliveFor},
-          {
-            values: [
-              {href: master.configLink, text: 'Config', class: 'btn-xs'},
-              {tooltip: master.homeDirectory, text: 'Home Dir.', class: 'btn-xs'},
-              {tooltip: master.logFile, text: 'Log Dir.', class: 'btn-xs'},
-              {tooltip: master.jarStore, text: 'Jar Store', class: 'btn-xs'}
-            ]
-          }
+        $ptb.$update($scope.masterInfoTable, [
+          master.leader,
+          master.cluster,
+          {text: master.masterStatus, condition: master.isHealthy ? 'good' : 'concern'},
+          master.aliveFor
+          /* placeholder for quick links, but they do not need to be updated */
         ]);
       }
 
-      updateSummaryTable(modelMaster);
-      modelMaster.$subscribe($scope, function(master) {
+      updateSummaryTable(master0);
+      master0.$subscribe($scope, function(master) {
         updateSummaryTable(master);
       });
 
-      $scope.metrics = modelMetrics.$data();
-      modelMetrics.$subscribe($scope, function(metrics) {
+      // JvmMetricsChartsCtrl will watch `$scope.metrics`
+      $scope.metrics = metrics0.$data();
+      metrics0.$subscribe($scope, function(metrics) {
         $scope.metrics = metrics;
       });
     }])

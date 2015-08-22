@@ -32,17 +32,21 @@ angular.module('dashboard')
         $ptb.number('Parallelism').done(),
         $ptb.text('Inputs').done(),
         $ptb.text('Outputs').done(),
-        $ptb.text('Life Time').done()
+        $ptb.datetime('Birth Time').done(),
+        $ptb.datetime('Death Time').done()
       ];
 
       function updateProcessorInfoTable(processor) {
         var connections = $scope.dag.calculateProcessorConnections(processor.id);
-        angular.merge($scope.processorInfoTable, [
-          {value: processor.taskClass},
-          {value: processor.parallelism},
-          {value: connections.inputs + ' processor(s)'},
-          {value: connections.outputs + ' processor(s)'},
-          {value: 'Birth=' + processor.life.birth + ', Death=' + processor.life.death}
+        $ptb.$update($scope.processorInfoTable, [
+          processor.taskClass,
+          processor.parallelism,
+          connections.inputs + ' processor(s)',
+          connections.outputs + ' processor(s)',
+          processor.life.birth <= 0 ?
+            'Start with the application' : processor.life.birth,
+          processor.life.death === '9223372036854775807' /* Long.max */ ?
+            'Not scheduled' : processor.life.death
         ]);
 
         $scope.tasks = {

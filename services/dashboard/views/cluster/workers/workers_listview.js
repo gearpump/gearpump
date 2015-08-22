@@ -16,15 +16,15 @@ angular.module('dashboard')
           templateUrl: 'views/cluster/workers/workers_listview.html',
           controller: 'WorkersListViewCtrl',
           resolve: {
-            modelWorkers: ['models', function(models) {
+            workers0: ['models', function(models) {
               return models.$get.workers();
             }]
           }
         });
     }])
 
-  .controller('WorkersListViewCtrl', ['$scope', '$sortableTableBuilder', 'modelWorkers',
-    function($scope, $stb, modelWorkers) {
+  .controller('WorkersListViewCtrl', ['$scope', '$sortableTableBuilder', 'workers0',
+    function($scope, $stb, workers0) {
       'use strict';
 
       $scope.workersTable = {
@@ -57,8 +57,8 @@ angular.module('dashboard')
         });
       }
 
-      updateTable(modelWorkers.$data());
-      modelWorkers.$subscribe($scope, function(data) {
+      updateTable(workers0.$data());
+      workers0.$subscribe($scope, function(data) {
         updateTable(data);
       });
     }])

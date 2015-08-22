@@ -10,25 +10,25 @@ angular.module('dashboard')
       'use strict';
 
       $scope.jvmMetricsTable = [
-        $ptb.number('Memory Total').done(),
-        $ptb.number('Memory Used').done(),
+        $ptb.bytes('Memory Total').done(),
+        $ptb.bytes('Memory Used').done(),
         $ptb.number('Thread Count').done(),
         $ptb.number('Thread Daemon Count').done()
       ];
 
       function updateMetricsTable(metrics) {
-        angular.merge($scope.jvmMetricsTable, [
-          {value: {number: _.last(metrics['memory.total.max']).value / 1024 / 1024, unit: 'MB'}},
-          {value: {number: _.last(metrics['memory.total.used']).value / 1024 / 1024, unit: 'MB'}},
-          {value: _.last(metrics['thread.count']).value},
-          {value: _.last(metrics['thread.daemon.count']).value}
+        $ptb.$update($scope.jvmMetricsTable, [
+          {raw: _.last(metrics['memory.total.max']).value, unit: 'B', readable: true},
+          {raw: _.last(metrics['memory.total.used']).value, unit: 'B', readable: true},
+          _.last(metrics['thread.count']).value,
+          _.last(metrics['thread.daemon.count']).value
         ]);
       }
 
       function updateMetricsCharts(metrics) {
         var array = metrics['memory.total.used'];
         $scope.chartData = _.map(array, function(metric) {
-          return {x: moment.unix(metric.time).format('HH:mm:ss'), y: metric.value};
+          return {x: moment(metric.time).format('HH:mm:ss'), y: metric.value};
         });
       }
 
@@ -37,11 +37,9 @@ angular.module('dashboard')
         updateMetricsCharts(metrics);
       });
 
-      var initialData = _.map(
-        $scope.metrics['memory.total.used'],
-        function(metric) {
-          return {x: moment.unix(metric.time).format('HH:mm:ss'), y: metric.value};
-        });
+      var initialData = _.map($scope.metrics['memory.total.used'], function(metric) {
+        return {x: moment(metric.time).format('HH:mm:ss'), y: metric.value};
+      });
       var sparkLineOptionBase = {
         height: '108px',
         data: initialData,
@@ -49,7 +47,7 @@ angular.module('dashboard')
         yAxisLabelFormatter: function(value) {
           return Math.floor(value / 1024 / 1024) + ' MB';
         },
-        seriesNames: ['T1']
+        seriesNames: ['Memory Used']
       };
 
       $scope.chartOptions = angular.merge({
@@ -57,6 +55,5 @@ angular.module('dashboard')
           return Math.floor(value / 1024 / 1024).toFixed(0) + ' MB';
         }
       }, sparkLineOptionBase);
-
     }])
 ;
