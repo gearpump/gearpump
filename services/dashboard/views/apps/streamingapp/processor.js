@@ -59,6 +59,11 @@ angular.module('dashboard')
             return array;
           }()
         };
+
+        // if only processor has only one task, select it by default. Corresponding charts will be shown automatically.
+        if ($scope.tasks.available.length === 1) {
+          $scope.tasks.selected = $scope.tasks.available;
+        }
       }
 
       updateProcessorInfoTable($scope.processor);
