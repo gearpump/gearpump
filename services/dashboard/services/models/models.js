@@ -73,191 +73,167 @@ angular.module('dashboard')
           });
           return result;
         },
+        _jvm: function(s) {
+          var tuple = s.split('@');
+          return {
+            pid: tuple[0],
+            hostname: tuple[1]
+          };
+        },
         /** Do the necessary deserialization. */
         master: function(wrapper) {
           var obj = wrapper.masterDescription;
           angular.merge(obj, {
+            // upickle conversion
+            cluster: obj.cluster.map(function(tuple) {
+              return tuple.join(':');
+            }),
+            jvm: decoder._jvm(obj.jvmName),
             leader: obj.leader.join(':'),
-            // missing properties
+            // extra properties/methods
             isHealthy: obj.masterStatus === 'synced',
-            // operations
             configLink: restapi.masterConfigLink()
-          });
-          // upickle crap
-          obj.cluster = obj.cluster.map(function(tuple) {
-            return tuple.join(':');
           });
           return obj;
         },
         masterMetrics: function(wrapper) {
-          var result = {};
-          _.map(wrapper.metrics, function(metric) {
-            // String before first '.' is `'worker' + workerId`
-            var metricName = metric.value.name.split('.').slice(1).join('.');
-            if (!result.hasOwnProperty(metricName)) {
-              result[metricName] = [];
-            }
-            result[metricName].push({
-              time: Math.floor(Number(metric.time) / 1000),
-              value: Number(metric.value.value)
-            });
-          });
-          return result;
+          return decoder._metrics(wrapper, 1);
         },
         workers: function(objs) {
-          return decoder._asAssociativeArray(objs, decoder.worker.detail, 'workerId');
+          return decoder._asAssociativeArray(objs, decoder.worker, 'workerId');
         },
-        worker: {
-          detail: function(obj) {
-            var slotsUsed = obj.totalSlots - obj.availableSlots;
-            return angular.merge(obj, {
-              // missing properties
-              location: util.extractLocation(obj.actorPath),
-              isHealthy: obj.state === 'active',
-              slots: {
-                usage: util.usage(slotsUsed, obj.totalSlots),
-                used: slotsUsed,
-                total: obj.totalSlots
-              },
-              pid: obj.jvmName.split('@')[0],
-              hostname: obj.jvmName.split('@')[1],
-              // operations
-              pageUrl: locator.worker(obj.workerId),
-              configLink: restapi.workerConfigLink(obj.workerId)
-            });
-          },
-          metrics: function(wrapper) {
-            var result = {};
-            _.map(wrapper.metrics, function(metric) {
-              // String before first '.' is `'worker' + workerId`
-              var metricName = metric.value.name.split('.').slice(1).join('.');
-              if (!result.hasOwnProperty(metricName)) {
-                result[metricName] = [];
-              }
-              result[metricName].push({
-                time: Math.floor(Number(metric.time) / 1000),
-                value: Number(metric.value.value)
-              });
-            });
-            return result;
-          }
+        worker: function(obj) {
+          var slotsUsed = obj.totalSlots - obj.availableSlots;
+          return angular.merge(obj, {
+            // extra properties
+            jvm: decoder._jvm(obj.jvmName),
+            location: util.extractLocation(obj.actorPath),
+            isHealthy: obj.state === 'active',
+            slots: {
+              usage: util.usage(slotsUsed, obj.totalSlots),
+              used: slotsUsed,
+              total: obj.totalSlots
+            },
+            // extra methods
+            pageUrl: locator.worker(obj.workerId),
+            configLink: restapi.workerConfigLink(obj.workerId)
+          });
+        },
+        workerMetrics: function(wrapper) {
+          return decoder._metrics(wrapper, 1);
         },
         apps: function(wrapper) {
           var objs = wrapper.appMasters;
-          return decoder._asAssociativeArray(objs, decoder.app.summary, 'appId');
+          return decoder._asAssociativeArray(objs, decoder.appSummary, 'appId');
         },
-        app: {
-          summary: function(obj) {
-            // todo: add `type` field to summary and detailed app response
-            angular.merge(obj, {
-              type: 'streaming'
-            });
+        appSummary: function(obj) {
+          // todo: add `type` field to summary and detailed app response
+          angular.merge(obj, {
+            type: 'streaming'
+          });
 
-            return angular.merge(obj, {
-              // missing properties
-              isRunning: obj.status === 'active',
-              location: util.extractLocation(obj.appMasterPath),
-              // operations
-              pageUrl: locator.app(obj.appId, obj.type),
-              terminate: function() {
-                return restapi.killApp(obj.appId);
-              },
-              restart: function() {
-                return restapi.restartAppAsync(obj.appId);
-              }
-            });
-          },
-          detail: function(obj) {
-            // todo: add `type` field to summary and detailed app response
-            angular.merge(obj, {
-              status: 'active',
-              type: obj.hasOwnProperty('dag') ? 'streaming' : ''
-            });
-
-            // streaming app related decoding
-            obj.processors = util.flatten(obj.processors);
-            obj.processorLevels = util.flatten(obj.processorLevels);
-            if (obj.dag && obj.dag.edgeList) {
-              obj.dag.edgeList = util.flatten(obj.dag.edgeList, function(item) {
-                return [item[0] + '_' + item[2],
-                  {source: parseInt(item[0]), target: parseInt(item[2]), type: item[1]}];
-              });
+          return angular.merge(obj, {
+            // extra properties
+            isRunning: obj.status === 'active',
+            location: util.extractLocation(obj.appMasterPath),
+            // extra methods
+            pageUrl: locator.app(obj.appId, obj.type),
+            terminate: function() {
+              return restapi.killApp(obj.appId);
+            },
+            restart: function() {
+              return restapi.restartAppAsync(obj.appId);
             }
+          });
+        },
+        app: function(obj) {
+          // todo: add `type` field to summary and detailed app response
+          angular.merge(obj, {
+            status: 'active',
+            type: obj.hasOwnProperty('dag') ? 'streaming' : ''
+          });
 
-            _.forEach(obj.processors, function(processor) {
-              var taskCountLookup = util.flatten(processor.taskCount);
-              processor.executors = _.map(processor.executors, function(executorId) {
-                var executor = obj.executors[executorId];
-                executor.taskCount = executorId in taskCountLookup ?
-                  taskCountLookup[executorId].count : 0;
-                return executor;
-              });
+          // upickle conversion 1: streaming app related decoding
+          obj.processors = util.flatten(obj.processors);
+          obj.processorLevels = util.flatten(obj.processorLevels);
+          if (obj.dag && obj.dag.edgeList) {
+            obj.dag.edgeList = util.flatten(obj.dag.edgeList, function(item) {
+              return [item[0] + '_' + item[2],
+                {source: parseInt(item[0]), target: parseInt(item[2]), type: item[1]}];
             });
+          }
+          // upickle conversion 2a: task count is executor specific property for streaming app
+          _.forEach(obj.processors, function(processor) {
+            var taskCountLookup = util.flatten(processor.taskCount);
+            processor.executors = _.map(processor.executors, function(executorId) {
+              var executor = obj.executors[executorId];
+              executor.taskCount = executorId in taskCountLookup ?
+                taskCountLookup[executorId].count : 0;
+              return executor;
+            });
+          });
 
-            angular.merge(obj, {
-              // missing properties
-              aliveFor: moment() - obj.startTime,
-              isRunning: true, // todo: handle empty response, which is the case application is stopped
-              // operations
-              pageUrl: locator.app(obj.appId, obj.type),
-              configLink: restapi.appConfigLink(obj.appId),
-              restart: function() {
-                console.warn('currently still not possible, because app id will be changed after a restart.');
-              },
-              terminate: function() {
-                return restapi.killApp(obj.appId);
-              }
+          // upickle conversion 2b: add extra executor properties and methods
+          _.forEach(obj.executors, function(executor) {
+            angular.merge(executor, {
+              isRunning: executor.status === 'active',
+              pageUrl: locator.executor(obj.appId, obj.type, executor.executorId),
+              workerPageUrl: locator.worker(executor.workerId)
             });
+          });
 
-            // upickle crap
-            _.forEach(obj.executors, function(executor) {
-              executor.isRunning = executor.status === 'active';
-              executor.pageUrl = locator.executor(obj.appId, obj.type, executor.executorId);
-              executor.workerPageUrl = locator.worker(executor.workerId);
-              executor.taskCount = executor.taskCount || 0 /* appmaster does not have task count */
-              // todo: store backend status, so that we can query worker information efficient.
-            });
-            return obj;
-          },
-          executor: function(obj) {
-            return angular.merge(obj, {
-              pid: obj.jvmName.split('@')[0],
-              hostname: obj.jvmName.split('@')[1],
-              // operations
-              workerPageUrl: locator.worker(obj.workerId),
-              configLink: restapi.appExecutorConfigLink(obj.appId, obj.id)
-            });
-          },
-          metrics: function(wrapper) {
-            return _.map(wrapper.metrics, function(obj) {
-              switch (obj.value.$type) {
-                case 'io.gearpump.metrics.Metrics.Meter':
-                  return Metrics.decode.meter(obj);
-                case 'io.gearpump.metrics.Metrics.Histogram':
-                  return Metrics.decode.histogram(obj);
-                case 'io.gearpump.metrics.Metrics.Gauge':
-                  return Metrics.decode.gauge(obj);
-              }
-            });
-          },
-          metrics2: function(wrapper) {
-            var result = {};
-            _.map(wrapper.metrics, function(metric) {
-              var metricName = metric.value.name.split('.').slice(2).join('.');
+          angular.merge(obj, {
+            // extra properties
+            aliveFor: moment() - obj.startTime,
+            isRunning: true, // todo: handle empty response, which is the case application is stopped
+            // extra methods
+            pageUrl: locator.app(obj.appId, obj.type),
+            configLink: restapi.appConfigLink(obj.appId),
+            terminate: function() {
+              return restapi.killApp(obj.appId);
+            }
+          });
+          return obj;
+        },
+        appExecutor: function(obj) {
+          return angular.merge(obj, {
+            // extra properties and methods
+            jvm: decoder._jvm(obj.jvmName),
+            workerPageUrl: locator.worker(obj.workerId),
+            configLink: restapi.appExecutorConfigLink(obj.appId, obj.id)
+          });
+        },
+        appMetricsOld: function(wrapper) {
+          return _.map(wrapper.metrics, function(obj) {
+            return Metrics.$auto(obj);
+          });
+        },
+        appExecutorMetrics: function(wrapper) {
+          return decoder._metrics(wrapper, 2);
+        },
+        appStallingProcessors: function(wrapper) {
+          return _.groupBy(wrapper.tasks, 'processorId');
+        },
+        /** Decode metrics which needs an extra argument. */
+        _metrics: function(wrapper, splitMetricOwnAndMetricNameAt) {
+          var result = {};
+          _.forEach(wrapper.metrics, function(metric) {
+            var data = Metrics.$auto(metric, /*noMeta=*/true);
+            if (data) {
+              // Name consists of metric owner name and metric name.
+              // E.g. `worker0.executor1.physical.memory.total`.
+              // todo (#1359): backend should NOT mix the owner name and the metric name
+              //      `{owner: "worker0.executor1", name: "physical.memory.total"}`.
+              var metricName = splitMetricOwnAndMetricNameAt > 0 ?
+                metric.value.name.split('.').slice(splitMetricOwnAndMetricNameAt).join('.') :
+                metric.value.name;
               if (!result.hasOwnProperty(metricName)) {
                 result[metricName] = [];
               }
-              result[metricName].push({
-                time: Math.floor(Number(metric.time) / 1000),
-                value: Number(metric.value.value)
-              });
-            });
-            return result;
-          },
-          stallingProcessors: function(wrapper) {
-            // TODO: I prefer this format: {processorId: [taskIndex1, taskIndex2,...]}
-            return _.groupBy(wrapper.tasks, 'processorId');
-          }
+              result[metricName].push(data);
+            }
+          });
+          return result;
         }
       };
 
@@ -277,47 +253,43 @@ angular.module('dashboard')
             return get('/master/workerlist',
               decoder.workers);
           },
-          worker: {
-            detail: function(workerId) {
-              return get('/worker/' + workerId,
-                decoder.worker.detail);
-            },
-            metrics: function(workerId, all) {
-              var base = '/worker/' + workerId + '/metrics/worker' + workerId;
-              var firstTimePath = base + (all ? '' : '?readLatest=true');
-              var subscribePath = base + '?readLatest=true';
-              return get(firstTimePath, decoder.worker.metrics, subscribePath);
-            }
+          worker: function(workerId) {
+            return get('/worker/' + workerId,
+              decoder.worker);
+          },
+          workerMetrics: function(workerId, all) {
+            var base = '/worker/' + workerId + '/metrics/worker' + workerId;
+            var firstTimePath = base + (all ? '' : '?readLatest=true');
+            var subscribePath = base + '?readLatest=true';
+            return get(firstTimePath, decoder.workerMetrics, subscribePath);
           },
           apps: function() {
             return get('/master/applist',
               decoder.apps);
           },
-          app: {
-            detail: function(appId) {
-              return get('/appmaster/' + appId + '?detail=true',
-                decoder.app.detail);
-            },
-            executor: function(appId, executorId) {
-              return get('/appmaster/' + appId + '/executor/' + executorId,
-                decoder.app.executor);
-            },
-            metrics: function(appId, all) {
-              var base = '/appmaster/' + appId + '/metrics/app' + appId;
-              var firstTimePath = base + (all ? '' : '?readLatest=true');
-              var subscribePath = base + '?readLatest=true';
-              return get(firstTimePath, decoder.app.metrics, subscribePath);
-            },
-            executorMetrics: function(appId, executorId, all) {
-              var base = '/appmaster/' + appId + '/metrics/app' + appId + '.executor' + executorId;
-              var firstTimePath = base + (all ? '' : '?readLatest=true');
-              var subscribePath = base + '?readLatest=true';
-              return get(firstTimePath, decoder.app.metrics2, subscribePath);
-            },
-            stallingProcessors: function(appId) {
-              return get('/appmaster/' + appId + '/stallingtasks',
-                decoder.app.stallingProcessors);
-            }
+          app: function(appId) {
+            return get('/appmaster/' + appId + '?detail=true',
+              decoder.app);
+          },
+          appMetrics: function(appId, all) {
+            var base = '/appmaster/' + appId + '/metrics/app' + appId;
+            var firstTimePath = base + (all ? '' : '?readLatest=true');
+            var subscribePath = base + '?readLatest=true';
+            return get(firstTimePath, decoder.appMetricsOld, subscribePath);
+          },
+          appExecutor: function(appId, executorId) {
+            return get('/appmaster/' + appId + '/executor/' + executorId,
+              decoder.appExecutor);
+          },
+          appExecutorMetrics: function(appId, executorId, all) {
+            var base = '/appmaster/' + appId + '/metrics/app' + appId + '.executor' + executorId;
+            var firstTimePath = base + (all ? '' : '?readLatest=true');
+            var subscribePath = base + '?readLatest=true';
+            return get(firstTimePath, decoder.appExecutorMetrics, subscribePath);
+          },
+          appStallingProcessors: function(appId) {
+            return get('/appmaster/' + appId + '/stallingtasks',
+              decoder.appStallingProcessors);
           }
         },
 

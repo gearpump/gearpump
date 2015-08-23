@@ -29,11 +29,11 @@ angular.module('dashboard')
       ];
 
       $scope.$watch('app', function(app) {
-        $scope.appSummary = angular.merge({}, $scope.appSummary, [
-          {value: app.appId},
-          {value: app.startTime},
-          {value: app.actorPath},
-          {value: {href: app.configLink, text: 'Config', class: 'btn-xs'}}
+        $ptb.$update($scope.appSummary, [
+          app.appId,
+          app.startTime,
+          app.actorPath,
+          {href: app.configLink, text: 'Config', class: 'btn-xs'}
         ]);
       });
     }])

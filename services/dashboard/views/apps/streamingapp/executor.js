@@ -15,19 +15,19 @@ angular.module('dashboard')
           templateUrl: 'views/apps/streamingapp/executor.html',
           controller: 'StreamingAppExecutorCtrl',
           resolve: {
-            modelExecutor: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.app.executor($stateParams.appId, $stateParams.executorId);
+            executor0: ['$stateParams', 'models', function($stateParams, models) {
+              return models.$get.appExecutor($stateParams.appId, $stateParams.executorId);
             }],
-            modelMetrics: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.app.executorMetrics(
+            metrics0: ['$stateParams', 'models', function($stateParams, models) {
+              return models.$get.appExecutorMetrics(
                 $stateParams.appId, $stateParams.executorId, /*all=*/true);
             }],
           }
         });
     }])
 
-  .controller('StreamingAppExecutorCtrl', ['$scope', '$stateParams', '$propertyTableBuilder', 'restapi', 'modelExecutor', 'modelMetrics',
-    function($scope, $stateParams, $ptb, restapi, modelExecutor, modelMetrics) {
+  .controller('StreamingAppExecutorCtrl', ['$scope', '$stateParams', '$propertyTableBuilder', 'restapi', 'executor0', 'metrics0',
+    function($scope, $stateParams, $ptb, restapi, executor0, metrics0) {
       'use strict';
 
       $scope.overviewTable = [
@@ -35,32 +35,33 @@ angular.module('dashboard')
         $ptb.text('Actor Path').done(),
         $ptb.link('Worker').done(),
         $ptb.number('Task Count').done(),
-        $ptb.button('Quick Links').done()
+        $ptb.button('Quick Links').values([
+            {href: restapi.appExecutorConfigLink($scope.app.appId, executor0.id), text: 'Config', class: 'btn-xs'},
+            {tooltip: executor0.logFile, text: 'Log Dir.', class: 'btn-xs'}
+          ]
+        ).done()
       ];
 
       function updateOverviewTable(executor) {
-        angular.merge($scope.overviewTable, [
-          {value: executor.id},
-          {value: executor.actorPath},
-          {value: {href: executor.workerPageUrl, text: 'Worker ' + executor.workerId}},
-          {value: executor.taskCount},
-          {values: [
-              {href: restapi.appExecutorConfigLink($scope.app.appId, executor.id), text: 'Config', class: 'btn-xs'},
-              {tooltip: executor.logFile, text: 'Log Dir.', class: 'btn-xs'}
-          ]}
+        $ptb.$update($scope.overviewTable, [
+          executor.id,
+          executor.actorPath,
+          {href: executor.workerPageUrl, text: 'Worker ' + executor.workerId},
+          executor.taskCount
+          /* placeholder for quick links, but they do not need to be updated */
         ]);
       }
 
-      $scope.executor = modelExecutor.$data();
-      $scope.metrics = modelMetrics.$data();
-
+      $scope.executor = executor0.$data();
       updateOverviewTable($scope.executor);
-      modelExecutor.$subscribe($scope, function(executor) {
+      executor0.$subscribe($scope, function(executor) {
         $scope.executor = executor;
         updateOverviewTable(executor);
       });
 
-      modelMetrics.$subscribe($scope, function(metrics) {
+      // JvmMetricsChartsCtrl will watch `$scope.metrics`
+      $scope.metrics = metrics0.$data();
+      metrics0.$subscribe($scope, function(metrics) {
         $scope.metrics = metrics;
       });
     }])

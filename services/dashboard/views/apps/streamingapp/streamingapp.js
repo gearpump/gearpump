@@ -16,11 +16,11 @@ angular.module('dashboard')
           templateUrl: 'views/apps/streamingapp/streamingapp.html',
           controller: 'StreamingAppCtrl',
           resolve: {
-            modelApp: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.app.detail($stateParams.appId);
+            app0: ['$stateParams', 'models', function($stateParams, models) {
+              return models.$get.app($stateParams.appId);
             }],
-            modelMetrics: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.app.metrics($stateParams.appId, /*all=*/true);
+            metrics0: ['$stateParams', 'models', function($stateParams, models) {
+              return models.$get.appMetrics($stateParams.appId, /*all=*/true);
             }]
           }
         });
@@ -29,22 +29,22 @@ angular.module('dashboard')
 /**
  * This controller is used to obtain app. All nested views will read status from here.
  */
-  .controller('StreamingAppCtrl', ['$scope', '$state', 'conf', 'modelApp', 'modelMetrics', 'models',
-    function($scope, $state, conf, modelApp, modelMetrics, models) {
+  .controller('StreamingAppCtrl', ['$scope', '$state', 'conf', 'app0', 'metrics0', 'models',
+    function($scope, $state, conf, app0, metrics0, models) {
       'use strict';
 
       $scope.$state = $state; // required by streamingapp.html
-      $scope.app = modelApp;
-      $scope.dag = models.createDag(modelApp.clock, modelApp.processors,
-        modelApp.processorLevels, modelApp.dag.edgeList, modelApp.executors);
+      $scope.app = app0;
+      $scope.dag = models.createDag(app0.clock, app0.processors,
+        app0.processorLevels, app0.dag.edgeList, app0.executors);
 
-      modelApp.$subscribe($scope, function(app) {
+      app0.$subscribe($scope, function(app) {
         $scope.app = app;
         $scope.dag.setData(app.clock, app.processors,
           app.processorLevels, app.dag.edgeList);
       });
 
-      models.$get.app.stallingProcessors(modelApp.appId)
+      models.$get.appStallingProcessors(app0.appId)
         .then(function(processors) {
           $scope.dag.setStallingTasks(Object.keys(processors.$data()));
           processors.$subscribe($scope, function(data) {
@@ -52,8 +52,8 @@ angular.module('dashboard')
           });
         });
 
-      $scope.dag.updateMetricsArray(modelMetrics.$data());
-      modelMetrics.$subscribe($scope, function(metrics) {
+      $scope.dag.updateMetricsArray(metrics0.$data());
+      metrics0.$subscribe($scope, function(metrics) {
         $scope.dag.updateMetricsArray(metrics);
       });
     }])

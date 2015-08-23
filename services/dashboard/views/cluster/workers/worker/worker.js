@@ -19,13 +19,13 @@ angular.module('dashboard')
           templateUrl: 'views/cluster/workers/worker/worker.html',
           controller: 'WorkerCtrl',
           resolve: {
-            modelWorker: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.worker.detail($stateParams.workerId);
+            worker0: ['$stateParams', 'models', function($stateParams, models) {
+              return models.$get.worker($stateParams.workerId);
             }],
-            modelMetrics: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.worker.metrics($stateParams.workerId, /*all=*/true);
+            metrics0: ['$stateParams', 'models', function($stateParams, models) {
+              return models.$get.workerMetrics($stateParams.workerId, /*all=*/true);
             }],
-            modelApps: ['models', function(models) {
+            apps0: ['models', function(models) {
               return models.$get.apps();
             }]
           }
@@ -33,8 +33,8 @@ angular.module('dashboard')
     }])
 
   .controller('WorkerCtrl', ['$scope', '$propertyTableBuilder', '$sortableTableBuilder',
-    'modelWorker', 'modelMetrics', 'modelApps', 'locator', 'conf',
-    function($scope, $ptb, $stb, modelWorker, modelMetrics, modelApps, locator, conf) {
+    'worker0', 'metrics0', 'apps0', 'locator', 'conf',
+    function($scope, $ptb, $stb, worker0, metrics0, apps0, locator, conf) {
       'use strict';
 
       $scope.overviewTable = [
@@ -42,7 +42,11 @@ angular.module('dashboard')
         $ptb.text('Location').done(),
         $ptb.text('Actor Path').done(),
         $ptb.number('Slots Capacity').done(),
-        $ptb.button('Quick Links').done()
+        $ptb.button('Quick Links').values([
+          {href: worker0.configLink, text: 'Config', class: 'btn-xs'},
+          {tooltip: worker0.homeDirectory, text: 'Home Dir.', class: 'btn-xs'},
+          {tooltip: worker0.logFile, text: 'Log Dir.', class: 'btn-xs'}
+        ]).done()
       ];
 
       $scope.executorsTable = {
@@ -55,18 +59,12 @@ angular.module('dashboard')
       };
 
       function updateOverviewTable(worker) {
-        angular.merge($scope.overviewTable, [
-          {value: worker.workerId},
-          {value: worker.location},
-          {value: worker.actorPath},
-          {value: worker.slots.total},
-          {
-            values: [
-              {href: worker.configLink, text: 'Config', class: 'btn-xs'},
-              {tooltip: worker.homeDirectory, text: 'Home Dir.', class: 'btn-xs'},
-              {tooltip: worker.logFile, text: 'Log Dir.', class: 'btn-xs'}
-            ]
-          }
+        $ptb.$update($scope.overviewTable, [
+          worker.workerId,
+          worker.location,
+          worker.actorPath,
+          worker.slots.total
+          /* placeholder for quick links, but they do not need to be updated */
         ]);
       }
 
@@ -89,26 +87,27 @@ angular.module('dashboard')
         });
       }
 
-      $scope.worker = modelWorker.$data();
-      $scope.metrics = modelMetrics.$data();
-      $scope.apps = modelApps.$data();
+      $scope.worker = worker0.$data();
+      $scope.apps = apps0.$data();
       $scope.appsCount = Object.keys($scope.apps).length;
 
       updateOverviewTable($scope.worker);
       updateExecutorsTable();
 
-      modelWorker.$subscribe($scope, function(worker) {
+      worker0.$subscribe($scope, function(worker) {
         $scope.worker = worker;
         updateOverviewTable(worker);
         updateExecutorsTable();
       });
 
-      modelApps.$subscribe($scope, function(apps) {
+      apps0.$subscribe($scope, function(apps) {
         $scope.apps = apps;
         updateExecutorsTable();
       });
 
-      modelMetrics.$subscribe($scope, function(metrics) {
+      // JvmMetricsChartsCtrl will watch `$scope.metrics`
+      $scope.metrics = metrics0.$data();
+      metrics0.$subscribe($scope, function(metrics) {
         $scope.metrics = metrics;
       });
     }])

@@ -41,57 +41,71 @@ angular.module('dashboard')
       };
     }
 
-    return {
-      decode: {
-        meter: function(data) {
-          // TODO: Serde Meter (#458)
-          var value = data.value;
-          return {
-            meta: _decodeProcessorName(value.name),
-            time: Math.floor(Number(data.time) / 1000),
-            values: {
-              count: parseInt(value.count),
-              meanRate: value.meanRate,
-              movingAverage1m: value.m1,
-              movingAverage5m: value.m5,
-              movingAverage15m: value.m15
-            },
-            isMeter: true
-          };
-        },
-        histogram: function(data) {
-          // TODO: Serde Histogram (#458)
-          var value = data.value;
-          return {
-            meta: _decodeProcessorName(value.name),
-            time: Math.floor(Number(data.time) / 1000),
-            values: {
-              count: parseInt(value.count),
-              minimum: parseInt(value.min),
-              maximum: parseInt(value.max),
-              mean: value.mean,
-              stddev: value.stddev,
-              median: value.median,
-              p75: value.p75,
-              p95: value.p95,
-              p98: value.p98,
-              p99: value.p99,
-              p999: value.p999
-            },
-            isHistogram: true
-          };
-        },
-        gauge: function(data) {
-          // TODO: Serde Gauge (#458)
-          var value = data.value;
-          return {
-            meta: _decodeExecutorName(value.name),
-            time: Math.floor(Number(data.time) / 1000),
-            value: Number(value.value),
-            isGauge: true
-          };
+    var decoder = {
+      meter: function(data, noMeta) {
+        // TODO: Serde Meter (#458)
+        var value = data.value;
+        var result = noMeta ? {} : {meta: _decodeProcessorName(value.name)};
+        return angular.merge(result, {
+          isMeter: true,
+          time: Number(data.time),
+          values: {
+            count: parseInt(value.count), // downgrade the precision for dashboard
+            meanRate: value.meanRate,
+            movingAverage1m: value.m1,
+            movingAverage5m: value.m5,
+            movingAverage15m: value.m15
+          }
+        });
+      },
+      histogram: function(data, noMeta) {
+        // TODO: Serde Histogram (#458)
+        var value = data.value;
+        var result = noMeta ? {} : {meta: _decodeProcessorName(value.name)};
+        return angular.merge(result, {
+          isHistogram: true,
+          time: Number(data.time),
+          values: {
+            count: parseInt(value.count), // downgrade the precision for dashboard
+            minimum: parseInt(value.min), // downgrade the precision for dashboard
+            maximum: parseInt(value.max), // downgrade the precision for dashboard
+            mean: value.mean,
+            stddev: value.stddev,
+            median: value.median,
+            p75: value.p75,
+            p95: value.p95,
+            p98: value.p98,
+            p99: value.p99,
+            p999: value.p999
+          }
+        });
+      },
+      gauge: function(data, noMeta) {
+        // TODO: Serde Gauge (#458)
+        var value = data.value;
+        var result = noMeta ? {} : {meta: _decodeExecutorName(value.name)};
+        return angular.merge(result, {
+          isGauge: true,
+          time: Number(data.time),
+          value: Number(value.value)
+        });
+      },
+      /** automatically guess metric type and decode or return null */
+      $auto: function(data, noMeta) {
+        switch (data.value.$type) {
+          case 'io.gearpump.metrics.Metrics.Meter':
+            return decoder.meter(data, noMeta);
+          case 'io.gearpump.metrics.Metrics.Histogram':
+            return decoder.histogram(data, noMeta);
+          case 'io.gearpump.metrics.Metrics.Gauge':
+            return decoder.gauge(data, noMeta);
+          default:
+            console.warn('Unknown metric type: ' + data.value.$type);
+            return;
         }
       }
     };
+
+    return decoder;
   }])
 ;

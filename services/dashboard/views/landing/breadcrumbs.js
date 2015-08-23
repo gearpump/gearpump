@@ -42,6 +42,16 @@ angular.module('dashboard')
               var p = breadcrumbs[1].text.indexOf(appText);
               breadcrumbs[1].text = 'Application ' + breadcrumbs[1].text.substr(p + appText.length);
             }
+            if (breadcrumbs.length > 2) {
+              switch (breadcrumbs[2].text) {
+                case 'executor -1':
+                  breadcrumbs[2].text = 'AppMaster';
+                  break;
+                case 'dag':
+                  breadcrumbs[2].text = 'DAG';
+                  break;
+              }
+            }
           }
           return breadcrumbs;
         }

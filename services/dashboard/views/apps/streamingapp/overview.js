@@ -29,18 +29,22 @@ angular.module('dashboard')
         $ptb.button('Quick Links').done()
       ];
 
-      $scope.$watch('app', function(app) {
-        $scope.appSummary = angular.merge({}, $scope.appSummary, [
-          {value: app.appId},
-          {value: app.startTime},
-          {value: app.user},
-          {value: app.actorPath},
-          {values: [
+      function updateSummaryTable(app) {
+        $ptb.$update($scope.appSummary, [
+          app.appId,
+          app.startTime,
+          app.user,
+          app.actorPath,
+          [
             {href: app.configLink, text: 'Config', class: 'btn-xs'},
             {tooltip: app.homeDirectory, text: 'Home Dir.', class: 'btn-xs'},
             {tooltip: app.logFile, text: 'Log Dir.', class: 'btn-xs'}
-          ]}
+          ]
         ]);
+      }
+
+      $scope.$watch('app', function(app) {
+        updateSummaryTable(app);
       });
     }])
 ;

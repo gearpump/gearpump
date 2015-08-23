@@ -38,7 +38,7 @@ angular.module('dashboard')
                 id: {href: executor.pageUrl, text: executor.executorId === -1 ?
                   'AppMaster' : 'Executor ' + executor.executorId},
                 worker: {href: executor.workerPageUrl, text: executor.workerId},
-                tasks: {number: executor.taskCount || 0}
+                tasks: executor.taskCount || 0
               };
             });
           }
