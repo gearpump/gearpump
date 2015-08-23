@@ -5,8 +5,8 @@
 
 angular.module('dashboard')
 
-  .controller('JvmMetricsChartsCtrl', ['$scope', '$propertyTableBuilder', 'conf',
-    function($scope, $ptb, conf) {
+  .controller('JvmMetricsChartsCtrl', ['$scope', '$propertyTableBuilder', '$echarts', 'conf',
+    function($scope, $ptb, $echarts, conf) {
       'use strict';
 
       $scope.jvmMetricsTable = [
@@ -41,12 +41,10 @@ angular.module('dashboard')
         return {x: moment(metric.time).format('HH:mm:ss'), y: metric.value};
       });
       var sparkLineOptionBase = {
-        height: '108px',
+        height: '148px',
         data: initialData,
         maxDataNum: conf.metricsChartDataCount,
-        yAxisLabelFormatter: function(value) {
-          return Math.floor(value / 1024 / 1024) + ' MB';
-        },
+        yAxisLabelFormatter: $echarts.axisLabelFormatter('B'),
         seriesNames: ['Memory Used']
       };
 
