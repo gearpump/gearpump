@@ -58,10 +58,10 @@ class TaskActor(
 
   //metrics
   private val metricName = s"app${appId}.processor${taskId.processorId}.task${taskId.index}"
-  private val receiveLatency = Metrics(context.system).histogram(s"$metricName.receiveLatency", sampleRate = 1)
-  private val processTime = Metrics(context.system).histogram(s"$metricName.processTime")
-  private val sendThroughput = Metrics(context.system).meter(s"$metricName.sendThroughput")
-  private val receiveThroughput = Metrics(context.system).meter(s"$metricName.receiveThroughput")
+  private val receiveLatency = Metrics(context.system).histogram(s"$metricName:receiveLatency", sampleRate = 1)
+  private val processTime = Metrics(context.system).histogram(s"$metricName:processTime")
+  private val sendThroughput = Metrics(context.system).meter(s"$metricName:sendThroughput")
+  private val receiveThroughput = Metrics(context.system).meter(s"$metricName:receiveThroughput")
 
   private val registerTaskTimout = config.getLong(GEARPUMP_STREAMING_REGISTER_TASK_TIMEOUT_MS)
   private val maxPendingMessageCount = config.getInt(GEARPUMP_STREAMING_MAX_PENDING_MESSAGE_COUNT)
