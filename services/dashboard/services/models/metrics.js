@@ -14,30 +14,36 @@ angular.module('dashboard')
     }
 
     function _decodeProcessorName(name) {
-      var parts = name.split('.');
-      if (parts[0].indexOf('app') !== 0
+      var meta = decoder.$name(name);
+      var parts = meta.path.split('.');
+      if (parts.length !== 3
+        || parts[0].indexOf('app') !== 0
         || parts[1].indexOf('processor') !== 0
         || parts[2].indexOf('task') !== 0) {
         console.warn('Unexpected name: ' + name);
+        parts = ['', '', ''];
       }
       return {
         appId: _remainDigits(parts[0]),
         processorId: _remainDigits(parts[1]),
         taskId: _remainDigits(parts[2]),
-        clazz: parts[3]
+        clazz: meta.name
       };
     }
 
     function _decodeExecutorName(name) {
-      var parts = name.split('.');
-      if (parts[0].indexOf('app') !== 0
+      var meta = decoder.$name(name);
+      var parts = meta.path.split('.');
+      if (parts.length !== 2
+        || parts[0].indexOf('app') !== 0
         || (parts[1] !== 'appmaster' && parts[1].indexOf('executor') !== 0)) {
         console.warn('Unexpected name: ' + name);
+        parts = ['', ''];
       }
       return {
         appId: _remainDigits(parts[0]),
         executorId: parts[1] === 'appmaster' ? parts[1] : _remainDigits(parts[1]),
-        clazz: parts[2]
+        clazz: meta.name
       };
     }
 
@@ -103,6 +109,13 @@ angular.module('dashboard')
             console.warn('Unknown metric type: ' + data.value.$type);
             return;
         }
+      },
+      /** Decode name string as object path and metric name */
+      $name: function(name) {
+        var tuple = name.split(':');
+        return tuple.length === 2 ?
+        {path: tuple[0], name: tuple[1]} :
+        {path: '', name: name};
       }
     };
 
