@@ -29,7 +29,8 @@ class SOLStreamProducer(taskContext : TaskContext, conf: UserConfig) extends Tas
 
   import taskContext.output
 
-  private val sizeInBytes = conf.getInt(SOLStreamProducer.BYTES_PER_MESSAGE).get
+  private val sizeInBytes = conf.getInt(SOLStreamProducer.BYTES_PER_MESSAGE)
+      .getOrElse(DEFAULT_MESSAGE_SIZE)
   private var messages : Array[String] = null
   private var rand : Random = null
   private var messageCount : Long = 0
@@ -68,7 +69,8 @@ class SOLStreamProducer(taskContext : TaskContext, conf: UserConfig) extends Tas
   }
 }
 
-object SOLStreamProducer{
+object SOLStreamProducer {
+  val DEFAULT_MESSAGE_SIZE = 100 // bytes
   val BYTES_PER_MESSAGE = "bytesPerMessage"
   val Start = Message("start")
 }
