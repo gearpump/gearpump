@@ -210,7 +210,9 @@ angular.module('dashboard')
           _.forEach(wrapper.metrics, function(metric) {
             var data = Metrics.$auto(metric, /*noMeta=*/true);
             if (data) {
-              var metricName = Metrics.$name(metric.value.name).name;
+              var tuple = metric.value.name.split(':');
+              var metricName = tuple.length === 2 ?
+                tuple[1] : metric.value.name;
               if (!result.hasOwnProperty(metricName)) {
                 result[metricName] = [];
               }
