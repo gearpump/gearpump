@@ -11,9 +11,9 @@ class JvmMetricsSet(name: String) extends MetricSet {
   override def getMetrics: util.Map[String, Metric] = {
     val memoryMetrics = new MemoryUsageGaugeSet().getMetrics.asScala
     val threadMetrics = new ThreadStatesGaugeSet().getMetrics.asScala
-    Map(s"$name.memory.total.used" -> memoryMetrics("total.used"),
-        s"$name.memory.total.max" -> memoryMetrics("total.max"),
-        s"$name.thread.count" -> threadMetrics("count"),
-        s"$name.thread.daemon.count" -> threadMetrics("daemon.count")).asJava
+    Map(s"$name:memory.total.used" -> memoryMetrics("total.used"),
+        s"$name:memory.total.max" -> memoryMetrics("total.max"),
+        s"$name:thread.count" -> threadMetrics("count"),
+        s"$name:thread.daemon.count" -> threadMetrics("daemon.count")).asJava
   }
 }

@@ -96,9 +96,6 @@ angular.module('dashboard')
           });
           return obj;
         },
-        masterMetrics: function(wrapper) {
-          return decoder._metrics(wrapper, 1);
-        },
         workers: function(objs) {
           return decoder._asAssociativeArray(objs, decoder.worker, 'workerId');
         },
@@ -118,9 +115,6 @@ angular.module('dashboard')
             pageUrl: locator.worker(obj.workerId),
             configLink: restapi.workerConfigLink(obj.workerId)
           });
-        },
-        workerMetrics: function(wrapper) {
-          return decoder._metrics(wrapper, 1);
         },
         apps: function(wrapper) {
           var objs = wrapper.appMasters;
@@ -208,25 +202,15 @@ angular.module('dashboard')
             return Metrics.$auto(obj);
           });
         },
-        appExecutorMetrics: function(wrapper) {
-          return decoder._metrics(wrapper, 2);
-        },
         appStallingProcessors: function(wrapper) {
           return _.groupBy(wrapper.tasks, 'processorId');
         },
-        /** Decode metrics which needs an extra argument. */
-        _metrics: function(wrapper, splitMetricOwnAndMetricNameAt) {
+        metrics: function(wrapper) {
           var result = {};
           _.forEach(wrapper.metrics, function(metric) {
             var data = Metrics.$auto(metric, /*noMeta=*/true);
             if (data) {
-              // Name consists of metric owner name and metric name.
-              // E.g. `worker0.executor1.physical.memory.total`.
-              // todo (#1359): backend should NOT mix the owner name and the metric name
-              //      `{owner: "worker0.executor1", name: "physical.memory.total"}`.
-              var metricName = splitMetricOwnAndMetricNameAt > 0 ?
-                metric.value.name.split('.').slice(splitMetricOwnAndMetricNameAt).join('.') :
-                metric.value.name;
+              var metricName = Metrics.$name(metric.value.name).name;
               if (!result.hasOwnProperty(metricName)) {
                 result[metricName] = [];
               }
@@ -247,7 +231,7 @@ angular.module('dashboard')
             var base = '/master/metrics/master';
             var firstTimePath = base + (all ? '' : '?readLatest=true');
             var subscribePath = base + '?readLatest=true';
-            return get(firstTimePath, decoder.masterMetrics, subscribePath);
+            return get(firstTimePath, decoder.metrics, subscribePath);
           },
           workers: function() {
             return get('/master/workerlist',
@@ -261,7 +245,7 @@ angular.module('dashboard')
             var base = '/worker/' + workerId + '/metrics/worker' + workerId;
             var firstTimePath = base + (all ? '' : '?readLatest=true');
             var subscribePath = base + '?readLatest=true';
-            return get(firstTimePath, decoder.workerMetrics, subscribePath);
+            return get(firstTimePath, decoder.metrics, subscribePath);
           },
           apps: function() {
             return get('/master/applist',
@@ -285,7 +269,7 @@ angular.module('dashboard')
             var base = '/appmaster/' + appId + '/metrics/app' + appId + '.executor' + executorId;
             var firstTimePath = base + (all ? '' : '?readLatest=true');
             var subscribePath = base + '?readLatest=true';
-            return get(firstTimePath, decoder.appExecutorMetrics, subscribePath);
+            return get(firstTimePath, decoder.metrics, subscribePath);
           },
           appStallingProcessors: function(appId) {
             return get('/appmaster/' + appId + '/stallingtasks',
