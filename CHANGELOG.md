@@ -1,3 +1,17 @@
+Gearpump 0.6.1
+==========================
+Highlight: new version UI dashboard.
+
+
+Change log:
+--------------------
+- #1369: object path and metrics name are divided by ':' now
+- #1369: fixed data initialization issue of echart
+- #1364, add default value for BYTES_PER_MESSAGE of SOLStreamProducer
+- #1361: able to show multiple tasks in chart (better not select mo…
+- #1358: properties will be updated (2) moved roboto font and echar…  
+
+
 Gearpump 0.6
 ==========================
 Highlight: new version UI dashboard.
