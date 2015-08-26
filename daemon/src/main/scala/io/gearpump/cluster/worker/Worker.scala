@@ -21,31 +21,27 @@ package io.gearpump.cluster.worker
 import java.io.File
 import java.lang.management.ManagementFactory
 import java.net.URL
-import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
+import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor._
 import akka.pattern.pipe
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.master.Master.MasterInfo
-import io.gearpump.metrics.Metrics.ReportMetrics
-import io.gearpump.util.{Constants, TimeOutScheduler}
-import io.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
+import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
-import io.gearpump.cluster.{ExecutorContext, ExecutorJVMConfig, ClusterConfig}
 import io.gearpump.cluster.MasterToClient.WorkerConfig
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToAppMaster._
 import io.gearpump.cluster.WorkerToMaster._
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.cluster.worker.Worker._
+import io.gearpump.cluster.{ClusterConfig, ExecutorJVMConfig}
+import io.gearpump.jarstore.{ActorSystemRequired, ConfigRequired, JarStoreService}
 import io.gearpump.metrics.Metrics.ReportMetrics
-import io.gearpump.metrics.{MetricsReporterService, Metrics, JvmMetricsSet}
+import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
-import io.gearpump.jarstore.{ActorSystemRequired, ConfigRequired, JarStoreService}
-import io.gearpump.util._
+import io.gearpump.util.{Constants, TimeOutScheduler, _}
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
@@ -269,6 +265,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 }
 
 private[cluster] object Worker {
+  def getClassPathWhiteList(config: Config): Array[String] = {
+    val home = config.getString(GEARPUMP_HOME)
+    val gearHome = new File(home).getAbsolutePath
+    EXECUTOR_CLASSPATH_WHILTELIST.map(gearHome + File.separator + _)
+  }
 
   case class ExecutorResult(result : Try[Int])
 
@@ -437,18 +438,14 @@ private[cluster] object Worker {
       val format = new java.text.SimpleDateFormat(datePattern)
       format.format(timestamp)
     }
-  }
 
-  private def filterDaemonLib(classPath: Array[String]): Array[String] = {
-    val jarFile = new File(getClass.getProtectionDomain.getCodeSource.getLocation.toURI.getPath)
-    val daemonDir = jarFile.getParent
-    classPath.filterNot{path =>
-      //The class path maybe a symbol link
-      val canonicalized = Try(new File(path).getCanonicalPath)
-      if(canonicalized.isSuccess && canonicalized.get.startsWith(daemonDir)) {
-        true
-      } else {
-        false
+    private def filterDaemonLib(classPath: Array[String]): Array[String] = {
+      val classPathWhiteList = getClassPathWhiteList(config)
+      classPath.filter{ path =>
+        //The path may represent a file or folder
+        val file = new File(path)
+        classPathWhiteList.contains(file.getAbsolutePath) ||
+          classPathWhiteList.contains(file.getParentFile.getAbsolutePath)
       }
     }
   }

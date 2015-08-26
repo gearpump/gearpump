@@ -108,4 +108,7 @@ object Constants {
   //Service related
   val GEARPUMP_SERVICE_HTTP = "gearpump.services.http"
   val GEARPUMP_SERVICE_HOST = "gearpump.services.host"
+
+  //The folders are under ${GEARPUMP_HOME}
+  val EXECUTOR_CLASSPATH_WHILTELIST = Array("conf", "lib")
 }
