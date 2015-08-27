@@ -31,7 +31,6 @@ private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
   import StormUtil._
 
   private val topology = getTopology(conf)
-  private val stormConfig = getStormConfig(conf)
   private val pid = taskContext.taskId.processorId
 
   private val spoutId = conf.getString(GraphBuilder.COMPONENT_ID)
@@ -39,6 +38,7 @@ private[storm] class StormProducer(taskContext : TaskContext, conf: UserConfig)
   private val spoutSpec = conf.getValue[SpoutSpec](GraphBuilder.COMPONENT_SPEC)
       .getOrElse(throw new RuntimeException(s"Storm spout spec not found for processor $pid"))
   private val spout = Utils.getSetComponentObject(spoutSpec.get_spout_object()).asInstanceOf[ISpout]
+  private val stormConfig = getStormConfig(conf, spoutSpec.get_common())
   private val topologyContextBuilder = TopologyContextBuilder(topology, stormConfig, multiLang = spout.isInstanceOf[ShellSpout])
   private val collector = new StormOutputCollector(taskContext, pid, spoutId)
 

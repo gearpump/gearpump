@@ -68,7 +68,7 @@ object StormRunner extends AkkaApp with ArgumentsParser {
     val stormOptions = Array("-Dstorm.options=" +
       s"${Config.NIMBUS_HOST}=127.0.0.1,${Config.NIMBUS_THRIFT_PORT}=${GearpumpThriftServer.THRIFT_PORT}",
       "-Dstorm.jar=" + jar,
-      "-Dstorm.conf.file=" + stormConf
+      "-Dstorm.conf.file=" + stormConf.getName
     )
 
     val classPath = Array(System.getProperty("java.class.path"), stormConf.getParent, jar)
@@ -119,7 +119,7 @@ object StormRunner extends AkkaApp with ArgumentsParser {
         val processorGraph = graphBuilder.build(topology)
         val config = UserConfig.empty
           .withValue[StormTopology](TOPOLOGY, topology)
-          .withValue[String](STORM_CONFIG, jsonConf)
+          .withString(STORM_CONFIG, jsonConf)
         val app = StreamApplication("storm", processorGraph, config)
         val appId = clientContext.submit(app, jar)
         applications += name -> appId

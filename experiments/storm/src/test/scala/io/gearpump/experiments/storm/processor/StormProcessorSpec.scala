@@ -19,18 +19,15 @@
 package io.gearpump.experiments.storm.processor
 
 import akka.actor.ActorSystem
-import backtype.storm.generated.{GlobalStreamId, Bolt}
+import backtype.storm.generated.{Bolt, GlobalStreamId}
 import backtype.storm.utils.Utils
-import io.gearpump.experiments.storm.util.{TopologyUtil, StormTuple, StormUtil, GraphBuilder}
-import io.gearpump.streaming._
-import io.gearpump.streaming.task.{StartTime, TaskId}
 import io.gearpump.Message
 import io.gearpump.cluster.{TestUtil, UserConfig}
-import io.gearpump.experiments.storm.util.TopologyUtil
-import GraphBuilder._
-import io.gearpump.partitioner.{PartitionerObject, PartitionerDescription}
+import io.gearpump.experiments.storm.util.GraphBuilder._
+import io.gearpump.experiments.storm.util.{GraphBuilder, StormTuple, StormUtil, TopologyUtil}
+import io.gearpump.partitioner.{PartitionerDescription, PartitionerObject}
 import io.gearpump.streaming._
-import io.gearpump.streaming.task.StartTime
+import io.gearpump.streaming.task.{StartTime, TaskId}
 import org.json.simple.JSONValue
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -38,6 +35,7 @@ import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
+
 import scala.collection.JavaConversions._
 
 class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
@@ -64,7 +62,7 @@ class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with
     val stormConfig = Utils.readStormConfig()
     val userConfig = UserConfig.empty
       .withValue(TOPOLOGY, topology)
-      .withValue(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
+      .withString(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
     val fieldGen = Gen.alphaStr
 
     val bolts = topology.get_bolts()

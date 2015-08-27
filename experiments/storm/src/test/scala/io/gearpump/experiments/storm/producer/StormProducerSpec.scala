@@ -20,24 +20,20 @@ package io.gearpump.experiments.storm.producer
 
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
-import backtype.storm.generated.{SpoutSpec}
+import backtype.storm.generated.SpoutSpec
 import backtype.storm.utils.Utils
-import io.gearpump.experiments.storm.util.{TopologyUtil, StormUtil, GraphBuilder}
-import io.gearpump.streaming.{Processor, DAG, MockUtil}
-import io.gearpump.streaming.task.{StartTime, TaskId}
 import io.gearpump.Message
 import io.gearpump.cluster.{TestUtil, UserConfig}
-import GraphBuilder._
-import io.gearpump.experiments.storm.util.TopologyUtil
-import io.gearpump.partitioner.{PartitionerObject, PartitionerDescription}
-import io.gearpump.streaming.Processor
-import io.gearpump.streaming.task.StartTime
+import io.gearpump.experiments.storm.util.GraphBuilder._
+import io.gearpump.experiments.storm.util.{GraphBuilder, StormUtil, TopologyUtil}
+import io.gearpump.partitioner.{PartitionerDescription, PartitionerObject}
+import io.gearpump.streaming.task.{StartTime, TaskId}
+import io.gearpump.streaming.{DAG, MockUtil, Processor}
 import org.json.simple.JSONValue
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import scala.collection.JavaConversions._
 
 class StormProducerSpec extends PropSpec with PropertyChecks with Matchers {
   import StormUtil._
@@ -65,7 +61,7 @@ class StormProducerSpec extends PropSpec with PropertyChecks with Matchers {
     val stormConfig = Utils.readStormConfig()
     val userConfig = UserConfig.empty
       .withValue(TOPOLOGY, topology)
-      .withValue(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
+      .withString(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
 
     val mockTaskActor = TestProbe()
 

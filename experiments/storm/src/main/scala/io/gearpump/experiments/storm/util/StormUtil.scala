@@ -48,12 +48,14 @@ object StormUtil {
       .getOrElse(throw new RuntimeException("storm topology is not found"))
   }
 
-  def getStormConfig(config: UserConfig)(implicit system: ActorSystem) : JMap[_, _] = {
-    val serConf = config.getValue[String](STORM_CONFIG)
-      .getOrElse(throw new RuntimeException("storm config not found"))
-    val conf = JSONValue.parse(serConf).asInstanceOf[JMap[AnyRef, AnyRef]]
-    stormConfig.putAll(conf)
+  def getStormConfig(config: UserConfig, common: ComponentCommon)(implicit system: ActorSystem) : JMap[_, _] = {
+    config.getString(STORM_CONFIG).foreach(conf => stormConfig.putAll(parseJsonStringToMap(conf)))
+    Option(common.get_json_conf()).foreach(conf => stormConfig.putAll(parseJsonStringToMap(conf)))
     stormConfig
+  }
+
+  def parseJsonStringToMap(json: String): JMap[AnyRef, AnyRef] = {
+    JSONValue.parse(json).asInstanceOf[JMap[AnyRef, AnyRef]]
   }
 
   def getComponentToStreamFields(topology: StormTopology): JMap[String, JMap[String, Fields]] = {
