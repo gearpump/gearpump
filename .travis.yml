@@ -8,7 +8,7 @@ script:
 - echo "TRAVIS_TAG" $TRAVIS_TAG
 - echo "repo" $TRAVIS_REPO_SLUG
 - if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]];
-    then sbt clean coverage +test;
+    then sbt -jvm-opts project/travis/jvmopts clean coverage +test;
   elif [[ $TRAVIS_BRANCH == "master" ]];
     then sbt clean +publish;
   elif [[ $TRAVIS_TAG != "" ]];
