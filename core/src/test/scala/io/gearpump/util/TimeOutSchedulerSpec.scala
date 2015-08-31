@@ -40,7 +40,7 @@ class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with I
       val testActorRef = TestActorRef(Props(classOf[TestActor], mockActor.ref))
       val testActor = testActorRef.underlyingActor.asInstanceOf[TestActor]
       testActor.sendMsgToReply()
-      mockActor.expectMsg(Echo)
+      mockActor.expectMsg(30 seconds, Echo)
       testActor.sendMsgToIgnore()
       mockActor.expectMsg(30 seconds, MessageTimeOut)
     }
