@@ -19,11 +19,11 @@
 package io.gearpump.experiments.storm.partitioner
 
 import io.gearpump.Message
-import io.gearpump.partitioner.Partitioner
+import io.gearpump.partitioner.UnicastPartitioner
 
 import scala.util.Random
 
-class NoneGroupingPartitioner extends Partitioner {
+class NoneGroupingPartitioner extends UnicastPartitioner {
   val random = new Random
   override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
     random.nextInt % partitionNum

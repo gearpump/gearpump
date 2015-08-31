@@ -19,13 +19,14 @@
 package io.gearpump.experiments.storm.partitioner
 
 import backtype.storm.tuple.Fields
-import io.gearpump.experiments.storm.util.StormTuple
 import io.gearpump.Message
-import io.gearpump.partitioner.Partitioner
+import io.gearpump.experiments.storm.util.StormTuple
+import io.gearpump.partitioner.UnicastPartitioner
+
 import scala.collection.JavaConversions._
 
 
-private[storm] class FieldsGroupingPartitioner(outFields: Fields, groupFields: Fields) extends Partitioner {
+private[storm] class FieldsGroupingPartitioner(outFields: Fields, groupFields: Fields) extends UnicastPartitioner {
   override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
     val values = msg.msg.asInstanceOf[StormTuple].tuple
     val hash = outFields.select(groupFields, values).hashCode()

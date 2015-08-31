@@ -28,7 +28,7 @@ import io.gearpump.experiments.storm.producer.StormProducer
 import io.gearpump.streaming.Processor
 import io.gearpump.streaming.task.Task
 import io.gearpump.cluster.UserConfig
-import io.gearpump.partitioner.{ShuffleGroupingPartitioner, Partitioner}
+import io.gearpump.partitioner.{BroadcastPartitioner, ShuffleGroupingPartitioner, Partitioner}
 import io.gearpump.util.Graph
 
 import scala.collection.JavaConversions._
@@ -121,7 +121,7 @@ private[storm] class GraphBuilder {
       case Grouping._Fields.SHUFFLE =>
         new ShuffleGroupingPartitioner
       case Grouping._Fields.ALL =>
-        throw new RuntimeException("all grouping not supported")
+        new BroadcastPartitioner
       case Grouping._Fields.NONE =>
         new NoneGroupingPartitioner
       case Grouping._Fields.CUSTOM_SERIALIZED =>

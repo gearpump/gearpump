@@ -25,7 +25,7 @@ import io.gearpump.Message
 /**
  * Round Robin partition the data.
  */
-class ShufflePartitioner extends Partitioner {
+class ShufflePartitioner extends UnicastPartitioner {
   private var seed = 0
   private var count = 0
 

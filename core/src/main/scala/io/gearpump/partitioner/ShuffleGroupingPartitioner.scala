@@ -25,7 +25,7 @@ import scala.util.Random
  * Messages are randomly distributed across the downstream's tasks in a way such that
  * each task is guaranteed to get an equal number of messages.
  */
-class ShuffleGroupingPartitioner extends Partitioner {
+class ShuffleGroupingPartitioner extends UnicastPartitioner {
   private val random = new Random
   private var index = -1
   private var partitions = List.empty[Int]

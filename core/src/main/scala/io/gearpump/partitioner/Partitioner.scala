@@ -22,9 +22,10 @@ import io.gearpump.Message
 import scala.reflect.ClassTag
 import org.apache.commons.lang.SerializationUtils
 
-trait Partitioner extends Serializable {
+sealed trait Partitioner extends Serializable
 
-  /**
+trait UnicastPartitioner extends Partitioner {
+    /**
    *
    * @param msg
    * @param partitionNum
@@ -32,12 +33,21 @@ trait Partitioner extends Serializable {
    *   partition id,
    * @return
    */
-  def getPartition(msg : Message, partitionNum : Int, currentPartitionId: Int) : Int
+  def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int
 
-  def getPartition(msg : Message, partitionNum : Int) : Int = {
+  def getPartition(msg: Message, partitionNum: Int): Int = {
     getPartition(msg, partitionNum, Partitioner.UNKNOWN_PARTITION_ID)
   }
 }
+
+trait MulticastPartitioner extends Partitioner {
+  def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): List[Int]
+
+  def getPartitions(msg: Message, partitionNum: Int): List[Int] = {
+    getPartitions(msg, partitionNum, Partitioner.UNKNOWN_PARTITION_ID)
+  }
+}
+
 
 sealed trait PartitionerFactory {
 
