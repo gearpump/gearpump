@@ -26,15 +26,15 @@ import com.typesafe.config.Config
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster._
-import io.gearpump.cluster.MasterToClient.{ResolveWorkerIdResult, MasterConfig}
+import io.gearpump.cluster.MasterToClient.{MasterConfig, ResolveWorkerIdResult}
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToMaster._
 import io.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVFailed, GetKVSuccess, PutKV}
 import io.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated, _}
 import io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
-import io.gearpump.metrics.Metrics.ReportMetrics
-import io.gearpump.metrics.{MetricsReporterService, Metrics, JvmMetricsSet}
 import io.gearpump.jarstore.local.LocalJarStore
+import io.gearpump.metrics.Metrics.ReportMetrics
+import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
@@ -197,7 +197,7 @@ private[cluster] class Master extends Actor with Stash {
     }
   }
 
-  import scala.util.{Success, Failure}
+  import scala.util.{Failure, Success}
 
   def clientMsgHandler : Receive = {
     case app : SubmitApplication =>

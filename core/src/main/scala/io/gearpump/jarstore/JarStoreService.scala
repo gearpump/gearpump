@@ -17,12 +17,14 @@
  */
 package io.gearpump.jarstore
 
+import java.io.File
+import java.net.URI
 import java.util.ServiceLoader
 
-import java.net.URI
-import java.io.File
+import akka.actor.{ActorSystem, ActorRefFactory}
 import com.typesafe.config.Config
-import io.gearpump.util.{Util, Constants}
+import io.gearpump.util.{Constants, Util}
+
 import scala.collection.JavaConverters._
 
 case class FilePath(path: String)
@@ -32,6 +34,8 @@ trait JarStoreService {
     * The scheme of the JarStoreService.
    */
   val scheme : String
+
+  def init(config: Config, actorRefFactory: ActorRefFactory)
 
   /**
     * This function will copy the local file to the remote JarStore, called from client side.
@@ -59,8 +63,8 @@ object JarStoreService {
   }
 
   def get(config: Config): JarStoreService = {
-      val jarStoreRootPath = config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH)
-      get(jarStoreRootPath)
-   }
+    val jarStoreRootPath = config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH)
+    get(jarStoreRootPath)
+  }
 }
 

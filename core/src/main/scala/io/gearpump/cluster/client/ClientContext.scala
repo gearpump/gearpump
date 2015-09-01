@@ -27,7 +27,7 @@ import io.gearpump.cluster.MasterToAppMaster.AppMastersData
 import io.gearpump.cluster.MasterToClient.ReplayApplicationResult
 import io.gearpump.cluster._
 import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.jarstore.{ActorSystemRequired, ConfigRequired, FilePath, JarStoreService}
+import io.gearpump.jarstore.{FilePath, JarStoreService}
 import io.gearpump.util.Constants._
 import io.gearpump.util.{Constants, LogUtil, Util}
 import org.slf4j.Logger
@@ -46,10 +46,7 @@ class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[Act
 
   private val master = _master.getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
   private val jarStoreService = JarStoreService.get(config)
-  jarStoreService match {
-    case needConfig: ConfigRequired => needConfig.init(config)
-    case needSystem: ActorSystemRequired => needSystem.init(system)
-  }
+  jarStoreService.init(config, system)
 
   LOG.info(s"Creating master proxy ${master} for master list: $masters")
 

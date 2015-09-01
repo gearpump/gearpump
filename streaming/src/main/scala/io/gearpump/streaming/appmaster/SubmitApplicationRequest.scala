@@ -18,11 +18,12 @@
 
 package io.gearpump.streaming.appmaster
 
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.{ProcessorId, ProcessorDescription}
 import io.gearpump.util.Graph
 
 case class SubmitApplicationRequest (
-    appName: String = null,
-    appJar: String = null,
-    processors: Map[ProcessorId, ProcessorDescription] = null,
-    dag: Graph[Int, String] = null)
+    appName: String,
+    processors: Map[ProcessorId, ProcessorDescription],
+    dag: Graph[Int, String],
+    userconfig: UserConfig = UserConfig.empty)

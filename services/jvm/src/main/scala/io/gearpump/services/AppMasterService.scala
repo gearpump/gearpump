@@ -18,44 +18,31 @@
 
 package io.gearpump.services
 
-import java.io.File
-
 import akka.actor.{ActorRef, ActorSystem}
 import io.gearpump.streaming.AppMasterToMaster
 import io.gearpump.streaming.appmaster.{StreamAppMasterSummary, DagManager}
 import io.gearpump.streaming.executor.Executor
-import io.gearpump.cluster.AppJar
 import io.gearpump.cluster.AppMasterToMaster.{GeneralAppMasterSummary, AppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
-import io.gearpump.jarstore.{FilePath, ActorSystemRequired, ConfigRequired, JarStoreService}
 import AppMasterService.Status
 import AppMasterToMaster.StallingTasks
 import DagManager._
 import Executor.{ExecutorConfig, QueryExecutorConfig, ExecutorSummary, GetExecutorSummary}
 import io.gearpump.util.ActorUtil.{askActor, askAppMaster}
-import io.gearpump.util.{FileUtils, Constants, LogUtil}
+import io.gearpump.util.{Constants, Util}
 import spray.http.{MediaTypes, MultipartFormData}
 import spray.routing.HttpService
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 import upickle.default.{write, read}
-import AppMasterService._
 
 trait AppMasterService extends HttpService {
+  this: JarStoreProvider =>
+
   def master: ActorRef
-
   implicit val system: ActorSystem
-
-  lazy val jarStoreService = {
-    val service = JarStoreService.get(system.settings.config)
-    service match {
-      case needConfig: ConfigRequired => needConfig.init(system.settings.config)
-      case needSystem: ActorSystemRequired => needSystem.init(system)
-    }
-    service
-  }
 
   def appMasterRoute = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -72,7 +59,7 @@ trait AppMasterService extends HttpService {
                 if(jar.nonEmpty) {
                   dagOperation match {
                     case replace: ReplaceProcessor =>
-                      val description = replace.newProcessorDescription.copy(jar = uploadJar(jar.get, jarStoreService))
+                      val description = replace.newProcessorDescription.copy(jar = Util.uploadJar(jar.get, getJarStoreService))
                       dagOperation = replace.copy(newProcessorDescription = description)
                   }
                 }
@@ -213,12 +200,4 @@ trait AppMasterService extends HttpService {
 
 object AppMasterService {
   case class Status(success: Boolean, reason: String = null)
-
-  def uploadJar(jarData: Array[Byte], jarStoreService: JarStoreService): AppJar = {
-    val jarFile = File.createTempFile("gearpump_userapp_", "")
-    FileUtils.writeByteArrayToFile(jarFile, jarData)
-    val remotePath = FilePath(Math.abs(new java.util.Random().nextLong()).toString)
-    jarStoreService.copyFromLocal(jarFile, remotePath)
-    AppJar(jarFile.getName, remotePath)
-  }
 }

@@ -128,7 +128,7 @@ object DagManager {
   case object GetLatestDAG
   case class LatestDAG(dag: DAG)
 
-  
+
   case class GetTaskLaunchData(dagVersion: Int, processorId: Int, context: AnyRef = null)
   case class TaskLaunchData(processorDescription : ProcessorDescription, subscribers: List[Subscriber], context: AnyRef = null)
 
