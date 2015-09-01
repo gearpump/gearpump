@@ -19,10 +19,9 @@
 package io.gearpump.streaming.dsl
 
 import akka.actor.ActorSystem
-import io.gearpump.streaming.dsl.plan.OpTranslator.SourceTask
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.dsl.plan.OpTranslator._
+import io.gearpump.streaming.dsl.plan.OpTranslator.SourceTask
 import org.mockito.Mockito.when
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
