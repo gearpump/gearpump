@@ -189,7 +189,8 @@ angular.module('dashboard')
       /** Return the number of inputs and outputs of a processor */
       calculateProcessorConnections: function(processorId) {
         var result = {inputs: 0, outputs: 0};
-        _.forEach(this.edges, function(edge) {
+        var aliveProcessors = this._getAliveProcessors();
+        _.forEach(this._getProcessorEdges(aliveProcessors), function(edge) {
           if (edge.source === processorId) {
             result.outputs++;
           } else if (edge.target === processorId) {
