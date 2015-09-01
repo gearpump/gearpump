@@ -18,14 +18,14 @@
 
 package io.gearpump.streaming.dsl
 
-import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import akka.actor.ActorSystem
+import io.gearpump.cluster.UserConfig
+import io.gearpump.cluster.client.ClientContext
 import io.gearpump.streaming.StreamApplication
-import io.gearpump.streaming.dsl.op.{DataSourceOp, OpEdge, Op}
+import io.gearpump.streaming.dsl.op.{DataSourceOp, Op, OpEdge}
 import io.gearpump.streaming.dsl.plan.Planner
 import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.cluster.UserConfig
-import io.gearpump.cluster.client.ClientContext
 import io.gearpump.util.Graph
 import io.gearpump.{Message, TimeStamp}
 
@@ -78,15 +78,37 @@ object StreamApp {
   }
 }
 
-trait TypedDataSource[T] extends DataSource
+object TimeExtractor {
+  def apply[T](fn: T => TimeStamp): TimeExtractor[T] = new TimeExtractor[T] {
+    override def apply(t: T): TimeStamp = fn(t)
+  }
+}
+trait TimeExtractor[T] {
+  def apply(t: T): TimeStamp
+}
+
+trait TypedDataSource[T] extends DataSource {
+  def setTimeExtractor(extractor: TimeExtractor[T]): Unit
+}
 
 class CollectionDataSource[T](seq: Seq[T]) extends TypedDataSource[T] {
   var index = 0
+  var timeExtractor: TimeExtractor[T] = TimeExtractor((t: T) => System.currentTimeMillis())
+  val seqLength = seq.length
+
+  override def setTimeExtractor(extractor: TimeExtractor[T]): Unit = {
+    this.timeExtractor = extractor
+  }
 
   override def read(batchSize: Int): List[Message] = {
-    val size = Math.min(seq.length - index % seq.length, batchSize)
-    index += size
-    seq.slice(index % seq.length - size, size).toList.map(msg => Message(msg.asInstanceOf[AnyRef], System.currentTimeMillis()))
+    if (seqLength == 0) {
+      List.empty[Message]
+    } else {
+      if (index > seqLength) index = 0
+      val data = seq.slice(index , batchSize).toList.map(msg => Message(msg.asInstanceOf[AnyRef], timeExtractor(msg)))
+      index += batchSize
+      data
+    }
   }
 
   override def close(): Unit = {}
