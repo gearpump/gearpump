@@ -19,8 +19,8 @@
 package io.gearpump.experiments.storm.partitioner
 
 import io.gearpump.Message
-import io.gearpump.partitioner.Partitioner
+import io.gearpump.partitioner.UnicastPartitioner
 
-private[storm] class GlobalGroupingPartitioner extends Partitioner {
+private[storm] class GlobalGroupingPartitioner extends UnicastPartitioner {
   override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = 0
 }

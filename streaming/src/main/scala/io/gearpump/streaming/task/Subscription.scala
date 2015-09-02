@@ -19,11 +19,12 @@
 package io.gearpump.streaming.task
 
 import io.gearpump.google.common.primitives.Shorts
+import io.gearpump.partitioner.{MulticastPartitioner, UnicastPartitioner}
 import io.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import io.gearpump.streaming.LifeTime
 import io.gearpump.streaming.task.Subscription._
 import io.gearpump.util.LogUtil
-import io.gearpump.{TimeStamp, Message}
+import io.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
 /**
@@ -49,21 +50,34 @@ class Subscription(
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
-  import subscriber.{partitionerDescription, processorId, parallelism}
+  import subscriber.{parallelism, partitionerDescription, processorId}
 
   // Don't worry if this store negative number. We will wrap the Short
   private val messageCount: Array[Short] = new Array[Short](parallelism)
   private val pendingMessageCount: Array[Short] = new Array[Short](parallelism)
   private val candidateMinClockSince: Array[Short] = new Array[Short](parallelism)
 
-  private var minClockValue: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
-  private var candidateMinClock: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
+  private val minClockValue: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
+  private val candidateMinClock: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
 
   private var maxPendingCount: Short = 0
 
   private var life = subscriber.lifeTime
 
   val partitioner = partitionerDescription.partitionerFactory.partitioner
+  val sendFn = partitioner match {
+    case up: UnicastPartitioner =>
+      (msg: Message) => {
+        val partition = up.getPartition(msg, parallelism, taskId.index)
+        sendMessage(msg, partition)
+      }
+    case mp: MulticastPartitioner =>
+      (msg: Message) => {
+        val partitions = mp.getPartitions(msg, parallelism, taskId.index)
+        partitions.map(partition => sendMessage(msg, partition)).sum
+      }
+
+  }
 
   def changeLife(life: LifeTime): Unit = {
     this.life = life
@@ -74,17 +88,20 @@ class Subscription(
     transport.transport(ackRequest, allTasks: _*)
   }
 
+  def sendMessage(msg: Message): Int = {
+    sendFn(msg)
+  }
+
   /**
    * Return how many message is actually sent by this subscription
    * @param msg
    * @return
    */
-  def sendMessage(msg: Message): Int = {
+  def sendMessage(msg: Message, partition: Int): Int = {
 
     // only send message whose timestamp matches the lifeTime
     if (life.contains(msg.timestamp)) {
 
-      val partition = partitioner.getPartition(msg, parallelism, taskId.index)
       val targetTask = TaskId(processorId, partition)
       transport.transport(msg, targetTask)
 

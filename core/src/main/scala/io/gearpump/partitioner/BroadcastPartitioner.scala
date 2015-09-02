@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,13 +20,8 @@ package io.gearpump.partitioner
 
 import io.gearpump.Message
 
-/**
- * Only make sense when the message has implemented the hashCode()
- * Otherwise, it will use Object.hashCode(), which will not return
- * same hash code after serialization and deserialization.
- */
-class HashPartitioner extends UnicastPartitioner {
-  override def getPartition(msg : Message, partitionNum : Int, currentPartitionId: Int) : Int = {
-    (msg.msg.hashCode() & Integer.MAX_VALUE) % partitionNum
+class BroadcastPartitioner extends MulticastPartitioner {
+  override def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): List[Int] = {
+    (0 until partitionNum).toList
   }
 }
