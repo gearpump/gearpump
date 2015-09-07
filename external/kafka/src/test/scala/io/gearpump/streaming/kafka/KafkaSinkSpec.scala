@@ -20,8 +20,8 @@ package io.gearpump.streaming.kafka
 
 import com.twitter.bijection.Injection
 import io.gearpump.Message
-import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
-import org.mockito.Matchers._
+import io.gearpump.streaming.MockUtil
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
@@ -39,12 +39,17 @@ class KafkaSinkSpec extends PropSpec with PropertyChecks with Matchers with Mock
   property("KafkaSink write should send producer record") {
     forAll(dataGen) {
       (data: (String, Array[Byte], Array[Byte])) =>
-      val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
-      val (topic, key, msg) = data
-      val kafkaSink = new KafkaSink(() => producer, topic)
-      kafkaSink.write(Message((key, msg)))
-      verify(producer).send(anyObject[ProducerRecord[Array[Byte], Array[Byte]]]())
-      kafkaSink.close()
+        val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
+        val (topic, key, msg) = data
+        val kafkaSink = new KafkaSink(() => producer, topic)
+        kafkaSink.write(Message((key, msg)))
+        verify(producer).send(MockUtil.argMatch[ProducerRecord[Array[Byte], Array[Byte]]](
+          r => r.topic == topic && (r.key sameElements key) && (r.value sameElements msg)))
+        kafkaSink.write(Message(msg))
+        verify(producer).send(MockUtil.argMatch[ProducerRecord[Array[Byte], Array[Byte]]](
+          r => r.topic() == topic && (r.key == null) && (r.value() sameElements msg)
+        ))
+        kafkaSink.close()
     }
   }
 

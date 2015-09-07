@@ -38,7 +38,7 @@ object KafkaWordCount extends AkkaApp with ArgumentsParser {
     "source" -> CLIOption[Int]("<hom many kafka producer tasks>", required = false, defaultValue = Some(1)),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(1)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1)),
-    "sink" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(4))
+    "sink" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(1))
     )
 
   def application(config: ParseResult, system: ActorSystem) : StreamApplication = {

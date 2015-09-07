@@ -61,8 +61,12 @@ class KafkaSink private[kafka](getProducer: () => KafkaProducer[Array[Byte], Arr
   override def open(context: TaskContext): Unit = {}
 
   override def write(message: Message): Unit = {
-    val (key, value) = message.msg.asInstanceOf[(Array[Byte], Array[Byte])]
-    val record = new ProducerRecord[Array[Byte], Array[Byte]](topic, key, value)
+    val record = message.msg match {
+      case (k, v) =>
+        new ProducerRecord[Array[Byte], Array[Byte]](topic, k.asInstanceOf[Array[Byte]], v.asInstanceOf[Array[Byte]])
+      case v =>
+        new ProducerRecord[Array[Byte], Array[Byte]](topic, v.asInstanceOf[Array[Byte]])
+    }
     producer.send(record)
   }
 
