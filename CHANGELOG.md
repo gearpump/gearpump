@@ -1,3 +1,16 @@
+Gearpump 0.6.1.4
+==========================
+
+Change log:
+--------------------
+- #1370: support storm tick tuple
+- #1381: test on travis out of memory
+- #1266: should exclude dead edges
+- #1238: adds BroadcastPartitioner
+- #1395: cross publishSigned
+- #1397: allow KafkaSink to receive Message of bytes
+- #1374: remove jars of yarn in executor's classpath
+
 Gearpump 0.6.1
 ==========================
 Highlight: new version UI dashboard.
@@ -5,8 +18,8 @@ Highlight: new version UI dashboard.
 
 Change log:
 --------------------
-- #1369: object path and metrics name are divided by ':' now
-- #1369: fixed data initialization issue of echart
+- #1359: object path and metrics name are divided by ':' now
+- #1363: fixed data initialization issue of echart
 - #1364, add default value for BYTES_PER_MESSAGE of SOLStreamProducer
 - #1361: able to show multiple tasks in chart (better not select mo…
 - #1358: properties will be updated (2) moved roboto font and echar…  
