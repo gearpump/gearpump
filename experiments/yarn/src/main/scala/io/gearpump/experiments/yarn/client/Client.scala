@@ -96,7 +96,7 @@ class Client(configuration: AppConfig, yarnConf: YarnConfiguration, yarnClient: 
     val logdir = ApplicationConstants.LOG_DIR_EXPANSION_VAR
     val command = s"$exe  -cp ${classPath.mkString(File.pathSeparator)}${File.pathSeparator}" +
       "$CLASSPATH" +
-      s" -D${Constants.GEARPUMP_HOME}=${Environment.HOME.$$()}/pack" +
+      s" -D${Constants.GEARPUMP_HOME}=${Environment.LOCAL_DIRS.$$()}/${Environment.CONTAINER_ID.$$()}/pack" +
       s" $mainClass" +
       s" -version $version" +
       " 1>" + logdir +"/" + ApplicationConstants.STDOUT +
