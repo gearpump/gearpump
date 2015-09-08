@@ -21,10 +21,11 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.pattern.ask
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem, ActorRefFactory}
 import io.gearpump.cluster.ClientToMaster.{JarStoreServerAddress, GetJarStoreServer}
 import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.jarstore.{ActorSystemRequired, FilePath, JarStoreService}
+import com.typesafe.config.Config
+import io.gearpump.jarstore.{FilePath, JarStoreService}
 import io.gearpump.util._
 import scala.collection.JavaConversions._
 import org.slf4j.Logger
@@ -32,23 +33,18 @@ import org.slf4j.Logger
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-class LocalJarStoreService extends JarStoreService with ActorSystemRequired{
+class LocalJarStoreService extends JarStoreService{
   private def LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Constants.FUTURE_TIMEOUT
-  private var system : ActorSystem = null
+  private var actorRefFactory : akka.actor.ActorRefFactory = null
   private var master : ActorRef = null
 
   override val scheme: String = "file"
 
-  /**
-   * Use ActorSystem to initiate the JarStoreService
-   * @param system
-   */
-  override def init(system: ActorSystem): Unit = {
-    this.system = system
-    val config = system.settings.config
+  override def init(config: Config, actorRefFactory: ActorRefFactory): Unit = {
+    this.actorRefFactory = actorRefFactory
     val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
-    master = system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}${Util.randInt}")
+    master = actorRefFactory.actorOf(MasterProxy.props(masters), s"masterproxy${Util.randInt}")
   }
 
   /**
@@ -62,7 +58,7 @@ class LocalJarStoreService extends JarStoreService with ActorSystemRequired{
       val client = FileServer.newClient
       val bytes = client.get(address.url + remotePath).get
       FileUtils.writeByteArrayToFile(localFile, bytes)
-    }(system.dispatcher)
+    }(actorRefFactory.dispatcher)
     Await.ready(future, Duration(15, TimeUnit.SECONDS))
   }
 
@@ -77,7 +73,7 @@ class LocalJarStoreService extends JarStoreService with ActorSystemRequired{
       val bytes = FileUtils.readFileToByteArray(localFile)
       val client = FileServer.newClient
       client.save(address.url + remotePath, bytes)
-    }(system.dispatcher)
+    }(actorRefFactory.dispatcher)
     Await.ready(future, Duration(15, TimeUnit.SECONDS))
   }
 }

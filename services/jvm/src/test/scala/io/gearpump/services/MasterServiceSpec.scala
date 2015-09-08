@@ -31,6 +31,7 @@ import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfi
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.cluster.worker.WorkerSummary
+import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.{Constants, Graph}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import spray.http.{BodyPart, ContentTypes, HttpEntity, MultipartFormData}
@@ -39,15 +40,18 @@ import spray.testkit.ScalatestRouteTest
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
 
-
-class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with Matchers with BeforeAndAfterAll {
-
+class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterService with
+  Matchers with BeforeAndAfterAll with JarStoreProvider{
   import upickle.default.{read, write}
 
   def actorRefFactory = system
 
   val workerId = 0
   val mockWorker = TestProbe()
+
+  lazy val jarStoreService = JarStoreService.get(system.settings.config)
+
+  override def getJarStoreService: JarStoreService = jarStoreService
 
   mockWorker.setAutoPilot {
     new AutoPilot {
@@ -165,7 +169,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
 
   import io.gearpump.util.Graph._
   val dag = Graph(0 ~ "partitioner" ~> 1)
-  val submit = SubmitApplicationRequest("complexdag", appJar = null, processors, dag)
+  val submit = SubmitApplicationRequest("complexdag", processors, dag)
 
   "submitDag" should "submit a SubmitApplicationRequest and get an appId > 0" in {
     implicit val timeout = Constants.FUTURE_TIMEOUT

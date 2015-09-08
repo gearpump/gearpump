@@ -18,27 +18,23 @@
 package io.gearpump.jarstore.dfs
 
 import java.io.File
+import akka.actor.ActorRefFactory
 import com.typesafe.config.Config
-import io.gearpump.util.Constants
 import org.apache.hadoop.fs.Path
-import io.gearpump.jarstore.{ConfigRequired, FilePath, JarStoreService}
+import io.gearpump.jarstore.{FilePath, JarStoreService}
 import io.gearpump.util.LogUtil
 import org.apache.hadoop.conf.Configuration
 import io.gearpump.util.Constants
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
 import org.slf4j.Logger
 
-class DFSJarStoreService extends JarStoreService with ConfigRequired{
+class DFSJarStoreService extends JarStoreService {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private var rootPath: Path = null
 
   override val scheme: String = "hdfs"
 
-  /**
-   * Use config to initiate the JarStoreService
-   * @param config
-   */
-  override def init(config: Config): Unit = {
+  override def init(config: Config, actorRefFactory: ActorRefFactory): Unit = {
     rootPath = new Path(config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH))
     val fs = rootPath.getFileSystem(new Configuration())
     if (!fs.exists(rootPath)) {

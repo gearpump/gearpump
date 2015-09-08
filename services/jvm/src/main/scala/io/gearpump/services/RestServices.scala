@@ -20,18 +20,21 @@ package io.gearpump.services
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.io.IO
-import org.apache.commons.lang.exception.ExceptionUtils
+import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.{Constants, LogUtil}
+import org.apache.commons.lang.exception.ExceptionUtils
 import spray.can._
+import spray.http.StatusCodes._
 import spray.routing.{ExceptionHandler, RoutingSettings}
 import spray.util.LoggingContext
-import org.apache.commons.lang.SerializationUtils
-import spray.http.StatusCodes._
+
 trait RestServices extends
     StaticService with
     MasterService with
     WorkerService with
-    AppMasterService {
+    AppMasterService with
+    JarStoreProvider {
+
   implicit def executionContext = actorRefFactory.dispatcher
 
   lazy val routes =
@@ -43,10 +46,18 @@ trait RestServices extends
     staticRoute
 }
 
+trait JarStoreProvider {
+  def getJarStoreService: JarStoreService
+}
+
 class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
   def actorRefFactory = context
   implicit val system: ActorSystem = sys
   implicit val eh = RoutingSettings.default(context)
+  val jarStoreService = JarStoreService.get(system.settings.config)
+  jarStoreService.init(system.settings.config, actorRefFactory)
+
+  override def getJarStoreService: JarStoreService = jarStoreService
 
   implicit def myExceptionHandler(implicit log: LoggingContext): ExceptionHandler = ExceptionHandler{
     case ex: Throwable =>
@@ -55,8 +66,8 @@ class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with R
         complete(InternalServerError, ExceptionUtils.getStackTrace(ex))
       }
   }
-
   val master = masters
+
   def receive = runRoute(routes)
 }
 

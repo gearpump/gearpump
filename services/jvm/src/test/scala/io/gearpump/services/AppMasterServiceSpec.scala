@@ -22,28 +22,33 @@ import akka.actor.ActorRef
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
-import io.gearpump.streaming.executor.Executor
 import io.gearpump.cluster.AppMasterToMaster.GeneralAppMasterSummary
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
-import Executor.{ExecutorConfig, QueryExecutorConfig, ExecutorSummary, GetExecutorSummary}
+import io.gearpump.jarstore.JarStoreService
+import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
 import spray.testkit.ScalatestRouteTest
+import upickle.default.read
 
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
-import upickle.default.{read,write}
 
-class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService with Matchers with BeforeAndAfterAll {
+class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService
+  with Matchers with BeforeAndAfterAll with JarStoreProvider{
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
 
   val mockAppMaster = TestProbe()
   val failure = LastFailure(System.currentTimeMillis(), "Some error")
+
+  lazy val jarStoreService = JarStoreService.get(system.settings.config)
+
+  override def getJarStoreService: JarStoreService = jarStoreService
 
   mockAppMaster.setAutoPilot {
     new AutoPilot {

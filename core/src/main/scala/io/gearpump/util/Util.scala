@@ -22,6 +22,8 @@ import java.io.File
 import java.net.URI
 import java.net.ServerSocket
 import com.typesafe.config.Config
+import io.gearpump.cluster.AppJar
+import io.gearpump.jarstore.{FilePath, JarStoreService}
 import io.gearpump.transport.HostPort
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -99,6 +101,14 @@ object Util {
       socket.close;
       port
     }
+  }
+
+  def uploadJar(jarData: Array[Byte], jarStoreService: JarStoreService): AppJar = {
+    val jarFile = File.createTempFile("gearpump_userapp_", "")
+    FileUtils.writeByteArrayToFile(jarFile, jarData)
+    val remotePath = FilePath(Math.abs(new java.util.Random().nextLong()).toString)
+    jarStoreService.copyFromLocal(jarFile, remotePath)
+    AppJar(jarFile.getName, remotePath)
   }
 
   case class JvmSetting(vmargs : Array[String], classPath : Array[String])

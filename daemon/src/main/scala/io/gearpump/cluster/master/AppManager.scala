@@ -20,23 +20,18 @@ package io.gearpump.cluster.master
 
 import akka.actor._
 import akka.pattern.ask
-import io.gearpump.cluster.AppMasterToMaster.{SaveAppDataFailed, AppDataSaved}
-import io.gearpump.cluster.MasterToAppMaster.{AppMasterDataRequest, AppMasterData, AppMastersDataRequest}
-import io.gearpump.cluster.WorkerToAppMaster.ShutdownExecutorFailed
-import io.gearpump.cluster.master.InMemoryKVService.{GetKVResult, PutKVSuccess, PutKVResult}
-import io.gearpump.util.{ActorUtil, Util, TimeOutScheduler}
-import io.gearpump.cluster.master.AppManager._
-import io.gearpump.cluster.AppMasterToMaster._
+import io.gearpump.cluster.AppMasterToMaster.{AppDataSaved, SaveAppDataFailed, _}
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster._
-import io.gearpump.cluster.MasterToAppMaster._
+import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataRequest, AppMastersDataRequest, _}
 import io.gearpump.cluster.MasterToClient._
+import io.gearpump.cluster.WorkerToAppMaster.{ShutdownExecutorFailed, _}
+import io.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, ApplicationState}
+import io.gearpump.cluster.master.AppManager._
+import io.gearpump.cluster.master.InMemoryKVService.{GetKVResult, PutKVResult, PutKVSuccess, _}
 import io.gearpump.cluster.master.Master._
-import io.gearpump.cluster.WorkerToAppMaster._
-import io.gearpump.cluster.appmaster.{ApplicationState, AppMasterRuntimeInfo}
-import io.gearpump.cluster.master.InMemoryKVService._
 import io.gearpump.util.Constants._
-import io.gearpump.util._
+import io.gearpump.util.{ActorUtil, TimeOutScheduler, Util, _}
 import org.slf4j.Logger
 
 import scala.concurrent.Future

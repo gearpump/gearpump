@@ -23,37 +23,34 @@ import java.io.{File, IOException}
 
 import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.config.Config
-import io.gearpump.services.util.UpickleUtil
-import io.gearpump.streaming.StreamApplication
-import io.gearpump.streaming.appmaster.SubmitApplicationRequest
-import io.gearpump.util.FileUtils
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig, SubmitApplicationResultValue}
-import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.AppSubmitter
-import io.gearpump.cluster.worker.{WorkerSummary}
+import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
+import io.gearpump.streaming.StreamApplication
+import io.gearpump.streaming.appmaster.SubmitApplicationRequest
 import io.gearpump.util.ActorUtil._
-import io.gearpump.util.Constants.GEARPUMP_APP_JAR
-import io.gearpump.util.{Constants, Util}
+import io.gearpump.util.{Constants, FileUtils, Util}
 import spray.http.{BodyPart, MediaTypes, MultipartFormData}
 import spray.routing
 import spray.routing.HttpService
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Try, Failure, Success}
-import UpickleUtil._
+import scala.util.{Failure, Success, Try}
 
 trait MasterService extends HttpService {
+  this: JarStoreProvider =>
+
   import upickle.default.{read, write}
   def master:ActorRef
   implicit val system: ActorSystem
-
   implicit val ec: ExecutionContext = actorRefFactory.dispatcher
+
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
   def masterRoute: routing.Route = {
@@ -140,15 +137,10 @@ trait MasterService extends HttpService {
       path("submitdag") {
         post {
           entity(as[String]) { request =>
-            val submitApplicationRequest = read[SubmitApplicationRequest](request)
-            import submitApplicationRequest.{appJar, appName, dag, processors}
-
-            Option(appJar) match {
-              case Some(jar) =>
-                System.setProperty(GEARPUMP_APP_JAR, appJar)
-              case None =>
-            }
-
+            import io.gearpump.services.util.UpickleUtil._
+            val msg = java.net.URLDecoder.decode(request, "UTF-8")
+            val submitApplicationRequest = read[SubmitApplicationRequest](msg)
+            import submitApplicationRequest.{appName, dag, processors, userconfig}
             val context = ClientContext(system.settings.config, Some(system), Some(master))
 
             val graph = dag.mapVertex {processorId =>
@@ -157,12 +149,26 @@ trait MasterService extends HttpService {
               PartitionerDescription(new PartitionerByClassName(edge))
             }
 
-            val appId = context.submit(new StreamApplication(appName, UserConfig.empty, graph))
+            val appId = context.submit(new StreamApplication(appName, userconfig, graph))
 
-            import upickle.default.{read, write}
+            import upickle.default.write
             val submitApplicationResultValue = SubmitApplicationResultValue(appId)
             val jsonData = write(submitApplicationResultValue)
             complete(jsonData)
+          }
+        }
+      } ~
+      path("uploadjar") {
+        post {
+          entity(as[MultipartFormData]) { formData =>
+            import formData.fields
+            val jar = MasterService.findFormDataOption(fields, "jar")
+            if (jar.isEmpty) {
+              complete(write(
+                MasterService.Status(success = false, reason = "Jar file not supplied")))
+            }
+            val jarFile = Util.uploadJar(jar.get, getJarStoreService)
+            complete(write(jarFile))
           }
         }
       }

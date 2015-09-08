@@ -280,8 +280,13 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   private def getUpdatedDAG(): DAG = {
     val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
     val updated = dag.processors.map{ idAndProcessor =>
-      val (id, processor) = idAndProcessor
-      (id, processor.copy(jar = appContext.appJar.get))
+      val (id, oldProcessor) = idAndProcessor
+      val newProcessor = if(oldProcessor.jar == null) {
+        oldProcessor.copy(jar = appContext.appJar.get)
+      } else {
+        oldProcessor
+      }
+      (id, newProcessor)
     }
     DAG(dag.version, updated, dag.graph)
   }

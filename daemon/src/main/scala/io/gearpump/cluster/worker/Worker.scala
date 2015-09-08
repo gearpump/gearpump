@@ -26,22 +26,23 @@ import java.util.concurrent.{Executors, TimeUnit}
 import akka.actor._
 import akka.pattern.pipe
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
+import io.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
+import io.gearpump.cluster.{ExecutorJVMConfig, ClusterConfig}
 import io.gearpump.cluster.MasterToClient.WorkerConfig
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToAppMaster._
 import io.gearpump.cluster.WorkerToMaster._
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.cluster.{ClusterConfig, ExecutorJVMConfig}
-import io.gearpump.jarstore.{ActorSystemRequired, ConfigRequired, JarStoreService}
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util.{Constants, TimeOutScheduler, _}
+import io.gearpump.jarstore.JarStoreService
+import io.gearpump.util._
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
@@ -66,10 +67,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private var masterInfo: MasterInfo = null
   private var executorNameToActor = Map.empty[String, ActorRef]
   private val jarStoreService = JarStoreService.get(systemConfig)
-  jarStoreService match {
-    case needConfig: ConfigRequired => needConfig.init(systemConfig)
-    case needSystem: ActorSystemRequired => needSystem.init(context.system)
-  }
+  jarStoreService.init(systemConfig, context)
 
   private val ioPool = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 
