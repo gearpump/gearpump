@@ -156,16 +156,9 @@ angular.module('dashboard')
                 {source: parseInt(item[0]), target: parseInt(item[2]), type: item[1]}];
             });
           }
-          // upickle conversion 2a: task count is executor specific property for streaming app
-          _.forEach(obj.processors, function(processor) {
-            var taskCountLookup = util.flatten(processor.taskCount);
-            processor.executors = _.map(processor.executors, function(executorId) {
-              var executor = obj.executors[executorId];
-              executor.taskCount = executorId in taskCountLookup ?
-                taskCountLookup[executorId].count : 0;
-              return executor;
-            });
-          });
+
+          // upickle conversion 2a: convert array to dictionary
+          obj.executors = _.object(_.pluck(obj.executors, 'executorId'), obj.executors);
 
           // upickle conversion 2b: add extra executor properties and methods
           _.forEach(obj.executors, function(executor) {
@@ -173,6 +166,20 @@ angular.module('dashboard')
               isRunning: executor.status === 'active',
               pageUrl: locator.executor(obj.appId, obj.type, executor.executorId),
               workerPageUrl: locator.worker(executor.workerId)
+            });
+          });
+
+          // upickle conversion 2c: task count is executor specific property for streaming app
+          _.forEach(obj.processors, function(processor) {
+            var taskCountLookup = util.flatten(processor.taskCount);
+            // Backend returns executor ids, but names as `executor`. We change them to real executors.
+            processor.executors = _.map(processor.executors, function(executorId) {
+              var executor = obj.executors[executorId];
+              var processorExecutor = angular.copy(executor); // The task count is for particular processor, so we make a copy
+              processorExecutor.taskCount = taskCountLookup[executorId].count;
+              // Update global executor task count by the way
+              executor.taskCount = (executor.taskCount || 0) + processorExecutor.taskCount;
+              return processorExecutor;
             });
           });
 
@@ -280,8 +287,8 @@ angular.module('dashboard')
         },
 
         // TODO: scalajs should return a app.details object with dag, if it is a streaming application.
-        createDag: function(appId, clock, processors, levels, edges, executors) {
-          var dag = new StreamingDag(appId, clock, processors, levels, edges, executors);
+        createDag: function(clock, processors, levels, edges) {
+          var dag = new StreamingDag(clock, processors, levels, edges);
           dag.replaceProcessor = restapi.replaceDagProcessor;
           return dag;
         }

@@ -37,9 +37,6 @@ angular.module('dashboard')
 
       /** Update (or add) an array of metrics */
       updateMetricsArray: function(array) {
-        // for debugging
-        this.reportDuplicates = !this.hasMetrics();
-
         _.forEach(array, function(metric) {
           if (metric.isMeter) {
             this._updateProcessorMetrics('meter', metric);
@@ -75,9 +72,6 @@ angular.module('dashboard')
         shorthandAccessor = _getOrCreate(metricGroupHistorical, metric.meta.clazz, {});
         shorthandAccessor = _getOrCreate(shorthandAccessor, metric.time, {});
         if (key in shorthandAccessor) {
-          if (this.reportDuplicates) {
-            console.warn({message: 'Duplicated metric', source: metric});
-          }
           return;
         }
         // example path:                 [root] [group] [meta.clazz] [time] [key]
