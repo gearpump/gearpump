@@ -20,7 +20,7 @@ angular.module('dashboard')
               return models.$get.app($stateParams.appId);
             }],
             metrics0: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.appMetrics($stateParams.appId, /*all=*/true);
+              return models.$get.appMetrics($stateParams.appId);
             }]
           }
         });

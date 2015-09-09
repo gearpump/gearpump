@@ -5,63 +5,65 @@
 
 angular.module('dashboard')
 
-  .controller('StreamingAppMetricsChartsCtrl', ['$scope', 'conf',
-    function($scope, conf) {
+  .controller('StreamingAppMetricsChartsCtrl', ['$scope', '$filter', 'sorted', 'conf',
+    function($scope, $filter, sorted, conf) {
       'use strict';
 
       var lineChartOptionBase = {
         height: '108px',
-        maxDataNum: conf.metricsChartDataCount
+        visibleDataPointsNum: conf.metricsChartDataCount
       };
 
       var throughputChartOptions = angular.merge({
         valueFormatter: function(value) {
-          return Number(value).toFixed(0) + ' msg/s';
+          return $filter('number')(value, 0) + ' msg/s';
         },
-        seriesNames: ['Sum of All Processors']
+        seriesNames: ['Throughput']
       }, lineChartOptionBase);
 
-      $scope.sendThroughputChartOptions = angular.merge({
-        data: _.map($scope.dag.getHistoricalMessageReceiveThroughput(), function(value, time) {
-          return {x: moment(Number(time)).format('HH:mm:ss'), y: value};
-        })
-      }, throughputChartOptions);
-
-      $scope.receiveThroughputChartOptions = angular.merge({
-        data: _.map($scope.dag.getHistoricalMessageSendThroughput(), function(value, time) {
-          return {x: moment(Number(time)).format('HH:mm:ss'), y: value};
-        })
-      }, throughputChartOptions);
+      $scope.sendThroughputChartOptions = angular.copy(throughputChartOptions);
+      $scope.receiveThroughputChartOptions = angular.copy(throughputChartOptions);
 
       var durationChartOptions = angular.merge({
         valueFormatter: function(value) {
-          return Number(value).toFixed(3) + ' ms';
+          return $filter('number')(value, 3) + ' ms';
         },
-        seriesNames: ['Average of All Processors']
+        seriesNames: ['Duration']
       }, lineChartOptionBase);
 
-      $scope.averageProcessingTimeChartOptions = angular.merge({
-        data: _.map($scope.dag.getHistoricalAverageMessageProcessingTime(), function(value, time) {
-          return {x: moment(Number(time)).format('HH:mm:ss'), y: value};
-        })
-      }, durationChartOptions);
-
-      $scope.averageMessageReceiveLatencyChartOptions = angular.merge({
-        data: _.map($scope.dag.getHistoricalAverageMessageReceiveLatency(), function(value, time) {
-          return {x: moment(Number(time)).format('HH:mm:ss'), y: value};
-        })
-      }, durationChartOptions);
+      $scope.averageProcessingTimeChartOptions = angular.copy(durationChartOptions);
+      $scope.averageMessageReceiveLatencyChartOptions = angular.copy(durationChartOptions);
 
       $scope.$watchCollection('dag.metrics.meter', function() {
-        updateMeterMetricsCharts($scope.dag);
+        updateCurrentMeterMetrics($scope.dag);
       });
 
       $scope.$watchCollection('dag.metrics.histogram', function() {
-        updateHistogramMetricsCharts($scope.dag);
+        updateCurrentHistogramMetrics($scope.dag);
       });
 
-      function updateMeterMetricsCharts(metricsProvider) {
-        var timeLabel = moment().format('HH:mm:ss');
+      $scope.$watchCollection('historicalMetrics', function(metrics) {
+        updateHistoricalMetricsCharts(metrics);
+      });
+
+      function updateHistoricalMetricsCharts(metrics) {
+        $scope.sendThroughputData = buildChartData('toHistoricalMessageSendThroughputData', metrics);
+        $scope.receiveThroughputData = buildChartData('toHistoricalMessageReceiveThroughputData', metrics);
+        $scope.averageProcessingTimeData = buildChartData('toHistoricalMessageAverageProcessingTimeData', metrics);
+        $scope.averageMessageReceiveLatencyData = buildChartData('toHistoricalAverageMessageReceiveLatencyData', metrics);
+      }
+
+      function buildChartData(convertFuncName, metrics) {
+        return _.map(sorted.byKey($scope.dag[convertFuncName](metrics)),
+          function(value, timeString) {
+            return {
+              x: moment(Number(timeString)).format('HH:mm:ss'),
+              y: value
+            };
+          });
+      }
+
+      function updateCurrentMeterMetrics(metricsProvider) {
         var receivedMessages = metricsProvider.getReceivedMessages();
         var sentMessages = metricsProvider.getSentMessages();
 
@@ -69,16 +71,11 @@ angular.module('dashboard')
         $scope.currentMessageReceiveRate = receivedMessages.rate;
         $scope.totalSentMessages = sentMessages.total;
         $scope.totalReceivedMessages = receivedMessages.total;
-        $scope.receiveThroughputData = {x: timeLabel, y: $scope.currentMessageReceiveRate};
-        $scope.sendThroughputData = {x: timeLabel, y: $scope.currentMessageSendRate};
       }
 
-      function updateHistogramMetricsCharts(metricsProvider) {
-        var timeLabel = moment().format('HH:mm:ss');
+      function updateCurrentHistogramMetrics(metricsProvider) {
         $scope.averageProcessingTime = metricsProvider.getMessageProcessingTime();
         $scope.averageMessageReceiveLatency = metricsProvider.getMessageReceiveLatency();
-        $scope.averageProcessingTimeData = {x: timeLabel, y: $scope.averageProcessingTime};
-        $scope.averageMessageReceiveLatencyData = {x: timeLabel, y: $scope.averageMessageReceiveLatency};
       }
     }])
 ;

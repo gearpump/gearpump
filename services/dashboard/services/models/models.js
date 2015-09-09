@@ -11,11 +11,6 @@ angular.module('dashboard')
       'use strict';
 
       var util = {
-        extractLocation: function(actorPath) {
-          return actorPath
-            .split('@')[1]
-            .split('/')[0];
-        },
         usage: function(current, total) {
           return total > 0 ? 100 * current / total : 0;
         },
@@ -28,35 +23,40 @@ angular.module('dashboard')
             result[item[0]] = item[1];
           });
           return result;
+        },
+        getOrCreate: function(obj, prop, init) {
+          if (!obj.hasOwnProperty(prop)) {
+            obj[prop] = init;
+          }
+          return obj[prop];
         }
       };
 
       /**
-       * Retrieves a model from backend as a promise. The resolved object will have a $subscribe method, which can be
-       * used to watch model changes within a scope. */
-      function get(path, decodeFn, subscribePath) {
+       * Retrieves a model from backend as a promise.
+       * The resolved object will have two special methods.
+       *   `$subscribe` - watch model changes within a scope.
+       *   `$data` - return pure model data without these two methods.
+       */
+      function get(path, decodeFn, args) {
         return restapi.get(path).then(function(response) {
           var oldModel;
-          var model = decodeFn(response.data);
+          var model = decodeFn(response.data, args);
 
           model.$subscribe = function(scope, onData) {
-            restapi.subscribe(subscribePath || path, scope, function(data) {
-              var newModel = decodeFn(data);
+            restapi.subscribe(path, scope, function(data) {
+              var newModel = decodeFn(data, args);
               if (!_.isEqual(newModel, oldModel)) {
                 onData(newModel);
                 oldModel = newModel;
               }
-            });
+            }, (args || {}).period);
           };
 
           model.$data = function() {
-            var result = {};
-            _.forEach(model, function(value, key) {
-              if (!angular.isFunction(value)) {
-                result[key] = value;
-              }
+            return _.omit(model, function(value) {
+              return _.isFunction(value);
             });
-            return result;
           };
 
           return model;
@@ -72,6 +72,11 @@ angular.module('dashboard')
             result[key] = model;
           });
           return result;
+        },
+        _location: function(actorPath) {
+          return actorPath
+            .split('@')[1]
+            .split('/')[0];
         },
         _jvm: function(s) {
           var tuple = s.split('@');
@@ -104,7 +109,7 @@ angular.module('dashboard')
           return angular.merge(obj, {
             // extra properties
             jvm: decoder._jvm(obj.jvmName),
-            location: util.extractLocation(obj.actorPath),
+            location: decoder._location(obj.actorPath),
             isHealthy: obj.state === 'active',
             slots: {
               usage: util.usage(slotsUsed, obj.totalSlots),
@@ -129,7 +134,7 @@ angular.module('dashboard')
           return angular.merge(obj, {
             // extra properties
             isRunning: obj.status === 'active',
-            location: util.extractLocation(obj.appMasterPath),
+            location: decoder._location(obj.appMasterPath),
             // extra methods
             pageUrl: locator.app(obj.appId, obj.type),
             terminate: function() {
@@ -206,86 +211,186 @@ angular.module('dashboard')
         },
         appMetricsOld: function(wrapper) {
           return _.map(wrapper.metrics, function(obj) {
-            return Metrics.$auto(obj);
+            return Metrics.$auto(obj, /*addMeta=*/true);
           });
         },
         appStallingProcessors: function(wrapper) {
           return _.groupBy(wrapper.tasks, 'processorId');
         },
-        metrics: function(wrapper) {
+        metrics: function(wrapper, args) {
+          var metrics = decoder._metrics(wrapper);
+          // Unbox one element array as object
+          _.forEach(metrics, function(metricsGroup) {
+            _.forEach(metricsGroup, function(timeSortedArray, path) {
+              metricsGroup[path] = _.last(timeSortedArray);
+            });
+          });
+
+          // Reduce 2d array to 1d, if we want to filter particular search path.
+          if (args.filterPath) {
+            decoder._removeUnrelatedMetricsFrom2dArray(metrics, args.filterPath);
+          }
+          return metrics;
+        },
+        /** Decode metrics and desample them by a given period and a given number of points. */
+        historicalMetricsDesampled: function(wrapper, args) {
+          if (!args.hasOwnProperty('timeStart')) {
+            args.timeStart = Number.MIN_VALUE;
+          }
+
+          var metrics = decoder._metrics(wrapper);
+
+          // Calculate the range of metrics selection
+          var timeMax = args.timeStart;
+          _.forEach(metrics, function(metricsGroup) {
+            _.forEach(metricsGroup, function(timeSortedArray) {
+              timeMax = Math.max(timeMax, _.last(timeSortedArray).time);
+            });
+          });
+          var timeStop = Math.ceil(timeMax / args.period) * args.period;
+          if (timeStop > timeMax) {
+            timeStop -= args.period;
+          }
+          var timeStart = Math.max(args.timeStart, timeStop - args.period * args.points);
+
+          _.forEach(metrics, function(metricsGroup) {
+            _.forEach(metricsGroup, function(timeSortedArray, path) {
+              // Reduce selection range and then desample metrics
+              metricsGroup[path] = Metrics.$desample(
+                _.filter(timeSortedArray, function(metric) {
+                  return metric.time >= timeStart && metric.time <= timeStop;
+                }), args.period);
+            });
+          });
+
+          // The function will be called periodically. To return new metrics only, we need to remember
+          // previous fetch start time. As a trick, we store the value into `args`, which can be
+          // accessed by the next function call.
+          args.timeStart = timeStop;
+
+          // Reduce 2d array to 1d, if we want to filter particular search path.
+          if (args.filterPath) {
+            decoder._removeUnrelatedMetricsFrom2dArray(metrics, args.filterPath);
+          }
+          return metrics;
+        },
+        /**
+         * Note that it returns a 2d associative array.
+         * The 1st level key is the metric class (e.g. memory.total.used)
+         * The snd level key is the object path (e.g. master or app0.processor0)
+         * The value is an array of metrics, which are sorted by time.
+         */
+        _metrics: function(wrapper) {
           var result = {};
-          _.forEach(wrapper.metrics, function(metric) {
-            var data = Metrics.$auto(metric, /*noMeta=*/true);
-            if (data) {
-              var tuple = metric.value.name.split(':');
-              var metricName = tuple.length === 2 ?
-                tuple[1] : metric.value.name;
-              if (!result.hasOwnProperty(metricName)) {
-                result[metricName] = [];
-              }
-              result[metricName].push(data);
+          _.forEach(wrapper.metrics, function(obj) {
+            var metric = Metrics.$auto(obj);
+            if (metric) {
+              var metricsGroup = util.getOrCreate(result, metric.meta.clazz, {});
+              var metricSeries = util.getOrCreate(metricsGroup, metric.meta.path, {});
+              delete metric.meta; // As meta is in the keys, we don't need it in every metric.
+              metricSeries[metric.time] = metric;
             }
           });
+
+          // Remove duplicates and sort metrics by time defensively
+          // https://github.com/gearpump/gearpump/issues/1385
+          _.forEach(result, function(metricsGroup) {
+            _.forEach(metricsGroup, function(metricSeries, path) {
+              metricsGroup[path] = _.sortBy(metricSeries, 'time');
+            });
+          });
           return result;
+        },
+        /** Remove related metrics paths and change the given 2d array to 1d. */
+        _removeUnrelatedMetricsFrom2dArray: function(metrics, filterPath) {
+          _.forEach(metrics, function(metricsGroup, clazz) {
+            if (metricsGroup.hasOwnProperty(filterPath)) {
+              metrics[clazz] = metricsGroup[filterPath];
+            } else {
+              delete metrics[clazz];
+            }
+          });
+        }
+      };
+
+      var getter = {
+        master: function() {
+          return get('/master',
+            decoder.master);
+        },
+        masterMetrics: function() {
+          return getter._metrics('/master/metrics/', 'master');
+        },
+        masterHistoricalMetrics: function(period, points) {
+          return getter._historicalMetrics('/master/metrics/', 'master',
+            period, points);
+        },
+        workers: function() {
+          return get('/master/workerlist',
+            decoder.workers);
+        },
+        worker: function(workerId) {
+          return get('/worker/' + workerId,
+            decoder.worker);
+        },
+        workerMetrics: function(workerId) {
+          return getter._metrics('/worker/' + workerId + '/metrics/', 'worker' + workerId);
+        },
+        workerHistoricalMetrics: function(workerId, period, points) {
+          return getter._historicalMetrics('/worker/' + workerId + '/metrics/', 'worker' + workerId,
+            period, points);
+        },
+        apps: function() {
+          return get('/master/applist',
+            decoder.apps);
+        },
+        app: function(appId) {
+          return get('/appmaster/' + appId + '?detail=true',
+            decoder.app);
+        },
+        /** Note that executor related metrics will be excluded. */
+        appMetrics: function(appId) {
+          var params = '?readLatest=true';
+          return get('/appmaster/' + appId + '/metrics/app' + appId + '.processor*' + params,
+            decoder.appMetricsOld);
+        },
+        appHistoricalMetrics: function(appId, period, points) {
+          return get('/appmaster/' + appId + '/metrics/app' + appId + '.processor*',
+            decoder.historicalMetricsDesampled, {
+              period: period, points: points
+            });
+        },
+        appExecutor: function(appId, executorId) {
+          return get('/appmaster/' + appId + '/executor/' + executorId,
+            decoder.appExecutor);
+        },
+        appExecutorMetrics: function(appId, executorId) {
+          return getter._metrics(
+            '/appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId);
+        },
+        appExecutorHistoricalMetrics: function(appId, executorId, period, count) {
+          return getter._historicalMetrics(
+            '/appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId,
+            period, count);
+        },
+        appStallingProcessors: function(appId) {
+          return get('/appmaster/' + appId + '/stallingtasks',
+            decoder.appStallingProcessors);
+        },
+        _metrics: function(pathPrefix, path) {
+          return get(pathPrefix + path + '?readLatest=true',
+            decoder.metrics, {filterPath: path});
+        },
+        _historicalMetrics: function(pathPrefix, path, period, points) {
+          return get(pathPrefix + path,
+            decoder.historicalMetricsDesampled, {
+              period: period, points: points, filterPath: path
+            });
         }
       };
 
       return {
-        $get: {
-          master: function() {
-            return get('/master',
-              decoder.master);
-          },
-          masterMetrics: function(all) {
-            var base = '/master/metrics/master';
-            var firstTimePath = base + (all ? '' : '?readLatest=true');
-            var subscribePath = base + '?readLatest=true';
-            return get(firstTimePath, decoder.metrics, subscribePath);
-          },
-          workers: function() {
-            return get('/master/workerlist',
-              decoder.workers);
-          },
-          worker: function(workerId) {
-            return get('/worker/' + workerId,
-              decoder.worker);
-          },
-          workerMetrics: function(workerId, all) {
-            var base = '/worker/' + workerId + '/metrics/worker' + workerId;
-            var firstTimePath = base + (all ? '' : '?readLatest=true');
-            var subscribePath = base + '?readLatest=true';
-            return get(firstTimePath, decoder.metrics, subscribePath);
-          },
-          apps: function() {
-            return get('/master/applist',
-              decoder.apps);
-          },
-          app: function(appId) {
-            return get('/appmaster/' + appId + '?detail=true',
-              decoder.app);
-          },
-          appMetrics: function(appId, all) {
-            var base = '/appmaster/' + appId + '/metrics/app' + appId;
-            var firstTimePath = base + (all ? '' : '?readLatest=true');
-            var subscribePath = base + '?readLatest=true';
-            return get(firstTimePath, decoder.appMetricsOld, subscribePath);
-          },
-          appExecutor: function(appId, executorId) {
-            return get('/appmaster/' + appId + '/executor/' + executorId,
-              decoder.appExecutor);
-          },
-          appExecutorMetrics: function(appId, executorId, all) {
-            var base = '/appmaster/' + appId + '/metrics/app' + appId + '.executor' + executorId;
-            var firstTimePath = base + (all ? '' : '?readLatest=true');
-            var subscribePath = base + '?readLatest=true';
-            return get(firstTimePath, decoder.metrics, subscribePath);
-          },
-          appStallingProcessors: function(appId) {
-            return get('/appmaster/' + appId + '/stallingtasks',
-              decoder.appStallingProcessors);
-          }
-        },
-
+        $get: getter,
         // TODO: scalajs should return a app.details object with dag, if it is a streaming application.
         createDag: function(clock, processors, levels, edges) {
           var dag = new StreamingDag(clock, processors, levels, edges);

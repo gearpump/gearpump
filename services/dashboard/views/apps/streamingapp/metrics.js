@@ -31,7 +31,7 @@ angular.module('dashboard')
       $scope.names.selected = $scope.names.available[0];
       $scope.types = function(name) {
         var clazz = lookup[name];
-        return clazz.split('.')[1];
+        return clazz.split('.')[2];
       };
 
       var stopWatchingFn = null;
@@ -96,11 +96,11 @@ angular.module('dashboard')
           return {
             taskPath: buildMetricsTaskPath(metric),
             taskClass: metric.taskClass,
-            count: metric.count,
-            mean: metric.meanRate,
-            ma1: metric.movingAverage1m,
-            ma5: metric.movingAverage5m,
-            ma15: metric.movingAverage15m
+            count: metric.values.count,
+            mean: metric.values.meanRate,
+            ma1: metric.values.movingAverage1m,
+            ma5: metric.values.movingAverage5m,
+            ma15: metric.values.movingAverage15m
           };
         });
       }
@@ -110,13 +110,13 @@ angular.module('dashboard')
           return {
             taskPath: buildMetricsTaskPath(metric),
             taskClass: metric.taskClass,
-            count: metric.count,
-            mean: metric.mean,
-            stddev: metric.stddev,
-            median: metric.median,
-            p95: metric.p95,
-            p99: metric.p99,
-            p999: metric.p999
+            count: metric.values.count,
+            mean: metric.values.mean,
+            stddev: metric.values.stddev,
+            median: metric.values.median,
+            p95: metric.values.p95,
+            p99: metric.values.p99,
+            p999: metric.values.p999
           };
         });
       }
