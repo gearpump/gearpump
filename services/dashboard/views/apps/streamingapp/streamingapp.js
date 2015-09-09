@@ -36,7 +36,7 @@ angular.module('dashboard')
       $scope.$state = $state; // required by streamingapp.html
       $scope.app = app0;
       $scope.dag = models.createDag(app0.clock, app0.processors,
-        app0.processorLevels, app0.dag.edgeList, app0.executors);
+        app0.processorLevels, app0.dag.edgeList);
 
       app0.$subscribe($scope, function(app) {
         $scope.app = app;

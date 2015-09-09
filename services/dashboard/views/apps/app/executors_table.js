@@ -22,7 +22,8 @@ angular.module('dashboard')
               $stb.indicator().key('status').canSort().styleClass('td-no-padding').done(),
               $stb.link('Name').key('id').canSort().sortDefault().styleClass('col-md-4').done(),
               $stb.link('Worker ID').key('worker').canSort().styleClass('col-md-4').done(),
-              $stb.number('Task Count').key('tasks').canSort().styleClass('col-md-4').done()
+              $stb.number('Task Count').key('tasks').canSort().styleClass('col-md-4')
+                .help('AppMaster is a coordinator. It does not run any computing tasks.').done()
             ],
             rows: null
           };
