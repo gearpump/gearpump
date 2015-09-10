@@ -56,5 +56,10 @@ angular.module('dashboard')
       metrics0.$subscribe($scope, function(metrics) {
         $scope.dag.updateMetricsArray(metrics);
       });
+
+      // Angular template cannot call the function directly, so export a function.
+      $scope.size = function(obj) {
+        return Object.keys(obj).length;
+      };
     }])
 ;
