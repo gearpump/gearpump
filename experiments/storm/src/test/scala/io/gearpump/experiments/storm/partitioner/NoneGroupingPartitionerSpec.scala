@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,20 @@
 
 package io.gearpump.experiments.storm.partitioner
 
-import clojure.lang.RT
 import io.gearpump.Message
-import io.gearpump.partitioner.UnicastPartitioner
+import org.scalacheck.Gen
+import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.prop.PropertyChecks
 
-import scala.util.Random
+class NoneGroupingPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
 
-class NoneGroupingPartitioner extends UnicastPartitioner {
-  val random = new Random
-  val mod = RT.`var`("clojure.core", "mod")
-
-
-  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
-    mod.invoke(random.nextInt, partitionNum).asInstanceOf[java.lang.Long].toInt
+  property("NonGroupingPartitioner should return random number in [0, partitionNum)") {
+    val msgGen = Gen.alphaStr.map(Message(_))
+    val partitionNumGen = Gen.chooseNum[Int](1, Int.MaxValue)
+    forAll(msgGen, partitionNumGen) { (msg: Message, partitionNum: Int) =>
+      val partitioner = new NoneGroupingPartitioner
+      partitioner.getPartition(msg, partitionNum) should (be >= 0 and be < partitionNum)
+    }
   }
+
 }
