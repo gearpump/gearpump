@@ -13,12 +13,18 @@ angular.module('dashboard')
         .state('streamingapp.overview', {
           url: '', /* default page */
           templateUrl: 'views/apps/streamingapp/overview.html',
-          controller: 'StreamingAppOverviewCtrl'
+          controller: 'StreamingAppOverviewCtrl',
+          resolve: {
+            historicalMetrics0: ['$stateParams', 'models', 'conf', function($stateParams, models, conf) {
+              return models.$get.appHistoricalMetrics($stateParams.appId,
+                conf.metricsChartSamplingRate, conf.metricsChartDataCount);
+            }]
+          }
         });
     }])
 
-  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder',
-    function($scope, $ptb) {
+  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder', 'historicalMetrics0',
+    function($scope, $ptb, historicalMetrics0) {
       'use strict';
 
       $scope.appSummary = [
@@ -45,6 +51,11 @@ angular.module('dashboard')
 
       $scope.$watch('app', function(app) {
         updateSummaryTable(app);
+      });
+
+      $scope.historicalMetrics = historicalMetrics0.$data();
+      historicalMetrics0.$subscribe($scope, function(metrics) {
+        $scope.historicalMetrics = metrics;
       });
     }])
 ;

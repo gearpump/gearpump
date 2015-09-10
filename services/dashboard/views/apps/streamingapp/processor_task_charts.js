@@ -6,8 +6,8 @@
 angular.module('dashboard')
 
   // todo: refactoring required
-  .controller('StreamingAppProcessorTaskChartsCtrl', ['$scope', 'conf', '$interval',
-    function($scope, conf, $interval) {
+  .controller('StreamingAppProcessorTaskChartsCtrl', ['$scope', '$filter', '$interval', 'conf',
+    function($scope, $filter, $interval, conf) {
       'use strict';
 
       // rebuild the charts when `tasks` is changed.
@@ -22,19 +22,19 @@ angular.module('dashboard')
 
         var lineChartOptionBase = {
           height: '108px',
-          maxDataNum: conf.metricsChartDataCount,
+          visibleDataPointsNum: conf.metricsChartDataCount,
           seriesNames: $scope.tasks.selected
         };
 
         var throughputChartOptions = angular.merge({
           valueFormatter: function(value) {
-            return Number(value).toFixed(0) + ' msg/s';
+            return $filter('number')(value, 0) + ' msg/s';
           }
         }, lineChartOptionBase);
 
         var durationChartOptions = angular.merge({
           valueFormatter: function(value) {
-            return Number(value).toFixed(3) + ' ms';
+            return $filter('number')(value, 3) + ' ms';
           }
         }, lineChartOptionBase);
 

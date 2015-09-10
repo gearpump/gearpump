@@ -20,6 +20,7 @@ angular.module('dashboard', [
       'use strict';
 
       $urlRouterProvider
+        .when('', '/')
         .when('/', '/cluster/master')
         .otherwise(function($injector, $location) {
           // redirects to parent state (recursively)
@@ -48,6 +49,7 @@ angular.module('dashboard', [
     restapiProtocol: 'v1.0',
     restapiRoot: location.origin,
     restapiQueryInterval: 2000 /*millis*/,
-    metricsChartDataCount: 24
+    metricsChartDataCount: 4 * 5,
+    metricsChartSamplingRate: 1000 * 15 /* p15s */
   })
 ;

@@ -29,6 +29,7 @@ angular.module('dashboard')
             $timeout.cancel(timeoutPromise);
           });
 
+          interval = interval || conf.restapiQueryInterval;
           var fn = function() {
             $http.get(restapiV1Root + path)
               .then(function(response) {
@@ -39,11 +40,11 @@ angular.module('dashboard')
               })
               .finally(function() {
                 if (!shouldCancel) {
-                  timeoutPromise = $timeout(fn, interval || conf.restapiQueryInterval);
+                  timeoutPromise = $timeout(fn, interval);
                 }
               });
           };
-          fn();
+          timeoutPromise = $timeout(fn, interval);
         },
 
         get: function(path) {
