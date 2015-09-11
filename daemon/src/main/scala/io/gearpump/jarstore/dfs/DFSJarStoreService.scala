@@ -18,7 +18,7 @@
 package io.gearpump.jarstore.dfs
 
 import java.io.File
-import akka.actor.ActorRefFactory
+import akka.actor.{ActorSystem, ActorRefFactory}
 import com.typesafe.config.Config
 import org.apache.hadoop.fs.Path
 import io.gearpump.jarstore.{FilePath, JarStoreService}
@@ -34,7 +34,7 @@ class DFSJarStoreService extends JarStoreService {
 
   override val scheme: String = "hdfs"
 
-  override def init(config: Config, actorRefFactory: ActorRefFactory): Unit = {
+  override def init(config: Config, actorRefFactory: ActorSystem): Unit = {
     rootPath = new Path(config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH))
     val fs = rootPath.getFileSystem(new Configuration())
     if (!fs.exists(rootPath)) {
@@ -58,12 +58,13 @@ class DFSJarStoreService extends JarStoreService {
   /**
    * This function will copy the local file to the remote JarStore, called from client side.
    * @param localFile The local file
-   * @param remotePath The path on JarStore
    */
-  override def copyFromLocal(localFile: File, remotePath: FilePath): Unit = {
+  override def copyFromLocal(localFile: File): FilePath = {
+    val remotePath = FilePath(Math.abs(new java.util.Random().nextLong()).toString)
     LOG.info(s"Copying from local file: ${localFile.getAbsolutePath} to ${remotePath}")
     val filePath = new Path(rootPath, remotePath.path)
     val fs = filePath.getFileSystem(new Configuration())
     fs.copyFromLocalFile(new Path(localFile.toURI.toString), filePath)
+    remotePath
   }
 }

@@ -103,11 +103,8 @@ object Util {
     }
   }
 
-  def uploadJar(jarData: Array[Byte], jarStoreService: JarStoreService): AppJar = {
-    val jarFile = File.createTempFile("gearpump_userapp_", "")
-    FileUtils.writeByteArrayToFile(jarFile, jarData)
-    val remotePath = FilePath(Math.abs(new java.util.Random().nextLong()).toString)
-    jarStoreService.copyFromLocal(jarFile, remotePath)
+  def uploadJar(jarFile: File, jarStoreService: JarStoreService): AppJar = {
+    val remotePath = jarStoreService.copyFromLocal(jarFile)
     AppJar(jarFile.getName, remotePath)
   }
 

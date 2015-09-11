@@ -79,7 +79,9 @@ object BuildExample extends sbt.Build {
         Seq(
           libraryDependencies ++= Seq(
             "commons-lang" % "commons-lang" % commonsLangVersion,
-            "commons-io" % "commons-io" % commonsIOVersion
+            "commons-io" % "commons-io" % commonsIOVersion,
+            "io.spray" %%  "spray-can"       % sprayVersion,
+            "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion
           ),
           target in assembly := baseDirectory.value.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)

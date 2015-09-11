@@ -19,9 +19,11 @@
 package io.gearpump.services
 
 import akka.actor.ActorRef
+import akka.http.scaladsl.server.RouteResult
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.gearpump.cluster.AppMasterToMaster.GeneralAppMasterSummary
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
@@ -31,8 +33,8 @@ import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary,
 import io.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
-import spray.testkit.ScalatestRouteTest
 import upickle.default.read
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
@@ -95,20 +97,20 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
     Get(s"/api/$REST_VERSION/appmaster/0?detail=false") ~> appMasterRoute ~> check{
-      val responseBody = response.entity.asString
+      val responseBody = responseAs[String]
       read[AppMasterData](responseBody)
     }
 
     Get(s"/api/$REST_VERSION/appmaster/0?detail=true") ~> appMasterRoute ~> check{
-      val responseBody = response.entity.asString
+      val responseBody = responseAs[String]
     }
 
   }
 
   "MetricsQueryService" should "return history metrics" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmaster/0/metrics/processor") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check {
-      val responseBody = response.entity.asString
+    (Get(s"/api/$REST_VERSION/appmaster/0/metrics/processor") ~> appMasterRoute) ~> check {
+      val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
     }
@@ -116,16 +118,16 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
 
   "AppMaster" should "return lastest error" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmaster/0/errors") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check {
-      val responseBody = response.entity.asString
+    (Get(s"/api/$REST_VERSION/appmaster/0/errors") ~> appMasterRoute) ~> check {
+      val responseBody = responseAs[String]
       assert(read[LastFailure](responseBody) == failure)
     }
   }
 
   "ConfigQueryService" should "return config for application" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmaster/0/config") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
-      val responseBody = response.entity.asString
+    (Get(s"/api/$REST_VERSION/appmaster/0/config") ~> appMasterRoute) ~> check{
+      val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
     }
@@ -133,8 +135,8 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
 
   it should "return config for executor " in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0/config") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
-      val responseBody = response.entity.asString
+    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0/config") ~> appMasterRoute) ~> check{
+      val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
     }
@@ -142,8 +144,8 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
 
   it should "return return executor summary" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0") ~> appMasterRoute).asInstanceOf[RouteResult] ~> check{
-      val responseBody = response.entity.asString
+    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0") ~> appMasterRoute) ~> check{
+      val responseBody = responseAs[String]
       val executorSummary = read[ExecutorSummary](responseBody)
       assert(executorSummary.id == 0)
     }
