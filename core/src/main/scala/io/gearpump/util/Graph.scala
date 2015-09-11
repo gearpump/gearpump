@@ -162,6 +162,20 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     output.iterator
   }
 
+  def hasCycle(): Boolean = {
+    @annotation.tailrec def detectCycle(graph: Graph[N, E]): Boolean = {
+      if(graph.edges.isEmpty) {
+        false
+      } else if(graph.vertices.nonEmpty && !graph.vertices.exists(graph.inDegreeOf(_) == 0)) {
+        true
+      } else {
+        graph.removeZeroInDegree
+        detectCycle(graph)
+      }
+    }
+
+    detectCycle(copy)
+  }
 
   /**
    * Generate a level map for each vertex

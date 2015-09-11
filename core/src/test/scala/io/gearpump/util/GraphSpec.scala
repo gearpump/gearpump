@@ -158,6 +158,23 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     val newGraph = graph.copy.replaceVertex("B", "D")
     assert(newGraph.inDegreeOf("D") == graph.inDegreeOf("B"))
     assert(newGraph.outDegreeOf("D") == graph.outDegreeOf("B"))
+  }
 
+  property("Cycle detecting should work properly") {
+    val graph = Graph.empty[String, String]
+    val defaultEdge = "edge"
+    graph.addVertex("A")
+    graph.addVertex("B")
+    graph.addVertex("C")
+    graph.addEdge("A", defaultEdge, "B")
+    graph.addEdge("B", defaultEdge, "C")
+
+    assert(!graph.hasCycle())
+
+    graph.addEdge("C", defaultEdge, "B")
+    assert(graph.hasCycle())
+
+    graph.addEdge("C", defaultEdge, "A")
+    assert(graph.hasCycle())
   }
 }
