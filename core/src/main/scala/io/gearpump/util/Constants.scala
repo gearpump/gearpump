@@ -20,6 +20,8 @@ package io.gearpump.util
 
 import java.util.concurrent.TimeUnit
 
+import io.gearpump.partitioner._
+
 object Constants {
   val MASTER_WATCHER = "masterwatcher"
   val SINGLETON_MANAGER = "singleton"
@@ -111,4 +113,12 @@ object Constants {
 
   //The folders are under ${GEARPUMP_HOME}
   val EXECUTOR_CLASSPATH_WHILTELIST = Array("conf", "lib")
+
+  //The partitioners provided by Gearpump
+  val BUILTIN_PARTITIONERS = Array(
+    classOf[BroadcastPartitioner],
+    classOf[CoLocationPartitioner],
+    classOf[HashPartitioner],
+    classOf[ShuffleGroupingPartitioner],
+    classOf[ShufflePartitioner])
 }
