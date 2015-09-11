@@ -16,7 +16,6 @@ angular.module('dashboard')
       //     name: sendThroughput|receiveThroughput|etc.
       //       field: count|movingAverage1M|etc.
       this.metrics = {meter: {}, histogram: {}, gauge: {}};
-      this.metricsHistory = {meter: {}, histogram: {}, gauge: {}};
       this.stallingTasks = {};
       this.setData(clock, processors, levels, edges);
     }
@@ -37,16 +36,13 @@ angular.module('dashboard')
 
       /** Update (or add) an array of metrics */
       updateMetricsArray: function(array) {
-        // for debugging
-        this.reportDuplicates = !this.hasMetrics();
-
         _.forEach(array, function(metric) {
           if (metric.isMeter) {
             this._updateProcessorMetrics('meter', metric);
           } else if (metric.isHistogram) {
             this._updateProcessorMetrics('histogram', metric);
-          } else if (metric.isGauge) {
-            this._updateApplicationMetrics('gauge', metric);
+          } else {
+            console.warn({message: 'Unhandled metric', metric: metric});
           }
         }, this);
       },
@@ -57,37 +53,20 @@ angular.module('dashboard')
           return;
         }
 
-        var key = metric.meta.processorId + '_' + metric.meta.taskId;
-        var value = angular.merge({}, metric.values, {
+        var path = metric.meta.processorId + '_' + metric.meta.taskId;
+        var value = {
           processorId: metric.meta.processorId,
           taskId: metric.meta.taskId,
-          taskClass: this.processors[metric.meta.processorId].taskClass
-        });
+          taskClass: this.processors[metric.meta.processorId].taskClass,
+          values: metric.values
+        };
 
         var metricGroupCurrent = this.metrics[metricsGroupName];
         var shorthandAccessor = _getOrCreate(metricGroupCurrent, metric.meta.clazz, {});
-        // example path:         [root] [group] [meta.clazz] [key]
+        // example path:         [root] [group]    [clazz]   [path]
         //                 "this.metrics.meter.sendThroughput.0_0"
-        shorthandAccessor[key] = value;
+        shorthandAccessor[path] = value;
         metricGroupCurrent.time = metric.time;
-
-        var metricGroupHistorical = this.metricsHistory[metricsGroupName];
-        shorthandAccessor = _getOrCreate(metricGroupHistorical, metric.meta.clazz, {});
-        shorthandAccessor = _getOrCreate(shorthandAccessor, metric.time, {});
-        if (key in shorthandAccessor) {
-          if (this.reportDuplicates) {
-            console.warn({message: 'Duplicated metric', source: metric});
-          }
-          return;
-        }
-        // example path:                 [root] [group] [meta.clazz] [time] [key]
-        //                 "this.metricsHistory.meter.sendThroughput.14000000000.0_0"
-        shorthandAccessor[key] = metric.values;
-        // todo: rotation by removing metrics with fresh timestamp
-      },
-
-      _updateApplicationMetrics: function(metricsGroupName, metric) {
-        // todo:
       },
 
       hasMetrics: function() {
@@ -96,11 +75,10 @@ angular.module('dashboard')
 
       /** Return the number of tasks (executed by executors). */
       getNumOfTasks: function() {
-        var count = 0;
-        _.forEach(this._getAliveProcessors(), function(processor) {
-          count += processor.parallelism;
-        });
-        return count;
+        return d3.sum(
+          _.map(this._getAliveProcessors(), function(processor) {
+            return processor.parallelism;
+          }));
       },
 
       /** Return the number of (alive) processors. */
@@ -209,7 +187,7 @@ angular.module('dashboard')
             var name = processorId + '_' + taskId;
             if (metricsGroup.hasOwnProperty(name)) {
               var metric = metricsGroup[name];
-              array.push(metric[metricField]);
+              array.push(metric.values[metricField]);
             }
           }
         }
@@ -297,72 +275,65 @@ angular.module('dashboard')
       },
 
       /** Return the historical message receive throughput as an array. */
-      getHistoricalMessageReceiveThroughput: function() {
+      toHistoricalMessageReceiveThroughputData: function(metrics) {
         var processorIds = this._getProcessorIdsByType('sink');
-        var metricsGroup = this.metricsHistory.meter['receiveThroughput'];
+        var metricsGroup = metrics['receiveThroughput'];
         var metricField = 'movingAverage1m';
         return this._getProcessorHistoricalMetrics(processorIds, metricsGroup, metricField, d3.sum);
       },
 
       /** Return the historical message send throughput as an array. */
-      getHistoricalMessageSendThroughput: function() {
+      toHistoricalMessageSendThroughputData: function(metrics) {
         var processorIds = this._getProcessorIdsByType('source');
-        var metricsGroup = this.metricsHistory.meter['sendThroughput'];
+        var metricsGroup = metrics['sendThroughput'];
         var metricField = 'movingAverage1m';
         return this._getProcessorHistoricalMetrics(processorIds, metricsGroup, metricField, d3.sum);
       },
 
       /** Return the historical average message processing time as an array. */
-      getHistoricalAverageMessageProcessingTime: function() {
+      toHistoricalMessageAverageProcessingTimeData: function(metrics) {
         var processorIds = _keysAsNum(this.processors);
-        var metricsGroup = this.metricsHistory.histogram['processTime'];
+        var metricsGroup = metrics['processTime'];
         var metricField = 'mean';
         return this._getProcessorHistoricalMetrics(processorIds, metricsGroup, metricField, d3.mean);
       },
 
       /** Return the historical average message receive latency as an array. */
-      getHistoricalAverageMessageReceiveLatency: function() {
+      toHistoricalAverageMessageReceiveLatencyData: function(metrics) {
         var processorIds = _keysAsNum(this.processors);
-        var metricsGroup = this.metricsHistory.histogram['receiveLatency'];
+        var metricsGroup = metrics['receiveLatency'];
         var metricField = 'mean';
         return this._getProcessorHistoricalMetrics(processorIds, metricsGroup, metricField, d3.mean);
       },
 
       /** Return particular historical metrics value of processor's tasks as an associative array. */
       _getProcessorHistoricalMetrics: function(processorIds, metricsGroup, metricField, fn) {
-        var interval = 30; // todo:
         var result = {};
         if (metricsGroup) {
           // Calculate names once before enter the time consuming iterations
-          var names = [];
+          var paths = [];
           _.forEach(processorIds, function(processorId) {
             var parallelism = this.processors[processorId].parallelism;
             for (var taskId = 0; taskId < parallelism; taskId++) {
-              var name = processorId + '_' + taskId;
-              names.push(name);
+              var path = 'processor' + processorId + '.task' + taskId;
+              paths.push(path);
             }
           }, this);
 
           // Iterate historical metrics by time
-          var latest = {};
-          var previousTime = 0;
-          _.forEach(metricsGroup, function(metricsGroupMoment, time) {
-            var array = [];
-            _.forEach(names, function(name) {
-              if (metricsGroupMoment.hasOwnProperty(name)) {
-                var metric = metricsGroupMoment[name];
-                latest[name] = {value: metric[metricField], time: time};
-              }
-              if (latest.hasOwnProperty(name) &&
-                (time - latest[name].time < interval)) {
-                array.push(latest[name].value);
-              }
-            });
-            if (array.length &&
-              (time - previousTime >= interval)) {
-              result[time] = _.isFunction(fn) ? fn(array) : array;
-              previousTime = time;
+          _.forEach(metricsGroup, function(metrics, path) {
+            path = path.split('.').slice(1).join('.'); // strip the prefix 'app0.'
+            if (paths.indexOf(path) !== -1) {
+              _.forEach(metrics, function(metric) {
+                result[metric.time] = result[metric.time] || [];
+                result[metric.time].push((metric.hasOwnProperty('values') ?
+                  metric.values : metric.value)[metricField]);
+              });
             }
+          });
+
+          _.forEach(result, function(array, time) {
+            result[time] = _.isFunction(fn) ? fn(array) : array;
           });
         }
         return result;

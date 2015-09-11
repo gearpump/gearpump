@@ -20,14 +20,20 @@ angular.module('dashboard')
             }],
             metrics0: ['$stateParams', 'models', function($stateParams, models) {
               return models.$get.appExecutorMetrics(
-                $stateParams.appId, $stateParams.executorId, /*all=*/true);
+                $stateParams.appId, $stateParams.executorId);
             }],
+            historicalMetrics0: ['$stateParams', 'models', 'conf', function($stateParams, models, conf) {
+              return models.$get.appExecutorHistoricalMetrics(
+                $stateParams.appId, $stateParams.executorId,
+                conf.metricsChartSamplingRate, conf.metricsChartDataCount);
+            }]
           }
         });
     }])
 
-  .controller('StreamingAppExecutorCtrl', ['$scope', '$stateParams', '$propertyTableBuilder', 'restapi', 'executor0', 'metrics0',
-    function($scope, $stateParams, $ptb, restapi, executor0, metrics0) {
+  .controller('StreamingAppExecutorCtrl', ['$scope', '$stateParams', '$propertyTableBuilder',
+    'restapi', 'executor0', 'metrics0', 'historicalMetrics0',
+    function($scope, $stateParams, $ptb, restapi, executor0, metrics0, historicalMetrics0) {
       'use strict';
 
       $scope.overviewTable = [
@@ -59,10 +65,14 @@ angular.module('dashboard')
         updateOverviewTable(executor);
       });
 
-      // JvmMetricsChartsCtrl will watch `$scope.metrics`
+      // JvmMetricsChartsCtrl will watch `$scope.metrics` and `$scope.historicalMetrics`.
       $scope.metrics = metrics0.$data();
       metrics0.$subscribe($scope, function(metrics) {
         $scope.metrics = metrics;
+      });
+      $scope.historicalMetrics = historicalMetrics0.$data();
+      historicalMetrics0.$subscribe($scope, function(metrics) {
+        $scope.historicalMetrics = metrics;
       });
     }])
 ;

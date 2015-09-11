@@ -39,6 +39,9 @@ import io.gearpump.streaming.appmaster.SubmitApplicationRequest
 import io.gearpump.util.ActorUtil.{askActor, _}
 import io.gearpump.util.FileDirective._
 import io.gearpump.util.{Constants, Util}
+import io.gearpump.util.ActorUtil._
+import io.gearpump.util.{Constants, FileUtils, Util}
+import io.gearpump.services.MasterService.BuiltinPartitioners
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
@@ -59,7 +62,7 @@ trait MasterService {
 
   def masterRoute: Route = {
     pathPrefix("api" / s"$REST_VERSION" / "master") {
-      extractMaterializer {implicit mat =>
+      extractMaterializer { implicit mat =>
         pathEnd {
           get {
             onComplete(askActor[MasterData](master, GetMasterData)) {
@@ -146,7 +149,7 @@ trait MasterService {
                 import submitApplicationRequest.{appName, dag, processors, userconfig}
                 val context = ClientContext(system.settings.config, Some(system), Some(master))
 
-                val graph = dag.mapVertex {processorId =>
+                val graph = dag.mapVertex { processorId =>
                   processors(processorId)
                 }.mapEdge { (node1, edge, node2) =>
                   PartitionerDescription(new PartitionerByClassName(edge))
@@ -172,49 +175,56 @@ trait MasterService {
                 complete(write(jarFile))
               }
             }
+          } ~
+          path("partitioners") {
+            get {
+              complete(write(BuiltinPartitioners(Constants.BUILTIN_PARTITIONERS.map(_.getName))))
+            }
           }
       }
     }
   }
+}
 
-  object MasterService {
+object MasterService {
 
-    case class Status(success: Boolean, reason: String = null)
+  case class BuiltinPartitioners(partitioners: Array[String])
 
-    /**
-     * Upload user application (JAR) into temporary directory and use AppSubmitter to submit
-     * it to master. The temporary file will be removed after submission is done/failed.
-     */
-    def submitJar(jar: File, userConf: Option[File], extraArgs: Array[String],
-                  sysConfig: Config): Unit = {
+  case class Status(success: Boolean, reason: String = null)
 
-      try {
-        val masters = sysConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
-        val mastersOption = masters.zipWithIndex.map { kv =>
-          val (master, index) = kv
-          s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.${index}=${master.host}:${master.port}"
-        }.toArray
+  /**
+   * Upload user application (JAR) into temporary directory and use AppSubmitter to submit
+   * it to master. The temporary file will be removed after submission is done/failed.
+   */
+  def submitJar(jar: File, userConf: Option[File], extraArgs: Array[String],
+                sysConfig: Config): Unit = {
 
-        val hostname = sysConfig.getString(Constants.GEARPUMP_HOSTNAME)
-        var options = Array(
-          s"-D${Constants.GEARPUMP_HOSTNAME}=$hostname"
-        ) ++ mastersOption
+    try {
+      val masters = sysConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+      val mastersOption = masters.zipWithIndex.map { kv =>
+        val (master, index) = kv
+        s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.${index}=${master.host}:${master.port}"
+      }.toArray
 
-        if (userConf.isDefined) {
-          options :+= s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=${userConf.get.getPath}"
-        }
+      val hostname = sysConfig.getString(Constants.GEARPUMP_HOSTNAME)
+      var options = Array(
+        s"-D${Constants.GEARPUMP_HOSTNAME}=$hostname"
+      ) ++ mastersOption
 
-        val arguments = Array("-jar", jar.getPath) ++ extraArgs
-        val mainClass = AppSubmitter.getClass.getName.dropRight(1)
-        val process = Util.startProcess(options, Util.getCurrentClassPath, mainClass, arguments)
-        val retval = process.exitValue()
-        if (retval != 0) {
-          throw new IOException(s"Process exit abnormally with code $retval, error summary: ${process.logger.summary}")
-        }
-      } finally {
-        userConf.foreach(_.delete)
-        jar.delete()
+      if (userConf.isDefined) {
+        options :+= s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=${userConf.get.getPath}"
       }
+
+      val arguments = Array("-jar", jar.getPath) ++ extraArgs
+      val mainClass = AppSubmitter.getClass.getName.dropRight(1)
+      val process = Util.startProcess(options, Util.getCurrentClassPath, mainClass, arguments)
+      val retval = process.exitValue()
+      if (retval != 0) {
+        throw new IOException(s"Process exit abnormally with code $retval, error summary: ${process.logger.summary}")
+      }
+    } finally {
+      userConf.foreach(_.delete)
+      jar.delete()
     }
   }
 }
