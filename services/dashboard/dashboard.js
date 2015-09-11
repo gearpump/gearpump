@@ -44,6 +44,15 @@ angular.module('dashboard', [
     cfpLoadingBarProvider.latencyThreshold = 200;
   }])
 
+  // disable caching for ajax calls to make MSIE happy
+  .config(['$httpProvider', function($httpProvider) {
+    $httpProvider.defaults.headers.get = angular.merge({
+      'If-Modified-Since': new Date(0),
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    }, $httpProvider.defaults.headers.get);
+  }])
+
   // constants
   .constant('conf', {
     restapiProtocol: 'v1.0',
