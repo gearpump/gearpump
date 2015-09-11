@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorSystem, Props}
 import akka.pattern.ask
 import io.gearpump.google.common.io.Files
-import io.gearpump.cluster.TestUtil
+import io.gearpump.cluster.{ClusterConfig, TestUtil}
 import io.gearpump.jarstore.FilePath
 import io.gearpump.util.FileServer._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -45,7 +45,8 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
   }
 
   override def beforeAll {
-    system = ActorSystem("FileServerSpec", TestUtil.DEFAULT_CONFIG)
+    val config = TestUtil.DEFAULT_CONFIG
+    system = ActorSystem("FileServerSpec", config)
   }
 
   private def save(client: Client, data: Array[Byte]): FilePath = {
@@ -89,9 +90,8 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
         val fetchedBytes = get(client, remote)
         assert(fetchedBytes sameElements bytes, s"fetch data is coruppted, $url, $rootDir")
       }
-      rootDir.delete()
-
       server.stop
+      rootDir.delete()
     }
   }
 
