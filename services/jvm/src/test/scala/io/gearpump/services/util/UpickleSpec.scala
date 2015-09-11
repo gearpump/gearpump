@@ -18,18 +18,13 @@
 
 package io.gearpump.services.util
 
-import akka.actor.{ActorSystem, ActorRef}
-import io.gearpump.streaming.ProcessorId
-import io.gearpump.streaming.appmaster.{ProcessorSummary, StreamAppMasterSummary, DagManager}
 import io.gearpump.cluster.UserConfig
 import io.gearpump.metrics.Metrics.{Counter, MetricType}
-import DagManager.ReplaceProcessor
+import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.ProcessorId
-import io.gearpump.streaming.appmaster.ProcessorSummary
-import io.gearpump.util.{Graph}
+import io.gearpump.streaming.appmaster.{ProcessorSummary, StreamAppMasterSummary}
+import io.gearpump.util.Graph
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-import upickle.default.{read, write}
-import UpickleUtil._
 import upickle.default.{read, write}
 
 class UpickleSpec extends FlatSpec with Matchers with BeforeAndAfterEach {

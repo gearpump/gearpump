@@ -19,30 +19,29 @@
 package io.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, WorkerConfig}
 import io.gearpump.util.ActorUtil._
 import io.gearpump.util.LogUtil
-import spray.routing
-import spray.routing.HttpService
-import spray.routing.directives.OnCompleteFutureMagnet._
 
 import scala.concurrent.ExecutionContext
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
-trait WorkerService extends HttpService {
+trait WorkerService {
 
-  import upickle.default.{read, write}
+  import upickle.default.write
 
   def master: ActorRef
 
-  implicit val system: ActorSystem
+  implicit def system: ActorSystem
 
   private val LOG = LogUtil.getLogger(getClass)
 
-  def workerRoute: routing.Route = {
-    implicit val ec: ExecutionContext = actorRefFactory.dispatcher
+  def workerRoute: Route = {
+    implicit val ec: ExecutionContext = system.dispatcher
 
     pathPrefix("api" / s"$REST_VERSION" / "worker" / IntNumber) { workerId =>
       pathEnd {

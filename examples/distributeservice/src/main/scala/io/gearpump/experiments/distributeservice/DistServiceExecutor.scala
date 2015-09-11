@@ -25,7 +25,7 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.text.StrSubstitutor
 import io.gearpump.cluster.{UserConfig, ExecutorContext}
 import DistServiceAppMaster.InstallService
-import io.gearpump.util.{ActorUtil, FileServer, LogUtil}
+import io.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
 
 import scala.io.Source

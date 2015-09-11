@@ -1,137 +1,132 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.gearpump.util
 
+
 import java.io.File
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.marshalling.{ToResponseMarshallable, Marshal}
+import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, MediaTypes, Multipart, _}
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.ActorMaterializer
+import akka.stream.io.{SynchronousFileSink, SynchronousFileSource}
+import akka.stream.scaladsl.{Sink, Source}
+import io.gearpump.jarstore.FilePath
+import io.gearpump.util.FileServer.Port
+import spray.json.{JsonFormat, RootJsonFormat}
+import scala.concurrent.{ExecutionContext, Future}
+import spray.json.DefaultJsonProtocol._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import FileDirective._
 
-import akka.actor.{Actor, Stash}
-import akka.io.IO
-import org.apache.commons.httpclient.HttpClient
-import org.apache.commons.httpclient.methods.{ByteArrayRequestEntity, GetMethod, PostMethod}
-import spray.can.Http
-import spray.http.HttpMethods._
-import spray.http._
+class FileServer(system: ActorSystem, host: String, port: Int = 0, rootDirectory: File) {
+  import system.dispatcher
+  implicit val actorSystem = system
+  implicit val materializer = ActorMaterializer()
+  import FileServer.filePathFormat
 
-import scala.util.{Failure, Success, Try}
-
-/**
- *
- * Should not use this to server too big files(more than 100MB), otherwise OOM may happen.
- *
- * port: set port to 0 if you want to bind to random port
- */
-class FileServer(rootDir: File, host: String, port : Int) extends Actor with Stash {
-  private val LOG = LogUtil.getLogger(getClass)
-
-  implicit val system = context.system
-
-  override def preStart(): Unit = {
-    // create http server
-    IO(Http) ! Http.Bind(self, host, port)
+  val route: Route = {
+    path("upload") {
+      uploadFileTo(rootDirectory) { fileMap =>
+        complete(fileMap.head._2.file.getName)
+      }
+    } ~
+      path("download") {
+        parameters("file") { file =>
+          downloadFile(new File(rootDirectory, file))
+        }
+      } ~
+      pathEndOrSingleSlash {
+        extractUri { uri =>
+          val upload = uri.withPath(Uri.Path("/upload")).toString()
+          val entity = HttpEntity(MediaTypes.`text/html`,
+            s"""
+            |
+            |<h2>Please specify a file to upload:</h2>
+            |<form action="$upload" enctype="multipart/form-data" method="post">
+            |<input type="file" name="datafile" size="40">
+            |</p>
+            |<div>
+            |<input type="submit" value="Submit">
+            |</div>
+            |</form>
+          """.stripMargin)
+        complete(entity)
+      }
+        }
   }
 
-  override def postStop() : Unit = {
-    //stop the server
-    IO(Http) ! Http.Unbind
+  private var connection: Future[ServerBinding] = null
+
+  def start: Future[Port] = {
+    connection = Http().bindAndHandle(Route.handlerFlow(route), host, port)
+    connection.map(address => Port(address.localAddress.getPort))
   }
 
-  override def receive: Receive = {
-    case Http.Bound(address) =>
-      LOG.info(s"FileServer bound on port: ${address.getPort}")
-      context.become(listen(address.getPort))
-      unstashAll()
-    case _ =>
-      stash()
-  }
-
-  def listen(port : Int) : Receive = {
-    case FileServer.GetPort => {
-      sender ! FileServer.Port(port)
-    }
-    case Http.Connected(remote, _) =>
-      sender ! Http.Register(self)
-
-    // fetch file from remote uri
-    case HttpRequest(GET, uri, _, _, _) =>
-      val child = uri.path.toString()
-      val payload = Try {
-        val source = new File(rootDir, child)
-        FileUtils.readFileToByteArray(source)
-      }
-      payload match {
-        case Success(data) =>
-          sender ! HttpResponse(entity = HttpEntity(data))
-        case Failure(ex) =>
-          LOG.error("failed to get file " + ex.getMessage)
-          sender ! HttpResponse(status = StatusCodes.InternalServerError, entity = ex.getMessage)
-      }
-    //save file to remote uri
-    case post @ HttpRequest(POST, uri, _, _, _) =>
-      val child = uri.path.toString()
-
-      val status = Try {
-        val target = new File(rootDir, child)
-        val payload = post.entity.data.toByteArray
-        FileUtils.writeByteArrayToFile(target, payload)
-        "OK"
-      }
-      status match {
-        case Success(message) => sender ! HttpResponse(entity = message)
-        case Failure(ex) =>
-          LOG.error("save file failed " + ex.getMessage)
-          sender ! HttpResponse(status = StatusCodes.InternalServerError, entity = ex.getMessage)
-      }
+  def stop: Future[Unit] = {
+    connection.flatMap(_.unbind())
   }
 }
 
 object FileServer {
-  object GetPort
+
+  implicit def filePathFormat: JsonFormat[FilePath] = jsonFormat1(FilePath.apply)
+
+  def newClient = null
+
   case class Port(port : Int)
 
-  def newClient = new Client
+  class Client(system: ActorSystem, host: String, port: Int) {
 
-  class Client {
-    val client = new HttpClient()
+    def this(system: ActorSystem, url: String) = {
+      this(system, Uri(url).authority.host.address(), Uri(url).authority.port)
+    }
 
-    def save(uri : String, data : Array[Byte]) : Try[Int] = {
-      Try {
-        val post = new PostMethod(uri)
-        val entity = new ByteArrayRequestEntity(data)
-        post.setRequestEntity(entity)
-        client.executeMethod(post)
+    private implicit val actorSystem = system
+    private implicit val materializer = ActorMaterializer()
+    private implicit val ec = system.dispatcher
+
+    val server = Uri(s"http://$host:$port")
+    val httpClient = Http(system).outgoingConnection(server.authority.host.address(), server.authority.port)
+
+    def upload(file: File): Future[FilePath] = {
+      val target = server.withPath(Path("/upload"))
+
+      val request = entity(file).map{entity =>
+        HttpRequest(HttpMethods.POST, uri = target, entity = entity)
+      }
+
+      val response = Source(request).via(httpClient).runWith(Sink.head)
+      response.flatMap{some =>
+        Unmarshal(some).to[String]
+      }.map{path =>
+        FilePath(path)
       }
     }
 
-    def get(uri : String) : Try[Array[Byte]] = {
-      val get = new GetMethod(uri)
-      val status = Try {
-        client.executeMethod(get)
+    def download(remoteFile: FilePath, saveAs: File): Future[Unit] = {
+      val downoad = server.withPath(Path("/download")).withQuery("file" -> remoteFile.path)
+      //download file to local
+      val response = Source.single(HttpRequest(uri = downoad)).via(httpClient).runWith(Sink.head)
+      val downloaded = response.flatMap { response =>
+        response.entity.dataBytes.runWith(SynchronousFileSink(saveAs))
       }
+      downloaded.map(written => Unit)
+    }
 
-      val data = status.flatMap { code =>
-        if (code == 200) {
-          Success(get.getResponseBody())
-        } else {
-          Failure(new Exception(s"We cannot get the data, the status code is $code"))
-        }
-      }
-      data
+    private def entity(file: File)(implicit ec: ExecutionContext): Future[RequestEntity] = {
+      val entity =  HttpEntity(MediaTypes.`application/octet-stream`, file.length(), SynchronousFileSource(file, chunkSize = 100000))
+      val body = Source.single(
+        Multipart.FormData.BodyPart(
+          "uploadfile",
+          entity,
+          Map("filename" -> file.getName)))
+      val form = Multipart.FormData(body)
+
+      Marshal(form).to[RequestEntity]
     }
   }
 }

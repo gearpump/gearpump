@@ -21,10 +21,10 @@ package io.gearpump.services
 import java.net.URL
 import java.util.jar.Manifest
 
-import spray.http.StatusCodes
-import spray.routing.HttpService
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Directives._
 
-trait StaticService extends HttpService {
+trait StaticService  {
 
   val version = {
     val manifest = getManifest(this.getClass)

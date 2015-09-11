@@ -18,12 +18,14 @@
 
 package io.gearpump.util
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import akka.pattern.ask
 import io.gearpump.google.common.io.Files
 import io.gearpump.cluster.TestUtil
+import io.gearpump.jarstore.FilePath
 import io.gearpump.util.FileServer._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -46,30 +48,50 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
     system = ActorSystem("FileServerSpec", TestUtil.DEFAULT_CONFIG)
   }
 
+  private def save(client: Client, data: Array[Byte]): FilePath = {
+    val file = File.createTempFile("fileserverspec", "test")
+    FileUtils.writeByteArrayToFile(file, data)
+    val future = client.upload(file)
+    import scala.concurrent.duration._
+    val path = Await.result(future, 10 seconds)
+    file.delete()
+    path
+  }
+
+  private def get(client: Client, remote: FilePath): Array[Byte] = {
+    val file = File.createTempFile("fileserverspec", "test")
+    val future = client.download(remote, file)
+    import scala.concurrent.duration._
+    val data = Await.result(future, 10 seconds)
+
+    val bytes = FileUtils.readFileToByteArray(file)
+    file.delete()
+    bytes
+  }
+
   "The file server" should {
     "serve the data previously stored" in {
 
       val rootDir = Files.createTempDir()
 
-      val server = system.actorOf(Props(classOf[FileServer], rootDir, host, 0))
-      val port = Await.result((server ? GetPort).asInstanceOf[Future[Port]], Duration(25, TimeUnit.SECONDS))
+      val server = new FileServer(system, host, 0, rootDir)
+      val port = Await.result((server.start), Duration(25, TimeUnit.SECONDS))
+
+      println("start test web server on port " + port)
 
       val sizes = List(1, 100, 1000000, 50000000)
+      val client = new Client(system, host, port.port)
 
-      val client = FileServer.newClient
       sizes.foreach { size =>
         val bytes = randomBytes(size)
         val url = s"http://$host:${port.port}/$size"
-        val saveReturnCode = client.save(url, bytes)
-        assert(saveReturnCode == Success(200), s"save data fails, $url, $rootDir")
-
-        val fetchedBytes = client.get(url)
-        assert(fetchedBytes.isSuccess, s"fetch data fails, $url, $rootDir")
-        assert(fetchedBytes.get sameElements bytes, s"fetch data is coruppted, $url, $rootDir")
+        val remote = save(client, bytes)
+        val fetchedBytes = get(client, remote)
+        assert(fetchedBytes sameElements bytes, s"fetch data is coruppted, $url, $rootDir")
       }
       rootDir.delete()
 
-      system.stop(server)
+      server.stop
     }
   }
 
@@ -78,14 +100,12 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
 
       val rootDir = Files.createTempDir()
 
-      val server = system.actorOf(Props(classOf[FileServer], rootDir, host, 0))
-      val port = Await.result((server ? GetPort).asInstanceOf[Future[Port]], Duration(15, TimeUnit.SECONDS))
+      val server = new FileServer(system, host, 0, rootDir)
+      val port = Await.result((server.start), Duration(25, TimeUnit.SECONDS))
 
-      val url = s"http://$host:${port.port}/notexist"
-
-      val client = FileServer.newClient
-      val fetchedBytes = client.get(url)
-      assert(fetchedBytes.isFailure, s"fetch data fails, $url, $rootDir")
+      val client = new Client(system, host, port.port)
+      val fetchedBytes = get(client, FilePath("noexist"))
+      assert(fetchedBytes.length == 0)
       rootDir.delete()
     }
   }

@@ -23,10 +23,8 @@ import java.io.File
 import akka.actor.{Actor, Props, Stash}
 import akka.pattern.{ask, pipe}
 import io.gearpump.cluster.ClientToMaster.GetJarStoreServer
-import io.gearpump.util.{FileServer, Constants}
-import io.gearpump.util.FileUtils
+import io.gearpump.util._
 import io.gearpump.cluster.ClientToMaster.{JarStoreServerAddress, GetJarStoreServer}
-import io.gearpump.util.{Constants, FileServer, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
@@ -39,12 +37,12 @@ class LocalJarStore(rootDirPath : String) extends Actor with Stash {
 
   FileUtils.forceMkdir(rootDirectory)
 
-  val server = context.actorOf(Props(classOf[FileServer], rootDirectory, host , 0))
+  val server = new FileServer(context.system, host, 0, rootDirectory)
 
   implicit val timeout = Constants.FUTURE_TIMEOUT
   implicit val executionContext = context.dispatcher
 
-  (server ? FileServer.GetPort).asInstanceOf[Future[FileServer.Port]] pipeTo self
+  server.start pipeTo self
 
   def receive : Receive = {
     case FileServer.Port(port) =>
@@ -57,5 +55,9 @@ class LocalJarStore(rootDirPath : String) extends Actor with Stash {
   def listen(port : Int) : Receive = {
     case GetJarStoreServer =>
       sender ! JarStoreServerAddress(s"http://$host:$port/")
+  }
+
+  override def postStop(): Unit = {
+    server.stop
   }
 }
