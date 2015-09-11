@@ -31,6 +31,7 @@ import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfi
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.cluster.worker.WorkerSummary
+import io.gearpump.services.MasterService.BuiltinPartitioners
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.{Constants, Graph}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
@@ -45,7 +46,6 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
   import upickle.default.{read, write}
 
   def actorRefFactory = system
-
   val workerId = 0
   val mockWorker = TestProbe()
 
@@ -99,7 +99,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
 
   it should "return master info when asked" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/master") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
+    (Get(s"/api/$REST_VERSION/master") ~> masterRoute) ~> check {
       // check the type
       val content = response.entity.asString
       read[MasterData](content)
@@ -110,7 +110,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
 
   it should "return a json structure of appMastersData for GET request" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/master/applist") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
+    (Get(s"/api/$REST_VERSION/master/applist") ~> masterRoute) ~> check {
       //check the type
       read[AppMastersData](response.entity.asString)
     }
@@ -135,7 +135,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
 
   it should "return config for master" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/master/config") ~> masterRoute).asInstanceOf[RouteResult] ~> check{
+    (Get(s"/api/$REST_VERSION/master/config") ~> masterRoute) ~> check{
       val responseBody = response.entity.asString
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
@@ -144,7 +144,6 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
   }
 
   "submitJar" should "submit an invalid jar and get success = false" in {
-    implicit val timeout = Constants.FUTURE_TIMEOUT
     implicit val routeTestTimeout = RouteTestTimeout(30.second)
     val tempfile = new File("foo")
     val mfd = MultipartFormData(Seq(BodyPart(tempfile, "file")))
@@ -155,29 +154,33 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
 
   "MetricsQueryService" should "return history metrics" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/master/metrics/master") ~> masterRoute).asInstanceOf[RouteResult] ~> check {
+    (Get(s"/api/$REST_VERSION/master/metrics/master") ~> masterRoute) ~> check {
       val responseBody = response.entity.asString
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
     }
   }
 
-  val processors = Map(
-    0 -> ProcessorDescription(0, "A", parallelism = 1),
-    1 -> ProcessorDescription(1, "B", parallelism = 1)
-  )
-
-  import io.gearpump.util.Graph._
-  val dag = Graph(0 ~ "partitioner" ~> 1)
-  val submit = SubmitApplicationRequest("complexdag", processors, dag)
-
   "submitDag" should "submit a SubmitApplicationRequest and get an appId > 0" in {
-    implicit val timeout = Constants.FUTURE_TIMEOUT
-    val jsonValue = write(submit)
+    import io.gearpump.util.Graph._
+    val processors = Map(
+      0 -> ProcessorDescription(0, "A", parallelism = 1),
+      1 -> ProcessorDescription(1, "B", parallelism = 1)
+    )
+    val dag = Graph(0 ~ "partitioner" ~> 1)
+    val jsonValue = write(SubmitApplicationRequest("complexdag", processors, dag))
     Post(s"/api/$REST_VERSION/master/submitdag", HttpEntity(ContentTypes.`application/json`, jsonValue)) ~> masterRoute ~> check {
       val responseBody = response.entity.asString
       val submitApplicationResultValue = read[SubmitApplicationResultValue](responseBody)
       validate(submitApplicationResultValue.appId >= 0, "invalid appid")
+    }
+  }
+
+  "MasterService" should "return Gearpump built-in partitioner list" in {
+    (Get(s"/api/$REST_VERSION/master/partitioners") ~> masterRoute) ~> check {
+      val responseBody = response.entity.asString
+      val partitioners = read[BuiltinPartitioners](responseBody)
+      validate(partitioners.partitioners.length > 0, "invalid response")
     }
   }
 }

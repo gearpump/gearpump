@@ -35,6 +35,7 @@ import io.gearpump.streaming.StreamApplication
 import io.gearpump.streaming.appmaster.SubmitApplicationRequest
 import io.gearpump.util.ActorUtil._
 import io.gearpump.util.{Constants, FileUtils, Util}
+import io.gearpump.services.MasterService.BuiltinPartitioners
 import spray.http.{BodyPart, MediaTypes, MultipartFormData}
 import spray.routing
 import spray.routing.HttpService
@@ -171,12 +172,19 @@ trait MasterService extends HttpService {
             complete(write(jarFile))
           }
         }
+      } ~
+      path("partitioners") {
+        get {
+          complete(write(BuiltinPartitioners(Constants.BUILTIN_PARTITIONERS.map(_.getName))))
+        }
       }
     }
   }
 }
 
 object MasterService {
+  case class BuiltinPartitioners(partitioners: Array[String])
+
   case class Status(success: Boolean, reason: String = null)
 
   /**
