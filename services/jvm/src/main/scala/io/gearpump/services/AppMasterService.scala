@@ -18,56 +18,59 @@
 
 package io.gearpump.services
 
+import java.io.File
+
 import akka.actor.{ActorRef, ActorSystem}
-import io.gearpump.streaming.AppMasterToMaster
-import io.gearpump.streaming.appmaster.{StreamAppMasterSummary, DagManager}
-import io.gearpump.streaming.executor.Executor
-import io.gearpump.cluster.AppMasterToMaster.{GeneralAppMasterSummary, AppMasterSummary}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.io.SynchronousFileSink
+import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
-import AppMasterService.Status
-import AppMasterToMaster.StallingTasks
-import DagManager._
-import Executor.{ExecutorConfig, QueryExecutorConfig, ExecutorSummary, GetExecutorSummary}
+import io.gearpump.services.AppMasterService.Status
+import io.gearpump.streaming.AppMasterToMaster
+import io.gearpump.streaming.AppMasterToMaster.StallingTasks
+import io.gearpump.streaming.appmaster.DagManager._
+import io.gearpump.streaming.appmaster.{DagManager, StreamAppMasterSummary}
+import io.gearpump.streaming.executor.Executor
+import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.util.ActorUtil.{askActor, askAppMaster}
 import io.gearpump.util.{Constants, Util}
-import spray.http.{MediaTypes, MultipartFormData}
-import spray.routing.HttpService
+import upickle.default.{read, write}
+
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
-import upickle.default.{write, read}
+import io.gearpump.util.FileDirective._
 
-trait AppMasterService extends HttpService {
+trait AppMasterService  {
   this: JarStoreProvider =>
 
   def master: ActorRef
-  implicit val system: ActorSystem
+  implicit def system: ActorSystem
 
   def appMasterRoute = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
-    implicit val ec: ExecutionContext = actorRefFactory.dispatcher
+    implicit val ec: ExecutionContext = system.dispatcher
     pathPrefix("api" / s"$REST_VERSION" / "appmaster" / IntNumber ) { appId =>
       path("dynamicdag") {
         post {
-          anyParams('args.as[Option[String]]) { (args) =>
-            respondWithMediaType(MediaTypes.`application/json`) {
-              entity(as[MultipartFormData]) { entity =>
-                val jar = MasterService.findFormDataOption(entity.fields, "jar")
-                val msg = java.net.URLDecoder.decode(args.get)
-                var dagOperation = read[DAGOperation](msg)
-                if(jar.nonEmpty) {
-                  dagOperation match {
-                    case replace: ReplaceProcessor =>
-                      val description = replace.newProcessorDescription.copy(jar = Util.uploadJar(jar.get, getJarStoreService))
-                      dagOperation = replace.copy(newProcessorDescription = description)
-                  }
+          parameters("args") { (args) =>
+            uploadFile { fileMap =>
+              val jar = fileMap.get("jar").map(_.file)
+              val msg = java.net.URLDecoder.decode(args)
+              var dagOperation = read[DAGOperation](msg)
+              if(jar.nonEmpty) {
+                dagOperation match {
+                  case replace: ReplaceProcessor =>
+                    val description = replace.newProcessorDescription.copy(jar = Util.uploadJar(jar.get, getJarStoreService))
+                    dagOperation = replace.copy(newProcessorDescription = description)
                 }
-                onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
-                  case Success(value) =>
-                    complete(write(value))
-                  case Failure(ex) => failWith(ex)
-                }
+              }
+              onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
+                case Success(value) =>
+                  complete(write(value))
+                case Failure(ex) => failWith(ex)
               }
             }
           }

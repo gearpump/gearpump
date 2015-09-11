@@ -124,9 +124,7 @@ class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[Act
 
   private def loadFile(jarPath : String) : AppJar = {
     val jarFile = new java.io.File(jarPath)
-    val path = FilePath(Math.abs(new java.util.Random().nextLong()).toString)
-
-    jarStoreService.copyFromLocal(jarFile, path)
+    val path = jarStoreService.copyFromLocal(jarFile)
     AppJar(jarFile.getName, path)
   }
 

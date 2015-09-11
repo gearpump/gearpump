@@ -18,57 +18,53 @@
 
 package io.gearpump.services
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.io.IO
+import akka.actor.{ActorRef, ActorSystem}
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.{Route, _}
+import akka.stream.ActorMaterializer
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
-import spray.can._
-import spray.http.StatusCodes._
-import spray.routing.{ExceptionHandler, RoutingSettings}
-import spray.util.LoggingContext
 
-trait RestServices extends
+class RestServices(actorSystem: ActorSystem, val master: ActorRef) extends
     StaticService with
     MasterService with
     WorkerService with
     AppMasterService with
     JarStoreProvider {
+  private val LOG = LogUtil.getLogger(getClass)
 
-  implicit def executionContext = actorRefFactory.dispatcher
+  implicit def system: ActorSystem = actorSystem
 
-  lazy val routes =
+  private def myExceptionHandler: ExceptionHandler = ExceptionHandler{
+    case ex: Throwable => {
+      extractUri { uri =>
+        LOG.error(s"Request to $uri could not be handled normally", ex)
+        complete(InternalServerError, ExceptionUtils.getStackTrace(ex))
+      }
+    }
+  }
+
+  def routes = handleExceptions(myExceptionHandler) {
     masterRoute ~
     workerRoute ~
     appMasterRoute ~
     // make sure staticRoute is the final one, as it will try to lookup resource in local path
     // if there is no match in previous routes
     staticRoute
+  }
+
+  private val jarStoreService = JarStoreService.get(system.settings.config)
+  jarStoreService.init(system.settings.config, system)
+
+  override def getJarStoreService: JarStoreService = jarStoreService
 }
 
 trait JarStoreProvider {
   def getJarStoreService: JarStoreService
-}
-
-class RestServicesActor(masters: ActorRef, sys:ActorSystem) extends Actor with RestServices {
-  def actorRefFactory = context
-  implicit val system: ActorSystem = sys
-  implicit val eh = RoutingSettings.default(context)
-  val jarStoreService = JarStoreService.get(system.settings.config)
-  jarStoreService.init(system.settings.config, actorRefFactory)
-
-  override def getJarStoreService: JarStoreService = jarStoreService
-
-  implicit def myExceptionHandler(implicit log: LoggingContext): ExceptionHandler = ExceptionHandler{
-    case ex: Throwable =>
-      requestUri { uri =>
-        log.error(ex, "Request to {} could not be handled normally", uri)
-        complete(InternalServerError, ExceptionUtils.getStackTrace(ex))
-      }
-  }
-  val master = masters
-
-  def receive = runRoute(routes)
 }
 
 object RestServices {
@@ -76,11 +72,14 @@ object RestServices {
 
   def apply(master:ActorRef)(implicit system:ActorSystem) {
     implicit val executionContext = system.dispatcher
-    val services = system.actorOf(Props(classOf[RestServicesActor], master, system), "rest-services")
+    val services = new RestServices(system, master)
     val config = system.settings.config
     val port = config.getInt(Constants.GEARPUMP_SERVICE_HTTP)
     val host = config.getString(Constants.GEARPUMP_SERVICE_HOST)
-    IO(Http) ! Http.Bind(services, interface = host, port = port)
+
+    implicit val materializer = ActorMaterializer()
+
+    Http().bindAndHandle(Route.handlerFlow(services.routes), host, port)
 
     val displayHost = if(host == "0.0.0.0") "127.0.0.1" else host
     LOG.info(s"Please browse to http://$displayHost:$port to see the web UI")

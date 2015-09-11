@@ -19,7 +19,6 @@ package io.gearpump.experiments.distributeservice
 
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestProbe}
-import io.gearpump.experiments.distributeservice.DistServiceAppMaster
 import io.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers, RegisterAppMaster}
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerList, AppMasterRegistered}
