@@ -177,4 +177,19 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     graph.addEdge("C", defaultEdge, "A")
     assert(graph.hasCycle())
   }
+
+  property("Duplicated edges detecting should work properly") {
+    val graph = Graph.empty[String, String]
+    val defaultEdge = "edge"
+    val anotherEdge = "edge2"
+    graph.addVertex("A")
+    graph.addVertex("B")
+    graph.addEdge("A", defaultEdge, "B")
+
+    assert(!graph.hasDuplicatedEdge())
+
+    graph.addEdge("A", anotherEdge, "B")
+
+    assert(graph.hasDuplicatedEdge())
+  }
 }

@@ -150,6 +150,11 @@ trait MasterService extends HttpService {
               PartitionerDescription(new PartitionerByClassName(edge))
             }
 
+            if(graph.hasDuplicatedEdge()){
+              complete(write(
+                MasterService.Status(success=false, reason="Graph has duplicated edges")))
+            }
+
             val appId = context.submit(new StreamApplication(appName, userconfig, graph))
 
             import upickle.default.write

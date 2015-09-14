@@ -74,6 +74,7 @@ object LifeTime {
 
 class StreamApplication(override val name : String,  inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, PartitionerDescription])
   extends Application {
+  require(!dag.hasDuplicatedEdge(), "Graph should not have duplicated edges")
 
   override def appMaster: Class[_ <: ApplicationMaster] = classOf[AppMaster]
   override def userConfig(implicit system: ActorSystem): UserConfig = {
