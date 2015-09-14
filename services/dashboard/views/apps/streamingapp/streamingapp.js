@@ -29,17 +29,19 @@ angular.module('dashboard')
 /**
  * This controller is used to obtain app. All nested views will read status from here.
  */
-  .controller('StreamingAppCtrl', ['$scope', '$state', 'conf', 'app0', 'metrics0', 'models',
-    function($scope, $state, conf, app0, metrics0, models) {
+  .controller('StreamingAppCtrl', ['$scope', '$state', '$filter', 'conf', 'app0', 'metrics0', 'models',
+    function($scope, $state, $filter, conf, app0, metrics0, models) {
       'use strict';
 
       $scope.$state = $state; // required by streamingapp.html
       $scope.app = app0;
+      $scope.aliveForCompact = buildCompactDuration(app0.aliveFor);
       $scope.dag = models.createDag(app0.clock, app0.processors,
         app0.processorLevels, app0.dag.edgeList);
 
       app0.$subscribe($scope, function(app) {
         $scope.app = app;
+        $scope.aliveForCompact = buildCompactDuration(app.aliveFor);
         $scope.dag.setData(app.clock, app.processors,
           app.processorLevels, app.dag.edgeList);
       });
@@ -61,5 +63,13 @@ angular.module('dashboard')
       $scope.size = function(obj) {
         return Object.keys(obj).length;
       };
+
+      function buildCompactDuration(millis) {
+        var pieces = $filter('duration')(millis).split(' ');
+        return {
+          value: Math.max(0, pieces[0]),
+          unit: pieces.length > 1 ? pieces[1] : ''
+        };
+      }
     }])
 ;

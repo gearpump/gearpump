@@ -18,7 +18,7 @@
       <metrics
         caption="Up Time"
         help="Running for {{app.aliveFor|duration}}"
-        value="{{(app.aliveFor / 1000 / 3600).toFixed(0)}}" unit="hr"></metrics>
+        value="{{aliveForCompact.value}}" unit="{{aliveForCompact.unit}}"></metrics>
     </div>
     <div class="col-md-2 col-sm-3 hidden-xs">
       <metrics value="{{dag.getNumOfProcessors()}}" unit="processor"></metrics>
