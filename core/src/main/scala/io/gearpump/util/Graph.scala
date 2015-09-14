@@ -94,7 +94,6 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     new Graph(vertices, newEdges)
   }
 
-
   def edgesOf(node : N): List[(N, E, N)] = {
     (incomingEdgesOf(node) ++ outgoingEdgesOf(node)).toSet.toList
   }
@@ -175,6 +174,10 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     }
 
     detectCycle(copy)
+  }
+
+  def hasDuplicatedEdge(): Boolean = {
+    edges.groupBy(edge => (edge._1, edge._3)).values.exists(_.size > 1)
   }
 
   /**
