@@ -11,7 +11,10 @@ angular.module('dashboard')
 
       var lineChartOptionBase = {
         height: '108px',
-        visibleDataPointsNum: conf.metricsChartDataCount
+        visibleDataPointsNum: conf.metricsChartDataCount,
+        data: _.times(conf.metricsChartDataCount, function() {
+          return {x: '', y: '-'};
+        })
       };
 
       var throughputChartOptions = angular.merge({

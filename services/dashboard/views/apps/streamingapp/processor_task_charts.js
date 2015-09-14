@@ -23,6 +23,9 @@ angular.module('dashboard')
         var lineChartOptionBase = {
           height: '108px',
           visibleDataPointsNum: conf.metricsChartDataCount,
+          data: _.times(conf.metricsChartDataCount, function() {
+            return {x: '', y: '-'};
+          }),
           seriesNames: $scope.tasks.selected
         };
 
@@ -84,7 +87,9 @@ angular.module('dashboard')
         }
 
         $scope.$watchCollection('dag', function(dag) {
-          updateMetricsCharts($scope.dag);
+          if (dag) {
+            updateMetricsCharts(dag);
+          }
         });
       });
     }])

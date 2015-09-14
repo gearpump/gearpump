@@ -62,6 +62,9 @@ angular.module('dashboard')
         height: '168px',
         seriesStacked: false,
         visibleDataPointsNum: conf.metricsChartDataCount,
+        data: _.times(conf.metricsChartDataCount, function() {
+          return {x: '', y: '-'};
+        }),
         yAxisLabelFormatter: $echarts.axisLabelFormatter('B')
       };
 
