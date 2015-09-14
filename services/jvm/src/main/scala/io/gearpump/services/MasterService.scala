@@ -146,7 +146,7 @@ trait MasterService {
                 val msg = java.net.URLDecoder.decode(request, "UTF-8")
                 val submitApplicationRequest = read[SubmitApplicationRequest](msg)
                 import submitApplicationRequest.{appName, dag, processors, userconfig}
-                val context = ClientContext(system.settings.config, Some(system), Some(master))
+                val context = ClientContext(system.settings.config, system, master)
 
                 val graph = dag.mapVertex { processorId =>
                   processors(processorId)

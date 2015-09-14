@@ -54,8 +54,20 @@ object Processor {
     new DefaultProcessor[T](parallelism, description, taskConf, taskClazz)
   }
 
-  case class DefaultProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T]) extends Processor[T]
+  case class DefaultProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T]) extends Processor[T] {
 
+    def withParallelism(parallel: Int): DefaultProcessor[T] = {
+      new DefaultProcessor[T](parallel, description, taskConf, taskClass)
+    }
+
+    def withDescription(desc: String): DefaultProcessor[T] = {
+      new DefaultProcessor[T](parallelism, desc, taskConf, taskClass)
+    }
+
+    def withConfig(conf: UserConfig): DefaultProcessor[T] = {
+      new DefaultProcessor[T](parallelism, description, conf, taskClass)
+    }
+  }
 }
 
 case class LifeTime(birth: TimeStamp, death: TimeStamp) {
