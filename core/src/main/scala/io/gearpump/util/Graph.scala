@@ -17,7 +17,6 @@
  */
 
 package io.gearpump.util
-
 import scala.collection.mutable
 import scala.language.implicitConversions
 

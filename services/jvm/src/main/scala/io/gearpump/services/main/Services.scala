@@ -19,10 +19,9 @@
 package io.gearpump.services.main
 
 import akka.actor.ActorSystem
-import io.gearpump.services.RestServices
-import io.gearpump.services.websocket.WebSocketServices
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.MasterProxy
+import io.gearpump.services.RestServices
 import io.gearpump.util.LogUtil.ProcessType
 import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 import org.slf4j.Logger
@@ -50,7 +49,6 @@ object Services extends AkkaApp {
     import scala.concurrent.duration._
     val master = system.actorOf(MasterProxy.props(masterCluster, 1 day), s"masterproxy${system.name}")
 
-    WebSocketServices(master)
     RestServices(master)
 
     system.awaitTermination()

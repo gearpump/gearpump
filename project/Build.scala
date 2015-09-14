@@ -15,7 +15,7 @@ object Build extends sbt.Build {
 
   val copySharedSourceFiles = TaskKey[Unit]("copied shared services source code")
 
-  val akkaVersion = "2.3.6"
+  val akkaVersion = "2.3.12"
   val kryoVersion = "0.3.2"
   val clouderaVersion = "2.6.0-cdh5.4.2"
   val clouderaHBaseVersion = "1.0.0-cdh5.4.2"
@@ -37,7 +37,6 @@ object Build extends sbt.Build {
   val scalaVersionNumber = crossScalaVersionNumbers.last
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
-  val sprayWebSocketsVersion = "0.1.4"
   val scalaTestVersion = "2.2.0"
   val scalaCheckVersion = "1.11.3"
   val mockitoVersion = "1.10.17"
@@ -131,8 +130,10 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-contrib" % akkaVersion
         exclude("com.typesafe.akka", "akka-persistence-experimental_2.11"),
       "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
-      "io.spray" %%  "spray-can"       % sprayVersion,
-      "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion,
+      "com.typesafe.akka" %% "akka-http-experimental" % "1.0",
+      "com.typesafe.akka" %% "akka-http-core-experimental" % "1.0",
+      "com.typesafe.akka" %% "akka-stream-experimental" % "1.0",
+      "com.typesafe.akka" %% "akka-http-spray-json-experimental"% "1.0",
       "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
       "commons-logging" % "commons-logging" % commonsLoggingVersion,
       "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
@@ -233,12 +234,7 @@ object Build extends sbt.Build {
 
   lazy val serviceJvmSettings = commonSettings ++ noPublish ++ Seq(
     libraryDependencies ++= Seq(
-    "io.spray" %% "spray-testkit" % sprayVersion % "test",
-    "io.spray" %% "spray-httpx" % sprayVersion,
-    "io.spray" %% "spray-client" % sprayVersion,
-    "io.spray" %% "spray-json" % sprayJsonVersion,
-    "com.wandoulabs.akka" %% "spray-websocket" % sprayWebSocketsVersion
-      exclude("com.typesafe.akka", "akka-actor_2.11"),
+    "com.typesafe.akka" %% "akka-http-testkit-experimental"% "1.0" % "test",
     "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
     "com.lihaoyi" %% "upickle" % upickleVersion,
     "org.webjars" % "angularjs" % "1.4.3",
@@ -337,7 +333,8 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
-          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided",
+          "org.specs2" %% "specs2-mock" % "3.6.4" % "test"
         )
       )
   ) dependsOn(services % "test->test;compile->compile", core % "provided")

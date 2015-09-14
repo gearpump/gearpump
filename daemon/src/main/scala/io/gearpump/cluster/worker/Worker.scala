@@ -67,7 +67,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private var masterInfo: MasterInfo = null
   private var executorNameToActor = Map.empty[String, ActorRef]
   private val jarStoreService = JarStoreService.get(systemConfig)
-  jarStoreService.init(systemConfig, context)
+  jarStoreService.init(systemConfig, context.system)
 
   private val ioPool = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 

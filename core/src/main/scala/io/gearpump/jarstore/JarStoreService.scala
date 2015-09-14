@@ -35,14 +35,13 @@ trait JarStoreService {
    */
   val scheme : String
 
-  def init(config: Config, actorRefFactory: ActorRefFactory)
+  def init(config: Config, system: ActorSystem)
 
   /**
     * This function will copy the local file to the remote JarStore, called from client side.
    * @param localFile The local file
-   * @param remotePath The path on JarStore
    */
-  def copyFromLocal(localFile: File, remotePath: FilePath)
+  def copyFromLocal(localFile: File): FilePath
 
   /**
     * This function will copy the remote file to local file system, called from client side.
