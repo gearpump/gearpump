@@ -25,8 +25,8 @@ import scala.language.implicitConversions
  */
 class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serializable{
 
-  private val _vertices = mutable.Set.empty[N] ++ vertexList
-  private val _edges = mutable.Set.empty[(N, E, N)] ++ edgeList
+  private val _vertices = mutable.Set.empty[N] ++ Option(vertexList).getOrElse(List.empty[N])
+  private val _edges = mutable.Set.empty[(N, E, N)] ++ Option(edgeList).getOrElse(List.empty[(N, E, N)])
 
   def addVertex(vertex : N): Unit = {
     _vertices.add(vertex)

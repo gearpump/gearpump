@@ -16,40 +16,26 @@
  * limitations under the License.
  */
 
-
 package io.gearpump.streaming.javaapi;
 
-import akka.actor.ActorSystem;
-import io.gearpump.cluster.Application;
-import io.gearpump.cluster.ApplicationMaster;
-import io.gearpump.cluster.UserConfig;
 import io.gearpump.partitioner.Partitioner;
 
-public class StreamApplication implements Application {
-  private io.gearpump.streaming.StreamApplication app;
+public class Graph extends io.gearpump.util.Graph<io.gearpump.streaming.Processor, Partitioner> {
 
-  /**
-   *
-   * @param name name of the application
-   * @param conf
-   */
-  public StreamApplication(String name, UserConfig conf, Graph graph) {
-    this.app = io.gearpump.streaming.StreamApplication.apply(
-        name, graph, conf);
+  public Graph() {
+    super(null, null);
   }
 
   @Override
-  public String name() {
-    return app.name();
+  public void addVertex(io.gearpump.streaming.Processor vertex) {
+    super.addVertex(vertex);
   }
 
   @Override
-  public UserConfig userConfig(ActorSystem system) {
-    return app.userConfig(system);
-  }
-
-  @Override
-  public Class<? extends ApplicationMaster> appMaster() {
-    return app.appMaster();
+  public void addEdge(
+      io.gearpump.streaming.Processor node1,
+      Partitioner edge,
+      io.gearpump.streaming.Processor node2) {
+    super.addEdge(node1, edge, node2);
   }
 }
