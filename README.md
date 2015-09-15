@@ -1,4 +1,7 @@
+
 ## GearPump [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master) 
+ 
+Web site: http://gearpump.io 
  
 [![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](https://github.com/gearpump/gearpump/releases)
  
@@ -19,7 +22,7 @@ Per initial benchmarks we are able to process 11 million messages/second (100 by
 
 ![](https://raw.githubusercontent.com/gearpump/gearpump/master/doc/dashboard.png)
 
-For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/site/0.3/performance/)
+For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/site/0.6/performance/)
 
 ## Design Document
 
@@ -27,11 +30,11 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
 
 ## Introduction and Motivation
 
-Check [Introduction](http://www.gearpump.io/site/0.3/introduction/)
+Check [Introduction](http://www.gearpump.io/site/0.6/userguide/#introduction)
 
 ## Getting Started
 
-Check guide [Get Started](http://www.gearpump.io/site/0.3/getstarted/)
+Check guide [Get Started](http://www.gearpump.io/site/0.6/userguide/#get-started)
 
 ## How to Build
 
@@ -68,20 +71,20 @@ export HTTP_PROXY=http://host:port
 export HTTPS_PROXT= http://host:port
 ```
 
-After the build, the package directory layout looks like this: [Layout](http://www.gearpump.io/site/0.3/getstarted/#gearpump-package-structure)
+After the build, the package directory layout looks like this: [Layout](http://www.gearpump.io/site/0.6/userguide/#gearpump-package-structure)
 
 
 ## Concepts
 
-Check guide [Concepts](http://www.gearpump.io/site/0.3/concepts/)
+Check guide [Concepts](http://www.gearpump.io/site/0.6/userguide/#concepts)
 
 ## How to write a GearPump Application
 
-Check guide [Streaming Application Developer Guide](http://www.gearpump.io/site/0.3/how_to_write_a_streaming_application/)
+Check guide [Streaming Application Developer Guide](http://www.gearpump.io/site/0.6/userguide/#streaming-application-developer-guide)
 
 ## How to manage the cluster
 
-Check [Admin Guide](http://www.gearpump.io/site/0.3/adminguide/)
+Check [Admin Guide](http://www.gearpump.io/site/0.6/userguide/#admin-guide)
 
 # Maven dependencies
 
