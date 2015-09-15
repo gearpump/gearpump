@@ -34,8 +34,10 @@ public class StreamApplication implements Application {
    * @param conf
    */
   public StreamApplication(String name, UserConfig conf, Graph graph) {
+    //by pass the tricky type check in scala 2.10
+    io.gearpump.util.Graph untypedGraph = graph;
     this.app = io.gearpump.streaming.StreamApplication.apply(
-        name, graph, conf);
+        name, untypedGraph, conf);
   }
 
   @Override

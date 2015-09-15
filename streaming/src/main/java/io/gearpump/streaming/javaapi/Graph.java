@@ -20,22 +20,9 @@ package io.gearpump.streaming.javaapi;
 
 import io.gearpump.partitioner.Partitioner;
 
-public class Graph extends io.gearpump.util.Graph<io.gearpump.streaming.Processor, Partitioner> {
+public class Graph extends io.gearpump.util.Graph<io.gearpump.streaming.Processor<? extends io.gearpump.streaming.task.Task>, Partitioner> {
 
   public Graph() {
     super(null, null);
-  }
-
-  @Override
-  public void addVertex(io.gearpump.streaming.Processor vertex) {
-    super.addVertex(vertex);
-  }
-
-  @Override
-  public void addEdge(
-      io.gearpump.streaming.Processor node1,
-      Partitioner edge,
-      io.gearpump.streaming.Processor node2) {
-    super.addEdge(node1, edge, node2);
   }
 }
