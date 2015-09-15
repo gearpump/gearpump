@@ -24,9 +24,9 @@ import io.gearpump.cluster.UserConfig;
 import io.gearpump.cluster.client.ClientContext;
 import io.gearpump.partitioner.HashPartitioner;
 import io.gearpump.partitioner.Partitioner;
+import io.gearpump.streaming.javaapi.Graph;
 import io.gearpump.streaming.javaapi.Processor;
 import io.gearpump.streaming.javaapi.StreamApplication;
-import io.gearpump.util.Graph;
 
 public class WordCount {
 
@@ -45,7 +45,7 @@ public class WordCount {
     Processor sum = new Processor(Sum.class).withParallelism(sumTaskNumber);
 
     // construct the graph
-    Graph<Processor, Partitioner> graph = Graph.<Processor, Partitioner>empty();
+    Graph graph = new Graph();
     graph.addVertex(split);
     graph.addVertex(sum);
 
