@@ -47,7 +47,6 @@ angular.module('dashboard', [
   // disable caching for ajax calls to make MSIE happy
   .config(['$httpProvider', function($httpProvider) {
     $httpProvider.defaults.headers.get = angular.merge({
-      'If-Modified-Since': new Date(0),
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache'
     }, $httpProvider.defaults.headers.get);
@@ -58,7 +57,7 @@ angular.module('dashboard', [
     restapiProtocol: 'v1.0',
     restapiRoot: location.origin,
     restapiQueryInterval: 2000, // 2 second
-    metricsChartDataCount: 4 * 15, // 15 minutes data
+    metricsChartDataCount: 4 * 5, // 5 minutes data
     metricsChartSamplingRate: 1000 * 15 // 15 second
   })
 ;
