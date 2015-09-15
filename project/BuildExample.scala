@@ -9,7 +9,18 @@ object BuildExample extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ noPublish
-  ) aggregate (wordcount, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
+  ) aggregate (wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka, distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
+
+  lazy val wordcountJava = Project(
+    id = "gearpump-examples-wordcountjava",
+    base = file("examples/streaming/wordcount-java"),
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+      Seq(
+        mainClass in (Compile, packageBin) := Some("io.gearpump.streaming.examples.wordcountjava.WordCount"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+          CrossVersion.binaryScalaVersion(scalaVersion.value)
+      )
+  ) dependsOn (streaming % "test->test; provided")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",

@@ -59,7 +59,7 @@ object StormRunner extends AkkaApp with ArgumentsParser {
     val stormConf = new File(config.getString("config"))
 
     val system = ActorSystem("storm", akkaConf)
-    val clientContext = new ClientContext(akkaConf, Some(system), None)
+    val clientContext = new ClientContext(akkaConf, system, null)
 
     val stormNimbus = system.actorOf(Props(new Handler(clientContext, jar)))
     val thriftServer = GearpumpThriftServer(stormNimbus)

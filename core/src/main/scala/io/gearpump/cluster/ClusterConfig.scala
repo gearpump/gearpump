@@ -23,6 +23,17 @@ import com.typesafe.config.{ConfigValueFactory, Config, ConfigFactory, ConfigPar
 import io.gearpump.util.Constants._
 import io.gearpump.util.{FileUtils, Constants, LogUtil}
 
+
+/**
+ *
+ * For user application, you should use
+ *
+ * ClusterConfig.default
+ *
+ * To get akka config.
+ *
+ */
+
 /**
  * Please use ClusterConfig.load to construct this object
  */
@@ -111,6 +122,47 @@ object ClusterConfig {
         LOG.info("loading config file application.conf...")
         load("application.conf")
     }
+  }
+
+  /**
+   * alias for default
+   * default is a reserved word for java
+   * @return
+   */
+  def defaultConfig: Config = {
+    load.default
+  }
+
+  /**
+   * default application for user.
+   * Usually used when user want to start an client application.
+   * @return
+   */
+  def default: Config = {
+    load.default
+  }
+
+  /**
+   * configuration for master node
+   * @return
+   */
+  def master: Config = {
+    load.master
+  }
+
+  /*
+   * configuration for worker node
+   */
+  def worker: Config = {
+    load.worker
+  }
+
+  /**
+   * configuration for UI server
+   * @return
+   */
+  def ui: Config = {
+    load.ui
   }
 
   def load(source: ClusterConfigSource) : ClusterConfig = {

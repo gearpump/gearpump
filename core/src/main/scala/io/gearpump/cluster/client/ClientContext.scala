@@ -35,16 +35,27 @@ import org.slf4j.Logger
 import scala.collection.JavaConversions._
 
 //TODO: add interface to query master here
-class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[ActorRef]) {
+class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
+
+  def this(system: ActorSystem) = {
+    this(system.settings.config, system, null)
+  }
+
+  def this(config: Config) = {
+    this(config, null, null)
+  }
+
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
   private val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
 
-  implicit val system = sys.getOrElse(ActorSystem(s"client${Util.randInt}" , config))
-  LOG.info(s"Starting system ${system.name}")
 
-  private val master = _master.getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
+  implicit val system = Option(sys).getOrElse(ActorSystem(s"client${Util.randInt}" , config))
+  LOG.info(s"Starting system ${system.name}")
+  val shouldCleanupSystem = Option(sys).isEmpty
+
+  private val master = Option(_master).getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
   private val jarStoreService = JarStoreService.get(config)
   jarStoreService.init(config, system)
 
@@ -118,8 +129,10 @@ class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[Act
   }
 
   def close() : Unit = {
-    LOG.info(s"Shutting down system ${system.name}")
-    system.shutdown()
+    if (shouldCleanupSystem) {
+      LOG.info(s"Shutting down system ${system.name}")
+      system.shutdown()
+    }
   }
 
   private def loadFile(jarPath : String) : AppJar = {
@@ -145,11 +158,11 @@ class ClientContext(config: Config, sys:Option[ActorSystem], _master: Option[Act
 }
 
 object ClientContext {
-  def apply(): ClientContext = new ClientContext(ClusterConfig.load.default, None, None)
 
-  def apply(config: Config): ClientContext = new ClientContext(config, None, None)
+  def apply(): ClientContext = new ClientContext(ClusterConfig.load.default, null, null)
 
-  def apply(config: Config, system: Option[ActorSystem], master: Option[ActorRef]): ClientContext
+  def apply(config: Config): ClientContext = new ClientContext(config, null, null)
+
+  def apply(config: Config, system: ActorSystem, master: ActorRef): ClientContext
     = new ClientContext(config, system, master)
-
 }
