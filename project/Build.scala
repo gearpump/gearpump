@@ -10,6 +10,10 @@ import xerial.sbt.Sonatype._
 import BuildExample.examples
 import Pack.packProject
 import org.scalajs.sbtplugin.cross.CrossProject
+import sbtunidoc.Plugin.UnidocKeys._
+import sbtunidoc.Plugin._
+
+
 object Build extends sbt.Build {
 
 
@@ -179,10 +183,14 @@ object Build extends sbt.Build {
     jarName in assembly := { s"${name.value.split("-").last}-${scalaVersion.value}-${version.value}-assembly.jar" }
   )
 
+  val projectListWithDoc = Seq(
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(core, streaming, external_kafka, external_monoid, external_serializer, external_hbase, external_hadoopfs, daemon, streaming)
+  )
+
   lazy val root = Project(
     id = "gearpump",
     base = file("."),
-    settings = commonSettings ++ noPublish
+    settings = commonSettings ++ noPublish ++ unidocSettings ++ projectListWithDoc
   ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
       examples, storm, yarn, external_hbase, packProject, external_hadoopfs)
 
