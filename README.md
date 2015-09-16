@@ -55,6 +55,12 @@ Check guide [Get Started](http://www.gearpump.io/site/0.6/userguide/#get-started
 
   After the build, there will be a package file gearpump-${version}.tar.gz generated under target/ folder.
   
+  To build scala document, use 
+```bash
+   ## Will generate the scala doc under target/scala_2.xx/unidoc/
+   sbt unidoc
+```  
+  
   **NOTE:**
 The build requires network connection. If you are behind an enterprise proxy, make sure you have set the proxy in your env before running the build commands. 
 For windows:
