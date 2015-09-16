@@ -18,9 +18,16 @@
 
 package io.gearpump.streaming.javaapi;
 
+import akka.actor.ActorSystem;
 import io.gearpump.cluster.UserConfig;
+import io.gearpump.streaming.sink.DataSink;
+import io.gearpump.streaming.sink.DataSinkProcessor;
+import io.gearpump.streaming.sink.DataSinkTask;
+import io.gearpump.streaming.source.DataSource;
+import io.gearpump.streaming.source.DataSourceProcessor;
+import io.gearpump.streaming.source.DataSourceTask;
 
-public class Processor<T extends Task> implements io.gearpump.streaming.Processor<T> {
+public class Processor<T extends io.gearpump.streaming.task.Task> implements io.gearpump.streaming.Processor<T> {
   private Class<T> _taskClass;
   private int _parallelism = 1;
   private String _description = "";
@@ -33,6 +40,41 @@ public class Processor<T extends Task> implements io.gearpump.streaming.Processo
   public Processor(Class<T> taskClass, int parallelism) {
     this._taskClass = taskClass;
     this._parallelism = parallelism;
+  }
+
+  /**
+   * Create a Source Processor
+   * @param dataSink
+   * @param parallelism
+   * @param description
+   * @param taskConf
+   * @param system
+   * @return
+   */
+  public static Processor<DataSinkTask> sink(DataSink dataSink, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
+    io.gearpump.streaming.Processor<DataSinkTask> p = DataSinkProcessor.apply(dataSink, parallelism, description, taskConf, system);
+    return new Processor(p);
+  }
+
+  /**
+   * Create a Sink Processor
+   * @param source
+   * @param parallelism
+   * @param description
+   * @param taskConf
+   * @param system
+   * @return
+   */
+  public static Processor<DataSourceTask> source(DataSource source, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
+    io.gearpump.streaming.Processor<DataSourceTask> p = DataSourceProcessor.apply(source, parallelism, description, taskConf, system);
+    return new Processor(p);
+  }
+
+  public Processor(io.gearpump.streaming.Processor<T> processor) {
+    this._taskClass = (Class)(processor.taskClass());
+    this._parallelism = processor.parallelism();
+    this._description = processor.description();
+    this._userConf = processor.taskConf();
   }
 
   /**
@@ -77,7 +119,7 @@ public class Processor<T extends Task> implements io.gearpump.streaming.Processo
   }
 
   @Override
-  public Class<? extends Task> taskClass() {
+  public Class<? extends io.gearpump.streaming.task.Task> taskClass() {
     return _taskClass;
   }
 

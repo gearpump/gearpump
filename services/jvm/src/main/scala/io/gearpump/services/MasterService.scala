@@ -24,6 +24,7 @@ import java.io.{File, IOException}
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.typesafe.config.Config
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
@@ -62,7 +63,7 @@ trait MasterService {
 
   def masterRoute: Route = {
     pathPrefix("api" / s"$REST_VERSION" / "master") {
-      extractMaterializer { implicit mat =>
+      extractMaterializer { implicit mat: akka.stream.Materializer =>
         pathEnd {
           get {
             onComplete(askActor[MasterData](master, GetMasterData)) {
@@ -104,7 +105,7 @@ trait MasterService {
             }
           } ~
           path("metrics" / RestPath) { path =>
-            parameter("readLatest" ? "false") { readLatestInput =>
+            parameters(ParamMagnet("readLatest" ? "false")) { readLatestInput: String =>
               val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
               val query = QueryHistoryMetrics(path.head.toString, readLatest)
               onComplete(askActor[HistoryMetrics](master, query)) {
