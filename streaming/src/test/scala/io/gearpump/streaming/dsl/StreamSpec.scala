@@ -19,10 +19,9 @@
 package io.gearpump.streaming.dsl
 
 import akka.actor._
-import io.gearpump.streaming.task.{StartTime, TaskContext}
 import io.gearpump.Message
-import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner}
 import io.gearpump.streaming.dsl.StreamSpec.Join
 import io.gearpump.streaming.dsl.partitioner.GroupByPartitioner
@@ -82,7 +81,7 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with Mo
   }
 
   private def getExpectedDagTopology: Graph[String, String] = {
-    val source = classOf[SourceTask[_, _]].getName
+    val source = classOf[SourceTask[_,_]].getName
     val group = classOf[GroupByTask[_, _, _]].getName
     val merge = classOf[TransformTask[_, _]].getName
     val join = classOf[Join].getName

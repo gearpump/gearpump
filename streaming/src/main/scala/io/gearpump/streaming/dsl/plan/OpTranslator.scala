@@ -19,15 +19,16 @@
 package io.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
-import io.gearpump.streaming.{Processor, Constants}
-import io.gearpump.streaming.dsl.{TypedDataSink, TypedDataSource}
-import io.gearpump.streaming.dsl.op._
-import io.gearpump.streaming.task.{StartTime, TaskContext, Task}
 import io.gearpump._
 import io.gearpump.cluster.UserConfig
-import Constants._
-import Processor.DefaultProcessor
-import OpTranslator._
+import io.gearpump.streaming.Constants._
+import io.gearpump.streaming.Processor.DefaultProcessor
+import io.gearpump.streaming.dsl.TypedDataSource
+import io.gearpump.streaming.dsl.op._
+import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.source.DataSource
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import io.gearpump.streaming.{Constants, Processor}
 import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
@@ -37,6 +38,7 @@ import scala.collection.TraversableOnce
  * Translate a OP to a TaskDescription
  */
 class OpTranslator extends java.io.Serializable {
+  import OpTranslator._
   val LOG: Logger = LogUtil.getLogger(getClass)
   def translate(ops: OpChain)(implicit system: ActorSystem): Processor[_ <: Task] = {
     ops.ops.head match {
@@ -47,9 +49,8 @@ class OpTranslator extends java.io.Serializable {
 
         op match {
           case DataSourceOp(dataSource, parallism, description) =>
-            Processor[SourceTask[Object, Object]](parallism,
-              description = description + "." + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, dataSource))
+            import SourceTask._
+            Processor[HandlerTask,DataSource](dataSource, parallism, description + "." + func.description, userConfig)
           case groupby@ GroupByOp(_, parallism, description) =>
             Processor[GroupByTask[Object, Object, Object]](parallism,
               description = description + "." + func.description,
@@ -63,9 +64,8 @@ class OpTranslator extends java.io.Serializable {
               description = description + "." + func.description,
               taskConf = null, processor)
           case DataSinkOp(dataSink, parallelism, description) =>
-            Processor[SinkTask[Object]](parallelism,
-              description = func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SINK, dataSink))
+            import SinkTask._
+            Processor[HandlerTask,DataSink](dataSink, parallelism, func.description, userConfig)
         }
       case op: SlaveOp[_] =>
         val func = toFunction(ops.ops)
@@ -178,31 +178,39 @@ object OpTranslator {
     }
   }
 
-  class SourceTask[T, OUT](source: TypedDataSource[T], operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class HandlerTask[T](val handler: T, taskContext : TaskContext, userConf : UserConfig) extends Task(taskContext, userConf) {
+    def this(taskContext: TaskContext, userConf: UserConfig) = {
+      this(
+        userConf.getValue[T](GEARPUMP_STREAMING_HANDLER)(taskContext.system).get,
+        taskContext, userConf)
+    }
+  }
+
+  class SourceTask[IN, OUT](source: TypedDataSource[IN], operator: Option[SingleInputFunction[IN, OUT]], taskContext: TaskContext, userConf: UserConfig) extends HandlerTask[DataSource](source, taskContext, userConf) {
 
     def this(taskContext: TaskContext, userConf: UserConfig) = {
       this(
-        userConf.getValue[TypedDataSource[T]](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
-        userConf.getValue[SingleInputFunction[T, OUT]](GEARPUMP_STREAMING_OPERATOR)(taskContext.system),
+        userConf.getValue[TypedDataSource[IN]](GEARPUMP_STREAMING_HANDLER)(taskContext.system).get,
+        userConf.getValue[SingleInputFunction[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(taskContext.system),
         taskContext, userConf)
     }
 
     override def onStart(startTime: StartTime): Unit = {
-      source.open(taskContext, Some(startTime.startTime))
+      handler.open(taskContext, Some(startTime.startTime))
       self ! Message("start", System.currentTimeMillis())
     }
 
     override def onNext(msg: Message): Unit = {
       val time = System.currentTimeMillis()
       //Todo: determine the batch size
-      source.read(1).foreach(msg => {
+      handler.read(1).foreach(msg => {
         operator match {
           case Some(operator) =>
             operator match {
-              case bad: DummyInputFunction[T] =>
+              case bad: DummyInputFunction[DataSource] =>
                 taskContext.output(msg)
               case _ =>
-                operator.process(msg.msg.asInstanceOf[T]).foreach(msg => {
+                operator.process(msg.msg.asInstanceOf[IN]).foreach(msg => {
                   taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
                 })
             }
@@ -214,8 +222,12 @@ object OpTranslator {
     }
 
     override def onStop() = {
-      source.close()
+      handler.close()
     }
+  }
+
+  object SourceTask {
+    implicit val sourceTask: Class[_<:HandlerTask[DataSource]] = classOf[SourceTask[_,_]]
   }
 
   class TransformTask[IN, OUT](operator: Option[SingleInputFunction[IN, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
@@ -241,22 +253,23 @@ object OpTranslator {
     }
   }
 
-  class SinkTask[T](dataSink: TypedDataSink[T], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
-    def this(taskContext: TaskContext, userConf: UserConfig) = {
-      this(userConf.getValue[TypedDataSink[T]](GEARPUMP_STREAMING_SINK)(taskContext.system).get, taskContext, userConf)
-    }
+  class SinkTask(sink: DataSink, taskContext: TaskContext, userConf: UserConfig) extends HandlerTask[DataSink](sink, taskContext, userConf) {
 
     override def onStart(startTime: StartTime): Unit = {
-      dataSink.open(taskContext)
+      handler.open(taskContext)
     }
 
     override def onNext(msg: Message): Unit = {
-      dataSink.write(msg)
+      handler.write(msg)
     }
 
     override def onStop() = {
-      dataSink.close()
+      handler.close()
     }
+  }
+
+  object SinkTask {
+    implicit val sinkTask: Class[_<:HandlerTask[DataSink]] = classOf[SinkTask]
   }
 
 }

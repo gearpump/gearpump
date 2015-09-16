@@ -19,11 +19,13 @@
 package io.gearpump.streaming
 
 import akka.actor.ActorSystem
-import io.gearpump.streaming.appmaster.AppMaster
-import io.gearpump.streaming.task.Task
 import io.gearpump.TimeStamp
 import io.gearpump.cluster._
 import io.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription, PartitionerObject}
+import io.gearpump.streaming.Constants._
+import io.gearpump.streaming.appmaster.AppMaster
+import io.gearpump.streaming.dsl.plan.OpTranslator.HandlerTask
+import io.gearpump.streaming.task.Task
 import io.gearpump.util.{Graph, ReferenceEqual}
 
 import scala.language.implicitConversions
@@ -37,8 +39,10 @@ trait Processor[+T <: Task] extends ReferenceEqual {
 
   def description: String
 
-  def taskClass: Class[_ <: Task]
+  def taskClass: Class[_<:T]
 }
+
+trait TypedProcessor[F[_] <: HandlerTask[_]] extends Processor[F[_]]
 
 object Processor {
   def ProcessorToProcessorDescription(id: ProcessorId, processor: Processor[_ <: Task]): ProcessorDescription = {
@@ -52,6 +56,15 @@ object Processor {
 
   def apply[T<: Task](taskClazz: Class[T], parallelism : Int, description: String, taskConf: UserConfig): DefaultProcessor[T] = {
     new DefaultProcessor[T](parallelism, description, taskConf, taskClazz)
+  }
+
+  def apply[F[_] <: HandlerTask[_], T<:AnyRef](_handler: T, _parallelism : Int, _description: String, _taskConf: UserConfig)(implicit em: Class[_<:F[T]], system: ActorSystem): TypedProcessor[F] = {
+    new TypedProcessor[F] {
+      override def parallelism = _parallelism
+      override def description = _description
+      override def taskClass = em
+      override def taskConf = _taskConf.withValue(GEARPUMP_STREAMING_HANDLER, _handler)
+    }
   }
 
   case class DefaultProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T]) extends Processor[T] {

@@ -68,7 +68,7 @@ class OpTranslatorSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
     val data = "one two three".split("\\s")
 
     //source with no transformer
-    val source = new SourceTask[String, String](new CollectionDataSource[String](data), None, taskContext, conf)
+    val source = new SourceTask[String,String](new CollectionDataSource[String](data), None, taskContext, conf)
     source.onStart(StartTime(0))
     source.onNext(Message("next"))
     verify(taskContext, times(1)).output(anyObject())
@@ -100,12 +100,12 @@ class OpTranslatorSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
     val task = new GroupByTask[String, String, String](input => input, taskContext, config)
     task.onStart(StartTime(0))
 
-    val peopleCaptor = ArgumentCaptor.forClass(classOf[Message]);
+    val peopleCaptor = ArgumentCaptor.forClass(classOf[Message])
 
     data.split("\\s+").foreach { word =>
       task.onNext(Message(word))
     }
-    verify(taskContext, times(6)).output(peopleCaptor.capture());
+    verify(taskContext, times(6)).output(peopleCaptor.capture())
 
     import scala.collection.JavaConverters._
 

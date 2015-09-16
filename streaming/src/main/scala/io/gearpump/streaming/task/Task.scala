@@ -21,11 +21,14 @@ package io.gearpump.streaming.task
 import akka.actor.Actor.Receive
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.Constants._
+import io.gearpump.streaming.dsl.TypedDataSource
 import io.gearpump.util.LogUtil
 import io.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
  * This provides context information for a task.
