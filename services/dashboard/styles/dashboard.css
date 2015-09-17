@@ -74,9 +74,9 @@ td.td-no-padding  {
 /**
  * Animated loading arrows (3 rules)
  */
-.glyphicon-refresh-animate {
-  -animation: spin .7s infinite linear;
-  -webkit-animation: spin2 .7s infinite linear;
+.rotate-animation {
+  -animation: spin 1s infinite linear;
+  -webkit-animation: spin2 1s infinite linear;
 }
 
 @-webkit-keyframes spin2 {

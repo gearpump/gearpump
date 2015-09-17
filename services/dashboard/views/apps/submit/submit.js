@@ -2,21 +2,22 @@
  * Licensed under the Apache License, Version 2.0
  * See accompanying LICENSE file.
  */
-'use strict';
 angular.module('dashboard')
 
   .controller('AppSubmitCtrl', ['$scope', 'restapi',
     function($scope, restapi) {
+      'use strict';
+
       $scope.files = {};
-      $scope.filenames = {};
+      $scope.names = {};
 
       ['jar', 'conf'].forEach(function(name) {
         $scope.files[name] = null;
-        $scope.filenames[name] = null;
+        $scope.names[name] = null;
         $scope.$watch(name, function(val) {
           if (val != null && val.length) {
             $scope.files[name] = val[0];
-            $scope.filenames[name] = val[0].name;
+            $scope.names[name] = val[0].name;
           }
         });
       });
@@ -27,7 +28,7 @@ angular.module('dashboard')
 
       $scope.clear = function(name) {
         $scope.files[name] = null;
-        $scope.filenames[name] = null;
+        $scope.names[name] = null;
       };
 
       $scope.submit = function() {
@@ -44,11 +45,17 @@ angular.module('dashboard')
           if (response.success) {
             $scope.$hide();
           } else {
-            var reason = response.error;
-            if (response.stackTrace.length) {
-              reason = [reason, 'Stack Trace:'].concat(response.stackTrace).join('<br/>');
+            $scope.error = response.error;
+            $scope.hasStackTrace = response.stackTrace.length > 0;
+            $scope.showErrorInNewWin = function() {
+              if ($scope.hasStackTrace) {
+                var popup = window.open('', 'Error Log');
+                var html = [$scope.error].concat(response.stackTrace).join('\n');
+                popup.document.open();
+                popup.document.write('<pre>' + html + '</pre>');
+                popup.document.close();
+              }
             }
-            $scope.error = '<p align="left">' + reason + '</p>';
           }
         });
       };
