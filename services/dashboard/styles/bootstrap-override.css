@@ -173,3 +173,13 @@ html, body {
   border-bottom: thin dotted;
   cursor: help;
 }
+
+/* Make alert padding narrower (2 rules) */
+.alert {
+  padding: 7px 10px 7px 10px;
+}
+
+.alert-dismissable,
+.alert-dismissible {
+  padding-right: 30px;
+}

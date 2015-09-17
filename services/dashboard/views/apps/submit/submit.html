@@ -6,21 +6,25 @@
           <span>&times;</span></button>
         <h4>Submit Application</h4>
 
+        <p style="padding-top: 4px; padding-bottom: 14px;">Upload self contained JAR file and launch it immediately.</p>
+
         <div ng-show="shouldNoticeSubmitFailed">
           <div class="alert alert-danger alert-dismissible" role="alert">
             <button type="button" class="close" data-dismiss="alert"
                     ng-click="shouldNoticeSubmitFailed=false">
-              <span aria-hidden="true">&times;</span></button>
+              <span aria-hidden="true">&times;</span>
+            </button>
             Failed to submit the application.
             <span ng-if="error">
               Check out the
-              <span class="help-text" bs-tooltip="error"
-                    html="true" placement="auto bottom">reason</span>.
+              <span class="help-text"
+                 bs-tooltip="error" html="true" placement="bottom"
+                 ng-click="showErrorInNewWin()">reason
+                <i ng-if="hasStackTrace"
+                   class="fa fa-external-link"></i></span>.
             </span>
           </div>
         </div>
-
-        <p style="padding-top: 4px; padding-bottom: 14px;">Upload self contained JAR file and launch it immediately.</p>
 
         <form>
           <div class="row">
@@ -32,10 +36,9 @@
               <div class="form-group has-feedback form-row">
                 <input id="jarFileInput" readonly
                        type="text" class="form-control input-sm"
-                       placeholder="No file selected"
-                       ng-value="filenames['jar']"/>
-                  <span class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
-                        ngf-select ng-model="jar" ngf-accept="'.jar'"></span>
+                       ng-value="names['jar']"/>
+                <span class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
+                      ngf-select ng-model="jar" accept=".jar"></span>
               </div>
             </div>
             <!-- input 2 -->
@@ -47,13 +50,14 @@
               <div class="form-group has-feedback form-row">
                 <input id="configFileInput" readonly
                        type="text" class="form-control input-sm"
-                       ng-value="filenames['conf']"/>
-                  <span ng-hide="filenames['conf']"
-                        class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
-                        ngf-select ng-model="conf" ngf-accept="'.conf'"></span>
-                  <span ng-show="filenames['conf']"
-                        class="glyphicon glyphicon-trash form-control-feedback form-control-feedback-sm clickable"
-                        ng-click="clear('conf')"></span>
+                       ng-value="names['conf']"/>
+                <!-- Toggle buttons -->
+                <span ng-hide="names['conf']"
+                      class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
+                      ngf-select ng-model="conf" accept=".conf"></span>
+                <span ng-show="names['conf']"
+                      class="glyphicon glyphicon-trash form-control-feedback form-control-feedback-sm clickable"
+                      ng-click="clear('conf')"></span>
               </div>
             </div>
             <!-- input 3 -->
@@ -77,7 +81,7 @@
         <button type="button" class="btn btn-primary btn-sm"
                 ng-disabled="!canSubmit()" ng-click="submit()">
           <span ng-show="uploading"
-                class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>&nbsp;
+                class="glyphicon glyphicon-repeat rotate-animation"></span>
           Submit
         </button>
       </div>
