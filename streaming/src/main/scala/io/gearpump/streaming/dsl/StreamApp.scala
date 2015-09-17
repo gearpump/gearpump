@@ -20,10 +20,10 @@ package io.gearpump.streaming.dsl
 
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import io.gearpump.streaming.StreamApplication
-import io.gearpump.streaming.dsl.op.{DataSourceOp, OpEdge, Op}
+import io.gearpump.streaming.dsl.op.{Shuffle, ProcessorOp, DataSourceOp, OpEdge, Op}
 import io.gearpump.streaming.dsl.plan.Planner
 import io.gearpump.streaming.source.DataSource
-import io.gearpump.streaming.task.TaskContext
+import io.gearpump.streaming.task.{Task, TaskContext}
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.util.Graph
@@ -47,9 +47,11 @@ import scala.reflect.ClassTag
  *
  * @param name name of app
  */
-class StreamApp(val name: String, system: ActorSystem, userConfig: UserConfig) {
+class StreamApp(val name: String, system: ActorSystem, userConfig: UserConfig, val graph: Graph[Op, OpEdge]) {
 
-  val graph = Graph.empty[Op, OpEdge]
+  def this(name: String ,system: ActorSystem, userConfig: UserConfig) = {
+    this(name, system, userConfig, Graph.empty[Op, OpEdge])
+  }
 
   def plan(): StreamApplication = {
     implicit val actorSystem = system
@@ -67,13 +69,32 @@ object StreamApp {
   }
 
   implicit class Source(app: StreamApp) extends java.io.Serializable {
-    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int, description: String = null): Stream[T] = {
-      implicit val sourceOp = DataSourceOp(dataSource, parallism, description)
+
+    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int): Stream[T] = {
+      source(dataSource, parallism, UserConfig.empty)
+    }
+
+    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int, description: String): Stream[T] = {
+      source(dataSource, parallism, UserConfig.empty, description)
+    }
+
+    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int, conf: UserConfig): Stream[T] = {
+      source(dataSource, parallism, conf, description = null)
+    }
+
+    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+      implicit val sourceOp = DataSourceOp(dataSource, parallism, conf, description)
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)
     }
     def source[T: ClassTag](seq: Seq[T], parallism: Int, description: String): Stream[T] = {
-      this.source(new CollectionDataSource[T](seq), parallism, description)
+      this.source(new CollectionDataSource[T](seq), parallism, UserConfig.empty, description)
+    }
+
+    def source[T: ClassTag](source: Class[_ <: Task], parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+      val sourceOp = ProcessorOp(source, parallism, conf, Option(description).getOrElse("source"))
+      app.graph.addVertex(sourceOp)
+      new Stream[T](app.graph, sourceOp)
     }
   }
 }

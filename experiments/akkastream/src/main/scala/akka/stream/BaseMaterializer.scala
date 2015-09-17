@@ -15,23 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.external.hbase.dsl
 
-import io.gearpump.cluster.UserConfig
-import io.gearpump.external.hbase.HBaseSink
-import io.gearpump.streaming.dsl.Stream
-import Stream.Sink
+package akka.stream
 
-import scala.reflect.ClassTag
+import scala.concurrent.ExecutionContextExecutor
 
-class HBaseDSLSink[T: ClassTag](stream: Stream[T]) {
-  def writeToHbase(table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink(table), parallism, UserConfig.empty, description)
-  }
-}
+abstract class BaseMaterializer extends akka.stream.Materializer {
 
-object HBaseDSLSink {
-  implicit def streamToHBaseDSLSink[T: ClassTag](stream: Stream[T]): HBaseDSLSink[T] = {
-    new HBaseDSLSink[T](stream)
+  override def withNamePrefix(name: String): Materializer = throw new UnsupportedOperationException()
+
+  override implicit def executionContext: ExecutionContextExecutor = throw new UnsupportedOperationException()
+
+
+  def materialize[Mat](graph: ModuleGraph[Mat]): Mat
+
+  override def materialize[Mat](runnableGraph: Graph[ClosedShape, Mat]): Mat = {
+    val graph = ModuleGraph(runnableGraph)
+    materialize(graph)
   }
 }

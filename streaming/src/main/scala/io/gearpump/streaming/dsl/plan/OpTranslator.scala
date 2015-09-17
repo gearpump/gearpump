@@ -43,10 +43,10 @@ class OpTranslator extends java.io.Serializable {
       case op: MasterOp =>
         val tail = ops.ops.tail
         val func = toFunction(tail)
-        val userConfig = UserConfig.empty.withValue(GEARPUMP_STREAMING_OPERATOR, func)
+        val userConfig = op.conf.withValue(GEARPUMP_STREAMING_OPERATOR, func)
 
         op match {
-          case DataSourceOp(dataSource, parallism, description) =>
+          case DataSourceOp(dataSource, parallism, conf, description) =>
             Processor[SourceTask[Object, Object]](parallism,
               description = description + "." + func.description,
               taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, dataSource))
@@ -58,11 +58,11 @@ class OpTranslator extends java.io.Serializable {
             Processor[TransformTask[Object, Object]](1,
               description = op.description + "." + func.description,
               taskConf = userConfig)
-          case ProcessorOp(processor, parallism, description) =>
+          case ProcessorOp(processor, parallism, conf, description) =>
             DefaultProcessor(parallism,
               description = description + "." + func.description,
-              taskConf = null, processor)
-          case DataSinkOp(dataSink, parallelism, description) =>
+              taskConf = conf, processor)
+          case DataSinkOp(dataSink, parallelism, conf, description) =>
             Processor[SinkTask[Object]](parallelism,
               description = func.description,
               taskConf = userConfig.withValue(GEARPUMP_STREAMING_SINK, dataSink))
@@ -109,7 +109,7 @@ object OpTranslator {
     //should never be called
     override def process(value: T) = None
 
-    override def description: String = null
+    override def description: String = ""
   }
 
   class AndThen[IN, MIDDLE, OUT](first: SingleInputFunction[IN, MIDDLE], second: SingleInputFunction[MIDDLE, OUT]) extends SingleInputFunction[IN, OUT] {
@@ -258,5 +258,4 @@ object OpTranslator {
       dataSink.close()
     }
   }
-
 }

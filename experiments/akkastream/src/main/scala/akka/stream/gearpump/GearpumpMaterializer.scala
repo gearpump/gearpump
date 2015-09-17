@@ -15,23 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.external.hbase.dsl
 
-import io.gearpump.cluster.UserConfig
-import io.gearpump.external.hbase.HBaseSink
-import io.gearpump.streaming.dsl.Stream
-import Stream.Sink
+package akka.stream.gearpump
 
-import scala.reflect.ClassTag
+import akka.actor.ActorSystem
+import akka.stream._
+import akka.stream.gearpump.graph.GraphCutter
+import akka.stream.gearpump.graph.GraphCutter.Strategy
+import akka.stream.impl.StreamLayout.Module
 
-class HBaseDSLSink[T: ClassTag](stream: Stream[T]) {
-  def writeToHbase(table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink(table), parallism, UserConfig.empty, description)
+class GearpumpMaterializer(system: ActorSystem, strategy: Strategy = GraphCutter.AllRemoteStrategy)
+    extends BaseMaterializer {
+
+  override def materialize[Mat](graph: ModuleGraph[Mat]): Mat = {
+    val subGraphs = new GraphCutter(strategy).cut(graph)
+    val matValues = subGraphs.foldLeft(Map.empty[Module, Any]){(map, subGraph) =>
+      map ++ subGraph.materialize(map, system)
+    }
+    graph.resolve(matValues)
   }
 }
 
-object HBaseDSLSink {
-  implicit def streamToHBaseDSLSink[T: ClassTag](stream: Stream[T]): HBaseDSLSink[T] = {
-    new HBaseDSLSink[T](stream)
-  }
+object GearpumpMaterializer{
+  def apply(system: ActorSystem) = new GearpumpMaterializer(system)
 }
