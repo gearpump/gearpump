@@ -8,6 +8,11 @@ body {
   padding-top: 50px; /*equals navbar height*/
 }
 
+/* Bugfix: Angular-strap's dropdown menu will not response on clicking footer */
+html, body {
+  height: 100%;
+}
+
 /* Make navbar font more readable */
 .navbar-nav > li {
   font-weight: 500;
@@ -27,13 +32,17 @@ body {
 .breadcrumb-sm > li {
   font-size: 0.9em;
   font-weight: 500;
-  padding-right: 6px;
 }
 
 /* Alternative breadcrumb style: no rounded corners and shadow on the bottom */
 .breadcrumb-alt {
   border-radius: 0;
   box-shadow: 1px 1px 2px #ddd;
+}
+
+/* Bugfix: Remove too large padding after path separator */
+.breadcrumb > li {
+  padding-right: 7px;
 }
 
 /* Remove 1px border from stripped table (2 rules) */
@@ -80,6 +89,13 @@ body {
   top: 2px;
 }
 
+/* glyphicon placeholder */
+.glyphicon-none:before {
+  /* http://stackoverflow.com/questions/19598336/blank-placeholder-for-bootstrap-glyphicon */
+  content: "\e094";
+  color: transparent !important;
+}
+
 /* Tune bootstrap-tooltip look and feel (2 rules) */
 .tooltip-inner {
   max-width: none;
@@ -97,14 +113,24 @@ body {
   background-color: transparent;
 }
 
-/* Smaller font size and spacing for dropdown menu (2 rules) */
-.dropdown-menu-sm {
+/* Smaller font size and spacing for dropdown menu (3 rules) */
+.dropdown-menu {
   font-size: 0.95em;
 }
 
-.dropdown-menu-sm > li > a {
-  padding-left: 10px;
+.dropdown-menu > li > a {
+  padding-left: 12px;
   cursor: pointer;
+}
+
+.dropdown-menu > li > a > i {
+  padding-right: 2px;
+}
+
+/* The default padding was too large for xs size */
+.btn.btn-xs.dropdown-toggle {
+  padding: 1px 4px 3px 4px;
+  line-height: 16px;
 }
 
 /* Draw a shadow around panel */
@@ -128,13 +154,22 @@ body {
   font-size: 0.95em;
 }
 
-/* Make horizontal form group more compact (2 rules) */
-.form-group-compact-h > .control-label-box {
-  padding-top: 6px;
-  padding-right: 0;
+/* Make the feedback icon of a form input control clickable (2 rules) */
+.form-control-feedback.clickable {
+  pointer-events: auto;
 }
 
-.form-group-compact-h,
-.form-group-compact-h > * {
-  padding: 2px 0 2px 0;
+.form-control-feedback.clickable:hover {
+  cursor: pointer;
+}
+
+/* Fix the icon position issue when corresponding input-control is small */
+.form-control-feedback-sm {
+  margin-top: -1px;
+}
+
+/* Help text */
+.help-text {
+  border-bottom: thin dotted;
+  cursor: help;
 }

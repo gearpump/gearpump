@@ -88,3 +88,19 @@ td.td-no-padding  {
   from { transform: scale(1) rotate(0deg);}
   to { transform: scale(1) rotate(360deg);}
 }
+
+/* Fix form control position and alignment (2 rules) */
+.form-row {
+  margin-bottom: 6px;
+}
+
+.form-label-vertical {
+  line-height: 30px;
+}
+
+/* Form group header text style */
+.form-group-header {
+  padding-top: 10px;
+  color: #888;
+  text-transform: uppercase;
+}

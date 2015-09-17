@@ -11,61 +11,62 @@
             <button type="button" class="close" data-dismiss="alert"
                     ng-click="shouldNoticeSubmitFailed=false">
               <span aria-hidden="true">&times;</span></button>
-            Failed to submit the application. Please try it again.
+            Failed to submit the application.
+            <span ng-if="error">
+              Check out the
+              <span class="help-text" bs-tooltip="error"
+                    html="true" placement="auto bottom">reason</span>.
+            </span>
           </div>
         </div>
 
-        <p style="padding:14px 0">
-          Are you sure to submit the self contained jar application and launch it immediately?</p>
+        <p style="padding-top: 4px; padding-bottom: 14px;">Upload self contained JAR file and launch it immediately.</p>
 
-        <form class="form-horizontal">
-          <div class="form-group" style="padding-left:12px">
-            <div class="form-group-compact-h">
-              <div class="col-sm-3">
-                <label for="opt1" class="control-label">Application File</label>
-              </div>
-              <div class="col-sm-6">
-                <input type="text" class="form-control input-sm" id="opt1" readonly
-                       ng-value="filenames.jar" />
-              </div>
-              <div>
-                <button type="button" class="btn btn-primary btn-sm"
-                        ngf-select ng-model="jar" ngf-accept="'.jar'">
-                  <span class="glyphicon glyphicon-folder-open"></span>
-                </button>
-                <button type="button" class="btn btn-sm"
-                        ng-disabled="!filenames.jar" ng-click="clear('jar')">
-                  <span class="glyphicon glyphicon-trash"></span>
-                </button>
+        <form>
+          <div class="row">
+            <!-- input 1 -->
+            <div class="col-sm-4">
+              <label class="form-label-vertical" for="jarFileInput">Application File</label>
+            </div>
+            <div class="col-sm-8">
+              <div class="form-group has-feedback form-row">
+                <input id="jarFileInput" readonly
+                       type="text" class="form-control input-sm"
+                       placeholder="No file selected"
+                       ng-value="filenames['jar']"/>
+                  <span class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
+                        ngf-select ng-model="jar" ngf-accept="'.jar'"></span>
               </div>
             </div>
-            <div class="form-group-compact-h">
-              <div class="col-sm-3">
-                <label for="opt2" class="control-label">Config File</label>
-                <explanation-icon value="Optional to provide a config file to override default behaviors"/>
-              </div>
-              <div class="col-sm-6">
-                <input type="text" class="form-control input-sm" id="opt2" readonly
-                       ng-value="filenames.conf" />
-              </div>
-              <div>
-                <button type="button" class="btn btn-sm"
-                        ngf-select ng-model="conf" ngf-accept="'.conf'">
-                  <span class="glyphicon glyphicon-folder-open"></span>
-                </button>
-                <button type="button" class="btn btn-sm"
-                        ng-disabled="!filenames.conf" ng-click="clear('conf')">
-                  <span class="glyphicon glyphicon-trash"></span>
-                </button>
+            <!-- input 2 -->
+            <div class="col-sm-4">
+              <label class="form-label-vertical" for="configFileInput">Config File</label>
+              <remark tooltip="Optional to provide a config file to override default behaviors"></remark>
+            </div>
+            <div class="col-sm-8">
+              <div class="form-group has-feedback form-row">
+                <input id="configFileInput" readonly
+                       type="text" class="form-control input-sm"
+                       ng-value="filenames['conf']"/>
+                  <span ng-hide="filenames['conf']"
+                        class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
+                        ngf-select ng-model="conf" ngf-accept="'.conf'"></span>
+                  <span ng-show="filenames['conf']"
+                        class="glyphicon glyphicon-trash form-control-feedback form-control-feedback-sm clickable"
+                        ng-click="clear('conf')"></span>
               </div>
             </div>
-            <div class="form-group-compact-h">
-              <div class="col-sm-3">
-                <label for="opt3" class="control-label">Launch Args</label>
-                <explanation-icon value="Optional to provide arguments for launching the application. E.g. for WordCount example &quot;-split 2 -sum 1&quot;"/>
-              </div>
-              <div class="col-sm-6">
-                <input type="text" class="form-control input-sm" id="opt3" ng-model="extraArgs"/>
+            <!-- input 3 -->
+            <div class="col-sm-4">
+              <label class="form-label-vertical" for="launchArgsInput">Launch Arguments</label>
+              <remark
+                tooltip="Optional to provide extra launch arguments. E.g. WordCount can use &quot;-split 2 -sum 1&quot;"></remark>
+            </div>
+            <div class="col-sm-8">
+              <div class="form-group form-row" style="margin-bottom: 18px">
+
+                <input id="launchArgsInput" type="text"
+                       class="form-control input-sm" ng-model="extraArgs"/>
               </div>
             </div>
           </div>
