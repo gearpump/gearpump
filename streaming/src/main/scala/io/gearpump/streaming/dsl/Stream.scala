@@ -18,6 +18,7 @@
 
 package io.gearpump.streaming.dsl
 
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl.op._
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.Task
@@ -129,13 +130,12 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
    * @tparam R
    * @return
    */
-  def process[R: ClassTag](processor: Class[_ <: Task], parallism: Int, description: String = null): Stream[R] = {
-    val processorOp = ProcessorOp(processor, parallism, Option(description).getOrElse("process"))
+  def process[R: ClassTag](processor: Class[_ <: Task], parallism: Int, conf: UserConfig = UserConfig.empty, description: String = null): Stream[R] = {
+    val processorOp = ProcessorOp(processor, parallism, conf, Option(description).getOrElse("process"))
     graph.addVertex(processorOp)
     graph.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
     new Stream[R](graph, processorOp, Some(Shuffle))
   }
-
 }
 
 class KVStream[K, V](stream: Stream[Tuple2[K, V]]){
@@ -176,11 +176,18 @@ object Stream {
   implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = new KVStream(stream)
 
   implicit class Sink[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
-    def sink[T: ClassTag](dataSink: TypedDataSink[T], parallism: Int, description: String): Stream[T] = {
-      implicit val sink = DataSinkOp(dataSink, parallism, Some(description).getOrElse("traversable"))
+    def sink[T: ClassTag](dataSink: TypedDataSink[T], parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+      implicit val sink = DataSinkOp(dataSink, parallism, conf, Some(description).getOrElse("traversable"))
       stream.graph.addVertex(sink)
       stream.graph.addEdge(stream.thisNode, Shuffle, sink)
       new Stream[T](stream.graph, sink)
+    }
+
+    def sink[T: ClassTag](sink: Class[_ <: Task], parallism: Int, conf: UserConfig = UserConfig.empty, description: String = null): Stream[T] = {
+      val sinkOp = ProcessorOp(sink, parallism, conf, Option(description).getOrElse("source"))
+      stream.graph.addVertex(sinkOp)
+      stream.graph.addEdge(stream.thisNode, Shuffle, sinkOp)
+      new Stream[T](stream.graph, sinkOp)
     }
   }
 }

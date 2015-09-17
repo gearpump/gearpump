@@ -67,13 +67,4 @@ class MasterClient(master : ActorRef) {
     val result = Await.result((master ? AppMastersDataRequest).asInstanceOf[Future[AppMastersData]], Duration.Inf)
     result
   }
-
-  /**
-   * Internal API, will be removed in future
-   */
-  def replayFromTimestampWindowTrailingEdge(appId : Int): ReplayApplicationResult = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val result = Await.result(ActorUtil.askAppMaster[ReplayApplicationResult](master, appId,ReplayFromTimestampWindowTrailingEdge(appId)), Duration.Inf)
-    result
-  }
 }

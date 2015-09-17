@@ -19,6 +19,7 @@ package io.gearpump.streaming.kafka.dsl
 
 import java.util.Properties
 
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl
 import io.gearpump.streaming.dsl.TypedDataSink
 import io.gearpump.streaming.kafka.KafkaSink
@@ -31,7 +32,7 @@ class KafkaDSLSink[T: ClassTag](stream: dsl.Stream[T]) {
       bootstrapServers: String,
       parallism: Int,
       description: String): dsl.Stream[T] = {
-    stream.sink(new KafkaSink(topic, bootstrapServers) with TypedDataSink[T], parallism, description)
+    stream.sink(new KafkaSink(topic, bootstrapServers) with TypedDataSink[T], parallism, UserConfig.empty, description)
   }
 
   def writeToKafka(
@@ -39,7 +40,7 @@ class KafkaDSLSink[T: ClassTag](stream: dsl.Stream[T]) {
       properties: Properties,
       parallism: Int,
       description: String): dsl.Stream[T] = {
-    stream.sink(new KafkaSink(topic, properties) with TypedDataSink[T], parallism, description)
+    stream.sink(new KafkaSink(topic, properties) with TypedDataSink[T], parallism, UserConfig.empty, description)
   }
 }
 

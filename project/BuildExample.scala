@@ -78,6 +78,7 @@ object BuildExample extends sbt.Build {
     base = file("examples/distributedshell"),
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
+          mainClass in (Compile, packageBin) := Some("io.gearpump.examples.distributedshell.DistributedShell"),
           target in assembly := baseDirectory.value.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
@@ -94,6 +95,7 @@ object BuildExample extends sbt.Build {
             "io.spray" %%  "spray-can"       % sprayVersion,
             "io.spray" %%  "spray-routing-shapeless2"   % sprayVersion
           ),
+          mainClass in (Compile, packageBin) := Some("io.gearpump.experiments.distributeservice.DistributeService"),
           target in assembly := baseDirectory.value.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
     )
@@ -126,6 +128,7 @@ object BuildExample extends sbt.Build {
     base = file("examples/streaming/kafka"),
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
+          mainClass in (Compile, packageBin) := Some("io.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount"),
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
@@ -167,6 +170,7 @@ object BuildExample extends sbt.Build {
           exclude("org.ow2.asm", "asm"),
         "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion
       ),
+      mainClass in (Compile, packageBin) := Some("io.gearpump.streaming.examples.state.MessageCountApp"),
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
     )
@@ -175,6 +179,10 @@ object BuildExample extends sbt.Build {
   lazy val pagerank = Project(
     id = "gearpump-examples-pagerank",
     base = file("examples/pagerank"),
-    settings = commonSettings ++ noPublish
+    settings = commonSettings ++ noPublish ++ Seq(
+      mainClass in (Compile, packageBin) := Some("io.gearpump.experiments.pagerank.example.PageRankExample"),
+      target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+        CrossVersion.binaryScalaVersion(scalaVersion.value)
+    )
   ) dependsOn(streaming % "test->test; provided")
 }

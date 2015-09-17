@@ -17,6 +17,7 @@
  */
 package io.gearpump.external.hbase.dsl
 
+import io.gearpump.cluster.UserConfig
 import io.gearpump.external.hbase.HBaseSink
 import io.gearpump.streaming.dsl.Stream
 import Stream.Sink
@@ -25,7 +26,7 @@ import scala.reflect.ClassTag
 
 class HBaseDSLSink[T: ClassTag](stream: Stream[T]) {
   def writeToHbase(table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink(table), parallism, description)
+    stream.sink(HBaseSink(table), parallism, UserConfig.empty, description)
   }
 }
 

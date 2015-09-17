@@ -18,6 +18,7 @@
 
 package io.gearpump.streaming.dsl.op
 
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl.{TypedDataSource, TypedDataSink}
 import io.gearpump.streaming.task.Task
 
@@ -41,19 +42,25 @@ case class FlatMapOp[T: ClassTag, R](fun: (T) => TraversableOnce[R], description
 
 case class ReduceOp[T: ClassTag](fun: (T, T) =>T, description: String) extends SlaveOp[T]
 
-trait MasterOp extends Op
+trait MasterOp extends Op {
+  def conf: UserConfig
+}
 
 trait ParameterizedOp[T] extends MasterOp
 
-case class MergeOp(source: Op, target: Op, description: String) extends MasterOp
+case class MergeOp(source: Op, target: Op, description: String) extends MasterOp {
+  override def conf: UserConfig = UserConfig.empty
+}
 
-case class GroupByOp[T: ClassTag, R](fun: T => R, parallism: Int, description: String) extends ParameterizedOp[T]
+case class GroupByOp[T: ClassTag, R](fun: T => R, parallism: Int, description: String) extends ParameterizedOp[T]{
+  override def conf: UserConfig = UserConfig.empty
+}
 
-case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int, description: String) extends ParameterizedOp[T]
+case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
-case class DataSourceOp[T: ClassTag](dataSource: TypedDataSource[T], parallelism: Int, description: String) extends ParameterizedOp[T]
+case class DataSourceOp[T: ClassTag](dataSource: TypedDataSource[T], parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
-case class DataSinkOp[T: ClassTag](dataSink: TypedDataSink[T], parallelism: Int, description: String) extends ParameterizedOp[T]
+case class DataSinkOp[T: ClassTag](dataSink: TypedDataSink[T], parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
 /**
  * Contains operators which can be chained to single one.

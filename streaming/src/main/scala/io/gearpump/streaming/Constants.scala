@@ -13,4 +13,6 @@ object Constants {
 
   val GEARPUMP_STREAMING_MAX_PENDING_MESSAGE_COUNT = "gearpump.streaming.max-pending-message-count-per-connection"
   val GEARPUMP_STREAMING_ACK_ONCE_EVERY_MESSAGE_COUNT = "gearpump.streaming.ack-once-every-message-count"
+
+  val CLUE_KEY_NAME = "gearpump.streaming.processor.name"
 }
