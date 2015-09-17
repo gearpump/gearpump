@@ -43,6 +43,12 @@ angular.module('dashboard')
           $scope.uploading = false;
           if (response.success) {
             $scope.$hide();
+          } else {
+            var reason = response.error;
+            if (response.stackTrace.length) {
+              reason = [reason, 'Stack Trace:'].concat(response.stackTrace).join('<br/>');
+            }
+            $scope.error = '<p align="left">' + reason + '</p>';
           }
         });
       };

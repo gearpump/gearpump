@@ -107,9 +107,16 @@ angular.module('dashboard')
               var data = response.data;
               onComplete({success: data && data.success});
             }
-          }, function() {
+          }, function(response) {
             if (onComplete) {
-              onComplete({success: false});
+              var errorMessage = '';
+              var stackTrace = [];
+              var lines = (response.data || '').split('\n');
+              if (lines.length) {
+                errorMessage = lines[0].replace(', error summary:', '');
+                stackTrace = lines.slice(1);
+              }
+              onComplete({success: false, error: errorMessage, stackTrace: stackTrace});
             }
           });
         },
