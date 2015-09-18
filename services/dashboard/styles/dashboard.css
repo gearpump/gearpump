@@ -104,3 +104,9 @@ td.td-no-padding  {
   color: #888;
   text-transform: uppercase;
 }
+
+/* Help text */
+.help-text {
+  border-bottom: thin dotted;
+  cursor: help;
+}

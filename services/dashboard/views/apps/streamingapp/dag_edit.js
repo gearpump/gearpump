@@ -8,9 +8,6 @@ angular.module('dashboard')
     function($scope) {
       'use strict';
 
-      $scope.files = {};
-      $scope.filenames = {};
-
       var options = $scope.modifyOptions || {};
       $scope.changeParallelismOnly = options.parallelism;
       var processor = $scope.activeProcessor;
@@ -19,21 +16,23 @@ angular.module('dashboard')
       $scope.description = processor.description;
       $scope.parallelism = processor.parallelism;
 
-      ['jar'].forEach(function(name) {
-        $scope.files[name] = null;
-        $scope.filenames[name] = null;
-        $scope.$watch(name, function(val) {
-          if (val != null && val.length) {
-            $scope.files[name] = val[0];
-            $scope.filenames[name] = val[0].name;
-          }
-        });
-      });
+      $scope.files = {};
+      $scope.names = {};
 
       $scope.clear = function(name) {
         $scope.files[name] = null;
-        $scope.filenames[name] = null;
+        $scope.names[name] = ''; // must be '', otherwise MSIE will not response expectedly
       };
+
+      ['jar'].forEach(function(name) {
+        $scope.clear(name);
+        $scope.$watch(name, function(files) {
+          if (Array.isArray(files) && files.length) {
+            $scope.files[name] = files[0];
+            $scope.names[name] = files[0].name;
+          }
+        });
+      });
 
       $scope.fillDefaultTime = function() {
         if (!$scope.transitTime) {
@@ -43,7 +42,7 @@ angular.module('dashboard')
 
       $scope.validParallelism = true;
       $scope.$watch('parallelism', function(val) {
-        $scope.validParallelism = val && !isNaN(val);
+        $scope.validParallelism = angular.isNumber(val) && val > 0;
       });
 
       $scope.validTaskClass = true;

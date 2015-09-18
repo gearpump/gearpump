@@ -11,24 +11,23 @@ angular.module('dashboard')
       $scope.files = {};
       $scope.names = {};
 
-      ['jar', 'conf'].forEach(function(name) {
+      $scope.clear = function(name) {
         $scope.files[name] = null;
-        $scope.names[name] = null;
-        $scope.$watch(name, function(val) {
-          if (val != null && val.length) {
-            $scope.files[name] = val[0];
-            $scope.names[name] = val[0].name;
+        $scope.names[name] = ''; // must be '', otherwise MSIE will not response expectedly
+      };
+
+      ['jar', 'conf'].forEach(function(name) {
+        $scope.clear(name);
+        $scope.$watch(name, function(files) {
+          if (Array.isArray(files) && files.length) {
+            $scope.files[name] = files[0];
+            $scope.names[name] = files[0].name;
           }
         });
       });
 
       $scope.canSubmit = function() {
         return $scope.files.jar && !$scope.uploading;
-      };
-
-      $scope.clear = function(name) {
-        $scope.files[name] = null;
-        $scope.names[name] = null;
       };
 
       $scope.submit = function() {
