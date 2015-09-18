@@ -15,23 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.gearpump.serializer
 
-import akka.actor.ExtendedActorSystem
+import io.gearpump.esotericsoftware.kryo.Serializer
 
-trait SerializerPool {
-  def get(threadId: Long): FastKryoSerializer
-}
-
-class KryoPool(system: ExtendedActorSystem) extends SerializerPool{
-  private val pool = new ThreadLocal[FastKryoSerializer]() {
-    override def initialValue(): FastKryoSerializer = {
-      new FastKryoSerializer(system)
-    }
-  }
-
-  def get(threadId: Long): FastKryoSerializer = {
-    pool.get()
-  }
+/**
+ * This class should only be extended in Gearpump and for message serialization.
+ * When a Class extends this. Gearpump will construct the corresponding object
+ * using reflection and pass in a delegate.
+ */
+private[gearpump] abstract class IMessageSerializer[T] extends Serializer[T]{
+  val delegate: Option[SerializationDelegate]
 }
