@@ -27,10 +27,10 @@
         </div>
 
         <form>
-          <div class="row">
+          <div class="row" style="margin-bottom: 18px">
             <!-- input 1 -->
             <div class="col-sm-4">
-              <label class="form-label-vertical" for="jarFileInput">Application File</label>
+              <label class="form-label-vertical" for="jarFileInput">Application JAR</label>
             </div>
             <div class="col-sm-8">
               <div class="form-group has-feedback form-row">
@@ -38,7 +38,7 @@
                        type="text" class="form-control input-sm"
                        ng-value="names['jar']"/>
                 <span class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
-                      ngf-select ng-model="jar" accept=".jar"></span>
+                      ngf-select ng-model="jar" accept=".jar" ngf-accept="'.jar'"></span>
               </div>
             </div>
             <!-- input 2 -->
@@ -54,7 +54,7 @@
                 <!-- Toggle buttons -->
                 <span ng-hide="names['conf']"
                       class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
-                      ngf-select ng-model="conf" accept=".conf"></span>
+                      ngf-select ng-model="conf" accept=".conf" ngf-accept="'.conf'"></span>
                 <span ng-show="names['conf']"
                       class="glyphicon glyphicon-trash form-control-feedback form-control-feedback-sm clickable"
                       ng-click="clear('conf')"></span>
@@ -67,8 +67,7 @@
                 tooltip="Optional to provide extra launch arguments. E.g. WordCount can use &quot;-split 2 -sum 1&quot;"></remark>
             </div>
             <div class="col-sm-8">
-              <div class="form-group form-row" style="margin-bottom: 18px">
-
+              <div class="form-group form-row">
                 <input id="launchArgsInput" type="text"
                        class="form-control input-sm" ng-model="extraArgs"/>
               </div>

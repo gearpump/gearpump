@@ -168,12 +168,6 @@ html, body {
   margin-top: -1px;
 }
 
-/* Help text */
-.help-text {
-  border-bottom: thin dotted;
-  cursor: help;
-}
-
 /* Make alert padding narrower (2 rules) */
 .alert {
   padding: 7px 10px 7px 10px;
