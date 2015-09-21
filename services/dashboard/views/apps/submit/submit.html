@@ -1,4 +1,4 @@
-<div class="modal" tabindex="-1" ng-controller="AppSubmitCtrl">
+<div class="modal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-body">
@@ -33,7 +33,7 @@
               <label class="form-label-vertical" for="jarFileInput">Application JAR</label>
             </div>
             <div class="col-sm-8">
-              <div class="form-group has-feedback form-row">
+              <div class="form-group has-feedback">
                 <input id="jarFileInput" readonly
                        type="text" class="form-control input-sm"
                        ng-value="names['jar']"/>
@@ -47,7 +47,7 @@
               <remark tooltip="Optional to provide a config file to override default behaviors"></remark>
             </div>
             <div class="col-sm-8">
-              <div class="form-group has-feedback form-row">
+              <div class="form-group has-feedback">
                 <input id="configFileInput" readonly
                        type="text" class="form-control input-sm"
                        ng-value="names['conf']"/>
@@ -67,7 +67,7 @@
                 tooltip="Optional to provide extra launch arguments. E.g. WordCount can use &quot;-split 2 -sum 1&quot;"></remark>
             </div>
             <div class="col-sm-8">
-              <div class="form-group form-row">
+              <div class="form-group">
                 <input id="launchArgsInput" type="text"
                        class="form-control input-sm" ng-model="extraArgs"/>
               </div>
@@ -76,13 +76,13 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default btn-sm" ng-click="$hide()">Cancel</button>
         <button type="button" class="btn btn-primary btn-sm"
                 ng-disabled="!canSubmit()" ng-click="submit()">
           <span ng-show="uploading"
                 class="glyphicon glyphicon-repeat rotate-animation"></span>
           Submit
         </button>
+        <button type="button" class="btn btn-default btn-sm" ng-click="$hide()">Cancel</button>
       </div>
     </div>
   </div>

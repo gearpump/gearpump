@@ -1,0 +1,47 @@
+<div class="modal" tabindex="-1">
+  <div class="modal-dialog" style="width: 520px">
+    <div class="modal-content">
+      <div class="modal-body">
+        <button type="button" class="close" ng-click="$hide()">
+          <span>&times;</span></button>
+        <h4 ng-if="edge.edgeId >= 0">Modify Edge</h4>
+        <h4 ng-if="!(edge.edgeId >= 0)">New Edge</h4>
+
+        <p style="padding-top: 4px; padding-bottom: 14px;">Note that connection should NOT build a direct/indirect
+          cycle.</p>
+
+        <form name="form">
+          <!-- right margin align to cancel button right -->
+          <div style="margin-bottom: 18px">
+            <!-- input 1 -->
+            <form-control
+              type="class" label="Partitioner Class" required="true"
+              choices="{{partitioners}}"
+              ng-model="edge.partitionerClass"
+              invalid="invalid.partitionerClass"></form-control>
+            <!-- input 2 -->
+            <form-control
+              type="choices" label="FROM Side" required="true"
+              choices="{{processors}}"
+              ng-model="edge.from"
+              invalid="invalid.from"></form-control>
+            <!-- input 3 -->
+            <form-control
+              type="choices" label="TO Side" required="true"
+              choices="{{processors}}"
+              ng-model="edge.to"
+              invalid="invalid.to"></form-control>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary btn-sm" style="width: 60px"
+                ng-disabled="!canSave()" ng-click="save()">Save
+        </button>
+        <button type="button" class="btn btn-default btn-sm"
+                ng-click="$hide()">Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

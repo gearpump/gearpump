@@ -16,6 +16,23 @@ angular.module('dashboard')
         show: false
       });
 
+      function decodeSuccessResponse(data) {
+        return angular.merge({
+          success: true
+        }, (data || {}));
+      }
+
+      function decodeErrorResponse(data) {
+        var errorMessage = '';
+        var stackTrace = [];
+        var lines = (data || '').split('\n');
+        if (lines.length) {
+          errorMessage = lines[0].replace(', error summary:', '');
+          stackTrace = lines.slice(1);
+        }
+        return {success: false, error: errorMessage, stackTrace: stackTrace};
+      }
+
       var restapiV1Root = conf.restapiRoot + '/api/' + conf.restapiProtocol;
       return {
         /**
@@ -109,14 +126,41 @@ angular.module('dashboard')
             }
           }, function(response) {
             if (onComplete) {
-              var errorMessage = '';
-              var stackTrace = [];
-              var lines = (response.data || '').split('\n');
-              if (lines.length) {
-                errorMessage = lines[0].replace(', error summary:', '');
-                stackTrace = lines.slice(1);
-              }
-              onComplete({success: false, error: errorMessage, stackTrace: stackTrace});
+              onComplete(decodeErrorResponse(response.data));
+            }
+          });
+        },
+
+        /** Submit an user defined application with user configuration */
+        submitDag: function(args, onComplete) {
+          var url = restapiV1Root + '/master/submitdag';
+          return $http.post(url, args).then(function(response) {
+            if (onComplete) {
+              onComplete(decodeSuccessResponse(response.data));
+            }
+          }, function(response) {
+            if (onComplete) {
+              onComplete(decodeErrorResponse(response.data));
+            }
+          });
+        },
+
+        /** Upload a set of JAR files */
+        uploadJars: function(files, onComplete) {
+          var upload = Upload.upload({
+            url: restapiV1Root + '/master/uploadjar',
+            method: 'POST',
+            file: files,
+            fileFormDataName: 'jar'
+          });
+
+          upload.then(function(response) {
+            if (onComplete) {
+              onComplete(decodeSuccessResponse({files: response.data}));
+            }
+          }, function(response) {
+            if (onComplete) {
+              onComplete(decodeErrorResponse(response.data));
             }
           });
         },

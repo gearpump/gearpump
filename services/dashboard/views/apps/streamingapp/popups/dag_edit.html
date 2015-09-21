@@ -1,13 +1,14 @@
-<div class="modal" tabindex="-1"
-     ng-controller="StreamingAppDagEditCtrl">
+<div class="modal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-body">
         <button type="button" class="close" ng-click="$hide()">
           <span>&times;</span></button>
-        <h4>Modify Processor {{processorId}}</h4>
+        <h4>Modify Processor
+          <span ng-bind="processorId"></span></h4>
 
-        <p style="padding-top: 4px; padding-bottom: 14px;">Note that change processor JAR or task class or parallelism will create a new processor instance.</p>
+        <p style="padding-top: 4px; padding-bottom: 14px;">Note that change processor JAR or task class or parallelism
+          will create a new processor instance.</p>
 
         <div ng-show="shouldNoticeSubmitFailed">
           <div class="alert alert-danger alert-dismissible" role="alert">
@@ -31,7 +32,7 @@
                 <label class="form-label-vertical" for="jarFileInput">New Processor JAR</label>
               </div>
               <div class="col-sm-8">
-                <div class="form-group has-feedback form-row">
+                <div class="form-group has-feedback">
                   <input id="jarFileInput" readonly
                          type="text" class="form-control input-sm"
                          ng-value="names['jar']"/>
@@ -52,7 +53,7 @@
                 <label class="form-label-vertical" for="taskClassInput">New Task Class</label>
               </div>
               <div class="col-sm-8">
-                <div class="form-group form-row">
+                <div class="form-group">
                   <input id="taskClassInput"
                          type="text" class="form-control input-sm"
                          ng-model="taskClass"/>
@@ -66,7 +67,7 @@
                 <remark tooltip="The number of tasks that will be allocated by the processor"></remark>
               </div>
               <div class="col-sm-8">
-                <div class="form-group form-row">
+                <div class="form-group">
                   <input id="parallelismInput"
                          type="number" class="form-control input-sm"
                          ng-model="parallelism"/>
@@ -80,7 +81,7 @@
                 <remark tooltip="Optional to provide processor description"></remark>
               </div>
               <div class="col-sm-8">
-                <div class="form-group form-row">
+                <div class="form-group">
                   <input id="descriptionInput"
                          type="text" class="form-control input-sm"
                          ng-model="description"/>
@@ -95,7 +96,7 @@
               </div>
               <div class="col-sm-4"
                    ng-class="{'has-error': form.date.$invalid}">
-                <div class="form-group form-row">
+                <div class="form-group">
                   <input id="transitTimeInput"
                          type="text" size="10" class="form-control" placeholder="Date" name="date"
                          ng-model="transitDate" data-date-format="yyyy-MM-dd"
@@ -104,7 +105,7 @@
               </div>
               <div class="col-sm-4"
                    ng-class="{'has-error': form.time.$invalid}">
-                <div class="form-group form-row">
+                <div class="form-group">
                   <input type="text" size="8" class="form-control" placeholder="Time" name="time"
                          ng-model="transitTime" ng-click="fillDefaultTime()" data-time-format="HH:mm:ss"
                          hour-step="-1" minute-step="-1" second-step="-1" time-type="string"
@@ -116,13 +117,13 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default btn-sm" ng-click="$hide()">Cancel</button>
         <button type="button" class="btn btn-primary btn-sm"
                 ng-disabled="!canReplace()" ng-click="submit()">
           <span ng-show="uploading"
                 class="glyphicon glyphicon-repeat rotate-animation"></span>
           Change
         </button>
+        <button type="button" class="btn btn-default btn-sm" ng-click="$hide()">Cancel</button>
       </div>
     </div>
   </div>

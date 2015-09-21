@@ -38,9 +38,15 @@ angular.module('dashboard')
           if (breadcrumbs.length > 0 && breadcrumbs[0].text === 'apps') {
             breadcrumbs[0].text = 'Applications';
             if (breadcrumbs.length > 1) {
-              var appText = 'app ';
-              var p = breadcrumbs[1].text.indexOf(appText);
-              breadcrumbs[1].text = 'Application ' + breadcrumbs[1].text.substr(p + appText.length);
+              if (breadcrumbs[1].text === 'compose') {
+                breadcrumbs[1].text = 'Compose DAG';
+              } else {
+                var appText = 'app ';
+                var p = breadcrumbs[1].text.indexOf(appText);
+                if (p !== -1) {
+                  breadcrumbs[1].text = 'Application ' + breadcrumbs[1].text.substr(p + appText.length);
+                }
+              }
             }
             if (breadcrumbs.length > 2) {
               switch (breadcrumbs[2].text) {

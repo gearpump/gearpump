@@ -155,17 +155,22 @@ html, body {
 }
 
 /* Make the feedback icon of a form input control clickable (2 rules) */
-.form-control-feedback.clickable {
+.clickable {
   pointer-events: auto;
 }
 
-.form-control-feedback.clickable:hover {
+.clickable:hover {
   cursor: pointer;
 }
 
 /* Fix the icon position issue when corresponding input-control is small */
 .form-control-feedback-sm {
   margin-top: -1px;
+}
+
+/* Narrow the distance between to form control rows */
+.form-group {
+  margin-bottom: 5px;
 }
 
 /* Make alert padding narrower (2 rules) */

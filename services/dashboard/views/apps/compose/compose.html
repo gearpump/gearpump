@@ -1,0 +1,88 @@
+<div class="col-md-3">
+
+  <h5>Components</h5>
+  <button type="button" class="btn btn-sm btn-default btn-primary btn-block"
+          ng-click="chooseProcessor()">
+    New Processor
+  </button>
+  <button type="button" class="btn btn-sm btn-default btn-block"
+          ng-disabled="visGraph.data.nodes.length < 2"
+          ng-click="chooseEdge()">
+    New Edge
+  </button>
+  <hr/>
+
+  <h5>Application JAR files
+    <remark tooltip="Provide user defined task classes or partitioner classes."></remark>
+  </h5>
+  <div class="dropbox" style="margin-bottom: 10px"
+       ngf-drop ngf-select ng-model="uploads"
+       ngf-drag-over-class="dropbox-dragover" ngf-multiple="true"
+       accept=".jar">
+    Drop an user defined JAR files here
+  </div>
+
+  <ul class="list-group">
+    <li class="list-group-item"
+        ng-repeat="name in keys(files) track by $index">
+      <span class="pull-right glyphicon glyphicon-trash clickable"
+            ng-click="removeFile(name)"></span>
+      <span ng-bind="name"></span>
+    </li>
+  </ul>
+</div>
+
+<div class="col-md-9">
+  <div class="row">
+    <div class="col-md-12">
+      <h5>Compose Canvas</h5>
+
+      <div ng-show="shouldNoticeSubmitFailed">
+        <div class="alert alert-danger alert-dismissible" role="alert">
+          <button type="button" class="close" data-dismiss="alert"
+                  ng-click="shouldNoticeSubmitFailed=false">
+            <span aria-hidden="true">&times;</span></button>
+          Failed to submit the DAG.
+            <span ng-if="error">
+              Check out the
+              <span class="help-text"
+                    bs-tooltip="error" html="true" placement="bottom"
+                    ng-click="showErrorInNewWin()">reason
+                <i ng-if="hasStackTrace"
+                   class="fa fa-external-link"></i></span>.
+            </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-12">
+      <div class="panel panel-sm panel-default">
+        <div class="panel-body">
+          <div class="cm-container" id="contextmenu"
+               bs-dropdown html="true"
+               template-url="views/apps/compose/popups/contextmenu.html"></div>
+          <vis-network
+            data="visGraph.data"
+            options="visGraph.options"
+            events="visGraph.events">
+          </vis-network>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-12">
+      <div class="pull-right">
+        <span class="btn btn-sm"
+              ng-class="{'btn-primary': !submitted, 'btn-default': submitted}"
+              ng-disabled="visGraph.data.nodes.length < 1 || keys(files).length === 0 || submitted"
+              ng-click="submit()">
+          <span ng-if="submitting"
+                class="glyphicon glyphicon-repeat rotate-animation"></span>
+        Submit</span>
+        <span ng-if="submitted"
+              class="btn btn-sm btn-primary"
+              ng-click="view()">View Application</span>
+      </div>
+    </div>
+  </div>
+</div>

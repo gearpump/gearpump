@@ -22,12 +22,13 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('AppsCtrl', ['$scope', '$modal', '$sortableTableBuilder', 'apps0',
-    function($scope, $modal, $stb, apps0) {
+  .controller('AppsCtrl', ['$scope', '$modal', '$state', '$sortableTableBuilder', 'apps0',
+    function($scope, $modal, $state, $stb, apps0) {
       'use strict';
 
       var submitWindow = $modal({
-        templateUrl: "views/apps/submit/submit.html",
+        templateUrl: 'views/apps/submit/submit.html',
+        controller: 'AppSubmitCtrl',
         backdrop: 'static',
         keyboard: false /* https://github.com/mgcrea/angular-strap/issues/1779 */,
         show: false
@@ -36,6 +37,14 @@ angular.module('dashboard')
       $scope.openSubmitDialog = function() {
         submitWindow.$promise.then(submitWindow.show);
       };
+
+      $scope.composeMenuOptions = [{
+        text: '<i class="glyphicon glyphicon-pencil"></i> Compose DAG',
+        href: $state.href('compose_app')
+      }, {
+        text: '<i class="glyphicon glyphicon-none"></i> <b>Submit Application</b>',
+        click: $scope.openSubmitDialog
+      }];
 
       $scope.appsTable = {
         cols: [

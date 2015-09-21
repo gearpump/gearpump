@@ -10,7 +10,7 @@ angular.module('dashboard')
     'use strict';
 
     function _remainDigits(s) {
-      return parseInt(s.replace(/[a-zA-Z]/g, ''));
+      return parseInt(s.replace(/[^0-9]/g, ''));
     }
 
     function _decodeProcessorName(path) {

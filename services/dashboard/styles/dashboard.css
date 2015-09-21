@@ -21,12 +21,12 @@ body, .form-control {
 .actor-path {
   word-break: break-all;
 }
+
 /*
 body {
   background-color: #f4f4f4;
 }
 */
-
 
 /* Translate the first letter of a angular-route-segment segment capitalized */
 .breadcrumb > li {
@@ -45,12 +45,12 @@ body {
 }
 
 /* For dashing widget "indicator" shape="stripe", need to remove parent element padding (2 rules) */
-th.td-no-padding  {
+th.td-no-padding {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
-td.td-no-padding  {
+td.td-no-padding {
   padding: 0 !important;
 }
 
@@ -80,33 +80,29 @@ td.td-no-padding  {
 }
 
 @-webkit-keyframes spin2 {
-  from { -webkit-transform: rotate(0deg);}
-  to { -webkit-transform: rotate(360deg);}
+  from { -webkit-transform: rotate(0deg); }
+  to { -webkit-transform: rotate(360deg); }
 }
 
 @keyframes spin {
-  from { transform: scale(1) rotate(0deg);}
-  to { transform: scale(1) rotate(360deg);}
-}
-
-/* Fix form control position and alignment (2 rules) */
-.form-row {
-  margin-bottom: 6px;
-}
-
-.form-label-vertical {
-  line-height: 30px;
-}
-
-/* Form group header text style */
-.form-group-header {
-  padding-top: 10px;
-  color: #888;
-  text-transform: uppercase;
+  from { transform: scale(1) rotate(0deg); }
+  to { transform: scale(1) rotate(360deg); }
 }
 
 /* Help text */
 .help-text {
   border-bottom: thin dotted;
   cursor: help;
+}
+
+/* Drop-box (2 rules) */
+.dropbox {
+  background: #f8f8f8;
+  border: 4px dashed #ddd;
+  text-align: center;
+  padding: 10px;
+}
+
+.dropbox-dragover {
+  border-color: #448bc8;
 }
