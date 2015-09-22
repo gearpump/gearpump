@@ -36,6 +36,7 @@ object Constants {
   val GEARPUMP_SCHEDULING_SCHEDULER = "gearpump.scheduling.scheduler-class"
   val GEARPUMP_SCHEDULING_REQUEST = "gearpump.scheduling.requests"
   val GEARPUMP_SERIALIZERS = "gearpump.serializers"
+  val GEARPUMP_SERIALIZER_DELEGATE_FACTORY = "gearpump.serializer.delegate.factory"
   val GEARPUMP_TASK_DISPATCHER = "gearpump.task-dispatcher"
   val GEARPUMP_CLUSTER_MASTERS = "gearpump.cluster.masters"
   val GEARPUMP_HOME = "gearpump.home"

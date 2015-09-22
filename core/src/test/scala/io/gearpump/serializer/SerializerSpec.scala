@@ -35,7 +35,7 @@ class SerializerSpec extends FlatSpec with Matchers with MockitoSugar {
       classOf[ClassB].getName -> classOf[ClassBSerializer].getName).asJava))
 
   "GearpumpSerialization" should "register custom serializers" in {
-    val serialization = new GearpumpSerialization(config)
+    val serialization = new GearpumpSerialization(config, None)
     val kryo = new Kryo
     serialization.customize(kryo)
 

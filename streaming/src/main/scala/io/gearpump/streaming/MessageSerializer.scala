@@ -21,22 +21,35 @@ package io.gearpump.streaming
 import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
 import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
 import io.gearpump.Message
+import io.gearpump.serializer.SerializationDelegate
+import io.gearpump.serializer.IMessageSerializer
 import io.gearpump.streaming.task._
 
-class MessageSerializer extends Serializer[Message] {
+class MessageSerializer(override val delegate: Option[SerializationDelegate]) extends IMessageSerializer[Message]{
   override def write(kryo: Kryo, output: Output, obj: Message) = {
     output.writeLong(obj.timestamp)
-    kryo.writeClassAndObject(output, obj.msg)
+    if(delegate.nonEmpty){
+      val bytes = delegate.get.serialize(obj.msg)
+      output.writeInt(bytes.length)
+      output.write(bytes)
+    } else {
+      kryo.writeClassAndObject(output, obj.msg)
+    }
   }
 
   override def read(kryo: Kryo, input: Input, typ: Class[Message]): Message = {
     val timeStamp = input.readLong()
-    val msg = kryo.readClassAndObject(input)
+    val msg = if(delegate.nonEmpty) {
+      val length = input.readInt()
+      delegate.get.deserialize(input.readBytes(length))
+    } else {
+      kryo.readClassAndObject(input)
+    }
     new Message(msg, timeStamp)
   }
 }
 
-class TaskIdSerializer  extends Serializer[TaskId] {
+class TaskIdSerializer extends Serializer[TaskId] {
   override def write(kryo: Kryo, output: Output, obj: TaskId) = {
     output.writeInt(obj.processorId)
     output.writeInt(obj.index)

@@ -23,8 +23,7 @@ import com.typesafe.config.Config
 import io.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
-class GearpumpSerialization(config: Config) {
-
+class GearpumpSerialization(config: Config, delegate: Option[SerializationDelegate]) {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   def customize(kryo: Kryo): Unit  = {
@@ -40,8 +39,7 @@ class GearpumpSerialization(config: Config) {
         //Use default serializer for this class type
         kryo.register(keyClass)
       } else {
-        val valueClass = Class.forName(value)
-        val register = kryo.register(keyClass, valueClass.newInstance().asInstanceOf[Serializer[_]])
+        val register = kryo.register(keyClass, resolveSerializer(value))
         LOG.debug(s"Registering ${keyClass}, id: ${register.getId}")
       }
     }
@@ -54,5 +52,15 @@ class GearpumpSerialization(config: Config) {
   private final def configToMap(config : Config, path: String) = {
     import scala.collection.JavaConverters._
     config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ k -> v.toString }
+  }
+
+  private def resolveSerializer(clazz: String): Serializer[_] = {
+    val valueClass = Class.forName(clazz)
+    val instance = if(classOf[IMessageSerializer[_]].isAssignableFrom(valueClass)){
+      valueClass.getConstructor(classOf[Option[SerializationDelegate]]).newInstance(delegate)
+    } else {
+      valueClass.newInstance()
+    }
+    instance.asInstanceOf[Serializer[_]]
   }
 }

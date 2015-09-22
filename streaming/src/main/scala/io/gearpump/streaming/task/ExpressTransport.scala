@@ -19,9 +19,10 @@
 package io.gearpump.streaming.task
 
 import akka.actor.{ActorRef, ExtendedActorSystem}
-import io.gearpump.serializer.{SerializerPool, KryoPool, FastKryoSerializer}
+import io.gearpump.serializer.SerializerPool
 import io.gearpump.transport.netty.TaskMessage
 import io.gearpump.transport.{Express, HostPort}
+import io.gearpump.Message
 
 import scala.collection.mutable
 

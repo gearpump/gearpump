@@ -18,15 +18,18 @@
 
 package io.gearpump.serializer
 
-import akka.actor.ExtendedActorSystem
+import akka.actor.{ActorSystem, ExtendedActorSystem}
+import com.typesafe.config.Config
+import io.gearpump.esotericsoftware.kryo.{Serializer, Kryo}
 import io.gearpump.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
 import io.gearpump.romix.serialization.kryo.KryoSerializerWrapper
 import io.gearpump.serializer.FastKryoSerializer.KryoSerializationException
-import io.gearpump.util.LogUtil
+import io.gearpump.util.{Constants, LogUtil}
 import io.gearpump.objenesis.strategy.StdInstantiatorStrategy
 
-class FastKryoSerializer(system: ExtendedActorSystem) {
+import scala.util.Try
 
+class FastKryoSerializer(system: ExtendedActorSystem) {
   private val LOG = LogUtil.getLogger(getClass)
   private val config = system.settings.config
 
@@ -35,8 +38,7 @@ class FastKryoSerializer(system: ExtendedActorSystem) {
   val strategy = new DefaultInstantiatorStrategy
   strategy.setFallbackInstantiatorStrategy(new StdInstantiatorStrategy)
   kryo.setInstantiatorStrategy(strategy)
-  private val kryoClazz = new GearpumpSerialization(config).customize(kryo)
-
+  private val kryoClazz = new GearpumpSerialization(config, getDelegator()).customize(kryo)
 
   def serialize(message: AnyRef) : Array[Byte] = {
     try {
@@ -74,7 +76,18 @@ class FastKryoSerializer(system: ExtendedActorSystem) {
   }
 
   def deserialize(msg : Array[Byte]): AnyRef = {
-      kryoSerializer.fromBinary(msg)
+    kryoSerializer.fromBinary(msg)
+  }
+
+  private def getDelegator(): Option[SerializationDelegate] = {
+    Try(config.getString(Constants.GEARPUMP_SERIALIZER_DELEGATE_FACTORY)).map { factoryClass =>
+      if (factoryClass != "") {
+        val factory = Class.forName(factoryClass).newInstance()
+        Some(factory.asInstanceOf[IDelegateFactory].getDelegate(system))
+      } else {
+        None
+      }
+    }.getOrElse(None)
   }
 }
 
