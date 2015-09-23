@@ -23,15 +23,18 @@ import java.util.{ArrayList => JArrayList, HashMap => JHashMap, List => JList, M
 
 import akka.actor.Actor.Receive
 import akka.actor.Cancellable
-import backtype.storm.generated.Bolt
+import backtype.storm.generated.{Bolt, GlobalStreamId, Grouping, StormTopology}
 import backtype.storm.task._
 import backtype.storm.tuple.{Fields, TupleImpl}
 import backtype.storm.utils.Utils
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.util._
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import io.gearpump.streaming.task._
+import io.gearpump.util.LogUtil
+import org.slf4j.Logger
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 
 object StormProcessor {
@@ -40,6 +43,8 @@ object StormProcessor {
   val SYSTEM_STREAM_ID = "__tick"
   val SYSTEM_COMPONENT_OUTPUT_FIELDS = "rate_secs"
   val TICK_TUPLE_FREQ_SECS = "topology.tick.tuple.freq.secs"
+
+  private val LOG: Logger = LogUtil.getLogger(classOf[StormProcessor])
 }
 
 private[storm] class StormProcessor(taskContext : TaskContext, conf: UserConfig)
@@ -47,17 +52,17 @@ private[storm] class StormProcessor(taskContext : TaskContext, conf: UserConfig)
   import StormUtil._
   import io.gearpump.experiments.storm.processor.StormProcessor._
 
-  private val topology = getTopology(conf)
-  private val pid = taskContext.taskId.processorId
-  private val boltId = conf.getString(GraphBuilder.COMPONENT_ID).getOrElse(
-    throw new RuntimeException(s"Storm bolt id not found for processor $pid"))
-  private val boltSpec = conf.getValue[Bolt](GraphBuilder.COMPONENT_SPEC).getOrElse(
-    throw new RuntimeException(s"Storm bolt spec not found for processor $pid"))
+  private val topology = conf.getValue[StormTopology](TOPOLOGY).get
+  private val boltId = conf.getString(GraphBuilder.COMPONENT_ID).get
+  private val boltSpec = conf.getValue[Bolt](GraphBuilder.COMPONENT_SPEC).get
   private val bolt = Utils.getSetComponentObject(boltSpec.get_bolt_object()).asInstanceOf[IBolt]
   private val stormConfig = getStormConfig(conf, boltSpec.get_common())
-  private val topologyContextBuilder = TopologyContextBuilder(topology, stormConfig,
-    multiLang = bolt.isInstanceOf[ShellBolt])
-  private val outputCollector = new StormOutputCollector(taskContext, pid, boltId)
+  private val taskToComponent = conf.getValue[Map[Integer, String]](TASK_TO_COMPONENT).get
+  private val componentToSortedTasks = getComponentToSortedTasks(taskToComponent)
+  private val stormTaskId = getStormTaskId(boltId, componentToSortedTasks, taskContext.taskId)
+  private val componentToStreamFields = getComponentToStreamFields(topology)
+  private val inputs: JMap[GlobalStreamId,  Grouping] = StormUtil.getInputs(boltId, topology)
+  private var outputCollector: StormOutputCollector = null
   private var scheduler: Cancellable = null
 
 
@@ -73,15 +78,23 @@ private[storm] class StormProcessor(taskContext : TaskContext, conf: UserConfig)
       })
     }
 
+    val topologyContext = buildTopologyContext(topology, stormConfig, taskToComponent.asJava, componentToSortedTasks,
+      componentToStreamFields, boltId, stormTaskId, bolt.isInstanceOf[ShellBolt])
+    val targets = topologyContext.getTargets(boltId)
+    outputCollector = new StormOutputCollector(taskContext, topology, boltId, boltSpec.get_common(), stormTaskId,
+      taskToComponent, componentToSortedTasks, targets)
     val delegate = new StormBoltOutputCollector(outputCollector)
-    val topologyContext = topologyContextBuilder.buildContext(pid, boltId)
     bolt.prepare(stormConfig, topologyContext, new OutputCollector(delegate))
   }
 
   override def onNext(msg: Message): Unit = {
     val stormTuple = msg.msg.asInstanceOf[StormTuple]
-    outputCollector.setTimestamp(msg.timestamp)
-    bolt.execute(stormTuple.toTuple(topologyContextBuilder))
+    val tuple = stormTuple.toTuple(topology, stormConfig, taskToComponent.asJava, componentToSortedTasks,
+      componentToStreamFields)
+    if (inputs.containsKey(tuple.getSourceGlobalStreamid)) {
+      outputCollector.setTimestamp(msg.timestamp)
+      bolt.execute(tuple)
+    }
   }
 
   override def onStop(): Unit = {
