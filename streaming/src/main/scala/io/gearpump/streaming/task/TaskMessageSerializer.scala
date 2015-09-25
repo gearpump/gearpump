@@ -15,20 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.streaming.task
 
-package io.gearpump.transport.netty;
+import java.io.{DataInput, DataOutput}
 
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+import org.jboss.netty.buffer.ChannelBuffer
 
-public class MessageEncoder extends OneToOneEncoder {
-  @Override
-  protected Object encode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
-    if (obj instanceof MessageBatch) {
-      return ((MessageBatch)obj).buffer();
-    }
+trait TaskMessageSerializer[T] {
+  def write(dataOutput: DataOutput, obj: T)
 
-    throw new RuntimeException("Unsupported encoding of object of class " + obj.getClass().getName());
-  }
+  def read(dataInput: DataInput): T
+
+  def getLength(obj: T): Int
 }

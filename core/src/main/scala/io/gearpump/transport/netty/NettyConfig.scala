@@ -30,4 +30,6 @@ class NettyConfig(conf: Config) {
   val messageBatchSize = conf.getInt(Constants.NETTY_MESSAGE_BATCH_SIZE)
   val flushCheckInterval = conf.getInt(Constants.NETTY_FLUSH_CHECK_INTERVAL)
 
+  val transportSerializer = Class.forName(conf.getString(Constants.GEARPUMP_TRANSPORT_SERIALIZER)).
+    newInstance().asInstanceOf[ITransportMessageSerializer]
 }

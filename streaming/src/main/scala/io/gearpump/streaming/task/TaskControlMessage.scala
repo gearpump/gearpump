@@ -31,12 +31,12 @@ case class InitialAckRequest(taskId: TaskId, sessionId: Int)
     between different replays after the application restart
  */
 case class AckRequest(taskId: TaskId, seq: Short, sessionId: Int)
+
 /*
   Here the seq field represents the expected number of received messages
     and the actualReceivedNum field means the actual received number since start
  */
 case class Ack(taskId: TaskId, seq: Short, actualReceivedNum: Short, sessionId: Int)
-
 
 sealed trait ClockEvent
 

@@ -18,8 +18,6 @@
 
 package io.gearpump.transport.netty;
 
-import java.util.Arrays;
-
 public class TaskMessage {
 
   // When network partition happen, there may be several task instances of
@@ -31,9 +29,9 @@ public class TaskMessage {
   private int _sessionId;
   private long _targetTask;
   private long _sourceTask;
-  private byte[] _message;
+  private Object _message;
 
-  public TaskMessage(int sessionId, long targetTask, long sourceTask,  byte[] message) {
+  public TaskMessage(int sessionId, long targetTask, long sourceTask, Object message) {
     _sessionId = sessionId;
     _targetTask = targetTask;
     _sourceTask = sourceTask;
@@ -50,16 +48,7 @@ public class TaskMessage {
     return _sourceTask;
   }
 
-  public byte[] message() {
+  public Object message() {
     return _message;
-  }
-
-  @Override
-  public boolean equals(Object obj)  {
-    TaskMessage other = (TaskMessage)obj;
-    return this.sessionId() == other.sessionId()
-        && this._sourceTask == other.sourceTask()
-        && this.targetTask() == other.targetTask()
-        && Arrays.equals(this.message(), other.message());
   }
 }

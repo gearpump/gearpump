@@ -23,10 +23,18 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
 
+import java.io.DataInput;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MessageDecoder extends FrameDecoder {
+  private ITransportMessageSerializer serializer;
+  private WrappedChannelBuffer dataInput = new WrappedChannelBuffer();
+
+  public MessageDecoder(ITransportMessageSerializer serializer){
+    this.serializer = serializer;
+  }
+
   /*
    * Each TaskMessage is encoded as:
    *  sessionId ... int(4)
@@ -37,6 +45,7 @@ public class MessageDecoder extends FrameDecoder {
    */
   protected List<TaskMessage> decode(ChannelHandlerContext ctx, Channel channel,
                                      ChannelBuffer buf) {
+    this.dataInput.setChannelBuffer(buf);
 
     final int SESION_LENGTH = 4; //int
     final int SOURCE_TASK_LENGTH = 8; //long
@@ -84,11 +93,11 @@ public class MessageDecoder extends FrameDecoder {
       available -= length;
 
       // There's enough bytes in the buffer. Read it.
-      ChannelBuffer payload = buf.readBytes(length);
+      Object message = serializer.deserialize(dataInput, length);
 
       // Successfully decoded a frame.
       // Return a TaskMessage object
-      taskMessageList.add(new TaskMessage(sessionId, targetTask, sourceTask, payload.array()));
+      taskMessageList.add(new TaskMessage(sessionId, targetTask, sourceTask, message));
     }
 
     return taskMessageList.size() == 0 ? null : taskMessageList;
