@@ -39,7 +39,9 @@ trait StaticService  {
     new Manifest(input)
   }
 
-  val staticRoute = {
+  // Optionally compresses the response with Gzip or Deflate, if the client accepts
+  // compressed responses.
+  val staticRoute = encodeResponse {
     pathEndOrSingleSlash {
       getFromResource("index.html")
     } ~
