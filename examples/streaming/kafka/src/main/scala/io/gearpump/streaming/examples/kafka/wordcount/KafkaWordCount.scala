@@ -19,14 +19,15 @@
 package io.gearpump.streaming.examples.kafka.wordcount
 
 import akka.actor.ActorSystem
-import io.gearpump.streaming.{StreamApplication, Processor}
-import io.gearpump.streaming.kafka.{KafkaSink, KafkaStorageFactory, KafkaSource}
-import io.gearpump.streaming.sink.DataSinkProcessor
-import io.gearpump.streaming.source.DataSourceProcessor
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.partitioner.HashPartitioner
+import io.gearpump.streaming.dsl.plan.OpTranslator.{HandlerTask, SinkTask, SourceTask}
+import io.gearpump.streaming.kafka.{KafkaSink, KafkaSource, KafkaStorageFactory}
+import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.source.DataSource
+import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.util.Graph._
 import io.gearpump.util.{AkkaApp, Graph, LogUtil}
 import org.slf4j.Logger
@@ -51,11 +52,13 @@ object KafkaWordCount extends AkkaApp with ArgumentsParser {
     val appConfig = UserConfig.empty
     val offsetStorageFactory = new KafkaStorageFactory("localhost:2181", "localhost:9092")
     val source = new KafkaSource("topic1", "localhost:2181", offsetStorageFactory)
-    val sourceProcessor = DataSourceProcessor(source, sourceNum)
+    import SourceTask._
+    val sourceProcessor = Processor[HandlerTask,DataSource](source, sourceNum, "KafkaSource", UserConfig.empty)
     val split = Processor[Split](splitNum)
     val sum = Processor[Sum](sumNum)
     val sink = new KafkaSink("topic2", "localhost:9092")
-    val sinkProcessor = DataSinkProcessor(sink, sinkNum)
+    import SinkTask._
+    val sinkProcessor = Processor[HandlerTask,DataSink](sink, sinkNum, "KafkaSink", UserConfig.empty)
     val partitioner = new HashPartitioner
     val computation = sourceProcessor ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> sinkProcessor
     val app = StreamApplication("KafkaWordCount", Graph(computation), appConfig)

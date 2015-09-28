@@ -19,6 +19,8 @@
 package io.gearpump.streaming.dsl.op
 
 import io.gearpump.streaming.dsl.{TypedDataSource, TypedDataSink}
+import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.task.Task
 
 import scala.reflect.ClassTag
@@ -51,9 +53,9 @@ case class GroupByOp[T: ClassTag, R](fun: T => R, parallism: Int, description: S
 
 case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int, description: String) extends ParameterizedOp[T]
 
-case class DataSourceOp[T: ClassTag](dataSource: TypedDataSource[T], parallelism: Int, description: String) extends ParameterizedOp[T]
+case class DataSourceOp(dataSource: DataSource, parallelism: Int, description: String) extends MasterOp
 
-case class DataSinkOp[T: ClassTag](dataSink: TypedDataSink[T], parallelism: Int, description: String) extends ParameterizedOp[T]
+case class DataSinkOp(dataSink: DataSink, parallelism: Int, description: String) extends MasterOp
 
 /**
  * Contains operators which can be chained to single one.

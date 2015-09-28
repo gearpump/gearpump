@@ -19,10 +19,9 @@
 package io.gearpump.streaming.dsl
 
 import akka.actor.ActorSystem
-import io.gearpump.streaming.dsl.plan.OpTranslator.SourceTask
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.dsl.plan.OpTranslator._
+import io.gearpump.streaming.dsl.plan.OpTranslator.SourceTask
 import org.mockito.Mockito.when
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
@@ -58,7 +57,7 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with
     val parallism = 3
     app.source(List("A","B","C"), parallism, "").flatMap(Array(_)).reduce(_+_)
     val task = app.plan.dag.vertices.iterator.next()
-    assert(task.taskClass == classOf[SourceTask[_, _]].getName)
+    assert(task.taskClass == classOf[SourceTask[_,_]].getName)
     assert(task.parallelism == parallism)
   }
 

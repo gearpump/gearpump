@@ -20,12 +20,10 @@ package io.gearpump.streaming.javaapi;
 
 import akka.actor.ActorSystem;
 import io.gearpump.cluster.UserConfig;
+import io.gearpump.streaming.Processor$;
+import io.gearpump.streaming.dsl.plan.OpTranslator;
 import io.gearpump.streaming.sink.DataSink;
-import io.gearpump.streaming.sink.DataSinkProcessor;
-import io.gearpump.streaming.sink.DataSinkTask;
 import io.gearpump.streaming.source.DataSource;
-import io.gearpump.streaming.source.DataSourceProcessor;
-import io.gearpump.streaming.source.DataSourceTask;
 
 public class Processor<T extends io.gearpump.streaming.task.Task> implements io.gearpump.streaming.Processor<T> {
   private Class<T> _taskClass;
@@ -51,8 +49,8 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
    * @param system
    * @return
    */
-  public static Processor<DataSinkTask> sink(DataSink dataSink, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
-    io.gearpump.streaming.Processor<DataSinkTask> p = DataSinkProcessor.apply(dataSink, parallelism, description, taskConf, system);
+  public static Processor<OpTranslator.SinkTask> sink(DataSink dataSink, int parallelism, String description,  UserConfig taskConf, Class<? extends OpTranslator.SinkTask> em, ActorSystem system) {
+    io.gearpump.streaming.Processor<OpTranslator.SinkTask> p = Processor$.MODULE$.apply(dataSink, parallelism, description, taskConf, em, system);
     return new Processor(p);
   }
 
@@ -65,8 +63,8 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
    * @param system
    * @return
    */
-  public static Processor<DataSourceTask> source(DataSource source, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
-    io.gearpump.streaming.Processor<DataSourceTask> p = DataSourceProcessor.apply(source, parallelism, description, taskConf, system);
+  public static Processor<OpTranslator.SourceTask> source(DataSource source, int parallelism, String description,  UserConfig taskConf, Class<? extends OpTranslator.SourceTask> em, ActorSystem system) {
+    io.gearpump.streaming.Processor<OpTranslator.SourceTask> p = Processor$.MODULE$.apply(source, parallelism, description, taskConf, em, system);
     return new Processor(p);
   }
 
@@ -119,7 +117,7 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
   }
 
   @Override
-  public Class<? extends io.gearpump.streaming.task.Task> taskClass() {
+  public Class<? extends T> taskClass() {
     return _taskClass;
   }
 
