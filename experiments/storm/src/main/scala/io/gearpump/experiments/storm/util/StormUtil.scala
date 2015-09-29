@@ -18,61 +18,60 @@
 
 package io.gearpump.experiments.storm.util
 
-import java.util.{HashMap => JHashMap, List => JList, Map => JMap}
+import java.util.{HashMap => JHashMap, Map => JMap}
 
 import akka.actor.ActorSystem
-import backtype.storm.generated.{ComponentCommon, StormTopology}
-import backtype.storm.tuple.Fields
-import backtype.storm.utils.Utils
+import backtype.storm.generated._
 import io.gearpump.cluster.UserConfig
-import io.gearpump.util.LogUtil
+import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
+import io.gearpump.experiments.storm.topology._
+import io.gearpump.streaming.task.{TaskContext, TaskId}
 import org.json.simple.JSONValue
 
-import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
-
 object StormUtil {
-  val TOPOLOGY = "topology"
-  val PROCESSOR_TO_COMPONENT = "processor_to_component"
-  val STORM_CONFIG = "storm_config"
-  val STORM_CONTEXT = "storm_context"
 
-  private val LOG = LogUtil.getLogger(StormUtil.getClass)
+  import StormConstants._
 
-  private val stormConfig = Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
-
-
-
-  def getTopology(config: UserConfig)(implicit system: ActorSystem) : StormTopology = {
-    config.getValue[StormTopology](TOPOLOGY)
-      .getOrElse(throw new RuntimeException("storm topology is not found"))
+  /**
+   * convert storm task id to gearpump [[TaskId]]
+   * the high 16 bit of an Int is TaskId.processorId
+   * the low 16 bit of an Int is TaskId.index
+   */
+  def stormTaskIdToGearpump(id: Integer): TaskId = {
+    val index = id & 0xFFFF
+    val processorId = id >> 16
+    TaskId(processorId, index)
   }
 
-  def getStormConfig(config: UserConfig, common: ComponentCommon)(implicit system: ActorSystem) : JMap[_, _] = {
-    config.getString(STORM_CONFIG).foreach(conf => stormConfig.putAll(parseJsonStringToMap(conf)))
-    Option(common.get_json_conf()).foreach(conf => stormConfig.putAll(parseJsonStringToMap(conf)))
-    stormConfig
+  /**
+   * convert gearpump [[TaskId]] to storm task id
+   * TaskId.processorId is the high 16 bit of an Int
+   * TaskId.index is the low 16 bit  of an Int
+   */
+  def gearpumpTaskIdToStorm(taskId: TaskId): Integer = {
+    val index = taskId.index
+    val processorId = taskId.processorId
+    (processorId << 16) + (index & 0xFFFF)
+  }
+
+
+  def getGearpumpStormComponent(taskContext: TaskContext, conf: UserConfig)(implicit system: ActorSystem): GearpumpStormComponent = {
+    val topology = conf.getValue[StormTopology](STORM_TOPOLOGY).get
+    val componentId = conf.getString(STORM_COMPONENT).get
+    val spouts = topology.get_spouts
+    val bolts = topology.get_bolts
+    if (spouts.containsKey(componentId)) {
+      GearpumpSpout(topology, componentId, spouts.get(componentId), taskContext)
+    } else if (bolts.containsKey(componentId)) {
+      GearpumpBolt(topology, componentId, bolts.get(componentId), taskContext)
+    } else {
+      throw new Exception(s"storm component $componentId not found")
+    }
   }
 
   def parseJsonStringToMap(json: String): JMap[AnyRef, AnyRef] = {
-    JSONValue.parse(json).asInstanceOf[JMap[AnyRef, AnyRef]]
+    Option(json).flatMap(json => Option(JSONValue.parse(json)))
+        .getOrElse(new JHashMap[AnyRef, AnyRef]).asInstanceOf[JMap[AnyRef, AnyRef]]
   }
 
-  def getComponentToStreamFields(topology: StormTopology): JMap[String, JMap[String, Fields]] = {
-    val spouts = topology.get_spouts()
-    val bolts = topology.get_bolts()
-
-    (spouts.map{ case (id, component) =>
-      id -> getComponentToFields(component.get_common())
-    } ++
-      bolts.map { case (id, component) =>
-        id -> getComponentToFields(component.get_common())
-      }).toMap.asJava
-  }
-
-  def getComponentToFields(common: ComponentCommon): JMap[String, Fields] = {
-    common.get_streams.map { case (sid, stream) =>
-      sid -> new Fields(stream.get_output_fields())
-    }.toMap.asJava
-  }
 }

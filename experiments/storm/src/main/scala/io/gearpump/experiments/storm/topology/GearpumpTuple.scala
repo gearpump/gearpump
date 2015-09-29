@@ -16,11 +16,24 @@
  * limitations under the License.
  */
 
-package io.gearpump.experiments.storm.partitioner
+package io.gearpump.experiments.storm.topology
 
-import io.gearpump.Message
-import io.gearpump.partitioner.UnicastPartitioner
+import backtype.storm.task.TopologyContext
+import backtype.storm.tuple.{Tuple, TupleImpl}
 
-private[storm] class GlobalGroupingPartitioner extends UnicastPartitioner {
-  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = 0
+import scala.collection.JavaConversions._
+
+private[storm] class GearpumpTuple(
+    tuple: List[AnyRef],
+    componentId: String,
+    streamId: String,
+    stormTaskId: Int,
+    @transient val targetPartitions: Map[String, List[Int]]) {
+
+  def toTuple(topologyContext: TopologyContext): Tuple = {
+    new TupleImpl(topologyContext, tuple, stormTaskId, streamId, null)
+  }
 }
+
+
+

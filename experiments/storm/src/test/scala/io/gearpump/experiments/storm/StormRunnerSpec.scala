@@ -19,17 +19,16 @@
 
 package io.gearpump.experiments.storm
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
-import io.gearpump.experiments.storm.util.TopologyUtil
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.client.ClientContext
-import Commands.{AppKilled, Kill, AppSubmitted, Submit}
-import StormRunner.Handler
-import org.mockito.Mockito
-import org.scalatest.{FlatSpec, Matchers, WordSpec}
-import org.mockito.Mockito
+import io.gearpump.experiments.storm.Commands.{AppKilled, AppSubmitted, Kill, Submit}
+import io.gearpump.experiments.storm.StormRunner.Handler
+import io.gearpump.experiments.storm.util.TopologyUtil
 import org.mockito.Matchers._
+import org.mockito.Mockito
+import org.scalatest.{FlatSpec, Matchers}
 
 class StormRunnerSpec extends FlatSpec with Matchers {
   it should "handle submit/kill correctly"  in {

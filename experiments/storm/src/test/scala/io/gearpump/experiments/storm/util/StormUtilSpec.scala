@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,26 @@
 
 package io.gearpump.experiments.storm.util
 
-import akka.actor.ActorSystem
-import backtype.storm.generated.StormTopology
-import io.gearpump.cluster.{TestUtil, UserConfig}
+import io.gearpump.streaming.task.TaskId
+import org.scalacheck.Gen
+import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-class StormUtilSpec extends PropSpec with Matchers {
+class StormUtilSpec extends PropSpec with PropertyChecks with Matchers {
 
-  implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
 
-  property("get storm topology through user config") {
-    val topology = TopologyUtil.getTestTopology
-    val config = UserConfig.empty.withValue[StormTopology](StormUtil.TOPOLOGY, topology)
-    StormUtil.getTopology(config) shouldBe topology
+  property("convert Storm task ids to gearpump TaskIds and back") {
+    import StormUtil._
+    val idGen = Gen.chooseNum[Int](0, Int.MaxValue)
+    forAll(idGen) { (stormTaskId: Int) =>
+      gearpumpTaskIdToStorm(stormTaskIdToGearpump(stormTaskId)) shouldBe stormTaskId
+    }
+
+    val processorIdGen = Gen.chooseNum[Int](0, Int.MaxValue >> 16)
+    val indexGen = Gen.chooseNum[Int](0, Int.MaxValue >> 16)
+    forAll(processorIdGen, indexGen) { (processorId: Int, index: Int) =>
+        val taskId = TaskId(processorId, index)
+      stormTaskIdToGearpump(gearpumpTaskIdToStorm(taskId)) shouldBe taskId
+    }
   }
 }
