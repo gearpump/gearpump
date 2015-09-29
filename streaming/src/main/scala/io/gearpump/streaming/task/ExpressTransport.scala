@@ -58,7 +58,7 @@ trait ExpressTransport {
         if (null == serializedMessage) {
           msg match {
             case message: Message =>
-              val bytes = serializerPool.get(Thread.currentThread().getId).serialize(message.msg)
+              val bytes = serializerPool.get().serialize(message.msg)
               serializedMessage = SerializedMessage(message.timestamp, bytes)
             case _ => serializedMessage = msg
           }
@@ -104,7 +104,7 @@ class SendLater(express: Express, serializerPool: SerializerPool, sender: ActorR
       val taskMessage = queue.dequeue()
       val msg = taskMessage.message() match {
         case serialized: SerializedMessage =>
-          Message(serializerPool.get(Thread.currentThread().getId).deserialize(serialized.bytes), serialized.timeStamp)
+          Message(serializerPool.get().deserialize(serialized.bytes), serialized.timeStamp)
         case _ =>
           taskMessage.message()
       }

@@ -31,7 +31,7 @@ import io.gearpump.cluster.MasterToAppMaster.MessageLoss
 import io.gearpump.cluster.{ExecutorContext, UserConfig}
 import io.gearpump.metrics.Metrics.{ReportMetrics, DemandMoreMetrics}
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
-import io.gearpump.serializer.KryoPool
+import io.gearpump.serializer.SerializerPool
 import AppMasterToExecutor._
 import ExecutorToAppMaster.RegisterExecutor
 import TaskRegistry.TaskLocations
@@ -39,7 +39,7 @@ import Executor._
 import TaskLauncher.TaskArgument
 import io.gearpump.transport.{Express, HostPort}
 import io.gearpump.util.Constants._
-import io.gearpump.util.{ActorUtil, LogUtil}
+import io.gearpump.util.{Constants, ActorUtil, LogUtil}
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
@@ -58,8 +58,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
+  val systemConfig = context.system.settings.config
 
-  private val kryoPool =  new KryoPool(context.system.asInstanceOf[ExtendedActorSystem])
+  private val serializerPool = getSerializerPool()
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
   LOG.info(s"Executor actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
@@ -68,7 +69,6 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   context.watch(appMaster)
 
   private var tasks = Map.empty[TaskId, ActorRef]
-  val systemConfig = context.system.settings.config
 
   val express = Express(context.system)
 
@@ -110,7 +110,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     }
 
   private def launchTask(taskId: TaskId, argument: TaskArgument): ActorRef = {
-    launcher.launch(List(taskId), argument, context, kryoPool).values.head
+    launcher.launch(List(taskId), argument, context, serializerPool).values.head
   }
 
   private val taskArgumentStore = new TaskArgumentStore()
@@ -120,7 +120,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       LOG.info(s"Launching Task $taskIds for app: ${appId}")
       val taskArgument = TaskArgument(dagVersion, processorDescription, subscribers)
       taskIds.foreach(taskArgumentStore.add(_, taskArgument))
-      val newAdded = launcher.launch(taskIds, taskArgument, context, kryoPool)
+      val newAdded = launcher.launch(taskIds, taskArgument, context, serializerPool)
       newAdded.foreach { newAddedTask =>
         context.watch(newAddedTask._2)
       }
@@ -209,6 +209,12 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         self ! TaskStopped(actor)
       }
     }
+  }
+
+  private def getSerializerPool(): SerializerPool = {
+    val clazz = Class.forName(systemConfig.getString(Constants.GEARPUMP_SERIALIZER_POOL))
+    val pool = clazz.getConstructor(classOf[ExtendedActorSystem]).newInstance(context.system.asInstanceOf[ExtendedActorSystem])
+    pool.asInstanceOf[SerializerPool]
   }
 }
 

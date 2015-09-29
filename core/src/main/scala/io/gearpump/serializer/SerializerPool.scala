@@ -15,23 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.gearpump.serializer
 
-import akka.actor.{ExtendedActorSystem, ActorSystem}
+import akka.actor.ExtendedActorSystem
 
 trait SerializerPool {
-  def get(threadId: Long): FastKryoSerializer
-}
+  val system: ExtendedActorSystem
 
-class KryoPool(system: ExtendedActorSystem) extends SerializerPool{
-  private val pool = new ThreadLocal[FastKryoSerializer]() {
-      override def initialValue(): FastKryoSerializer = {
-      new FastKryoSerializer(system)
-    }
-  }
-
-  def get(threadId: Long): FastKryoSerializer = {
-    pool.get()
-  }
+  def get(): Serializer
 }

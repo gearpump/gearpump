@@ -20,7 +20,7 @@ package io.gearpump.serializer
 
 import akka.actor.{ActorSystem, ExtendedActorSystem}
 import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
-import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
+import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.serializer.SerializerSpec._
@@ -64,7 +64,7 @@ object SerializerSpec {
 
   class ClassA {}
 
-  class ClassASerializer extends Serializer[ClassA] {
+  class ClassASerializer extends KryoSerializer[ClassA] {
     override def write(kryo: Kryo, output: Output, `object`: ClassA): Unit = {
       output.writeString(classOf[ClassA].getName.toString)
     }
@@ -77,7 +77,7 @@ object SerializerSpec {
 
   class ClassB {}
 
-  class ClassBSerializer extends Serializer[ClassA] {
+  class ClassBSerializer extends KryoSerializer[ClassA] {
     override def write(kryo: Kryo, output: Output, `object`: ClassA): Unit = {}
 
     override def read(kryo: Kryo, input: Input, `type`: Class[ClassA]): ClassA = {

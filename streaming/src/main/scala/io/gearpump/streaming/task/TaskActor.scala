@@ -39,7 +39,7 @@ class TaskActor(
     val taskContextData : TaskContextData,
     userConf : UserConfig,
     val task: TaskWrapper,
-    inputSerializerPool: SerializerPool)
+  inputSerializerPool: SerializerPool)
   extends Actor with ExpressTransport  with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
 
@@ -227,7 +227,7 @@ class TaskActor(
       subscriptions.find(_._1 == ack.taskId.processorId).foreach(_._2.receiveAck(ack))
       handler()
     case inputMessage: SerializedMessage =>
-      val message = Message(serializerPool.get(Thread.currentThread().getId).deserialize(inputMessage.bytes), inputMessage.timeStamp)
+      val message = Message(serializerPool.get().deserialize(inputMessage.bytes), inputMessage.timeStamp)
       receiveMessage(message, sender(), handler)
     case inputMessage: Message =>
       receiveMessage(inputMessage, sender(), handler)

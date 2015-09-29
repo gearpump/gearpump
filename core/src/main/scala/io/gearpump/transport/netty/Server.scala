@@ -22,8 +22,6 @@ import java.util
 
 import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import io.gearpump.transport.ActorLookupById
-import io.gearpump.serializer.FastKryoSerializer
-import io.gearpump.transport.ActorLookupById
 import io.gearpump.util.LogUtil
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
