@@ -60,7 +60,7 @@ class LocalJarStoreService extends JarStoreService{
    */
   override def copyToLocalFile(localFile: File, remotePath: FilePath): Unit = {
     LOG.info(s"Copying to local file: ${localFile.getAbsolutePath} from $remotePath")
-    val future = client.map(_.download(remotePath, localFile))
+    val future = client.flatMap(_.download(remotePath, localFile))
     Await.ready(future, Duration(60, TimeUnit.SECONDS))
   }
 
