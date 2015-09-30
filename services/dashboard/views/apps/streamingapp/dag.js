@@ -37,7 +37,7 @@ angular.module('dashboard')
       };
 
       $scope.visGraph = {
-        options: $vis.newOptions({depth: $scope.dag.hierarchyDepth()}),
+        options: $vis.newHierarchicalLayoutOptions({depth: $scope.dag.hierarchyDepth()}),
         data: $vis.newData(),
         events: {
           doubleClick: function(data) {
@@ -81,7 +81,7 @@ angular.module('dashboard')
           var diff = [];
 
           _.forEach(data.processors, function(processor, processorId) {
-            var label = '[' + processorId + '] ' + (processor.description || _.last(processor.taskClass.split('.')));
+            var label = $vis.processorNameAsLabel(processor);
             var weight = data.weights[processorId];
             var hierarchyLevel = data.hierarchyLevels[processorId];
             var visNode = visNodes.get(processorId);

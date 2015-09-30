@@ -72,16 +72,17 @@
 
     <div class="col-md-12">
       <div class="pull-right">
-        <span class="btn btn-sm"
-              ng-class="{'btn-primary': !submitted, 'btn-default': submitted}"
-              ng-disabled="visGraph.data.nodes.length < 1 || keys(files).length === 0 || submitted"
-              ng-click="submit()">
+        <button type="button" class="btn btn-sm"
+                ng-class="{'btn-primary': !submitted, 'btn-default': submitted}"
+                ng-disabled="!canSubmit()" ng-click="submit()">
           <span ng-if="submitting"
                 class="glyphicon glyphicon-repeat rotate-animation"></span>
-        Submit</span>
-        <span ng-if="submitted"
-              class="btn btn-sm btn-primary"
-              ng-click="view()">View Application</span>
+          Submit
+        </button>
+        <button ng-if="submitted"
+                type="button" class="btn btn-sm btn-primary"
+                ng-click="view()">View Application
+        </button>
       </div>
     </div>
   </div>
