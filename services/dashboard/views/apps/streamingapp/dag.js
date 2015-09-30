@@ -24,10 +24,11 @@ angular.module('dashboard')
       // todo: while metrics is not available, keep loading, otherwise the bandwidth is not calculable.
 
       var editorDialog = $modal({
-        templateUrl: "views/apps/streamingapp/dag_edit.html",
+        templateUrl: "views/apps/streamingapp/popups/dag_edit.html",
         backdrop: 'static',
         show: false,
-        scope: $scope
+        scope: $scope,
+        controller: 'StreamingAppDagEditCtrl'
       });
 
       $scope.modify = function(options) {

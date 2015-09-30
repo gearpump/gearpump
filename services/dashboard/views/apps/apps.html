@@ -3,9 +3,16 @@
   <div class="row">
     <div class="col-md-6">
       <span class="table-caption-ext pull-left">Applications</span>
-      <span class="btn btn-primary btn-xs pull-left"
-            style="margin-left: 6px; color: white"
-            ng-click="openSubmitDialog()">Submit +</span>
+      <!-- dropdown button -->
+      <div class="btn-group">
+        <span class="btn btn-xs btn-primary pull-left"
+              style="margin-left: 6px; color: white"
+              ng-click="openSubmitDialog()">Submit</span>
+        <button type="button" class="btn btn-xs btn-primary dropdown-toggle"
+                bs-dropdown="composeMenuOptions" html="true">
+          <span class="caret"></span>
+        </button>
+      </div>
     </div>
     <div class="col-md-3">
     </div>

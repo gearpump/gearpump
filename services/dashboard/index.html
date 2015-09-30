@@ -11,20 +11,20 @@
 
   <!-- Static Resources -->
   <link rel="stylesheet" href="webjars/bootstrap/3.3.5/css/bootstrap.min.css"/>
+  <!-- angular-strap requires the following 2 stylesheets -->
   <link rel="stylesheet" href="webjars/bootstrap-additions/0.3.1/dist/bootstrap-additions.min.css"/>
-  <link rel="stylesheet" href="webjars/font-awesome/4.4.0/css/font-awesome.min.css"/>
-  <link rel="stylesheet" href="webjars/select2-bootstrap-css/1.4.6/select2-bootstrap.css"/>
   <link rel="stylesheet" href="webjars/angular-motion/0.4.2/dist/angular-motion.min.css"/>
-  <link rel="stylesheet" href="webjars/angular-loading-bar/0.8.0/build/loading-bar.min.css"/>
-  <!-- decorate angular-ui-select with the following two stylesheets (stick with the version!) -->
+  <!-- angular-ui-select requires the following 3 stylesheets (stick with the version!) -->
   <link rel="stylesheet" href="webjars/angular-ui-select/0.12.0/dist/select.min.css"/>
   <link rel="stylesheet" href="webjars/select2/3.5.2/select2.css"/>
   <link rel="stylesheet" href="webjars/select2-bootstrap-css/1.4.6/select2-bootstrap.css"/>
+  <link rel="stylesheet" href="webjars/angular-loading-bar/0.8.0/build/loading-bar.min.css"/>
   <link rel="stylesheet" href="webjars/vis/4.7.0/dist/vis.min.css"/>
-  <link rel="stylesheet" href="webjars/dashing/0.2.4/dist/dashing.min.css"/>
+  <link rel="stylesheet" href="webjars/dashing/0.2.5/dist/dashing.min.css"/>
 
   <!-- Site styles -->
   <link rel="stylesheet" href="webjars/dashing-deps/0.0.8/roboto/roboto.min.css"/>
+  <link rel="stylesheet" href="webjars/font-awesome/4.4.0/css/font-awesome.min.css"/>
   <link rel="stylesheet" href="styles/bootstrap-override.css"/>
   <link rel="stylesheet" href="styles/bootstrap-doc.css"/><!-- todo: should be absorbed -->
   <link rel="stylesheet" href="styles/dashboard.css"/>
@@ -57,12 +57,12 @@
 <script src="webjars/angular-smart-table/2.1.1/dist/smart-table.min.js"></script>
 <script src="webjars/d3js/3.5.5/d3.min.js"></script>
 <script src="webjars/momentjs/2.10.3/min/moment.min.js"></script>
-<script src="webjars/underscorejs/1.8.3/underscore-min.js"></script>
+<script src="webjars/lodash/3.10.1/lodash.min.js"></script>
 <script src="webjars/vis/4.7.0/dist/vis.min.js"></script>
 <script src="webjars/ng-file-upload/5.0.9/ng-file-upload-shim.min.js"></script>
 <script src="webjars/ng-file-upload/5.0.9/ng-file-upload.min.js"></script>
 <script src="webjars/dashing-deps/0.0.8/echarts/2.2.7-compact/echarts-all.min.js"></script>
-<script src="webjars/dashing/0.2.4/dist/dashing.min.js"></script>
+<script src="webjars/dashing/0.2.5/dist/dashing.min.js"></script>
 
 <!-- Application -->
 <script src="dashboard.js"></script>
@@ -79,6 +79,9 @@
 <script src="views/cluster/workers/worker/worker.js"></script>
 <script src="views/jvm/metrics_charts.js"></script>
 <script src="views/apps/apps.js"></script>
+<script src="views/apps/compose/compose.js"></script>
+<script src="views/apps/compose/popups/choose_processor.js"></script>
+<script src="views/apps/compose/popups/choose_edge.js"></script>
 <script src="views/apps/submit/submit.js"></script>
 <script src="views/apps/app/app.js"></script>
 <script src="views/apps/app/overview.js"></script>
@@ -89,7 +92,7 @@
 <script src="views/apps/streamingapp/overview.js"></script>
 <script src="views/apps/streamingapp/metrics_charts.js"></script>
 <script src="views/apps/streamingapp/dag.js"></script>
-<script src="views/apps/streamingapp/dag_edit.js"></script>
+<script src="views/apps/streamingapp/popups/dag_edit.js"></script>
 <script src="views/apps/streamingapp/processor.js"></script>
 <script src="views/apps/streamingapp/processor_task_charts.js"></script>
 <script src="views/apps/streamingapp/executor.js"></script>

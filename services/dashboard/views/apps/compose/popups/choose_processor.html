@@ -1,0 +1,58 @@
+<div class="modal" tabindex="-1">
+  <div class="modal-dialog" style="width: 520px">
+    <div class="modal-content">
+      <div class="modal-body">
+        <button type="button" class="close" ng-click="$hide()">
+          <span>&times;</span></button>
+        <h4 ng-if="processor.processorId >= 0">Modify Processor</h4>
+        <h4 ng-if="!(processor.processorId >= 0)">New Processor</h4>
+
+        <p style="padding-top: 4px; padding-bottom: 14px;">Tip: You can create an isolated processor without an edge
+          connected.</p>
+
+        <form name="form">
+          <!-- right margin align to cancel button right -->
+          <div style="margin-bottom: 18px">
+            <!-- input 1 -->
+            <form-control
+              type="class" label="Task Class" required="true" autofocus="true"
+              ng-model="processor.taskClass"
+              invalid="invalid.taskClass"></form-control>
+            <!-- input 2 -->
+            <form-control
+              type="text" label="Description"
+              ng-model="processor.description"
+              invalid="invalid.description"></form-control>
+            <!-- input 3 -->
+            <form-control
+              type="positiveInteger" label="Parallelism" required="true"
+              ng-model="processor.parallelism"
+              invalid="invalid.parallelism"></form-control>
+            <!--&lt;!&ndash; optional inputs &ndash;&gt;-->
+            <!--<div class="form-group-header">Scheduling-->
+            <!--<remark tooltip="Optional to specify the activation and/or deactivation time for processor"></remark>-->
+            <!--</div>-->
+            <!--&lt;!&ndash; input 4 &ndash;&gt;-->
+            <!--<form-control-->
+            <!--type="datetime" label="Activation"-->
+            <!--ng-model="processor.birthTime"-->
+            <!--invalid="invalid.birthTime"></form-control>-->
+            <!--&lt;!&ndash; input 5 &ndash;&gt;-->
+            <!--<form-control-->
+            <!--type="datetime" label="Deactivation"-->
+            <!--ng-model="processor.deathTime"-->
+            <!--invalid="invalid.deathTime"></form-control>-->
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary btn-sm" style="width: 60px"
+                ng-disabled="!canSave()" ng-click="save()">Save
+        </button>
+        <button type="button" class="btn btn-default btn-sm"
+                ng-click="$hide()">Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

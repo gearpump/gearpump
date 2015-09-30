@@ -101,6 +101,9 @@ angular.module('dashboard')
           });
           return obj;
         },
+        partitioners: function(wrapper) {
+          return wrapper.partitioners;
+        },
         workers: function(objs) {
           return decoder._asAssociativeArray(objs, decoder.worker, 'workerId');
         },
@@ -325,6 +328,10 @@ angular.module('dashboard')
           return getter._historicalMetrics('/master/metrics/', 'master',
             period, points);
         },
+        partitioners: function() {
+          return get('/master/partitioners',
+            decoder.partitioners);
+        },
         workers: function() {
           return get('/master/workerlist',
             decoder.workers);
@@ -396,6 +403,25 @@ angular.module('dashboard')
           var dag = new StreamingDag(clock, processors, levels, edges);
           dag.replaceProcessor = restapi.replaceDagProcessor;
           return dag;
+        },
+        /** Submit a DAG along with jar files */
+        submitDag: function(files, dag, onComplete) {
+          if (Object.keys(files).length !== 1) {
+            return onComplete({success: false, message: 'One jar file is expected'});
+          }
+          files = _.values(files)[0]; // todo: only one file can be uploaded once (issue 1450)
+          return restapi.uploadJars(files, function(response) {
+            if (!response.success) {
+              return onComplete(response);
+            }
+            // todo: cannot set jar for individual processor
+            angular.forEach(dag.processors, function(elem) {
+              elem[1].jar = response.files;
+            });
+            return restapi.submitDag(dag, function(response) {
+              return onComplete(response);
+            });
+          });
         }
       };
     }])
