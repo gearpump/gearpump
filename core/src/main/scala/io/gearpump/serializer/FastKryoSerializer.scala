@@ -25,7 +25,7 @@ import io.gearpump.serializer.FastKryoSerializer.KryoSerializationException
 import io.gearpump.util.LogUtil
 import io.gearpump.objenesis.strategy.StdInstantiatorStrategy
 
-class FastKryoSerializer(system: ExtendedActorSystem) {
+class FastKryoSerializer(system: ExtendedActorSystem) extends Serializer{
 
   private val LOG = LogUtil.getLogger(getClass)
   private val config = system.settings.config
@@ -37,8 +37,7 @@ class FastKryoSerializer(system: ExtendedActorSystem) {
   kryo.setInstantiatorStrategy(strategy)
   private val kryoClazz = new GearpumpSerialization(config).customize(kryo)
 
-
-  def serialize(message: AnyRef) : Array[Byte] = {
+  override def serialize(message: AnyRef) : Array[Byte] = {
     try {
       kryoSerializer.toBinary(message)
     } catch {
@@ -73,8 +72,8 @@ class FastKryoSerializer(system: ExtendedActorSystem) {
     }
   }
 
-  def deserialize(msg : Array[Byte]): AnyRef = {
-      kryoSerializer.fromBinary(msg)
+  override def deserialize(msg : Array[Byte]): AnyRef = {
+    kryoSerializer.fromBinary(msg)
   }
 }
 

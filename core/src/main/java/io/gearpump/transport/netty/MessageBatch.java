@@ -30,17 +30,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MessageBatch {
-
   private static final Logger log = LoggerFactory.getLogger(MessageBatch.class);
 
   private int buffer_size;
   private List<TaskMessage> messages;
   private int encoded_length;
+  private ITransportMessageSerializer serializer;
 
-  MessageBatch(int buffer_size) {
+  MessageBatch(int buffer_size, ITransportMessageSerializer serializer) {
     this.buffer_size = buffer_size;
     messages = new ArrayList<TaskMessage>();
     encoded_length = 0;
+    this.serializer = serializer;
   }
 
   void add(TaskMessage taskMessage) {
@@ -51,7 +52,6 @@ public class MessageBatch {
     messages.add(taskMessage);
     encoded_length += msgEncodeLength(taskMessage);
   }
-
 
   TaskMessage get(int index) {
     return messages.get(index);
@@ -76,7 +76,7 @@ public class MessageBatch {
     if (taskMsg != null) {
       size = 24; //sessionId(INT) + sourceTask(LONG) + targetTask(LONG) + messageLength(INT)
       if (taskMsg.message() != null) {
-        size += taskMsg.message().length;
+        size += serializer.getLength(taskMsg.message());
       }
     }
     return size;
@@ -138,20 +138,15 @@ public class MessageBatch {
    */
   private void writeTaskMessage(ChannelBufferOutputStream bout,
                                 TaskMessage message) throws IOException {
-    int payload_len = 0;
-    if (message.message() != null) {
-      payload_len = message.message().length;
-    }
     long target_id = message.targetTask();
     long source_id = message.sourceTask();
-
     int sessionId = message.sessionId();
+    int msgLength = serializer.getLength(message.message());
+
     bout.writeInt(sessionId);
     bout.writeLong(target_id);
     bout.writeLong(source_id);
-    bout.writeInt(payload_len);
-    if (payload_len > 0) {
-      bout.write(message.message());
-    }
+    bout.writeInt(msgLength);
+    serializer.serialize(bout, message.message());
   }
 }

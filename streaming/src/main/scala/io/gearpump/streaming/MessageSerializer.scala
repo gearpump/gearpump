@@ -18,96 +18,91 @@
 
 package io.gearpump.streaming
 
-import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
-import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
-import io.gearpump.Message
+import java.io.{DataInput, DataOutput}
+
 import io.gearpump.streaming.task._
 
-class MessageSerializer extends Serializer[Message] {
-  override def write(kryo: Kryo, output: Output, obj: Message) = {
-    output.writeLong(obj.timestamp)
-    kryo.writeClassAndObject(output, obj.msg)
+class TaskIdSerializer extends TaskMessageSerializer[TaskId] {
+  override def getLength(obj: TaskId): Int = 8
+
+  override def write(dataOutput: DataOutput, obj: TaskId): Unit = {
+    dataOutput.writeInt(obj.processorId)
+    dataOutput.writeInt(obj.index)
   }
 
-  override def read(kryo: Kryo, input: Input, typ: Class[Message]): Message = {
-    val timeStamp = input.readLong()
-    val msg = kryo.readClassAndObject(input)
-    new Message(msg, timeStamp)
-  }
-}
-
-class TaskIdSerializer  extends Serializer[TaskId] {
-  override def write(kryo: Kryo, output: Output, obj: TaskId) = {
-    output.writeInt(obj.processorId)
-    output.writeInt(obj.index)
-  }
-
-  override def read(kryo: Kryo, input: Input, typ: Class[TaskId]): TaskId = {
-    val processorId = input.readInt()
-    val index = input.readInt()
+  override def read(dataInput: DataInput): TaskId = {
+    val processorId = dataInput.readInt()
+    val index = dataInput.readInt()
     new TaskId(processorId, index)
   }
 }
 
-class AckRequestSerializer extends Serializer[AckRequest] {
-  val taskIdSerialzer = new TaskIdSerializer()
+class AckSerializer extends TaskMessageSerializer[Ack] {
+  val taskIdSerializer = new TaskIdSerializer
 
-  override def write(kryo: Kryo, output: Output, obj: AckRequest) = {
-    taskIdSerialzer.write(kryo, output, obj.taskId)
-    output.writeShort(obj.seq)
-    output.writeInt(obj.sessionId)
+  override def getLength(obj: Ack): Int = taskIdSerializer.getLength(obj.taskId) + 8
+
+  override def write(dataOutput: DataOutput, obj: Ack): Unit = {
+    taskIdSerializer.write(dataOutput, obj.taskId)
+    dataOutput.writeShort(obj.seq)
+    dataOutput.writeShort(obj.actualReceivedNum)
+    dataOutput.writeInt(obj.sessionId)
   }
 
-  override def read(kryo: Kryo, input: Input, typ: Class[AckRequest]): AckRequest = {
-    val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
-    val seq = input.readShort()
-    val sessionId = input.readInt()
-    new AckRequest(taskId, seq, sessionId)
-  }
-}
-
-class InitialAckRequestSerializer extends Serializer[InitialAckRequest] {
-  val taskIdSerialzer = new TaskIdSerializer()
-
-  override def write(kryo: Kryo, output: Output, obj: InitialAckRequest) = {
-    taskIdSerialzer.write(kryo, output, obj.taskId)
-    output.writeInt(obj.sessionId)
-  }
-
-  override def read(kryo: Kryo, input: Input, typ: Class[InitialAckRequest]): InitialAckRequest = {
-    val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
-    val sessionId = input.readInt()
-    new InitialAckRequest(taskId, sessionId)
+  override def read(dataInput: DataInput): Ack = {
+    val taskId = taskIdSerializer.read(dataInput)
+    val seq = dataInput.readShort()
+    val actualReceivedNum = dataInput.readShort()
+    val sessionId = dataInput.readInt()
+    Ack(taskId, seq, actualReceivedNum, sessionId)
   }
 }
 
-class AckSerializer extends Serializer[Ack] {
+class InitialAckRequestSerializer extends TaskMessageSerializer[InitialAckRequest] {
   val taskIdSerialzer = new TaskIdSerializer()
 
-  override def write(kryo: Kryo, output: Output, obj: Ack) = {
-    taskIdSerialzer.write(kryo, output, obj.taskId)
-    output.writeShort(obj.seq)
-    output.writeShort(obj.actualReceivedNum)
-    output.writeInt(obj.sessionId)
+  override def getLength(obj: InitialAckRequest): Int = taskIdSerialzer.getLength(obj.taskId) + 4
+
+  override def write(dataOutput: DataOutput, obj: InitialAckRequest): Unit = {
+    taskIdSerialzer.write(dataOutput, obj.taskId)
+    dataOutput.writeInt(obj.sessionId)
   }
 
-  override def read(kryo: Kryo, input: Input, typ: Class[Ack]): Ack = {
-    val taskId = taskIdSerialzer.read(kryo, input, classOf[TaskId])
-    val seq = input.readShort()
-    val actualReceivedNum = input.readShort()
-    val sessionId = input.readInt()
-    new Ack(taskId, seq, actualReceivedNum, sessionId)
+  override def read(dataInput: DataInput): InitialAckRequest = {
+    val taskId = taskIdSerialzer.read(dataInput)
+    val sessionId = dataInput.readInt()
+    InitialAckRequest(taskId, sessionId)
   }
 }
 
-class LatencyProbeSerializer extends Serializer[LatencyProbe] {
+class AckRequestSerializer extends TaskMessageSerializer[AckRequest]{
+  val taskIdSerializer = new TaskIdSerializer
 
-  override def write(kryo: Kryo, output: Output, obj: LatencyProbe) = {
-    output.writeLong(obj.timestamp)
+  override def getLength(obj: AckRequest): Int = taskIdSerializer.getLength(obj.taskId) + 6
+
+  override def write(dataOutput: DataOutput, obj: AckRequest): Unit = {
+    taskIdSerializer.write(dataOutput, obj.taskId)
+    dataOutput.writeShort(obj.seq)
+    dataOutput.writeInt(obj.sessionId)
   }
 
-  override def read(kryo: Kryo, input: Input, typ: Class[LatencyProbe]): LatencyProbe = {
-    val timestamp = input.readLong()
-    new LatencyProbe(timestamp)
+  override def read(dataInput: DataInput): AckRequest = {
+    val taskId = taskIdSerializer.read(dataInput)
+    val seq = dataInput.readShort()
+    val sessionId = dataInput.readInt()
+    AckRequest(taskId, seq, sessionId)
+  }
+}
+
+class LatencyProbeSerializer extends TaskMessageSerializer[LatencyProbe] {
+  override def getLength(obj: LatencyProbe): Int = 8
+
+  override def write(dataOutput: DataOutput, obj: LatencyProbe): Unit = {
+    dataOutput.writeLong(obj.timestamp)
+  }
+
+  override def read(dataInput: DataInput): LatencyProbe = {
+    val timestamp = dataInput.readLong()
+    LatencyProbe(timestamp)
   }
 }

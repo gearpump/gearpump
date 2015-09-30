@@ -17,82 +17,61 @@
  */
 package io.gearpump.streaming
 
-import io.gearpump.esotericsoftware.kryo.Kryo
-import io.gearpump.streaming.task.TaskId
-import io.gearpump.streaming.task.{Ack, InitialAckRequest, AckRequest}
-import io.gearpump.Message
-import io.gearpump.cluster.ClusterConfig
-import io.gearpump.serializer.GearpumpSerialization
+import io.gearpump.streaming.task._
+import io.gearpump.transport.netty.WrappedChannelBuffer
+import org.jboss.netty.buffer.{ChannelBufferOutputStream, ChannelBuffers}
 import org.scalatest.{Matchers, WordSpec}
 
-import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
-
 class MessageSerializerSpec extends WordSpec with Matchers {
-  val kryo = new Kryo
-  val config = ClusterConfig.load.default
-  val serialization = new GearpumpSerialization(config)
-  serialization.customize(kryo)
-  val buffer = new Array[Byte](1024)
-  val outPut = new Output(buffer)
-  val input = new Input(buffer)
 
-  "MessageSerializer" should {
-    "serialize and deserialize Message properly" in {
-      val serializer = kryo.getRegistration(classOf[Message]).getSerializer
-      assert(serializer.isInstanceOf[MessageSerializer])
-      val msgSerializer = serializer.asInstanceOf[MessageSerializer]
-      val message = Message("test")
-      msgSerializer.write(kryo, outPut, message)
-      val result = msgSerializer.read(kryo, input, classOf[Message])
-      assert(result.equals(message))
+  def testSerializer[T](obj: T, taskMessageSerializer: TaskMessageSerializer[T]): T = {
+    val length = taskMessageSerializer.getLength(obj)
+    val bout = new ChannelBufferOutputStream(ChannelBuffers.buffer(length))
+    taskMessageSerializer.write(bout, obj)
+    val input = new WrappedChannelBuffer(ChannelBuffers.wrappedBuffer(bout.buffer().array()))
+    taskMessageSerializer.read(input)
+  }
+
+  "SerializedMessageSerializer"  should {
+    "serialize and deserialize SerializedMessage properly" in {
+      val serializer = new SerializedMessageSerializer
+      val data = new Array[Byte](256)
+      new java.util.Random().nextBytes(data)
+      val msg = SerializedMessage(1024, data)
+      val result = testSerializer(msg, serializer)
+      assert(result.timeStamp == msg.timeStamp && result.bytes.sameElements(msg.bytes))
     }
   }
 
   "TaskIdSerializer"  should {
     "serialize and deserialize TaskId properly" in {
-      val serializer = kryo.getRegistration(classOf[TaskId]).getSerializer
-      assert(serializer.isInstanceOf[TaskIdSerializer])
-      val taskIdSerializer = serializer.asInstanceOf[TaskIdSerializer]
+      val taskIdSerializer = new TaskIdSerializer
       val taskId = TaskId(1, 3)
-      taskIdSerializer.write(kryo, outPut, taskId)
-      val result = taskIdSerializer.read(kryo, input, classOf[TaskId])
-      assert(result.equals(taskId))
+      assert(testSerializer(taskId, taskIdSerializer).equals(taskId))
     }
   }
 
   "AckRequestSerializer"  should {
     "serialize and deserialize AckRequest properly" in {
-      val serializer = kryo.getRegistration(classOf[AckRequest]).getSerializer
-      assert(serializer.isInstanceOf[AckRequestSerializer])
-      val ackRequestSerializer = serializer.asInstanceOf[AckRequestSerializer]
+      val serializer = new AckRequestSerializer
       val ackRequest = AckRequest(TaskId(1, 2), 1000, 1024)
-      ackRequestSerializer.write(kryo, outPut, ackRequest)
-      val result = ackRequestSerializer.read(kryo, input, classOf[AckRequest])
-      assert(result.equals(ackRequest))
+      assert(testSerializer(ackRequest, serializer).equals(ackRequest))
     }
   }
 
   "InitialAckRequestSerializer"  should {
     "serialize and deserialize AckRequest properly" in {
-      val serializer = kryo.getRegistration(classOf[InitialAckRequest]).getSerializer
-      assert(serializer.isInstanceOf[InitialAckRequestSerializer])
-      val ackRequestSerializer = serializer.asInstanceOf[InitialAckRequestSerializer]
+      val serializer = new InitialAckRequestSerializer
       val ackRequest = InitialAckRequest(TaskId(1, 2), 1024)
-      ackRequestSerializer.write(kryo, outPut, ackRequest)
-      val result = ackRequestSerializer.read(kryo, input, classOf[InitialAckRequest])
-      assert(result.equals(ackRequest))
+      assert(testSerializer(ackRequest, serializer).equals(ackRequest))
     }
   }
 
   "AckSerializer"  should {
     "serialize and deserialize Ack properly" in {
-      val serializer = kryo.getRegistration(classOf[Ack]).getSerializer
-      assert(serializer.isInstanceOf[AckSerializer])
-      val ackSerializer = serializer.asInstanceOf[AckSerializer]
+      val serializer = new AckSerializer
       val ack = Ack(TaskId(1, 2), 1024, 1023, 1799)
-      ackSerializer.write(kryo, outPut, ack)
-      val result = ackSerializer.read(kryo, input, classOf[Ack])
-      assert(result.equals(ack))
+      assert(testSerializer(ack, serializer).equals(ack))
     }
   }
 }

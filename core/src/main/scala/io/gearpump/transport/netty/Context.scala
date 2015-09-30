@@ -49,7 +49,8 @@ import io.gearpump.transport.netty.Context._
     this(system, new NettyConfig(conf))
   }
 
-  private var closeHandler = new ConcurrentLinkedQueue[Closeable]()
+  private val closeHandler = new ConcurrentLinkedQueue[Closeable]()
+  val transportSerialize = conf.transportSerializer
   val maxWorkers: Int = 1
 
   private lazy val clientChannelFactory: NioClientSocketChannelFactory = {
@@ -68,7 +69,8 @@ import io.gearpump.transport.netty.Context._
   def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true, inputPort: Int = 0): Int = {
     //TODO: whether we should expose it as application config?
     val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor, deserializeFlag).withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), name)
-    val (port, channel) = NettyUtil.newNettyServer(name, new ServerPipelineFactory(server), 5242880, inputPort)
+    val (port, channel) = NettyUtil.newNettyServer(name,
+      new ServerPipelineFactory(server, new MessageDecoder(transportSerialize), new MessageEncoder()), 5242880, inputPort)
     val factory = channel.getFactory
     closeHandler.add{ () =>
         system.stop(server)

@@ -18,7 +18,7 @@
 
 package io.gearpump.serializer
 
-import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
+import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
 import com.typesafe.config.Config
 import io.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
@@ -41,7 +41,7 @@ class GearpumpSerialization(config: Config) {
         kryo.register(keyClass)
       } else {
         val valueClass = Class.forName(value)
-        val register = kryo.register(keyClass, valueClass.newInstance().asInstanceOf[Serializer[_]])
+        val register = kryo.register(keyClass, valueClass.newInstance().asInstanceOf[KryoSerializer[_]])
         LOG.debug(s"Registering ${keyClass}, id: ${register.getId}")
       }
     }

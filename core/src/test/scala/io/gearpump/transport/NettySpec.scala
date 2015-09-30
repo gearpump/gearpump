@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
 import io.gearpump.cluster.TestUtil
+import io.gearpump.transport.MockTransportSerializer.NettyMessage
 import io.gearpump.transport.netty.{Context, TaskMessage}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
@@ -30,7 +31,7 @@ import io.gearpump.util.Util
 
 import scala.concurrent.duration._
 
-class NettySpec  extends FlatSpec with Matchers with MockitoSugar {
+class NettySpec extends FlatSpec with Matchers with MockitoSugar {
 
   "Netty Transport" should "send and receive message correctly " in {
     val conf = TestUtil.DEFAULT_CONFIG
@@ -48,11 +49,10 @@ class NettySpec  extends FlatSpec with Matchers with MockitoSugar {
     }
     val client = context.connect(HostPort("127.0.0.1", port.get))
 
-    val data = new Array[Byte](1000)
-    (new java.util.Random()).nextBytes(data)
+    val data = NettyMessage(0)
     val msg = new TaskMessage(0, 1, 2, data)
     client ! msg
-    serverActor.expectMsg(15 seconds, msg)
+    serverActor.expectMsg(15 seconds, data)
     
     context.close
     system.shutdown()

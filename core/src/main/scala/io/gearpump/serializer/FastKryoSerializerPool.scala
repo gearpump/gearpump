@@ -15,25 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.serializer
 
-package io.gearpump.experiments.storm.topology
+import akka.actor.ExtendedActorSystem
 
-import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.{Tuple, TupleImpl}
+class FastKryoSerializerPool(override val system: ExtendedActorSystem) extends SerializerPool{
+  private val pool = new ThreadLocal[Serializer]() {
+    override def initialValue(): Serializer = {
+      new FastKryoSerializer(system)
+    }
+  }
 
-import scala.collection.JavaConversions._
-
-private[storm] class GearpumpTuple(
-    tuple: List[AnyRef],
-    componentId: String,
-    streamId: String,
-    stormTaskId: Int,
-    @transient val targetPartitions: Map[String, List[Int]]) extends Serializable{
-
-  def toTuple(topologyContext: TopologyContext): Tuple = {
-    new TupleImpl(topologyContext, tuple, stormTaskId, streamId, null)
+  override def get(): Serializer = {
+    pool.get()
   }
 }
-
-
-

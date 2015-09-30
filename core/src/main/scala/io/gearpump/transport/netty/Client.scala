@@ -40,13 +40,15 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
   val name = s"netty-client-$hostPort"
 
   private final var bootstrap: ClientBootstrap = null
-  private final var random: Random = new Random
+  private final val random: Random = new Random
+  private val serializer = conf.transportSerializer
   private var channel : Channel = null
 
   var batch = new util.ArrayList[TaskMessage]
 
   private val init = {
-    bootstrap = NettyUtil.createClientBootStrap(factory, new ClientPipelineFactory(name), conf.buffer_size)
+    bootstrap = NettyUtil.createClientBootStrap(factory,
+      new ClientPipelineFactory(name, new MessageDecoder(serializer), new MessageEncoder()), conf.buffer_size)
     self ! Connect(0)
   }
 
@@ -119,7 +121,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     while (msgs.hasNext) {
       val message: TaskMessage = msgs.next()
       if (null == messageBatch) {
-        messageBatch = new MessageBatch(conf.messageBatchSize)
+        messageBatch = new MessageBatch(conf.messageBatchSize, serializer)
       }
       messageBatch.add(message)
       if (messageBatch.isFull) {
@@ -198,11 +200,11 @@ object Client {
     }
   }
 
-  class ClientPipelineFactory(name: String) extends ChannelPipelineFactory {
+  class ClientPipelineFactory(name: String, decoder: MessageDecoder, encoder: MessageEncoder) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
       val pipeline: ChannelPipeline = Channels.pipeline
-      pipeline.addLast("decoder", new MessageDecoder)
-      pipeline.addLast("encoder", new MessageEncoder)
+      pipeline.addLast("decoder", decoder)
+      pipeline.addLast("encoder", encoder)
       pipeline.addLast("handler", new ClientErrorHandler(name))
       pipeline
     }

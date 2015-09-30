@@ -15,25 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.serializer
 
-package io.gearpump.experiments.storm.topology
+/**
+ * User defined message serializer
+ */
+trait Serializer {
+  def serialize(message: AnyRef) : Array[Byte]
 
-import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.{Tuple, TupleImpl}
-
-import scala.collection.JavaConversions._
-
-private[storm] class GearpumpTuple(
-    tuple: List[AnyRef],
-    componentId: String,
-    streamId: String,
-    stormTaskId: Int,
-    @transient val targetPartitions: Map[String, List[Int]]) extends Serializable{
-
-  def toTuple(topologyContext: TopologyContext): Tuple = {
-    new TupleImpl(topologyContext, tuple, stormTaskId, streamId, null)
-  }
+  def deserialize(msg : Array[Byte]): AnyRef
 }
-
-
-

@@ -15,25 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.streaming.task
 
-package io.gearpump.experiments.storm.topology
+import java.io.{DataInput, DataOutput}
 
-import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.{Tuple, TupleImpl}
+import org.jboss.netty.buffer.ChannelBuffer
 
-import scala.collection.JavaConversions._
+trait TaskMessageSerializer[T] {
+  def write(dataOutput: DataOutput, obj: T)
 
-private[storm] class GearpumpTuple(
-    tuple: List[AnyRef],
-    componentId: String,
-    streamId: String,
-    stormTaskId: Int,
-    @transient val targetPartitions: Map[String, List[Int]]) extends Serializable{
+  def read(dataInput: DataInput): T
 
-  def toTuple(topologyContext: TopologyContext): Tuple = {
-    new TupleImpl(topologyContext, tuple, stormTaskId, streamId, null)
-  }
+  def getLength(obj: T): Int
 }
-
-
-

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,25 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.transport.netty;
 
-package io.gearpump.experiments.storm.topology
+import java.io.DataInput;
+import java.io.DataOutput;
 
-import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.{Tuple, TupleImpl}
+public interface ITransportMessageSerializer {
+  int getLength(Object obj);
 
-import scala.collection.JavaConversions._
+  void serialize(DataOutput dataOutput, Object transportMessage);
 
-private[storm] class GearpumpTuple(
-    tuple: List[AnyRef],
-    componentId: String,
-    streamId: String,
-    stormTaskId: Int,
-    @transient val targetPartitions: Map[String, List[Int]]) extends Serializable{
-
-  def toTuple(topologyContext: TopologyContext): Tuple = {
-    new TupleImpl(topologyContext, tuple, stormTaskId, streamId, null)
-  }
+  Object deserialize(DataInput dataInput, int length);
 }
-
-
-

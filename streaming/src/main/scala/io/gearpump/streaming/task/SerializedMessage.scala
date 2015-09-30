@@ -15,25 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.streaming.task
 
-package io.gearpump.experiments.storm.topology
+import java.io.{DataInput, DataOutput}
 
-import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.{Tuple, TupleImpl}
+import io.gearpump.TimeStamp
 
-import scala.collection.JavaConversions._
+case class SerializedMessage(timeStamp: TimeStamp, bytes: Array[Byte])
 
-private[storm] class GearpumpTuple(
-    tuple: List[AnyRef],
-    componentId: String,
-    streamId: String,
-    stormTaskId: Int,
-    @transient val targetPartitions: Map[String, List[Int]]) extends Serializable{
+class SerializedMessageSerializer extends TaskMessageSerializer[SerializedMessage] {
+  override def getLength(obj: SerializedMessage): Int = 12 + obj.bytes.length
 
-  def toTuple(topologyContext: TopologyContext): Tuple = {
-    new TupleImpl(topologyContext, tuple, stormTaskId, streamId, null)
+  override def write(dataOutput: DataOutput, obj: SerializedMessage): Unit = {
+    dataOutput.writeLong(obj.timeStamp)
+    dataOutput.writeInt(obj.bytes.length)
+    dataOutput.write(obj.bytes)
+  }
+
+  override def read(dataInput: DataInput): SerializedMessage = {
+    val timestamp = dataInput.readLong()
+    val length = dataInput.readInt()
+    val bytes = new Array[Byte](length)
+    dataInput.readFully(bytes)
+    SerializedMessage(timestamp, bytes)
   }
 }
-
-
-

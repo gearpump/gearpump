@@ -20,12 +20,10 @@ package io.gearpump.streaming.task
 import akka.actor.{ExtendedActorSystem, Props}
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import io.gearpump.streaming.AppMasterToExecutor.{RegisterTaskFailedException, TaskRejected, TaskChanged, MsgLostException}
-import io.gearpump.streaming.{LifeTime, DAG}
 import io.gearpump.Message
 import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
 import io.gearpump.partitioner.{HashPartitioner, Partitioner}
-import io.gearpump.serializer.{FastKryoSerializer, SerializerPool}
+import io.gearpump.serializer.{SerializerPool, FastKryoSerializer}
 import io.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, RegisterTaskFailedException, Start, TaskChanged, TaskRejected}
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.task.TaskActorSpec.TestTask
@@ -33,7 +31,6 @@ import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import io.gearpump.transport.Express
 import io.gearpump.util.Graph._
 import io.gearpump.util.{Graph, Util}
-import org.mockito.Matchers._
 import org.mockito.Mockito.{mock, times, verify, when}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 
@@ -65,7 +62,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
     mockSerializerPool = mock(classOf[SerializerPool])
     val serializer = new FastKryoSerializer(getActorSystem.asInstanceOf[ExtendedActorSystem])
-    when(mockSerializerPool.get(anyLong())).thenReturn(serializer)
+    when(mockSerializerPool.get()).thenReturn(serializer)
 
     taskContext1 = TaskContextData(executorId1, appId,
       "appName", mockMaster.ref, 1,

@@ -19,9 +19,10 @@
 package io.gearpump.streaming.task
 
 import akka.actor.{ActorRef, ExtendedActorSystem}
-import io.gearpump.serializer.{SerializerPool, KryoPool, FastKryoSerializer}
+import io.gearpump.serializer.SerializerPool
 import io.gearpump.transport.netty.TaskMessage
 import io.gearpump.transport.{Express, HostPort}
+import io.gearpump.Message
 
 import scala.collection.mutable
 
@@ -41,8 +42,7 @@ trait ExpressTransport {
   lazy val sendLater = new SendLater(express, serializerPool, sessionRef)
 
   def transport(msg : AnyRef, remotes : TaskId *): Unit = {
-
-    var serializedMessage : Array[Byte] = null
+    var serializedMessage : AnyRef = null
 
     remotes.foreach { remote =>
       val transportId = TaskId.toLong(remote)
@@ -56,7 +56,12 @@ trait ExpressTransport {
       } else {
       //remote
         if (null == serializedMessage) {
-          serializedMessage = serializerPool.get(Thread.currentThread().getId).serialize(msg)
+          msg match {
+            case message: Message =>
+              val bytes = serializerPool.get().serialize(message.msg)
+              serializedMessage = SerializedMessage(message.timestamp, bytes)
+            case _ => serializedMessage = msg
+          }
         }
         val taskMessage = new TaskMessage(sessionId, transportId, sourceId, serializedMessage)
 
@@ -97,7 +102,12 @@ class SendLater(express: Express, serializerPool: SerializerPool, sender: ActorR
     val queue = buffer.getOrElse(transportId, mutable.Queue.empty[TaskMessage])
     while (queue.nonEmpty) {
       val taskMessage = queue.dequeue()
-      val msg = serializerPool.get(Thread.currentThread().getId).deserialize(taskMessage.message())
+      val msg = taskMessage.message() match {
+        case serialized: SerializedMessage =>
+          Message(serializerPool.get().deserialize(serialized.bytes), serialized.timeStamp)
+        case _ =>
+          taskMessage.message()
+      }
       localActor.tell(msg, sender)
     }
   }

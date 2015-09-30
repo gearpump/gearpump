@@ -22,8 +22,6 @@ import java.util
 
 import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import io.gearpump.transport.ActorLookupById
-import io.gearpump.serializer.FastKryoSerializer
-import io.gearpump.transport.ActorLookupById
 import io.gearpump.util.LogUtil
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
@@ -41,8 +39,6 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
   val allChannels: ChannelGroup = new DefaultChannelGroup("storm-server")
 
   val system = context.system.asInstanceOf[ExtendedActorSystem]
-
-  val serializer = new FastKryoSerializer(system)
 
   def receive = msgHandler orElse channelManager
   //As we will only transfer TaskId on the wire, this object will translate taskId to or from ActorRef
@@ -67,13 +63,8 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
         if (actor.isEmpty) {
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
-
-          if (deserializeFlag) {
-            val msg = serializer.deserialize(taskMessage.message())
-            actor.get.tell(msg, taskIdActorRefTranslation.translateToActorRef(taskMessage.sessionId()))
-          } else {
-            actor.get.tell(taskMessage, taskIdActorRefTranslation.translateToActorRef(taskMessage.sessionId()))
-          }
+          actor.get.tell(taskMessage.message(),
+            taskIdActorRefTranslation.translateToActorRef(taskMessage.sessionId()))
         }
       }
   }
@@ -90,11 +81,11 @@ object Server {
   // As we must use actorFor() which is deprecated,
   // according to the advice https://issues.scala-lang.org/browse/SI-7934,
   // use a helper object to bypass this deprecation warning.
-  class ServerPipelineFactory(server: ActorRef) extends ChannelPipelineFactory {
+  class ServerPipelineFactory(server: ActorRef, decoder: MessageDecoder, encoder: MessageEncoder) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
       val pipeline: ChannelPipeline = Channels.pipeline
-      pipeline.addLast("decoder", new MessageDecoder)
-      pipeline.addLast("encoder", new MessageEncoder)
+      pipeline.addLast("decoder", decoder)
+      pipeline.addLast("encoder", encoder)
       pipeline.addLast("handler", new ServerHandler(server))
       pipeline
     }
