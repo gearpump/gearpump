@@ -21,6 +21,7 @@ package io.gearpump.experiments.storm.util
 object StormConstants {
   val STORM_COMPONENT = "storm_component"
   val STORM_TOPOLOGY = "storm_topology"
+  val STORM_CONFIG = "storm_config"
   val SYSTEM_COMPONENT_ID = "__system"
   val SYSTEM_COMPONENT_OUTPUT_FIELDS = "rate_secs"
   val SYSTEM_TASK_ID: Integer = -1

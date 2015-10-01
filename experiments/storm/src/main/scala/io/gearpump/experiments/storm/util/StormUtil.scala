@@ -18,6 +18,7 @@
 
 package io.gearpump.experiments.storm.util
 
+import java.io._
 import java.util.{HashMap => JHashMap, Map => JMap}
 
 import akka.actor.ActorSystem
@@ -26,9 +27,14 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
 import io.gearpump.experiments.storm.topology._
 import io.gearpump.streaming.task.{TaskContext, TaskId}
+import io.gearpump.util.LogUtil
 import org.json.simple.JSONValue
+import org.slf4j.Logger
+import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.constructor.SafeConstructor
 
 object StormUtil {
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   import StormConstants._
 
@@ -72,6 +78,28 @@ object StormUtil {
   def parseJsonStringToMap(json: String): JMap[AnyRef, AnyRef] = {
     Option(json).flatMap(json => Option(JSONValue.parse(json)))
         .getOrElse(new JHashMap[AnyRef, AnyRef]).asInstanceOf[JMap[AnyRef, AnyRef]]
+  }
+
+  def readStormConfig(config: String): JMap[AnyRef, AnyRef] = {
+    var ret: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
+    try {
+      val yaml = new Yaml(new SafeConstructor)
+      val input: InputStream = new FileInputStream(config)
+      try {
+        ret = yaml.load(new InputStreamReader(input)).asInstanceOf[JMap[AnyRef, AnyRef]]
+      } catch {
+        case e: IOException =>
+          LOG.error(s"failed to load config file $config")
+      } finally {
+        input.close()
+      }
+    } catch {
+      case e: FileNotFoundException =>
+        LOG.error(s"failed to find config file $config")
+      case t: Throwable =>
+        LOG.error(t.getMessage)
+    }
+    ret
   }
 
 }
