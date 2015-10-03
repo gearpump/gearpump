@@ -11,26 +11,15 @@ angular.module('dashboard')
     var fontFace = 'lato,roboto,"helvetica neue","segoe ui",arial,helvetica,sans-serif';
     var maxNodeRadius = 16;
 
-    return {
-      newOptions: function(flags) {
-        var verticalMargin = 28;
-        var levelDistance = 85;
-        var chartMinHeight = 240;
+    var self = {
+      newOptions: function(height) {
         return {
           autoResize: true, // The network will automatically detect size changes and redraw itself accordingly
           interaction: {
             hover: true
           },
           width: '100%',
-          height: Math.max(chartMinHeight,
-            (maxNodeRadius * (flags.depth + 1) + levelDistance * flags.depth + verticalMargin * 2)) + 'px',
-          layout: {
-            hierarchical: {
-              sortMethod: 'hubsize',
-              direction: 'UD',
-              levelSeparation: levelDistance
-            }
-          },
+          height: height,
           nodes: {
             shape: 'dot',
             font: {
@@ -56,18 +45,31 @@ angular.module('dashboard')
           }
         };
       },
-
+      newHierarchicalLayoutOptions: function(flags) {
+        var verticalMargin = 28;
+        var levelDistance = 85;
+        var chartMinHeight = 240;
+        var height = Math.max(chartMinHeight,
+            (maxNodeRadius * (flags.depth + 1) + levelDistance * flags.depth + verticalMargin * 2)) + 'px';
+        return angular.merge(self.newOptions(height), {
+          layout: {
+            hierarchical: {
+              sortMethod: 'hubsize',
+              direction: 'UD',
+              levelSeparation: levelDistance
+            }
+          }
+        });
+      },
       newData: function() {
         return {
           nodes: new vis.DataSet(),
           edges: new vis.DataSet()
         };
       },
-
       nodeRadiusRange: function() {
         return [3, 16];
       },
-
       nodeColor: function(concern) {
         var colorSet = concern ? {
           border: 'rgb(138,1,12)',
@@ -83,19 +85,15 @@ angular.module('dashboard')
         }
         return result;
       },
-
       edgeWidthRange: function() {
         return [1, 5];
       },
-
       edgeArrowSizeRange: function() {
         return [0.5, 0.1];
       },
-
       edgeOpacityRange: function() {
         return [0.4, 1];
       },
-
       edgeColorSet: function(alive) {
         return alive ? {
           color: '#2B7CE9',
@@ -106,7 +104,13 @@ angular.module('dashboard')
           hover: 'rgb(166,166,166)',
           highlight: 'rgb(166,166,166)'
         };
+      },
+      /** Return label of processor name */
+      processorNameAsLabel: function(processor) {
+        return '[' + processor.id + '] ' +
+          (processor.description || _.last(processor.taskClass.split('.')));
       }
     };
+    return self;
   })
 ;

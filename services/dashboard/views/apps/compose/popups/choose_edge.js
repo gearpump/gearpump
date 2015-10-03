@@ -29,7 +29,7 @@ angular.module('dashboard')
         if ($scope.onChange) {
           $scope.edge.from = $scope.edge.from.value;
           $scope.edge.to = $scope.edge.to.value;
-          $scope.edge.edgeId = $scope.edge.from + '_' + $scope.edge.to;
+          $scope.edge.id = $scope.edge.from + '_' + $scope.edge.to;
           $scope.onChange($scope.edge);
         }
       }

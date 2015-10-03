@@ -45,11 +45,11 @@ angular.module('dashboard')
           processor: processor
         };
         chooseProcessorDialog.show(args, function(processor) {
-          processor.processorId = processor.processorId || newProcessorId();
-          $scope.visGraph.data.nodes.update(angular.merge({
-            id: processor.processorId,
-            label: processor.taskClass
-          }, processor));
+          if (!processor.hasOwnProperty('id')) {
+            processor.id = newProcessorId();
+          }
+          processor.label = $vis.processorNameAsLabel(processor);
+          $scope.visGraph.data.nodes.update(processor);
         });
       };
 
@@ -60,28 +60,23 @@ angular.module('dashboard')
           processors: {}
         };
         angular.forEach($scope.visGraph.data.nodes, function(processor) {
-          args.processors[processor.processorId] = {
-            text: 'Processor ' + processor.processorId,
+          args.processors[processor.id] = {
+            text: 'Processor ' + processor.id,
             subtext: processor.taskClass
           };
         });
         chooseEdgeDialog.show(args, function(edge) {
-          $scope.visGraph.data.edges.update(angular.merge({
-            id: edge.edgeId
-          }, edge));
+          $scope.visGraph.data.edges.update(edge);
         });
       };
 
       var processorId = 0;
-
       function newProcessorId() {
-        return ++processorId;
+        return processorId++;
       }
 
-      var visGraphOptions = $vis.newOptions({depth: 1});
-      delete visGraphOptions.layout;
       $scope.visGraph = {
-        options: visGraphOptions,
+        options: $vis.newOptions(/*height=*/'400px'),
         data: $vis.newData(),
         events: {
           doubleClick: function(data) {
@@ -96,27 +91,50 @@ angular.module('dashboard')
             }
           },
           oncontext: function(data) {
-            var elem = document.getElementById('contextmenu');
             if (data.hasOwnProperty('node')) {
               $scope.selectItemModify = function() {
                 $scope.chooseProcessor($scope.visGraph.data.nodes.get(data.node));
               };
               $scope.selectItemDelete = function() {
-                $scope.visGraph.data.nodes.remove(data.node);
+                deleteProcessor(data.node);
               };
-              $contextmenu.popup(elem, data.pointer.DOM);
             } else if (data.hasOwnProperty('edge')) {
               $scope.selectItemModify = function() {
                 $scope.chooseEdge($scope.visGraph.data.edges.get(data.edge));
               };
               $scope.selectItemDelete = function() {
-                $scope.visGraph.data.edges.remove(data.edge);
+                deleteEdge(data.edge);
               };
-              $contextmenu.popup(elem, data.pointer.DOM);
+            } else {
+              return;
+            }
+            var elem = document.getElementById('contextmenu');
+            $contextmenu.popup(elem, data.pointer.DOM);
+          },
+          ondeletepressed: function(selection) {
+            if (selection.nodes.length === 1) {
+              deleteProcessor(selection.nodes[0]);
+            } else if (selection.edges.length === 1) {
+              deleteEdge(selection.edges[0]);
             }
           }
         }
       };
+
+      function deleteProcessor(processorId) {
+        $scope.visGraph.data.nodes.remove(processorId);
+        var edgeIds = _.chain($scope.visGraph.data.edges.get())
+          .filter(function(edge) {
+            return processorId == edge.from || processorId == edge.to;
+          })
+          .pluck('id')
+          .value();
+        $scope.visGraph.data.edges.remove(edgeIds);
+      }
+
+      function deleteEdge(edgeId) {
+        $scope.visGraph.data.edges.remove(edgeId);
+      }
 
       $scope.files = {};
       $scope.submitted = false;
@@ -134,24 +152,28 @@ angular.module('dashboard')
         delete $scope.files[name];
       };
 
+      $scope.canSubmit = function() {
+        return !$scope.submitted &&
+          $scope.visGraph.data.nodes.length > 0 &&
+          Object.keys($scope.files).length > 0;
+      };
+
       $scope.submit = function() {
         var data = $scope.visGraph.data;
         var processors = data.nodes.get();
-        var edges = data.edges.get().filter(function(edge) {
-          return data.nodes.get(edge.from) && data.nodes.get(edge.to);
-        });
+        var edges = data.edges.get();
         var args = {
           appName: 'userapp',
           processors: processors.map(function(processor) {
-            return [processor.processorId, {
-              id: processor.processorId,
+            return [processor.id, {
+              id: processor.id,
               taskClass: processor.taskClass,
               parallelism: processor.parallelism,
               description: processor.description
             }];
           }),
           dag: {
-            vertexList: _.pluck(processors, 'processorId'),
+            vertexList: _.pluck(processors, 'id'),
             edgeList: edges.map(function(edge) {
               return [edge.from, edge.partitionerClass, edge.to]
             })
@@ -183,7 +205,7 @@ angular.module('dashboard')
 
       $scope.view = function() {
         $state.go('streamingapp.overview', {appId: $scope.appId});
-      }
+      };
 
       // Angular template cannot call the function directly, so export a function.
       $scope.keys = Object.keys;
@@ -205,8 +227,10 @@ angular.module('dashboard')
 
         var showDialogFn = dialog.show;
         dialog.show = function(args, onChange) {
-          angular.merge(dialog.$options.scope, args);
           dialog.$options.scope.onChange = onChange;
+          angular.forEach(args, function(value, key) {
+            dialog.$options.scope[key] = value;
+          });
           showDialogFn();
         };
 

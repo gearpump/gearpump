@@ -8,11 +8,11 @@ angular.module('dashboard')
   .directive('visNetwork', [function() {
     'use strict';
 
-    function overrideOnContextEvent(network, contextCallback) {
+    function overrideOnContextEvent(network, callback) {
       network.on('oncontext', function(args) {
         function handleOnContext(data) {
-          if (contextCallback) {
-            contextCallback(angular.merge(data, {pointer: args.pointer}));
+          if (callback) {
+            callback(angular.merge(data, {pointer: args.pointer}));
           }
           vis.util.preventDefault(args.event);
         }
@@ -29,14 +29,14 @@ angular.module('dashboard')
       });
     }
 
-    function overrideHoverNodeEvent(network, hoverNodeCallback) {
+    function overrideHoverNodeEvent(network, callback) {
       network.on('hoverNode', function(args) {
-          if (hoverNodeCallback) {
+          if (callback) {
             var nodeId = parseInt(args.node);
             var radius = network.findNode(nodeId)[0].options.size;
             var position = network.getPositions([nodeId])[nodeId];
             position = network.canvasToDOM(position);
-            hoverNodeCallback({
+            callback({
               node: nodeId,
               radius: Math.ceil(radius),
               position: position
@@ -45,6 +45,16 @@ angular.module('dashboard')
           vis.util.preventDefault(args.event);
         }
       );
+    }
+
+    function handleDeleteKeyPressed(network, callback) {
+      var keys = vis.keycharm({
+        container: network.dom
+      });
+      keys.bind('delete', function(event) {
+        var selection = network.getSelection();
+        callback(selection, event);
+      });
     }
 
     return {
@@ -61,18 +71,22 @@ angular.module('dashboard')
         });
 
         angular.forEach(scope.events, function(callback, name) {
-          if (['doubleClick', 'click'].indexOf(name) !== -1) {
-            network.on(name, callback);
+          switch (name) {
+            case 'click':
+            case 'doubleClick':
+              network.on(name, callback);
+              break;
+            case 'oncontext':
+              overrideOnContextEvent(network, callback);
+              break;
+            case 'hoverNode':
+              overrideHoverNodeEvent(network, callback);
+              break;
+            case 'ondeletepressed':
+              handleDeleteKeyPressed(network, callback);
+              break;
           }
         });
-
-        if (scope.events.hasOwnProperty('oncontext')) {
-          overrideOnContextEvent(network, scope.events.oncontext);
-        }
-
-        if (scope.events.hasOwnProperty('hoverNode')) {
-          overrideHoverNodeEvent(network, scope.events.hoverNode);
-        }
 
         network.on('resize', function() {
           network.fit();
