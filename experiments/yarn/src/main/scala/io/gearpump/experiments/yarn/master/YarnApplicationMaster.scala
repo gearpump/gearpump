@@ -92,6 +92,7 @@ class YarnApplicationMaster(appConfig: AppConfig, yarnConf: YarnConfiguration,
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private val nodeManagerClient: NMClientAsync = createNMClient(yarnConf, self)
   private val servicesPort = appConfig.getEnv(SERVICES_PORT).toInt
+  private val servicesEnabled = appConfig.getEnv(SERVICES_ENABLED).toBoolean
   private[master] val resourceManagerClient = context.actorOf(propsRMClient, "resourceManagerClient")
   private[master] val host = InetAddress.getLocalHost.getHostName
   private[master] val trackingURL = "http://" + host + ":" + servicesPort
@@ -163,7 +164,15 @@ class YarnApplicationMaster(appConfig: AppConfig, yarnConf: YarnConfiguration,
       if(needMoreWorkers(newYarnClusterStats)) {
         stay using newYarnClusterStats
       } else {
-        startServicesActor(newYarnClusterStats)
+        Option(servicesEnabled).foreach(enabled => {
+          enabled match {
+            case true =>
+              LOG.info("Starting services UI")
+              startServicesActor(newYarnClusterStats)
+            case false =>
+          }
+
+        })
         goto(AwaitingTermination) using newYarnClusterStats
       }
 
