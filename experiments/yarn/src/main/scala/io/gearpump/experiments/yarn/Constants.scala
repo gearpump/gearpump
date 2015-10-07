@@ -47,6 +47,7 @@ object Constants {
   val WORKER_LOG = "gearpump.worker.logname"
 
   val SERVICES_COMMAND = "gearpump.services.command"
+  val SERVICES_ENABLED = "gearpump.services.enabled"
   val SERVICES_MAIN = "gearpump.services.main"
   val SERVICES_PORT = "gearpump.services.port"
   val SERVICES_CONTAINERS = "gearpump.services.containers"
