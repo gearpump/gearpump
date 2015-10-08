@@ -17,6 +17,8 @@
  */
 package io.gearpump.examples.distributedshell
 
+import java.util.concurrent.TimeUnit
+
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import DistShellAppMaster.ShellCommand
@@ -24,6 +26,9 @@ import DistShellAppMaster.ShellCommand
 import akka.pattern.ask
 import io.gearpump.util.{AkkaApp, Constants}
 import org.slf4j.{LoggerFactory, Logger}
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 object DistributedShellClient extends AkkaApp with ArgumentsParser  {
   implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -42,10 +47,11 @@ object DistributedShellClient extends AkkaApp with ArgumentsParser  {
     val appid = config.getInt("appid")
     val command = config.getString("command")
     val appMaster = context.resolveAppID(appid)
-    LOG.info(s"Resolved appMaster $appid address ${appMaster.path.toString}, sending command $command")
-    (appMaster ? ShellCommand(command)).map { result =>
+    LOG.info(s"Resolved appMaster $appid address $appMaster, sending command $command")
+    val future = (appMaster ? ShellCommand(command)).map { result =>
       LOG.info(s"Result: $result")
       context.close()
     }
+    Await.ready(future, Duration(60, TimeUnit.SECONDS))
   }
 }

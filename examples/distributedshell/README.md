@@ -8,10 +8,10 @@ In order to run the example:
 
   2. Start the AppMaster:<br>
   ```bash
-  target/pack/bin/gear app -jar experiments/distributedshell/target/$SCALA_VERSION_MAJOR/gearpump-experiments-distributedshell_$VERSION.jar io.gearpump.distributedshell.DistributedShell
+  target/pack/bin/gear app -jar target/pack/examples/gearpump-experiments-distributedshell_$VERSION.jar io.gearpump.examples.distributedshell.DistributedShell
   ```
 
   3. Submit the shell command:<br>
   ```bash
-  target/pack/bin/gear app -jar experiments/distributedshell/target/$SCALA_VERSION_MAJOR/gearpump-experiments-distributedshell_$VERSION.jar io.gearpump.distributedshell.DistributedShellClient -appid $APPID -command "ls /"
+  target/pack/bin/gear app -verbose true -jar target/pack/examples/gearpump-experiments-distributedshell_$VERSION.jar io.gearpump.examples.distributedshell.DistributedShellClient -appid $APPID -command "ls /"
   ```
