@@ -28,7 +28,7 @@ private[storm] class GearpumpTuple(
     componentId: String,
     streamId: String,
     stormTaskId: Int,
-    @transient val targetPartitions: Map[String, List[Int]]) extends Serializable{
+    @transient val targetPartitions: Map[String, List[Int]]) extends Serializable {
 
   def toTuple(topologyContext: TopologyContext): Tuple = {
     new TupleImpl(topologyContext, tuple, stormTaskId, streamId, null)

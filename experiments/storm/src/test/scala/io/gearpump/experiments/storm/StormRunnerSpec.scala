@@ -42,7 +42,7 @@ class StormRunnerSpec extends FlatSpec with Matchers {
     implicit val dispatcher = system.dispatcher
     val clientContext = Mockito.mock(classOf[ClientContext])
     Mockito.when(clientContext.submit(any(), any())).thenReturn(0)
-    val handler = system.actorOf(Props(new Handler(clientContext, "jar")))
+    val handler = system.actorOf(Props(new Handler(clientContext, "jar", "user_config")))
     val client = TestProbe()
 
     client.send(handler, Submit("app", uploadedJarLocation, jsonConf, topology, null))

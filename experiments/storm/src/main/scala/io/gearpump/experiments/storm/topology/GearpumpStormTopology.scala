@@ -23,7 +23,7 @@ import java.util.{HashMap => JHashMap, Map => JMap}
 import akka.actor.ActorSystem
 import backtype.storm.Config
 import backtype.storm.generated._
-import backtype.storm.utils.{ThriftTopologyUtils, Utils}
+import backtype.storm.utils.ThriftTopologyUtils
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.processor.StormProcessor
 import io.gearpump.experiments.storm.producer.StormProducer
@@ -37,12 +37,9 @@ import scala.collection.JavaConversions._
 
 /**
  * @param topology storm topology
- * @param jsonConfig user config in json string
+ * @param stormConfig storm configuration
  */
-class GearpumpStormTopology(topology: StormTopology, jsonConfig: String)(implicit system: ActorSystem) {
-
-  private val defaultConfig = Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
-  private val userConfig = parseJsonStringToMap(jsonConfig)
+class GearpumpStormTopology(topology: StormTopology, stormConfig: JMap[AnyRef, AnyRef])(implicit system: ActorSystem) {
   private val spouts = topology.get_spouts()
   private val bolts = topology.get_bolts()
   private val spoutProcessors = spouts.map { case (id, spout) =>
@@ -119,12 +116,14 @@ class GearpumpStormTopology(topology: StormTopology, jsonConfig: String)(implici
   }
 
   private def setComponentConfig(componentCommon: ComponentCommon): Unit = {
-    val conf = new JHashMap[AnyRef, AnyRef]
-    conf.putAll(defaultConfig)
-    conf.putAll(userConfig)
-    val componentConfig = parseJsonStringToMap(componentCommon.get_json_conf())
-    conf.putAll(componentConfig)
-    componentCommon.set_json_conf(JSONValue.toJSONString(conf))
+    Option(stormConfig).foreach { config =>
+      val conf = new JHashMap[AnyRef, AnyRef]
+      conf.putAll(config)
+      val componentConfig = parseJsonStringToMap(componentCommon.get_json_conf())
+      conf.putAll(componentConfig)
+      componentCommon.set_json_conf(JSONValue.toJSONString(conf))
+    }
+
   }
 
 

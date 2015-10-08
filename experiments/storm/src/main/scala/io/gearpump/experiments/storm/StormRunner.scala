@@ -19,17 +19,19 @@
 package io.gearpump.experiments.storm
 
 import java.io.File
+import java.util.{Map => JMap}
 
 import akka.actor.{Actor, ActorSystem, Props}
 import backtype.storm.Config
 import backtype.storm.generated.{ClusterSummary, StormTopology, SupervisorSummary, TopologySummary}
+import backtype.storm.utils.Utils
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.experiments.storm.Commands.{GetClusterInfo, _}
 import io.gearpump.experiments.storm.topology.GearpumpStormTopology
-import io.gearpump.experiments.storm.util.{GraphBuilder, StormConstants}
+import io.gearpump.experiments.storm.util.{GraphBuilder, StormConstants, StormUtil}
 import io.gearpump.streaming.StreamApplication
 import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 
@@ -54,24 +56,23 @@ object StormRunner extends AkkaApp with ArgumentsParser {
     }
 
     val jar = config.getString("jar")
+    val stormConfig = config.getString("config")
     val topology = config.remainArgs(0)
     val stormArgs = config.remainArgs.drop(1)
-    val stormConf = new File(config.getString("config"))
 
     val system = ActorSystem("storm", akkaConf)
     val clientContext = new ClientContext(akkaConf, system, null)
 
-    val stormNimbus = system.actorOf(Props(new Handler(clientContext, jar)))
-    val thriftServer = GearpumpThriftServer(stormNimbus)
+    val gearpumpNimbus = system.actorOf(Props(new Handler(clientContext, jar, stormConfig)))
+    val thriftServer = GearpumpThriftServer(gearpumpNimbus)
     thriftServer.start()
 
     val stormOptions = Array("-Dstorm.options=" +
       s"${Config.NIMBUS_HOST}=127.0.0.1,${Config.NIMBUS_THRIFT_PORT}=${GearpumpThriftServer.THRIFT_PORT}",
-      "-Dstorm.jar=" + jar,
-      "-Dstorm.conf.file=" + stormConf.getName
+      "-Dstorm.jar=" + jar
     )
 
-    val classPath = Array(System.getProperty("java.class.path"), stormConf.getParent, jar)
+    val classPath = Array(System.getProperty("java.class.path"), jar)
     val process = Util.startProcess(stormOptions, classPath, topology, stormArgs)
 
     // wait till the process exit
@@ -96,7 +97,7 @@ object StormRunner extends AkkaApp with ArgumentsParser {
       .withValue(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH, ConfigValueFactory.fromAnyRef(executorClassPath))
   }
 
-  class Handler(clientContext: ClientContext, jar: String) extends Actor {
+  class Handler(clientContext: ClientContext, jar: String, userConfig: String) extends Actor {
     private var applications = Map.empty[String, Int]
     private var topologies = Map.empty[String, StormTopology]
     private val LOG = LogUtil.getLogger(classOf[Handler])
@@ -114,9 +115,16 @@ object StormRunner extends AkkaApp with ArgumentsParser {
       case Submit(name, uploadedJarLocation, jsonConf, topology, options) =>
         topologies += name -> topology
 
-        val gearpumpStormTopology = new GearpumpStormTopology(topology, jsonConf)
+        import StormUtil._
+
+        val stormConfig = Utils.readDefaultConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
+        stormConfig.putAll(parseJsonStringToMap(jsonConf))
+        stormConfig.putAll(readStormConfig(userConfig))
+        val gearpumpStormTopology = new GearpumpStormTopology(topology, stormConfig)
         val processorGraph = GraphBuilder.build(gearpumpStormTopology)
-        val config = UserConfig.empty.withValue[StormTopology](StormConstants.STORM_TOPOLOGY, topology)
+        val config = UserConfig.empty
+            .withValue[StormTopology](StormConstants.STORM_TOPOLOGY, topology)
+            .withValue[JMap[AnyRef, AnyRef]](StormConstants.STORM_CONFIG, stormConfig)
         val app = StreamApplication("storm", processorGraph, config)
         val appId = clientContext.submit(app, jar)
         applications += name -> appId

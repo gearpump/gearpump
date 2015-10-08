@@ -17,8 +17,7 @@
  */
 package io.gearpump.experiments.storm.util
 
-import java.util.Map
-import backtype.storm.utils.Utils
+import java.util.{Map => JMap}
 import akka.actor.ExtendedActorSystem
 import backtype.storm.serialization.SerializationFactory
 import com.esotericsoftware.kryo.Kryo
@@ -26,24 +25,27 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import io.gearpump.cluster.UserConfig
 import io.gearpump.serializer.{SerializerPool, Serializer}
 
-class StormSerializerPool extends SerializerPool{
-  val conf = Utils.readStormConfig().asInstanceOf[Map[AnyRef, AnyRef]]
+class StormSerializerPool extends SerializerPool {
+  private var stormConfig: JMap[AnyRef, AnyRef] = null
+  private var pool: ThreadLocal[Serializer] = null
 
-  private val pool = new ThreadLocal[Serializer]() {
-    override def initialValue(): Serializer = {
-      val kryo = SerializationFactory.getKryo(conf)
-      new StormSerializer(kryo)
+  override def init(system: ExtendedActorSystem, config: UserConfig): Unit = {
+    implicit val actorSystem = system
+    stormConfig = config.getValue[JMap[AnyRef, AnyRef]](StormConstants.STORM_CONFIG).get
+    pool = new ThreadLocal[Serializer]() {
+      override def initialValue(): Serializer = {
+        val kryo = SerializationFactory.getKryo(stormConfig)
+        new StormSerializer(kryo)
+      }
     }
   }
-
-  override def init(system: ExtendedActorSystem, config: UserConfig): Unit = {}
 
   override def get(): Serializer = {
     pool.get()
   }
 }
 
-class StormSerializer(kryo: Kryo) extends Serializer{
+class StormSerializer(kryo: Kryo) extends Serializer {
   val output = new Output(4096, 4096)
   override def serialize(message: AnyRef): Array[Byte] = {
     output.clear()
