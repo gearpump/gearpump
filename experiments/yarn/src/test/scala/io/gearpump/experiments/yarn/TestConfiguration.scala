@@ -27,4 +27,5 @@ trait TestConfiguration extends Mockito {
   appConfig.getEnv(GEARPUMPMASTER_VCORES) returns TEST_GEARPUMPMASTER_VCORES
   appConfig.getEnv(WORKER_MEMORY) returns TEST_WORKER_MEMORY
   appConfig.getEnv(WORKER_VCORES) returns TEST_WORKER_VCORES
+  appConfig.getEnv(SERVICES_ENABLED) returns "true"
 }

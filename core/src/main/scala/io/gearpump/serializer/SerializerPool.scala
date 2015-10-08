@@ -18,9 +18,10 @@
 package io.gearpump.serializer
 
 import akka.actor.ExtendedActorSystem
+import io.gearpump.cluster.UserConfig
 
 trait SerializerPool {
-  val system: ExtendedActorSystem
+  def init(system: ExtendedActorSystem, config: UserConfig)
 
   def get(): Serializer
 }

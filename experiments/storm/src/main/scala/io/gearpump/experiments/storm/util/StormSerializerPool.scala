@@ -23,9 +23,10 @@ import akka.actor.ExtendedActorSystem
 import backtype.storm.serialization.SerializationFactory
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.{Input, Output}
+import io.gearpump.cluster.UserConfig
 import io.gearpump.serializer.{SerializerPool, Serializer}
 
-class StormSerializerPool(override val system: ExtendedActorSystem) extends SerializerPool{
+class StormSerializerPool extends SerializerPool{
   val conf = Utils.readStormConfig().asInstanceOf[Map[AnyRef, AnyRef]]
 
   private val pool = new ThreadLocal[Serializer]() {
@@ -34,6 +35,8 @@ class StormSerializerPool(override val system: ExtendedActorSystem) extends Seri
       new StormSerializer(kryo)
     }
   }
+
+  override def init(system: ExtendedActorSystem, config: UserConfig): Unit = {}
 
   override def get(): Serializer = {
     pool.get()

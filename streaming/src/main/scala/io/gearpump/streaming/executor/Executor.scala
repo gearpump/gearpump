@@ -212,8 +212,10 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   }
 
   private def getSerializerPool(): SerializerPool = {
+    val system = context.system.asInstanceOf[ExtendedActorSystem]
     val clazz = Class.forName(systemConfig.getString(Constants.GEARPUMP_SERIALIZER_POOL))
-    val pool = clazz.getConstructor(classOf[ExtendedActorSystem]).newInstance(context.system.asInstanceOf[ExtendedActorSystem])
+    val pool = clazz.newInstance().asInstanceOf[SerializerPool]
+    pool.init(system, userConf)
     pool.asInstanceOf[SerializerPool]
   }
 }
