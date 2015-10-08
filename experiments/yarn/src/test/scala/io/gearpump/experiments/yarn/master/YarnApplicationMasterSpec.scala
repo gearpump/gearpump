@@ -301,7 +301,11 @@ with TestConfiguration {
     fsm ! ContainerStarted(containerId)
     fsm.stateName should be(AwaitingTermination)
     one(stats).withUpdatedContainer(ContainerStatus.newInstance(containerId, ContainerState.RUNNING, "", 0))
-    fsm.underlyingActor.servicesActor.isDefined should be(true)
+    fsm.underlyingActor.servicesEnabled match {
+      case true =>
+        fsm.underlyingActor.servicesActor.isDefined should be(true)
+      case false =>
+    }
     noCallsTo(nmClientAsyncMock)
   }
 
