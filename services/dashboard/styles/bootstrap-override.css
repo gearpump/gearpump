@@ -168,11 +168,6 @@ html, body {
   margin-top: -1px;
 }
 
-/* Narrow the distance between to form control rows */
-.form-group {
-  margin-bottom: 5px;
-}
-
 /* Make alert padding narrower (2 rules) */
 .alert {
   padding: 7px 10px 7px 10px;
