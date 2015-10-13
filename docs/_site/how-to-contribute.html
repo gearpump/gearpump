@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>How to contribute - GearPump 0.6.2-SNAPSHOT Documentation</title>
+  
+
+  
+
+  <link rel="stylesheet" href="css/bootstrap-3.3.5.min.css">
+  <style>
+    body {
+      padding-top: 60px;
+      padding-bottom: 40px;
+    }
+  </style>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/pygments-default.css">
+  <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
+</head>
+<body>
+  <!--[if lt IE 7]>
+    <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
+  <![endif]-->
+
+  <div class="navbar navbar-inverse navbar-fixed-top" id="topbar">
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#/">GearPump
+          <span class="label label-primary" style="font-size: .6em">0.6.2-SNAPSHOT</span>
+        </a>
+      </div>
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <li><a href="index.html">Overview</a></li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Introduction<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="submit-your-1st-application.html">Submit Your 1st Application</a></li>
+              <li><a href="commandline.html">Client Command Line</a></li>
+              <li class="divider"></li>
+              <li><a href="basic-concepts.html">Basic Concepts</a></li>
+              <li><a href="features.html">Technical Highlights</a></li>
+              <li><a href="usecases.html">Use Cases</a></li>
+              <li><a href="message-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="performance-report.html">Performance</a></li>
+              <li><a href="gearpump-internals.html">Gearpump Internals</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Deploying<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="dropdown-header">Deployment</li>
+              <li><a href="deployment-docker.html">Docker</a><li>
+              <li><a href="deployment-local.html">Local</a><li>
+              <li><a href="deployment-standalone.html">Standalone</a></li>
+              <li><a href="deployment-yarn.html">YARN</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-ha.html">High Availability</a></li>
+              <li><a href="deployment-msg-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="deployment-configuration.html">Configuration</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-security.html">Security</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Programming Guide<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="dev-write-1st-app.html">Write Your 1st App</a></li>
+              <li><a href="dev-custom-serializer.html">Customized Message Passing</a></li>
+              <li class="divider"></li>
+              <li><a href="api/scala/index.html">Scala API</a></li>
+              <li><a href="api/java/index.html">Java API</a></li>
+              <li><a href="dev-rest-api.html">RESTful API</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-connectors.html">Gearpump Connectors</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-storm.html">Storm Compatibility</a></li>
+              <!--
+              <li><a href="dev-samoa.html">Samoa Compatibility</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-iot.html">Gearpump with IoT</a></li>
+              -->
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">More<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="how-to-contribute.html">How to Contribute</a></li>
+              <li><a href="coding-style.html">Coding Style</a></li>
+              <li class="divider"></li>
+              <li><a href="faq.html">FAQ</a><li>
+              <li><a href="about.html">About</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="content">
+   
+    <h1 class="title">How to contribute</h1>
+   
+
+   <h2 id="contributions-welcome">Contributions Welcome!</h2>
+<p>Gearpump is developed by an open and friendly community. Everybody is cordially welcome to join the community and contribute to Gearpump. There are several ways to interact with the community and to contribute to Gearpump including asking questions, filing bug reports, implementing new use cases, proposing new features, joining discussions on the mailing lists, contributing code or documentation, improving the website, or testing release candidates.</p>
+
+<h3 id="ask-questions">Ask questions!</h3>
+
+<p>The Gearpump community is eager to help and to answer your questions. We have a <a href="https://groups.google.com/forum/#!forum/gearpump-user">user mailing list</a>.</p>
+
+<h3 id="file-a-bug-report">File a bug report</h3>
+
+<p>Please let us know if you experienced a problem with Gearpump and file a bug report. Open <a href="https://github.com/gearpump/gearpump/issues">Gearpump’s Issue Tracker</a> and click on the green <em>New Issue</em> button at the top right. Please give detailed information about the problem you encountered and, if possible, add a description that helps to reproduce the problem. Thank you very much.</p>
+
+<h3 id="propose-an-improvement-or-a-new-feature">Propose an improvement or a new feature</h3>
+
+<p>Our community is constantly looking for feedback to improve Gearpump. If you have an idea how to improve Gearpump or have a new feature in mind that would be beneficial for Gearpump users, please open an issue in <a href="https://github.com/gearpump/gearpump/issues">Gearpump’s Issue Tracker</a>. The improvement or new feature should be described in appropriate detail and include the scope and its requirements if possible. Detailed information is important for a few reasons:</p>
+
+<ul>
+  <li>It ensures your requirements are met when the improvement or feature is implemented.</li>
+  <li>It helps to estimate the effort and to design a solution that addresses your needs.</li>
+  <li>It allow for constructive discussions that might arise around this issue.</li>
+  <li>Detailed information is also required, if you plan to contribute the improvement or feature you proposed yourself. Please read the Contribute code guide in this case as well.</li>
+</ul>
+
+<h3 id="test-a-release-candidate">Test a release candidate</h3>
+
+<p>Gearpump is continuously improved by its active community. Every few weeks, we release a new version of Gearpump with bug fixes, improvements, and new features. Release testing is a big effort if done by a small group of people but can be easily scaled out to more people. The Gearpump community encourages everybody to participate in the testing of a release candidate. By testing a release candidate, you can ensure that the next Gearpump release is working properly for your setup and help to improve the quality of releases.</p>
+
+<h3 id="contribute-code">Contribute code</h3>
+
+<p>Gearpump is maintained, improved, and extended by code contributions of volunteers. The Gearpump community encourages anybody to contribute source code.</p>
+
+<h3 id="looking-for-an-issue-to-work-on">Looking for an issue to work on?</h3>
+<p>We maintain a list of all known bugs, proposed improvements and suggested features in <a href="https://github.com/gearpump/gearpump/issues">Gearpump’s Issue Tracker</a>. Please have a look at the list, if you are looking for an issue to work on. Feel free to ask questions about issues that you would be interested in working on.</p>
+
+<h3 id="contribute-documentation">Contribute documentation</h3>
+
+<p>Good documentation is crucial for any kind of software. This is especially true for sophisticated software systems such as distributed data processing engines like Gearpump. The Gearpump community aims to provide concise, precise, and complete documentation and welcomes any contribution to improve Gearpump’s documentation.</p>
+
+<p>Please report missing, incorrect, or out-dated documentation as an issue.
+Gearpump’s documentation is written in Markdown and located in the <code>docs</code> folder in Gearpump’s source code repository.</p>
+
+<h3 id="improve-the-website">Improve the website</h3>
+
+<p>The Gearpump website presents Gearpump and its community. It serves several purposes including:</p>
+
+<ul>
+  <li>Informing visitors about Gearpump and its features.</li>
+  <li>Encouraging visitors to download and use Gearpump.</li>
+  <li>Encouraging visitors to engage with the community.</li>
+</ul>
+
+<p>We welcome any contribution to improve our website.</p>
+
+<p>Please open an issue at <a href="https://github.com/gearpump/gearpump.github.io/issues">Gearpump Website Issue Tracker</a> if you think our website could be improved.</p>
+
+<h3 id="more-ways-to-contribute">More ways to contribute…</h3>
+
+<p>There are many more ways to contribute to the Gearpump community. For example you can</p>
+
+<ul>
+  <li>give a talk about Gearpump and tell others how you use it.</li>
+  <li>organize a local Meetup or user group.</li>
+  <li>talk to people about Gearpump.</li>
+  <li>…</li>
+</ul>
+
+
+  </div> <!-- /container -->
+
+  <script src="js/vendor/jquery-2.1.4.min.js"></script>
+  <script src="js/vendor/bootstrap-3.3.5.min.js"></script>
+  <script src="js/vendor/anchor-1.1.1.min.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- MathJax Section -->
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      TeX: { equationNumbers: { autoNumber: "AMS" } }
+    });
+  </script>
+  <script>
+    // Note that we load MathJax this way to work with local file (file://), HTTP and HTTPS.
+    // We could use "//cdn.mathjax...", but that won't support "file://".
+    (function(d, script) {
+      script = d.createElement('script');
+      script.type = 'text/javascript';
+      script.async = true;
+      script.onload = function(){
+        MathJax.Hub.Config({
+          tex2jax: {
+            inlineMath: [ ["$", "$"], ["\\\\(","\\\\)"] ],
+            displayMath: [ ["$$","$$"], ["\\[", "\\]"] ],
+            processEscapes: true,
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+          }
+        });
+      };
+      script.src = ('https:' == document.location.protocol ? 'https://' : 'http://') +
+        'cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+      d.getElementsByTagName('head')[0].appendChild(script);
+    }(document));
+  </script>
+</body>
+</html>

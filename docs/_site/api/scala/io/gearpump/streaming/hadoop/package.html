@@ -1,0 +1,199 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>hadoop - io.gearpump.streaming.hadoop</title>
+          <meta name="description" content="hadoop - io.gearpump.streaming.hadoop" />
+          <meta name="keywords" content="hadoop io.gearpump.streaming.hadoop" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'io.gearpump.streaming.hadoop.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="io">io</a>.<a href="../../package.html" class="extype" name="io.gearpump">gearpump</a>.<a href="../package.html" class="extype" name="io.gearpump.streaming">streaming</a></p>
+        <h1>hadoop</h1><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.hadoop.package" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hadoop</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.streaming.hadoop.HadoopCheckpointStore" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="HadoopCheckpointStoreextendsCheckpointStore"></a>
+      <a id="HadoopCheckpointStore:HadoopCheckpointStore"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HadoopCheckpointStore.html"><span class="name">HadoopCheckpointStore</span></a><span class="result"> extends <a href="../transaction/api/CheckpointStore.html" class="extype" name="io.gearpump.streaming.transaction.api.CheckpointStore">CheckpointStore</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.hadoop.package@HadoopCheckpointStoreextendsCheckpointStore" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">stores timestamp-checkpoint mapping to Hadoop-compatible filesystem
+store file layout
+   timestamp1, index1,
+   timestamp2, index2,
+   ...</p><div class="fullcomment"><div class="comment cmt"><p>stores timestamp-checkpoint mapping to Hadoop-compatible filesystem
+store file layout
+   timestamp1, index1,
+   timestamp2, index2,
+   ...
+   timestampN, indexN
+</p></div></div>
+    </li><li name="io.gearpump.streaming.hadoop.HadoopCheckpointStoreFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HadoopCheckpointStoreFactoryextendsCheckpointStoreFactory"></a>
+      <a id="HadoopCheckpointStoreFactory:HadoopCheckpointStoreFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HadoopCheckpointStoreFactory.html"><span class="name">HadoopCheckpointStoreFactory</span></a><span class="result"> extends <a href="../transaction/api/CheckpointStoreFactory.html" class="extype" name="io.gearpump.streaming.transaction.api.CheckpointStoreFactory">CheckpointStoreFactory</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.hadoop.package@HadoopCheckpointStoreFactoryextendsCheckpointStoreFactory" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.streaming.hadoop.HadoopCheckpointStore" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HadoopCheckpointStore"></a>
+      <a id="HadoopCheckpointStore:HadoopCheckpointStore"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HadoopCheckpointStore$.html"><span class="name">HadoopCheckpointStore</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.hadoop.package@HadoopCheckpointStore" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.hadoop.HadoopCheckpointStoreFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HadoopCheckpointStoreFactory"></a>
+      <a id="HadoopCheckpointStoreFactory:HadoopCheckpointStoreFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HadoopCheckpointStoreFactory$.html"><span class="name">HadoopCheckpointStoreFactory</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.hadoop.package@HadoopCheckpointStoreFactory" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.hadoop.lib" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="lib"></a>
+      <a id="lib:lib"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="lib/package.html"><span class="name">lib</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.hadoop.package@lib" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

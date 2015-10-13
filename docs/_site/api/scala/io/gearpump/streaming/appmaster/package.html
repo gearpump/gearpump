@@ -1,0 +1,445 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>appmaster - io.gearpump.streaming.appmaster</title>
+          <meta name="description" content="appmaster - io.gearpump.streaming.appmaster" />
+          <meta name="keywords" content="appmaster io.gearpump.streaming.appmaster" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'io.gearpump.streaming.appmaster.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="io">io</a>.<a href="../../package.html" class="extype" name="io.gearpump">gearpump</a>.<a href="../package.html" class="extype" name="io.gearpump.streaming">streaming</a></p>
+        <h1>appmaster</h1><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">appmaster</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.streaming.appmaster.AppMaster" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AppMasterextendsApplicationMaster"></a>
+      <a id="AppMaster:AppMaster"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AppMaster.html"><span class="name">AppMaster</span></a><span class="result"> extends <a href="../../cluster/ApplicationMaster.html" class="extype" name="io.gearpump.cluster.ApplicationMaster">ApplicationMaster</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@AppMasterextendsApplicationMaster" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.AppMasterTaskDetail" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AppMasterTaskDetailextendsProductwithSerializable"></a>
+      <a id="AppMasterTaskDetail:AppMasterTaskDetail"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AppMasterTaskDetail.html"><span class="name">AppMasterTaskDetail</span></a><span class="params">(<span name="tasks">tasks: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="../task/TaskId.html" class="extype" name="io.gearpump.streaming.task.TaskId">TaskId</a>, <a href="../package.html#ExecutorId=Int" class="extmbr" name="io.gearpump.streaming.ExecutorId">ExecutorId</a>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@AppMasterTaskDetailextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.ClockService" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClockServiceextendsActorwithStash"></a>
+      <a id="ClockService:ClockService"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ClockService.html"><span class="name">ClockService</span></a><span class="result"> extends <span class="extype" name="akka.actor.Actor">Actor</span> with <span class="extype" name="akka.actor.Stash">Stash</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@ClockServiceextendsActorwithStash" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The clockService will maintain a global view of message timestamp in the application
+</p>
+    </li><li name="io.gearpump.streaming.appmaster.DagManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DagManagerextendsActor"></a>
+      <a id="DagManager:DagManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DagManager.html"><span class="name">DagManager</span></a><span class="result"> extends <span class="extype" name="akka.actor.Actor">Actor</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@DagManagerextendsActor" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Will handle dag modification and other stuff related with DAG</p>
+    </li><li name="io.gearpump.streaming.appmaster.ProcessorSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ProcessorSummaryextendsProductwithSerializable"></a>
+      <a id="ProcessorSummary:ProcessorSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ProcessorSummary.html"><span class="name">ProcessorSummary</span></a><span class="params">(<span name="id">id: <a href="../package.html#ProcessorId=Int" class="extmbr" name="io.gearpump.streaming.ProcessorId">ProcessorId</a></span>, <span name="taskClass">taskClass: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="parallelism">parallelism: <span class="extype" name="scala.Int">Int</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="taskConf">taskConf: <a href="../../cluster/UserConfig.html" class="extype" name="io.gearpump.cluster.UserConfig">UserConfig</a></span>, <span name="life">life: <a href="../LifeTime.html" class="extype" name="io.gearpump.streaming.LifeTime">LifeTime</a></span>, <span name="executors">executors: <span class="extype" name="scala.List">List</span>[<a href="../package.html#ExecutorId=Int" class="extmbr" name="io.gearpump.streaming.ExecutorId">ExecutorId</a>]</span>, <span name="taskCount">taskCount: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="../package.html#ExecutorId=Int" class="extmbr" name="io.gearpump.streaming.ExecutorId">ExecutorId</a>, <a href="TaskCount.html" class="extype" name="io.gearpump.streaming.appmaster.TaskCount">TaskCount</a>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@ProcessorSummaryextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.StreamAppMasterSummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamAppMasterSummaryextendsAppMasterToMaster.AppMasterSummarywithProductwithSerializable"></a>
+      <a id="StreamAppMasterSummary:StreamAppMasterSummary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamAppMasterSummary.html"><span class="name">StreamAppMasterSummary</span></a><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Int">Int</span></span>, <span name="appName">appName: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">null</span></span>, <span name="processors">processors: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="../package.html#ProcessorId=Int" class="extmbr" name="io.gearpump.streaming.ProcessorId">ProcessorId</a>, <a href="ProcessorSummary.html" class="extype" name="io.gearpump.streaming.appmaster.ProcessorSummary">ProcessorSummary</a>]</span>, <span name="processorLevels">processorLevels: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="../package.html#ProcessorId=Int" class="extmbr" name="io.gearpump.streaming.ProcessorId">ProcessorId</a>, <span class="extype" name="scala.Int">Int</span>]</span>, <span name="dag">dag: <a href="../../util/Graph.html" class="extype" name="io.gearpump.util.Graph">Graph</a>[<a href="../package.html#ProcessorId=Int" class="extmbr" name="io.gearpump.streaming.ProcessorId">ProcessorId</a>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">null</span></span>, <span name="actorPath">actorPath: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">null</span></span>, <span name="clock">clock: <a href="../../package.html#TimeStamp=Long" class="extmbr" name="io.gearpump.TimeStamp">TimeStamp</a> = <span class="symbol">0</span></span>, <span name="executors">executors: <span class="extype" name="scala.List">List</span>[<a href="AppMaster$$ExecutorBrief.html" class="extype" name="io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief">ExecutorBrief</a>] = <span class="symbol">null</span></span>, <span name="status">status: <a href="../../cluster/MasterToAppMaster$.html#AppMasterStatus=String" class="extmbr" name="io.gearpump.cluster.MasterToAppMaster.AppMasterStatus">AppMasterStatus</a> = <span class="symbol"><span class="name"><a href="../../../package.html">MasterToAppMaster.AppMasterActive</a></span></span></span>, <span name="startTime">startTime: <a href="../../package.html#TimeStamp=Long" class="extmbr" name="io.gearpump.TimeStamp">TimeStamp</a> = <span class="symbol">0L</span></span>, <span name="user">user: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">null</span></span>, <span name="appType">appType: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;streaming&quot;</span></span>, <span name="homeDirectory">homeDirectory: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;&quot;</span></span>, <span name="logFile">logFile: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;&quot;</span></span>)</span><span class="result"> extends <a href="../../cluster/AppMasterToMaster$$AppMasterSummary.html" class="extype" name="io.gearpump.cluster.AppMasterToMaster.AppMasterSummary">AppMasterSummary</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@StreamAppMasterSummaryextendsAppMasterToMaster.AppMasterSummarywithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.SubDAGManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SubDAGManagerextendsAnyRef"></a>
+      <a id="SubDAGManager:SubDAGManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SubDAGManager.html"><span class="name">SubDAGManager</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@SubDAGManagerextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.SubmitApplicationRequest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SubmitApplicationRequestextendsProductwithSerializable"></a>
+      <a id="SubmitApplicationRequest:SubmitApplicationRequest"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SubmitApplicationRequest.html"><span class="name">SubmitApplicationRequest</span></a><span class="params">(<span name="appName">appName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="processors">processors: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="../package.html#ProcessorId=Int" class="extmbr" name="io.gearpump.streaming.ProcessorId">ProcessorId</a>, <a href="../ProcessorDescription.html" class="extype" name="io.gearpump.streaming.ProcessorDescription">ProcessorDescription</a>]</span>, <span name="dag">dag: <a href="../../util/Graph.html" class="extype" name="io.gearpump.util.Graph">Graph</a>[<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="userconfig">userconfig: <a href="../../cluster/UserConfig.html" class="extype" name="io.gearpump.cluster.UserConfig">UserConfig</a> = <span class="symbol"><span class="name"><a href="../../../package.html">UserConfig.empty</a></span></span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@SubmitApplicationRequestextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.TaskCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskCountextendsProductwithSerializable"></a>
+      <a id="TaskCount:TaskCount"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskCount.html"><span class="name">TaskCount</span></a><span class="params">(<span name="count">count: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@TaskCountextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.TaskLocator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskLocatorextendsAnyRef"></a>
+      <a id="TaskLocator:TaskLocator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskLocator.html"><span class="name">TaskLocator</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@TaskLocatorextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.TaskRegistry" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskRegistryextendsAnyRef"></a>
+      <a id="TaskRegistry:TaskRegistry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskRegistry.html"><span class="name">TaskRegistry</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@TaskRegistryextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.TaskScheduler" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TaskSchedulerextendsAnyRef"></a>
+      <a id="TaskScheduler:TaskScheduler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskScheduler.html"><span class="name">TaskScheduler</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@TaskSchedulerextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This schedules tasks to run for new allocated resources.</p>
+    </li><li name="io.gearpump.streaming.appmaster.TaskSchedulerImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskSchedulerImplextendsTaskScheduler"></a>
+      <a id="TaskSchedulerImpl:TaskSchedulerImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskSchedulerImpl.html"><span class="name">TaskSchedulerImpl</span></a><span class="result"> extends <a href="TaskScheduler.html" class="extype" name="io.gearpump.streaming.appmaster.TaskScheduler">TaskScheduler</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@TaskSchedulerImplextendsTaskScheduler" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.streaming.appmaster.AppMaster" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AppMaster"></a>
+      <a id="AppMaster:AppMaster"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="AppMaster$.html"><span class="name">AppMaster</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@AppMaster" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.ClockService" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClockService"></a>
+      <a id="ClockService:ClockService"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ClockService$.html"><span class="name">ClockService</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@ClockService" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.DagManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DagManager"></a>
+      <a id="DagManager:DagManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DagManager$.html"><span class="name">DagManager</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@DagManager" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.SubDAGManager" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SubDAGManager"></a>
+      <a id="SubDAGManager:SubDAGManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SubDAGManager$.html"><span class="name">SubDAGManager</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@SubDAGManager" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.TaskLocator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskLocator"></a>
+      <a id="TaskLocator:TaskLocator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskLocator$.html"><span class="name">TaskLocator</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@TaskLocator" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.TaskRegistry" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskRegistry"></a>
+      <a id="TaskRegistry:TaskRegistry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskRegistry$.html"><span class="name">TaskRegistry</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@TaskRegistry" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.appmaster.TaskScheduler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskScheduler"></a>
+      <a id="TaskScheduler:TaskScheduler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskScheduler$.html"><span class="name">TaskScheduler</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.appmaster.package@TaskScheduler" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

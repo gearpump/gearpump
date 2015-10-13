@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>Write Your 1st Gearpump App - GearPump 0.6.2-SNAPSHOT Documentation</title>
+  
+   <meta name="description" content="Write Your 1st Gearpump App">
+  
+
+  
+
+  <link rel="stylesheet" href="css/bootstrap-3.3.5.min.css">
+  <style>
+    body {
+      padding-top: 60px;
+      padding-bottom: 40px;
+    }
+  </style>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/pygments-default.css">
+  <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
+</head>
+<body>
+  <!--[if lt IE 7]>
+    <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
+  <![endif]-->
+
+  <div class="navbar navbar-inverse navbar-fixed-top" id="topbar">
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#/">GearPump
+          <span class="label label-primary" style="font-size: .6em">0.6.2-SNAPSHOT</span>
+        </a>
+      </div>
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <li><a href="index.html">Overview</a></li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Introduction<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="submit-your-1st-application.html">Submit Your 1st Application</a></li>
+              <li><a href="commandline.html">Client Command Line</a></li>
+              <li class="divider"></li>
+              <li><a href="basic-concepts.html">Basic Concepts</a></li>
+              <li><a href="features.html">Technical Highlights</a></li>
+              <li><a href="usecases.html">Use Cases</a></li>
+              <li><a href="message-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="performance-report.html">Performance</a></li>
+              <li><a href="gearpump-internals.html">Gearpump Internals</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Deploying<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="dropdown-header">Deployment</li>
+              <li><a href="deployment-docker.html">Docker</a><li>
+              <li><a href="deployment-local.html">Local</a><li>
+              <li><a href="deployment-standalone.html">Standalone</a></li>
+              <li><a href="deployment-yarn.html">YARN</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-ha.html">High Availability</a></li>
+              <li><a href="deployment-msg-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="deployment-configuration.html">Configuration</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-security.html">Security</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Programming Guide<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="dev-write-1st-app.html">Write Your 1st App</a></li>
+              <li><a href="dev-custom-serializer.html">Customized Message Passing</a></li>
+              <li class="divider"></li>
+              <li><a href="api/scala/index.html">Scala API</a></li>
+              <li><a href="api/java/index.html">Java API</a></li>
+              <li><a href="dev-rest-api.html">RESTful API</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-connectors.html">Gearpump Connectors</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-storm.html">Storm Compatibility</a></li>
+              <!--
+              <li><a href="dev-samoa.html">Samoa Compatibility</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-iot.html">Gearpump with IoT</a></li>
+              -->
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">More<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="how-to-contribute.html">How to Contribute</a></li>
+              <li><a href="coding-style.html">Coding Style</a></li>
+              <li class="divider"></li>
+              <li><a href="faq.html">FAQ</a><li>
+              <li><a href="about.html">About</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="content">
+   
+    <h1 class="title">Write Your 1st Gearpump App</h1>
+   
+
+   <p>We&#8217;ll use <a href="https://github.com/gearpump/gearpump/blob/master/examples/streaming/wordcount/src/main/scala/io/gearpump/streaming/examples/wordcount/">wordcount</a> as an example to illustrate how to write GearPump applications.</p>
+
+<h3 id="mavensbt-settings">Maven/Sbt Settings</h3>
+
+<p>Repository and library dependencies can be found at <a href="maven-setting.html">Maven Setting</a>.</p>
+
+<h3 id="ide-setup-optional">IDE Setup (Optional)</h3>
+<p>You can get your preferred IDE ready for Gearpump by following <a href="dev-ide-setup.html">this guide</a>.</p>
+
+<h3 id="define-processortask-class-and-partitioner-class">Define Processor(Task) class and Partitioner class</h3>
+
+<p>An application is a Directed Acyclic Graph (DAG) of processors. In the wordcount example, We will firstly define two processors <code>Split</code> and <code>Sum</code>, and then weave them together.</p>
+
+<h4 id="about-message-type">About message type</h4>
+
+<p>User are allowed to send message of type AnyRef(map to Object in java).</p>
+
+<div class="highlight"><pre><code>case class Message(msg: AnyRef, timestamp: TimeStamp = Message.noTimeStamp)
+</code></pre></div>
+
+<p>If user want to send primitive types like Int, Long, then he should box it explicitly with asInstanceOf. For example:</p>
+
+<div class="highlight"><pre><code>new Message(3.asInstanceOf[AnyRef])
+</code></pre></div>
+
+<h4 id="split-processor">Split processor</h4>
+
+<p>In the Split processor, we simply split a predefined text (the content is simplified for conciseness) and send out each split word to Sum.</p>
+
+<p>Scala:</p>
+
+<div class="highlight"><pre><code class="language-scala"><span class="k">class</span> <span class="nc">Split</span><span class="o">(</span><span class="n">taskContext</span> <span class="k">:</span> <span class="kt">TaskContext</span><span class="o">,</span> <span class="n">conf</span><span class="k">:</span> <span class="kt">UserConfig</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Task</span><span class="o">(</span><span class="n">taskContext</span><span class="o">,</span> <span class="n">conf</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">import</span> <span class="nn">taskContext.output</span>
+
+  <span class="k">override</span> <span class="k">def</span> <span class="n">onStart</span><span class="o">(</span><span class="n">startTime</span> <span class="k">:</span> <span class="kt">StartTime</span><span class="o">)</span> <span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="n">self</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(</span><span class="s">&quot;start&quot;</span><span class="o">)</span>
+  <span class="o">}</span>
+
+  <span class="k">override</span> <span class="k">def</span> <span class="n">onNext</span><span class="o">(</span><span class="n">msg</span> <span class="k">:</span> <span class="kt">Message</span><span class="o">)</span> <span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="nc">Split</span><span class="o">.</span><span class="nc">TEXT_TO_SPLIT</span><span class="o">.</span><span class="n">lines</span><span class="o">.</span><span class="n">foreach</span> <span class="o">{</span> <span class="n">line</span> <span class="k">=&gt;</span>
+      <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="o">(</span><span class="s">&quot;[\\s]+&quot;</span><span class="o">).</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">nonEmpty</span><span class="o">).</span><span class="n">foreach</span> <span class="o">{</span> <span class="n">msg</span> <span class="k">=&gt;</span>
+        <span class="n">output</span><span class="o">(</span><span class="k">new</span> <span class="nc">Message</span><span class="o">(</span><span class="n">msg</span><span class="o">,</span> <span class="nc">System</span><span class="o">.</span><span class="n">currentTimeMillis</span><span class="o">()))</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="n">self</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(</span><span class="s">&quot;continue&quot;</span><span class="o">,</span> <span class="nc">System</span><span class="o">.</span><span class="n">currentTimeMillis</span><span class="o">())</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="k">object</span> <span class="nc">Split</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="nc">TEXT_TO_SPLIT</span> <span class="k">=</span> <span class="s">&quot;some text&quot;</span>
+<span class="o">}</span></code></pre></div>
+
+<p>Like Split, every processor extends a <code>TaskActor</code>.  The <code>onStart</code> method is called once before any message comes in; <code>onNext</code> method is called to process every incoming message. Note that GearPump employs the message-driven model and that&#8217;s why Split sends itself a message at the end of <code>onStart</code> and <code>onNext</code> to trigger next message processing.</p>
+
+<h4 id="sum-processor">Sum Processor</h4>
+
+<p>The structure of Sum processor looks much alike. Sum does not need to send messages to itself since it receives messages from Split.</p>
+
+<p>Scala:</p>
+
+<div class="highlight"><pre><code class="language-scala"><span class="k">class</span> <span class="nc">Sum</span> <span class="o">(</span><span class="n">taskContext</span> <span class="k">:</span> <span class="kt">TaskContext</span><span class="o">,</span> <span class="n">conf</span><span class="k">:</span> <span class="kt">UserConfig</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Task</span><span class="o">(</span><span class="n">taskContext</span><span class="o">,</span> <span class="n">conf</span><span class="o">)</span> <span class="o">{</span>
+  <span class="k">private</span><span class="o">[</span><span class="kt">wordcount</span><span class="o">]</span> <span class="k">val</span> <span class="n">map</span> <span class="k">:</span> <span class="kt">mutable.HashMap</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Long</span><span class="o">]</span> <span class="k">=</span> <span class="k">new</span> <span class="n">mutable</span><span class="o">.</span><span class="nc">HashMap</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">Long</span><span class="o">]()</span>
+
+  <span class="k">private</span><span class="o">[</span><span class="kt">wordcount</span><span class="o">]</span> <span class="k">var</span> <span class="n">wordCount</span> <span class="k">:</span> <span class="kt">Long</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="k">private</span> <span class="k">var</span> <span class="n">snapShotTime</span> <span class="k">:</span> <span class="kt">Long</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="n">currentTimeMillis</span><span class="o">()</span>
+  <span class="k">private</span> <span class="k">var</span> <span class="n">snapShotWordCount</span> <span class="k">:</span> <span class="kt">Long</span> <span class="o">=</span> <span class="mi">0</span>
+
+  <span class="k">private</span> <span class="k">var</span> <span class="n">scheduler</span> <span class="k">:</span> <span class="kt">Cancellable</span> <span class="o">=</span> <span class="kc">null</span>
+
+  <span class="k">override</span> <span class="k">def</span> <span class="n">onStart</span><span class="o">(</span><span class="n">startTime</span> <span class="k">:</span> <span class="kt">StartTime</span><span class="o">)</span> <span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="n">scheduler</span> <span class="k">=</span> <span class="n">taskContext</span><span class="o">.</span><span class="n">schedule</span><span class="o">(</span><span class="k">new</span> <span class="nc">FiniteDuration</span><span class="o">(</span><span class="mi">5</span><span class="o">,</span> <span class="nc">TimeUnit</span><span class="o">.</span><span class="nc">SECONDS</span><span class="o">),</span>
+      <span class="k">new</span> <span class="nc">FiniteDuration</span><span class="o">(</span><span class="mi">5</span><span class="o">,</span> <span class="nc">TimeUnit</span><span class="o">.</span><span class="nc">SECONDS</span><span class="o">))(</span><span class="n">reportWordCount</span><span class="o">)</span>
+  <span class="o">}</span>
+
+  <span class="k">override</span> <span class="k">def</span> <span class="n">onNext</span><span class="o">(</span><span class="n">msg</span> <span class="k">:</span> <span class="kt">Message</span><span class="o">)</span> <span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="kc">null</span> <span class="o">==</span> <span class="n">msg</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span>
+    <span class="o">}</span>
+    <span class="k">val</span> <span class="n">current</span> <span class="k">=</span> <span class="n">map</span><span class="o">.</span><span class="n">getOrElse</span><span class="o">(</span><span class="n">msg</span><span class="o">.</span><span class="n">msg</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">String</span><span class="o">],</span> <span class="mi">0L</span><span class="o">)</span>
+    <span class="n">wordCount</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">map</span><span class="o">.</span><span class="n">put</span><span class="o">(</span><span class="n">msg</span><span class="o">.</span><span class="n">msg</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">String</span><span class="o">],</span> <span class="n">current</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span>
+  <span class="o">}</span>
+
+  <span class="k">override</span> <span class="k">def</span> <span class="n">onStop</span><span class="o">()</span> <span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">scheduler</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">scheduler</span><span class="o">.</span><span class="n">cancel</span><span class="o">()</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+
+  <span class="k">def</span> <span class="n">reportWordCount</span><span class="o">()</span> <span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">current</span> <span class="k">:</span> <span class="kt">Long</span> <span class="o">=</span> <span class="nc">System</span><span class="o">.</span><span class="n">currentTimeMillis</span><span class="o">()</span>
+    <span class="nc">LOG</span><span class="o">.</span><span class="n">info</span><span class="o">(</span><span class="n">s</span><span class="s">&quot;Task ${taskContext.taskId} Throughput: ${(wordCount - snapShotWordCount, (current - snapShotTime) / 1000)} (words, second)&quot;</span><span class="o">)</span>
+    <span class="n">snapShotWordCount</span> <span class="k">=</span> <span class="n">wordCount</span>
+    <span class="n">snapShotTime</span> <span class="k">=</span> <span class="n">current</span>
+  <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<p>Besides counting the sum, we also define a scheduler to report throughput every 5 seconds. The scheduler should be cancelled when the computation completes, which could be accomplished overriding the <code>onStop</code> method. The default implementation of <code>onStop</code> is a no-op.</p>
+
+<h4 id="partitioner">Partitioner</h4>
+
+<p>A processor could be parallelized to a list of tasks. A <code>Partitioner</code> defines how the data is shuffled among tasks of Split and Sum. GearPump has already provided two partitioners</p>
+
+<ul>
+  <li><code>HashPartitioner</code>: partitions data based on the message&#8217;s hashcode</li>
+  <li><code>ShufflePartitioner</code>: partitions data in a round-robin way.</li>
+</ul>
+
+<p>You could define your own partitioner by extending the <code>Partitioner</code> trait and overriding the <code>getPartition</code> method.</p>
+
+<div class="highlight"><pre><code class="language-scala"><span class="k">trait</span> <span class="nc">Partitioner</span> <span class="k">extends</span> <span class="nc">Serializable</span> <span class="o">{</span>
+  <span class="k">def</span> <span class="n">getPartition</span><span class="o">(</span><span class="n">msg</span> <span class="k">:</span> <span class="kt">Message</span><span class="o">,</span> <span class="n">partitionNum</span> <span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">:</span> <span class="kt">Int</span>
+<span class="o">}</span></code></pre></div>
+
+<h3 id="define-taskdescription-and-appdescription">Define TaskDescription and AppDescription</h3>
+
+<p>Now, we are able to write our application class, weaving the above components together.</p>
+
+<p>The application class extends <code>App</code> and `ArgumentsParser which make it easier to parse arguments and run main functions.</p>
+
+<div class="highlight"><pre><code class="language-scala"><span class="k">object</span> <span class="nc">WordCount</span> <span class="k">extends</span> <span class="nc">App</span> <span class="k">with</span> <span class="nc">ArgumentsParser</span> <span class="o">{</span>
+  <span class="k">private</span> <span class="k">val</span> <span class="nc">LOG</span><span class="k">:</span> <span class="kt">Logger</span> <span class="o">=</span> <span class="nc">LogUtil</span><span class="o">.</span><span class="n">getLogger</span><span class="o">(</span><span class="n">getClass</span><span class="o">)</span>
+  <span class="k">val</span> <span class="nc">RUN_FOR_EVER</span> <span class="k">=</span> <span class="o">-</span><span class="mi">1</span>
+
+  <span class="k">override</span> <span class="k">val</span> <span class="n">options</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[(</span><span class="kt">String</span>, <span class="kt">CLIOption</span><span class="o">[</span><span class="kt">Any</span><span class="o">])]</span> <span class="k">=</span> <span class="nc">Array</span><span class="o">(</span>
+    <span class="s">&quot;split&quot;</span> <span class="o">-&gt;</span> <span class="nc">CLIOption</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="s">&quot;&lt;how many split tasks&gt;&quot;</span><span class="o">,</span> <span class="n">required</span> <span class="k">=</span> <span class="kc">false</span><span class="o">,</span> <span class="n">defaultValue</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="mi">1</span><span class="o">)),</span>
+    <span class="s">&quot;sum&quot;</span> <span class="o">-&gt;</span> <span class="nc">CLIOption</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="s">&quot;&lt;how many sum tasks&gt;&quot;</span><span class="o">,</span> <span class="n">required</span> <span class="k">=</span> <span class="kc">false</span><span class="o">,</span> <span class="n">defaultValue</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="mi">1</span><span class="o">))</span>
+  <span class="o">)</span>
+
+  <span class="k">def</span> <span class="n">application</span><span class="o">(</span><span class="n">config</span><span class="k">:</span> <span class="kt">ParseResult</span><span class="o">)</span> <span class="k">:</span> <span class="kt">StreamApplication</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">splitNum</span> <span class="k">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getInt</span><span class="o">(</span><span class="s">&quot;split&quot;</span><span class="o">)</span>
+    <span class="k">val</span> <span class="n">sumNum</span> <span class="k">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getInt</span><span class="o">(</span><span class="s">&quot;sum&quot;</span><span class="o">)</span>
+    <span class="k">val</span> <span class="n">partitioner</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">HashPartitioner</span><span class="o">()</span>
+    <span class="k">val</span> <span class="n">split</span> <span class="k">=</span> <span class="nc">Processor</span><span class="o">[</span><span class="kt">Split</span><span class="o">](</span><span class="n">splitNum</span><span class="o">)</span>
+    <span class="k">val</span> <span class="n">sum</span> <span class="k">=</span> <span class="nc">Processor</span><span class="o">[</span><span class="kt">Sum</span><span class="o">](</span><span class="n">sumNum</span><span class="o">)</span>
+    <span class="k">val</span> <span class="n">app</span> <span class="k">=</span> <span class="nc">StreamApplication</span><span class="o">(</span><span class="s">&quot;wordCount&quot;</span><span class="o">,</span> <span class="nc">Graph</span><span class="o">[</span><span class="kt">Processor</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">Task</span><span class="o">]</span>, <span class="kt">Partitioner</span><span class="o">](</span><span class="n">split</span> <span class="o">~</span> <span class="n">partitioner</span> <span class="o">~&gt;</span> <span class="n">sum</span><span class="o">),</span> <span class="nc">UserConfig</span><span class="o">.</span><span class="n">empty</span><span class="o">)</span>
+    <span class="n">app</span>
+  <span class="o">}</span>
+
+  <span class="k">val</span> <span class="n">config</span> <span class="k">=</span> <span class="n">parse</span><span class="o">(</span><span class="n">args</span><span class="o">)</span>
+  <span class="k">val</span> <span class="n">context</span> <span class="k">=</span> <span class="nc">ClientContext</span><span class="o">()</span>
+  <span class="k">val</span> <span class="n">appId</span> <span class="k">=</span> <span class="n">context</span><span class="o">.</span><span class="n">submit</span><span class="o">(</span><span class="n">application</span><span class="o">(</span><span class="n">config</span><span class="o">))</span>
+  <span class="n">context</span><span class="o">.</span><span class="n">close</span><span class="o">()</span>
+<span class="o">}</span></code></pre></div>
+
+<p>We override <code>options</code> value and define an array of command line arguments to parse. We want application users to pass in masters&#8217; hosts and ports, the parallelism of split and sum tasks, and how long to run the example. We also specify whether an option is <code>required</code> and provide <code>defaultValue</code> for some arguments.</p>
+
+<p>Given the <code>ParseResult</code> of command line arguments, we create <code>TaskDescription</code>s for Split and Sum processors, and connect them with <code>HashPartitioner</code> using DAG API. The graph is wrapped in an <code>AppDescrition</code> , which is finally submit to master.</p>
+
+<h3 id="submit-application">Submit application</h3>
+
+<p>After all these, you need to package everything into a uber jar and submit the jar to Gearpump Cluster. Please check <a href="commandline.html">Application submission tool</a> to command line tool syntax.</p>
+
+<h3 id="advanced-topic">Advanced topic</h3>
+<p>For a real application, you definitely need to define your own customized message passing between processors.
+Customized message needs customized serializer to help message passing over wire.
+Check <a href="dev-connectors.html">this guide</a> for how to customize serializer.</p>
+
+<h3 id="gearpump-for-non-streaming-usage">Gearpump for Non-Streaming Usage</h3>
+<p>Gearpump is also able to as a base platform to develop non-streaming applications. See <a href="dev-non-streaming-example.html">this guide</a> on how to use Gearpump to develop a distributed shell.</p>
+
+
+  </div> <!-- /container -->
+
+  <script src="js/vendor/jquery-2.1.4.min.js"></script>
+  <script src="js/vendor/bootstrap-3.3.5.min.js"></script>
+  <script src="js/vendor/anchor-1.1.1.min.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- MathJax Section -->
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      TeX: { equationNumbers: { autoNumber: "AMS" } }
+    });
+  </script>
+  <script>
+    // Note that we load MathJax this way to work with local file (file://), HTTP and HTTPS.
+    // We could use "//cdn.mathjax...", but that won't support "file://".
+    (function(d, script) {
+      script = d.createElement('script');
+      script.type = 'text/javascript';
+      script.async = true;
+      script.onload = function(){
+        MathJax.Hub.Config({
+          tex2jax: {
+            inlineMath: [ ["$", "$"], ["\\\\(","\\\\)"] ],
+            displayMath: [ ["$$","$$"], ["\\[", "\\]"] ],
+            processEscapes: true,
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+          }
+        });
+      };
+      script.src = ('https:' == document.location.protocol ? 'https://' : 'http://') +
+        'cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+      d.getElementsByTagName('head')[0].appendChild(script);
+    }(document));
+  </script>
+</body>
+</html>

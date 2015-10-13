@@ -1,0 +1,249 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>kafka - io.gearpump.streaming.kafka</title>
+          <meta name="description" content="kafka - io.gearpump.streaming.kafka" />
+          <meta name="keywords" content="kafka io.gearpump.streaming.kafka" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'io.gearpump.streaming.kafka.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="io">io</a>.<a href="../../package.html" class="extype" name="io.gearpump">gearpump</a>.<a href="../package.html" class="extype" name="io.gearpump.streaming">streaming</a></p>
+        <h1>kafka</h1><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.kafka.package" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">kafka</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.streaming.kafka.KafkaSink" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="KafkaSinkextendsDataSink"></a>
+      <a id="KafkaSink:KafkaSink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="KafkaSink.html"><span class="name">KafkaSink</span></a><span class="result"> extends <a href="../sink/DataSink.html" class="extype" name="io.gearpump.streaming.sink.DataSink">DataSink</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.kafka.package@KafkaSinkextendsDataSink" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">kafka sink connectors that invokes org.apache.kafka.clients.producer.KafkaProducer to send
+messages to kafka queue</p>
+    </li><li name="io.gearpump.streaming.kafka.KafkaSource" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="KafkaSourceextendsTimeReplayableSource"></a>
+      <a id="KafkaSource:KafkaSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="KafkaSource.html"><span class="name">KafkaSource</span></a><span class="result"> extends <a href="../transaction/api/TimeReplayableSource.html" class="extype" name="io.gearpump.streaming.transaction.api.TimeReplayableSource">TimeReplayableSource</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.kafka.package@KafkaSourceextendsTimeReplayableSource" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Kafka source connectors that pulls a batch of messages (<code>kafka.consumer.emit.batch.size</code>)
+from multiple Kafka TopicAndPartition in a round-robin way.</p><div class="fullcomment"><div class="comment cmt"><p>Kafka source connectors that pulls a batch of messages (<code>kafka.consumer.emit.batch.size</code>)
+from multiple Kafka TopicAndPartition in a round-robin way.</p><p>This is a TimeReplayableSource which is able to replay messages given a start time.
+Each kafka message is tagged with a timestamp by <a href="../transaction/api/MessageDecoder.html" class="extype" name="io.gearpump.streaming.transaction.api.MessageDecoder">io.gearpump.streaming.transaction.api.MessageDecoder</a> and the (offset, timestamp) mapping
+is stored to a <span class="extype" name="OffsetStorage">OffsetStorage</span>. On recovery, we could retrieve the previously stored offset
+from the <span class="extype" name="OffsetStorage">OffsetStorage</span> by timestamp and start to read from there.</p><p>kafka message is wrapped into gearpump <a href="../../Message.html" class="extype" name="io.gearpump.Message">Message</a> and further filtered by a <span class="extype" name="TimeStampFilter">TimeStampFilter</span>
+such that obsolete messages are dropped.
+</p></div></div>
+    </li><li name="io.gearpump.streaming.kafka.KafkaStorage" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="KafkaStorageextendsOffsetStorage"></a>
+      <a id="KafkaStorage:KafkaStorage"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="KafkaStorage.html"><span class="name">KafkaStorage</span></a><span class="result"> extends <a href="../transaction/api/OffsetStorage.html" class="extype" name="io.gearpump.streaming.transaction.api.OffsetStorage">OffsetStorage</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.kafka.package@KafkaStorageextendsOffsetStorage" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">this stores offset-timestamp mapping to kafka</p>
+    </li><li name="io.gearpump.streaming.kafka.KafkaStorageFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="KafkaStorageFactoryextendsOffsetStorageFactory"></a>
+      <a id="KafkaStorageFactory:KafkaStorageFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="KafkaStorageFactory.html"><span class="name">KafkaStorageFactory</span></a><span class="result"> extends <a href="../transaction/api/OffsetStorageFactory.html" class="extype" name="io.gearpump.streaming.transaction.api.OffsetStorageFactory">OffsetStorageFactory</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.kafka.package@KafkaStorageFactoryextendsOffsetStorageFactory" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">factory that builds <a href="KafkaStorage.html" class="extype" name="io.gearpump.streaming.kafka.KafkaStorage">KafkaStorage</a>
+</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.streaming.kafka.KafkaSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="KafkaSource"></a>
+      <a id="KafkaSource:KafkaSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="KafkaSource$.html"><span class="name">KafkaSource</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.kafka.package@KafkaSource" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.kafka.KafkaStorage" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="KafkaStorage"></a>
+      <a id="KafkaStorage:KafkaStorage"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="KafkaStorage$.html"><span class="name">KafkaStorage</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.kafka.package@KafkaStorage" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.kafka.dsl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="dsl"></a>
+      <a id="dsl:dsl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="dsl/package.html"><span class="name">dsl</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.kafka.package@dsl" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.kafka.lib" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="lib"></a>
+      <a id="lib:lib"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="lib/package.html"><span class="name">lib</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.kafka.package@lib" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

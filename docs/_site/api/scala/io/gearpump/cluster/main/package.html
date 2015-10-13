@@ -1,0 +1,360 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>main - io.gearpump.cluster.main</title>
+          <meta name="description" content="main - io.gearpump.cluster.main" />
+          <meta name="keywords" content="main io.gearpump.cluster.main" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'io.gearpump.cluster.main.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="io">io</a>.<a href="../../package.html" class="extype" name="io.gearpump">gearpump</a>.<a href="../package.html" class="extype" name="io.gearpump.cluster">cluster</a></p>
+        <h1>main</h1><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">main</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.cluster.main.ArgumentsParser" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ArgumentsParserextendsAnyRef"></a>
+      <a id="ArgumentsParser:ArgumentsParser"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ArgumentsParser.html"><span class="name">ArgumentsParser</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@ArgumentsParserextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Parse command line arguments
+Grammar: -option1 value1 -option2 value3 -flag1 -flag2 remainArg1 remainArg2...</p>
+    </li><li name="io.gearpump.cluster.main.CLIOption" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CLIOption[+T]extendsProductwithSerializable"></a>
+      <a id="CLIOption[+T]:CLIOption[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CLIOption.html"><span class="name">CLIOption</span></a><span class="tparams">[<span name="T">+T</span>]</span><span class="params">(<span name="description">description: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;&quot;</span></span>, <span name="required">required: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="defaultValue">defaultValue: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="io.gearpump.cluster.main.CLIOption.T">T</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@CLIOption[+T]extendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.MasterWatcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MasterWatcherextendsActorwithActorLogging"></a>
+      <a id="MasterWatcher:MasterWatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MasterWatcher.html"><span class="name">MasterWatcher</span></a><span class="result"> extends <span class="extype" name="akka.actor.Actor">Actor</span> with <span class="extype" name="akka.actor.ActorLogging">ActorLogging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@MasterWatcherextendsActorwithActorLogging" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.ParseResult" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParseResultextendsAnyRef"></a>
+      <a id="ParseResult:ParseResult"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ParseResult.html"><span class="name">ParseResult</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@ParseResultextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.cluster.main.AppSubmitter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AppSubmitter"></a>
+      <a id="AppSubmitter:AppSubmitter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="AppSubmitter$.html"><span class="name">AppSubmitter</span></a><span class="result"> extends <a href="../../util/AkkaApp.html" class="extype" name="io.gearpump.util.AkkaApp">AkkaApp</a> with <a href="ArgumentsParser.html" class="extype" name="io.gearpump.cluster.main.ArgumentsParser">ArgumentsParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@AppSubmitter" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.ArgumentsParser" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ArgumentsParser"></a>
+      <a id="ArgumentsParser:ArgumentsParser"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ArgumentsParser$.html"><span class="name">ArgumentsParser</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@ArgumentsParser" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.Gear" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Gear"></a>
+      <a id="Gear:Gear"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Gear$.html"><span class="name">Gear</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@Gear" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.Info" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Info"></a>
+      <a id="Info:Info"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Info$.html"><span class="name">Info</span></a><span class="result"> extends <a href="../../util/AkkaApp.html" class="extype" name="io.gearpump.util.AkkaApp">AkkaApp</a> with <a href="ArgumentsParser.html" class="extype" name="io.gearpump.cluster.main.ArgumentsParser">ArgumentsParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@Info" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.Kill" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Kill"></a>
+      <a id="Kill:Kill"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Kill$.html"><span class="name">Kill</span></a><span class="result"> extends <a href="../../util/AkkaApp.html" class="extype" name="io.gearpump.util.AkkaApp">AkkaApp</a> with <a href="ArgumentsParser.html" class="extype" name="io.gearpump.cluster.main.ArgumentsParser">ArgumentsParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@Kill" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.Local" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Local"></a>
+      <a id="Local:Local"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Local$.html"><span class="name">Local</span></a><span class="result"> extends <a href="../../util/AkkaApp.html" class="extype" name="io.gearpump.util.AkkaApp">AkkaApp</a> with <a href="ArgumentsParser.html" class="extype" name="io.gearpump.cluster.main.ArgumentsParser">ArgumentsParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@Local" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.MainRunner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MainRunner"></a>
+      <a id="MainRunner:MainRunner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MainRunner$.html"><span class="name">MainRunner</span></a><span class="result"> extends <a href="../../util/AkkaApp.html" class="extype" name="io.gearpump.util.AkkaApp">AkkaApp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@MainRunner" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.Master" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Master"></a>
+      <a id="Master:Master"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Master$.html"><span class="name">Master</span></a><span class="result"> extends <a href="../../util/AkkaApp.html" class="extype" name="io.gearpump.util.AkkaApp">AkkaApp</a> with <a href="ArgumentsParser.html" class="extype" name="io.gearpump.cluster.main.ArgumentsParser">ArgumentsParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@Master" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.MasterWatcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MasterWatcher"></a>
+      <a id="MasterWatcher:MasterWatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MasterWatcher$.html"><span class="name">MasterWatcher</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@MasterWatcher" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.Replay" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Replay"></a>
+      <a id="Replay:Replay"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Replay$.html"><span class="name">Replay</span></a><span class="result"> extends <a href="../../util/AkkaApp.html" class="extype" name="io.gearpump.util.AkkaApp">AkkaApp</a> with <a href="ArgumentsParser.html" class="extype" name="io.gearpump.cluster.main.ArgumentsParser">ArgumentsParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@Replay" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main.Worker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Worker"></a>
+      <a id="Worker:Worker"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Worker$.html"><span class="name">Worker</span></a><span class="result"> extends <a href="../../util/AkkaApp.html" class="extype" name="io.gearpump.util.AkkaApp">AkkaApp</a> with <a href="ArgumentsParser.html" class="extype" name="io.gearpump.cluster.main.ArgumentsParser">ArgumentsParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.main.package@Worker" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

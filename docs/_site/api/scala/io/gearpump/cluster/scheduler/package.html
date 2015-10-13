@@ -1,0 +1,257 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>scheduler - io.gearpump.cluster.scheduler</title>
+          <meta name="description" content="scheduler - io.gearpump.cluster.scheduler" />
+          <meta name="keywords" content="scheduler io.gearpump.cluster.scheduler" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'io.gearpump.cluster.scheduler.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="io">io</a>.<a href="../../package.html" class="extype" name="io.gearpump">gearpump</a>.<a href="../package.html" class="extype" name="io.gearpump.cluster">cluster</a></p>
+        <h1>scheduler</h1><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">scheduler</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.cluster.scheduler.PriorityScheduler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PrioritySchedulerextendsScheduler"></a>
+      <a id="PriorityScheduler:PriorityScheduler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PriorityScheduler.html"><span class="name">PriorityScheduler</span></a><span class="result"> extends <a href="Scheduler.html" class="extype" name="io.gearpump.cluster.scheduler.Scheduler">Scheduler</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package@PrioritySchedulerextendsScheduler" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.scheduler.Resource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResourceextendsProductwithSerializable"></a>
+      <a id="Resource:Resource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Resource.html"><span class="name">Resource</span></a><span class="params">(<span name="slots">slots: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package@ResourceextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.scheduler.ResourceAllocation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResourceAllocationextendsProductwithSerializable"></a>
+      <a id="ResourceAllocation:ResourceAllocation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ResourceAllocation.html"><span class="name">ResourceAllocation</span></a><span class="params">(<span name="resource">resource: <a href="Resource.html" class="extype" name="io.gearpump.cluster.scheduler.Resource">Resource</a></span>, <span name="worker">worker: <span class="extype" name="akka.actor.ActorRef">ActorRef</span></span>, <span name="workerId">workerId: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package@ResourceAllocationextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.scheduler.ResourceRequest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResourceRequestextendsProductwithSerializable"></a>
+      <a id="ResourceRequest:ResourceRequest"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ResourceRequest.html"><span class="name">ResourceRequest</span></a><span class="params">(<span name="resource">resource: <a href="Resource.html" class="extype" name="io.gearpump.cluster.scheduler.Resource">Resource</a></span>, <span name="workerId">workerId: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">0</span></span>, <span name="priority">priority: <a href="Priority$.html#Priority=io.gearpump.cluster.scheduler.Priority.Value" class="extmbr" name="io.gearpump.cluster.scheduler.Priority.Priority">Priority.Priority</a> = <span class="symbol"><span class="name"><a href="Priority$.html">NORMAL</a></span></span></span>, <span name="relaxation">relaxation: <a href="Relaxation$.html#Relaxation=io.gearpump.cluster.scheduler.Relaxation.Value" class="extmbr" name="io.gearpump.cluster.scheduler.Relaxation.Relaxation">Relaxation.Relaxation</a> = <span class="symbol"><span class="name"><a href="Relaxation$.html">ANY</a></span></span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package@ResourceRequestextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.scheduler.Scheduler" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SchedulerextendsActor"></a>
+      <a id="Scheduler:Scheduler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Scheduler.html"><span class="name">Scheduler</span></a><span class="result"> extends <span class="extype" name="akka.actor.Actor">Actor</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package@SchedulerextendsActor" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.cluster.scheduler.Priority" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Priority"></a>
+      <a id="Priority:Priority"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Priority$.html"><span class="name">Priority</span></a><span class="result"> extends <span class="extype" name="scala.Enumeration">Enumeration</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package@Priority" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.scheduler.Relaxation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Relaxation"></a>
+      <a id="Relaxation:Relaxation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Relaxation$.html"><span class="name">Relaxation</span></a><span class="result"> extends <span class="extype" name="scala.Enumeration">Enumeration</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package@Relaxation" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.scheduler.Resource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Resource"></a>
+      <a id="Resource:Resource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Resource$.html"><span class="name">Resource</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package@Resource" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.scheduler.Scheduler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Scheduler"></a>
+      <a id="Scheduler:Scheduler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Scheduler$.html"><span class="name">Scheduler</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.cluster.scheduler.package@Scheduler" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

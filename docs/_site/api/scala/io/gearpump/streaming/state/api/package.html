@@ -1,0 +1,211 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>api - io.gearpump.streaming.state.api</title>
+          <meta name="description" content="api - io.gearpump.streaming.state.api" />
+          <meta name="keywords" content="api io.gearpump.streaming.state.api" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'io.gearpump.streaming.state.api.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="io">io</a>.<a href="../../../package.html" class="extype" name="io.gearpump">gearpump</a>.<a href="../../package.html" class="extype" name="io.gearpump.streaming">streaming</a>.<a href="../package.html" class="extype" name="io.gearpump.streaming.state">state</a></p>
+        <h1>api</h1><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.state.api.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">api</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.streaming.state.api.Group" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Group[T]extendsMonoid[T]"></a>
+      <a id="Group[T]:Group[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Group.html"><span class="name">Group</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="Monoid.html" class="extype" name="io.gearpump.streaming.state.api.Monoid">Monoid</a>[<span class="extype" name="io.gearpump.streaming.state.api.Group.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.state.api.package@Group[T]extendsMonoid[T]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.state.api.Monoid" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Monoid[T]extendsSerializable"></a>
+      <a id="Monoid[T]:Monoid[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Monoid.html"><span class="name">Monoid</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.state.api.package@Monoid[T]extendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.state.api.MonoidState" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="MonoidState[T]extendsPersistentState[T]"></a>
+      <a id="MonoidState[T]:MonoidState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MonoidState.html"><span class="name">MonoidState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="PersistentState.html" class="extype" name="io.gearpump.streaming.state.api.PersistentState">PersistentState</a>[<span class="extype" name="io.gearpump.streaming.state.api.MonoidState.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.state.api.package@MonoidState[T]extendsPersistentState[T]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">MonoidState uses Algebird Monoid to aggregate state</p><div class="fullcomment"><div class="comment cmt"><p>MonoidState uses Algebird Monoid to aggregate state</p><p>on start, state value is initialized to monoid.zero
+on each new message, existing state value is aggregated with
+the incoming value using monoid.plus to get a new state value
+</p></div></div>
+    </li><li name="io.gearpump.streaming.state.api.PersistentState" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="PersistentState[T]extendsAnyRef"></a>
+      <a id="PersistentState[T]:PersistentState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="PersistentState.html"><span class="name">PersistentState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.state.api.package@PersistentState[T]extendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">PersistentState is part of the transaction API</p><div class="fullcomment"><div class="comment cmt"><p>PersistentState is part of the transaction API</p><p>Users could get transaction support from the framework by
+conforming to PersistentState APIs and extending PersistentTask
+to manage the state
+</p></div></div>
+    </li><li name="io.gearpump.streaming.state.api.PersistentTask" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="PersistentTask[T]extendsTask"></a>
+      <a id="PersistentTask[T]:PersistentTask[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PersistentTask.html"><span class="name">PersistentTask</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../task/Task.html" class="extype" name="io.gearpump.streaming.task.Task">Task</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.state.api.package@PersistentTask[T]extendsTask" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">PersistentTask is part of the transaction API</p><div class="fullcomment"><div class="comment cmt"><p>PersistentTask is part of the transaction API</p><p>Users should extend this task if they want to get transaction support
+from the framework
+</p></div></div>
+    </li><li name="io.gearpump.streaming.state.api.Serializer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Serializer[T]extendsSerializable"></a>
+      <a id="Serializer[T]:Serializer[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Serializer.html"><span class="name">Serializer</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.state.api.package@Serializer[T]extendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>
