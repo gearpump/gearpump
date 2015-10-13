@@ -56,8 +56,8 @@ class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: Task
 
   /**
    * Use with caution, output unmanaged message to target tasks
-   * @param msg
-   * @param tasks
+   * @param msg  message to output
+   * @param tasks  the tasks to output to
    */
   def outputUnManaged(msg: AnyRef, tasks: TaskId *): Unit = {
     actor.transport(msg, tasks: _*)
@@ -69,14 +69,8 @@ class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: Task
 
   def system: ActorSystem = actor.context.system
 
-  /**
-   * @see ActorRefProvider.actorOf
-   */
   override def actorOf(props: Props): ActorRef = actor.context.actorOf(props)
 
-  /**
-   * @see ActorRefProvider.actorOf
-   */
   override def actorOf(props: Props, name: String): ActorRef = actor.context.actorOf(props, name)
 
   override def onStart(startTime: StartTime): Unit = {

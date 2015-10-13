@@ -21,8 +21,8 @@ package io.gearpump.streaming.dsl
 import io.gearpump.streaming.dsl.op._
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.Task
-import io.gearpump.util.{Graph, LogUtil}
-import org.slf4j.{Logger, LoggerFactory}
+import io.gearpump.util.Graph
+import org.slf4j.LoggerFactory
 
 import scala.reflect.ClassTag
 
@@ -31,9 +31,9 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
   /**
    * convert a value[T] to a list of value[R]
    * @param fun function
-   * @param description the descripton message for this opeartion
-   * @tparam R return type
-   * @return
+   * @param description the description message for this operation
+   * @param <R>  the result message type
+   * @return a new stream with type [R]
    */
   def flatMap[R: ClassTag](fun: T => TraversableOnce[R], description: String = null): Stream[R] = {
     val flatMapOp = FlatMapOp(fun, Option(description).getOrElse("flatmap"))
@@ -45,8 +45,8 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
   /**
    * convert value[T] to value[R]
    * @param fun function
-   * @tparam R return type
-   * @return
+   * @param <R>  the result message type
+   * @return a new stream with type [R]
    */
   def map[R: ClassTag](fun: T => R, description: String = null): Stream[R] = {
     this.flatMap ({ data =>
@@ -56,8 +56,8 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
 
   /**
    * reserve records when fun(T) == true
-   * @param fun
-   * @return
+   * @param fun  the filter
+   * @return  a new stream after filter
    */
   def filter(fun: T => Boolean, description: String = null): Stream[T] = {
     this.flatMap ({ data =>
@@ -67,9 +67,9 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
 
   /**
    * Reduce opeartion
-   * @param fun
+   * @param fun  reduction function
    * @param description description message for this operator
-   * @return
+   * @return a new stream after reduction
    */
   def reduce(fun: (T, T) => T, description: String = null): Stream[T] = {
     val reduceOp = ReduceOp(fun, Option(description).getOrElse("reduce"))
@@ -87,8 +87,8 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
 
   /**
    * Merge data from two stream into one
-   * @param other
-   * @return
+   * @param other the other stream
+   * @return  the merged stream
    */
   def merge(other: Stream[T], description: String = null): Stream[T] = {
     val mergeOp = MergeOp(thisNode, other.thisNode, Option(description).getOrElse("merge"))
@@ -110,13 +110,14 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
    *
    * Stream[People].groupBy(_.gender).flatmap(..).filter.(..).reduce(..)
    *
-   * @param fun
-   * @param parallism
-   * @tparam Group
-   * @return
+   * @param fun  group by function
+   * @param parallelism   parallelism level
+   * @param description  the description
+   * @param <Group>  the group type
+   * @return  the grouped stream
    */
-  def groupBy[Group](fun: T => Group, parallism: Int = 1, description: String = null): Stream[T] = {
-    val groupOp = GroupByOp(fun, parallism, Option(description).getOrElse("groupBy"))
+  def groupBy[Group](fun: T => Group, parallelism: Int = 1, description: String = null): Stream[T] = {
+    val groupOp = GroupByOp(fun, parallelism, Option(description).getOrElse("groupBy"))
     graph.addVertex(groupOp)
     graph.addEdge(thisNode, edge.getOrElse(Shuffle), groupOp)
     new Stream[T](graph, groupOp)
@@ -124,13 +125,13 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
 
   /**
    * connect with a low level Processor(TaskDescription)
-   * @param processor
-   * @param parallism
-   * @tparam R
-   * @return
+   * @param processor  a user defined processor
+   * @param parallelism  parallelism level
+   * @param <R>  the result message type
+   * @return  new stream after processing with type [R]
    */
-  def process[R: ClassTag](processor: Class[_ <: Task], parallism: Int, description: String = null): Stream[R] = {
-    val processorOp = ProcessorOp(processor, parallism, Option(description).getOrElse("process"))
+  def process[R: ClassTag](processor: Class[_ <: Task], parallelism: Int, description: String = null): Stream[R] = {
+    val processorOp = ProcessorOp(processor, parallelism, Option(description).getOrElse("process"))
     graph.addVertex(processorOp)
     graph.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
     new Stream[R](graph, processorOp, Some(Shuffle))
@@ -143,10 +144,11 @@ class KVStream[K, V](stream: Stream[Tuple2[K, V]]){
    * Apply to Stream[Tuple2[K,V]]
    * Group by the key of a KV tuple
    * For (key, value) will groupby key
-   * @return
+   * @param parallelism  the parallelism for this operation
+   * @return  the new KV stream
    */
-  def groupByKey(parallism: Int = 1): Stream[Tuple2[K, V]] = {
-    stream.groupBy(Stream.getTupleKey[K, V], parallism, "groupByKey")
+  def groupByKey(parallelism: Int = 1): Stream[Tuple2[K, V]] = {
+    stream.groupBy(Stream.getTupleKey[K, V], parallelism, "groupByKey")
   }
 
 
@@ -156,8 +158,8 @@ class KVStream[K, V](stream: Stream[Tuple2[K, V]]){
    * Apply to Stream[Tuple2[K,V]], V must be of type Number
    *
    * For input (key, value1), (key, value2), will generate (key, value1 + value2)
-   *
-   * @return
+   * @param numeric  the numeric operations
+   * @return  the sum stream
    */
   def sum(implicit numeric: Numeric[V]) = {
     stream.reduce(Stream.sumByValue[K, V](numeric), "sum")

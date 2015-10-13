@@ -50,7 +50,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   private var healthCheckScheduler : Cancellable = null
   private var snapshotScheduler : Cancellable = null
 
-  override def receive = null
+  override def receive = Map.empty
 
   override def preStart() : Unit = {
     LOG.info("Initializing Clock service, get snapshotted StartClock ....")

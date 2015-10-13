@@ -41,10 +41,10 @@ object KafkaSource {
 
 /**
  * Kafka source connectors that pulls a batch of messages (`kafka.consumer.emit.batch.size`)
- * from multiple Kafka [[TopicAndPartition]]s in a round-robin way.
+ * from multiple Kafka TopicAndPartition in a round-robin way.
  *
  * This is a TimeReplayableSource which is able to replay messages given a start time.
- * Each kafka message is tagged with a timestamp by [[MessageDecoder]] and the (offset, timestamp) mapping
+ * Each kafka message is tagged with a timestamp by [[io.gearpump.streaming.transaction.api.MessageDecoder]] and the (offset, timestamp) mapping
  * is stored to a [[OffsetStorage]]. On recovery, we could retrieve the previously stored offset
  * from the [[OffsetStorage]] by timestamp and start to read from there.
  *
@@ -55,7 +55,7 @@ object KafkaSource {
  * @param messageDecoder decodes [[Message]] from raw bytes
  * @param timestampFilter filters out message based on timestamp
  * @param fetchThread fetches messages and puts on a in-memory queue
- * @param offsetManagers manages offset-to-timestamp storage for each [[TopicAndPartition]]
+ * @param offsetManagers manages offset-to-timestamp storage for each kafka.common.TopicAndPartition
  */
 class KafkaSource(
     config: KafkaSourceConfig,
@@ -73,7 +73,8 @@ class KafkaSource(
   /**
    * @param topics comma-separated string of topics
    * @param properties kafka consumer config
-   * @param offsetStorageFactory [[OffsetStorageFactory]] that creates [[OffsetStorage]]
+   * @param offsetStorageFactory [[io.gearpump.streaming.transaction.api.OffsetStorageFactory]]
+   *                            that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
    *
    */
   def this(topics: String, properties: Properties, offsetStorageFactory: OffsetStorageFactory) = {
@@ -82,7 +83,8 @@ class KafkaSource(
   /**
    * @param topics comma-separated string of topics
    * @param properties kafka consumer config
-   * @param offsetStorageFactory [[OffsetStorageFactory]] that creates [[OffsetStorage]]
+   * @param offsetStorageFactory [[io.gearpump.streaming.transaction.api.OffsetStorageFactory]]
+   *                            that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
    * @param messageDecoder decodes [[Message]] from raw bytes
    * @param timestampFilter filters out message based on timestamp
    */
@@ -97,7 +99,8 @@ class KafkaSource(
   /**
    * @param topics comma-separated string of topics
    * @param zkConnect kafka consumer config `zookeeper.connect`
-   * @param offsetStorageFactory [[OffsetStorageFactory]] that creates [[OffsetStorage]]
+   * @param offsetStorageFactory [[io.gearpump.streaming.transaction.api.OffsetStorageFactory]]
+   *                            that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
    */
   def this(topics: String, zkConnect: String, offsetStorageFactory: OffsetStorageFactory) =
     this(topics, KafkaUtil.buildConsumerConfig(zkConnect), offsetStorageFactory)
@@ -105,7 +108,8 @@ class KafkaSource(
   /**
    * @param topics comma-separated string of topics
    * @param zkConnect kafka consumer config `zookeeper.connect`
-   * @param offsetStorageFactory [[OffsetStorageFactory]] that creates [[OffsetStorage]]
+   * @param offsetStorageFactory [[io.gearpump.streaming.transaction.api.OffsetStorageFactory]]
+   *                            that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
    * @param messageDecoder decodes [[Message]] from raw bytes
    * @param timestampFilter filters out message based on timestamp
    */

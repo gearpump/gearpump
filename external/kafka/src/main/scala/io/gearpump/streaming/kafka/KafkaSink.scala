@@ -28,7 +28,7 @@ import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 
 /**
- * kafka sink connectors that invokes [[KafkaProducer]] to send
+ * kafka sink connectors that invokes org.apache.kafka.clients.producer.KafkaProducer to send
  * messages to kafka queue
  * @param getProducer is a function to construct a KafkaProducer
  * @param topic is the kafka topic to write to
