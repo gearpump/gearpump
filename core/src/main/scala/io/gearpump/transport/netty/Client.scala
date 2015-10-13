@@ -41,14 +41,14 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
 
   private final var bootstrap: ClientBootstrap = null
   private final val random: Random = new Random
-  private val serializer = conf.transportSerializer
+  private val serializer = conf.newTransportSerializer
   private var channel : Channel = null
 
   var batch = new util.ArrayList[TaskMessage]
 
   private val init = {
     bootstrap = NettyUtil.createClientBootStrap(factory,
-      new ClientPipelineFactory(name, new MessageDecoder(serializer), new MessageEncoder()), conf.buffer_size)
+      new ClientPipelineFactory(name, conf), conf.buffer_size)
     self ! Connect(0)
   }
 
@@ -200,11 +200,11 @@ object Client {
     }
   }
 
-  class ClientPipelineFactory(name: String, decoder: MessageDecoder, encoder: MessageEncoder) extends ChannelPipelineFactory {
+  class ClientPipelineFactory(name: String, conf: NettyConfig) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
       val pipeline: ChannelPipeline = Channels.pipeline
-      pipeline.addLast("decoder", decoder)
-      pipeline.addLast("encoder", encoder)
+      pipeline.addLast("decoder", new MessageDecoder(conf.newTransportSerializer))
+      pipeline.addLast("encoder", new MessageEncoder)
       pipeline.addLast("handler", new ClientErrorHandler(name))
       pipeline
     }
