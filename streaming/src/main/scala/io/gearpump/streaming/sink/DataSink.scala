@@ -18,8 +18,8 @@
 
 package io.gearpump.streaming.sink
 
-import io.gearpump.streaming.task.{Task, TaskContext}
 import io.gearpump.Message
+import io.gearpump.streaming.task.TaskContext
 
 /**
  * interface to implement custom data sink
@@ -47,21 +47,21 @@ trait DataSink extends java.io.Serializable {
 
   /**
    * open connection to data sink
-   * invoked at onStart() method of [[Task]]
+   * invoked at onStart() method of [[io.gearpump.streaming.task.Task]]
    * @param context is the task context at runtime
    */
   def open(context: TaskContext): Unit
 
   /**
    * write message into data sink
-   * invoked at onNext() method of [[Task]]
+   * invoked at onNext() method of [[io.gearpump.streaming.task.Task]]
    * @param message wraps data to be written out
    */
   def write(message: Message): Unit
 
   /**
    * close connection to data sink
-   * invoked at onClose() method of [[Task]]
+   * invoked at onClose() method of [[io.gearpump.streaming.task.Task]]
    */
   def close(): Unit
 }

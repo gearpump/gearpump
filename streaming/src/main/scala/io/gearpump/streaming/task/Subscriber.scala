@@ -37,13 +37,12 @@ object Subscriber {
 
   /**
    *
-   * Subscription of processorId.
+   * List subscriptions of a processor.
+   * The topology information is retrieved from dag
    *
-   * The topology information is retrived from dag
-   *
-   * @param processorId
-   * @param dag
-   * @return
+   * @param processorId   the processor to list
+   * @param dag     the DAG
+   * @return   the subscribers of this processor
    */
   def of(processorId: Int, dag: DAG): List[Subscriber] = {
     val edges = dag.graph.outgoingEdgesOf(processorId)

@@ -28,13 +28,11 @@ import io.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
 /**
- *
  * This manage the output and message clock for single downstream processor
  *
  * @param subscriber downstream processor
  * @param maxPendingMessageCount trigger flow control. Should be bigger than maxPendingMessageCountPerAckRequest
  * @param ackOnceEveryMessageCount send on AckRequest to the target
- *
  */
 class Subscription(
     appId: Int,
@@ -94,8 +92,9 @@ class Subscription(
 
   /**
    * Return how many message is actually sent by this subscription
-   * @param msg
-   * @return
+   * @param msg  the message to send
+   * @param partition  the target partition to send message to
+   * @return 1 if success
    */
   def sendMessage(msg: Message, partition: Int): Int = {
 
@@ -152,9 +151,9 @@ class Subscription(
     }
   }
 
-  /**
-   * throw MessageLossException if required.
-   * @param ack
+  /** Handle acknowledge message.
+    * Throw MessageLossException if required.
+   * @param ack acknowledge message received
    */
   def receiveAck(ack: Ack): Unit = {
 
