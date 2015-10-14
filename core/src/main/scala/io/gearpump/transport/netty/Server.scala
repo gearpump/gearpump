@@ -81,11 +81,11 @@ object Server {
   // As we must use actorFor() which is deprecated,
   // according to the advice https://issues.scala-lang.org/browse/SI-7934,
   // use a helper object to bypass this deprecation warning.
-  class ServerPipelineFactory(server: ActorRef, decoder: MessageDecoder, encoder: MessageEncoder) extends ChannelPipelineFactory {
+  class ServerPipelineFactory(server: ActorRef, conf: NettyConfig) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
       val pipeline: ChannelPipeline = Channels.pipeline
-      pipeline.addLast("decoder", decoder)
-      pipeline.addLast("encoder", encoder)
+      pipeline.addLast("decoder", new MessageDecoder(conf.newTransportSerializer))
+      pipeline.addLast("encoder", new MessageEncoder)
       pipeline.addLast("handler", new ServerHandler(server))
       pipeline
     }
