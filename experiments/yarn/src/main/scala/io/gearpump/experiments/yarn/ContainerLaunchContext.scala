@@ -28,13 +28,13 @@ import org.apache.hadoop.io.DataOutputBuffer
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment
 import org.apache.hadoop.yarn.api.records._
+import org.apache.hadoop.mapreduce.security.TokenCache
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.util.{ConverterUtils, Records}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
-
 
 object ContainerLaunchContext {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -91,9 +91,11 @@ object ContainerLaunchContext {
     resource
   }
 
-  private def getToken: ByteBuffer = {
+  private def getToken(yc: YarnConfiguration, ac: AppConfig): ByteBuffer = {
     val credentials = UserGroupInformation.getCurrentUser.getCredentials
     val dob = new DataOutputBuffer
+    val homePath = new Path(ac.getEnv(Constants.HDFS_ROOT))
+    TokenCache.obtainTokensForNamenodes(credentials, Array(homePath), yc)
     credentials.writeTokenStorageToStream(dob)
     ByteBuffer.wrap(dob.getData)
   }
@@ -104,7 +106,7 @@ object ContainerLaunchContext {
     val context = Records.newRecord(classOf[ContainerLaunchContext])
     context.setCommands(Seq(command))
     context.setEnvironment(getAppEnv(yarnConf))
-    context.setTokens(getToken)
+    context.setTokens(getToken(yc, ac))
     context.setLocalResources(getAMLocalResourcesMap)
     context
   }
