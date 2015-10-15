@@ -51,22 +51,28 @@ class StormOutputCollector(
   private val taskToComponent = topologyContext.getTaskToComponent
   private val componentToProcessorId = getComponentToProcessorId(taskToComponent.toMap)
   private val targets = topologyContext.getTargets(componentId)
+  private val streamGroupers: Map[String, Grouper] =
+    targets.flatMap { case (streamId, targetGrouping) =>
+      targetGrouping.collect { case (target, grouping) if !grouping.is_set_direct() =>
+        streamId -> getGrouper(topologyContext, grouping, componentId, streamId, target)
+      }
+    }.toMap
 
   def emit(streamId: String, values: JList[AnyRef]): JList[Integer] = {
     if (targets.containsKey(streamId)) {
+      val ret: JList[Integer] = new JArrayList[Integer](targets.size)
       val targetPartitions = targets.get(streamId).foldLeft(Map.empty[String, List[Int]]) { case (accum, iter) =>
-        val (target, grouping) = iter
-          val grouper = getGrouper(topologyContext, grouping, componentId, streamId, target)
-          val partitions = grouper.getPartitions(stormTaskId, values)
-          accum + (target -> partitions)
+        val (target, _) = iter
+        val grouper = streamGroupers(streamId)
+        val partitions = grouper.getPartitions(stormTaskId, values)
+        ret.addAll(partitions.map { p =>
+          gearpumpTaskIdToStorm(TaskId(componentToProcessorId(target), p))
+        })
+        accum + (target -> partitions)
       }
-      // convert backtype.storm.tuple.Values to scala List to avoid serialization issues
-      // TODO: investigate performance impact
-      val tuple = new GearpumpTuple(values.toList, componentId, streamId, stormTaskId, targetPartitions)
+      val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
       context.output(Message(tuple, timestamp))
-      targetPartitions.toList.flatMap { case (target, partitions) =>
-        partitions.map(p => gearpumpTaskIdToStorm(TaskId(componentToProcessorId(target), p)))
-      }
+      ret
     } else {
       EMPTY_LIST
     }
@@ -77,7 +83,7 @@ class StormOutputCollector(
       val target = taskToComponent(id)
       val partition = stormTaskIdToGearpump(id).index
       val targetPartitions = Map(target -> List(partition))
-      val tuple = new GearpumpTuple(values.toList, componentId, streamId, stormTaskId, targetPartitions)
+      val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
       context.output(Message(tuple, timestamp))
     }
   }
