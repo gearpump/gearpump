@@ -18,22 +18,24 @@
 
 package io.gearpump.experiments.storm.topology
 
+import java.lang.{Integer => JInteger}
+import java.util.{List => JList}
+
 import backtype.storm.task.TopologyContext
 import backtype.storm.tuple.{Tuple, TupleImpl}
 
-import scala.collection.JavaConversions._
 
 private[storm] class GearpumpTuple(
-    tuple: List[AnyRef],
-    componentId: String,
-    streamId: String,
-    stormTaskId: Int,
+    tuple: JList[AnyRef],
+    sourceTaskId: JInteger,
+    sourceStreamId: String,
     @transient val targetPartitions: Map[String, List[Int]]) extends Serializable {
 
+  def this() = this(null, null, null, null)
+
   def toTuple(topologyContext: TopologyContext): Tuple = {
-    new TupleImpl(topologyContext, tuple, stormTaskId, streamId, null)
+    new TupleImpl(topologyContext, tuple, sourceTaskId, sourceStreamId)
   }
 }
-
 
 
