@@ -56,7 +56,7 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
 
   def clientCommands: Receive = {
     case start: StartExecutorSystems =>
-      LOG.info(s"starting executor systems $start")
+      LOG.info(s"starting executor systems (ExecutorSystemConfig(${start.executorSystemConfig}), Resources(${start.resources.mkString(",")}))")
       val requestor = sender()
       val executorSystemConfig = start.executorSystemConfig
       val session  = Session(requestor, executorSystemConfig)
@@ -132,6 +132,7 @@ object ExecutorSystemScheduler {
 
   case class ExecutorSystemJvmConfig(classPath : Array[String], jvmArguments : Array[String],
      jar: Option[AppJar], username : String, executorAkkaConfig: Config = null)
+
 
   /**
    * For each client which ask for an executor system, the scheduler will create a session for it.

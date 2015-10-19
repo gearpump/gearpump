@@ -28,6 +28,7 @@ import io.gearpump.util.Graph
 
 class SubDAGManager(appId : Int, appName: String, config: Config) {
   private var taskSchedulers = Map.empty[AppJar, TaskScheduler]
+  private var executorAndSchedulers = Map.empty[Int, (AppJar, TaskScheduler)]
 
   def setDag(dag: DAG): Unit = {
     val processors = dag.processors.values.groupBy(_.jar)
@@ -51,14 +52,15 @@ class SubDAGManager(appId : Int, appName: String, config: Config) {
   }
 
   def scheduleTask(appJar: AppJar, workerId: Int, executorId: Int, resource: Resource): List[TaskId] = {
-    taskSchedulers.get(appJar).map(_.schedule(workerId, executorId, resource)).getOrElse(List.empty)
+    taskSchedulers.get(appJar).map { scheduler =>
+      executorAndSchedulers += executorId -> (appJar, scheduler)
+      scheduler.schedule(workerId, executorId, resource)
+    }.getOrElse(List.empty)
   }
 
   def executorFailed(executorId: Int): ResourceRequestDetail = {
-    taskSchedulers.find(_._2.executorFailed(executorId).nonEmpty).map{jarAndScheduler =>
-      val (jar, scheduler) = jarAndScheduler
-      ResourceRequestDetail(jar, scheduler.getResourceRequests())
-    }.get
+    val (jar, scheduler) = executorAndSchedulers(executorId)
+    ResourceRequestDetail(jar, scheduler.executorFailed(executorId))
   }
 }
 
