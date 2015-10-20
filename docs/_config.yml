@@ -5,6 +5,7 @@ markdown: kramdown
 # OS/packages wrt encoding. So we hard code this config.
 kramdown:
   entity_output: numeric
+  input: GFM
 
 include:
   - _static
