@@ -40,6 +40,9 @@ import scala.collection.JavaConversions._
  * @param stormConfig storm configuration
  */
 class GearpumpStormTopology(topology: StormTopology, stormConfig: JMap[AnyRef, AnyRef])(implicit system: ActorSystem) {
+
+  Option(stormConfig).foreach(_.put(Config.TOPOLOGY_KRYO_FACTORY, "io.gearpump.experiments.storm.util.StormKryoFactory"))
+
   private val spouts = topology.get_spouts()
   private val bolts = topology.get_bolts()
   private val spoutProcessors = spouts.map { case (id, spout) =>
