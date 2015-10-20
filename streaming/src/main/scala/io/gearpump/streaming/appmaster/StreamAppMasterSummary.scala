@@ -38,6 +38,7 @@ case class StreamAppMasterSummary(
     executors: List[ExecutorBrief] = null,
     status: AppMasterStatus = MasterToAppMaster.AppMasterActive,
     startTime: TimeStamp = 0L,
+    uptime: TimeStamp = 0L,
     user: String = null,
     appType: String = "streaming",
     homeDirectory: String = "",

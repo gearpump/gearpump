@@ -194,6 +194,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
           executors,
           status = MasterToAppMaster.AppMasterActive,
           startTime = startTime,
+          uptime = System.currentTimeMillis() - startTime,
           user = username,
           homeDirectory = userDir,
           logFile = logFile.getAbsolutePath
