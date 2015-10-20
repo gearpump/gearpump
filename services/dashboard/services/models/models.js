@@ -193,7 +193,6 @@ angular.module('dashboard')
 
           angular.merge(obj, {
             // extra properties
-            aliveFor: moment() - obj.startTime,
             isRunning: true, // todo: handle empty response, which is the case application is stopped
             // extra methods
             pageUrl: locator.app(obj.appId, obj.type),

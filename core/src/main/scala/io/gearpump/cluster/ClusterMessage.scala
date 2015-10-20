@@ -94,28 +94,26 @@ object AppMasterToMaster {
   case class GetAppData(appId: Int, key: String)
   case class GetAppDataResult(key: String, value: Any)
 
-  //TODO:
-  // clock field may not make sense for applications other than streaming
   trait AppMasterSummary {
-
     def appType: String
     def appId: Int
     def appName: String
     def actorPath: String
-
     def status: AppMasterStatus
     def startTime: TimeStamp
+    def uptime: TimeStamp
     def user: String
   }
 
   case class GeneralAppMasterSummary(
-      appId: Int,
-      appType: String = "general",
-      appName: String = null,
-      actorPath: String = null,
-      status: AppMasterStatus = MasterToAppMaster.AppMasterActive,
-      startTime: TimeStamp = 0L,
-      user: String = null)
+    appId: Int,
+    appType: String = "general",
+    appName: String = null,
+    actorPath: String = null,
+    status: AppMasterStatus = MasterToAppMaster.AppMasterActive,
+    startTime: TimeStamp = 0L,
+    uptime: TimeStamp = 0L,
+    user: String = null)
     extends AppMasterSummary
 
   case object GetAllWorkers

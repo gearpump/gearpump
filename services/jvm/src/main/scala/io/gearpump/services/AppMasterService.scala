@@ -146,9 +146,9 @@ trait AppMasterService  {
       pathEnd {
         get {
           parameter("detail" ? "false") { detail =>
-            val detailValue = Try(detail.toBoolean).getOrElse(false)
+            val queryDetails = Try(detail.toBoolean).getOrElse(false)
             val request = AppMasterDataDetailRequest(appId)
-            detailValue match {
+            queryDetails match {
               case true =>
                 onComplete(askAppMaster[AppMasterSummary](master, appId, request)) {
                   case Success(value) =>
