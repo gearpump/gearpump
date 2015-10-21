@@ -18,7 +18,7 @@
 
 package io.gearpump.experiments.storm.util
 
-import java.util.{ArrayList => JArrayList, List => JList}
+import java.util.{ArrayList => JArrayList, List => JList, Iterator => JIterator}
 
 import backtype.storm.generated.{JavaObject, GlobalStreamId, Grouping}
 import backtype.storm.grouping.CustomStreamGrouping
@@ -61,15 +61,26 @@ class StormOutputCollector(
   def emit(streamId: String, values: JList[AnyRef]): JList[Integer] = {
     if (targets.containsKey(streamId)) {
       val ret: JList[Integer] = new JArrayList[Integer](targets.size)
-      val targetPartitions = targets.get(streamId).foldLeft(Map.empty[String, List[Int]]) { case (accum, iter) =>
-        val (target, _) = iter
-        val grouper = streamGroupers(streamId)
-        val partitions = grouper.getPartitions(stormTaskId, values)
-        ret.addAll(partitions.map { p =>
-          gearpumpTaskIdToStorm(TaskId(componentToProcessorId(target), p))
-        })
-        accum + (target -> partitions)
+
+      @annotation.tailrec
+      def getTargetPartitions(iter: JIterator[String],
+                              accum: Map[String, List[Int]]): Map[String, List[Int]] = {
+        if (iter.hasNext) {
+          val target = iter.next
+          val grouper = streamGroupers(streamId)
+          val partitions = grouper.getPartitions(stormTaskId, values)
+          partitions.foreach { p =>
+            val stormTaskId = gearpumpTaskIdToStorm(TaskId(componentToProcessorId(target), p))
+            ret.add(stormTaskId)
+          }
+          getTargetPartitions(iter, accum + (target -> partitions))
+        } else {
+          accum
+        }
+
       }
+
+      val targetPartitions = getTargetPartitions(targets.get(streamId).keySet().iterator, Map.empty[String, List[Int]])
       val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
       context.output(Message(tuple, timestamp))
       ret
