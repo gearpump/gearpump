@@ -21,15 +21,15 @@ package io.gearpump.streaming.appmaster
 import akka.actor._
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
-import io.gearpump.streaming.{ExecutorId, ExecutorToAppMaster}
-import io.gearpump.streaming.executor.Executor
 import io.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.{AppJar, AppMasterContext, ExecutorContext, UserConfig}
-import ExecutorToAppMaster.RegisterExecutor
-import ExecutorManager._
+import io.gearpump.streaming.ExecutorId
+import io.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
+import io.gearpump.streaming.appmaster.ExecutorManager._
+import io.gearpump.streaming.executor.Executor
 import io.gearpump.util.{LogUtil, Util}
 
 import scala.util.Try
@@ -54,7 +54,7 @@ private[appmaster] class ExecutorManager(
 
   private val LOG = LogUtil.getLogger(getClass)
 
-  import appContext.{appId, appJar, masterProxy, username}
+  import appContext.{appId, masterProxy, username}
 
   private var taskManager: ActorRef = null
   implicit val actorSystem = context.system
@@ -121,9 +121,12 @@ private[appmaster] class ExecutorManager(
   def terminationWatch : Receive = {
     case Terminated(actor) =>
       val executorId = Try(actor.path.name.toInt)
-      LOG.error(s"Executor $executorId is down")
       executorId match {
-        case scala.util.Success(id) => taskManager ! ExecutorStopped(id)
+        case scala.util.Success(id) => {
+          executors -= id
+          LOG.error(s"Executor $id is down")
+          taskManager ! ExecutorStopped(id)
+        }
         case scala.util.Failure(ex) => LOG.error(s"failed to get the executor Id from path string ${actor.path}" , ex)
       }
   }
