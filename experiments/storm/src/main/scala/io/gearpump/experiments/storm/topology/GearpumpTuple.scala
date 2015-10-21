@@ -34,7 +34,7 @@ private[storm] class GearpumpTuple(
   def this() = this(null, null, null, null)
 
   def toTuple(topologyContext: TopologyContext): Tuple = {
-    new TupleImpl(topologyContext, tuple, sourceTaskId, sourceStreamId)
+    new TupleImpl(topologyContext, tuple, sourceTaskId, sourceStreamId, null)
   }
 }
 
