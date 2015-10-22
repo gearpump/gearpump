@@ -32,8 +32,8 @@ angular.module('dashboard')
     }])
 
   .controller('StreamingAppExecutorCtrl', ['$scope', '$stateParams', '$propertyTableBuilder',
-    'restapi', 'executor0', 'metrics0', 'historicalMetrics0',
-    function($scope, $stateParams, $ptb, restapi, executor0, metrics0, historicalMetrics0) {
+    'helper', 'restapi', 'executor0', 'metrics0', 'historicalMetrics0',
+    function($scope, $stateParams, $ptb, helper, restapi, executor0, metrics0, historicalMetrics0) {
       'use strict';
 
       $scope.overviewTable = [
@@ -43,7 +43,7 @@ angular.module('dashboard')
         $ptb.number('Task Count').done(),
         $ptb.button('Quick Links').values([
             {href: restapi.appExecutorConfigLink($scope.app.appId, executor0.id), text: 'Config', class: 'btn-xs'},
-            {tooltip: executor0.logFile, text: 'Log Dir.', class: 'btn-xs'}
+            helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, executor0.logFile)
           ]
         ).done()
       ];

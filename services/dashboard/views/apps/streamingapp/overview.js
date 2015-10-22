@@ -23,8 +23,9 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder', 'historicalMetrics0',
-    function($scope, $ptb, historicalMetrics0) {
+  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder',
+    'helper', 'historicalMetrics0',
+    function($scope, $ptb, helper, historicalMetrics0) {
       'use strict';
 
       $scope.appSummary = [
@@ -43,8 +44,8 @@ angular.module('dashboard')
           app.actorPath,
           [
             {href: app.configLink, text: 'Config', class: 'btn-xs'},
-            {tooltip: app.homeDirectory, text: 'Home Dir.', class: 'btn-xs'},
-            {tooltip: app.logFile, text: 'Log Dir.', class: 'btn-xs'}
+            helper.withClickToCopy({text: 'Home Dir.', class: 'btn-xs'}, app.homeDirectory),
+            helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, app.logFile)
           ]
         ]);
       }

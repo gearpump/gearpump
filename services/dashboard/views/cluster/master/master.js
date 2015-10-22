@@ -29,8 +29,9 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder', 'master0', 'metrics0', 'historicalMetrics0',
-    function($scope, $ptb, master0, metrics0, historicalMetrics0) {
+  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder',
+    'helper', 'master0', 'metrics0', 'historicalMetrics0',
+    function($scope, $ptb, helper, master0, metrics0, historicalMetrics0) {
       'use strict';
 
       $scope.masterInfoTable = [
@@ -40,9 +41,9 @@ angular.module('dashboard')
         $ptb.duration('Up Time').done(),
         $ptb.button('Quick Links').values([
           {href: master0.configLink, text: 'Config', class: 'btn-xs'},
-          {tooltip: master0.homeDirectory, text: 'Home Dir.', class: 'btn-xs'},
-          {tooltip: master0.logFile, text: 'Log Dir.', class: 'btn-xs'},
-          {tooltip: master0.jarStore, text: 'Jar Store', class: 'btn-xs'}
+          helper.withClickToCopy({text: 'Home Dir.', class: 'btn-xs'}, master0.homeDirectory),
+          helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, master0.logFile),
+          helper.withClickToCopy({text: 'Jar Store', class: 'btn-xs'}, master0.jarStore)
         ]).done()
       ];
 
