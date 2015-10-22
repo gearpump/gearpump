@@ -94,7 +94,9 @@ class SendLater(express: Express, serializerPool: SerializerPool, sender: ActorR
       flushPendingMessages(localActor.get, transportId)
     } else {
       val remoteAddress = express.lookupRemoteAddress(transportId)
-      flushPendingMessages(remoteAddress.get, transportId)
+      if (remoteAddress.isDefined) {
+        flushPendingMessages(remoteAddress.get, transportId)
+      }
     }
   }
 
