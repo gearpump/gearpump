@@ -19,15 +19,20 @@
 package io.gearpump.experiments.yarn
 
 import org.apache.hadoop.yarn.conf.YarnConfiguration
+import org.mockito.Mockito._
 import org.scalatest.FlatSpecLike
 import org.scalatest.Matchers._
-import org.specs2.mock.Mockito
+import org.scalatest.mock.MockitoSugar
 
-class ContainerLaunchContextSpec extends FlatSpecLike
-with Mockito {
+class ContainerLaunchContextSpec extends FlatSpecLike with MockitoSugar {
 
   "A ContainerLaunchContext object" should "create new ContainerLaunchContext" in {
     val command = "foo"
-    ContainerLaunchContext(mock[YarnConfiguration], mock[AppConfig])(command) should not be theSameInstanceAs(ContainerLaunchContext(mock[YarnConfiguration], mock[AppConfig])(command))
+    val hdfsRoot = "hdfs"
+    val yarnConfig = mock[YarnConfiguration]
+    val appConfig = mock[AppConfig]
+    when(appConfig.getEnv(Constants.HDFS_ROOT)).thenReturn(hdfsRoot)
+    ContainerLaunchContext(yarnConfig, appConfig)(command) should not be
+      theSameInstanceAs(ContainerLaunchContext(yarnConfig, appConfig)(command))
   }
 }
