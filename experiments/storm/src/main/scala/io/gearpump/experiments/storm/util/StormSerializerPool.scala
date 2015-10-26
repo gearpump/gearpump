@@ -46,7 +46,8 @@ class StormSerializerPool extends SerializerPool {
 }
 
 class StormSerializer(kryo: Kryo) extends Serializer {
-  val output = new Output(4096, 4096)
+  // -1 means the max buffer size is 2147483647
+  val output = new Output(4096, -1)
   override def serialize(message: AnyRef): Array[Byte] = {
     output.clear()
     kryo.writeClassAndObject(output, message)
