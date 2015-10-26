@@ -40,12 +40,24 @@ angular.module('dashboard', [
   // configure loading bar effect
   .config(['cfpLoadingBarProvider', function(cfpLoadingBarProvider) {
     'use strict';
+
     cfpLoadingBarProvider.includeSpinner = false;
     cfpLoadingBarProvider.latencyThreshold = 200;
   }])
 
+  // configure angular-strap
+  .config(['$tooltipProvider', function($tooltipProvider) {
+    'use strict';
+
+    angular.extend($tooltipProvider.defaults, {
+      html: true
+    });
+  }])
+
   // disable caching for ajax calls to make MSIE happy
   .config(['$httpProvider', function($httpProvider) {
+    'use strict';
+
     $httpProvider.defaults.headers.get = angular.merge({
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache'

@@ -37,8 +37,8 @@ angular.module('dashboard')
     }])
 
   .controller('WorkerCtrl', ['$scope', '$propertyTableBuilder', '$sortableTableBuilder',
-    'worker0', 'metrics0', 'historicalMetrics0', 'apps0', 'locator',
-    function($scope, $ptb, $stb, worker0, metrics0, historicalMetrics0, apps0, locator) {
+    'helper', 'worker0', 'metrics0', 'historicalMetrics0', 'apps0', 'locator',
+    function($scope, $ptb, $stb, helper, worker0, metrics0, historicalMetrics0, apps0, locator) {
       'use strict';
 
       $scope.overviewTable = [
@@ -48,8 +48,8 @@ angular.module('dashboard')
         $ptb.number('Slots Capacity').done(),
         $ptb.button('Quick Links').values([
           {href: worker0.configLink, text: 'Config', class: 'btn-xs'},
-          {tooltip: worker0.homeDirectory, text: 'Home Dir.', class: 'btn-xs'},
-          {tooltip: worker0.logFile, text: 'Log Dir.', class: 'btn-xs'}
+          helper.withClickToCopy({text: 'Home Dir.', class: 'btn-xs'}, worker0.homeDirectory),
+          helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, worker0.logFile)
         ]).done()
       ];
 
