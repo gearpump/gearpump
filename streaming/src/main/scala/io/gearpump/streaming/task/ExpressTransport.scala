@@ -23,6 +23,8 @@ import io.gearpump.serializer.SerializerPool
 import io.gearpump.transport.netty.TaskMessage
 import io.gearpump.transport.{Express, HostPort}
 import io.gearpump.Message
+import io.gearpump.util.LogUtil
+import org.slf4j.Logger
 
 import scala.collection.mutable
 
@@ -80,6 +82,7 @@ trait ExpressTransport {
 }
 
 class SendLater(express: Express, serializerPool: SerializerPool, sender: ActorRef){
+  import io.gearpump.streaming.task.SendLater._
   private var buffer = Map.empty[Long, mutable.Queue[TaskMessage]]
 
   def addMessage(transportId: Long, taskMessage: TaskMessage) = {
@@ -94,7 +97,11 @@ class SendLater(express: Express, serializerPool: SerializerPool, sender: ActorR
       flushPendingMessages(localActor.get, transportId)
     } else {
       val remoteAddress = express.lookupRemoteAddress(transportId)
-      flushPendingMessages(remoteAddress.get, transportId)
+      if (remoteAddress.isDefined) {
+        flushPendingMessages(remoteAddress.get, transportId)
+      } else {
+        LOG.error(s"location of remote task $transportId not found; we'll drop pending messages to it")
+      }
     }
   }
 
@@ -126,4 +133,8 @@ class SendLater(express: Express, serializerPool: SerializerPool, sender: ActorR
   }
 
   def hasPendingMessages: Boolean = buffer.nonEmpty
+}
+
+object SendLater {
+  private val LOG: Logger = LogUtil.getLogger(classOf[SendLater])
 }

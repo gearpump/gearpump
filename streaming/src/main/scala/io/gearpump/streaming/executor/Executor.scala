@@ -23,28 +23,26 @@ import java.lang.management.ManagementFactory
 import akka.actor.SupervisorStrategy.{Resume, Stop}
 import akka.actor._
 import com.typesafe.config.Config
-import io.gearpump.streaming.{ProcessorId, ExecutorToAppMaster, AppMasterToExecutor}
-import io.gearpump.streaming.AppMasterToExecutor.{TasksChanged, TasksLaunched, RegisterTaskFailedException, MsgLostException}
-import io.gearpump.streaming.appmaster.TaskRegistry
-import io.gearpump.streaming.task.{TaskId, Subscriber}
 import io.gearpump.cluster.MasterToAppMaster.MessageLoss
 import io.gearpump.cluster.{ExecutorContext, UserConfig}
-import io.gearpump.metrics.Metrics.{ReportMetrics, DemandMoreMetrics}
+import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.serializer.SerializerPool
-import AppMasterToExecutor._
-import ExecutorToAppMaster.RegisterExecutor
-import TaskRegistry.TaskLocations
-import Executor._
-import TaskLauncher.TaskArgument
-import io.gearpump.transport.{Express, HostPort}
+import io.gearpump.streaming.AppMasterToExecutor.{MsgLostException, RegisterTaskFailedException, TasksChanged, TasksLaunched, _}
+import io.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
+import io.gearpump.streaming.ProcessorId
+import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
+import io.gearpump.streaming.executor.Executor._
+import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
+import io.gearpump.streaming.task.{Subscriber, TaskId}
+import io.gearpump.transport.Express
 import io.gearpump.util.Constants._
-import io.gearpump.util.{Constants, ActorUtil, LogUtil}
+import io.gearpump.util.{ActorUtil, Constants, LogUtil}
+import org.apache.commons.lang.exception.ExceptionUtils
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import org.apache.commons.lang.exception.ExceptionUtils
 
 class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher: ITaskLauncher)  extends Actor {
 
@@ -157,7 +155,6 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       }
     case RestartTasks(dagVersion) =>
       LOG.info(s"Executor received restart tasks")
-      express.remoteAddressMap.send(Map.empty[Long, HostPort])
 
       tasks.foreach { task =>
         task._2 ! PoisonPill
