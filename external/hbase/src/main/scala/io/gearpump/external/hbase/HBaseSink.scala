@@ -17,8 +17,9 @@
  */
 package io.gearpump.external.hbase
 
-import java.io.{IOException, ObjectInputStream, ObjectOutputStream}
+import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl.TypedDataSink
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.TaskContext
@@ -28,14 +29,14 @@ import org.apache.hadoop.hbase.{TableName, HBaseConfiguration}
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
 import org.apache.hadoop.hbase.util.Bytes
 
-class HBaseSink(tableName: String, @transient var configuration: Configuration) extends DataSink{
-  lazy val connection = ConnectionFactory.createConnection(configuration)
+class HBaseSink(userconfig: UserConfig, tableName: String, @transient var configuration: Configuration) extends DataSink{
+  lazy val connection = HBaseSecurityUtil.getConnection(userconfig, configuration)
   lazy val table = connection.getTable(TableName.valueOf(tableName))
 
   override def open(context: TaskContext): Unit = {}
 
-  def this(tableName: String) = {
-    this(tableName, HBaseConfiguration.create())
+  def this(userconfig: UserConfig, tableName: String) = {
+    this(userconfig, tableName, HBaseConfiguration.create())
   }
 
   def insert(put: Put): Unit = {
@@ -80,6 +81,7 @@ class HBaseSink(tableName: String, @transient var configuration: Configuration) 
   }
 
   private def readObject(in: ObjectInputStream): Unit = {
+    in.defaultReadObject()
     configuration = new Configuration(false)
     configuration.readFields(in)
   }
@@ -91,11 +93,11 @@ object HBaseSink {
   val COLUMN_FAMILY = "hbase.table.column.family"
   val COLUMN_NAME = "hbase.table.column.name"
 
-  def apply[T](tableName: String): HBaseSink with TypedDataSink[T] = {
-    new HBaseSink(tableName) with TypedDataSink[T]
+  def apply[T](userconfig: UserConfig, tableName: String): HBaseSink with TypedDataSink[T] = {
+    new HBaseSink(userconfig, tableName) with TypedDataSink[T]
   }
 
-  def apply[T](tableName: String, configuration: Configuration): HBaseSink with TypedDataSink[T] = {
-    new HBaseSink(tableName, configuration) with TypedDataSink[T]
+  def apply[T](userconfig: UserConfig, tableName: String, configuration: Configuration): HBaseSink with TypedDataSink[T] = {
+    new HBaseSink(userconfig, tableName, configuration) with TypedDataSink[T]
   }
 }

@@ -123,4 +123,8 @@ object Constants {
     classOf[HashPartitioner],
     classOf[ShuffleGroupingPartitioner],
     classOf[ShufflePartitioner])
+
+  //Security related
+  val GEARPUMP_KEYTAB_FILE = "gearpump.keytab.file"
+  val GEARPUMP_KERBEROS_PRINCIPAL = "gearpump.kerberos.principal"
 }
