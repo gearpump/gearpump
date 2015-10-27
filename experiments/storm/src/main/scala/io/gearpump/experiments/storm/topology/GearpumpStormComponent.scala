@@ -24,9 +24,10 @@ import java.util.{HashMap => JHashMap, List => JList, Map => JMap}
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import backtype.storm.Config
 import backtype.storm.generated.{Bolt, ComponentCommon, SpoutSpec, StormTopology}
 import backtype.storm.spout.{ISpout, SpoutOutputCollector}
-import backtype.storm.task.{IBolt, OutputCollector, TopologyContext}
+import backtype.storm.task.{GeneralTopologyContext, IBolt, OutputCollector, TopologyContext}
 import backtype.storm.tuple.{Fields, TupleImpl}
 import backtype.storm.utils.Utils
 import clojure.lang.Atom
@@ -58,11 +59,12 @@ trait GearpumpStormComponent {
 object GearpumpStormComponent {
   private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpStormComponent])
 
-  case class GearpumpSpout(topology: StormTopology, spoutId: String, spoutSpec: SpoutSpec, taskContext: TaskContext)
+  case class GearpumpSpout(topology: StormTopology, config: JMap[AnyRef, AnyRef],
+                           spoutId: String, spoutSpec: SpoutSpec, taskContext: TaskContext)
       extends GearpumpStormComponent {
+
+    normalizeConfig(config, spoutSpec.get_common())
     private val spout: ISpout = Utils.getSetComponentObject(spoutSpec.get_spout_object()).asInstanceOf[ISpout]
-    private val config: JMap[AnyRef, AnyRef] =
-      parseJsonStringToMap(spoutSpec.get_common().get_json_conf())
     private var collector: StormOutputCollector = null
 
     override def start(startTime: StartTime): Unit = {
@@ -83,15 +85,16 @@ object GearpumpStormComponent {
     }
   }
 
-  case class GearpumpBolt(topology: StormTopology, boltId: String, boltSpec: Bolt, taskContext: TaskContext)
+  case class GearpumpBolt(topology: StormTopology, config: JMap[AnyRef, AnyRef],
+                          boltId: String, boltSpec: Bolt, taskContext: TaskContext)
       extends GearpumpStormComponent {
     import taskContext.{appMaster, taskId}
 
+    normalizeConfig(config, boltSpec.get_common())
     private val bolt: IBolt = Utils.getSetComponentObject(boltSpec.get_bolt_object()).asInstanceOf[IBolt]
-    private val config: JMap[AnyRef, AnyRef] =
-      parseJsonStringToMap(boltSpec.get_common().get_json_conf())
     private var collector: StormOutputCollector = null
     private var topologyContext: TopologyContext = null
+    private var generalTopologyContext: GeneralTopologyContext = null
     private var tickTuple: TupleImpl = null
 
 
@@ -99,6 +102,7 @@ object GearpumpStormComponent {
       val dag = askAppMasterForDAG(appMaster)
       val stormTaskId = gearpumpTaskIdToStorm(taskId)
       topologyContext = buildTopologyContext(dag, topology, config, stormTaskId)
+      generalTopologyContext = buildGeneralTopologyContext(dag, topology, config)
       collector = new StormOutputCollector(taskContext, topologyContext)
       val delegate = new StormBoltOutputCollector(collector)
       bolt.prepare(config, topologyContext, new OutputCollector(delegate))
@@ -106,16 +110,16 @@ object GearpumpStormComponent {
 
     override def next(message: Message): Unit = {
       collector.setTimestamp(message.timestamp)
-      bolt.execute(message.msg.asInstanceOf[GearpumpTuple].toTuple(topologyContext))
+      bolt.execute(message.msg.asInstanceOf[GearpumpTuple].toTuple(generalTopologyContext))
     }
 
     def getTickFrequency: Option[Long] = {
-      Option(config.get(TICK_TUPLE_FREQ_SECS)).asInstanceOf[Option[Long]]
+      Option(config.get(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS)).asInstanceOf[Option[Long]]
     }
 
     def tick(freq: Long): Unit = {
       if (null == tickTuple) {
-        tickTuple = new TupleImpl(topologyContext, List(freq.asInstanceOf[java.lang.Long]),
+        tickTuple = new TupleImpl(generalTopologyContext, List(freq.asInstanceOf[java.lang.Long]),
           SYSTEM_TASK_ID, SYSTEM_TICK_STREAM_ID, null)
       }
       bolt.execute(tickTuple)
@@ -123,13 +127,19 @@ object GearpumpStormComponent {
   }
 
 
+  private def normalizeConfig(stormConfig: JMap[AnyRef, AnyRef],
+                              componentCommon: ComponentCommon): Unit = {
+    val componentConfig = parseJsonStringToMap(componentCommon.get_json_conf())
+    Option(componentConfig.get(Config.TOPOLOGY_TRANSACTIONAL_ID))
+      .foreach(stormConfig.put(Config.TOPOLOGY_TRANSACTIONAL_ID, _))
+    Option(componentConfig.get(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS))
+      .foreach(stormConfig.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, _))
+  }
+
 
   private def getComponentToStreamFields(topology: StormTopology): JMap[String, JMap[String, Fields]] = {
     val spouts = topology.get_spouts()
     val bolts = topology.get_bolts()
-
-    val systemStreamFields = new JHashMap[String, Fields]
-    systemStreamFields.put(SYSTEM_TICK_STREAM_ID, new Fields(SYSTEM_COMPONENT_OUTPUT_FIELDS))
 
     (spouts.map { case (id, component) => id -> getComponentToFields(component.get_common()) } ++
         bolts.map { case (id, component) => id -> getComponentToFields(component.get_common())} ++
@@ -156,7 +166,7 @@ object GearpumpStormComponent {
       val component = processorDescription.taskConf.getString(STORM_COMPONENT).get
       (0 until parallelism).map(index => gearpumpTaskIdToStorm(TaskId(processorId, index)) -> component)
     }
-    taskToComponent + (SYSTEM_TASK_ID -> SYSTEM_COMPONENT_ID)
+    taskToComponent
   }
 
   // a workaround to support storm ShellBolt
@@ -211,6 +221,14 @@ object GearpumpStormComponent {
     implicit val timeout = Constants.FUTURE_TIMEOUT
     val dagFuture = (appMaster ? GetDAG).asInstanceOf[Future[DAG]]
     Await.result(dagFuture, timeout.duration)
+  }
+
+
+  private def buildGeneralTopologyContext(dag: DAG, topology: StormTopology, stormConf: JMap[_, _]): GeneralTopologyContext = {
+    val taskToComponent = getTaskToComponent(dag)
+    val componentToSortedTasks: JMap[String, JList[Integer]] = getComponentToSortedTasks(taskToComponent)
+    val componentToStreamFields: JMap[String, JMap[String, Fields]] = getComponentToStreamFields(topology)
+    new GeneralTopologyContext(topology, stormConf, taskToComponent, componentToSortedTasks, componentToStreamFields, null)
   }
 
   private def buildTopologyContext(dag: DAG, topology: StormTopology, stormConf: JMap[_, _], stormTaskId: Integer): TopologyContext = {

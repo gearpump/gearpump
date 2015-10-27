@@ -17,12 +17,16 @@
  */
 package io.gearpump.experiments.storm.util
 
+import java.lang.{Integer => JInteger}
 import java.util.{Map => JMap}
 import akka.actor.ExtendedActorSystem
 import backtype.storm.serialization.SerializationFactory
+import backtype.storm.utils.ListDelegate
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.{Input, Output}
 import io.gearpump.cluster.UserConfig
+import io.gearpump.experiments.storm.topology.GearpumpTuple
+import io.gearpump.experiments.storm.util.StormConstants._
 import io.gearpump.serializer.{SerializerPool, Serializer}
 
 class StormSerializerPool extends SerializerPool {
@@ -31,7 +35,7 @@ class StormSerializerPool extends SerializerPool {
 
   override def init(system: ExtendedActorSystem, config: UserConfig): Unit = {
     implicit val actorSystem = system
-    stormConfig = config.getValue[JMap[AnyRef, AnyRef]](StormConstants.STORM_CONFIG).get
+    stormConfig = config.getValue[JMap[AnyRef, AnyRef]](STORM_CONFIG).get
     pool = new ThreadLocal[Serializer]() {
       override def initialValue(): Serializer = {
         val kryo = SerializationFactory.getKryo(stormConfig)
@@ -47,14 +51,25 @@ class StormSerializerPool extends SerializerPool {
 
 class StormSerializer(kryo: Kryo) extends Serializer {
   // -1 means the max buffer size is 2147483647
-  val output = new Output(4096, -1)
+  private val output = new Output(4096, -1)
+  private val input = new Input
+
   override def serialize(message: AnyRef): Array[Byte] = {
+    val tuple = message.asInstanceOf[GearpumpTuple]
     output.clear()
-    kryo.writeClassAndObject(output, message)
+    output.writeInt(tuple.sourceTaskId)
+    output.writeString(tuple.sourceStreamId)
+    val listDelegate = new ListDelegate
+    listDelegate.setDelegate(tuple.values)
+    kryo.writeObject(output, listDelegate)
     output.toBytes
   }
 
   override def deserialize(msg: Array[Byte]): AnyRef = {
-    kryo.readClassAndObject(new Input(msg))
+    input.setBuffer(msg)
+    val sourceTaskId: JInteger = input.readInt
+    val sourceStreamId: String = input.readString
+    val listDelegate = kryo.readObject[ListDelegate](input, classOf[ListDelegate])
+    new GearpumpTuple(listDelegate.getDelegate, sourceTaskId, sourceStreamId, null)
   }
 }
