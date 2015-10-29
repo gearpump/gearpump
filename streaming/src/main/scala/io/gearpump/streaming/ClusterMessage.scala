@@ -19,6 +19,7 @@
 package io.gearpump.streaming
 
 import akka.actor.ActorRef
+import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
 import io.gearpump.streaming.task.{TaskId, Subscriber}
 import io.gearpump.TimeStamp
 import io.gearpump.cluster.appmaster.WorkerInfo
@@ -44,10 +45,12 @@ object AppMasterToExecutor {
   case class TaskChanged(taskId: TaskId, dagVersion: Int)
 
   case class Start(startClock : TimeStamp, sessionId: Int)
-  case object TaskRejected
+
+  case class StartAllTasks(taskLocations: TaskLocations, startClock: TimeStamp)
+  case class TaskRegistered(taskId: TaskId, sessionId: Int)
+  case class TaskRejected(taskId: TaskId)
 
   case object RestartClockService
-  class RegisterTaskFailedException extends Exception
   class MsgLostException extends Exception
 }
 
@@ -55,6 +58,8 @@ object ExecutorToAppMaster {
   case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, worker : WorkerInfo)
 
   case class RegisterTask(taskId: TaskId, executorId : Int, task: HostPort)
+
+  case class MessageLoss(executorId: Int, taskId: TaskId, cause: String)
 }
 
 object AppMasterToMaster {

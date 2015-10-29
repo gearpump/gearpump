@@ -20,7 +20,7 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
-import io.gearpump.streaming.AppMasterToExecutor.LaunchTasks
+import io.gearpump.streaming.AppMasterToExecutor.{StartAllTasks, TaskRegistered, LaunchTasks}
 import io.gearpump.streaming.DAG
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
@@ -35,7 +35,6 @@ import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.{AppJar, TestUtil, UserConfig}
 import io.gearpump.jarstore.FilePath
 import io.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
-import io.gearpump.streaming.AppMasterToExecutor.LaunchTasks
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
@@ -207,13 +206,16 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // step8: Task is started. registerTask.
     val registerTask1 = executorManager.expectMsgPF()(launchTaskMatch)
-    executorManager.reply(registerTask1)
+    taskManager.tell(registerTask1, executor.ref)
+    executor.expectMsgType[TaskRegistered]
 
     // taskmanager should return the latest start clock to task(0,0)
     clockService.expectMsg(GetStartClock)
+    clockService.reply(StartClock(0))
 
     val registerTask2 = executorManager.expectMsgPF()(launchTaskMatch)
-    executorManager.reply(registerTask2)
+    taskManager.tell(registerTask2, executor.ref)
+    executor.expectMsgType[TaskRegistered]
 
     // Tell executor Manager the updated usage status of executors.
     executorManager.expectMsgType[ExecutorResourceUsageSummary]
@@ -225,7 +227,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     // step10: After we get reply from ClockService, start broadcasting TaskLocations.
     import scala.concurrent.duration._
     assert(executorManager.expectMsgPF(5 seconds) {
-      case BroadCast(taskLocation) => taskLocation.isInstanceOf[TaskLocations]
+      case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[StartAllTasks]
     })
 
     // step11: transition from DynamicDAG to ApplicationReady

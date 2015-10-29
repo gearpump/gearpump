@@ -23,12 +23,10 @@ import com.typesafe.config.ConfigFactory
 import io.gearpump.Message
 import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
 import io.gearpump.partitioner.{HashPartitioner, Partitioner}
-import io.gearpump.serializer.{SerializerPool, FastKryoSerializer}
-import io.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, RegisterTaskFailedException, Start, TaskChanged, TaskRejected}
-import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
+import io.gearpump.serializer.{FastKryoSerializer, SerializerPool}
+import io.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, Start, TaskChanged}
 import io.gearpump.streaming.task.TaskActorSpec.TestTask
 import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
-import io.gearpump.transport.Express
 import io.gearpump.util.Graph._
 import io.gearpump.util.{Graph, Util}
 import org.mockito.Mockito.{mock, times, verify, when}
@@ -72,13 +70,9 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
   "TaskActor" should {
     "register itself to AppMaster when started" in {
-
       val mockTask = mock(classOf[TaskWrapper])
       val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
-      val express1 = Express(getActorSystem)
-      val testActorHost = express1.localHost
-      mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
-      mockMaster.reply(Start(0, Util.randInt))
+      testActor ! Start(0, Util.randInt)
 
       implicit val system = getActorSystem
       val ack = Ack(taskId2, 100, 99, testActor.underlyingActor.sessionId)
@@ -88,39 +82,13 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     }
 
     "respond to ChangeTask" in {
-
       val mockTask = mock(classOf[TaskWrapper])
       val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
-      val express1 = Express(getActorSystem)
-      val testActorHost = express1.localHost
-      mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
-      mockMaster.reply(Start(0, Util.randInt))
+      testActor ! Start(0, Util.randInt)
+      mockMaster.expectMsgType[GetUpstreamMinClock]
 
       mockMaster.send(testActor, ChangeTask(taskId1, 1, LifeTime.Immortal, List.empty[Subscriber]))
       mockMaster.expectMsgType[TaskChanged]
-    }
-
-    "shutdown itself when RegisterTask is rejected" in {
-      val mockTask = mock(classOf[TaskWrapper])
-      val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
-      val express1 = Express(getActorSystem)
-      val testActorHost = express1.localHost
-      mockMaster.expectMsg(RegisterTask(taskId1, executorId1, testActorHost))
-
-      implicit val system = getActorSystem
-      val deathWatch = TestProbe()
-      deathWatch.watch(testActor)
-      mockMaster.reply(TaskRejected)
-      import scala.concurrent.duration._
-      deathWatch.expectTerminated(testActor, 15 seconds)
-    }
-
-    "throw RegisterTaskFailedException when register to AppMaster time out" in {
-      implicit val system = getActorSystem
-      val mockTask = mock(classOf[TaskWrapper])
-      EventFilter[RegisterTaskFailedException](occurrences = 1) intercept {
-        TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
-      }
     }
 
     "handle received message correctly" in {

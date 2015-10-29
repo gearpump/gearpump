@@ -20,21 +20,21 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.pattern.ask
-import io.gearpump.streaming.task._
+import io.gearpump.TimeStamp
+import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
+import io.gearpump.streaming.AppMasterToExecutor._
+import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterTask}
 import io.gearpump.streaming._
-import io.gearpump.streaming.appmaster.ExecutorManager.{StartExecutorsTimeOut, ExecutorStarted}
-import io.gearpump.streaming.executor.{ExecutorRestartPolicy, Executor}
+import io.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, TaskActorRef}
+import io.gearpump.streaming.appmaster.ClockService.ChangeToNewDAG
+import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
+import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorStarted, StartExecutorsTimeOut, _}
+import io.gearpump.streaming.appmaster.TaskManager._
+import io.gearpump.streaming.appmaster.TaskRegistry.{Accept, TaskLocation}
+import io.gearpump.streaming.executor.Executor.RestartTasks
+import io.gearpump.streaming.executor.ExecutorRestartPolicy
+import io.gearpump.streaming.task._
 import io.gearpump.streaming.util.ActorPathUtil
-import io.gearpump.cluster.MasterToAppMaster.{MessageLoss, ReplayFromTimestampWindowTrailingEdge}
-import AppMasterToExecutor.{ChangeTasks, LaunchTasks, Start, TaskChanged, TaskRejected, TasksChanged, TasksLaunched}
-import ExecutorToAppMaster.RegisterTask
-import AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, TaskActorRef}
-import ClockService.ChangeToNewDAG
-import DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
-import ExecutorManager._
-import TaskManager._
-import TaskRegistry.{Accept, TaskLocation}
-import Executor.RestartTasks
 import io.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
@@ -67,12 +67,6 @@ private[appmaster] class TaskManager(
   dagManager ! WatchChange(watcher = self)
   executorManager ! SetTaskManager(self)
 
-  import io.gearpump.TimeStamp
-
-  private def getMinClock: Future[TimeStamp] = {
-    (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
-  }
-
   private def getStartClock: Future[TimeStamp] = {
     (clockService ? GetStartClock).asInstanceOf[Future[StartClock]].map(_.clock)
   }
@@ -81,7 +75,7 @@ private[appmaster] class TaskManager(
 
   private val startTasks: StateFunction = {
     case Event(executor: ExecutorStarted, state) =>
-      import executor.{boundedJar, workerId, executorId, resource}
+      import executor.{boundedJar, executorId, resource, workerId}
       val taskIds = subDAGManager.scheduleTask(boundedJar.get, workerId, executorId, resource)
       LOG.info(s"Executor $executor has been started, start to schedule tasks: ${taskIds.mkString(",")}")
 
@@ -98,7 +92,8 @@ private[appmaster] class TaskManager(
         val resourceRequestDetail = subDAGManager.executorFailed(executorId)
         executorManager ! StartExecutors(resourceRequestDetail.requests, resourceRequestDetail.jar)
       } else {
-        LOG.error(s"Executor restarted too many times")
+        val errorMsg = s"Executor restarted too many times to recover"
+        appMaster ! FailedToRecover(errorMsg)
       }
       stay
 
@@ -130,17 +125,17 @@ private[appmaster] class TaskManager(
       if (status == Accept) {
         LOG.info(s"RegisterTask($taskId) TaskLocation: $host, Executor: $executorId")
         val sessionId = ids.newSessionId
-        startClock.map(client ! Start(_, sessionId))
+        client ! TaskRegistered(taskId, sessionId)
         checkApplicationReady(state)
       } else {
-        sender ! TaskRejected
+        sender ! TaskRejected(taskId)
         stay
       }
 
     case Event(TaskChanged(taskId, dagVersion), state) =>
       state.taskChangeRegistry.taskChanged(taskId)
       checkApplicationReady(state)
-      
+
     case Event(CheckApplicationReady, state) =>
       checkApplicationReady(state)
   }
@@ -151,7 +146,7 @@ private[appmaster] class TaskManager(
       LOG.info(s"All tasks have been launched; send Task locations to all executors")
       val taskLocations = taskRegistry.getTaskLocations
       (clockService ? ChangeToNewDAG(state.dag)).map { _ =>
-        executorManager ! BroadCast(taskLocations)
+        startClock.map(clock => executorManager ! BroadCast(StartAllTasks(taskLocations, clock)))
       }
 
       val recoverState = StateData(state.dag, new TaskRegistry(appId, state.dag.tasks))
@@ -203,8 +198,6 @@ private[appmaster] class TaskManager(
       goto (ApplicationReady) using state.copy(recoverState = state)
   }
 
-  when(Recovery)(startTasks orElse ignoreClockEvent)
-
   private val onMessageLoss: StateFunction = {
     case Event(executorStopped@ExecutorStopped(executorId), state) =>
       if (state.taskRegistry.isTaskRegisteredForExecutor(executorId)) {
@@ -214,10 +207,13 @@ private[appmaster] class TaskManager(
         stay
       }
 
-    case Event(MessageLoss(executorId, cause), state) =>
-      if (state.taskRegistry.isTaskRegisteredForExecutor(executorId)) {
+    case Event(MessageLoss(executorId, taskId, cause), state) =>
+      if (state.taskRegistry.isTaskRegisteredForExecutor(executorId) &&
+            executorRestartPolicy.allowRestartExecutor(executorId)) {
         goto(Recovery) using state.recoverState
       } else {
+        val errorMsg = s"Task $taskId fails too many times to recover"
+        appMaster ! FailedToRecover(errorMsg)
         stay
       }
     case Event(reply: ReplayFromTimestampWindowTrailingEdge, state) =>
@@ -259,6 +255,8 @@ private[appmaster] class TaskManager(
         goto(DynamicDAG) using nextState
       }
   }
+
+  when(Recovery)(startTasks orElse ignoreClockEvent)
 
   when(ApplicationReady)(onMessageLoss orElse onClientQuery orElse onNewDAG orElse onClockEvent)
 
@@ -307,6 +305,8 @@ private [appmaster] object TaskManager {
 
   case class TaskList(tasks: Map[TaskId, ExecutorId])
 
+  case class FailedToRecover(errorMsg: String)
+
   case class StartTasksOnExecutor(executorId: Int, tasks: List[TaskId])
   case class ChangeTasksOnExecutor(executorId: Int, tasks: List[TaskId])
 
@@ -351,7 +351,6 @@ private [appmaster] object TaskManager {
     // all upstream will be affected.
     DAGDiff(added.toList, modified.toList, impactedUpstream.toList)
   }
-
 
   class SessionIdFactory {
     private var nextSessionId = 1

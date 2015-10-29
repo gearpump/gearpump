@@ -286,7 +286,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
         LOG.info(s"AppManager Recovering Application $appId...")
         context.actorOf(launcher.props(appId, executorId, state.app, state.jar, state.username, context.parent, None), s"launcher${appId}_${Util.randInt}")
       } else {
-        LOG.error(s"Application $appId failed to many times")
+        LOG.error(s"Application $appId failed too many times")
       }
   }
 

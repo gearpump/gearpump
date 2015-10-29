@@ -39,8 +39,6 @@ class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with I
     "handle the time out event" in {
       val testActorRef = TestActorRef(Props(classOf[TestActor], mockActor.ref))
       val testActor = testActorRef.underlyingActor.asInstanceOf[TestActor]
-      testActor.sendMsgToReply()
-      mockActor.expectMsg(30 seconds, Echo)
       testActor.sendMsgToIgnore()
       mockActor.expectMsg(30 seconds, MessageTimeOut)
     }
@@ -48,7 +46,6 @@ class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with I
 }
 
 case object Echo
-case object MessageToReply
 case object MessageTimeOut
 
 class TestActor(mock: ActorRef) extends Actor with TimeOutScheduler {
@@ -57,14 +54,9 @@ class TestActor(mock: ActorRef) extends Actor with TimeOutScheduler {
   val target = context.actorOf(Props(classOf[EchoActor]))
 
   override def receive: Receive = {
-    case Echo =>
-      mock ! Echo
+    case _ =>
   }
 
-  def sendMsgToReply(): Unit = {
-    sendMsgWithTimeOutCallBack(target, MessageToReply, 2, ())
-  }
-  
   def sendMsgToIgnore(): Unit = {
     sendMsgWithTimeOutCallBack(target, Echo, 2, sendMsgTimeOut())
   }
@@ -76,8 +68,6 @@ class TestActor(mock: ActorRef) extends Actor with TimeOutScheduler {
 
 class EchoActor extends Actor {
   override def receive: Receive = {
-    case MessageToReply =>
-      sender ! Echo
     case _ =>
   }
 }

@@ -20,7 +20,6 @@ package io.gearpump.streaming.task
 
 import io.gearpump.TimeStamp
 
-
 /*
  * Initial AckRequest
  */
@@ -52,7 +51,7 @@ case class LatestMinClock(clock: TimeStamp)
 
 case class ReportCheckpointClock(taskId: TaskId, clock: TimeStamp)
 
-object GetStartClock
+case object GetStartClock
 
 case class StartClock(clock: TimeStamp)
 
