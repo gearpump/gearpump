@@ -24,7 +24,7 @@ import backtype.storm.generated.{JavaObject, GlobalStreamId, Grouping}
 import backtype.storm.grouping.CustomStreamGrouping
 import backtype.storm.task.TopologyContext
 import backtype.storm.tuple.{Fields, Tuple}
-import backtype.storm.utils.Utils
+import backtype.storm.utils.{ListDelegate, Utils}
 import io.gearpump._
 import io.gearpump.experiments.storm.topology.GearpumpTuple
 import io.gearpump.experiments.storm.util.StormUtil._

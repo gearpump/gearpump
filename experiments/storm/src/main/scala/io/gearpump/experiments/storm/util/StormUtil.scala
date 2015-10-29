@@ -18,7 +18,7 @@
 
 package io.gearpump.experiments.storm.util
 
-import java.io._
+import java.lang.{Boolean => JBoolean, Double => JDouble, Integer => JInteger, Long => JLong}
 import java.util.{HashMap => JHashMap, Map => JMap}
 
 import akka.actor.ActorSystem
@@ -27,14 +27,9 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
 import io.gearpump.experiments.storm.topology._
 import io.gearpump.streaming.task.{TaskContext, TaskId}
-import io.gearpump.util.LogUtil
 import org.json.simple.JSONValue
-import org.slf4j.Logger
-import org.yaml.snakeyaml.Yaml
-import org.yaml.snakeyaml.constructor.SafeConstructor
 
 object StormUtil {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   import StormConstants._
 
@@ -63,13 +58,14 @@ object StormUtil {
 
   def getGearpumpStormComponent(taskContext: TaskContext, conf: UserConfig)(implicit system: ActorSystem): GearpumpStormComponent = {
     val topology = conf.getValue[StormTopology](STORM_TOPOLOGY).get
+    val stormConfig = conf.getValue[JMap[AnyRef, AnyRef]](STORM_CONFIG).get
     val componentId = conf.getString(STORM_COMPONENT).get
     val spouts = topology.get_spouts
     val bolts = topology.get_bolts
     if (spouts.containsKey(componentId)) {
-      GearpumpSpout(topology, componentId, spouts.get(componentId), taskContext)
+      GearpumpSpout(topology, stormConfig, componentId, spouts.get(componentId), taskContext)
     } else if (bolts.containsKey(componentId)) {
-      GearpumpBolt(topology, componentId, bolts.get(componentId), taskContext)
+      GearpumpBolt(topology, stormConfig, componentId, bolts.get(componentId), taskContext)
     } else {
       throw new Exception(s"storm component $componentId not found")
     }
@@ -80,26 +76,19 @@ object StormUtil {
         .getOrElse(new JHashMap[AnyRef, AnyRef]).asInstanceOf[JMap[AnyRef, AnyRef]]
   }
 
-  def readStormConfig(config: String): JMap[AnyRef, AnyRef] = {
-    var ret: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
-    try {
-      val yaml = new Yaml(new SafeConstructor)
-      val input: InputStream = new FileInputStream(config)
-      try {
-        ret = yaml.load(new InputStreamReader(input)).asInstanceOf[JMap[AnyRef, AnyRef]]
-      } catch {
-        case e: IOException =>
-          LOG.error(s"failed to load config file $config")
-      } finally {
-        input.close()
-      }
-    } catch {
-      case e: FileNotFoundException =>
-        LOG.error(s"failed to find config file $config")
-      case t: Throwable =>
-        LOG.error(t.getMessage)
+  def getInt(conf: JMap[_, _], name: AnyRef): Option[Int] = {
+    Option(conf.get(name)).map {
+      case l: JLong => l.toInt
+      case d: JDouble => d.toInt
+      case i: JInteger => i.toInt
+      case _ => throw new IllegalArgumentException(s"$name must be a Java Integer within type range")
     }
-    ret
   }
 
+  def getBoolean(conf: JMap[_, _], name: AnyRef): Option[Boolean] = {
+    Option(conf.get(name)).map {
+      case b: JBoolean => b.booleanValue()
+      case _ => throw new IllegalArgumentException(s"$name must be a Java Boolean")
+    }
+  }
 }

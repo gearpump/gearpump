@@ -18,23 +18,26 @@
 
 package io.gearpump.experiments.storm.topology
 
-import java.lang.{Integer => JInteger}
 import java.util.{List => JList}
 
-import backtype.storm.task.TopologyContext
+import backtype.storm.task.GeneralTopologyContext
 import backtype.storm.tuple.{Tuple, TupleImpl}
+import io.gearpump.util.LogUtil
+import org.slf4j.Logger
 
 
 private[storm] class GearpumpTuple(
-    tuple: JList[AnyRef],
-    sourceTaskId: JInteger,
-    sourceStreamId: String,
+    val values: JList[AnyRef],
+    val sourceTaskId: Integer,
+    val sourceStreamId: String,
     @transient val targetPartitions: Map[String, List[Int]]) extends Serializable {
+  private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpTuple])
 
-  def this() = this(null, null, null, null)
-
-  def toTuple(topologyContext: TopologyContext): Tuple = {
-    new TupleImpl(topologyContext, tuple, sourceTaskId, sourceStreamId, null)
+  def toTuple(topologyContext: GeneralTopologyContext): Tuple = {
+    if (topologyContext.getComponentId(sourceTaskId) == null) {
+      LOG.error(s"${topologyContext.getTaskToComponent}")
+    }
+    new TupleImpl(topologyContext, values, sourceTaskId, sourceStreamId, null)
   }
 }
 

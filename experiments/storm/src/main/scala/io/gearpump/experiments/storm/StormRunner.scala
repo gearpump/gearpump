@@ -24,14 +24,13 @@ import java.util.{Map => JMap}
 import akka.actor.{Actor, ActorSystem, Props}
 import backtype.storm.Config
 import backtype.storm.generated.{ClusterSummary, StormTopology, SupervisorSummary, TopologySummary}
-import backtype.storm.utils.Utils
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.experiments.storm.Commands.{GetClusterInfo, _}
 import io.gearpump.experiments.storm.topology.GearpumpStormTopology
-import io.gearpump.experiments.storm.util.{GraphBuilder, StormConstants, StormUtil}
+import io.gearpump.experiments.storm.util.{GraphBuilder, StormConstants}
 import io.gearpump.streaming.StreamApplication
 import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 
@@ -97,7 +96,7 @@ object StormRunner extends AkkaApp with ArgumentsParser {
       .withValue(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH, ConfigValueFactory.fromAnyRef(executorClassPath))
   }
 
-  class Handler(clientContext: ClientContext, jar: String, userConfig: String) extends Actor {
+  class Handler(clientContext: ClientContext, jar: String, fileConfig: String) extends Actor {
     private var applications = Map.empty[String, Int]
     private var topologies = Map.empty[String, StormTopology]
     private val LOG = LogUtil.getLogger(classOf[Handler])
@@ -112,18 +111,16 @@ object StormRunner extends AkkaApp with ArgumentsParser {
         applications -= name
         LOG.info(s"Killed topology $name")
         sender ! AppKilled(name, appId)
-      case Submit(name, uploadedJarLocation, jsonConf, topology, options) =>
+      case Submit(name, uploadedJarLocation, appConfig, topology, option) =>
         topologies += name -> topology
 
-        val stormConfig = Utils.readDefaultConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
-        stormConfig.putAll(StormUtil.parseJsonStringToMap(jsonConf))
-        stormConfig.putAll(StormUtil.readStormConfig(userConfig))
-        val gearpumpStormTopology = new GearpumpStormTopology(topology, stormConfig)
+        val gearpumpStormTopology = new GearpumpStormTopology(topology, appConfig, fileConfig)
+        val stormConfig = gearpumpStormTopology.getStormConfig
         val processorGraph = GraphBuilder.build(gearpumpStormTopology)
         val config = UserConfig.empty
             .withValue[StormTopology](StormConstants.STORM_TOPOLOGY, topology)
             .withValue[JMap[AnyRef, AnyRef]](StormConstants.STORM_CONFIG, stormConfig)
-        val app = StreamApplication("storm", processorGraph, config)
+        val app = StreamApplication(name, processorGraph, config)
         val appId = clientContext.submit(app, jar)
         applications += name -> appId
         LOG.info(s"Storm Application $appId submitted")
