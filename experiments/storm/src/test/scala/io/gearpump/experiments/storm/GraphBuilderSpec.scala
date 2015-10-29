@@ -31,12 +31,10 @@ class GraphBuilderSpec extends WordSpec with Matchers {
 
   "GraphBuilder" should {
     val topology = TopologyUtil.getTestTopology
-    val spouts = topology.get_spouts()
-    val bolts = topology.get_bolts()
 
     "build Graph from Storm topology" in {
       implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
-      val gearpumpStormTopology = new GearpumpStormTopology(topology, null)
+      val gearpumpStormTopology = new GearpumpStormTopology(topology, null, "")
       val processorGraph = GraphBuilder.build(gearpumpStormTopology)
       processorGraph.vertices.size shouldBe 4
       processorGraph.edges.length shouldBe 3
