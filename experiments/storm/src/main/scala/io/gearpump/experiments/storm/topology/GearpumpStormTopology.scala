@@ -50,15 +50,12 @@ class GearpumpStormTopology(topology: StormTopology, appConfig: String, fileConf
 
   private val spouts = topology.get_spouts()
   private val bolts = topology.get_bolts()
-  private val spoutProcessors = spouts.map { case (id, spout) =>
-    id -> spoutToProcessor(id, spout) }.toMap
-  private val boltProcessors = bolts.map { case (id, bolt) =>
-    id -> boltToProcessor(id, bolt) }.toMap
-  private val allProcessors = spoutProcessors ++ boltProcessors
-
-
   private val stormConfig = mergeConfigs(appConfig, fileConfig, getComponentConfigs(spouts, bolts))
-  println(stormConfig)
+  private val spoutProcessors = spouts.map { case (id, spout) =>
+    id -> spoutToProcessor(id, spout, stormConfig) }.toMap
+  private val boltProcessors = bolts.map { case (id, bolt) =>
+    id -> boltToProcessor(id, bolt, stormConfig) }.toMap
+  private val allProcessors = spoutProcessors ++ boltProcessors
 
   /**
    * merge configs from application, custom config file and component
@@ -88,20 +85,22 @@ class GearpumpStormTopology(topology: StormTopology, appConfig: String, fileConf
     }
   }
 
-  private def spoutToProcessor(spoutId: String, spoutSpec: SpoutSpec)(implicit system: ActorSystem): Processor[Task] = {
+  private def spoutToProcessor(spoutId: String, spoutSpec: SpoutSpec,
+      allConfig: JMap[AnyRef, AnyRef])(implicit system: ActorSystem): Processor[Task] = {
     val componentCommon = spoutSpec.get_common()
     val taskConf = UserConfig.empty
         .withString(STORM_COMPONENT, spoutId)
-    val parallelism = getParallelism(stormConfig, componentCommon)
+    val parallelism = getParallelism(allConfig, componentCommon)
     Processor[StormProducer](parallelism, spoutId, taskConf)
 
   }
 
-  private def boltToProcessor(boltId: String, bolt: Bolt)(implicit system: ActorSystem): Processor[Task] = {
+  private def boltToProcessor(boltId: String, bolt: Bolt,
+      allConfig: JMap[AnyRef, AnyRef])(implicit system: ActorSystem): Processor[Task] = {
     val componentCommon = bolt.get_common()
     val taskConf = UserConfig.empty
         .withString(STORM_COMPONENT, boltId)
-    val parallelism = getParallelism(stormConfig, componentCommon)
+    val parallelism = getParallelism(allConfig, componentCommon)
     Processor[StormProcessor](parallelism, boltId, taskConf)
   }
 
