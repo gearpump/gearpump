@@ -6,7 +6,7 @@ description: Gearpump Internals
 ---
 ### Actor Hiearachy?
 
-![](/img/actor_hierarchy.png)
+![Actor Hierarchy](/img/actor_hierarchy.png)
 
 Everything in the diagram is an actor; they fall into two categories, Cluster Actors and Application Actors.
 
@@ -34,7 +34,7 @@ Global clock service will track the minimum time stamp of all pending messages i
   - Minimum time stamp of all un-acked outgoing messages. When there is message loss, the minimum clock will not advance.
   - Minimum clock of all task states. If the state is accumulated by a lot of input messages, then the clock value is decided by the oldest message's timestamp. The state clock will advance by doing snapshots to persistent storage or by fading out the effect of old messages.
 
-![](/img/clock.png)
+![Clock](/img/clock.png)
 
 The global clock service will keep track of all task minimum clocks effectively and maintain a global view of minimum clock. The global minimum clock value is monotonically increasing; it means that all source messages before this clock value have been processed. If there is message loss or task crash, the global minimum clock will stop.
 
@@ -46,7 +46,7 @@ For streaming application, message passing performance is extremely important. F
 
 In streaming, typical message size is very small, usually less than 100 bytes per message, like the floating car GPS data. But network efficiency is very bad when transferring small messages. As you can see in below diagram, when message size is 50 bytes, it can only use 20% bandwidth. How to improve the throughput?
 
-![](/img/through_vs_message_size.png)
+![Throughput vs. Message Size](/img/through_vs_message_size.png)
 
 #### Second Challenge: Message overhead is too big
 
@@ -60,7 +60,7 @@ akka.tcp://system1@192.168.1.53:51582/remote/akka.tcp/2120193a-e10b-474e-bccb-8e
 
 We implement a custom Netty transportation layer with Akka extension. In the below diagram, Netty Client will translate ActorPath to TaskId, and Netty Server will translate it back. Only TaskId will be passed on wire, it is only about 10 bytes, the overhead is minimized. Different Netty Client Actors are isolated; they will not block each other.
 
-![](/img/netty_transport.png)
+![Netty Transport](/img/netty_transport.png)
 
 For performance, effective batching is really the key! We group multiple messages to a single batch and send it on the wire. The batch size is not fixed; it is adjusted dynamically based on network status. If the network is available, we will flush pending messages immediately without waiting; otherwise we will put the message in a batch and trigger a timer to flush the batch later.
 
@@ -68,7 +68,7 @@ For performance, effective batching is really the key! We group multiple message
 
 Without flow control, one task can easily flood another task with too many messages, causing out of memory error. Typical flow control will use a TCP-like sliding window, so that source and target can run concurrently without blocking each other.
 
-![](/img/flow_control.png)
+![Flow Control](/img/flow_control.png)
 Figure: Flow control, each task is "star" connected to input tasks and output tasks
 
 The difficult part for our problem is that each task can have multiple input tasks and output tasks. The input and output must be geared together so that the back pressure can be properly propagated from downstream to upstream. The flow control also needs to consider failures, and it needs to be able to recover when there is message loss.
@@ -78,7 +78,7 @@ Another challenge is that the overhead of flow control messages can be big. If w
 
 For example, for web ads, we may charge for every click, we don't want to miscount.  The streaming platform needs to effectively track what messages have been lost, and recover as fast as possible.
 
-![](/img/messageLoss.png)
+![Message Loss](/img/messageLoss.png)
 Figure: Message Loss Detection
 
 We use the flow control message AckRequest and Ack to detect message loss. The target task will count how many messages has been received since last AckRequest, and ack the count back to source task. The source task will check the count and find message loss.
@@ -88,7 +88,7 @@ This is just an illustration, the real case is more difficulty, we need to handl
 
 In some applications, a message cannot be lost, and must be replayed. For example, during the money transfer, the bank will SMS us the verification code. If that message is lost, the system must replay it so that money transfer can continue. We made the decision to use **source end message storage** and **time stamp based replay**.
 
-![](/img/replay.png)
+![Replay](/img/replay.png)
 Figure: Replay with Source End Message Store
 
 Every message is immutable, and tagged with a timestamp. We have an assumption that the timestamp is approximately incremental (allow small ratio message disorder).
@@ -99,7 +99,7 @@ We assume the message is coming from a replay-able source, like Kafka queue; oth
 
 In a distributed streaming system, any part can fail. The system must stay responsive and do recovery in case of errors.
 
-![](/img/ha.png)
+![HA](/img/ha.png)
 Figure: Master High Availability
 
 We use Akka clustering to implement the Master high availability. The cluster consists of several master nodes, but no worker nodes. With clustering facilities, we can easily detect and handle the failure of master node crash. The master state is replicated on all master nodes with the Typesafe akka-data-replication  library, when one master node crashes, another standby master will read the master state and take over. The master state contains the submission data of all applications. If one application dies, a master can use that state to recover that application. CRDT LwwMap  is used to represent the state; it is a hash map that can converge on distributed nodes without conflict. To have strong data consistency, the state read and write must happen on a quorum of master nodes.
@@ -110,7 +110,7 @@ With Akka's powerful actor supervision, we can implement a resilient system rela
 
 There are multiple possible failure scenarios
 
-![](/img/failures.png)
+![Failures](/img/failures.png)
 Figure: Possible Failure Scenarios and Error Supervision Hierarchy
 
 #### What happen when Master Crash?
@@ -142,7 +142,7 @@ For some applications, it is extremely important to do "exactly once" message de
   Transparent to application developer
 We use global clock to synchronize the distributed transactions. We assume every message from the data source will have a unique timestamp, the timestamp can be a part of the message body, or can be attached later with system clock when the message is injected into the streaming system. With this global synchronized clock, we can coordinate all tasks to checkpoint at same timestamp.
 
-![](/img/checkpointing.png)
+![Checkpoint](/img/checkpointing.png)
 Figure: Checkpointing and Exactly-Once Message delivery
 
 Workflow to do state checkpointing:
@@ -156,14 +156,14 @@ Workflow to do state checkpointing:
 
 The checkpoint interval is determined by global clock service dynamically. Each data source will track the max timestamp of input messages. Upon receiving min clock updates, the data source will report the time delta back to global clock service. The max time delta is the upper bound of the application state timespan. The checkpoint interval is bigger than max delta time:
 
-![](/img/checkpoint_equation.png)
+![Checkpoint Equation](/img/checkpoint_equation.png)
 
-![](/img/checkpointing_interval.png)
+![Checkpointing Interval](/img/checkpointing_interval.png)
 Figure: How to determine Checkpoint Interval
 
 After the checkpoint interval is notified to tasks by global clock service, each task will calculate its next checkpoint timestamp autonomously without global synchronization.
 
-![](/img/checkpoint_interval_equation.png)
+![Checkpoint Interval Equation](/img/checkpoint_interval_equation.png)
 
 For each task, it contains two states, checkpoint state and current state. The code to update the state is shown in listing below.
 
@@ -196,14 +196,14 @@ List 1: Task Transactional State Implementation
 
 The DAG can be modified dynamically. We want to be able to dynamically add, remove, and replace a sub-graph.
 
-![](/img/dynamic.png)
+![Dynamic DAG](/img/dynamic.png)
 Figure: Dynamic Graph, Attach, Replace, and Remove
 
 ## At least once message delivery and Kafka
 
 The Kafka source example project and tutorials can be found at:
 - [Kafka connector example project](https://github.com/gearpump/gearpump/tree/master/examples/streaming/kafka)
-- [Connect with Kafka source](#connect-with-kafka)
+- [Connect with Kafka source](dev-connectors.html)
 
 In this doc, we will talk about how the at least once message delivery works.
 
@@ -212,7 +212,7 @@ We will use the WordCount example of [source tree](https://github.com/gearpump/g
 ### How the kafka WordCount DAG looks like:
 
 It contains three processors:
-![](/img/kafka_wordcount.png)
+![Kafka WordCount](/img/kafka_wordcount.png)
 
 - KafkaStreamProducer(or KafkaSource) will read message from kafka queue.
 - Split will split lines to words
@@ -220,7 +220,7 @@ It contains three processors:
 
 ### How to read data from Kafka
 
-We use KafkaSource, please check [Connect with Kafka source](#connect-with-kafka) for the introduction.
+We use KafkaSource, please check [Connect with Kafka source](dev-connectors.html) for the introduction.
 
 Please note that we have set a startTimestamp for the KafkaSource, which means KafkaSource will read from Kafka queue starting from messages whose timestamp is near startTimestamp.
 

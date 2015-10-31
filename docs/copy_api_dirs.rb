@@ -20,16 +20,15 @@ include FileUtils
 
 if (ENV['BUILD_API'] == '1')
     # Build Scaladoc for Java/Scala
-
     puts "Moving to project root and building API docs."
     curr_dir = pwd
     cd("..")
 
     puts "Running 'sbt clean unidoc' from " + pwd + "; this may take a few minutes..."
-    system("sbt", "clean", "unidoc")
+    # system("sbt", "clean", "unidoc")
 
     puts "Moving back into docs dir."
-    cd("docs")
+    cd(curr_dir)
 
     puts "Removing old docs"
     puts `rm -rf _site/api`

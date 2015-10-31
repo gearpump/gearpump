@@ -35,4 +35,4 @@ Dashboard web socket service |	8091 |	UI backend web socket service for long con
 Master port |	3000 |	Every other role like worker, appmaster, executor, user use this port to communicate with Master.
 
 You need to ensure that your firewall has not banned these ports to ensure Gearpump can work correctly.
-And you can modify the port configuration. Check [Configuration]("deployment-configuration.html") section for details.  
+And you can modify the port configuration. Check [Configuration](deployment-configuration.html) section for details.  

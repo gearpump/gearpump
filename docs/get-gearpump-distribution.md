@@ -77,7 +77,7 @@ tar  -zxvf gearpump-${version}.tar.gz
 
 After decompression, the directory structure looks like picture 1.
 
-![](/img/layout.png)
+![Layout](/img/layout.png)
 
 Under bin/ folder, there are script files for Linux(bash script) and Windows(.bat script).
 
@@ -88,4 +88,4 @@ master | To start Gearpump in cluster mode, you need to start one or more master
 worker | To start Gearpump in cluster mode, you also need to start several workers, with each worker represent a set of local resources. worker/worker.bat is launcher script to start the worker node.
 services | This script is used to start backend REST service and other services for frontend UI dashboard.
 
-Please check [Command Line Syntax](#command-line-syntax) for more information for each script.
+Please check [Command Line Syntax](commandline.html) for more information for each script.
