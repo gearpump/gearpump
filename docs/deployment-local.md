@@ -34,4 +34,4 @@ Open another shell,
 ```bash
 bin/services
 ```
-You can manage the applications in UI [http://127.0.0.1:8090](http://127.0.0.1:8090) or by [Command Line tool](#command-line-syntax).
+You can manage the applications in UI [http://127.0.0.1:8090](http://127.0.0.1:8090) or by [Command Line tool](commandline.html).

@@ -33,7 +33,7 @@ bin/gear app -jar examples/gearpump-examples-assembly-{{site.GEARPUMP_VERSION}}.
 ###  Step 2: Congratulation! You have your first application running! Open the UI and view the status
 
 Now, the application is running, start the Web UI at [http://127.0.0.1:8090](http://127.0.0.1:8090) and check the status.
-![](/img/dashboard.gif)
+![Dashboard](/img/dashboard.gif)
 
 You see, now it is up and running.
 
