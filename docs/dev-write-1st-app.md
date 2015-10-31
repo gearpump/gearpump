@@ -167,7 +167,7 @@ Given the `ParseResult` of command line arguments, we create `TaskDescription`s 
 
 ### Submit application
 
-After all these, you need to package everything into a uber jar and submit the jar to Gearpump Cluster. Please check [Application submission tool](Commandline.html) to command line tool syntax.
+After all these, you need to package everything into a uber jar and submit the jar to Gearpump Cluster. Please check [Application submission tool](commandline.html) to command line tool syntax.
 
 
 ### Advanced topic
