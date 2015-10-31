@@ -10,7 +10,14 @@ all needed software via:
 
     gem install jekyll
     gem install kramdown
+    gem install html-proofer
     sudo easy_install Pygments
+
+For Mac OSX you may need to do `sudo gem install -n /usr/local/bin jekyll` if you see the following error:
+```
+ERROR:  While executing gem ... (Errno::EPERM)
+    Operation not permitted - /usr/bin/listen
+```
 
 Kramdown is needed for Markdown processing and the Python based Pygments is used for syntax
 highlighting.

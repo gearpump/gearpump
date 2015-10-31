@@ -13,4 +13,11 @@ fi
 export SCALA_VERSION=$1
 export BUILD_API=$2
 
+#generate _site documents
 jekyll build
+
+#generate API doc
+ruby copy_api_dirs.rb
+
+#check html link validality
+ htmlproof _site --disable-external --url-ignore api/scala/index.html,api/java-api.html
