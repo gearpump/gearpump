@@ -18,60 +18,49 @@
 
 package io.gearpump.experiments.storm.producer
 
-// TODO: fix this spec
-/*class StormProducerSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
-  import StormConstants._
+import akka.testkit.TestProbe
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpSpout
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.task.StartTime
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{WordSpec, Matchers}
+import org.mockito.Mockito._
 
-  property("StormProducer should work") {
-    implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
-    val topology = TopologyUtil.getTestTopology
-    val graphBuilder = GraphBuilder
-    val processorGraph = graphBuilder.build(topology, null)
+class StormProducerSpec extends WordSpec with Matchers with MockitoSugar {
 
+  "StormProducer" should {
+    "start GearpumpSpout onStart" in {
+      val startTime = mock[StartTime]
+      val gearpumpSpout = mock[GearpumpSpout]
+      val taskContext = MockUtil.mockTaskContext
+      implicit val actorSystem = taskContext.system
+      val taskActor = TestProbe()
+      when(taskContext.self).thenReturn(taskActor.ref)
+      val userConfig = UserConfig.empty
+      val stormProducer = new StormProducer(gearpumpSpout, taskContext, userConfig)
 
-    var processorIdIndex = 0
-    val processorDescriptionGraph = processorGraph.mapVertex { processor =>
-      val description = Processor.ProcessorToProcessorDescription(processorIdIndex, processor)
-      processorIdIndex += 1
-      description
-    }.mapEdge { (node1, edge, node2) =>
-      PartitionerDescription(new PartitionerObject(edge))
+      stormProducer.onStart(startTime)
+
+      verify(gearpumpSpout).start(startTime)
+      taskActor.expectMsg(Message("start"))
     }
 
-    val dag = DAG(processorDescriptionGraph)
+    "pass message to GearpumpBolt onNext" in {
+      val message = mock[Message]
+      val gearpumpSpout = mock[GearpumpSpout]
+      val taskContext = MockUtil.mockTaskContext
+      implicit val actorSystem = taskContext.system
+      val taskActor = TestProbe()
+      when(taskContext.self).thenReturn(taskActor.ref)
+      val userConfig = UserConfig.empty
+      val stormProducer = new StormProducer(gearpumpSpout, taskContext, userConfig)
 
+      stormProducer.onNext(message)
 
-    val processors = dag.processors
-
-    val stormConfig = Utils.readStormConfig()
-    val userConfig = UserConfig.empty
-        .withValue(TOPOLOGY, topology)
-        .withString(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
-
-    val mockTaskActor = TestProbe()
-
-    val spouts = topology.get_spouts()
-    processors.foreach { case (pid, procDesc) =>
-      val conf = procDesc.taskConf
-      val cid = conf.getString(COMPONENT_ID).getOrElse(
-        fail(s"component id not found for processor $pid")
-      )
-      if (spouts.containsKey(cid)) {
-        val spoutSpec = conf.getValue[SpoutSpec](COMPONENT_SPEC).getOrElse(
-          fail(s"spout not found for processor $pid")
-        )
-        spoutSpec shouldBe spouts.get(cid)
-
-        val taskContext = MockUtil.mockTaskContext
-        when(taskContext.self).thenReturn(mockTaskActor.ref)
-        when(taskContext.taskId).thenReturn(TaskId(pid, 0))
-        val stormProducer = new StormProducer(taskContext, procDesc.taskConf.withConfig(userConfig))
-        stormProducer.onStart(StartTime(0))
-        mockTaskActor.expectMsgType[Message]
-        stormProducer.onNext(Message("Next"))
-        mockTaskActor.expectMsgType[Message]
-        verify(taskContext).output(anyObject())
-      }
+      verify(gearpumpSpout).next(message)
+      taskActor.expectMsg(Message("continue"))
     }
   }
-}*/
+}

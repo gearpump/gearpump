@@ -18,30 +18,37 @@
 
 package io.gearpump.experiments.storm.util
 
-
 import io.gearpump.experiments.storm.partitioner.StormPartitioner
 import io.gearpump.experiments.storm.topology.GearpumpStormTopology
-import io.gearpump.partitioner.Partitioner
 import io.gearpump.streaming.Processor
 import io.gearpump.streaming.task.Task
-import io.gearpump.util.Graph
+import org.mockito.Mockito._
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{Matchers, WordSpec}
 
-object GraphBuilder {
+class GraphBuilderSpec extends WordSpec with Matchers with MockitoSugar {
 
-  /**
-   * build a Gearpump DAG from a Storm topology
-   * @param topology a wrapper over Storm topology
-   * @return a DAG
-   */
-  def build(topology: GearpumpStormTopology): Graph[Processor[_ <: Task], _ <: Partitioner] = {
-    val processorGraph = Graph.empty[Processor[Task], Partitioner]
+  "GraphBuilder" should {
+    "build Graph from Storm topology" in {
+      val topology = mock[GearpumpStormTopology]
 
-    topology.getProcessors.foreach { case (sourceId, sourceProcessor) =>
-      topology.getTargets(sourceId).foreach { case (targetId, targetProcessor) =>
-        processorGraph.addEdge(sourceProcessor, new StormPartitioner(targetId), targetProcessor)
-      }
+      val sourceId = "source"
+      val sourceProcessor = mock[Processor[Task]]
+      val targetId = "target"
+      val targetProcessor = mock[Processor[Task]]
+
+      when(topology.getProcessors).thenReturn(
+        Map(sourceId -> sourceProcessor, targetId -> targetProcessor))
+      when(topology.getTargets(sourceId)).thenReturn(Map(targetId -> targetProcessor))
+      when(topology.getTargets(targetId)).thenReturn(Map.empty[String, Processor[Task]])
+
+      val graph = GraphBuilder.build(topology)
+
+      graph.edges.size shouldBe 1
+      val (from, edge, to) = graph.edges.head
+      from shouldBe sourceProcessor
+      edge shouldBe a [StormPartitioner]
+      to shouldBe targetProcessor
     }
-
-    processorGraph
   }
 }

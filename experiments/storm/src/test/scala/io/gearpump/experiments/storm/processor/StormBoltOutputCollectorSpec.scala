@@ -20,6 +20,7 @@ package io.gearpump.experiments.storm.processor
 
 import java.util.{List => JList}
 
+import backtype.storm.tuple.Tuple
 import backtype.storm.utils.Utils
 import io.gearpump.experiments.storm.util.StormOutputCollector
 import org.mockito.Mockito._
@@ -43,5 +44,12 @@ class StormBoltOutputCollectorSpec extends PropSpec with PropertyChecks with Mat
       boltCollector.emit(streamId, null, values)
       verify(collector).emit(streamId, values)
     }
+  }
+
+  property("StormBoltOutputCollector should throw on fail") {
+    val collector = mock[StormOutputCollector]
+    val tuple = mock[Tuple]
+    val boltCollector = new StormBoltOutputCollector(collector)
+    an [Exception] should be thrownBy boltCollector.fail(tuple)
   }
 }

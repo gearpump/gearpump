@@ -114,7 +114,7 @@ object StormRunner extends AkkaApp with ArgumentsParser {
       case Submit(name, uploadedJarLocation, appConfig, topology, option) =>
         topologies += name -> topology
 
-        val gearpumpStormTopology = new GearpumpStormTopology(topology, appConfig, fileConfig)
+        val gearpumpStormTopology = GearpumpStormTopology(topology, appConfig, fileConfig)
         val stormConfig = gearpumpStormTopology.getStormConfig
         val processorGraph = GraphBuilder.build(gearpumpStormTopology)
         val config = UserConfig.empty

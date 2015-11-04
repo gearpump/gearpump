@@ -24,13 +24,19 @@ import io.gearpump.experiments.storm.util.StormOutputCollector
 import io.gearpump.partitioner.{MulticastPartitioner, Partitioner}
 
 /**
- * partitioner for storm applications
+ * this is a partitioner bound to a target Storm component
  * partitioning is already done in [[StormOutputCollector]] and
- * kept in [[GearpumpTuple]] as the mapping of target to partitions
- * this partitioner just gets the partitions for the target
+ * kept in "targetPartitions" of [[GearpumpTuple]]
+ * the partitioner just returns the partitions of the target
+ *
+ * In Gearpump, a message is sent from a task to all the subscribers.
+ * In Storm, however, a message is sent to one or more of the subscribers.
+ * Hence, we have to do the partitioning in [[StormOutputCollector]] till the Storm way
+ * is supported in Gearpump
+ *
  * @param target target storm component id
  */
-class StormPartitioner(target: String) extends MulticastPartitioner {
+private[storm] class StormPartitioner(target: String) extends MulticastPartitioner {
 
   override def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): List[Int] = {
     val stormTuple = msg.msg.asInstanceOf[GearpumpTuple]

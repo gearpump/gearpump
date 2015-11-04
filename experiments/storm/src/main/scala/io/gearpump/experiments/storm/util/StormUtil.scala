@@ -18,7 +18,7 @@
 
 package io.gearpump.experiments.storm.util
 
-import java.lang.{Boolean => JBoolean, Double => JDouble, Integer => JInteger, Long => JLong}
+import java.lang.{Boolean => JBoolean}
 import java.util.{HashMap => JHashMap, Map => JMap}
 
 import akka.actor.ActorSystem
@@ -26,12 +26,12 @@ import backtype.storm.generated._
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
 import io.gearpump.experiments.storm.topology._
+import io.gearpump.experiments.storm.util.StormConstants._
 import io.gearpump.streaming.task.{TaskContext, TaskId}
 import org.json.simple.JSONValue
 
 object StormUtil {
 
-  import StormConstants._
 
   /**
    * convert storm task id to gearpump [[TaskId]]
@@ -56,6 +56,9 @@ object StormUtil {
   }
 
 
+  /**
+   * @return a configured [[GearpumpStormComponent]]
+   */
   def getGearpumpStormComponent(taskContext: TaskContext, conf: UserConfig)(implicit system: ActorSystem): GearpumpStormComponent = {
     val topology = conf.getValue[StormTopology](STORM_TOPOLOGY).get
     val stormConfig = conf.getValue[JMap[AnyRef, AnyRef]](STORM_CONFIG).get
@@ -63,32 +66,52 @@ object StormUtil {
     val spouts = topology.get_spouts
     val bolts = topology.get_bolts
     if (spouts.containsKey(componentId)) {
-      GearpumpSpout(topology, stormConfig, componentId, spouts.get(componentId), taskContext)
+      GearpumpSpout(topology, stormConfig, spouts.get(componentId), taskContext)
     } else if (bolts.containsKey(componentId)) {
-      GearpumpBolt(topology, stormConfig, componentId, bolts.get(componentId), taskContext)
+      GearpumpBolt(topology, stormConfig, bolts.get(componentId), taskContext)
     } else {
       throw new Exception(s"storm component $componentId not found")
     }
   }
 
+  /**
+   * parse config in json to map
+   * return empty map for invalid json string
+   * @param json config in json
+   * @return config in map
+   */
   def parseJsonStringToMap(json: String): JMap[AnyRef, AnyRef] = {
-    Option(json).flatMap(json => Option(JSONValue.parse(json)))
-        .getOrElse(new JHashMap[AnyRef, AnyRef]).asInstanceOf[JMap[AnyRef, AnyRef]]
+    Option(json).flatMap(json => JSONValue.parse(json) match {
+      case m: JMap[_, _] => Option(m.asInstanceOf[JMap[AnyRef, AnyRef]])
+      case _ => None
+    }).getOrElse(new JHashMap[AnyRef, AnyRef])
   }
 
-  def getInt(conf: JMap[_, _], name: AnyRef): Option[Int] = {
+  /**
+   * get Int value of the config name
+   */
+  def getInt(conf: JMap[_, _], name: String): Option[Int] = {
     Option(conf.get(name)).map {
-      case l: JLong => l.toInt
-      case d: JDouble => d.toInt
-      case i: JInteger => i.toInt
-      case _ => throw new IllegalArgumentException(s"$name must be a Java Integer within type range")
+      case number: Number => number.intValue
+      case invalid => throw new IllegalArgumentException(s"$name must be Java Integer; actual: ${invalid.getClass}")
     }
   }
 
+  /**
+   * get Boolean value of the config name
+   */
   def getBoolean(conf: JMap[_, _], name: AnyRef): Option[Boolean] = {
     Option(conf.get(name)).map {
       case b: JBoolean => b.booleanValue()
-      case _ => throw new IllegalArgumentException(s"$name must be a Java Boolean")
+      case invalid => throw new IllegalArgumentException(s"$name must be a Java Boolean; acutal: ${invalid.getClass}")
     }
+  }
+
+  /**
+   * clojure mod ported from Storm
+   * see https://clojuredocs.org/clojure.core/mod
+   */
+  def mod(num: Int, div: Int): Int = {
+    (num % div + div) % div
   }
 }

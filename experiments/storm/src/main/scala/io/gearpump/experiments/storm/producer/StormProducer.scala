@@ -24,11 +24,17 @@ import io.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpSpo
 import io.gearpump.experiments.storm.util._
 import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-private[storm] class StormProducer(taskContext: TaskContext, conf: UserConfig)
+/**
+ * this is runtime container for Storm spout
+ */
+private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
+                                   taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
-  import StormUtil._
 
-  private val gearpumpSpout = getGearpumpStormComponent(taskContext, conf).asInstanceOf[GearpumpSpout]
+  def this(taskContext: TaskContext, conf: UserConfig) = {
+    this(StormUtil.getGearpumpStormComponent(taskContext, conf)(taskContext.system)
+      .asInstanceOf[GearpumpSpout], taskContext, conf)
+  }
 
   override def onStart(startTime: StartTime): Unit = {
     gearpumpSpout.start(startTime)
@@ -37,6 +43,6 @@ private[storm] class StormProducer(taskContext: TaskContext, conf: UserConfig)
 
   override def onNext(msg: Message): Unit = {
     gearpumpSpout.next(msg)
-    self ! Message("Continue")
+    self ! Message("continue")
   }
 }

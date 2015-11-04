@@ -24,6 +24,9 @@ import backtype.storm.task.IOutputCollector
 import backtype.storm.tuple.Tuple
 import io.gearpump.experiments.storm.util.StormOutputCollector
 
+/**
+ * this is used by Storm bolt to emit messages
+ */
 private[storm] class StormBoltOutputCollector(collector: StormOutputCollector) extends IOutputCollector {
 
   override def emit(streamId: String, anchors: JCollection[Tuple], tuple: JList[AnyRef]): JList[Integer] = {
@@ -35,11 +38,14 @@ private[storm] class StormBoltOutputCollector(collector: StormOutputCollector) e
   }
 
   override def fail(tuple: Tuple): Unit = {
-    collector.fail(tuple)
+    // application failure, throw exception such that the tuple can be replayed
+    // Note: do not print the tuple which will trigger NPE since its messageId is null
+    throw new Exception("Storm Bolt.execute failed")
   }
 
   override def ack(tuple: Tuple): Unit = {
-    collector.ack(tuple)
+    // used by Storm bolt to ack a tuple has been received and executed successfully
+    // no-op for Gearpump
   }
 
   override def reportError(throwable: Throwable): Unit = {

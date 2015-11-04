@@ -49,6 +49,10 @@ class StormSerializerPool extends SerializerPool {
   }
 }
 
+/**
+ * serializes / deserializes [[GearpumpTuple]]
+ * @param kryo created by Storm [[SerializationFactory]]
+ */
 class StormSerializer(kryo: Kryo) extends Serializer {
   // -1 means the max buffer size is 2147483647
   private val output = new Output(4096, -1)
