@@ -16,7 +16,7 @@ pump	that	consists of	only	two	gears,	but	is	very	powerful at	streaming water.
 ![Logo](img/logo2.png)
 
 ### Gearpump Technical Highlights
-GearPump is a modern big data real-time streaming engine which has many unique features:
+GearPump's feature set includes:
 
 * Extremely high performance
 * Low latency
@@ -25,7 +25,6 @@ GearPump is a modern big data real-time streaming engine which has many unique f
 * Dynamic DAG
 * Storm compatibility
 * Samoa compatibility
-* widely IoT connectivity
 * Both high level and low level API
 
 

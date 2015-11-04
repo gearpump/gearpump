@@ -5,17 +5,16 @@ title: submitapp
 description: Submit Your 1st Gearpump Application
 ---
 
-Before you can submit and run your first Gearpump application, we first need a running Gearpump service.
-You can have multiple ways to such a cluster running ([Local mode](deployment-local.html),
-[Standalone mode](deployment-standalone.html), [YARN mode](deployment-yarn.html)) or [Docker mode](deployment-docker.html).
+Before you can submit and run your first Gearpump application, you will need a running Gearpump service.
+There are multiple ways to run GearPump [Local mode](deployment-local.html), [Standalone mode](deployment-standalone.html), [YARN mode](deployment-yarn.html) or [Docker mode](deployment-docker.html).
 
-The easiest way for a try is to run Gearpump in [Local mode](deployment-local.html)
-which you even don't need a server to run. Any Linux desktop is sufficient for a run.
+The easiest way is to run Gearpump in [Local mode](deployment-local.html).
+Any Linux, MacOSX or Windows desktop can be used with zero configuration.
 
-In below example, we assume your are running with ([Local mode](deployment-local.html).
-If you running Gearpump in other modes, you will need to configure the Gearpump client to
-make it know where to look for the Gearpump service by setting the `gear.conf` configuration path in classpath.
-You need to change the parameter `gearpump.cluster.masters` to make it point to the correct Gearpump masters.
+In the example below, we assume your are running in [Local mode](deployment-local.html).
+If you running Gearpump in one of the other modes, you will need to configure the Gearpump client to
+connect to the Gearpump service by setting the `gear.conf` configuration path in classpath.
+Within this file, you will need to change the parameter `gearpump.cluster.masters` to the correct Gearpump master(s).
 See [Configuration](deployment-configuration.html) for details.
 
 ## Steps to submit your first Application
@@ -30,12 +29,10 @@ Open another shell,
 bin/gear app -jar examples/gearpump-examples-assembly-{{site.GEARPUMP_VERSION}}.jar io.gearpump.streaming.examples.wordcount.WordCount
 ```
 
-###  Step 2: Congratulation! You have your first application running! Open the UI and view the status
+###  Step 2: Congratulations, you've submitted your first application.
 
-Now, the application is running, start the Web UI at [http://127.0.0.1:8090](http://127.0.0.1:8090) and check the status.
+To view the application status and metrics, start the Web UI services, and browse to [http://127.0.0.1:8090](http://127.0.0.1:8090) to check the status.
 ![Dashboard](/img/dashboard.gif)
-
-You see, now it is up and running.
 
 **NOTE:** the UI port setting can be defined in configuration, please check section [Configuration](deployment-configuration.html).
 
