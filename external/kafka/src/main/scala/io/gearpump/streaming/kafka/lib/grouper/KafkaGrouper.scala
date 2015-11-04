@@ -21,7 +21,7 @@ package io.gearpump.streaming.kafka.lib.grouper
 import kafka.common.TopicAndPartition
 
 /**
- * this class dispatches kafka [[TopicAndPartition]] to gearpump tasks
+ * this class dispatches kafka kafka.common.TopicAndPartition to gearpump tasks
  */
 trait KafkaGrouper {
   def group(taskNum: Int, taskIndex: Int, topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition]

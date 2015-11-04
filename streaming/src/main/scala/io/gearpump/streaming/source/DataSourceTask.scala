@@ -31,7 +31,7 @@ object DataSourceTask {
  * see [[DataSourceProcessor]] for its usage
  *
  * DataSourceTask calls
- *   - `DataSource.open` in `onStart` and pass in [[TaskContext]] and application start time
+ *   - `DataSource.open` in `onStart` and pass in [[io.gearpump.streaming.task.TaskContext]] and application start time
  *   - `DataSource.read` in each `onNext`, which reads a batch of messages whose size are defined by
  *     `gearpump.source.read.batch.size`.
  *   - `DataSource.close` in `onStop`
