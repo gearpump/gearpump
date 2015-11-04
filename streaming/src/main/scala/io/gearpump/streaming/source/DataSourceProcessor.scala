@@ -27,7 +27,6 @@ import io.gearpump.cluster.UserConfig
  * user should pass in a [[DataSource]]
  *
  * here is an example to build a DAG that reads from Kafka source followed by word count
- *
  * {{{
  *    val source = new KafkaSource()
  *    val sourceProcessor =  DataSourceProcessor(source, 1)

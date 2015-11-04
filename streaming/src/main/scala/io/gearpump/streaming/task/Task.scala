@@ -42,7 +42,7 @@ trait TaskContext {
 
   /**
    * The actorRef of AppMaster
-   * @return
+   * @return application master's actor reference
    */
   def appMaster : ActorRef
 
@@ -57,56 +57,44 @@ trait TaskContext {
    * parallelism of 2 for this task, then each task will be responsible
    * to read data from 5 partitions.
    *
-   * @return
+   * @return  the parallelism level
    */
   def parallelism: Int
 
 
   /**
    * Please don't use this if possible.
-   * @return
+   * @return  self actor ref
    */
   //TODO: We should remove the self from TaskContext
   def self: ActorRef
 
   /**
    * Please don't use this if possible
-   * @return
+   * @return the actor system
    */
   //TODO: we should remove this in future
   def system: ActorSystem
 
   /**
    * This can be used to output messages to downstream tasks.
-   *
    * The data shuffling rule can be decided by Partitioner.
-   *
-   * @param msg
+   * @param msg message to output
    */
   def output(msg : Message) : Unit
 
 
-  /**
-   * @see ActorRefProvider.actorOf
-   */
   def actorOf(props: Props): ActorRef
 
-  /**
-   * @see ActorRefProvider.actorOf
-   */
   def actorOf(props: Props, name: String): ActorRef
 
-  /**
-   * @see ActorRefProducer.schedule
-   */
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable
 
   /**
-   *
-   * ActorRefProvider.scheduleOnce
-   * @param initialDelay
-   * @param f
-   * @return
+   * akka.actor.ActorRefProvider.scheduleOnce
+   * @param initialDelay  the initial delay
+   * @param f  the function to execute after initial delay
+   * @return the executable
    */
   def scheduleOnce(initialDelay: FiniteDuration)(f: ⇒ Unit): Cancellable
 
@@ -115,14 +103,14 @@ trait TaskContext {
    * It's address is not something meaningful, you should not use this directly
    *
    * For unmanaged message, the sender represent the sender ActorRef
-   * @return
+   * @return sender
    */
    def sender: ActorRef
 
 
   /**
    * retrieve upstream min clock from TaskActor
-   * @return
+   * @return the min clock
    */
   def upstreamMinClock: TimeStamp
 }
@@ -133,23 +121,24 @@ trait TaskContext {
 trait TaskInterface {
 
   /**
+   * Method called with the task is initialized.
    * @param startTime startTime that can be used to decide from when a source producer task should replay the data source, or from when a processor task should recover its checkpoint data in to in-memory state.
    */
   def onStart(startTime : StartTime) : Unit
 
-  /**
+  /** Method called for each message received.
    * @param msg message send by upstream tasks
    */
   def onNext(msg : Message) : Unit
 
-  /**
+  /** Method called when task is under clean up.
    * This can be used to cleanup resource when the application finished.
    */
   def onStop() : Unit
 
   /**
    * handler for unmanaged message
-  * @return
+  * @return the handler
   */
   def receiveUnManagedMessage: Receive = null
 }
@@ -169,7 +158,7 @@ abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends Ta
    * you should not use this directory
    *
    * For unmanaged message, the sender represent the sender actor
-   * @return
+   * @return the sender
    */
   protected def sender: ActorRef = taskContext.sender
 

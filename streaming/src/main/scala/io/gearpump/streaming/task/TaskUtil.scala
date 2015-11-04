@@ -18,14 +18,12 @@
 
 package io.gearpump.streaming.task
 
-import akka.actor.Actor
-
 object TaskUtil {
 
   /**
    * Resolve a classname to a Task class.
-   * @param className
-   * @return
+   * @param className  the class name to resolve
+   * @return resolved class
    */
   def loadClass(className: String): Class[_<:Task] = {
     Class.forName(className).asSubclass(classOf[Task])

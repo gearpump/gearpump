@@ -29,9 +29,11 @@ public class StreamApplication implements Application {
   private io.gearpump.streaming.StreamApplication app;
 
   /**
-   *
+   * Create a streaming application
    * @param name name of the application
-   * @param conf
+   * @param conf  user configuration
+   * @param graph  the DAG
+   *
    */
   public StreamApplication(String name, UserConfig conf, Graph graph) {
     //by pass the tricky type check in scala 2.10
