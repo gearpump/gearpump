@@ -20,7 +20,8 @@ package io.gearpump.streaming.dsl.partitioner
 
 import io.gearpump.Message
 import io.gearpump.partitioner.UnicastPartitioner
-/**
+/** Partition messages by applying group by function first.
+  *
  * @param groupBy
  * First apply message with groupBy function, then pick the hashCode of the output to do the partitioning.
  * You must define hashCode() for output type of groupBy function.
@@ -33,9 +34,6 @@ import io.gearpump.partitioner.UnicastPartitioner
  *   val groupBy: (People => String) = people => people.gender
  *   val partitioner = GroupByPartitioner(groupBy)
  * }
-
- * @tparam T
- * @tparam GROUP must have method hashCode for this type
  */
 class GroupByPartitioner[T, GROUP](groupBy: T => GROUP = null) extends UnicastPartitioner {
   override def getPartition(msg : Message, partitionNum : Int, currentPartitionId: Int) : Int = {
