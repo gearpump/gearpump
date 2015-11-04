@@ -44,7 +44,7 @@ By implementing smart batching strategies, Gearpump is extremely effective in tr
 
 #### High availability, No single point of failure
 
-Gearpump has a careful design for high availability. We have considered message loss, worker machine crash, application crash, master crash, brain-split, and have made sure Gearpump recovers when there errors happen. When there is message loss, lost message will be replayed; when there is worker machine crash or application crash, computation tasks will be rescheduled to new machines. For master high availability, several master nodes will form a Akka cluster, and CRDT (conflict free data type) is used to exchange the state, so as long as there is still a quorum, the master will stay functional. When one master node crash, other master nodes in the cluster will take over and state will be recovered.
+Gearpump has a careful design for high availability. We have considered message loss, worker machine crash, application crash, master crash, brain-split, and have made sure Gearpump recovers when these errors may occur. When there is message loss, the lost message will be replayed; when there is a worker machine crash or application crash, the related computation tasks will be rescheduled on new machines. For master high availability, several master nodes will form a Akka cluster, and CRDTs (conflict free data types) are used to exchange the state, so as long as there is still a quorum, the master will stay functional. When one master node fails, other master nodes in the cluster will take over and state will be recovered.
 
 ![HA](/img/ha.png)
 
@@ -66,7 +66,7 @@ Different applications have different requirements related to performance metric
 
 #### Built-in Dashboard UI
 
-Gearpump has a built-in dashboard UI to manage the cluster and visualize the applications. The UI uses REST call to connect with backend, so it is easy to embed the UI within other dashboards.
+Gearpump has a built-in dashboard UI to manage the cluster and visualize the applications. The UI uses REST calls to connect with backend, so it is easy to embed the UI within other dashboards.
 
 ![Dashboard](/img/dashboard.gif)
 
