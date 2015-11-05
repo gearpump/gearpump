@@ -106,6 +106,7 @@ class TaskActor(
   def onStop() : Unit = task.onStop()
 
   def output(msg : Message) : Unit = {
+    LOG.debug("[output]: " + msg.msg)
     var count = 0
     this.subscriptions.foreach{ subscription =>
       count += subscription._2.sendMessage(msg)
@@ -155,6 +156,7 @@ class TaskActor(
             LOG.debug(s"Sending ack back, target taskId: $targetTask, my task: $taskId, received message: ${ack.actualReceivedNum}")
           case m : Message =>
             count += 1
+            LOG.debug("[input]: " + m.msg)
             onNext(m)
           case other =>
             // un-managed message

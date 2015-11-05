@@ -17,7 +17,7 @@
  */
 package io.gearpump.cluster.worker
 
-import _root_.akka.actor.{ActorSystem, PoisonPill, Props}
+import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import io.gearpump.cluster.WorkerToMaster.RegisterNewWorker
