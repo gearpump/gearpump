@@ -11,10 +11,10 @@ The commands can be found at: "bin" folder of Gearpump binary.
 
 ### Submit an new application
 
-You can use command `bin/gear app` to submit an application:
+You can use the command `gear` under the bin directory to submit, query and terminate an application:
 
 ```bash
-bin/gear app [-namePrefix <application name prefix>] -jar xx.jar MainClass <arg1> <arg2> ...
+gear app [-namePrefix <application name prefix>] -jar xx.jar MainClass <arg1> <arg2> ...
 ```
 
 ### List all running applications
