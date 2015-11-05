@@ -26,7 +26,7 @@ import scala.reflect.ClassTag
 
 class HBaseDSLSink[T: ClassTag](stream: Stream[T]) {
   def writeToHbase(table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink(table), parallism, UserConfig.empty, description)
+    stream.sink(HBaseSink[T](table), parallism, UserConfig.empty, description)
   }
 }
 
