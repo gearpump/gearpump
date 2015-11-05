@@ -19,11 +19,12 @@ package io.gearpump.streaming.executor
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
 import io.gearpump.streaming.task.Subscriber
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
-import io.gearpump.streaming.AppMasterToExecutor.{ChangeTask, ChangeTasks, LaunchTasks, TasksChanged, TasksLaunched}
+import io.gearpump.streaming.AppMasterToExecutor._
 import io.gearpump.streaming.executor.TaskLauncherSpec.MockTask
 import io.gearpump.streaming.task.{Subscriber, TaskId}
 import io.gearpump.streaming.{LifeTime, ProcessorDescription}
@@ -69,6 +70,10 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     client.expectMsg(TasksLaunched)
 
     verify(taskLauncher, times(1)).launch(any(), any(), any(), any())
+
+    executor ! StartAllTasks(TaskLocations(Map.empty), 0)
+    task.expectMsgType[Start]
+    task.expectMsgType[Start]
 
     val changeTasks = ChangeTasks(taskIds, dagVersion = 1, life = LifeTime(0, Long.MaxValue), List.empty[Subscriber])
 

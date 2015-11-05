@@ -20,21 +20,22 @@ package io.gearpump.streaming.appmaster
 
 import java.lang.management.ManagementFactory
 
+import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import io.gearpump._
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
-import io.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, MessageLoss, ReplayFromTimestampWindowTrailingEdge}
+import io.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
 import io.gearpump.cluster.MasterToClient.LastFailure
 import io.gearpump.cluster._
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.partitioner.PartitionerDescription
-import io.gearpump.streaming.ExecutorToAppMaster.{RegisterExecutor, RegisterTask}
+import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask}
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.AppMaster._
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
 import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, GetExecutorInfo}
-import io.gearpump.streaming.appmaster.TaskManager.{GetTaskList, TaskList}
+import io.gearpump.streaming.appmaster.TaskManager.{FailedToRecover, GetTaskList, TaskList}
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import io.gearpump.streaming.task._
@@ -107,7 +108,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private val executorManager: ActorRef =
     context.actorOf(ExecutorManager.props(userConfig, appContext, app.clusterConfig, app.name),
-    ActorPathUtil.executorManagerActorName)
+      ActorPathUtil.executorManagerActorName)
+
   for (dag <- getDAG) {
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
     clockService = Some(context.actorOf(Props(new ClockService(dag, store))))
@@ -141,8 +143,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case GetDAG =>
       val task = sender
       getDAG.foreach {
-        dag =>
-          task ! dag
+        dag => task ! dag
       }
   }
 
@@ -243,6 +244,11 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
    }
 
   def recover: Receive = {
+    case FailedToRecover(errorMsg) =>
+      if(context.children.toList.contains(sender())){
+        LOG.error(errorMsg)
+        masterProxy ! ShutdownApplication(appId)
+      }
     case AllocateResourceTimeOut =>
       LOG.error(s"Failed to allocate resource in time, shutdown application $appId")
       masterProxy ! ShutdownApplication(appId)

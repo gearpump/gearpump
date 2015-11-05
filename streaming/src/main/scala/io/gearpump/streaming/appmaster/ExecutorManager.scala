@@ -18,6 +18,7 @@
 
 package io.gearpump.streaming.appmaster
 
+import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
@@ -31,7 +32,9 @@ import io.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import io.gearpump.streaming.appmaster.ExecutorManager._
 import io.gearpump.streaming.executor.Executor
 import io.gearpump.util.{LogUtil, Util}
+import org.apache.commons.lang.exception.ExceptionUtils
 
+import scala.concurrent.duration._
 import scala.util.Try
 
 /**
@@ -68,6 +71,18 @@ private[appmaster] class ExecutorManager(
     case SetTaskManager(taskManager) =>
       this.taskManager = taskManager
       context.become(service orElse terminationWatch)
+  }
+
+  override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+    case ex: Throwable =>
+      val executorId = Try(sender.path.name.toInt)
+      executorId match {
+        case scala.util.Success(id) => {
+          executors -= id
+          LOG.error(s"Executor $id throws exception, stop it...\n" + ExceptionUtils.getStackTrace(ex))
+        }
+      }
+      Stop
   }
 
   def service: Receive = {

@@ -39,8 +39,6 @@ trait ExpressTransport {
     system.actorFor(s"/session#$sessionId")
   }
 
-  lazy val sendLater = new SendLater(express, serializerPool, sessionRef)
-
   def transport(msg : AnyRef, remotes : TaskId *): Unit = {
     var serializedMessage : AnyRef = null
 
@@ -48,13 +46,8 @@ trait ExpressTransport {
       val transportId = TaskId.toLong(remote)
       val localActor = express.lookupLocalActor(transportId)
       if (localActor.isDefined) {
-        //local
-        if(sendLater.hasPendingMessages){
-          sendLater.flushPendingMessages(localActor.get, transportId)
-        }
         localActor.get.tell(msg, sessionRef)
       } else {
-      //remote
         if (null == serializedMessage) {
           msg match {
             case message: Message =>
@@ -67,63 +60,11 @@ trait ExpressTransport {
 
         val remoteAddress = express.lookupRemoteAddress(transportId)
         if (remoteAddress.isDefined) {
-          if(sendLater.hasPendingMessages){
-            sendLater.flushPendingMessages(remoteAddress.get, transportId)
-          }
           express.transport(taskMessage, remoteAddress.get)
         } else {
-          sendLater.addMessage(transportId, taskMessage)
+          LOG.error(s"Can not find target task $remote, maybe the application is undergoing recovery")
         }
       }
     }
   }
-}
-
-class SendLater(express: Express, serializerPool: SerializerPool, sender: ActorRef){
-  private var buffer = Map.empty[Long, mutable.Queue[TaskMessage]]
-
-  def addMessage(transportId: Long, taskMessage: TaskMessage) = {
-    val queue = buffer.getOrElse(transportId, mutable.Queue.empty[TaskMessage])
-    queue.enqueue(taskMessage)
-    buffer += transportId -> queue
-  }
-
-  private def sendPendingMessages(transportId: Long) = {
-    val localActor = express.lookupLocalActor(transportId)
-    if (localActor.isDefined) {
-      flushPendingMessages(localActor.get, transportId)
-    } else {
-      val remoteAddress = express.lookupRemoteAddress(transportId)
-      flushPendingMessages(remoteAddress.get, transportId)
-    }
-  }
-
-  def flushPendingMessages(localActor: ActorRef, transportId: Long) = {
-    val queue = buffer.getOrElse(transportId, mutable.Queue.empty[TaskMessage])
-    while (queue.nonEmpty) {
-      val taskMessage = queue.dequeue()
-      val msg = taskMessage.message() match {
-        case serialized: SerializedMessage =>
-          Message(serializerPool.get().deserialize(serialized.bytes), serialized.timeStamp)
-        case _ =>
-          taskMessage.message()
-      }
-      localActor.tell(msg, sender)
-    }
-  }
-
-  def flushPendingMessages(remoteAddress: HostPort, transportId: Long) = {
-    val queue = buffer.getOrElse(transportId, mutable.Queue.empty[TaskMessage])
-    while (queue.nonEmpty) {
-      val taskMessage = queue.dequeue()
-      express.transport(taskMessage, remoteAddress)
-    }
-  }
-
-  def sendAllPendingMsgs(): Unit = {
-    buffer.keySet.foreach(sendPendingMessages)
-    buffer = Map.empty[Long, mutable.Queue[TaskMessage]]
-  }
-
-  def hasPendingMessages: Boolean = buffer.nonEmpty
 }

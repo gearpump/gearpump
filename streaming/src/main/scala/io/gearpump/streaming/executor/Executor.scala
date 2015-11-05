@@ -20,33 +20,32 @@ package io.gearpump.streaming.executor
 
 import java.lang.management.ManagementFactory
 
-import akka.actor.SupervisorStrategy.{Resume, Stop}
+import akka.actor.SupervisorStrategy.Resume
 import akka.actor._
 import com.typesafe.config.Config
-import io.gearpump.streaming.{ProcessorId, ExecutorToAppMaster, AppMasterToExecutor}
-import io.gearpump.streaming.AppMasterToExecutor.{TasksChanged, TasksLaunched, RegisterTaskFailedException, MsgLostException}
-import io.gearpump.streaming.appmaster.TaskRegistry
-import io.gearpump.streaming.task.{TaskId, Subscriber}
-import io.gearpump.cluster.MasterToAppMaster.MessageLoss
 import io.gearpump.cluster.{ExecutorContext, UserConfig}
-import io.gearpump.metrics.Metrics.{ReportMetrics, DemandMoreMetrics}
+import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.serializer.SerializerPool
-import AppMasterToExecutor._
-import ExecutorToAppMaster.RegisterExecutor
-import TaskRegistry.TaskLocations
-import Executor._
-import TaskLauncher.TaskArgument
+import io.gearpump.streaming.AppMasterToExecutor.{MsgLostException, TasksChanged, TasksLaunched, _}
+import io.gearpump.streaming.Constants._
+import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask}
+import io.gearpump.streaming.ProcessorId
+import io.gearpump.streaming.executor.Executor._
+import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
+import io.gearpump.streaming.task.{Subscriber, TaskId}
+import io.gearpump.streaming.task.TaskActor._
 import io.gearpump.transport.{Express, HostPort}
 import io.gearpump.util.Constants._
-import io.gearpump.util.{Constants, ActorUtil, LogUtil}
+import io.gearpump.util.{ActorUtil, Constants, LogUtil, TimeOutScheduler}
+import org.apache.commons.lang.exception.ExceptionUtils
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import org.apache.commons.lang.exception.ExceptionUtils
 
-class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher: ITaskLauncher)  extends Actor {
+class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher: ITaskLauncher)
+  extends Actor with TimeOutScheduler{
 
   def this(executorContext: ExecutorContext, userConf: UserConfig) = {
     this(executorContext, userConf, TaskLauncher(executorContext, userConf))
@@ -57,10 +56,11 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 
+  implicit val timeOut = FUTURE_TIMEOUT
   private val address = ActorUtil.getFullPath(context.system, self.path)
-  val systemConfig = context.system.settings.config
-
+  private val systemConfig = context.system.settings.config
   private val serializerPool = getSerializerPool()
+  private val registerTaskTimeout = systemConfig.getLong(GEARPUMP_STREAMING_REGISTER_TASK_TIMEOUT_MS)
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
   LOG.info(s"Executor actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
@@ -68,7 +68,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   appMaster ! RegisterExecutor(self, executorId, resource, worker)
   context.watch(appMaster)
 
-  private var tasks = Map.empty[TaskId, ActorRef]
+  private var tasks = Map.empty[TaskId, (ActorRef, Int)]
+  private val taskArgumentStore = new TaskArgumentStore()
 
   val express = Express(context.system)
 
@@ -82,30 +83,29 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     appMaster.tell(ReportMetrics, metricsReportService)
   }
 
-  def receive : Receive = appMasterMsgHandler
+  def receive : Receive = launchTasksHandler orElse terminationWatch
 
   private def getTaskId(actorRef: ActorRef): Option[TaskId] = {
-    tasks.find(_._2 == sender()).map(_._1)
+    tasks.find{ kv =>
+      val (_, (_actorRef, _)) = kv
+      _actorRef == actorRef
+    }.map(_._1)
   }
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case _: MsgLostException =>
+        val taskId = getTaskId(sender)
         val cause =  s"We got MessageLossException from task ${getTaskId(sender)}, replaying application..."
         LOG.error(cause)
-        LOG.info(s"sending to appMaster ${appMaster.path.toString}")
-        appMaster ! MessageLoss(executorId, cause)
+        taskId.foreach(appMaster ! MessageLoss(executorId, _,  cause))
         Resume
-      case _: RegisterTaskFailedException =>
-        val taskId = getTaskId(sender)
-        LOG.error(s"We got RegisterTaskFailedException from ${taskId}, stopping this task...")
-        Stop
       case ex: Throwable =>
         val taskId = getTaskId(sender)
-        val errorMsg = s"We got ${ex.getClass.getName} from ${taskId}, we will treat it as MessageLoss, so that the system will replay all lost message"
+        val errorMsg = s"We got ${ex.getClass.getName} from $taskId, we will treat it as MessageLoss, so that the system will replay all lost message"
         LOG.error(errorMsg, ex)
         val detailErrorMsg = errorMsg + "\n" + ExceptionUtils.getStackTrace(ex)
-        appMaster ! MessageLoss(executorId, detailErrorMsg)
+        taskId.foreach(appMaster ! MessageLoss(executorId, _, detailErrorMsg))
         Resume
     }
 
@@ -113,9 +113,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     launcher.launch(List(taskId), argument, context, serializerPool).values.head
   }
 
-  private val taskArgumentStore = new TaskArgumentStore()
-
-  def appMasterMsgHandler : Receive = terminationWatch orElse {
+  def launchTasksHandler: Receive = queryMsgHandler orElse {
     case LaunchTasks(taskIds, dagVersion, processorDescription, subscribers: List[Subscriber]) => {
       LOG.info(s"Launching Task $taskIds for app: ${appId}")
       val taskArgument = TaskArgument(dagVersion, processorDescription, subscribers)
@@ -124,10 +122,43 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       newAdded.foreach { newAddedTask =>
         context.watch(newAddedTask._2)
       }
-      tasks ++= newAdded
+      tasks ++= newAdded.mapValues((_, NONE_SESSION))
       sender ! TasksLaunched
     }
 
+    case StartAllTasks(taskLocations, startClock) =>
+      LOG.info(s"TaskLocations Ready...")
+      val result = taskLocations.locations.filter(location => !location._1.equals(express.localHost)).flatMap { kv =>
+        val (host, taskIdList) = kv
+        taskIdList.map(taskId => (TaskId.toLong(taskId), host))
+      }
+      express.startClients(taskLocations.locations.keySet).map { _ =>
+        express.remoteAddressMap.send(result)
+        express.remoteAddressMap.future().map { _ =>
+          tasks.values.foreach {
+            case (actor, sessionId) => actor ! Start(startClock, sessionId)
+          }
+        }
+      }
+      context.become(applicationReady orElse terminationWatch)
+
+    case registered: TaskRegistered =>
+      tasks.get(registered.taskId).foreach {
+        case (actorRef, sessionId) =>
+          tasks += registered.taskId -> (actorRef, registered.sessionId)
+      }
+    case rejected: TaskRejected =>
+      tasks.get(rejected.taskId).foreach {
+        case (task, sessionId) => task ! PoisonPill
+      }
+      tasks -= rejected.taskId
+      LOG.error(s"Task ${rejected.taskId} is rejected by AppMaster, shutting down it...")
+
+    case register: RegisterTask =>
+      sendMsgWithTimeOutCallBack(appMaster, register, registerTaskTimeout, timeOutHandler(register.taskId))
+  }
+
+  def applicationReady: Receive = queryMsgHandler orElse {
     case ChangeTasks(taskIds, dagVersion, life, subscribers) =>
       LOG.info(s"Change Tasks $taskIds for app: ${appId}, verion: $life, $dagVersion, $subscribers")
       taskIds.foreach { taskId =>
@@ -137,33 +168,21 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         }
 
         val taskActor = tasks.get(taskId)
-        taskActor.foreach(_ forward ChangeTask(taskId, dagVersion, life, subscribers))
+        taskActor.foreach(_._1 forward ChangeTask(taskId, dagVersion, life, subscribers))
       }
       sender ! TasksChanged
 
-    case TaskLocations(locations) =>
-      LOG.info(s"TaskLocations Ready...")
-      val result = locations.filter(location => !location._1.equals(express.localHost)).flatMap { kv =>
-        val (host, taskIdList) = kv
-        taskIdList.map(taskId => (TaskId.toLong(taskId), host))
-      }
-      express.startClients(locations.keySet).map { _ =>
-        express.remoteAddressMap.send(result)
-        express.remoteAddressMap.future().map{_ =>
-          tasks.foreach { task =>
-            task._2 ! TaskLocationReady
-          }
-        }
-      }
     case RestartTasks(dagVersion) =>
       LOG.info(s"Executor received restart tasks")
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
-
-      tasks.foreach { task =>
-        task._2 ! PoisonPill
-      }
       context.become(restartingTask(dagVersion, remain = tasks.keys.size, restarted = Map.empty[TaskId, ActorRef]))
 
+      tasks.values.foreach {
+        case (task, sessionId) => task ! PoisonPill
+      }
+  }
+
+  def queryMsgHandler: Receive = {
     case get: GetExecutorSummary =>
       val logFile = LogUtil.applicationLogDir(systemConfig)
       val processorTasks = tasks.keySet.groupBy(_.processorId).mapValues(_.toList).view.force
@@ -181,17 +200,25 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       sender ! ExecutorConfig(systemConfig)
   }
 
-  def restartingTask(dagVersion: Int, remain: Int, restarted: Map[TaskId, ActorRef]): Receive = terminationWatch orElse {
+  private val timeOutHandler = (taskId: TaskId) => {
+    val cause = s"Failed to register task $taskId to AppMaster of application $appId, " +
+      s"executor id is $executorId, treat it as MessageLoss"
+    LOG.error(cause)
+    appMaster ! MessageLoss(executorId, taskId, cause)
+  }
+
+  def restartingTask(dagVersion: Int, remain: Int, restarted: Map[TaskId, ActorRef]): Receive =
+    terminationWatch orElse launchTasksHandler orElse {
     case TaskStopped(actor) =>
-      for ((taskId, _) <- (tasks.find(_._2 == actor))) {
+      for (taskId <- getTaskId(actor)) {
         for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
           val task = launchTask(taskId, taskArgument)
           context.watch(task)
           val newRestarted = restarted + (taskId -> task)
           val newRemain = remain - 1
           if (newRemain == 0) {
-            tasks ++= newRestarted
-            context.become(appMasterMsgHandler)
+            tasks ++= newRestarted.mapValues((_, NONE_SESSION))
+            context.become(launchTasksHandler orElse terminationWatch)
           } else {
             context.become(restartingTask(dagVersion, newRemain, newRestarted))
           }
@@ -202,7 +229,6 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   val terminationWatch: Receive = {
     case Terminated(actor) => {
       if (actor.compareTo(appMaster) == 0) {
-
         LOG.info(s"AppMaster ${appMaster.path.toString} is terminated, shutting down current executor $appId, $executorId")
         context.stop(self)
       } else {
@@ -222,8 +248,6 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
 object Executor {
   case class RestartTasks(dagVersion: Int)
-
-  case object TaskLocationReady
 
   class TaskArgumentStore {
 
@@ -275,5 +299,4 @@ object Executor {
   case class QueryExecutorConfig(executorId: Int)
 
   case class ExecutorConfig(config: Config)
-
 }

@@ -154,8 +154,6 @@ object MasterToAppMaster {
 
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
 
-  case class MessageLoss(executorId: Int, cause: String)
-
   case class WorkerList(workers: List[Int])
 }
 
