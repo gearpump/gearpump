@@ -22,7 +22,7 @@ import akka.stream.Attributes.Attribute
 import akka.stream.ModuleGraph
 import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.graph.GraphCutter.{Local, Remote, Strategy, Tag}
-import akka.stream.gearpump.module.{BridgeModule, DummyModule, SinkBridgeModule, SourceBridgeModule}
+import akka.stream.gearpump.module.{GearpumpTaskModule, BridgeModule, DummyModule, SinkBridgeModule, SourceBridgeModule}
 import akka.stream.impl.StreamLayout.{MaterializedValueNode, Module}
 import akka.stream.impl.{MaterializedValueSource, SinkModule, SourceModule}
 import io.gearpump.util.Graph
@@ -141,6 +141,8 @@ object GraphCutter {
 
   val BaseStrategy: Strategy = {
     case source: BridgeModule[_, _, _] =>
+      Remote
+    case task: GearpumpTaskModule =>
       Remote
     case source: SourceModule[_, _] =>
       Local

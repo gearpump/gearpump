@@ -32,7 +32,7 @@ import org.reactivestreams.{Publisher, Subscriber}
  *       out of band data input or output channel [[MAT]]
  *
  *
- * Typically, it is used as a bridge between different materializers.
+ * [[BridgeModule]] is used as a bridge between different materializers.
  * Different [[akka.stream.Materializer]]s can use out of band channel to
  * exchange messages.
  *

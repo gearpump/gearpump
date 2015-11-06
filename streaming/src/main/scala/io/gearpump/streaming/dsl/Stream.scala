@@ -18,10 +18,11 @@
 
 package io.gearpump.streaming.dsl
 
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl.op._
 import io.gearpump.streaming.sink.DataSink
-import io.gearpump.streaming.task.Task
+import io.gearpump.streaming.task.{TaskContext, Task}
 import io.gearpump.util.{Graph, LogUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -193,4 +194,14 @@ object Stream {
 }
 
 trait TypedDataSink[T] extends DataSink
+
+class LoggerSink[T] extends TypedDataSink[T] {
+
+  override def open(context: TaskContext) = Unit
+
+  override def write(message: Message): Unit = {
+  }
+
+  override def close() = Unit
+}
 

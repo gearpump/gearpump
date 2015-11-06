@@ -18,44 +18,30 @@
 
 package akka.stream.gearpump.example
 
-import akka.actor.{Actor, ActorSystem, Props}
-import akka.stream.ActorMaterializer
+import akka.actor.{Actor, Props, ActorSystem}
 import akka.stream.gearpump.GearpumpMaterializer
-import akka.stream.gearpump.scaladsl.{GearSink, GearSource}
-import akka.stream.scaladsl.{Flow, FlowGraph, Sink, Source}
+import akka.stream.gearpump.scaladsl.GearSource
+import akka.stream.scaladsl.{Source, Sink}
 import io.gearpump.cluster.ClusterConfig
+import io.gearpump.streaming.dsl.CollectionDataSource
 
 /**
- *
- * This test how different Materializer can be used together in explicit way.
- *
+ * read from remote and write to local
  */
-object Test2 {
+object Test3 {
 
   def main(args: Array[String]): Unit = {
 
-    println("running Test2...")
+    println("running Test...")
+
     implicit val system = ActorSystem("akkastream-test", ClusterConfig.default)
-    val materializer = new GearpumpMaterializer(system)
+    implicit val materializer = new GearpumpMaterializer(system)
 
     val echo = system.actorOf(Props(new Echo()))
-    val source = GearSource.bridge[String, String]
-    val sink = GearSink.bridge[String, String]
-
-    val flow = Flow[String].filter(_.startsWith("red")).map("I want to order item: " + _)
-    val (entry, exit) = flow.runWith(source, sink)(materializer)
-
-    val actorMaterializer = ActorMaterializer()
-
-    val externalSource = Source(List("red hat", "yellow sweater", "blue jack", "red apple", "green plant", "blue sky"))
-    val externalSink = Sink.actorRef(echo, "COMPLETE")
-
-    val graph = FlowGraph.closed() { implicit b =>
-      import FlowGraph.Implicits._
-      externalSource ~> Sink(entry)
-      Source(exit) ~> externalSink
-    }
-    graph.run()(actorMaterializer)
+    val sink = Sink.actorRef(echo, "COMPLETE")
+    val sourceData = new CollectionDataSource(List("red hat", "yellow sweater", "blue jack", "red apple", "green plant", "blue sky"))
+    val source = GearSource.from(sourceData)
+    source.filter(_.startsWith("red")).map("I want to order item: " + _).runWith(sink)
 
     system.awaitTermination()
   }

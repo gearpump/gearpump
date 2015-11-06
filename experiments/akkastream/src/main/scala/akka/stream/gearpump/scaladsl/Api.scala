@@ -19,48 +19,81 @@
 package akka.stream.gearpump.scaladsl
 
 import akka.stream.Attributes
-import akka.stream.gearpump.module.{DummySink, DummySource, SinkBridgeModule, SourceBridgeModule}
+import akka.stream.gearpump.module.{SinkTaskModule, SourceTaskModule, DummySink, DummySource, SinkBridgeModule, SourceBridgeModule}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import io.gearpump.streaming.dsl.TypedDataSource
+import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.source.DataSource
 import org.reactivestreams.{Publisher, Subscriber}
 
-/**
- * Construct a Source which accept out of band input messages.
- *
- *                  [[AkkaStreamSource]] -> Sink
- *                          /
- *                         /
- *                        V
- *                materialize to [[Subscriber]]
- *                                   /|
- *                                  /
- *       upstream [[Publisher]] send out of band message
- *
- */
-object AkkaStreamSource {
-  def apply[IN, OUT]: Source[OUT, Subscriber[IN]] = {
-    val source = Source(new DummySource[IN](Attributes.name("dummy"), Source.shape("dummy")))
+
+object GearSource{
+
+  /**
+   * Construct a Source which accept out of band input messages.
+   *
+   *                   [[SourceBridgeModule]] -> Sink
+   *                          /
+   *                         /
+   *                        V
+   *                materialize to [[Subscriber]]
+   *                                   /|
+   *                                  /
+   *       upstream [[Publisher]] send out of band message
+   *
+   */
+  def bridge[IN, OUT]: Source[OUT, Subscriber[IN]] = {
+    val source = new Source(new DummySource[IN](Attributes.name("dummy"), Source.shape("dummy")))
     val flow = new Flow[IN, OUT, Subscriber[IN]](new SourceBridgeModule[IN, OUT]())
     source.viaMat(flow)(Keep.right)
   }
+
+  /**
+   * Construct a Source from Gearpump [[DataSource]].
+   *
+   *    [[SourceTaskModule]] -> Sink
+   *
+   */
+  def from[OUT](source: DataSource): Source[OUT, Unit] = {
+    val taskSource = new Source[OUT, Unit](new SourceTaskModule(source))
+    taskSource
+  }
+
+  def from[OUT](source: TypedDataSource[OUT]): Source[OUT, Unit] = {
+    val taskSource = new Source[OUT, Unit](new SourceTaskModule(source))
+    taskSource
+  }
 }
 
-/**
- * Construct a Sink which output messages to out of band channel.
- *
- *   Souce ->   [[AkkaStreamSink]]
- *                    \
- *                     \|
- *         materialize to [[Publisher]]
- *                              \
- *                               \
- *                                \|
- *       send out of band message to downstream [[Subscriber]]
- *
- */
-object AkkaStreamSink {
-  def apply[IN, OUT]: Sink[IN, Publisher[OUT]] = {
+object GearSink {
+
+  /**
+   * Construct a Sink which output messages to out of band channel.
+   *
+   *   Souce ->   [[SinkBridgeModule]]
+   *                    \
+   *                     \|
+   *         materialize to [[Publisher]]
+   *                              \
+   *                               \
+   *                                \|
+   *       send out of band message to downstream [[Subscriber]]
+   *
+   */
+  def bridge[IN, OUT]: Sink[IN, Publisher[OUT]] = {
     val sink = new Sink(new DummySink[OUT](Attributes.name("dummy"), Sink.shape("dummy")))
     val flow = new Flow[IN, OUT, Publisher[OUT]](new SinkBridgeModule[IN, OUT]())
     flow.to(sink)
+  }
+
+  /**
+   * Construct a Source from Gearpump [[DataSink]].
+   *
+   *    Source -> [[SinkTaskModule]]
+   *
+   */
+  def to[IN](sink: DataSink): Sink[IN, Unit] = {
+    val taskSink = new Sink[IN, Unit](new SinkTaskModule(sink))
+    taskSink
   }
 }
