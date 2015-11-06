@@ -161,6 +161,7 @@ object GraphCutter {
 
   val TagAttributeStrategy: Strategy = BaseStrategy orElse {
     case module =>
+      // if there is no attribute found, we treat it as local module
       val tag = module.attributes.getAttribute(classOf[TagAttribute], TagAttribute(Local))
       tag.tag
   }

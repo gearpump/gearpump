@@ -35,17 +35,17 @@ trait GearpumpTaskModule extends Module
 
 final case class SourceTaskModule[T](
    source: DataSource,
-   shape: SourceShape[T] = SourceShape[T](Outlet[T]("Materialized.out")),
-   attributes: Attributes = Attributes.name("Materialized"))
+   shape: SourceShape[T] = SourceShape[T](Outlet[T]("SourceTaskModule.out")),
+   attributes: Attributes = Attributes.name("SourceTaskModule"))
   extends GearpumpTaskModule {
 
   override def subModules: Set[Module] = Set.empty
   override def withAttributes(attr: Attributes): Module = this.copy(shape = amendShape(attr), attributes = attr)
-  override def carbonCopy: Module = this.copy(shape = SourceShape(Outlet[T]("Materialized.out")))
+  override def carbonCopy: Module = this.copy(shape = SourceShape(Outlet[T]("SourceTaskModule.out")))
 
   override def replaceShape(s: Shape): Module =
     if (s == shape) this
-    else throw new UnsupportedOperationException("cannot replace the shape of MaterializedValueSource")
+    else throw new UnsupportedOperationException("cannot replace the shape of SourceTaskModule")
 
   private def amendShape(attr: Attributes): SourceShape[T] = {
     val thisN = attributes.nameOrDefault(null)
