@@ -98,12 +98,21 @@ object StreamApp {
 }
 
 class CollectionDataSource[T](seq: Seq[T]) extends DataSource {
+  val list = seq.toList
   var index = 0
 
+  def readOne(): List[Message] = {
+    if (index < list.length) {
+      val element = List(Message(list(index).asInstanceOf[AnyRef]))
+      index += 1
+      element
+    } else {
+      List.empty[Message]
+    }
+  }
+
   override def read(batchSize: Int): List[Message] = {
-    val size = Math.min(seq.length - index % seq.length, batchSize)
-    index += size
-    seq.slice(index % seq.length - size, size).toList.map(msg => Message(msg.asInstanceOf[AnyRef], System.currentTimeMillis()))
+    readOne()
   }
 
   override def close(): Unit = {}
