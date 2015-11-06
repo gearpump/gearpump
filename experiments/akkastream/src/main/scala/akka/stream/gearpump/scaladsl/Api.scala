@@ -21,7 +21,6 @@ package akka.stream.gearpump.scaladsl
 import akka.stream.Attributes
 import akka.stream.gearpump.module.{SinkTaskModule, SourceTaskModule, DummySink, DummySource, SinkBridgeModule, SourceBridgeModule}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import io.gearpump.streaming.dsl.TypedDataSource
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
 import org.reactivestreams.{Publisher, Subscriber}

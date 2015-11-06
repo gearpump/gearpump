@@ -40,7 +40,7 @@ object Test3 {
     val echo = system.actorOf(Props(new Echo()))
     val sink = Sink.actorRef(echo, "COMPLETE")
     val sourceData = new CollectionDataSource(List("red hat", "yellow sweater", "blue jack", "red apple", "green plant", "blue sky"))
-    val source = GearSource.from(sourceData)
+    val source = GearSource.from[String](sourceData)
     source.filter(_.startsWith("red")).map("I want to order item: " + _).runWith(sink)
 
     system.awaitTermination()

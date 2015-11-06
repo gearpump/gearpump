@@ -19,7 +19,6 @@
 package io.gearpump.streaming.dsl.op
 
 import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.dsl.{TypedDataSink}
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.task.Task

@@ -26,6 +26,8 @@ import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
 import org.reactivestreams.{Publisher, Subscriber}
 
+import scala.reflect.ClassTag
+
 /**
  * [[GearpumpTaskModule]] represent modules that can be materialized as Gearpump Tasks.
  * 
@@ -33,7 +35,7 @@ import org.reactivestreams.{Publisher, Subscriber}
 
 trait GearpumpTaskModule extends Module
 
-final case class SourceTaskModule[T](
+final case class SourceTaskModule[T: ClassTag](
    source: DataSource,
    shape: SourceShape[T] = SourceShape[T](Outlet[T]("Materialized.out")),
    attributes: Attributes = Attributes.name("Materialized"))

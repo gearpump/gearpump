@@ -178,7 +178,7 @@ object Stream {
 
   implicit class Sink[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
     def sink[T: ClassTag](dataSink: DataSink, parallism: Int, conf: UserConfig, description: String): Stream[T] = {
-      implicit val sink = DataSinkOp(dataSink, parallism, conf, Some(description).getOrElse("traversable"))
+      implicit val sink = DataSinkOp[T](dataSink, parallism, conf, Some(description).getOrElse("traversable"))
       stream.graph.addVertex(sink)
       stream.graph.addEdge(stream.thisNode, Shuffle, sink)
       new Stream[T](stream.graph, sink)

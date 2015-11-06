@@ -22,7 +22,6 @@ import akka.actor.ActorSystem
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.{Processor, Constants}
-import io.gearpump.streaming.dsl.{TypedDataSink, TypedDataSource}
 import io.gearpump.streaming.dsl.op._
 import io.gearpump.streaming.task.{StartTime, TaskContext, Task}
 import io.gearpump._

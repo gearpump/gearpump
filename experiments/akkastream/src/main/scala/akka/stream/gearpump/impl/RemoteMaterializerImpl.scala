@@ -26,7 +26,7 @@ import akka.stream.impl.Stages.{Filter, StageModule}
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.{FanIn, FanOut, Stages}
 import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.dsl.{TypedDataSource, StreamApp}
+import io.gearpump.streaming.dsl.{StreamApp}
 import io.gearpump.streaming.dsl.op.{DataSinkOp, DataSourceOp, Direct, FlatMapOp, MasterOp, Op, OpEdge, ProcessorOp, Shuffle, SlaveOp}
 import io.gearpump.streaming.{Constants, ProcessorId, StreamApplication}
 import io.gearpump.util.Graph
