@@ -23,6 +23,9 @@ import java.util.{List => JList}
 import backtype.storm.spout.ISpoutOutputCollector
 import io.gearpump.experiments.storm.util.StormOutputCollector
 
+/**
+ * this is used by Storm Spout to emit messages
+ */
 private[storm] class StormSpoutOutputCollector(collector: StormOutputCollector) extends ISpoutOutputCollector {
 
   override def emit(streamId: String, values: JList[AnyRef], messageId: scala.Any): JList[Integer] = {

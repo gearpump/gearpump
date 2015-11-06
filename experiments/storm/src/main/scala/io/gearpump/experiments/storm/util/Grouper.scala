@@ -41,23 +41,29 @@ sealed trait Grouper {
   def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int]
 }
 
+/**
+ * GlobalGrouper always returns partition 0
+ */
 class GlobalGrouper extends Grouper {
   override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = List(0)
 }
 
 /**
+ * NoneGrouper randomly returns partition
  * @param numTasks number of target tasks
  */
 class NoneGrouper(numTasks: Int) extends Grouper {
   private val random = new Random
 
   override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = {
-    val partition = (random.nextInt % numTasks + numTasks) % numTasks
+    val partition = StormUtil.mod(random.nextInt, numTasks)
     List(partition)
   }
 }
 
 /**
+ * ShuffleGrouper shuffles partitions and returns them sequentially,
+ * and then shuffles again
  * @param numTasks number of target tasks
  */
 class ShuffleGrouper(numTasks: Int) extends Grouper {
@@ -79,6 +85,7 @@ class ShuffleGrouper(numTasks: Int) extends Grouper {
 }
 
 /**
+ * FieldsGrouper returns partition based on value of groupFields
  * @param outFields declared output fields of source task
  * @param groupFields grouping fields of target tasks
  * @param numTasks number of target tasks
@@ -87,11 +94,13 @@ class FieldsGrouper(outFields: Fields, groupFields: Fields, numTasks: Int) exten
 
   override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = {
     val hash = outFields.select(groupFields, values).hashCode()
-    List((hash & Integer.MAX_VALUE) % numTasks)
+    val partition = StormUtil.mod(hash, numTasks)
+    List(partition)
   }
 }
 
 /**
+ * AllGrouper returns all partitions
  * @param numTasks number of target tasks
  */
 class AllGrouper(numTasks: Int) extends Grouper {
@@ -102,12 +111,13 @@ class AllGrouper(numTasks: Int) extends Grouper {
 }
 
 /**
+ * CustomGrouper allows users to specify grouping strategy
  * @param grouping see [[CustomStreamGrouping]]
  */
 class CustomGrouper(grouping: CustomStreamGrouping) extends Grouper {
 
-  def prepare(topologyContext: TopologyContext, globalStreamId: GlobalStreamId, sourceTasks: JList[Integer]): Unit = {
-    grouping.prepare(topologyContext, globalStreamId, sourceTasks)
+  def prepare(topologyContext: TopologyContext, globalStreamId: GlobalStreamId, targetTasks: JList[Integer]): Unit = {
+    grouping.prepare(topologyContext, globalStreamId, targetTasks)
   }
 
   override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = {

@@ -22,22 +22,44 @@ import java.util.{List => JList}
 
 import backtype.storm.task.GeneralTopologyContext
 import backtype.storm.tuple.{Tuple, TupleImpl}
-import io.gearpump.util.LogUtil
-import org.slf4j.Logger
 
 
+/**
+ * this carries Storm tuple values in the Gearpump world
+ * the targetPartitions field dictate which tasks a GearpumpTuple should be sent to
+ * see [[io.gearpump.experiments.storm.partitioner.StormPartitioner]] for more info
+ */
 private[storm] class GearpumpTuple(
     val values: JList[AnyRef],
     val sourceTaskId: Integer,
     val sourceStreamId: String,
     @transient val targetPartitions: Map[String, List[Int]]) extends Serializable {
-  private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpTuple])
-
+  /**
+   * creates a Storm [[Tuple]] to be passed to a Storm component
+   * this is needed for each incoming message
+   * because we cannot get [[GeneralTopologyContext]] at deserialization
+   * @param topologyContext topology context used for all tasks
+   * @return a Tuple
+   */
   def toTuple(topologyContext: GeneralTopologyContext): Tuple = {
-    if (topologyContext.getComponentId(sourceTaskId) == null) {
-      LOG.error(s"${topologyContext.getTaskToComponent}")
-    }
     new TupleImpl(topologyContext, values, sourceTaskId, sourceStreamId, null)
+  }
+
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[GearpumpTuple]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: GearpumpTuple =>
+      (that canEqual this) &&
+          values == that.values &&
+          sourceTaskId == that.sourceTaskId &&
+          sourceStreamId == that.sourceStreamId
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    val state = Seq(values, sourceTaskId, sourceStreamId)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }
 

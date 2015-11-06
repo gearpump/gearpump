@@ -18,13 +18,13 @@
 
 package io.gearpump.experiments.storm.util
 
-import java.util.{ArrayList => JArrayList, List => JList, Iterator => JIterator}
+import java.util.{ArrayList => JArrayList, List => JList, Iterator => JIterator, Map => JMap}
 
 import backtype.storm.generated.{JavaObject, GlobalStreamId, Grouping}
 import backtype.storm.grouping.CustomStreamGrouping
 import backtype.storm.task.TopologyContext
-import backtype.storm.tuple.{Fields, Tuple}
-import backtype.storm.utils.{ListDelegate, Utils}
+import backtype.storm.tuple.Fields
+import backtype.storm.utils.Utils
 import io.gearpump._
 import io.gearpump.experiments.storm.topology.GearpumpTuple
 import io.gearpump.experiments.storm.util.StormUtil._
@@ -37,80 +37,56 @@ import scala.collection.JavaConversions._
 
 object StormOutputCollector {
   private val LOG: Logger = LogUtil.getLogger(classOf[StormOutputCollector])
-  private val EMPTY_LIST: JList[Integer] = new JArrayList[Integer](0)
-}
+  private[storm] val EMPTY_LIST: JList[Integer] = new JArrayList[Integer](0)
 
-class StormOutputCollector(
-    context: TaskContext,
-    topologyContext: TopologyContext) {
-  import io.gearpump.experiments.storm.util.StormOutputCollector._
-
-  private val stormTaskId = topologyContext.getThisTaskId
-  private val componentId = topologyContext.getThisComponentId
-  private var timestamp: TimeStamp = LatestTime
-  private val taskToComponent = topologyContext.getTaskToComponent
-  private val componentToProcessorId = getComponentToProcessorId(taskToComponent.toMap)
-  private val targets = topologyContext.getTargets(componentId)
-  private val streamGroupers: Map[String, Grouper] =
-    targets.flatMap { case (streamId, targetGrouping) =>
-      targetGrouping.collect { case (target, grouping) if !grouping.is_set_direct() =>
-        streamId -> getGrouper(topologyContext, grouping, componentId, streamId, target)
-      }
-    }.toMap
-
-  def emit(streamId: String, values: JList[AnyRef]): JList[Integer] = {
-    if (targets.containsKey(streamId)) {
-      val ret: JList[Integer] = new JArrayList[Integer](targets.size)
-
-      @annotation.tailrec
-      def getTargetPartitions(iter: JIterator[String],
-                              accum: Map[String, List[Int]]): Map[String, List[Int]] = {
-        if (iter.hasNext) {
-          val target = iter.next
-          val grouper = streamGroupers(streamId)
-          val partitions = grouper.getPartitions(stormTaskId, values)
-          partitions.foreach { p =>
-            val stormTaskId = gearpumpTaskIdToStorm(TaskId(componentToProcessorId(target), p))
-            ret.add(stormTaskId)
-          }
-          getTargetPartitions(iter, accum + (target -> partitions))
-        } else {
-          accum
+  def apply(taskContext: TaskContext, topologyContext: TopologyContext): StormOutputCollector = {
+    val stormTaskId = topologyContext.getThisTaskId
+    val componentId = topologyContext.getThisComponentId
+    val taskToComponent = topologyContext.getTaskToComponent
+    val componentToProcessorId = getComponentToProcessorId(taskToComponent.toMap)
+    val targets = topologyContext.getTargets(componentId)
+    val streamGroupers: Map[String, Grouper] =
+      targets.flatMap { case (streamId, targetGrouping) =>
+        targetGrouping.collect { case (target, grouping) if !grouping.is_set_direct() =>
+          streamId -> getGrouper(topologyContext, grouping, componentId, streamId, target)
         }
+      }.toMap
+    val getTargetPartitionsFn = (streamId: String, values: JList[AnyRef]) => {
+      getTargetPartitions(stormTaskId, streamId, targets, streamGroupers, componentToProcessorId, values)
+    }
+    new StormOutputCollector(stormTaskId, taskToComponent, targets, getTargetPartitionsFn, taskContext, LatestTime)
+  }
 
+  /**
+   * get target Gearpump partitions and Storm task ids
+   */
+  private def getTargetPartitions(
+      stormTaskId: Int,
+      streamId: String,
+      targets: JMap[String, JMap[String, Grouping]],
+      streamGroupers: Map[String, Grouper],
+      componentToProcessorId: Map[String, ProcessorId],
+      values: JList[AnyRef]): (Map[String, List[Int]], JList[Integer]) ={
+    val ret: JList[Integer] = new JArrayList[Integer](targets.size)
+
+    @annotation.tailrec
+    def getRecur(iter: JIterator[String],
+        accum: Map[String, List[Int]]): Map[String, List[Int]] = {
+      if (iter.hasNext) {
+        val target = iter.next
+        val grouper = streamGroupers(streamId)
+        val partitions = grouper.getPartitions(stormTaskId, values)
+        partitions.foreach { p =>
+          val stormTaskId = gearpumpTaskIdToStorm(TaskId(componentToProcessorId(target), p))
+          ret.add(stormTaskId)
+        }
+        getRecur(iter, accum + (target -> partitions))
+      } else {
+        accum
       }
-
-      val targetPartitions = getTargetPartitions(targets.get(streamId).keySet().iterator, Map.empty[String, List[Int]])
-      val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
-      context.output(Message(tuple, timestamp))
-      ret
-    } else {
-      EMPTY_LIST
     }
-  }
-
-  def emitDirect(id: Int, streamId: String, values: JList[AnyRef]): Unit = {
-    if (targets.containsKey(streamId)) {
-      val target = taskToComponent(id)
-      val partition = stormTaskIdToGearpump(id).index
-      val targetPartitions = Map(target -> List(partition))
-      val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
-      context.output(Message(tuple, timestamp))
-    }
-  }
-
-  def fail(tuple: Tuple): Unit = {
-    // TODO: add meaningful semantics
-  }
-
-
-  def ack(tuple: Tuple): Unit = {
-    // TODO: add meaningful semantics
-  }
-
-
-  def setTimestamp(timestamp: TimeStamp): Unit = {
-    this.timestamp = timestamp
+    val targetPartitions = getRecur(targets.get(streamId).keySet().iterator, Map.empty[String, List[Int]])
+    (targetPartitions, ret)
   }
 
   private def getComponentToProcessorId(taskToComponent: Map[Integer, String]): Map[String, ProcessorId] = {
@@ -120,10 +96,10 @@ class StormOutputCollector(
   }
 
   private def getGrouper(topologyContext: TopologyContext, grouping: Grouping,
-      source: String, streamId: String, target: String): Grouper = {
+                         source: String, streamId: String, target: String): Grouper = {
     val outFields = topologyContext.getComponentOutputFields(source, streamId)
-    val sourceTasks = topologyContext.getComponentTasks(source)
-    val targetTaskNum = topologyContext.getComponentTasks(target).size
+    val targetTasks = topologyContext.getComponentTasks(target)
+    val targetTaskNum = targetTasks.size
     val globalStreamId = new GlobalStreamId(source, streamId)
 
     grouping.getSetField match {
@@ -142,13 +118,13 @@ class StormOutputCollector(
       case Grouping._Fields.CUSTOM_SERIALIZED =>
         val customGrouping = Utils.deserialize(grouping.get_custom_serialized()).asInstanceOf[CustomStreamGrouping]
         val grouper = new CustomGrouper(customGrouping)
-        grouper.prepare(topologyContext, globalStreamId, sourceTasks)
+        grouper.prepare(topologyContext, globalStreamId, targetTasks)
         grouper
       case Grouping._Fields.CUSTOM_OBJECT =>
         val customObject = grouping.get_custom_object()
         val customGrouping = instantiateJavaObject(customObject)
         val grouper = new CustomGrouper(customGrouping)
-        grouper.prepare(topologyContext, globalStreamId, sourceTasks)
+        grouper.prepare(topologyContext, globalStreamId, targetTasks)
         grouper
       case Grouping._Fields.LOCAL_OR_SHUFFLE =>
         // GearPump has built-in support for sending messages to local actor
@@ -160,14 +136,77 @@ class StormOutputCollector(
 
   private def isGlobalGrouping(grouping: Grouping): Boolean = {
     grouping.getSetField == Grouping._Fields.FIELDS &&
-        grouping.get_fields.isEmpty
+      grouping.get_fields.isEmpty
   }
 
   private def instantiateJavaObject(javaObject: JavaObject): CustomStreamGrouping = {
     val className = javaObject.get_full_class_name()
     val args = javaObject.get_args_list().map(_.getFieldValue)
     val customGrouping = Class.forName(className).getConstructor(args.map(_.getClass): _*)
-        .newInstance(args).asInstanceOf[CustomStreamGrouping]
+      .newInstance(args).asInstanceOf[CustomStreamGrouping]
     customGrouping
+  }
+}
+
+/**
+ * this provides common functionality for [[io.gearpump.experiments.storm.producer.StormSpoutOutputCollector]]
+ * and [[io.gearpump.experiments.storm.processor.StormBoltOutputCollector]]
+ */
+class StormOutputCollector(
+    stormTaskId: Int,
+    taskToComponent: JMap[Integer, String],
+    targets: JMap[String, JMap[String, Grouping]],
+    getTargetPartitionsFn: (String, JList[AnyRef]) => (Map[String, List[Int]], JList[Integer]),
+    taskContext: TaskContext,
+    private var timestamp: TimeStamp) {
+  import io.gearpump.experiments.storm.util.StormOutputCollector._
+
+  /**
+   * this is invoked by a Storm output collector to emit tuple values into a stream.
+   * We will wrap the values into a message of [[GearpumpTuple]] along with the target partitions
+   * to tell [[io.gearpump.experiments.storm.partitioner.StormPartitioner]] where to send the message.
+   * We also return the corresponding target Storm task ids back to the collector
+   *
+   * @param streamId Storm stream id
+   * @param values Storm tuple values
+   * @return target Storm task ids
+   */
+  def emit(streamId: String, values: JList[AnyRef]): JList[Integer] = {
+    if (targets.containsKey(streamId)) {
+      val (targetPartitions, targetStormTaskIds) = getTargetPartitionsFn(streamId, values)
+      val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
+      taskContext.output(Message(tuple, timestamp))
+      targetStormTaskIds
+    } else {
+      EMPTY_LIST
+    }
+  }
+
+  /**
+   * this is invoked by Storm output collector to emit tuple values to a specific Storm task.
+   * we translate the Storm task id into Gearpump TaskId and tell
+   * [[io.gearpump.experiments.storm.partitioner.StormPartitioner]] through the targetPartitions
+   * field of [[GearpumpTuple]]
+   *
+   * @param id Storm task id
+   * @param streamId Storm stream id
+   * @param values Storm tuple values
+   */
+  def emitDirect(id: Int, streamId: String, values: JList[AnyRef]): Unit = {
+    if (targets.containsKey(streamId)) {
+      val target = taskToComponent.get(id)
+      val partition = stormTaskIdToGearpump(id).index
+      val targetPartitions = Map(target -> List(partition))
+      val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
+      taskContext.output(Message(tuple, timestamp))
+    }
+  }
+
+  /**
+   * get timestamp from each incoming Message and
+   * which will be set into output messages
+   */
+  def setTimestamp(timestamp: TimeStamp): Unit = {
+    this.timestamp = timestamp
   }
 }

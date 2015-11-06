@@ -18,79 +18,49 @@
 
 package io.gearpump.experiments.storm.processor
 
-// TODO: fix this spec
-/*class StormProcessorSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
-  import StormConstants._
-  import StormUtil._
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.task.StartTime
+import org.mockito.Mockito._
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{WordSpec, Matchers}
 
-  property("StormProcessor should work") {
-    implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
-    val topology = TopologyUtil.getTestTopology
-    val processorGraph = GraphBuilder.build(topology, null)
-    val componentToStreamFields = getComponentToStreamFields(topology)
+class StormProcessorSpec extends WordSpec with Matchers with MockitoSugar {
 
-    var processorIdIndex = 0
-    val processorDescriptionGraph = processorGraph.mapVertex { processor =>
-      val description = Processor.ProcessorToProcessorDescription(processorIdIndex, processor)
-      processorIdIndex += 1
-      description
-    }.mapEdge { (node1, edge, node2) =>
-      PartitionerDescription(new PartitionerObject(edge))
+  "StormProcessor" should {
+    "start GearpumpSpout onStart" in {
+      val startTime = mock[StartTime]
+      val gearpumpBolt = mock[GearpumpBolt]
+      when(gearpumpBolt.getTickFrequency).thenReturn(None)
+      val taskContext = MockUtil.mockTaskContext
+      val userConfig = UserConfig.empty
+      val stormProcessor = new StormProcessor(gearpumpBolt, taskContext, userConfig)
+
+      stormProcessor.onStart(startTime)
+
+      verify(gearpumpBolt).start(startTime)
     }
-    val dag = DAG(processorDescriptionGraph)
-    val appMaster = TestProbe()
-    appMaster.expectMsg(GetDAG)
-    appMaster.reply(dag)
 
-    val processors = dag.processors
-    val stormConfig = Utils.readStormConfig()
-    val userConfig = UserConfig.empty
-      .withValue(TOPOLOGY, topology)
-      .withString(STORM_CONFIG, JSONValue.toJSONString(stormConfig))
-    val fieldGen = Gen.alphaStr
+    "pass message to GearpumpBolt onNext" in {
+      val message = mock[Message]
+      val gearpumpBolt = mock[GearpumpBolt]
+      val freq = 5L
+      when(gearpumpBolt.getTickFrequency).thenReturn(Some(freq))
+      val taskContext = MockUtil.mockTaskContext
+      val userConfig = UserConfig.empty
+      val stormProcessor = new StormProcessor(gearpumpBolt, taskContext, userConfig)
 
-    val bolts = topology.get_bolts()
-    forAll(fieldGen) { (field: String) =>
-      processors foreach { case (pid, procDesc) =>
-        val conf = procDesc.taskConf
-        val cid = conf.getString(COMPONENT_ID).getOrElse(
-          fail(s"component id not found for processor $pid")
-        )
-        val targets = StormUtil.getTargets(cid, topology)
-        if (bolts.containsKey(cid)) {
-          val bolt = conf.getValue[Bolt](COMPONENT_SPEC).getOrElse(
-            fail(s"bolt not found for processor $pid")
-          )
-          bolt shouldBe bolts.get(cid)
-          bolt.get_common().get_inputs() foreach { case (streamId, grouping) =>
-            val (spid, scid) = findSourceTaskId(processors, streamId, pid)
-            val taskContext = MockUtil.mockTaskContext
-            when(taskContext.taskId).thenReturn(TaskId(pid, 0))
-            when(taskContext.appMaster).thenReturn(appMaster.ref)
-            val stormProcessor = new StormProcessor(taskContext, procDesc.taskConf.withConfig(userConfig))
-            stormProcessor.onStart(StartTime(0))
-            val fields = componentToStreamFields.get(scid).get(streamId.get_streamId())
-            val values = List.fill(fields.size)(field)
-            val stormTuple = new StormTuple(values, scid, streamId.get_streamId(), 0, Map.empty[String, List[Int]])
-            stormProcessor.onNext(Message(stormTuple, System.currentTimeMillis()))
-            if (targets.containsKey(streamId)) {
-              verify(taskContext).output(anyObject())
-            } else {
-              verify(taskContext, times(0)).output(anyObject())
-            }
-          }
-        }
-      }
+      stormProcessor.onNext(message)
+
+      verify(gearpumpBolt).next(message)
+
+      stormProcessor.onNext(StormProcessor.TICK)
+
+      verify(gearpumpBolt).tick(freq)
     }
   }
 
-  private def findSourceTaskId(processors: Map[ProcessorId, ProcessorDescription], streamId: GlobalStreamId, pid: ProcessorId): (ProcessorId, String) = {
-    val (sourceTaskId, sourceProcDesc) = processors.find { case (id, desc) =>
-      desc.taskConf.getString(COMPONENT_ID).getOrElse(
-        fail(s"component id not found for processor $id")
-      ) ==  streamId.get_componentId()
-    }.getOrElse(fail(s"source task not found for processor $pid"))
-    sourceTaskId -> sourceProcDesc.taskConf.getString(COMPONENT_ID)
-      .getOrElse(fail(s"component id not found for processor $sourceTaskId"))
-  }
-}*/
+}
+

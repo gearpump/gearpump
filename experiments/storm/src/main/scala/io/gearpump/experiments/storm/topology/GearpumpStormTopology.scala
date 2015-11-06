@@ -40,72 +40,149 @@ import org.yaml.snakeyaml.constructor.SafeConstructor
 
 import scala.collection.JavaConversions._
 
+object GearpumpStormTopology {
+  private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpStormTopology])
+
+  def apply(
+      topology: StormTopology,
+      appConfigInJson: String,
+      fileConfig: String)(implicit system: ActorSystem): GearpumpStormTopology = {
+    new GearpumpStormTopology(
+      topology,
+      Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]],
+      parseJsonStringToMap(appConfigInJson),
+      readStormConfig(fileConfig)
+    )
+
+  }
+
+  /**
+   * @param configFile user provided local config file
+   * @return a config Map loaded from config file
+   */
+  private def readStormConfig(configFile: String): JMap[AnyRef, AnyRef] = {
+    var ret: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
+    try {
+      val yaml = new Yaml(new SafeConstructor)
+      val input: InputStream = new FileInputStream(configFile)
+      try {
+        ret = yaml.load(new InputStreamReader(input)).asInstanceOf[JMap[AnyRef, AnyRef]]
+      } catch {
+        case e: IOException =>
+          LOG.error(s"failed to load config file $configFile")
+      } finally {
+        input.close()
+      }
+    } catch {
+      case e: FileNotFoundException =>
+        LOG.error(s"failed to find config file $configFile")
+      case t: Throwable =>
+        LOG.error(t.getMessage)
+    }
+    ret
+  }
+}
+
 /**
- * @param topology storm topology
- * @param appConfig json config submitted from user application
+ * this is a wrapper over Storm topology which
+ *   1. merges Storm and Gearpump configs
+ *   2. creates Gearpump processors
+ *   3. provides interface for Gearpump applications to use Storm topology
+ *
+ * an implicit ActorSystem is required to create Gearpump processors
+ * @param topology Storm topology
+ * @param sysConfig configs from "defaults.yaml" and "storm.yaml"
+ * @param appConfig config submitted from user application
  * @param fileConfig custom file config set by user in command line
  */
-class GearpumpStormTopology(topology: StormTopology, appConfig: String, fileConfig: String)(implicit system: ActorSystem) {
-  import io.gearpump.experiments.storm.topology.GearpumpStormTopology._
+private[storm] class GearpumpStormTopology(
+    topology: StormTopology,
+    sysConfig: JMap[AnyRef, AnyRef],
+    appConfig: JMap[AnyRef, AnyRef],
+    fileConfig: JMap[AnyRef, AnyRef])(implicit system: ActorSystem) {
 
   private val spouts = topology.get_spouts()
   private val bolts = topology.get_bolts()
-  private val stormConfig = mergeConfigs(appConfig, fileConfig, getComponentConfigs(spouts, bolts))
+  private val stormConfig = mergeConfigs(sysConfig, appConfig, fileConfig, getComponentConfigs(spouts, bolts))
   private val spoutProcessors = spouts.map { case (id, spout) =>
-    id -> spoutToProcessor(id, spout, stormConfig) }.toMap
+    id -> spoutToProcessor(id, spout, stormConfig.toMap) }.toMap
   private val boltProcessors = bolts.map { case (id, bolt) =>
-    id -> boltToProcessor(id, bolt, stormConfig) }.toMap
+    id -> boltToProcessor(id, bolt, stormConfig.toMap) }.toMap
   private val allProcessors = spoutProcessors ++ boltProcessors
 
   /**
-   * merge configs from application, custom config file and component
-   * with priority
+   * @return merged Storm config with priority
    *    defaults.yaml < storm.yaml < application config < component config < custom file config
    */
-  private def mergeConfigs(appConfig: String, fileConfig: String,
-                           componentConfigs: Iterable[JMap[AnyRef, AnyRef]]): JMap[AnyRef, AnyRef] = {
-    val allConfig = Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
-    allConfig.putAll(parseJsonStringToMap(appConfig))
-    allConfig.putAll(getMergedComponentConfig(componentConfigs, allConfig))
-    allConfig.putAll(readStormConfig(fileConfig))
-    allConfig
-  }
-
-  def unique(list: List[AnyRef]): AnyRef = {
-    list.distinct
-  }
-
   def getStormConfig: JMap[AnyRef, AnyRef] = stormConfig
 
+  /**
+   * @return Storm components to Gearpump processors
+   */
   def getProcessors: Map[String, Processor[Task]] = allProcessors
 
+  /**
+   * @param sourceId source component id
+   * @return target Storm components and Gearpump processors
+   */
   def getTargets(sourceId: String): Map[String, Processor[Task]] = {
     getTargets(sourceId, topology).map { case (targetId, _) =>
       targetId -> boltProcessors(targetId)
     }
   }
 
+  /**
+   * merge configs from application, custom config file and component
+   */
+  private def mergeConfigs(
+      sysConfig: JMap[AnyRef, AnyRef],
+      appConfig: JMap[AnyRef, AnyRef],
+      fileConfig: JMap[AnyRef, AnyRef],
+      componentConfigs: Iterable[JMap[AnyRef, AnyRef]]): JMap[AnyRef, AnyRef] = {
+    val allConfig = new JHashMap[AnyRef, AnyRef]
+    allConfig.putAll(sysConfig)
+    allConfig.putAll(appConfig)
+    allConfig.putAll(getMergedComponentConfig(componentConfigs, allConfig.toMap))
+    allConfig.putAll(fileConfig)
+    allConfig
+  }
+
+  /**
+   * creates Gearpump processor from Storm spout
+   * @param spoutId spout id
+   * @param spoutSpec spout spec
+   * @param stormConfig merged storm config
+   * @param system actor system
+   * @return a Processor[StormProducer]
+   */
   private def spoutToProcessor(spoutId: String, spoutSpec: SpoutSpec,
-      allConfig: JMap[AnyRef, AnyRef])(implicit system: ActorSystem): Processor[Task] = {
+      stormConfig: Map[AnyRef, AnyRef])(implicit system: ActorSystem): Processor[Task] = {
     val componentCommon = spoutSpec.get_common()
     val taskConf = UserConfig.empty
         .withString(STORM_COMPONENT, spoutId)
-    val parallelism = getParallelism(allConfig, componentCommon)
+    val parallelism = getParallelism(stormConfig, componentCommon)
     Processor[StormProducer](parallelism, spoutId, taskConf)
-
   }
 
-  private def boltToProcessor(boltId: String, bolt: Bolt,
-      allConfig: JMap[AnyRef, AnyRef])(implicit system: ActorSystem): Processor[Task] = {
-    val componentCommon = bolt.get_common()
+  /**
+   * creates Gearpump processor from Storm bolt
+   * @param boltId bolt id
+   * @param boltSpec bolt spec
+   * @param stormConfig merged storm config
+   * @param system actor system
+   * @return a Processor[StormProcessor]
+   */
+  private def boltToProcessor(boltId: String, boltSpec: Bolt,
+      stormConfig: Map[AnyRef, AnyRef])(implicit system: ActorSystem): Processor[Task] = {
+    val componentCommon = boltSpec.get_common()
     val taskConf = UserConfig.empty
         .withString(STORM_COMPONENT, boltId)
-    val parallelism = getParallelism(allConfig, componentCommon)
+    val parallelism = getParallelism(stormConfig, componentCommon)
     Processor[StormProcessor](parallelism, boltId, taskConf)
   }
 
   /**
-   * target components and streams
+   * @return target components and streams
    */
   private def getTargets(componentId: String, topology: StormTopology): Map[String, Map[String, Grouping]] = {
     val componentIds = ThriftTopologyUtils.getComponentIds(topology)
@@ -125,11 +202,22 @@ class GearpumpStormTopology(topology: StormTopology, appConfig: String, fileConf
     }
   }
 
+  /**
+   * @return input stream and grouping for a Storm component
+   */
   private def getInputs(componentId: String, topology: StormTopology): JMap[GlobalStreamId, Grouping] = {
     ThriftTopologyUtils.getComponentCommon(topology, componentId).get_inputs
   }
 
-  private def getParallelism(allConfig: JMap[AnyRef, AnyRef], component: ComponentCommon): Int = {
+  /**
+   * get Storm component parallelism according to the following rule,
+   *   1. use "topology.tasks" if defined; otherwise use parallelism_hint
+   *   2. parallelism should not be larger than "topology.max.task.parallelism" if defined
+   *   3. component config overrides system config
+   * @param stormConfig system configs without merging "topology.tasks" and "topology.max.task.parallelism" of component
+   * @return number of task instances for a component
+   */
+  private def getParallelism(stormConfig: Map[AnyRef, AnyRef], component: ComponentCommon): Int = {
     val parallelismHint: Int = if (component.is_set_parallelism_hint()) {
       component.get_parallelism_hint()
     } else {
@@ -137,7 +225,7 @@ class GearpumpStormTopology(topology: StormTopology, appConfig: String, fileConf
     }
     val mergedConfig = new JHashMap[AnyRef, AnyRef]
     val componentConfig = parseJsonStringToMap(component.get_json_conf)
-    mergedConfig.putAll(allConfig)
+    mergedConfig.putAll(stormConfig)
     mergedConfig.putAll(componentConfig)
     val numTasks: Int = getInt(mergedConfig, Config.TOPOLOGY_TASKS).getOrElse(parallelismHint)
     val parallelism: Int = getInt(mergedConfig, Config.TOPOLOGY_MAX_TASK_PARALLELISM)
@@ -154,22 +242,28 @@ class GearpumpStormTopology(topology: StormTopology, appConfig: String, fileConf
     }
   }
 
+  /**
+   * merge component configs "topology.kryo.decorators" and "topology.kryo.register"
+   * @param componentConfigs list of component configs
+   * @param allConfig existing configs without merging component configs
+   * @return the two configs merged from all the component configs and existing configs
+   */
   private def getMergedComponentConfig(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
-                                       allConfig: JMap[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
+                                       allConfig: Map[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
     val mergedConfig: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
-    mergeKryoDecorators(componentConfigs, allConfig, mergedConfig)
-    mergeKryoRegister(componentConfigs, allConfig, mergedConfig)
+    mergedConfig.putAll(getMergedKryoDecorators(componentConfigs, allConfig))
+    mergedConfig.putAll(getMergedKryoRegister(componentConfigs, allConfig))
     mergedConfig
   }
 
-  private def getConfigValues(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
-                              allConfig: JMap[AnyRef, AnyRef], key: String): Iterable[AnyRef] = {
-    componentConfigs.map(config => config.get(key)) ++ Option(allConfig.get(key)).toList
-  }
-
-  private def mergeKryoDecorators(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
-                                  allConfig: JMap[AnyRef, AnyRef],
-                                  mergedConfig: JMap[AnyRef, AnyRef]): Unit = {
+  /**
+   * @param componentConfigs list of component configs
+   * @param allConfig existing configs without merging component configs
+   * @return a merged config with a list of distinct kryo decorators from component and existing configs
+   */
+  private def getMergedKryoDecorators(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
+                                allConfig: Map[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
+    val mergedConfig: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef](1)
     val key = Config.TOPOLOGY_KRYO_DECORATORS
     val configs = getConfigValues(componentConfigs, allConfig, key)
     val distincts = configs.foldLeft(Set.empty[String]) {
@@ -190,11 +284,17 @@ class GearpumpStormTopology(topology: StormTopology, appConfig: String, fileConf
       decorators.addAll(distincts)
       mergedConfig.put(key, decorators)
     }
+    mergedConfig
   }
 
-  private def mergeKryoRegister(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
-                                allConfig: JMap[AnyRef, AnyRef],
-                                mergedConfig: JMap[AnyRef, AnyRef]): Unit = {
+  /**
+   * @param componentConfigs list of component configs
+   * @param allConfig existing configs without merging component configs
+   * @return a merged config with component config overriding existing configs
+   */
+  private def getMergedKryoRegister(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
+                              allConfig: Map[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
+    val mergedConfig: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef](1)
     val key = Config.TOPOLOGY_KRYO_REGISTER
     val configs = getConfigValues(componentConfigs, allConfig, key)
     val merged = configs.foldLeft(Map.empty[String, String]) {
@@ -223,31 +323,21 @@ class GearpumpStormTopology(topology: StormTopology, appConfig: String, fileConf
       registers.putAll(merged)
      mergedConfig.put(key, registers)
     }
+    mergedConfig
   }
 
-  private def readStormConfig(config: String): JMap[AnyRef, AnyRef] = {
-    var ret: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
-    try {
-      val yaml = new Yaml(new SafeConstructor)
-      val input: InputStream = new FileInputStream(config)
-      try {
-        ret = yaml.load(new InputStreamReader(input)).asInstanceOf[JMap[AnyRef, AnyRef]]
-      } catch {
-        case e: IOException =>
-          LOG.error(s"failed to load config file $config")
-      } finally {
-        input.close()
-      }
-    } catch {
-      case e: FileNotFoundException =>
-        LOG.error(s"failed to find config file $config")
-      case t: Throwable =>
-        LOG.error(t.getMessage)
-    }
-    ret
+  /**
+   * @param componentConfigs list of raw component configs
+   * @param allConfig existing configs without merging component configs
+   * @param key config key
+   * @return a list of values for a config from both component configs and existing configs
+   */
+  private def getConfigValues(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
+                              allConfig: Map[AnyRef, AnyRef], key: String): Iterable[AnyRef] = {
+    componentConfigs.map(config => config.get(key)) ++ allConfig.get(key).toList
   }
+
+
+
 }
 
-object GearpumpStormTopology {
-  private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpStormTopology])
-}

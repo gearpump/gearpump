@@ -31,16 +31,22 @@ import org.slf4j.Logger
 import scala.concurrent.duration.Duration
 
 object StormProcessor {
-  private val LOG: Logger = LogUtil.getLogger(classOf[StormProcessor])
-  private val TICK = Message("tick")
+  val TICK = Message("tick")
 }
 
-private[storm] class StormProcessor(taskContext: TaskContext, conf: UserConfig)
+/**
+ * this is runtime container for Storm bolt
+ */
+private[storm] class StormProcessor(gearpumpBolt: GearpumpBolt,
+                                    taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
-  import StormUtil._
   import io.gearpump.experiments.storm.processor.StormProcessor._
 
-  private val gearpumpBolt = getGearpumpStormComponent(taskContext, conf).asInstanceOf[GearpumpBolt]
+  def this(taskContext: TaskContext, conf:UserConfig) = {
+    this(StormUtil.getGearpumpStormComponent(taskContext, conf)(taskContext.system)
+      .asInstanceOf[GearpumpBolt], taskContext, conf)
+  }
+
   private val freqOpt = gearpumpBolt.getTickFrequency
 
   override def onStart(startTime: StartTime): Unit = {
@@ -60,7 +66,7 @@ private[storm] class StormProcessor(taskContext: TaskContext, conf: UserConfig)
     }
   }
 
-  def scheduleTick(freq: Long): Unit = {
+  private def scheduleTick(freq: Long): Unit = {
     taskContext.scheduleOnce(Duration(freq, TimeUnit.SECONDS)){ self ! TICK }
   }
 }
