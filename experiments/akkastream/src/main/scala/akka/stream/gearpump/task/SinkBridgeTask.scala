@@ -66,9 +66,11 @@ class SinkBridgeTask (taskContext : TaskContext, userConf : UserConfig) extends 
   override def onStop() : Unit = {}
 
   private def trySendingData(): Unit = {
-    (0 to request).map(_ => queue.poll()).filter(_ != null).foreach{ msg =>
-      subscriber ! msg.msg
-      request -= 1
+    if (subscriber != null) {
+      (0 to request).map(_ => queue.poll()).filter(_ != null).foreach { msg =>
+        subscriber ! msg.msg
+        request -= 1
+      }
     }
   }
 
