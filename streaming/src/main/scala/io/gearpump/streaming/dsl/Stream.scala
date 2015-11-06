@@ -26,9 +26,7 @@ import io.gearpump.streaming.task.{TaskContext, Task}
 import io.gearpump.util.{Graph, LogUtil}
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.reflect.ClassTag
-
-class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNode:Op, private val edge: Option[OpEdge] = None) {
+class Stream[T](private val graph: Graph[Op,OpEdge], private val thisNode:Op, private val edge: Option[OpEdge] = None) {
 
   /**
    * convert a value[T] to a list of value[R]
@@ -37,7 +35,7 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
    * @tparam R return type
    * @return
    */
-  def flatMap[R: ClassTag](fun: T => TraversableOnce[R], description: String = null): Stream[R] = {
+  def flatMap[R](fun: T => TraversableOnce[R], description: String = null): Stream[R] = {
     val flatMapOp = FlatMapOp(fun, Option(description).getOrElse("flatmap"))
     graph.addVertex(flatMapOp )
     graph.addEdge(thisNode, edge.getOrElse(Direct), flatMapOp)
@@ -50,7 +48,7 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
    * @tparam R return type
    * @return
    */
-  def map[R: ClassTag](fun: T => R, description: String = null): Stream[R] = {
+  def map[R](fun: T => R, description: String = null): Stream[R] = {
     this.flatMap ({ data =>
       Option(fun(data))
     }, Option(description).getOrElse("map"))
@@ -131,7 +129,7 @@ class Stream[T:ClassTag](private val graph: Graph[Op,OpEdge], private val thisNo
    * @tparam R
    * @return
    */
-  def process[R: ClassTag](processor: Class[_ <: Task], parallism: Int, conf: UserConfig = UserConfig.empty, description: String = null): Stream[R] = {
+  def process[R](processor: Class[_ <: Task], parallism: Int, conf: UserConfig = UserConfig.empty, description: String = null): Stream[R] = {
     val processorOp = ProcessorOp(processor, parallism, conf, Option(description).getOrElse("process"))
     graph.addVertex(processorOp)
     graph.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
@@ -167,7 +165,7 @@ class KVStream[K, V](stream: Stream[Tuple2[K, V]]){
 
 object Stream {
 
-  def apply[T: ClassTag](graph: Graph[Op, OpEdge], node: Op, edge: Option[OpEdge]) = new Stream[T](graph, node, edge)
+  def apply[T](graph: Graph[Op, OpEdge], node: Op, edge: Option[OpEdge]) = new Stream[T](graph, node, edge)
 
   def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
 
@@ -176,15 +174,15 @@ object Stream {
 
   implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = new KVStream(stream)
 
-  implicit class Sink[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
-    def sink[T: ClassTag](dataSink: DataSink, parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+  implicit class Sink[T](stream: Stream[T]) extends java.io.Serializable {
+    def sink[T](dataSink: DataSink, parallism: Int, conf: UserConfig, description: String): Stream[T] = {
       implicit val sink = DataSinkOp[T](dataSink, parallism, conf, Some(description).getOrElse("traversable"))
       stream.graph.addVertex(sink)
       stream.graph.addEdge(stream.thisNode, Shuffle, sink)
       new Stream[T](stream.graph, sink)
     }
 
-    def sink[T: ClassTag](sink: Class[_ <: Task], parallism: Int, conf: UserConfig = UserConfig.empty, description: String = null): Stream[T] = {
+    def sink[T](sink: Class[_ <: Task], parallism: Int, conf: UserConfig = UserConfig.empty, description: String = null): Stream[T] = {
       val sinkOp = ProcessorOp(sink, parallism, conf, Option(description).getOrElse("source"))
       stream.graph.addVertex(sinkOp)
       stream.graph.addEdge(stream.thisNode, Shuffle, sinkOp)

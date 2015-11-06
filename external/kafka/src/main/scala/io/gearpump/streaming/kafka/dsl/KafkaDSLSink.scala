@@ -21,12 +21,9 @@ import java.util.Properties
 
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl
-import io.gearpump.streaming.dsl.TypedDataSink
 import io.gearpump.streaming.kafka.KafkaSink
 
-import scala.reflect.ClassTag
-
-class KafkaDSLSink[T: ClassTag](stream: dsl.Stream[T]) {
+class KafkaDSLSink[T](stream: dsl.Stream[T]) {
   def writeToKafka(
       topic: String,
       bootstrapServers: String,
@@ -45,7 +42,7 @@ class KafkaDSLSink[T: ClassTag](stream: dsl.Stream[T]) {
 }
 
 object KafkaDSLSink {
-  implicit def streamToKafkaDSLSink[T: ClassTag](stream: dsl.Stream[T]): KafkaDSLSink[T] = {
+  implicit def streamToKafkaDSLSink[T](stream: dsl.Stream[T]): KafkaDSLSink[T] = {
     new KafkaDSLSink[T](stream)
   }
 }

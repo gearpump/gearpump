@@ -23,8 +23,6 @@ import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.task.Task
 
-import scala.reflect.ClassTag
-
 /**
  * Operators for the DSL
  */
@@ -39,9 +37,9 @@ sealed trait Op {
  */
 trait SlaveOp[T] extends Op
 
-case class FlatMapOp[T: ClassTag, R](fun: (T) => TraversableOnce[R], description: String) extends SlaveOp[T]
+case class FlatMapOp[T, R](fun: (T) => TraversableOnce[R], description: String) extends SlaveOp[T]
 
-case class ReduceOp[T: ClassTag](fun: (T, T) =>T, description: String) extends SlaveOp[T]
+case class ReduceOp[T](fun: (T, T) =>T, description: String) extends SlaveOp[T]
 
 trait MasterOp extends Op {
   def conf: UserConfig
@@ -53,15 +51,15 @@ case class MergeOp(source: Op, target: Op, description: String) extends MasterOp
   override def conf: UserConfig = UserConfig.empty
 }
 
-case class GroupByOp[T: ClassTag, R](fun: T => R, parallism: Int, description: String) extends ParameterizedOp[T]{
+case class GroupByOp[T, R](fun: T => R, parallism: Int, description: String) extends ParameterizedOp[T]{
   override def conf: UserConfig = UserConfig.empty
 }
 
-case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
+case class ProcessorOp[T <: Task](processor: Class[T], parallism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
-case class DataSourceOp[T: ClassTag](dataSource: DataSource, parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
+case class DataSourceOp[T](dataSource: DataSource, parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
-case class DataSinkOp[T: ClassTag](dataSink: DataSink, parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
+case class DataSinkOp[T](dataSink: DataSink, parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
 /**
  * Contains operators which can be chained to single one.

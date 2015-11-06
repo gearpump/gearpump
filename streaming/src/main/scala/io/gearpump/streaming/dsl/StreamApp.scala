@@ -29,8 +29,6 @@ import io.gearpump.cluster.client.ClientContext
 import io.gearpump.util.Graph
 import io.gearpump.{Message, TimeStamp}
 
-import scala.reflect.ClassTag
-
 /**
  * Example:
  *
@@ -70,28 +68,28 @@ object StreamApp {
 
   implicit class Source(app: StreamApp) extends java.io.Serializable {
 
-    def source[T: ClassTag](dataSource: DataSource, parallism: Int): Stream[T] = {
+    def source[T](dataSource: DataSource, parallism: Int): Stream[T] = {
       source(dataSource, parallism, UserConfig.empty)
     }
 
-    def source[T: ClassTag](dataSource: DataSource, parallism: Int, description: String): Stream[T] = {
+    def source[T](dataSource: DataSource, parallism: Int, description: String): Stream[T] = {
       source(dataSource, parallism, UserConfig.empty, description)
     }
 
-    def source[T: ClassTag](dataSource: DataSource, parallism: Int, conf: UserConfig): Stream[T] = {
+    def source[T](dataSource: DataSource, parallism: Int, conf: UserConfig): Stream[T] = {
       source(dataSource, parallism, conf, description = null)
     }
 
-    def source[T: ClassTag](dataSource: DataSource, parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+    def source[T](dataSource: DataSource, parallism: Int, conf: UserConfig, description: String): Stream[T] = {
       implicit val sourceOp = DataSourceOp(dataSource, parallism, conf, description)
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)
     }
-    def source[T: ClassTag](seq: Seq[T], parallism: Int, description: String): Stream[T] = {
+    def source[T](seq: Seq[T], parallism: Int, description: String): Stream[T] = {
       this.source(new CollectionDataSource[T](seq), parallism, UserConfig.empty, description)
     }
 
-    def source[T: ClassTag](source: Class[_ <: Task], parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+    def source[T](source: Class[_ <: Task], parallism: Int, conf: UserConfig, description: String): Stream[T] = {
       val sourceOp = ProcessorOp(source, parallism, conf, Option(description).getOrElse("source"))
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)

@@ -25,10 +25,8 @@ import io.gearpump.streaming.kafka.KafkaSource
 import io.gearpump.streaming.kafka.lib.{DefaultMessageDecoder, KafkaSourceConfig}
 import io.gearpump.streaming.transaction.api.{OffsetStorageFactory, TimeStampFilter, MessageDecoder}
 
-import scala.reflect.ClassTag
-
 object KafkaDSLUtil {
-  def createStream[T: ClassTag](
+  def createStream[T](
       app: StreamApp,
       parallelism: Int,
       description: String,
@@ -38,7 +36,7 @@ object KafkaDSLUtil {
     app.source[T](new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder), parallelism, description)
   }
 
-  def createStream[T: ClassTag](
+  def createStream[T](
       app: StreamApp,
       parallelism: Int,
       description: String,
@@ -49,7 +47,7 @@ object KafkaDSLUtil {
         , parallelism, description)
   }
 
-  def createStream[T: ClassTag](
+  def createStream[T](
       app: StreamApp,
       parallelism: Int,
       description: String,
@@ -62,7 +60,7 @@ object KafkaDSLUtil {
         , parallelism, description)
   }
 
-  def createStream[T: ClassTag](
+  def createStream[T](
       app: StreamApp,
       parallelism: Int,
       description: String,
@@ -72,7 +70,7 @@ object KafkaDSLUtil {
     app.source[T](new KafkaSource(topics, properties, offsetStorageFactory), parallelism, description)
   }
 
-  def createStream[T: ClassTag](
+  def createStream[T](
       app: StreamApp,
       topics: String,
       parallelism: Int,
