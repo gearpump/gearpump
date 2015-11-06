@@ -196,10 +196,17 @@ object Stream {
 trait TypedDataSink[T] extends DataSink
 
 class LoggerSink[T] extends TypedDataSink[T] {
+  var logger: Logger = null
 
-  override def open(context: TaskContext) = Unit
+  private var context: TaskContext = null
+
+
+  override def open(context: TaskContext) = {
+    this.logger = context.logger
+  }
 
   override def write(message: Message): Unit = {
+    logger.info("logging message " + message.msg)
   }
 
   override def close() = Unit

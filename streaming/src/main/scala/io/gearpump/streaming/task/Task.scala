@@ -125,6 +125,14 @@ trait TaskContext {
    * @return
    */
   def upstreamMinClock: TimeStamp
+
+
+  /**
+   * logger is environment dependant, it should be provided by
+   * containing environment.
+   * @return
+   */
+  def logger: Logger
 }
 
 /**
