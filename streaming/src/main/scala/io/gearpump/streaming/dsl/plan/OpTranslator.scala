@@ -65,7 +65,7 @@ class OpTranslator extends java.io.Serializable {
               taskConf = conf, processor)
           case DataSinkOp(dataSink, parallelism, conf, description) =>
             Processor[SinkTask[Object]](parallelism,
-              description = func.description,
+              description = description + func.description,
               taskConf = userConfig.withValue(GEARPUMP_STREAMING_SINK, dataSink))
         }
       case op: SlaveOp[_] =>
