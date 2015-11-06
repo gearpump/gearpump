@@ -61,7 +61,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
     clues.flatMap { kv =>
       val (module, clue) = kv
       val processorId = app.dag.vertices.find { processor =>
-        processor.taskConf.getString(Constants.CLUE_KEY_NAME) == Some(clue)
+        processor.taskConf.getString(RemoteMaterializerImpl.CLUE_KEY_NAME) == Some(clue)
       }.map(_.id)
       processorId.map((module, _))
     }
@@ -69,7 +69,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
 
   private def cleanClues(app: StreamApplication): StreamApplication = {
     val graph = app.dag.mapVertex{ processor =>
-      val conf = processor.taskConf.without(Constants.CLUE_KEY_NAME)
+      val conf = processor.taskConf.without(RemoteMaterializerImpl.CLUE_KEY_NAME)
       processor.copy(taskConf = conf)
     }
     new StreamApplication(app.name, app.inputUserConfig, graph)
@@ -80,7 +80,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
 
     val opGraph = graph.mapVertex{ module =>
       val name = uuid
-      val conf = UserConfig.empty.withString(Constants.CLUE_KEY_NAME, name)
+      val conf = UserConfig.empty.withString(RemoteMaterializerImpl.CLUE_KEY_NAME, name)
       matValues += module -> name
       module match {
         case source: SourceTaskModule[t] =>
@@ -156,4 +156,6 @@ object RemoteMaterializerImpl {
   def flatMapOp(fun: Any => TraversableOnce[Any], description: String): Op = {
     FlatMapOp(fun, description)
   }
+
+  val CLUE_KEY_NAME = "gearpump.streaming.processor.name"
 }
