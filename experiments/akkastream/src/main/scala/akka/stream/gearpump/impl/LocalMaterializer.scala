@@ -67,6 +67,7 @@ abstract class LocalMaterializer(
         case SupervisionStrategy(decider) => s.withSupervisionStrategy(decider)
         case l: LogLevels                 => s
         case Name(_)                      => s
+        case other => s
       }
     }
   }

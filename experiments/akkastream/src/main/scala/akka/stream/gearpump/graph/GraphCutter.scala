@@ -21,7 +21,9 @@ package akka.stream.gearpump.graph
 import akka.stream.Attributes.Attribute
 import akka.stream.ModuleGraph
 import akka.stream.ModuleGraph.Edge
-import akka.stream.gearpump.graph.GraphCutter.{Local, Remote, Strategy, Tag}
+import akka.stream.gearpump.GearAttributes
+import akka.stream.gearpump.GearAttributes.{LocationAttribute, Location, Remote, Local}
+import akka.stream.gearpump.graph.GraphCutter.{Strategy}
 import akka.stream.gearpump.module.{GearpumpTaskModule, BridgeModule, DummyModule, SinkBridgeModule, SourceBridgeModule}
 import akka.stream.impl.StreamLayout.{MaterializedValueNode, Module}
 import akka.stream.impl.{MaterializedValueSource, SinkModule, SourceModule}
@@ -62,7 +64,7 @@ class GraphCutter(strategy: Strategy = GraphCutter.AllRemoteStrategy) {
     doCut(graph, tags, moduleGraph.mat)
   }
 
-  private def doCut(graph: Graph[Module, Edge], tags: Map[Module, Tag], mat: MaterializedValueNode): List[SubGraph] = {
+  private def doCut(graph: Graph[Module, Edge], tags: Map[Module, Location], mat: MaterializedValueNode): List[SubGraph] = {
     val local = Graph.empty[Module, Edge]
     val remote = Graph.empty[Module, Edge]
 
@@ -111,7 +113,7 @@ class GraphCutter(strategy: Strategy = GraphCutter.AllRemoteStrategy) {
     List(new RemoteGraph(remote), new LocalGraph(local))
   }
 
-  private def tag(graph: Graph[Module, Edge], strategy: Strategy): Map[Module, Tag] = {
+  private def tag(graph: Graph[Module, Edge], strategy: Strategy): Map[Module, Location] = {
     graph.vertices.map{vertex =>
       vertex -> strategy.apply(vertex)
     }.toMap
@@ -133,11 +135,9 @@ class GraphCutter(strategy: Strategy = GraphCutter.AllRemoteStrategy) {
 }
 
 object GraphCutter {
-  sealed trait Tag
-  object Local extends Tag
-  object Remote extends Tag
 
-  type Strategy = PartialFunction[Module, Tag]
+
+  type Strategy = PartialFunction[Module, Location]
 
   val BaseStrategy: Strategy = {
     case source: BridgeModule[_, _, _] =>
@@ -157,13 +157,14 @@ object GraphCutter {
       Remote
   }
 
-  final case class TagAttribute(tag: Tag) extends Attribute
-
+  /**
+   * Will decide whether to render a module locally or remotely
+   * based on Attribute settings.
+   *
+   */
   val TagAttributeStrategy: Strategy = BaseStrategy orElse {
     case module =>
-      // if there is no attribute found, we treat it as local module
-      val tag = module.attributes.getAttribute(classOf[TagAttribute], TagAttribute(Local))
-      tag.tag
+      GearAttributes.location(module.attributes)
   }
 
   val AllLocalStrategy: Strategy = BaseStrategy orElse {

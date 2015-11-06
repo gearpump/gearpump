@@ -20,6 +20,7 @@ package akka.stream.gearpump.impl
 
 import akka.actor.ActorSystem
 import akka.stream.ModuleGraph.Edge
+import akka.stream.gearpump.GearAttributes
 import akka.stream.gearpump.module.{SinkTaskModule, SourceTaskModule, SinkBridgeModule, SourceBridgeModule}
 import akka.stream.gearpump.task.{SinkBridgeTask, SourceBridgeTask}
 import akka.stream.impl.Stages.{Filter, StageModule}
@@ -77,16 +78,16 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
 
   private def toOpGraph(): (Graph[Op, OpEdge], Map[Module, Clue]) = {
     var matValues = Map.empty[Module, Clue]
-
     val opGraph = graph.mapVertex{ module =>
       val name = uuid
       val conf = UserConfig.empty.withString(RemoteMaterializerImpl.CLUE_KEY_NAME, name)
       matValues += module -> name
+      val parallelism = GearAttributes.count(module.attributes)
       module match {
         case source: SourceTaskModule[t] =>
-          new DataSourceOp[t](source.source, 1, conf, "source")
+          new DataSourceOp[t](source.source, parallelism, conf, "source")
         case sink: SinkTaskModule[t] =>
-          new DataSinkOp[t](sink.sink, 1, conf, "sink")
+          new DataSinkOp[t](sink.sink, parallelism, conf, "sink")
         case sourceBridge: SourceBridgeModule[_, _] =>
           new ProcessorOp(classOf[SourceBridgeTask], parallism = 1, conf, "source")
         case sinkBridge: SinkBridgeModule[_, _] =>
