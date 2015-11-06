@@ -22,7 +22,7 @@ import _root_.io.gearpump.util
 import _root_.io.gearpump.util.Graph
 import akka.stream.Attributes.Attribute
 import akka.stream.ModuleGraph.Edge
-import akka.stream.gearpump.module.BridgeModule
+import akka.stream.gearpump.module.{GearpumpTaskModule, BridgeModule}
 import akka.stream.gearpump.util.MaterializedValueOps
 import akka.stream.impl.GenJunctions.{UnzipWithModule, ZipWithModule}
 import akka.stream.impl.Junctions.{BalanceModule, BroadcastModule, ConcatModule, FanInModule, FanOutModule, FlexiMergeModule, FlexiRouteModule, JunctionModule, MergeModule, MergePreferredModule}
@@ -153,101 +153,21 @@ object ModuleGraph {
     }
 
     private def materializeAtomic(atomic: Module, parentAttributes: Attributes): MaterializedValueNode = {
-      val copied = atomic match {
-        case bridge: BridgeModule[_, _, _] =>
-          val copied = copyAtomicModule(bridge, parentAttributes)
-          assignPort(bridge.inPort, (copied.inPort, copied))
-          assignPort(bridge.outPort, (copied.outPort, copied))
-          copied
-        case sink: SinkModule[_, _] =>
-          val inlet = sink.shape.inlet
-          val copied = copyAtomicModule(sink, parentAttributes)
-          assignPort(inlet, (copied.shape.inlet, copied))
-          copied
-        case source: SourceModule[_, _] =>
-          val outlet = source.shape.outlet
-          val copied = copyAtomicModule(source, parentAttributes)
-          assignPort(outlet, (copied.shape.outlet, copied))
-          copied
-        case stage: StageModule =>
-          val copied = copyAtomicModule(stage, parentAttributes)
-          assignPort(stage.inPort, (copied.inPort, copied))
-          assignPort(stage.outPort, (copied.outPort, copied))
-          copied
-        case tls: TlsModule =>
-          val copied = copyAtomicModule(tls, parentAttributes)
-          assignPort(tls.plainOut, (copied.plainOut, copied))
-          assignPort(tls.cipherOut, (copied.cipherOut, copied))
-          assignPort(tls.plainIn, (copied.plainIn, copied))
-          assignPort(tls.cipherIn, (copied.cipherIn, copied))
-          copied
-        case junction: JunctionModule =>
-          materializeJunction(junction, parentAttributes)
+      val (inputs, outputs) = (atomic.shape.inlets, atomic.shape.outlets)
+      val copied = copyAtomicModule(atomic, parentAttributes)
+
+      for ((in, id) <- inputs.zipWithIndex) {
+        val inPort = inPortMapping(atomic, copied)(in)
+        assignPort(in, (inPort, copied))
       }
+
+      for ((out, id) <- outputs.zipWithIndex) {
+        val outPort = outPortMapping(atomic, copied)(out)
+        assignPort(out, (outPort, copied))
+      }
+
       graph.addVertex(copied)
       Atomic(copied)
-    }
-
-    private def materializeJunction(op: JunctionModule,
-       parentAttributes: Attributes): Module = {
-      val copied = op match {
-        case fanin: FanInModule =>
-          val (inputs, output) = fanin match {
-            case MergeModule(shape, _) =>
-              (shape.inSeq, shape.out)
-
-            case f: FlexiMergeModule[t, Shape] =>
-              val flexi = f.flexi(f.shape)
-              (f.shape.inlets, f.shape.outlets.head)
-
-            case MergePreferredModule(shape, _) =>
-              (shape.preferred +: shape.inSeq, shape.out)
-
-            case ConcatModule(shape, _) =>
-              (shape.inSeq, shape.out)
-
-            case zip: ZipWithModule =>
-              (zip.shape.inlets, zip.outPorts.head)
-          }
-
-          val copied = copyAtomicModule(fanin, parentAttributes)
-
-          for ((in, id) <- inputs.zipWithIndex) {
-            val inPort = inPortMapping(fanin, copied)(in)
-            assignPort(in, (inPort, copied))
-          }
-          val outPort = outPortMapping(fanin, copied)(output)
-          assignPort(output, (outPort, copied))
-          copied
-
-        case fanout: FanOutModule =>
-          val (in, outs) = fanout match {
-
-            case r: FlexiRouteModule[t, Shape] =>
-              val flexi = r.flexi(r.shape)
-              (r.shape.inlets.head: InPort, r.shape.outlets)
-
-            case BroadcastModule(shape, eagerCancel, _) =>
-              (shape.in, shape.outArray.toSeq)
-
-            case BalanceModule(shape, waitForDownstreams, _) =>
-              (shape.in, shape.outArray.toSeq)
-
-            case unzip: UnzipWithModule =>
-              (unzip.inPorts.head, unzip.shape.outlets)
-          }
-
-          val copied = copyAtomicModule(fanout, parentAttributes)
-
-          publishers.iterator.zip(outs.iterator).foreach { case (pub, out) =>
-            val outPort = outPortMapping(fanout, copied)(out)
-            assignPort(out, (outPort, copied))
-          }
-          val inPort = inPortMapping(fanout, copied)(in)
-          assignPort(in, (inPort, copied))
-          copied
-      }
-      copied
     }
 
     def create(): (util.Graph[Module, Edge], MaterializedValueNode) = {
