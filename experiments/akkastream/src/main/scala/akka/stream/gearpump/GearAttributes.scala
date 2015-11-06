@@ -18,9 +18,8 @@
 
 package akka.stream.gearpump
 
-import akka.stream.ActorAttributes.{SupervisionStrategy, Dispatcher}
 import akka.stream.Attributes
-import akka.stream.Attributes.{Name, LogLevels, InputBuffer, Attribute}
+import akka.stream.Attributes.Attribute
 
 object GearAttributes {
 

@@ -22,14 +22,9 @@ import _root_.io.gearpump.util
 import _root_.io.gearpump.util.Graph
 import akka.stream.Attributes.Attribute
 import akka.stream.ModuleGraph.Edge
-import akka.stream.gearpump.module.{GearpumpTaskModule, BridgeModule}
 import akka.stream.gearpump.util.MaterializedValueOps
-import akka.stream.impl.GenJunctions.{UnzipWithModule, ZipWithModule}
-import akka.stream.impl.Junctions.{BalanceModule, BroadcastModule, ConcatModule, FanInModule, FanOutModule, FlexiMergeModule, FlexiRouteModule, JunctionModule, MergeModule, MergePreferredModule}
-import akka.stream.impl.Stages.StageModule
 import akka.stream.impl.StreamLayout._
 import akka.stream.impl._
-import akka.stream.io.SslTls.TlsModule
 import akka.stream.{Graph => AkkaGraph}
 
 import scala.collection.mutable

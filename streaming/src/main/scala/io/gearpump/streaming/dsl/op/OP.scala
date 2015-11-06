@@ -47,7 +47,7 @@ trait MasterOp extends Op {
 
 trait ParameterizedOp[T] extends MasterOp
 
-case class MergeOp(source: Op, target: Op, description: String) extends MasterOp {
+case class MergeOp(description: String) extends MasterOp {
   override def conf: UserConfig = UserConfig.empty
 }
 

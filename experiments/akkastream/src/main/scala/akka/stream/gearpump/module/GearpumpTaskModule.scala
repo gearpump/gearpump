@@ -18,13 +18,10 @@
 
 package akka.stream.gearpump.module
 
-import akka.stream.{Inlet, SinkShape, Shape, Outlet, SourceShape, Attributes}
-import akka.stream.impl.{StreamLayout, FlowModule}
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.StreamLayout.Module
+import akka.stream.{Attributes, Inlet, Outlet, Shape, SinkShape, SourceShape}
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
-import org.reactivestreams.{Publisher, Subscriber}
 
 /**
  * [[GearpumpTaskModule]] represent modules that can be materialized as Gearpump Tasks.

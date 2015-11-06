@@ -18,13 +18,12 @@
 
 package akka.stream.gearpump.example
 
-import akka.actor.{Actor, ActorSystem, Props}
-import akka.stream.ActorMaterializer
+import akka.actor.ActorSystem
 import akka.stream.gearpump.GearpumpMaterializer
-import akka.stream.gearpump.scaladsl.{GearSink, GearSource}
-import akka.stream.scaladsl.{FlowGraph, Source, Flow, Sink}
+import akka.stream.gearpump.scaladsl.GearSink
+import akka.stream.scaladsl.Source
 import io.gearpump.cluster.ClusterConfig
-import io.gearpump.streaming.dsl.{LoggerSink, CollectionDataSource}
+import io.gearpump.streaming.dsl.LoggerSink
 
 /**
  * read from local and write to remote

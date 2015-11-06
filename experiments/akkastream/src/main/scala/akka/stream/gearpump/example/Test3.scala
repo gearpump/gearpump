@@ -18,10 +18,10 @@
 
 package akka.stream.gearpump.example
 
-import akka.actor.{Actor, Props, ActorSystem}
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.scaladsl.GearSource
-import akka.stream.scaladsl.{Source, Sink}
+import akka.stream.scaladsl.Sink
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.streaming.dsl.CollectionDataSource
 

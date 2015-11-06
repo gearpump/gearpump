@@ -19,7 +19,7 @@
 package akka.stream.gearpump.scaladsl
 
 import akka.stream.Attributes
-import akka.stream.gearpump.module.{SinkTaskModule, SourceTaskModule, DummySink, DummySource, SinkBridgeModule, SourceBridgeModule}
+import akka.stream.gearpump.module.{DummySink, DummySource, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource

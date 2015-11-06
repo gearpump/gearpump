@@ -18,13 +18,13 @@
 
 package akka.stream.gearpump.graph
 
-import akka.stream.Attributes.Attribute
 import akka.stream.ModuleGraph
 import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.GearAttributes
-import akka.stream.gearpump.GearAttributes.{LocationAttribute, Location, Remote, Local}
-import akka.stream.gearpump.graph.GraphCutter.{Strategy}
-import akka.stream.gearpump.module.{GearpumpTaskModule, BridgeModule, DummyModule, SinkBridgeModule, SourceBridgeModule}
+import akka.stream.gearpump.GearAttributes.{Local, Location, Remote}
+import akka.stream.gearpump.graph.GraphCutter.Strategy
+import akka.stream.gearpump.module.{BridgeModule, DummyModule, GearpumpTaskModule, SinkBridgeModule, SourceBridgeModule}
+import akka.stream.impl.Stages.DirectProcessor
 import akka.stream.impl.StreamLayout.{MaterializedValueNode, Module}
 import akka.stream.impl.{MaterializedValueSource, SinkModule, SourceModule}
 import io.gearpump.util.Graph
@@ -149,6 +149,8 @@ object GraphCutter {
     case sink: SinkModule[_, _] =>
       Local
     case matValueSource: MaterializedValueSource[_] =>
+      Local
+    case direct: DirectProcessor =>
       Local
   }
 

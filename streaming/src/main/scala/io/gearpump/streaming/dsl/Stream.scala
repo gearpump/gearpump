@@ -91,7 +91,7 @@ class Stream[T](private val graph: Graph[Op,OpEdge], private val thisNode:Op, pr
    * @return
    */
   def merge(other: Stream[T], description: String = null): Stream[T] = {
-    val mergeOp = MergeOp(thisNode, other.thisNode, Option(description).getOrElse("merge"))
+    val mergeOp = MergeOp(Option(description).getOrElse("merge"))
     graph.addVertex(mergeOp)
     graph.addEdge(thisNode, edge.getOrElse(Direct), mergeOp)
     graph.addEdge(other.thisNode, other.edge.getOrElse(Shuffle), mergeOp)
