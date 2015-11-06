@@ -19,6 +19,8 @@
 package io.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
+import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.{Processor, Constants}
 import io.gearpump.streaming.dsl.{TypedDataSink, TypedDataSource}
 import io.gearpump.streaming.dsl.op._
@@ -178,11 +180,11 @@ object OpTranslator {
     }
   }
 
-  class SourceTask[T, OUT](source: TypedDataSource[T], operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class SourceTask[T, OUT](source: DataSource, operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
     def this(taskContext: TaskContext, userConf: UserConfig) = {
       this(
-        userConf.getValue[TypedDataSource[T]](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
+        userConf.getValue[DataSource](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
         userConf.getValue[SingleInputFunction[T, OUT]](GEARPUMP_STREAMING_OPERATOR)(taskContext.system),
         taskContext, userConf)
     }
@@ -241,9 +243,9 @@ object OpTranslator {
     }
   }
 
-  class SinkTask[T](dataSink: TypedDataSink[T], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class SinkTask[T](dataSink: DataSink, taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
     def this(taskContext: TaskContext, userConf: UserConfig) = {
-      this(userConf.getValue[TypedDataSink[T]](GEARPUMP_STREAMING_SINK)(taskContext.system).get, taskContext, userConf)
+      this(userConf.getValue[DataSink](GEARPUMP_STREAMING_SINK)(taskContext.system).get, taskContext, userConf)
     }
 
     override def onStart(startTime: StartTime): Unit = {

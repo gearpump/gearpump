@@ -177,7 +177,7 @@ object Stream {
   implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = new KVStream(stream)
 
   implicit class Sink[T: ClassTag](stream: Stream[T]) extends java.io.Serializable {
-    def sink[T: ClassTag](dataSink: TypedDataSink[T], parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+    def sink[T: ClassTag](dataSink: DataSink, parallism: Int, conf: UserConfig, description: String): Stream[T] = {
       implicit val sink = DataSinkOp(dataSink, parallism, conf, Some(description).getOrElse("traversable"))
       stream.graph.addVertex(sink)
       stream.graph.addEdge(stream.thisNode, Shuffle, sink)
@@ -193,9 +193,7 @@ object Stream {
   }
 }
 
-trait TypedDataSink[T] extends DataSink
-
-class LoggerSink[T] extends TypedDataSink[T] {
+class LoggerSink[T] extends DataSink {
   var logger: Logger = null
 
   private var context: TaskContext = null

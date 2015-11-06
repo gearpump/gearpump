@@ -70,19 +70,19 @@ object StreamApp {
 
   implicit class Source(app: StreamApp) extends java.io.Serializable {
 
-    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int): Stream[T] = {
+    def source[T: ClassTag](dataSource: DataSource, parallism: Int): Stream[T] = {
       source(dataSource, parallism, UserConfig.empty)
     }
 
-    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int, description: String): Stream[T] = {
+    def source[T: ClassTag](dataSource: DataSource, parallism: Int, description: String): Stream[T] = {
       source(dataSource, parallism, UserConfig.empty, description)
     }
 
-    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int, conf: UserConfig): Stream[T] = {
+    def source[T: ClassTag](dataSource: DataSource, parallism: Int, conf: UserConfig): Stream[T] = {
       source(dataSource, parallism, conf, description = null)
     }
 
-    def source[T: ClassTag](dataSource: TypedDataSource[T], parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+    def source[T: ClassTag](dataSource: DataSource, parallism: Int, conf: UserConfig, description: String): Stream[T] = {
       implicit val sourceOp = DataSourceOp(dataSource, parallism, conf, description)
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)
@@ -99,9 +99,7 @@ object StreamApp {
   }
 }
 
-trait TypedDataSource[T] extends DataSource
-
-class CollectionDataSource[T](seq: Seq[T]) extends TypedDataSource[T] {
+class CollectionDataSource[T](seq: Seq[T]) extends DataSource {
   var index = 0
 
   override def read(batchSize: Int): List[Message] = {

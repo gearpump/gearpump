@@ -58,11 +58,6 @@ object GearSource{
     val taskSource = new Source[OUT, Unit](new SourceTaskModule(source))
     taskSource
   }
-
-  def from[OUT](source: TypedDataSource[OUT]): Source[OUT, Unit] = {
-    val taskSource = new Source[OUT, Unit](new SourceTaskModule(source))
-    taskSource
-  }
 }
 
 object GearSink {

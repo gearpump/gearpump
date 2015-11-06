@@ -32,7 +32,7 @@ class KafkaDSLSink[T: ClassTag](stream: dsl.Stream[T]) {
       bootstrapServers: String,
       parallism: Int,
       description: String): dsl.Stream[T] = {
-    stream.sink(new KafkaSink(topic, bootstrapServers) with TypedDataSink[T], parallism, UserConfig.empty, description)
+    stream.sink(new KafkaSink(topic, bootstrapServers), parallism, UserConfig.empty, description)
   }
 
   def writeToKafka(
@@ -40,7 +40,7 @@ class KafkaDSLSink[T: ClassTag](stream: dsl.Stream[T]) {
       properties: Properties,
       parallism: Int,
       description: String): dsl.Stream[T] = {
-    stream.sink(new KafkaSink(topic, properties) with TypedDataSink[T], parallism, UserConfig.empty, description)
+    stream.sink(new KafkaSink(topic, properties), parallism, UserConfig.empty, description)
   }
 }
 

@@ -20,14 +20,14 @@ package akka.stream.gearpump.impl
 
 import akka.actor.ActorSystem
 import akka.stream.ModuleGraph.Edge
-import akka.stream.gearpump.module.{SinkBridgeModule, SourceBridgeModule}
+import akka.stream.gearpump.module.{SinkTaskModule, SourceTaskModule, SinkBridgeModule, SourceBridgeModule}
 import akka.stream.gearpump.task.{SinkBridgeTask, SourceBridgeTask}
 import akka.stream.impl.Stages.{Filter, StageModule}
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.{FanIn, FanOut, Stages}
 import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.dsl.StreamApp
-import io.gearpump.streaming.dsl.op.{Direct, FlatMapOp, MasterOp, Op, OpEdge, ProcessorOp, Shuffle, SlaveOp}
+import io.gearpump.streaming.dsl.{TypedDataSource, StreamApp}
+import io.gearpump.streaming.dsl.op.{DataSinkOp, DataSourceOp, Direct, FlatMapOp, MasterOp, Op, OpEdge, ProcessorOp, Shuffle, SlaveOp}
 import io.gearpump.streaming.{Constants, ProcessorId, StreamApplication}
 import io.gearpump.util.Graph
 
@@ -83,9 +83,13 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
       val conf = UserConfig.empty.withString(Constants.CLUE_KEY_NAME, name)
       matValues += module -> name
       module match {
-        case source: SourceBridgeModule[_, _] =>
+        case source: SourceTaskModule[t] =>
+          new DataSourceOp[t](source.source, 1, conf, "source")
+        case sink: SinkTaskModule[t] =>
+          new DataSinkOp[t](sink.sink, 1, conf, "sink")
+        case sourceBridge: SourceBridgeModule[_, _] =>
           new ProcessorOp(classOf[SourceBridgeTask], parallism = 1, conf, "source")
-        case sink: SinkBridgeModule[_, _] =>
+        case sinkBridge: SinkBridgeModule[_, _] =>
           new ProcessorOp(classOf[SinkBridgeTask], parallism = 1, conf, "sink")
         case stage: StageModule =>
           translateStage(stage)
