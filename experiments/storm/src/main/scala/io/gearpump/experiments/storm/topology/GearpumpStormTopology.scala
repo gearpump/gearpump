@@ -70,7 +70,7 @@ object GearpumpStormTopology {
         ret = yaml.load(new InputStreamReader(input)).asInstanceOf[JMap[AnyRef, AnyRef]]
       } catch {
         case e: IOException =>
-          LOG.error(s"failed to load config file $configFile")
+          LOG.warn(s"failed to load config file $configFile")
       } finally {
         input.close()
       }

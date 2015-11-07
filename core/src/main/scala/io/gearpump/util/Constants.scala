@@ -58,7 +58,7 @@ object Constants {
   val GEARPUMP_VERBOSE_GC = "gearpump.verbose-gc"
 
   //the time out for Future
-  val FUTURE_TIMEOUT = akka.util.Timeout(15, TimeUnit.SECONDS)
+  val FUTURE_TIMEOUT = akka.util.Timeout(90, TimeUnit.SECONDS)
 
   val APPMASTER_DEFAULT_EXECUTOR_ID = -1
 

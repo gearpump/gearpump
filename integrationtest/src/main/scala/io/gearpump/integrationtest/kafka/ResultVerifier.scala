@@ -15,39 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.integrationtest.kafka
 
-package io.gearpump.util
+import scala.collection.mutable
 
-import java.io.{Closeable, Flushable}
+trait ResultVerifier {
+  def onNext(msg: String): Unit
+}
 
-import org.slf4j.LoggerFactory
+class MessageLossDetector(totalNum: Int) extends ResultVerifier {
+  private val bitSets = new mutable.BitSet(totalNum)
 
-import scala.sys.process.ProcessLogger
-
-class ProcessLogRedirector extends ProcessLogger with Closeable with Flushable with ConsoleOutput {
-  private val LOG = LoggerFactory.getLogger("redirect")
-
-  // We only capture the first 1K chars
-  private final val LENGTH = 1000
-  private var _error: String = ""
-  private var _output: String = ""
-
-  def error: String = _error
-  def output: String = _output
-
-  def out(s: => String): Unit = {
-    if (_output.length <= LENGTH) {
-      _output += "\n" + s
-    }
-    LOG.info(s)
+  override def onNext(msg: String): Unit = {
+    val num = msg.toInt
+    bitSets.add(num)
   }
-  def err(s: => String): Unit = {
-    if (_error.length <= LENGTH) {
-      _error += "\n" + s
-    }
-    LOG.error(s)
+
+  def allReceived: Boolean = {
+    1.to(totalNum).forall(bitSets)
   }
-  def buffer[T](f: => T): T = f
-  def close(): Unit = Unit
-  def flush(): Unit = Unit
+
 }
