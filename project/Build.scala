@@ -422,4 +422,15 @@ object Build extends sbt.Build {
           )
         )
   ) dependsOn(streaming % "test->test; provided")
+
+  lazy val integration_test = Project(
+    id = "gearpump-integration-test",
+    base = file("integrationtest"),
+    settings = commonSettings ++ Seq(
+      libraryDependencies ++= Seq(
+        "com.lihaoyi" %% "upickle" % upickleVersion,
+        "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+      )
+    )
+  ) dependsOn(streaming % "test->test; provided")
 }
