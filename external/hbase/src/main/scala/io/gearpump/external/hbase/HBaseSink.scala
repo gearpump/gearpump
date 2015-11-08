@@ -91,11 +91,11 @@ object HBaseSink {
   val COLUMN_FAMILY = "hbase.table.column.family"
   val COLUMN_NAME = "hbase.table.column.name"
 
-  def apply[T](tableName: String): HBaseSink with TypedDataSink[T] = {
-    new HBaseSink(tableName) with TypedDataSink[T]
+  def apply[T](tableName: String): HBaseSink = {
+    new HBaseSink(tableName)
   }
 
-  def apply[T](tableName: String, configuration: Configuration): HBaseSink with TypedDataSink[T] = {
-    new HBaseSink(tableName, configuration) with TypedDataSink[T]
+  def apply[T](tableName: String, configuration: Configuration): HBaseSink = {
+    new HBaseSink(tableName, configuration)
   }
 }

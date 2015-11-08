@@ -23,16 +23,19 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.typesafe.config.{ConfigFactory, Config}
-import io.gearpump.cluster.MasterToAppMaster.AppMastersData
+import io.gearpump.cluster.MasterToAppMaster.{ReplayFromTimestampWindowTrailingEdge, AppMastersData}
 import io.gearpump.cluster.MasterToClient.ReplayApplicationResult
 import io.gearpump.cluster._
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.jarstore.{FilePath, JarStoreService}
 import io.gearpump.util.Constants._
-import io.gearpump.util.{Constants, LogUtil, Util}
+import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.concurrent.Future
 
 //TODO: add interface to query master here
 class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
@@ -109,8 +112,14 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   }
 
   def replayFromTimestampWindowTrailingEdge(appId : Int): ReplayApplicationResult = {
-    val client = new MasterClient(master)
-    client.replayFromTimestampWindowTrailingEdge(appId)
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val result = Await.result(ActorUtil.askAppMaster[ReplayApplicationResult](master, appId,ReplayFromTimestampWindowTrailingEdge(appId)), Duration.Inf)
+    result
+  }
+
+  def askAppMaster[T](appId: Int, msg: Any): Future[T] = {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    ActorUtil.askAppMaster[T](master, appId, msg)
   }
 
   def listApps: AppMastersData = {
@@ -160,6 +169,10 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
 object ClientContext {
 
   def apply(): ClientContext = new ClientContext(ClusterConfig.load.default, null, null)
+
+  def apply(system: ActorSystem) = new ClientContext(ClusterConfig.load.default, system, null)
+
+  def apply(system: ActorSystem, master: ActorRef) = new ClientContext(ClusterConfig.load.default, system, master)
 
   def apply(config: Config): ClientContext = new ClientContext(config, null, null)
 

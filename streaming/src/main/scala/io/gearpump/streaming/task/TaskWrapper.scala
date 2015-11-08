@@ -23,6 +23,7 @@ import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import io.gearpump.{TimeStamp, Message}
 import io.gearpump.cluster.UserConfig
 import io.gearpump.util.LogUtil
+import org.slf4j.Logger
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -117,4 +118,11 @@ class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: Task
     case msg =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + msg.toString)
   }
+
+  /**
+   * logger is environment dependant, it should be provided by
+   * containing environment.
+   * @return
+   */
+  override def logger: Logger = LOG
 }
