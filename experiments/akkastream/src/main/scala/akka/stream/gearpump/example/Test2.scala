@@ -26,10 +26,11 @@ import akka.stream.scaladsl.{Flow, FlowGraph, Sink, Source}
 import io.gearpump.cluster.ClusterConfig
 
 /**
- *
- * This test how different Materializer can be used together in explicit way.
- *
- */
+  *
+  * This tests how different Materializers can be used together in an explicit way.
+  * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
+  *
+  */
 object Test2 {
 
   def main(args: Array[String]): Unit = {

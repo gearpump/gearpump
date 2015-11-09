@@ -32,8 +32,8 @@ import scala.collection.mutable
 /**
  *
  * ModuleGraph is a transformation on [[akka.stream.scaladsl.RunnableGraph]].
- * It carry all information of [[akka.stream.scaladsl.RunnableGraph]], but
- * represent it in a different way.
+ * It carries all the information of [[akka.stream.scaladsl.RunnableGraph]], but
+ * represents it in a different way.
  *
  * Here is the difference:
  *
@@ -72,21 +72,21 @@ import scala.collection.mutable
  * Why use [[ModuleGraph]] instead of [[akka.stream.scaladsl.RunnableGraph]]?
  * =========================
  * There are several good reasons:):
- * 1. [[ModuleGraph]] outline explicitly the upstream/downstream relation.
+ * 1. [[ModuleGraph]] outlines explicitly the upstream/downstream relation.
  *   Each [[Edge]] of [[ModuleGraph]] represent a upstream/downstream pair.
  *   It is easier for user to understand the overall data flow.
  *
  * 2. It is easier for performance optimization.
  *  For the above Graph, if we want to fuse AtomicModule2 and AtomicModule3
- *  together, it will be natually in do this with [[ModuleGraph]]. We only need
+ *  together, it can be done within [[ModuleGraph]]. We only need
  *  to substitute Pair(AtomicModule2, AtomicModule4) with a unified Module.
  *
- * 3. It avoid module duplication.
+ * 3. It avoids module duplication.
  *  In [[akka.stream.scaladsl.RunnableGraph]], composite Module can be re-used.
  *  It is possible that there can be duplicate Modules.
- *  The duplication problem cause big headache when doing materilization.
+ *  The duplication problem causes big headache when doing materialization.
  *
- *  [[ModuleGraph]] don't have a problem. [[ModuleGraph]] does transform on the Module
+ *  [[ModuleGraph]] doesn't have thjis problem. [[ModuleGraph]] does a transformation on the Module
  *  Tree to make sure each Atomic Module [[ModuleGraph]] is unique.
  *
  *

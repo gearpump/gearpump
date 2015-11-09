@@ -90,7 +90,8 @@ abstract class BridgeModule[IN, OUT, MAT] extends FlowModule[IN, OUT, MAT]{
  * @tparam IN, input data type from out of band [[org.reactivestreams.Publisher]]
  * @tparam OUT out put data type to next module.
  */
-class SourceBridgeModule[IN, OUT](val attributes: Attributes = Attributes.name("sourceBridgeModule")) extends BridgeModule[IN, OUT, Subscriber[IN]] {  override protected def newInstance: BridgeModule[IN, OUT, Subscriber[IN]] = new SourceBridgeModule[IN, OUT](attributes)
+class SourceBridgeModule[IN, OUT](val attributes: Attributes = Attributes.name("sourceBridgeModule")) extends BridgeModule[IN, OUT, Subscriber[IN]] {
+  override protected def newInstance: BridgeModule[IN, OUT, Subscriber[IN]] = new SourceBridgeModule[IN, OUT](attributes)
 
   override def withAttributes(attributes: Attributes): BridgeModule[IN, OUT, Subscriber[IN]] = {
     new SourceBridgeModule( attributes)

@@ -34,9 +34,9 @@ import io.gearpump.util.Graph
  * GraphCutter is used to decide which part will be rendered locally
  * and which part should be rendered remotely.
  *
- * We will cut the graph based on [[Strategy]] used provided.
+ * We will cut the graph based on the [[Strategy]] provided.
  *
- * For example, for following graph, we can cut the graph to
+ * For example, for the following graph, we can cut the graph to
  * two parts, each part will be a Sub Graph. The top SubGraph
  * can be materialized remotely. The bottom part can be materialized
  * locally.

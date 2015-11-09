@@ -30,7 +30,7 @@ import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 import org.reactivestreams.{Subscriber, Subscription}
 
 /**
- * Bridge Task when data flow from local Akka-Stream Module to remote Gearpump Task
+ * Bridge Task when data flow is from local Akka-Stream Module to remote Gearpump Task
  *
  *
  *

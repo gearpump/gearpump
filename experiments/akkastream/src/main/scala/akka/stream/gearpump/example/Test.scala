@@ -24,14 +24,17 @@ import akka.stream.scaladsl.{Sink, Source}
 import io.gearpump.cluster.ClusterConfig
 
 /**
- * This test how [[GearpumpMaterializer]] materialize different piece of Graph
- * to different runtime.
- *
- * In this test, source module and sink module will be materialized locally,
- * Other transformation module will be materialized remotely in Gearpump
- * streaming Application.
- *
- */
+  * This tests how the [[GearpumpMaterializer]] materializes different partials of Graph
+  * to different runtime.
+  *
+  * In this test, source module and sink module will be materialized locally,
+  * Other transformation module will be materialized remotely in Gearpump
+  * streaming Application.
+  *
+  * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
+  *
+  *
+  */
 object Test {
 
   def main(args: Array[String]): Unit = {
