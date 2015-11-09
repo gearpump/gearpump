@@ -26,7 +26,7 @@ import akka.stream.impl.StreamLayout.Module
 
 /**
  *
- * [[GearpumpMaterializer]] allow you to render akka-stream DSL as a Gearpump
+ * [[GearpumpMaterializer]] allows you to render akka-stream DSL as a Gearpump
  * streaming application. If some module cannot be rendered remotely in Gearpump
  * Cluster, then it will use local Actor materializer as fallback to materialize
  * the module locally.
@@ -35,7 +35,7 @@ import akka.stream.impl.StreamLayout.Module
  * remotely, and which module should be rendered locally.
  *
  * @see [[GraphCutter]] to find out how we cut the [[ModuleGraph]] to two parts,
- *   and materialize there seperately.
+ *   and materialize them seperately.
  *
  * @param system
  * @param strategy

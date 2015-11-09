@@ -32,7 +32,7 @@ import io.gearpump.util.Graph
 /**
  *
  * [[RemoteGraph]] is a [[SubGraph]] of the application DSL Graph, which only
- *  contain module that can be materialized in remote Gearpump cluster.
+ *  contain modules that can be materialized in remote Gearpump cluster.
  *
  * By calling [[materialize]], [[RemoteGraph]] will materialize all sub-modules
  * remotely as a stream application in Gearpump Cluster.

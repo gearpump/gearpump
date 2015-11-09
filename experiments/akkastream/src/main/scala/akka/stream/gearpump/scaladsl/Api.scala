@@ -29,7 +29,7 @@ import org.reactivestreams.{Publisher, Subscriber}
 object GearSource{
 
   /**
-   * Construct a Source which accept out of band input messages.
+   * Construct a Source which accepts out of band input messages.
    *
    *                   [[SourceBridgeModule]] -> Sink
    *                          /
@@ -62,7 +62,7 @@ object GearSource{
 object GearSink {
 
   /**
-   * Construct a Sink which output messages to out of band channel.
+   * Construct a Sink which output messages to a out of band channel.
    *
    *   Souce ->   [[SinkBridgeModule]]
    *                    \

@@ -26,8 +26,9 @@ import io.gearpump.cluster.ClusterConfig
 import io.gearpump.streaming.dsl.CollectionDataSource
 
 /**
- * read from remote and write to local
- */
+  * read from remote and write to local
+  * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
+  */
 object Test3 {
 
   def main(args: Array[String]): Unit = {
