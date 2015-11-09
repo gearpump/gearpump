@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package akka.stream.gearpump.impl
+package akka.stream.gearpump.materializer
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 

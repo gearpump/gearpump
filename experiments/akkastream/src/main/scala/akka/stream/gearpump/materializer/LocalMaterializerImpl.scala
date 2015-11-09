@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package akka.stream.gearpump.impl
+package akka.stream.gearpump.materializer
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 
@@ -24,7 +24,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.dispatch.Dispatchers
 import akka.stream.ModuleGraph.{Edge, MaterializedValueSourceAttribute}
 import akka.stream.actor.ActorSubscriber
-import akka.stream.gearpump.impl.LocalMaterializerImpl.MaterializedModule
+import akka.stream.gearpump.materializer.LocalMaterializerImpl.MaterializedModule
 import akka.stream.gearpump.util.MaterializedValueOps
 import akka.stream.impl.GenJunctions.{UnzipWithModule, ZipWithModule}
 import akka.stream.impl.Junctions.{BalanceModule, BroadcastModule, ConcatModule, FanInModule, FanOutModule, FlexiMergeModule, FlexiRouteModule, JunctionModule, MergeModule, MergePreferredModule}

@@ -19,7 +19,6 @@ package io.gearpump.external.hbase
 
 import java.io.{IOException, ObjectInputStream, ObjectOutputStream}
 
-import io.gearpump.streaming.dsl.TypedDataSink
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.TaskContext
 import io.gearpump.Message

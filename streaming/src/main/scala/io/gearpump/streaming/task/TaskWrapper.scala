@@ -56,6 +56,13 @@ class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: Task
   override def output(msg: Message): Unit = actor.output(msg)
 
   /**
+   * @see [[TaskActor.output]]
+   * @param index, not same as ProcessorId
+   * @param msg
+   */
+  def output(index: Int, msg: Message): Unit = actor.output(index, msg)
+
+  /**
    * Use with caution, output unmanaged message to target tasks
    * @param msg
    * @param tasks

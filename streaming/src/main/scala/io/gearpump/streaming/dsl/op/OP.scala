@@ -28,6 +28,7 @@ import io.gearpump.streaming.task.Task
  */
 sealed trait Op {
   def description: String
+  def conf: UserConfig
 }
 
 /**
@@ -37,23 +38,17 @@ sealed trait Op {
  */
 trait SlaveOp[T] extends Op
 
-case class FlatMapOp[T, R](fun: (T) => TraversableOnce[R], description: String) extends SlaveOp[T]
+case class FlatMapOp[T, R](fun: (T) => TraversableOnce[R], description: String, conf: UserConfig = UserConfig.empty) extends SlaveOp[T]
 
-case class ReduceOp[T](fun: (T, T) =>T, description: String) extends SlaveOp[T]
+case class ReduceOp[T](fun: (T, T) =>T, description: String, conf: UserConfig = UserConfig.empty) extends SlaveOp[T]
 
-trait MasterOp extends Op {
-  def conf: UserConfig
-}
+trait MasterOp extends Op
 
 trait ParameterizedOp[T] extends MasterOp
 
-case class MergeOp(description: String) extends MasterOp {
-  override def conf: UserConfig = UserConfig.empty
-}
+case class MergeOp(description: String, override val conf: UserConfig = UserConfig.empty) extends MasterOp
 
-case class GroupByOp[T, R](fun: T => R, parallism: Int, description: String) extends ParameterizedOp[T]{
-  override def conf: UserConfig = UserConfig.empty
-}
+case class GroupByOp[T, R](fun: T => R, parallism: Int, description: String, override val conf: UserConfig = UserConfig.empty) extends ParameterizedOp[T]
 
 case class ProcessorOp[T <: Task](processor: Class[T], parallism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
@@ -73,6 +68,13 @@ case class OpChain(ops: List[Op]) extends Op {
   def last: Op = ops.last
 
   def description: String = null
+
+  override def conf: UserConfig = {
+    // the head's conf has priority
+    ops.reverse.foldLeft(UserConfig.empty){(conf, op) =>
+      conf.withConfig(op.conf)
+    }
+  }
 }
 
 trait OpEdge

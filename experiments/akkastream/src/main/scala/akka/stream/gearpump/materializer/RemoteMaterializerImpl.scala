@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package akka.stream.gearpump.impl
+package akka.stream.gearpump.materializer
 
 import akka.actor.ActorSystem
 import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.GearAttributes
 import akka.stream.gearpump.module.{SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
-import akka.stream.gearpump.task.{SinkBridgeTask, SourceBridgeTask}
-import akka.stream.impl.GenJunctions.ZipWithModule
+import akka.stream.gearpump.task.{BalanceTask, BroadcastTask, GraphTask, UnZip2Task, SinkBridgeTask, SourceBridgeTask}
+import akka.stream.impl.GenJunctions.{UnzipWith2Module, ZipWithModule}
 import akka.stream.impl.Junctions._
-import akka.stream.impl.Stages
+import akka.stream.impl.{FlexiRouteImpl, Stages}
 import akka.stream.impl.Stages.{MaterializingStageFactory, StageModule}
 import akka.stream.impl.StreamLayout.Module
 import io.gearpump.cluster.UserConfig
@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory
 class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
 
   type Clue = String
+  private implicit val actorSystem = system
 
   private def uuid: String = {
     java.util.UUID.randomUUID.toString
@@ -56,16 +57,59 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
   def materialize: (StreamApplication, Map[Module, ProcessorId]) = {
     val (opGraph, clues) = toOpGraph()
     val app: StreamApplication = new StreamApp("app", system, UserConfig.empty, opGraph)
-    val matValues = resolveClues(app, clues)
+    val processorIds = resolveClues(app, clues)
 
-    (cleanClues(app), matValues)
+    val updatedApp = updateJunctionConfig(processorIds, app)
+    (cleanClues(updatedApp), processorIds)
+  }
+
+  private def updateJunctionConfig(processorIds: Map[Module, ProcessorId], app: StreamApplication): StreamApplication = {
+    val config = junctionConfig(processorIds)
+
+    val dag = app.dag.mapVertex { vertex =>
+      val processorId = vertex.id
+      val newConf = vertex.taskConf.withConfig(config(processorId))
+      vertex.copy(taskConf = newConf)
+    }
+    new StreamApplication(app.name, app.inputUserConfig, dag)
+  }
+
+  /**
+   * Update junction config so that each GraphTask know its upstream and downstream.
+   * @param processorIds
+   * @return
+   */
+  private def junctionConfig(processorIds: Map[Module, ProcessorId]): Map[ProcessorId, UserConfig] = {
+    val updatedConfigs = graph.vertices.map { vertex =>
+      val processorId = processorIds(vertex)
+      vertex match {
+        case junction: JunctionModule =>
+          val inProcessors = junction.shape.inlets.map { inlet =>
+            val upstreamModule = graph.incomingEdgesOf(junction).find(_._2.to == inlet).map(_._1)
+            val upstreamProcessorId = processorIds(upstreamModule.get)
+            upstreamProcessorId
+          }.toList
+
+          val outProcessors = junction.shape.outlets.map { outlet =>
+            val downstreamModule = graph.outgoingEdgesOf(junction).find(_._2.from == outlet).map(_._3)
+            val downstreamProcessorId = downstreamModule.map(processorIds(_))
+            downstreamProcessorId.get
+          }.toList
+
+          (processorId, UserConfig.empty.withValue(GraphTask.OUT_PROCESSORS, outProcessors)
+            .withValue(GraphTask.IN_PROCESSORS, inProcessors))
+        case _ =>
+          (processorId, UserConfig.empty)
+      }
+    }.toMap
+    updatedConfigs
   }
 
   private def resolveClues(app: StreamApplication, clues: Map[Module, Clue]): Map[Module, ProcessorId] = {
     clues.flatMap { kv =>
       val (module, clue) = kv
       val processorId = app.dag.vertices.find { processor =>
-        processor.taskConf.getString(RemoteMaterializerImpl.CLUE_KEY_NAME) == Some(clue)
+        processor.taskConf.getString(clue).isDefined
       }.map(_.id)
       processorId.map((module, _))
     }
@@ -73,17 +117,23 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
 
   private def cleanClues(app: StreamApplication): StreamApplication = {
     val graph = app.dag.mapVertex{ processor =>
-      val conf = processor.taskConf.without(RemoteMaterializerImpl.CLUE_KEY_NAME)
+      val conf = cleanClue(processor.taskConf)
       processor.copy(taskConf = conf)
     }
     new StreamApplication(app.name, app.inputUserConfig, graph)
+  }
+
+  private def cleanClue(conf: UserConfig): UserConfig = {
+    conf.filter{kv =>
+      kv._2 != RemoteMaterializerImpl.STAINS
+    }
   }
 
   private def toOpGraph(): (Graph[Op, OpEdge], Map[Module, Clue]) = {
     var matValues = Map.empty[Module, Clue]
     val opGraph = graph.mapVertex{ module =>
       val name = uuid
-      val conf = UserConfig.empty.withString(RemoteMaterializerImpl.CLUE_KEY_NAME, name)
+      val conf = UserConfig.empty.withString(name, RemoteMaterializerImpl.STAINS)
       matValues += module -> name
       val parallelism = GearAttributes.count(module.attributes)
       val op = module match {
@@ -96,11 +146,11 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
         case sinkBridge: SinkBridgeModule[_, _] =>
           new ProcessorOp(classOf[SinkBridgeTask], parallism = 1, conf, "sink")
         case stage: StageModule =>
-          translateStage(stage)
+          translateStage(stage, conf)
         case fanIn: FanInModule =>
-          translateFanIn(fanIn)
+          translateFanIn(fanIn, graph.incomingEdgesOf(fanIn), parallelism, conf)
         case fanOut: FanOutModule =>
-          translateFanOut(fanOut)
+          translateFanOut(fanOut, graph.outgoingEdgesOf(fanOut), parallelism, conf)
       }
 
       if (op == null) {
@@ -121,40 +171,40 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
   }
 
   import RemoteMaterializerImpl._
-  private def translateStage(module: StageModule): Op = {
+  private def translateStage(module: StageModule, conf: UserConfig): Op = {
     module match {
       case buffer: Stages.Buffer =>
         //ignore the buffering operation
-        identity("buffer")
+        identity("buffer", conf)
       case collect: Stages.Collect =>
-        collectOp(collect.pf)
+        collectOp(collect.pf, conf)
       case concatAll: Stages.ConcatAll =>
         //TODO:
         null
       case conflat: Stages.Conflate =>
-        conflatOp(conflat.seed, conflat.aggregate)
+        conflatOp(conflat.seed, conflat.aggregate, conf)
       case drop: Stages.Drop =>
-        dropOp(drop.n)
+        dropOp(drop.n, conf)
       case dropWhile: Stages.DropWhile =>
-        dropWhileOp(dropWhile.p)
+        dropWhileOp(dropWhile.p, conf)
       case expand: Stages.Expand =>
         //TODO
         null
       case filter: Stages.Filter =>
-        filterOp(filter.p)
+        filterOp(filter.p, conf)
       case fold: Stages.Fold =>
-        foldOp(fold.zero, fold.f)
+        foldOp(fold.zero, fold.f, conf)
       case groupBy: Stages.GroupBy =>
         //TODO
         null
       case grouped: Stages.Grouped =>
-        groupedOp(grouped.n)
+        groupedOp(grouped.n, conf)
       case _: Stages.Identity =>
-        identity("identity")
+        identity("identity", conf)
       case log: Stages.Log =>
-        logOp(log.name, log.extract)
+        logOp(log.name, log.extract, conf)
       case map: Stages.Map =>
-        mapOp(map.f)
+        mapOp(map.f, conf)
       case mapAsync: Stages.MapAsync =>
         //TODO
         null
@@ -162,7 +212,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
         //TODO
         null
       case flatMap: Stages.MapConcat =>
-        flatMapOp(flatMap.f)
+        flatMapOp(flatMap.f, "mapConcat", conf)
       case stage: MaterializingStageFactory =>
         //TODO
         null
@@ -171,9 +221,9 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
         null
       case recover: Stages.Recover =>
         //TODO: we will just ignore this
-        identity("recover")
+        identity("recover", conf)
       case scan: Stages.Scan =>
-        scanOp(scan.zero, scan.f)
+        scanOp(scan.zero, scan.f, conf)
       case split: Stages.Split =>
         //TODO
         null
@@ -181,22 +231,26 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
         //TODO
         null
       case take: Stages.Take =>
-        takeOp(take.n)
+        takeOp(take.n, conf)
       case takeWhile: Stages.TakeWhile =>
-        filterOp(takeWhile.p)
+        filterOp(takeWhile.p, conf)
       case time: Stages.TimerTransform =>
         //TODO
         null
     }
   }
 
-  private def translateFanIn(fanIn: FanInModule): Op = {
+  private def translateFanIn(
+      fanIn: FanInModule,
+      edges: List[(Module, Edge, Module)],
+      parallelism: Int,
+      conf: UserConfig): Op = {
     fanIn match {
       case merge: MergeModule[_] =>
-        MergeOp("merge")
+        MergeOp("merge", conf)
       case mergePrefered: MergePreferredModule[_] =>
         //TODO, support "prefer" merge
-        MergeOp("mergePrefered")
+        MergeOp("mergePrefered", conf)
       case zip: ZipWithModule =>
         //TODO: support zip module
         null
@@ -209,72 +263,88 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
     }
   }
 
-  private def translateFanOut(fanOut: FanOutModule): Op = {
-    //TODO add FanOut Support
-    null
+  private def translateFanOut(
+      fanOut: FanOutModule,
+      edges: List[(Module, Edge, Module)],
+      parallelism: Int,
+      conf: UserConfig): Op = {
+    fanOut match {
+      case unzip2: UnzipWith2Module[Any, Any, Any] =>
+        val updatedConf = conf.withValue(UnZip2Task.UNZIP2_FUNCTION, new UnZip2Task.UnZipFunction(unzip2.f))
+        new ProcessorOp(classOf[UnZip2Task], parallelism, updatedConf, "unzip")
+      case broadcast: BroadcastModule[_] =>
+        new ProcessorOp(classOf[BroadcastTask], parallelism, conf, "broadcast")
+      case broadcast: BalanceModule[_] =>
+        new ProcessorOp(classOf[BalanceTask], parallelism, conf, "balance")
+      case flexi: FlexiRouteImpl[_, _] =>
+        //TODO
+        null
+    }
   }
 }
 
 object RemoteMaterializerImpl {
   final val NotApplied: Any => Any = _ => NotApplied
 
-  def collectOp(collect: PartialFunction[Any, Any]): Op = {
+  def collectOp(collect: PartialFunction[Any, Any], conf: UserConfig): Op = {
     flatMapOp({ data =>
       collect.applyOrElse(data, NotApplied) match {
         case NotApplied => None
         case result: Any => Option(result)
       }
-    }, "collect")
+    }, "collect", conf)
   }
 
-  def filterOp(filter: Any => Boolean): Op = {
+  def filterOp(filter: Any => Boolean, conf: UserConfig): Op = {
     flatMapOp({ data =>
       if (filter(data)) Option(data) else None
-    }, "filter")
+    }, "filter", conf)
   }
 
-  def identity(description: String): Op = {
+  def identity(description: String, conf: UserConfig): Op = {
     flatMapOp({ data =>
-      Option(data)
-    }, description)
+      List(data)
+    }, description, conf)
   }
 
-  def mapOp(map: Any => Any): Op = {
-    flatMapOp ({ data =>
-      Option(map(data))
-    }, "map")
+  def mapOp(map: Any => Any, conf: UserConfig): Op = {
+    flatMapOp ({ data: Any =>
+      List(map(data))
+    }, "map", conf)
   }
 
-  def flatMapOp(flatMap: Any => Iterable[Any]): Op = {
-    flatMapOp(flatMap, "flatmap")
+  def flatMapOp(flatMap: Any => Iterable[Any], conf: UserConfig): Op = {
+    flatMapOp(flatMap, "flatmap", conf)
   }
 
-  def flatMapOp(fun: Any => TraversableOnce[Any], description: String): Op = {
-    FlatMapOp(fun, description)
+  def flatMapOp(fun: Any => TraversableOnce[Any], description: String, conf: UserConfig): Op = {
+    FlatMapOp(fun, description, conf)
   }
 
-  def conflatOp(seed: Any => Any, aggregate: (Any, Any) => Any): Op = {
+  def conflatOp(seed: Any => Any, aggregate: (Any, Any) => Any, conf: UserConfig): Op = {
     var agg : Any = null
-    val map = {elem: Any =>
+    val flatMap = {elem: Any =>
       agg = if (agg == null) {
         seed(elem)
       } else {
         aggregate(agg, elem)
       }
-      agg
+      List(agg)
     }
-    mapOp(map)
+
+    flatMapOp (flatMap, "map", conf)
   }
 
-  def foldOp(zero: Any, fold: (Any, Any) => Any): Op = {
+  def foldOp(zero: Any, fold: (Any, Any) => Any, conf: UserConfig): Op = {
     var aggregator: Any = zero
     val map = { elem: Any =>
       aggregator = fold(aggregator, elem)
+      List(aggregator)
     }
-    mapOp(map)
+    flatMapOp(map, "fold", conf)
   }
 
-  def groupedOp(count: Int): Op = {
+  def groupedOp(count: Int, conf: UserConfig): Op = {
     var left = count
     val buf = {
       val b = Vector.newBuilder[Any]
@@ -294,38 +364,37 @@ object RemoteMaterializerImpl {
         None
       }
     }
-    flatMapOp(flatMap)
+    flatMapOp(flatMap, conf: UserConfig)
   }
 
-  def dropOp(number: Long): Op = {
+  def dropOp(number: Long, conf: UserConfig): Op = {
     var left = number
-    val filter = {input: Any =>
+    val flatMap: Any=>Iterable[Any] = {input: Any =>
       if (left > 0) {
         left -= 1
-        false
+        None
       } else {
-        true
+        Some(input)
       }
     }
-    filterOp(filter)
+    flatMapOp(flatMap, "drop", conf)
   }
 
-  def dropWhileOp(drop: Any=>Boolean): Op = {
-    val filter = {input: Any =>
-      !drop(input)
-    }
-    filterOp(filter)
+  def dropWhileOp(drop: Any=>Boolean, conf: UserConfig): Op = {
+    flatMapOp({ data =>
+      if (drop(data))  None else Option(data)
+    }, "dropWhile", conf)
   }
 
-  def logOp(name: String, extract: Any=>Any): Op = {
-    val map = {elem: Any =>
+  def logOp(name: String, extract: Any=>Any, conf: UserConfig): Op = {
+    val flatMap = {elem: Any =>
       LoggerFactory.getLogger(name).info(s"Element: {${extract(elem)}}")
-      elem
+      List(elem)
     }
-    mapOp(map)
+    flatMapOp(flatMap, "log", conf)
   }
 
-  def scanOp(zero: Any, f: (Any, Any) => Any): Op = {
+  def scanOp(zero: Any, f: (Any, Any) => Any, conf: UserConfig): Op = {
     var aggregator = zero
     var pushedZero = false
 
@@ -339,20 +408,24 @@ object RemoteMaterializerImpl {
         List(aggregator)
       }
     }
-    flatMapOp(flatMap)
+    flatMapOp(flatMap, "scan", conf)
   }
 
-  def takeOp(count: Long): Op = {
+  def takeOp(count: Long, conf: UserConfig): Op = {
     var left: Long = count
 
-    val filter = {elem: Any =>
+    val filter: Any=>Iterable[Any] = {elem: Any =>
       left -= 1
-      if (left > 0) true
-      else if (left == 0) true
-      else false
+      if (left > 0) Some(elem)
+      else if (left == 0) Some(elem)
+      else None
     }
-    filterOp(filter)
+    flatMapOp(filter, "take", conf)
   }
 
-  val CLUE_KEY_NAME = "gearpump.streaming.processor.name"
+  /**
+   * We use stains to track how module maps to Processor
+   *
+   */
+  val STAINS = "track how module is fused to processor"
 }

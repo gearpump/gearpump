@@ -39,38 +39,43 @@ import scala.collection.TraversableOnce
  */
 class OpTranslator extends java.io.Serializable {
   val LOG: Logger = LogUtil.getLogger(getClass)
+
   def translate(ops: OpChain)(implicit system: ActorSystem): Processor[_ <: Task] = {
+
+    val baseConfig = ops.conf
+
     ops.ops.head match {
       case op: MasterOp =>
         val tail = ops.ops.tail
         val func = toFunction(tail)
-        val userConfig = op.conf.withValue(GEARPUMP_STREAMING_OPERATOR, func)
+        val userConfig = baseConfig.withValue(GEARPUMP_STREAMING_OPERATOR, func)
 
         op match {
           case DataSourceOp(dataSource, parallism, conf, description) =>
             Processor[SourceTask[Object, Object]](parallism,
               description = description + "." + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, dataSource))
-          case groupby@ GroupByOp(_, parallism, description) =>
+              userConfig.withValue(GEARPUMP_STREAMING_SOURCE, dataSource))
+          case groupby@ GroupByOp(_, parallism, description, _) =>
             Processor[GroupByTask[Object, Object, Object]](parallism,
               description = description + "." + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_GROUPBY_FUNCTION, groupby))
+              userConfig.withValue(GEARPUMP_STREAMING_GROUPBY_FUNCTION, groupby))
           case merge: MergeOp =>
             Processor[TransformTask[Object, Object]](1,
               description = op.description + "." + func.description,
-              taskConf = userConfig)
+              userConfig)
           case ProcessorOp(processor, parallism, conf, description) =>
             DefaultProcessor(parallism,
               description = description + "." + func.description,
-              taskConf = conf, processor)
+              userConfig, processor)
           case DataSinkOp(dataSink, parallelism, conf, description) =>
             Processor[SinkTask[Object]](parallelism,
               description = description + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SINK, dataSink))
+              userConfig.withValue(GEARPUMP_STREAMING_SINK, dataSink))
         }
       case op: SlaveOp[_] =>
         val func = toFunction(ops.ops)
-        val userConfig = UserConfig.empty.withValue(GEARPUMP_STREAMING_OPERATOR, func)
+        val userConfig = baseConfig.withValue(GEARPUMP_STREAMING_OPERATOR, func)
+
         Processor[TransformTask[Object, Object]](1,
           description = func.description,
           taskConf = userConfig)

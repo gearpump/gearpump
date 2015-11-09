@@ -20,7 +20,7 @@ package akka.stream.gearpump.graph
 
 import akka.actor.ActorSystem
 import akka.stream.ModuleGraph.Edge
-import akka.stream.gearpump.impl.RemoteMaterializerImpl
+import akka.stream.gearpump.materializer.RemoteMaterializerImpl
 import akka.stream.gearpump.module.{SinkBridgeModule, SourceBridgeModule}
 import akka.stream.gearpump.task.SinkBridgeTask.SinkBridgeTaskClient
 import akka.stream.gearpump.task.SourceBridgeTask.SourceBridgeTaskClient

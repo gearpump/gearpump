@@ -21,22 +21,13 @@ package akka.stream.gearpump.example
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.graph.GraphCutter
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Unzip, Source, FlowGraph, Sink}
 import io.gearpump.cluster.ClusterConfig
 
 /**
-  * This tests how the [[GearpumpMaterializer]] materializes different partials of Graph
-  * to different runtime.
-  *
-  * In this test, source module and sink module will be materialized locally,
-  * Other transformation module will be materialized remotely in Gearpump
-  * streaming Application.
-  *
-  * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
-  *
-  *
-  */
-object Test {
+ test fanout
+ */
+object Test5 {
 
   def main(args: Array[String]): Unit = {
 
@@ -47,10 +38,22 @@ object Test {
 
     val echo = system.actorOf(Props(new Echo()))
     val sink = Sink.actorRef(echo, "COMPLETE")
-    val source = Source(List("red hat", "yellow sweater", "blue jack", "red apple", "green plant", "blue sky"))
-    source.filter(_.startsWith("red")).fold("Items:"){(a, b) =>
-      a + "|" + b
-    }.map("I want to order item: " + _).runWith(sink)
+
+    val source = Source(List(("male", "24"), ("female", "23")))
+
+    val graph = FlowGraph.closed() { implicit b =>
+      import FlowGraph.Implicits._
+      val unzip = b.add(Unzip[String, String]())
+
+      val sink1 = Sink.actorRef(echo, "COMPLETE")
+      val sink2 = Sink.actorRef(echo, "COMPLETE")
+
+      source ~> unzip.in
+      unzip.out0 ~> sink1
+      unzip.out1 ~> sink1
+    }
+
+    graph.run()
 
     system.awaitTermination()
   }

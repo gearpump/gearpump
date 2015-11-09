@@ -20,7 +20,7 @@ package akka.stream.gearpump.graph
 
 import akka.actor.ActorSystem
 import akka.stream.ModuleGraph.Edge
-import akka.stream.gearpump.impl.LocalMaterializer
+import akka.stream.gearpump.materializer.LocalMaterializer
 import akka.stream.gearpump.module.{SinkBridgeModule, SourceBridgeModule}
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module

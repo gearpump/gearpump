@@ -105,6 +105,18 @@ class TaskActor(
 
   def onStop() : Unit = task.onStop()
 
+  /**
+   * output to a downstream by specifying a arrayIndex
+   * @param arrayIndex, this is not same as ProcessorId
+   * @param msg
+   */
+  def output(arrayIndex: Int, msg: Message) : Unit = {
+    LOG.debug("[output]: " + msg.msg)
+    var count = 0
+    count +=  this.subscriptions(arrayIndex)._2.sendMessage(msg)
+    sendThroughput.mark(count)
+  }
+
   def output(msg : Message) : Unit = {
     LOG.debug("[output]: " + msg.msg)
     var count = 0
@@ -188,7 +200,7 @@ class TaskActor(
         (subscriber.processorId ,
           new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
             maxPendingMessageCount, ackOnceEveryMessageCount))
-      }
+      }.sortBy(_._1)
 
       subscriptions.foreach(_._2.start)
 
@@ -257,6 +269,8 @@ class TaskActor(
               maxPendingMessageCount, ackOnceEveryMessageCount)
             subscription.start
             subscriptions :+= (subscriber.processorId, subscription)
+            // resort, keep the order
+            subscriptions = subscriptions.sortBy(_._1)
         }
       }
       sender ! TaskChanged(taskId, dagVersion)
