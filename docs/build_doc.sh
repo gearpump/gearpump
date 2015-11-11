@@ -6,12 +6,12 @@ if [ "$CURDIRNAME" != "docs" ]; then
   exit 1
 fi
 
-function help {
-  echo "Usage: \n\t$0 scala_version[2.11] build_api_doc[0|1]"
-  echo "\tE.g. $0 2.11 1"
+help() {
+  echo -e "Usage: \n\t$0 scala_version[2.11] build_api_doc[0|1]"
+  echo -e "\tE.g. $0 2.11 1"
 }
 
-function copy_dir {
+copy_dir() {
   srcDir=$1
   destDir=$2
 
