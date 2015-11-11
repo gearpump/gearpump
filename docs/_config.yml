@@ -11,6 +11,10 @@ include:
   - _static
   - _modules
 
+exclude:
+  - README.md
+  - build_doc.sh
+
 # These allow the documentation to be updated with newer releases of Gearpump
 GEARPUMP_VERSION: 0.6.1.4
 SCALA_BINARY_VERSION: "2.11"
