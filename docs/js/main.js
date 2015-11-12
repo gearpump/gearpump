@@ -67,6 +67,9 @@ function codeTabs() {
     $("." + $(this).attr('class')).tab('show');
     $(document).scrollTop($(this).offset().top - scrollOffset);
   });
+  $("table").each(function() {
+    $(this).addClass("table table-bordered");
+  });
 }
 
 
