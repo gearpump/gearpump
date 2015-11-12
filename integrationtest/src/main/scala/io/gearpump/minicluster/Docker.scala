@@ -53,7 +53,9 @@ object Docker {
    */
   def execAndCaptureOutput(name: String, command: String): String = {
     LOG.info(s"$name -> exec: `$command`")
-    s"docker exec $name $command".!!.trim
+    val output = s"docker exec $name $command".!!.trim
+    LOG.info(s"$name <- exec: `$output`")
+    output
   }
 
   def killAndRemove(name: String): Boolean = {

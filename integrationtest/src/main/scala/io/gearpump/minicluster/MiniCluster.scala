@@ -22,15 +22,18 @@ import scala.sys.process._
 /**
  * This class is a test driver for end-to-end integration test.
  */
-class MiniCluster(workerNum: Int = 2) {
+class MiniCluster(
+                   workerNum: Int = 2, // Each worker will launch a new Docker container
+                   tunnelPorts: Set[Int] = Set.empty, // Ports that need to be forwarded
+                   dockerImage: String = "stanleyxu2005/gpct-jdk8" // The Docker image to be tested with
+                   ) {
 
-  private val DOCKER_IMAGE_NAME = "stanleyxu2005/gpct-jdk8"
   private val SUT_HOME = "/opt/gearpump"
   private val MOUNT_PATH = "pwd".!!.trim + "/output/target/pack"
   private val MOUNT_PATH_OPTS = s"-v $MOUNT_PATH:$SUT_HOME"
 
   private val MASTERS = {
-    (0 to 0).map("gpc-master" + _)
+    (0 to 0).map("master" + _)
   }
 
   private val MASTER_PORT = 3000
@@ -52,7 +55,7 @@ class MiniCluster(workerNum: Int = 2) {
 
     // Workers' membership can be modified at runtime
     (0 to workerNum - 1).foreach(index => {
-      val host = "gpc-worker" + index
+      val host = "worker" + index
       newWorkerNode(host)
     })
 
@@ -61,11 +64,12 @@ class MiniCluster(workerNum: Int = 2) {
   }
 
   private def newMasterNode(host: String): Unit = {
-    // Expose REST service port to localhost for debugging
-    val debugOpts = s"-p $REST_PORT:$REST_PORT"
+    // Setup port forwarding from master node to host machine for testing
+    val tunnelPortsOpt = tunnelPorts.map(port =>
+      s"-p $port:$port").mkString(" ")
 
-    Docker.run(host, s"-d -h $host -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS $debugOpts",
-      s"master -ip $host -port $MASTER_PORT", DOCKER_IMAGE_NAME)
+    Docker.run(host, s"-d -h $host -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS $tunnelPortsOpt",
+      s"master -ip $host -port $MASTER_PORT", dockerImage)
   }
 
   def newWorkerNode(host: String): Unit = {
@@ -74,7 +78,7 @@ class MiniCluster(workerNum: Int = 2) {
       "--link " + master).mkString(" ")
 
     Docker.run(host, s"-d $hostLinksOpt -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS",
-      "worker", DOCKER_IMAGE_NAME)
+      "worker", dockerImage)
     workers :+= host
   }
 
