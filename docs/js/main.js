@@ -40,6 +40,7 @@ function codeTabs() {
       var image = $(this).data("image");
       var notabs = $(this).data("notabs");
       var capitalizedLang = lang.substr(0, 1).toUpperCase() + lang.substr(1);
+      lang = lang.replace(/ /g, '');
       var id = "tab_" + lang + "_" + counter;
       $(this).attr("id", id);
       if (image != null && langImages[lang]) {
