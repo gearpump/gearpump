@@ -25,56 +25,67 @@ import scala.sys.process._
 class MiniCluster(
                    workerNum: Int = 2, // Each worker will launch a new Docker container
                    tunnelPorts: Set[Int] = Set.empty, // Ports that need to be forwarded
-                   dockerImage: String = "stanleyxu2005/gpct-jdk8" // The Docker image to be tested with
+                   dockerImage: String = "stanleyxu2005/gpct-jdk8", // The Docker image to be tested with
+                   masterPort: Int = 3000, // The port of master endpoint
+                   restServicePort: Int = 8090 // The port of REST service (Yarn integration might modify the value)
                    ) {
 
   private val SUT_HOME = "/opt/gearpump"
   private val MOUNT_PATH = "pwd".!!.trim + "/output/target/pack"
   private val MOUNT_PATH_OPTS = s"-v $MOUNT_PATH:$SUT_HOME"
 
-  private val MASTERS = {
-    (0 to 0).map("master" + _)
+  private val MASTER_ADDRS = {
+    (0 to 0).map(index =>
+      ("master" + index, masterPort)
+    )
   }
 
-  private val MASTER_PORT = 3000
-  private val REST_PORT = 8090
-
-  def client = new RestClient(MASTERS.head, REST_PORT)
+  def client = new RestClient(getMasterHosts.head, restServicePort)
 
   private val CLUSTER_OPTS = {
-    MASTERS.zipWithIndex.map { case (host, index) =>
-      s"-Dgearpump.cluster.masters.$index=$host:$MASTER_PORT"
+    MASTER_ADDRS.zipWithIndex.map { case (hostPort, index) =>
+      s"-Dgearpump.cluster.masters.$index=${hostPort._1}:${hostPort._2}"
     }.mkString(" ")
   }
 
   private var workers: List[String] = List.empty
 
   def start(): Unit = {
+    cleanupDockerEnv()
+
     // Masters' membership cannot be modified at runtime
-    MASTERS.foreach(newMasterNode)
+    MASTER_ADDRS.foreach({ case (host, port) =>
+      newMasterNode(host, port)
+    })
+    // We consider the cluster is started, when the REST services are ready.
+    expectRestServiceAvailable()
 
     // Workers' membership can be modified at runtime
     (0 to workerNum - 1).foreach(index => {
       val host = "worker" + index
       newWorkerNode(host)
     })
-
-    // We consider the cluster is started, when the REST services are ready.
-    expectRestServiceAvailable()
   }
 
-  private def newMasterNode(host: String): Unit = {
+  private def cleanupDockerEnv(): Unit = {
+    val containers = Docker.listContainers()
+    if (containers.nonEmpty) {
+      Docker.killAndRemove(containers.mkString(" "))
+    }
+  }
+
+  private def newMasterNode(host: String, port: Int): Unit = {
     // Setup port forwarding from master node to host machine for testing
     val tunnelPortsOpt = tunnelPorts.map(port =>
       s"-p $port:$port").mkString(" ")
 
     Docker.run(host, s"-d -h $host -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS $tunnelPortsOpt",
-      s"master -ip $host -port $MASTER_PORT", dockerImage)
+      s"master -ip $host -port $port", dockerImage)
   }
 
   def newWorkerNode(host: String): Unit = {
     // Masters's hostname will be exposed to worker node
-    val hostLinksOpt = MASTERS.map(master =>
+    val hostLinksOpt = getMasterHosts.map(master =>
       "--link " + master).mkString(" ")
 
     Docker.run(host, s"-d $hostLinksOpt -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS",
@@ -96,8 +107,8 @@ class MiniCluster(
   }
 
   def shutDown(): Unit = {
-    workers.foreach(removeWorkerNode)
-    MASTERS.foreach(removeMasterNode)
+    getWorkerHosts.foreach(removeWorkerNode)
+    getMasterHosts.foreach(removeMasterNode)
   }
 
   private def removeMasterNode(host: String): Unit = {
@@ -110,12 +121,20 @@ class MiniCluster(
     }
   }
 
-  def nodeOnline(host: String): Boolean = {
-    Docker.running(host)
+  def getMasterHosts = {
+    MASTER_ADDRS.map({ case (host, port) => host })
+  }
+
+  def getWorkerHosts = {
+    workers
+  }
+
+  def nodeIsOnline(host: String): Boolean = {
+    Docker.containerIsRunning(host)
   }
 
   def queryBuiltInExampleJars(subtext: String): Seq[String] = {
-    Docker.execAndCaptureOutput(MASTERS.head, s"find $SUT_HOME/examples")
+    Docker.execAndCaptureOutput(getMasterHosts.head, s"find $SUT_HOME/examples")
       .split("\n").filter(_.contains(subtext))
   }
 

@@ -28,40 +28,53 @@ object Docker {
 
   private val LOG = Logger.getLogger("")
 
+  def listContainers(): Seq[String] = {
+    shellExecAndCaptureOutput("docker ps -q -a", "LIST -a")
+      .split("\n").filter(_.nonEmpty)
+  }
+
   /**
    * @throws RuntimeException in case particular container is created already
    */
   def run(name: String, options: String, args: String, image: String): Unit = {
-    val command = s"docker run $options --name $name $image $args"
-    LOG.info(s"$name -> create and run: `$command`")
-    if (command.! != 0) {
-      throw new RuntimeException(s"Container '$name' exists already. Please remove it first.")
+    if (!shellExec(s"docker run $options --name $name $image $args", s" RUN $name")) {
+      throw new RuntimeException(s"Failed to run container '$name'.")
     }
   }
 
-  def running(name: String): Boolean = {
-    s"docker ps -q --filter 'name=$name'".!!.trim != ""
+  def containerIsRunning(name: String): Boolean = {
+    shellExecAndCaptureOutput(s"docker ps -q --filter 'name=$name'", s"LIST $name").nonEmpty
+  }
+
+  def containerExists(name: String): Boolean = {
+    shellExecAndCaptureOutput(s"docker ps -q -a --filter 'name=$name'", s"LIST $name").nonEmpty
   }
 
   def exec(name: String, command: String): Boolean = {
-    LOG.info(s"$name -> exec: `$command`")
-    s"docker exec $name $command".! == 0
+    shellExec(s"docker exec $name $command", s"EXEC $name")
   }
 
   /**
    * @throws RuntimeException in case retval != 0
    */
   def execAndCaptureOutput(name: String, command: String): String = {
-    LOG.info(s"$name -> exec: `$command`")
-    val output = s"docker exec $name $command".!!.trim
-    LOG.info(s"$name <- exec: `$output`")
-    output
+    shellExecAndCaptureOutput(s"docker exec $name $command", s"EXEC $name")
   }
 
   def killAndRemove(name: String): Boolean = {
-    val command = s"docker rm -f $name"
-    LOG.info(s"$name -> stop and remove: `$command`")
+    shellExec(s"docker rm -f $name", s"STOP $name")
+  }
+
+  private def shellExec(command: String, sender: String): Boolean = {
+    LOG.info(s"$sender -> `$command`")
     command.! == 0
+  }
+
+  private def shellExecAndCaptureOutput(command: String, sender: String): String = {
+    LOG.info(s"$sender -> `$command`")
+    val output = command.!!.trim
+    LOG.info(s"$sender <- `$output`")
+    output
   }
 
 }
