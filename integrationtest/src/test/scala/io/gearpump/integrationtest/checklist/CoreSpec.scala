@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.functionaltests
+package io.gearpump.integrationtest.checklist
 
 import io.gearpump.minicluster.MiniCluster
 import org.scalatest.{FlatSpec, Matchers, BeforeAndAfterAll}
