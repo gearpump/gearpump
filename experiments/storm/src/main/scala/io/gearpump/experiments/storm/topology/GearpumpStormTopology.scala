@@ -30,6 +30,7 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.processor.StormProcessor
 import io.gearpump.experiments.storm.producer.StormProducer
 import io.gearpump.experiments.storm.util.StormConstants._
+import io.gearpump.experiments.storm.util.StormUtil
 import io.gearpump.experiments.storm.util.StormUtil._
 import io.gearpump.streaming.Processor
 import io.gearpump.streaming.task.Task
@@ -177,6 +178,7 @@ private[storm] class GearpumpStormTopology(
     val componentCommon = boltSpec.get_common()
     val taskConf = UserConfig.empty
         .withString(STORM_COMPONENT, boltId)
+        .withBoolean("state.checkpoint.enable", StormUtil.ackEnabled(stormConfig))
     val parallelism = getParallelism(stormConfig, componentCommon)
     Processor[StormProcessor](parallelism, boltId, taskConf)
   }

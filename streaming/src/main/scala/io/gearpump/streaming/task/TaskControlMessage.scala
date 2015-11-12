@@ -51,6 +51,10 @@ case class LatestMinClock(clock: TimeStamp)
 
 case class ReportCheckpointClock(taskId: TaskId, clock: TimeStamp)
 
+case object GetCheckpointClock
+
+case class CheckpointClock(clock: Option[TimeStamp])
+
 case object GetStartClock
 
 case class StartClock(clock: TimeStamp)
@@ -58,3 +62,5 @@ case class StartClock(clock: TimeStamp)
 case class LatencyProbe(timestamp: Long)
 
 case class SendMessageLoss()
+
+case object GetDAG

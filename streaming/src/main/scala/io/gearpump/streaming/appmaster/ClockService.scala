@@ -177,6 +177,9 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     case ReportCheckpointClock(task, time) =>
       updateCheckpointClocks(task, time)
 
+    case GetCheckpointClock =>
+      sender ! CheckpointClock(minCheckpointClock)
+
     case getStalling: GetStallingTasks =>
       sender ! StallingTasks(healthChecker.getReport.stallingTasks)
 

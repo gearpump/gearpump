@@ -20,7 +20,6 @@ package io.gearpump.streaming.appmaster
 
 import java.lang.management.ManagementFactory
 
-import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import io.gearpump._
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
@@ -145,6 +144,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       getDAG.foreach {
         dag => task ! dag
       }
+    case GetCheckpointClock =>
+      clockService.foreach(_ forward GetCheckpointClock)
   }
 
   def executorMessageHandler: Receive = {
@@ -314,5 +315,4 @@ object AppMaster {
 
   case class ExecutorBrief(executorId: ExecutorId, executor: String, workerId: Int, status: String)
 
-  case object GetDAG
 }

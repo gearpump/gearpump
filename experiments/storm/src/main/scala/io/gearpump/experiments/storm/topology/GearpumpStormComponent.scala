@@ -20,7 +20,7 @@ package io.gearpump.experiments.storm.topology
 
 import java.io.{File, FileOutputStream, IOException}
 import java.util.jar.JarFile
-import java.util.{HashMap => JHashMap, List => JList, Map => JMap}
+import java.util.{HashMap => JHashMap, LinkedList => JLinkedList, List => JList, Map => JMap}
 
 import akka.actor.ActorRef
 import akka.pattern.ask
@@ -28,19 +28,18 @@ import backtype.storm.Config
 import backtype.storm.generated.{Bolt, ComponentCommon, SpoutSpec, StormTopology}
 import backtype.storm.spout.{ISpout, SpoutOutputCollector}
 import backtype.storm.task.{GeneralTopologyContext, IBolt, OutputCollector, TopologyContext}
-import backtype.storm.tuple.{Tuple, Fields, TupleImpl}
+import backtype.storm.tuple.{Fields, Tuple, TupleImpl}
 import backtype.storm.utils.Utils
 import clojure.lang.Atom
-import io.gearpump.Message
 import io.gearpump.experiments.storm.processor.StormBoltOutputCollector
 import io.gearpump.experiments.storm.producer.StormSpoutOutputCollector
 import io.gearpump.experiments.storm.util.StormConstants._
-import io.gearpump.experiments.storm.util.StormOutputCollector
 import io.gearpump.experiments.storm.util.StormUtil._
+import io.gearpump.experiments.storm.util.{StormOutputCollector, StormUtil}
 import io.gearpump.streaming.DAG
-import io.gearpump.streaming.appmaster.AppMaster.GetDAG
-import io.gearpump.streaming.task.{StartTime, TaskContext, TaskId}
+import io.gearpump.streaming.task._
 import io.gearpump.util.{Constants, LogUtil}
+import io.gearpump.{Message, TimeStamp}
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.slf4j.Logger
 
@@ -83,12 +82,14 @@ object GearpumpStormComponent {
         val stormTaskId = gearpumpTaskIdToStorm(taskId)
         buildTopologyContext(dag, topology, normalizedConfig, stormTaskId)
       }
+      val spout = Utils.getSetComponentObject(spoutSpec.get_spout_object()).asInstanceOf[ISpout]
       val getOutputCollector = (taskContext: TaskContext, topologyContext: TopologyContext) => {
-        StormOutputCollector(taskContext, topologyContext)
+        new StormSpoutOutputCollector(
+          StormOutputCollector(taskContext, topologyContext), spout)
       }
       GearpumpSpout(
         normalizedConfig,
-        Utils.getSetComponentObject(spoutSpec.get_spout_object()).asInstanceOf[ISpout],
+        spout,
         askAppMasterForDAG,
         getTopologyContext,
         getOutputCollector,
@@ -101,11 +102,12 @@ object GearpumpStormComponent {
       spout: ISpout,
       getDAG: ActorRef => DAG,
       getTopologyContext: (DAG, TaskId) => TopologyContext,
-      getOutputCollector: (TaskContext, TopologyContext) => StormOutputCollector,
+      getOutputCollector: (TaskContext, TopologyContext) => StormSpoutOutputCollector,
       taskContext: TaskContext)
     extends GearpumpStormComponent {
 
-    private var collector: StormOutputCollector = null
+    private var collector: StormSpoutOutputCollector = null
+    val ackEnabled = StormUtil.ackEnabled(config)
 
     override def start(startTime: StartTime): Unit = {
       import taskContext.{appMaster, taskId}
@@ -113,13 +115,15 @@ object GearpumpStormComponent {
       val dag = getDAG(appMaster)
       val topologyContext = getTopologyContext(dag, taskId)
       collector = getOutputCollector(taskContext, topologyContext)
-      val delegate = new StormSpoutOutputCollector(collector)
-      spout.open(config, topologyContext, new SpoutOutputCollector(delegate))
+      spout.open(config, topologyContext, new SpoutOutputCollector(collector))
     }
 
     override def next(message: Message): Unit = {
-      collector.setTimestamp(System.currentTimeMillis())
       spout.nextTuple()
+    }
+
+    def onCheckpointClock(clock: TimeStamp): Unit = {
+      collector.ack(clock)
     }
   }
 
@@ -150,8 +154,6 @@ object GearpumpStormComponent {
         getOutputCollector,
         getTickTuple,
         taskContext)
-
-
     }
   }
 
@@ -182,8 +184,9 @@ object GearpumpStormComponent {
     }
 
     override def next(message: Message): Unit = {
-      collector.setTimestamp(message.timestamp)
-      bolt.execute(message.msg.asInstanceOf[GearpumpTuple].toTuple(generalTopologyContext))
+      val timestamp = message.timestamp
+      collector.setTimestamp(timestamp)
+      bolt.execute(message.msg.asInstanceOf[GearpumpTuple].toTuple(generalTopologyContext, timestamp))
     }
 
     def getTickFrequency: Option[Long] = {

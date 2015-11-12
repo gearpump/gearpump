@@ -20,6 +20,7 @@ package io.gearpump.experiments.storm.producer
 
 import java.util.{List => JList}
 
+import backtype.storm.spout.ISpout
 import backtype.storm.utils.Utils
 import io.gearpump.experiments.storm.util.StormOutputCollector
 import org.mockito.Mockito._
@@ -38,8 +39,9 @@ class StormSpoutOutputCollectorSpec extends PropSpec with PropertyChecks with Ma
 
     forAll(valuesGen) { (values: List[AnyRef]) =>
       val collector = mock[StormOutputCollector]
+      val spout = mock[ISpout]
       val streamId = Utils.DEFAULT_STREAM_ID
-      val spoutCollector = new StormSpoutOutputCollector(collector)
+      val spoutCollector = new StormSpoutOutputCollector(collector, spout)
       spoutCollector.emit(streamId, values, null)
       verify(collector).emit(streamId, values)
     }

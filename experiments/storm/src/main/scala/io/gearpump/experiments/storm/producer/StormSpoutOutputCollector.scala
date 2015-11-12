@@ -20,15 +20,20 @@ package io.gearpump.experiments.storm.producer
 
 import java.util.{List => JList}
 
-import backtype.storm.spout.ISpoutOutputCollector
+import backtype.storm.spout.{ISpout, ISpoutOutputCollector}
+import io.gearpump.TimeStamp
 import io.gearpump.experiments.storm.util.StormOutputCollector
 
 /**
  * this is used by Storm Spout to emit messages
  */
-private[storm] class StormSpoutOutputCollector(collector: StormOutputCollector) extends ISpoutOutputCollector {
+private[storm] class StormSpoutOutputCollector(collector: StormOutputCollector, spout: ISpout) extends ISpoutOutputCollector {
+  private var pendingMessages = Vector.empty[(TimeStamp, Object)]
 
-  override def emit(streamId: String, values: JList[AnyRef], messageId: scala.Any): JList[Integer] = {
+  override def emit(streamId: String, values: JList[AnyRef], messageId: Object): JList[Integer] = {
+    val timestamp = System.currentTimeMillis()
+    pendingMessages :+= timestamp -> messageId
+    collector.setTimestamp(timestamp)
     collector.emit(streamId, values)
   }
 
@@ -36,7 +41,28 @@ private[storm] class StormSpoutOutputCollector(collector: StormOutputCollector) 
     throw throwable
   }
 
-  override def emitDirect(taskId: Int, streamId: String, values: JList[AnyRef], messageId: scala.Any): Unit = {
+  override def emitDirect(taskId: Int, streamId: String, values: JList[AnyRef], messageId: Object): Unit = {
     collector.emitDirect(taskId, streamId, values)
   }
+
+  def ack(checkpointClock: TimeStamp): Unit = {
+
+    @annotation.tailrec
+    def ackRec(rest: Vector[(TimeStamp, Object)]): Vector[(TimeStamp, Object)] = {
+      if (rest.isEmpty) {
+        rest
+      } else {
+        val (time, id) = rest.head
+        if (time <= checkpointClock) {
+          spout.ack(id)
+          ackRec(rest.tail)
+        } else {
+          rest
+        }
+      }
+    }
+
+    pendingMessages = ackRec(pendingMessages)
+  }
+
 }

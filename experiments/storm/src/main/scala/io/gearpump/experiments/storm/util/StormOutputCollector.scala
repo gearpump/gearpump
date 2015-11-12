@@ -18,9 +18,9 @@
 
 package io.gearpump.experiments.storm.util
 
-import java.util.{ArrayList => JArrayList, List => JList, Iterator => JIterator, Map => JMap}
+import java.util.{ArrayList => JArrayList, Iterator => JIterator, List => JList, Map => JMap}
 
-import backtype.storm.generated.{JavaObject, GlobalStreamId, Grouping}
+import backtype.storm.generated.{GlobalStreamId, Grouping, JavaObject}
 import backtype.storm.grouping.CustomStreamGrouping
 import backtype.storm.task.TopologyContext
 import backtype.storm.tuple.Fields
@@ -157,7 +157,7 @@ class StormOutputCollector(
     taskToComponent: JMap[Integer, String],
     targets: JMap[String, JMap[String, Grouping]],
     getTargetPartitionsFn: (String, JList[AnyRef]) => (Map[String, List[Int]], JList[Integer]),
-    taskContext: TaskContext,
+    val taskContext: TaskContext,
     private var timestamp: TimeStamp) {
   import io.gearpump.experiments.storm.util.StormOutputCollector._
 
@@ -209,4 +209,6 @@ class StormOutputCollector(
   def setTimestamp(timestamp: TimeStamp): Unit = {
     this.timestamp = timestamp
   }
+
+  def getTimestamp: Long = timestamp
 }

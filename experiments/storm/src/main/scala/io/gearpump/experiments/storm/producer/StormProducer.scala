@@ -18,11 +18,16 @@
 
 package io.gearpump.experiments.storm.producer
 
+import java.util.concurrent.TimeUnit
+
+import akka.actor.Actor.Receive
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpSpout
 import io.gearpump.experiments.storm.util._
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import io.gearpump.streaming.task._
+
+import scala.concurrent.duration.Duration
 
 /**
  * this is runtime container for Storm spout
@@ -38,11 +43,27 @@ private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
 
   override def onStart(startTime: StartTime): Unit = {
     gearpumpSpout.start(startTime)
+    if (gearpumpSpout.ackEnabled) {
+      getCheckpointClock
+    }
     self ! Message("start")
   }
 
   override def onNext(msg: Message): Unit = {
     gearpumpSpout.next(msg)
     self ! Message("continue")
+  }
+
+  override def receiveUnManagedMessage: Receive = {
+    case CheckpointClock(optClock) =>
+      optClock.foreach { clock =>
+        gearpumpSpout.onCheckpointClock(clock)
+      }
+      getCheckpointClock
+  }
+
+  def getCheckpointClock: Unit = {
+    taskContext.scheduleOnce(Duration(StormConstants.CHECKPOINT_INTERVAL_SECS,
+      TimeUnit.SECONDS))(taskContext.appMaster ! GetCheckpointClock)
   }
 }

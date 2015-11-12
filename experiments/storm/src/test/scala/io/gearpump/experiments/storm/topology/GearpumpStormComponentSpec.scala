@@ -22,6 +22,7 @@ import backtype.storm.spout.{SpoutOutputCollector, ISpout}
 import backtype.storm.task.{OutputCollector, IBolt, GeneralTopologyContext, TopologyContext}
 import java.util.{Map => JMap}
 import backtype.storm.tuple.Tuple
+import io.gearpump.experiments.storm.producer.StormSpoutOutputCollector
 import io.gearpump.{TimeStamp, Message}
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
 import io.gearpump.experiments.storm.util.StormOutputCollector
@@ -48,9 +49,9 @@ class GearpumpStormComponentSpec extends PropSpec with PropertyChecks with Match
     val getTopologyContext = mock[(DAG, TaskId) => TopologyContext]
     val topologyContext = mock[TopologyContext]
     when(getTopologyContext(dag, taskContext.taskId)).thenReturn(topologyContext)
-    val getOutputCollector = mock[(TaskContext, TopologyContext) => StormOutputCollector]
-    val stormOutputCollector = mock[StormOutputCollector]
-    when(getOutputCollector(taskContext, topologyContext)).thenReturn(stormOutputCollector)
+    val getOutputCollector = mock[(TaskContext, TopologyContext) => StormSpoutOutputCollector]
+    val outputCollector = mock[StormSpoutOutputCollector]
+    when(getOutputCollector(taskContext, topologyContext)).thenReturn(outputCollector)
 
     val gearpumpSpout = GearpumpSpout(config, spout, getDAG, getTopologyContext,
       getOutputCollector, taskContext)
@@ -65,7 +66,6 @@ class GearpumpStormComponentSpec extends PropSpec with PropertyChecks with Match
     val message = mock[Message]
     gearpumpSpout.next(message)
 
-    verify(stormOutputCollector).setTimestamp(anyLong())
     verify(spout).nextTuple()
   }
 
@@ -105,7 +105,7 @@ class GearpumpStormComponentSpec extends PropSpec with PropertyChecks with Match
       // next
       val gearpumpTuple = mock[GearpumpTuple]
       val tuple = mock[Tuple]
-      when(gearpumpTuple.toTuple(generalTopologyContext)).thenReturn(tuple)
+      when(gearpumpTuple.toTuple(generalTopologyContext, timestamp)).thenReturn(tuple)
       val message = Message(gearpumpTuple, timestamp)
       gearpumpBolt.next(message)
 
