@@ -2,43 +2,6 @@
    Author's custom styles
    ========================================================================== */
 
-.navbar .brand {
-  height: 50px;
-  width: 110px;
-  margin-left: 1px;
-  padding: 0;
-}
-
-.version {
-  line-height: 30px;
-  vertical-align: bottom;
-  font-size: 12px;
-  padding: 0;
-  margin: 0;
-  font-weight: bold;
-  color: #777;
-}
-
-.navbar-inner {
-  padding-top: 2px;
-  height: 50px;
-}
-
-.navbar-inner .nav {
-  margin-top: 5px;
-  font-size: 15px;
-}
-
-.navbar .divider-vertical {
-  border-right-color: lightgray;
-}
-
-.navbar-text .version-text {
-  color: #555555;
-  padding: 5px;
-  margin-left: 10px;
-}
-
 body #content {
   line-height: 1.6; /* Inspired by Github's wiki style */
 }
@@ -62,29 +25,8 @@ h3 {
   margin-top: 10px;
 }
 
-pre {
-  font-family: "Menlo", "Lucida Console", monospace;
-}
-
-code {
-  font-family: "Menlo", "Lucida Console", monospace;
-  background: white;
-  border: none;
-  padding: 0;
-  color: #444444;
-}
-
-a code {
-  color: #0088cc;
-}
-
-a:hover code {
-  color: #005580;
-  text-decoration: underline;
-}
-
 .container {
-  max-width: 914px;
+  max-width: 960px;
 }
 
 .dropdown-menu {
@@ -151,3 +93,26 @@ ul.nav li.dropdown ul.dropdown-menu li.dropdown-submenu ul.dropdown-menu {
  * AnchorJS (anchor links when hovering over headers)
  */
 a.anchorjs-link:hover { text-decoration: none; }
+
+/**
+ * Dashboard Look And Feel Adjustments
+ */
+* {
+  font-family: roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+pre, pre > *,
+code, code > * {
+  font-family: "roboto mono",monaco,consolas,menlo,"Lucida Console",monospace !important;
+  font-size: 12px;
+  font-weight: normal !important;
+  line-height: 165%;
+}
+
+img {
+  max-width: 100%;
+}
+
+.navbar-header {
+  padding-right: 60px;
+}
