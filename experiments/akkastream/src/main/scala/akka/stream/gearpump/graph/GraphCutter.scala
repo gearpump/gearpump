@@ -24,7 +24,7 @@ import akka.stream.gearpump.GearAttributes
 import akka.stream.gearpump.GearAttributes.{Local, Location, Remote}
 import akka.stream.gearpump.graph.GraphCutter.Strategy
 import akka.stream.gearpump.module.{BridgeModule, DummyModule, GearpumpTaskModule, SinkBridgeModule, SourceBridgeModule}
-import akka.stream.impl.Stages.DirectProcessor
+import akka.stream.impl.Stages.{TimerTransform, DirectProcessor}
 import akka.stream.impl.StreamLayout.{MaterializedValueNode, Module}
 import akka.stream.impl.{MaterializedValueSource, SinkModule, SourceModule}
 import io.gearpump.util.Graph
@@ -57,7 +57,7 @@ import io.gearpump.util.Graph
  * @see [[ModuleGraph]] for more information of how Graph is organized.
  *
  */
-class GraphCutter(strategy: Strategy = GraphCutter.AllRemoteStrategy) {
+class GraphCutter(strategy: Strategy) {
   def cut(moduleGraph: ModuleGraph[_]): List[SubGraph] = {
     val graph = removeDummyModule(moduleGraph.graph)
     val tags = tag(graph, strategy)
@@ -151,6 +151,9 @@ object GraphCutter {
     case matValueSource: MaterializedValueSource[_] =>
       Local
     case direct: DirectProcessor =>
+      Local
+    case time: TimerTransform =>
+      // render to local as it requires a timer.
       Local
   }
 

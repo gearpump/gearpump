@@ -302,7 +302,7 @@ object Build extends sbt.Build {
       Seq(
         mainClass in (Compile, packageBin) := Some("akka.stream.gearpump.example.Test")
       )
-  ) dependsOn (streaming % "test->test; provided")
+  ) dependsOn (streaming % "test->test; provided", daemon % "test->test; provided")
 
   lazy val storm = Project(
     id = "gearpump-experiments-storm",

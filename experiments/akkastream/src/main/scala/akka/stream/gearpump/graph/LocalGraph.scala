@@ -34,35 +34,47 @@ import org.reactivestreams.{Publisher, Subscriber}
  * [[LocalGraph]] is a [[SubGraph]] of the application DSL Graph, which only
  *  contain module that can be materialized in local JVM.
  *
- * By calling [[materialize]], [[LocalGraph]] will materialize all sub-modules
- * in local JVM.
- *
  * @param graph
  */
-class LocalGraph(override val graph: Graph[Module, Edge]) extends SubGraph {
+class LocalGraph(override val graph: Graph[Module, Edge]) extends SubGraph
+
+object LocalGraph {
 
   /**
-   * @see [[SubGraph.materialize]]
-   *
+   * materialize LocalGraph in local JVM
+   * @param system
    */
-  override def materialize(matValues: Map[Module, Any], system: ActorSystem): Map[Module, Any] = {
+  class LocalGraphMaterializer(system: ActorSystem) extends SubGraphMaterializer {
 
-    val newGraph: Graph[Module, Edge] = graph.mapVertex{ module =>
-      module match {
-        case source: SourceBridgeModule[AnyRef, AnyRef] =>
-          val subscriber = matValues(source).asInstanceOf[Subscriber[AnyRef]]
-          val shape = SinkShape(source.inPort)
-          new SubscriberSink(subscriber, DefaultAttributes.subscriberSink, shape)
-        case sink: SinkBridgeModule[AnyRef, AnyRef] =>
-          val publisher = matValues(sink).asInstanceOf[Publisher[AnyRef]]
-          val shape = SourceShape(sink.outPort.asInstanceOf[Outlet[AnyRef]])
-          new PublisherSource(publisher, DefaultAttributes.publisherSource, shape)
-        case other =>
-          other
+    // create a local materializer
+    val materializer = LocalMaterializer()(system)
+
+    /**
+     *
+     * @param matValues Materialized Values for each module before materialization
+     * @return Materialized Values for each Module after the materialization.
+     */
+    override def materialize(graph: SubGraph, matValues: Map[Module, Any]): Map[Module, Any] = {
+      val newGraph: Graph[Module, Edge] = graph.graph.mapVertex{ module =>
+        module match {
+          case source: SourceBridgeModule[AnyRef, AnyRef] =>
+            val subscriber = matValues(source).asInstanceOf[Subscriber[AnyRef]]
+            val shape = SinkShape(source.inPort)
+            new SubscriberSink(subscriber, DefaultAttributes.subscriberSink, shape)
+          case sink: SinkBridgeModule[AnyRef, AnyRef] =>
+            val publisher = matValues(sink).asInstanceOf[Publisher[AnyRef]]
+            val shape = SourceShape(sink.outPort.asInstanceOf[Outlet[AnyRef]])
+            new PublisherSource(publisher, DefaultAttributes.publisherSource, shape)
+          case other =>
+            other
+        }
       }
+      materializer.materialize(newGraph, matValues)
     }
 
-    val materializer = LocalMaterializer()(system)
-    materializer.materialize(newGraph, matValues)
+    override def shutdown: Unit = {
+      materializer.shutdown()
+    }
   }
 }
+

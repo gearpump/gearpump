@@ -25,8 +25,10 @@ import akka.stream.gearpump.module.{SinkBridgeModule, SourceBridgeModule}
 import akka.stream.gearpump.task.SinkBridgeTask.SinkBridgeTaskClient
 import akka.stream.gearpump.task.SourceBridgeTask.SourceBridgeTaskClient
 import akka.stream.impl.StreamLayout.Module
+import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.ProcessorId
+import io.gearpump.cluster.local.LocalCluster
+import io.gearpump.streaming.{StreamApplication, ProcessorId}
 import io.gearpump.util.Graph
 
 /**
@@ -34,49 +36,71 @@ import io.gearpump.util.Graph
  * [[RemoteGraph]] is a [[SubGraph]] of the application DSL Graph, which only
  *  contain modules that can be materialized in remote Gearpump cluster.
  *
- * By calling [[materialize]], [[RemoteGraph]] will materialize all sub-modules
- * remotely as a stream application in Gearpump Cluster.
- *
  * @param graph
  */
-class RemoteGraph(override val graph: Graph[Module, Edge]) extends SubGraph {
+class RemoteGraph(override val graph: Graph[Module, Edge]) extends SubGraph
+
+object RemoteGraph {
 
   /**
-   * @see [[SubGraph.materialize]]
-   *
+   * * materialize LocalGraph in remote gearpump cluster
+   * @param useInProcessCluster
+   * @param system
    */
-  override def materialize(inputMatValues: Map[Module, Any], system: ActorSystem): Map[Module, Any] = {
-    if (graph.isEmpty) {
-      inputMatValues
+  class RemoteGraphMaterializer(useInProcessCluster: Boolean, system: ActorSystem) extends SubGraphMaterializer {
+    private val local = if (useInProcessCluster) {
+      val cluster = LocalCluster()
+      cluster.start
+      Some(cluster)
     } else {
-      doMaterialize(inputMatValues, system)
-    }
-  }
-
-  private def doMaterialize(inputMatValues: Map[Module, Any], system: ActorSystem): Map[Module, Any] = {
-    val materializer = new RemoteMaterializerImpl(graph, system)
-    val (app, matValues) = materializer.materialize
-    val context = ClientContext(system)
-    val appId = context.submit(app)
-    println("sleep 5 second until the applicaiton is ready on cluster")
-    Thread.sleep(5000)
-
-    def resolve(matValues: Map[Module, ProcessorId]): Map[Module, Any] = {
-      matValues.toList.flatMap{ kv =>
-        val (module, processorId) = kv
-        module match {
-          case source: SourceBridgeModule[AnyRef, AnyRef] =>
-            val bridge = new SourceBridgeTaskClient[AnyRef](system, context, appId, processorId)
-            Some((module, bridge))
-          case sink: SinkBridgeModule[AnyRef, AnyRef] =>
-            val bridge = new SinkBridgeTaskClient(system, context, appId, processorId)
-            Some((module, bridge))
-          case other =>
-            None
-        }
-      }.toMap
+      None
     }
 
-    inputMatValues ++ resolve(matValues)
+    private val context: ClientContext = local match {
+      case Some(local) => local.newClientContext
+      case None => ClientContext(system)
+    }
+
+    override def materialize(subGraph: SubGraph, inputMatValues: Map[Module, Any]): Map[Module, Any] = {
+      val graph = subGraph.graph
+      
+      if (graph.isEmpty) {
+        inputMatValues
+      } else {
+        doMaterialize(graph: Graph[Module, Edge], inputMatValues)
+      }
+    }
+
+    private def doMaterialize(graph: Graph[Module, Edge], inputMatValues: Map[Module, Any]): Map[Module, Any] = {
+      val materializer = new RemoteMaterializerImpl(graph, system)
+      val (app, matValues) = materializer.materialize
+
+      val appId = context.submit(app)
+      println("sleep 5 second until the applicaiton is ready on cluster")
+      Thread.sleep(5000)
+
+      def resolve(matValues: Map[Module, ProcessorId]): Map[Module, Any] = {
+        matValues.toList.flatMap { kv =>
+          val (module, processorId) = kv
+          module match {
+            case source: SourceBridgeModule[AnyRef, AnyRef] =>
+              val bridge = new SourceBridgeTaskClient[AnyRef](system.dispatcher, context, appId, processorId)
+              Some((module, bridge))
+            case sink: SinkBridgeModule[AnyRef, AnyRef] =>
+              val bridge = new SinkBridgeTaskClient(system, context, appId, processorId)
+              Some((module, bridge))
+            case other =>
+              None
+          }
+        }.toMap
+      }
+
+      inputMatValues ++ resolve(matValues)
+    }
+
+    override def shutdown: Unit = {
+      context.close()
+      local.map(_.stop)
+    }
   }
 }

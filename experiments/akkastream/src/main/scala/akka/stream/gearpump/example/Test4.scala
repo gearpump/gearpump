@@ -35,7 +35,7 @@ object Test4 {
 
     println("running Test...")
 
-    implicit val system = ActorSystem("akkastream-test", ClusterConfig.default)
+    implicit val system = ActorSystem("akka-test")
     implicit val materializer = new GearpumpMaterializer(system)
 
     val sink = GearSink.to(new LoggerSink[String])

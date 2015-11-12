@@ -20,7 +20,7 @@ object BuildExample extends sbt.Build {
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
       )
-  ) dependsOn (streaming % "test->test; provided")
+  ) dependsOn (streaming % "test->test; provided", daemon % "test->test; provided")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
@@ -31,7 +31,7 @@ object BuildExample extends sbt.Build {
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
-  ) dependsOn (streaming % "test->test; provided")
+  ) dependsOn (streaming % "test->test; provided", daemon % "test->test; provided")
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",

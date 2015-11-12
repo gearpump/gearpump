@@ -287,7 +287,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     val updated = dag.processors.map{ idAndProcessor =>
       val (id, oldProcessor) = idAndProcessor
       val newProcessor = if(oldProcessor.jar == null) {
-        oldProcessor.copy(jar = appContext.appJar.get)
+        oldProcessor.copy(jar = appContext.appJar.getOrElse(null))
       } else {
         oldProcessor
       }

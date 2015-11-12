@@ -38,6 +38,7 @@ import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
+import io.gearpump.util.ActorSystemBooter.Daemon
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util.{Constants, TimeOutScheduler, _}
@@ -46,8 +47,9 @@ import io.gearpump.util._
 import org.slf4j.Logger
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Promise, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import akka.actor.SupervisorStrategy.{Resume, Stop}
 
 /**
  * masterProxy is used to resolve the master
@@ -273,26 +275,34 @@ private[cluster] object Worker {
 
   class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo, ioPool: ExecutionContext, jarStoreService: JarStoreService) extends Actor {
 
-    val config = context.system.settings.config
+    val config = {
+      val systemConfig = context.system.settings.config
+
+      // try to resolve user config
+      val userConfig = Option(launch.executorJvmConfig).flatMap{ jvmConfig =>
+        Option(jvmConfig.executorAkkaConfig)
+      }.getOrElse(ConfigFactory.empty())
+      userConfig.withFallback(systemConfig)
+    }
+
     private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
 
     implicit val executorService = ioPool
 
     private val executorHandler = {
       val ctx = launch.executorJvmConfig
-      if (System.getProperty("LOCAL") != null) {
+
+      if (config.getBoolean(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS)) {
         new ExecutorHandler {
-          override def destroy = Unit // we cannot forcefully terminate a future by scala limit
-          override def exitValue : Future[Try[Int]] = Future {
-              try {
-                val clazz = Class.forName(ctx.mainClass)
-                val main = clazz.getMethod("main", classOf[Array[String]])
-                main.invoke(null, ctx.arguments)
-                Success(0)
-              } catch {
-                case e: Throwable => Failure(e)
-              }
-            }
+          val exitPromise = Promise[Int]()
+          val app = context.actorOf(Props(new InJvmExecutor(launch, exitPromise)))
+
+          override def destroy = {
+            context.stop(app)
+          }
+          override def exitValue : Future[Int] = {
+            exitPromise.future
+          }
         }
       } else {
         createProcess(ctx)
@@ -391,13 +401,13 @@ private[cluster] object Worker {
           }
         }
 
-        override def exitValue: Future[Try[Int]] = {
-          process.map { info =>
+        override def exitValue: Future[Int] = {
+          process.flatMap { info =>
             val exit = info.process.exitValue()
             if (exit == 0) {
-              Success(0)
+              Future.successful(0)
             } else {
-              Failure(new Exception(s"Executor exit with failure, exit value: $exit, error summary: ${info.process.logger.summary}"))
+              Future.failed[Int](new Exception(s"Executor exit with failure, exit value: $exit, error summary: ${info.process.logger.summary}"))
             }
           }
         }
@@ -411,7 +421,10 @@ private[cluster] object Worker {
     }
 
     override def preStart: Unit = {
-      executorHandler.exitValue.map(ExecutorResult).pipeTo(self)
+      executorHandler.exitValue.onComplete{value =>
+        val result = ExecutorResult(value)
+        self ! result
+      }
     }
 
     override def postStop: Unit = {
@@ -450,8 +463,31 @@ private[cluster] object Worker {
 
   trait ExecutorHandler {
     def destroy : Unit
-    def exitValue : Future[Try[Int]]
+    def exitValue : Future[Int]
   }
 
   case class ProcessInfo(process: RichProcess, jarPath: Option[String], configFile: Option[String])
+
+  /**
+   * We will start the executor in  the same JVM as worker.
+   * @param launch
+   * @param exit
+   */
+  class InJvmExecutor(launch: LaunchExecutor, exit: Promise[Int]) extends Daemon(launch.executorJvmConfig.arguments(0), launch.executorJvmConfig.arguments(1)) {
+    private var exitCode = 0
+
+    override val supervisorStrategy =
+      OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+        case ex: Throwable =>
+          LOG.error(s"system $name stopped ", ex)
+          exit.failure(ex)
+          Stop
+      }
+
+    override def postStop : Unit = {
+      if (!exit.isCompleted) {
+        exit.success(exitCode)
+      }
+    }
+  }
 }

@@ -20,7 +20,9 @@ package akka.stream.gearpump
 
 import akka.actor.ActorSystem
 import akka.stream._
-import akka.stream.gearpump.graph.GraphCutter
+import akka.stream.gearpump.graph.LocalGraph.LocalGraphMaterializer
+import akka.stream.gearpump.graph.RemoteGraph.RemoteGraphMaterializer
+import akka.stream.gearpump.graph.{RemoteGraph, SubGraphMaterializer, LocalGraph, GraphCutter}
 import akka.stream.gearpump.graph.GraphCutter.Strategy
 import akka.stream.impl.StreamLayout.Module
 
@@ -39,16 +41,27 @@ import akka.stream.impl.StreamLayout.Module
  *
  * @param system
  * @param strategy
+ * @param useLocalCluster whether to use built-in in-process local cluster
  */
-class GearpumpMaterializer(system: ActorSystem, strategy: Strategy = GraphCutter.AllRemoteStrategy)
+class GearpumpMaterializer(system: ActorSystem, strategy: Strategy = GraphCutter.AllRemoteStrategy, useLocalCluster: Boolean = true)
     extends BaseMaterializer {
+
+  private val subMaterializers: Map[Class[_], SubGraphMaterializer] = Map(
+    classOf[LocalGraph] -> new LocalGraphMaterializer(system),
+    classOf[RemoteGraph] -> new RemoteGraphMaterializer(useLocalCluster, system)
+  )
 
   override def materialize[Mat](graph: ModuleGraph[Mat]): Mat = {
     val subGraphs = new GraphCutter(strategy).cut(graph)
     val matValues = subGraphs.foldLeft(Map.empty[Module, Any]){(map, subGraph) =>
-      map ++ subGraph.materialize(map, system)
+      val materializer = subMaterializers(subGraph.getClass)
+      map ++ materializer.materialize(subGraph, map)
     }
     graph.resolve(matValues)
+  }
+
+  override def shutdown: Unit = {
+    subMaterializers.values.foreach(_.shutdown)
   }
 }
 

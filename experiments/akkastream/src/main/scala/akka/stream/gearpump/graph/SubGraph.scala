@@ -32,17 +32,26 @@ import io.gearpump.util.Graph
  */
 
 trait SubGraph {
-  /**
-   *
-   * @param matValues Materialized Values for each module before materialization
-   * @param system
-   * @return Materialized Values for each Module after the materialization.
-   */
-  def materialize(matValues: Map[Module, Any], system: ActorSystem): Map[Module, Any]
 
   /**
    * the [[Graph]] representation of this SubGraph
    * @return
    */
   def graph: Graph[Module, Edge]
+}
+
+
+/**
+ * Materializer for Sub-Graph type
+ */
+trait SubGraphMaterializer{
+  /**
+   *
+   * @param matValues Materialized Values for each module before materialization
+   * @return Materialized Values for each Module after the materialization.
+   */
+
+  def materialize(graph: SubGraph, matValues: Map[Module, Any]): Map[Module, Any]
+
+  def shutdown: Unit
 }

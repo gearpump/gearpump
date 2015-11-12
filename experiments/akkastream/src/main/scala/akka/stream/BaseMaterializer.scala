@@ -43,4 +43,6 @@ abstract class BaseMaterializer extends akka.stream.Materializer {
     val graph = ModuleGraph(runnableGraph)
     materialize(graph)
   }
+
+  def shutdown: Unit
 }

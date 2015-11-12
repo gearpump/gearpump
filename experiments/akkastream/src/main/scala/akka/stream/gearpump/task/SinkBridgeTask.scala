@@ -31,7 +31,10 @@ import io.gearpump.cluster.client.ClientContext
 import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
 import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
+import io.gearpump.util.LogUtil
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
+
+import scala.concurrent.ExecutionContext
 
 /**
  * Bridge Task when data flow is from remote Gearpump Task to local Akka-Stream Module
@@ -76,8 +79,8 @@ class SinkBridgeTask (taskContext : TaskContext, userConf : UserConfig) extends 
 
   override def receiveUnManagedMessage: Receive = {
     case RequestMessage(n) =>
-      LOG.error("the downstream has requested " + n + " messages")
       this.subscriber = sender
+      LOG.info("the downstream has requested " + n + " messages from " + subscriber)
       request += n.toInt
       trySendingData()
     case msg =>
@@ -90,19 +93,21 @@ object SinkBridgeTask {
   case class RequestMessage(number: Int)
 
   class SinkBridgeTaskClient(system: ActorSystem, context: ClientContext, appId: Int, processorId: ProcessorId) extends Publisher[AnyRef] with Subscription {
-    val taskId = TaskId(processorId, index = 0)
+    private val taskId = TaskId(processorId, index = 0)
 
-    var actor: ActorRef = null
+    private val LOG = LogUtil.getLogger(getClass)
+
+    private var actor: ActorRef = null
     import system.dispatcher
 
-    val task = context.askAppMaster[TaskActorRef](appId, LookupTaskActorRef(taskId)).map{container =>
+    private val task = context.askAppMaster[TaskActorRef](appId, LookupTaskActorRef(taskId)).map{container =>
       // println("Successfully resolved taskRef for taskId " + taskId + ", " + container.task)
       container.task
     }
 
     override def subscribe(subscriber: Subscriber[_ >: AnyRef]): Unit = {
-      subscriber.onSubscribe(this)
       this.actor = system.actorOf(Props(new ClientActor(subscriber)))
+      subscriber.onSubscribe(this)
     }
 
     override def cancel(): Unit = Unit

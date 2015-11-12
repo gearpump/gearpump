@@ -36,7 +36,7 @@ object Test2 {
   def main(args: Array[String]): Unit = {
 
     println("running Test2...")
-    implicit val system = ActorSystem("akkastream-test", ClusterConfig.default)
+    implicit val system = ActorSystem("akka-test")
     val materializer = new GearpumpMaterializer(system)
 
     val echo = system.actorOf(Props(new Echo()))

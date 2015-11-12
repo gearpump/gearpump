@@ -33,7 +33,7 @@ object Test5 {
 
     println("running Test...")
 
-    implicit val system = ActorSystem("akkastream-test", ClusterConfig.default)
+    implicit val system = ActorSystem("akka-test")
     implicit val materializer = new GearpumpMaterializer(system, GraphCutter.AllRemoteStrategy)
 
     val echo = system.actorOf(Props(new Echo()))

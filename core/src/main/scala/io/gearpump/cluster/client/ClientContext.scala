@@ -51,18 +51,19 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
-  private val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
-
-
   implicit val system = Option(sys).getOrElse(ActorSystem(s"client${Util.randInt}" , config))
   LOG.info(s"Starting system ${system.name}")
   val shouldCleanupSystem = Option(sys).isEmpty
 
-  private val master = Option(_master).getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
   private val jarStoreService = JarStoreService.get(config)
   jarStoreService.init(config, system)
 
-  LOG.info(s"Creating master proxy ${master} for master list: $masters")
+  private lazy val master: ActorRef = {
+    val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+    val master = Option(_master).getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
+    LOG.info(s"Creating master proxy ${master} for master list: $masters")
+    master
+  }
 
   /**
    * Submit an applicaiton with default jar setting. Use java property
@@ -72,6 +73,7 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   def submit(app : Application) : Int = {
     submit(app, System.getProperty(GEARPUMP_APP_JAR))
   }
+
 
   def submit(app : Application, jar: String) : Int = {
     import app.{name, appMaster, userConfig}

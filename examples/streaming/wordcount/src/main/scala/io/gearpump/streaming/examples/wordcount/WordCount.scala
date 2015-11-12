@@ -18,6 +18,7 @@
 
 package io.gearpump.streaming.examples.wordcount
 
+import io.gearpump.cluster.local.LocalCluster
 import io.gearpump.streaming.{StreamApplication, Processor}
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
@@ -34,7 +35,7 @@ object WordCount extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(1)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1))
-  )
+    )
 
   def application(config: ParseResult) : StreamApplication = {
     val splitNum = config.getInt("split")
@@ -49,9 +50,23 @@ object WordCount extends AkkaApp with ArgumentsParser {
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
-    val context = ClientContext(akkaConf)
+
+    val localCluster = if (System.getProperty("DEBUG") != null) {
+      val cluster = new LocalCluster(akkaConf: Config)
+      cluster.start
+      Some(cluster)
+    } else {
+      None
+    }
+
+    val context: ClientContext = localCluster match {
+      case Some(local) => local.newClientContext
+      case None => ClientContext(akkaConf)
+    }
+
     val appId = context.submit(application(config))
     context.close()
+    localCluster.map(_.stop)
   }
 }
 

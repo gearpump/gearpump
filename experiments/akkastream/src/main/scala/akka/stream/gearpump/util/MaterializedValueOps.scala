@@ -35,3 +35,4 @@ class MaterializedValueOps(mat: MaterializedValueNode) {
 object MaterializedValueOps{
   def apply(mat: MaterializedValueNode): MaterializedValueOps = new MaterializedValueOps(mat)
 }
+

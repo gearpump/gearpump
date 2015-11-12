@@ -29,6 +29,8 @@ import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorR
 import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 import org.reactivestreams.{Subscriber, Subscription}
 
+import scala.concurrent.ExecutionContext
+
 /**
  * Bridge Task when data flow is from local Akka-Stream Module to remote Gearpump Task
  *
@@ -60,7 +62,7 @@ class SourceBridgeTask(taskContext : TaskContext, userConf : UserConfig) extends
       LOG.error("the stream has error", ex)
     case AkkaStreamMessage(msg) =>
       LOG.error("we have received message from akka stream source: " + msg)
-      taskContext.output(Message(msg))
+      taskContext.output(Message(msg, System.currentTimeMillis()))
     case Complete(description) =>
       LOG.error("the stream is completed: " + description)
     case msg =>
@@ -76,11 +78,10 @@ object SourceBridgeTask {
 
   case class AkkaStreamMessage(msg: AnyRef)
 
-  class SourceBridgeTaskClient[T <: AnyRef](system: ActorSystem, context: ClientContext, appId: Int, processorId: ProcessorId) extends Subscriber[T] {
+  class SourceBridgeTaskClient[T <: AnyRef](ec: ExecutionContext, context: ClientContext, appId: Int, processorId: ProcessorId) extends Subscriber[T] {
     val taskId = TaskId(processorId, 0)
     var subscription: Subscription = null
-
-    import system.dispatcher
+    implicit val dispatcher = ec
 
     val task = context.askAppMaster[TaskActorRef](appId, LookupTaskActorRef(taskId)).map{container =>
       // println("Successfully resolved taskRef for taskId " + taskId + ", " + container.task)
