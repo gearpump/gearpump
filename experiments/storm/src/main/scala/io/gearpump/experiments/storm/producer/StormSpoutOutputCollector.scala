@@ -20,23 +20,68 @@ package io.gearpump.experiments.storm.producer
 
 import java.util.{List => JList}
 
-import backtype.storm.spout.ISpoutOutputCollector
+import backtype.storm.spout.{ISpout, ISpoutOutputCollector}
+import io.gearpump.TimeStamp
 import io.gearpump.experiments.storm.util.StormOutputCollector
+import io.gearpump.util.LogUtil
+import org.slf4j.Logger
+
+case class PendingMessage(id: Object, messageTime: TimeStamp, startTime: TimeStamp)
 
 /**
  * this is used by Storm Spout to emit messages
  */
-private[storm] class StormSpoutOutputCollector(collector: StormOutputCollector) extends ISpoutOutputCollector {
+private[storm] class StormSpoutOutputCollector(
+    collector: StormOutputCollector, spout: ISpout, ackEnabled: Boolean) extends ISpoutOutputCollector {
+  private var pendingMessage: Option[PendingMessage] = None
 
-  override def emit(streamId: String, values: JList[AnyRef], messageId: scala.Any): JList[Integer] = {
-    collector.emit(streamId, values)
+  override def emit(streamId: String, values: JList[AnyRef], messageId: Object): JList[Integer] = {
+    val outTasks = collector.emit(streamId, values)
+    setPendingOrAck(messageId)
+    outTasks
   }
 
   override def reportError(throwable: Throwable): Unit = {
     throw throwable
   }
 
-  override def emitDirect(taskId: Int, streamId: String, values: JList[AnyRef], messageId: scala.Any): Unit = {
+  override def emitDirect(taskId: Int, streamId: String, values: JList[AnyRef], messageId: Object): Unit = {
     collector.emitDirect(taskId, streamId, values)
+    setPendingOrAck(messageId)
+  }
+
+
+  def ackPendingMessage(checkpointClock: TimeStamp): Unit = {
+    pendingMessage.foreach { case PendingMessage(id, messageTime, _) =>
+      if (messageTime <= checkpointClock) {
+        spout.ack(id)
+        reset
+      }
+    }
+  }
+
+  def failPendingMessage(timeout: Int): Unit = {
+    pendingMessage.foreach { case PendingMessage(id, _, startTime) =>
+      if (System.currentTimeMillis() - startTime >= timeout) {
+        spout.fail(id)
+      }
+      reset
+    }
+  }
+
+  private def reset: Unit = {
+    pendingMessage = None
+  }
+
+  private def setPendingOrAck(messageId: Object): Unit = {
+    val curTime = System.currentTimeMillis()
+    if (ackEnabled && pendingMessage.isEmpty) {
+      val startTime = curTime
+      val messageTime = curTime
+      pendingMessage = Some(PendingMessage(messageId, messageTime, startTime))
+    } else {
+      spout.ack(messageId)
+    }
+    collector.setTimestamp(curTime)
   }
 }

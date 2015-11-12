@@ -22,6 +22,7 @@ import java.lang.{Boolean => JBoolean}
 import java.util.{HashMap => JHashMap, Map => JMap}
 
 import akka.actor.ActorSystem
+import backtype.storm.Config
 import backtype.storm.generated._
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
@@ -113,5 +114,18 @@ object StormUtil {
    */
   def mod(num: Int, div: Int): Int = {
     (num % div + div) % div
+  }
+
+  def ackEnabled(config: JMap[AnyRef, AnyRef]): Boolean = {
+    if (config.containsKey(Config.TOPOLOGY_ACKER_EXECUTORS)) {
+      val ackers = config.get(Config.TOPOLOGY_ACKER_EXECUTORS)
+      if (ackers != null && ackers.asInstanceOf[Integer] == 0) {
+        false
+      } else {
+        true
+      }
+    } else {
+      false
+    }
   }
 }

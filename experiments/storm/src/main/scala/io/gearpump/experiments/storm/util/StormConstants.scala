@@ -26,4 +26,6 @@ object StormConstants {
   val SYSTEM_COMPONENT_OUTPUT_FIELDS = "rate_secs"
   val SYSTEM_TASK_ID: Integer = -1
   val SYSTEM_TICK_STREAM_ID = "__tick"
+
+  val CHECKPOINT_INTERVAL_SECS = 5L
 }
