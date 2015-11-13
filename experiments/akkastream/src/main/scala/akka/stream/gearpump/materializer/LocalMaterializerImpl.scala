@@ -25,10 +25,11 @@ import akka.dispatch.Dispatchers
 import akka.stream.ModuleGraph.{Edge, MaterializedValueSourceAttribute}
 import akka.stream.actor.ActorSubscriber
 import akka.stream.gearpump.materializer.LocalMaterializerImpl.MaterializedModule
+import akka.stream.gearpump.module.ReduceModule
 import akka.stream.gearpump.util.MaterializedValueOps
 import akka.stream.impl.GenJunctions.{UnzipWithModule, ZipWithModule}
 import akka.stream.impl.Junctions.{BalanceModule, BroadcastModule, ConcatModule, FanInModule, FanOutModule, FlexiMergeModule, FlexiRouteModule, JunctionModule, MergeModule, MergePreferredModule}
-import akka.stream.impl.Stages.{DirectProcessor, Identity, StageModule}
+import akka.stream.impl.Stages.{Fold, DirectProcessor, Identity, StageModule}
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.io.SslTlsCipherActor
 import akka.stream.impl.{ActorProcessorFactory, ActorPublisher, Balance, Broadcast, Concat, ExposedPublisher, FairMerge, FanIn, FanOut, FlexiMerge, FlexiRoute, MaterializedValuePublisher, MaterializedValueSource, SinkModule, SourceModule, UnfairMerge, VirtualProcessor}
@@ -136,6 +137,15 @@ class LocalMaterializerImpl (
         val (pub, mat) = source.create(newMaterializationContext())
         val outputs = Map[OutPort, Publisher[_]](source.shape.outlet -> pub)
         MaterializedModule(source, mat, outputs = outputs)
+
+      case reduce: ReduceModule[Any] =>
+      //TODO: remove this after the official akka-stream API support the Reduce Module
+        val stage = LocalMaterializerImpl.toFoldModule(reduce)
+        val (processor, mat) = processorFor(stage, effectiveAttributes, effectiveSettings(effectiveAttributes))
+        val inputs = Map[InPort, Subscriber[_]](stage.inPort -> processor)
+        val outputs = Map[OutPort, Publisher[_]](stage.outPort -> processor)
+        MaterializedModule(stage, mat, inputs, outputs)
+
       case stage: StageModule =>
         val (processor, mat) = processorFor(stage, effectiveAttributes, effectiveSettings(effectiveAttributes))
         val inputs = Map[InPort, Subscriber[_]](stage.inPort -> processor)
@@ -260,4 +270,16 @@ private def materializeJunction(
 
 object LocalMaterializerImpl {
   case class MaterializedModule(val module: Module, val matValue: Any, inputs: Map[InPort, Subscriber[_]] = Map.empty[InPort, Subscriber[_]] , outputs: Map[OutPort, Publisher[_]] = Map.empty[OutPort, Publisher[_]])
+
+  def toFoldModule(reduce: ReduceModule[Any]): Fold = {
+    val f = reduce.f
+    val aggregator = {(zero: Any, input: Any) =>
+      if (zero == null) {
+        input
+      } else {
+        f(zero, input)
+      }
+    }
+    new Fold(null, aggregator)
+  }
 }

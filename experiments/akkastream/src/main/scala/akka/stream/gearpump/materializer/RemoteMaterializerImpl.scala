@@ -21,7 +21,7 @@ package akka.stream.gearpump.materializer
 import akka.actor.ActorSystem
 import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.GearAttributes
-import akka.stream.gearpump.module.{SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
+import akka.stream.gearpump.module.{ReduceModule, GroupByModule, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
 import akka.stream.gearpump.task.{BalanceTask, BroadcastTask, GraphTask, UnZip2Task, SinkBridgeTask, SourceBridgeTask}
 import akka.stream.impl.GenJunctions.{UnzipWith2Module, ZipWithModule}
 import akka.stream.impl.Junctions._
@@ -30,7 +30,7 @@ import akka.stream.impl.Stages.{MaterializingStageFactory, StageModule}
 import akka.stream.impl.StreamLayout.Module
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl.StreamApp
-import io.gearpump.streaming.dsl.op.{DataSinkOp, DataSourceOp, Direct, FlatMapOp, MasterOp, MergeOp, Op, OpEdge, ProcessorOp, Shuffle, SlaveOp}
+import io.gearpump.streaming.dsl.op.{GroupByOp, DataSinkOp, DataSourceOp, Direct, FlatMapOp, MasterOp, MergeOp, Op, OpEdge, ProcessorOp, Shuffle, SlaveOp}
 import io.gearpump.streaming.{ProcessorId, StreamApplication}
 import io.gearpump.util.Graph
 import org.slf4j.LoggerFactory
@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory
  * @param system
  */
 class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
+
+  import RemoteMaterializerImpl._
 
   type Clue = String
   private implicit val actorSystem = system
@@ -142,9 +144,13 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
         case sink: SinkTaskModule[t] =>
           new DataSinkOp[t](sink.sink, parallelism, conf, "sink")
         case sourceBridge: SourceBridgeModule[_, _] =>
-          new ProcessorOp(classOf[SourceBridgeTask], parallism = 1, conf, "source")
+          new ProcessorOp(classOf[SourceBridgeTask], parallelism = 1, conf, "source")
         case sinkBridge: SinkBridgeModule[_, _] =>
-          new ProcessorOp(classOf[SinkBridgeTask], parallism = 1, conf, "sink")
+          new ProcessorOp(classOf[SinkBridgeTask], parallelism, conf, "sink")
+        case groupBy: GroupByModule[t, g] =>
+          new GroupByOp[t, g](groupBy.groupBy, parallelism, "groupBy", conf)
+        case reduce: ReduceModule[Any] =>
+          reduceOp(reduce.f, conf)
         case stage: StageModule =>
           translateStage(stage, conf)
         case fanIn: FanInModule =>
@@ -170,7 +176,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
     (opGraph, matValues)
   }
 
-  import RemoteMaterializerImpl._
+
   private def translateStage(module: StageModule, conf: UserConfig): Op = {
     module match {
       case buffer: Stages.Buffer =>
@@ -299,6 +305,19 @@ object RemoteMaterializerImpl {
     flatMapOp({ data =>
       if (filter(data)) Option(data) else None
     }, "filter", conf)
+  }
+
+  def reduceOp(reduce: (Any, Any) => Any, conf: UserConfig): Op = {
+    var result: Any = null
+    val flatMap = { elem: Any =>
+      if (result == null) {
+        result = elem
+      } else {
+        result = reduce(result, elem)
+      }
+      List(result)
+    }
+    flatMapOp(flatMap, "reduce", conf)
   }
 
   def identity(description: String, conf: UserConfig): Op = {

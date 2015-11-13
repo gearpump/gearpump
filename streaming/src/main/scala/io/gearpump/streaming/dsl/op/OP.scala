@@ -48,9 +48,9 @@ trait ParameterizedOp[T] extends MasterOp
 
 case class MergeOp(description: String, override val conf: UserConfig = UserConfig.empty) extends MasterOp
 
-case class GroupByOp[T, R](fun: T => R, parallism: Int, description: String, override val conf: UserConfig = UserConfig.empty) extends ParameterizedOp[T]
+case class GroupByOp[T, R](fun: T => R, parallelism: Int, description: String, override val conf: UserConfig = UserConfig.empty) extends ParameterizedOp[T]
 
-case class ProcessorOp[T <: Task](processor: Class[T], parallism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
+case class ProcessorOp[T <: Task](processor: Class[T], parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
 case class DataSourceOp[T](dataSource: DataSource, parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 

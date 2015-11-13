@@ -23,7 +23,7 @@ import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.GearAttributes
 import akka.stream.gearpump.GearAttributes.{Local, Location, Remote}
 import akka.stream.gearpump.graph.GraphCutter.Strategy
-import akka.stream.gearpump.module.{BridgeModule, DummyModule, GearpumpTaskModule, SinkBridgeModule, SourceBridgeModule}
+import akka.stream.gearpump.module.{GroupByModule, BridgeModule, DummyModule, GearpumpTaskModule, SinkBridgeModule, SourceBridgeModule}
 import akka.stream.impl.Stages.{TimerTransform, DirectProcessor}
 import akka.stream.impl.StreamLayout.{MaterializedValueNode, Module}
 import akka.stream.impl.{MaterializedValueSource, SinkModule, SourceModule}
@@ -143,6 +143,10 @@ object GraphCutter {
     case source: BridgeModule[_, _, _] =>
       Remote
     case task: GearpumpTaskModule =>
+      Remote
+    case groupBy: GroupByModule[_, _] =>
+      //TODO: groupBy is not supported by local materializer
+      // yet
       Remote
     case source: SourceModule[_, _] =>
       Local

@@ -19,7 +19,7 @@
 package akka.stream.gearpump.scaladsl
 
 import akka.stream.Attributes
-import akka.stream.gearpump.module.{DummySink, DummySource, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
+import akka.stream.gearpump.module.{ReduceModule, GroupByModule, DummySink, DummySource, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
@@ -89,5 +89,45 @@ object GearSink {
   def to[IN](sink: DataSink): Sink[IN, Unit] = {
     val taskSink = new Sink[IN, Unit](new SinkTaskModule(sink))
     taskSink
+  }
+}
+
+/**
+ *
+ * GroupBy will divide the main input stream to a set of sub-streams.
+ * This is a work-around to bypass the limitation of official API Flow.groupBy
+ *
+ *
+ * For example, to do a word count, we can write code like this:
+ *
+ * case class KV(key: String, value: String)
+ * case class Count(key: String, count: Int)
+ *
+ * val flow: Flow[KV] = GroupBy[KV](foo).map{ kv =>
+ *   Count(kv.key, 1)
+ * }.fold(Count(null, 0)){(base, add) =>
+ *   Count(add.key, base.count + add.count)
+ * }.log("count of current key")
+ * .flatten()
+ * .to(sink)
+ *
+ * map, fold will transform data on all sub-streams, If there are 10 groups,
+ * then there will be 10 sub-streams, and for each sub-stream, there will be
+ * a map and fold.
+ *
+ * flatten will collect all sub-stream into the main stream,
+ *
+ * sink will only operate on the main stream.
+ *
+ */
+object GroupBy{
+  def apply[T, Group](groupBy: T=>Group): Flow[T, T, Unit] = {
+    new Flow[T, T, Unit](new GroupByModule(groupBy, Attributes.name("groupByModule")))
+  }
+}
+
+object Reduce{
+  def apply[T](reduce: (T, T) => T): Flow[T, T, Unit] = {
+    new Flow[T, T, Unit](new ReduceModule(reduce, Attributes.name("reduceModule")))
   }
 }
