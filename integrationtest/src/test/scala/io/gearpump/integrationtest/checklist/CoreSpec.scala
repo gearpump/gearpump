@@ -17,27 +17,12 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.minicluster.MiniCluster
-import org.scalatest.{FlatSpec, Matchers, BeforeAndAfterAll}
+import io.gearpump.integrationtest.TestSpecBase
 
 /**
  * The test spec contains basic functional test cases
  */
-class CoreSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
-
-  private var cluster: MiniCluster = null
-  private def client = cluster.client
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    cluster = new MiniCluster
-    cluster.start()
-  }
-
-  override def afterAll(): Unit = {
-    cluster.shutDown()
-    super.afterAll()
-  }
+class CoreSpec extends TestSpecBase {
 
   "query system version" should "return the current version number" in {
     client.queryVersion should not be empty
