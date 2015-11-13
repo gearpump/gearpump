@@ -15,30 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.suites
+package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.MiniClusterProvider
-import io.gearpump.integrationtest.checklist.CoreSpec
-import io.gearpump.minicluster.MiniCluster
-import org.scalatest.{BeforeAndAfterAll, Suites}
+import io.gearpump.integrationtest.TestSpecBase
 
 /**
- * Run all test specs with a standalone cluster
+ * The test spec checks the compatibility of running Storm applications
  */
-class StandaloneClusterSuite extends Suites(
-  new CoreSpec
-) with BeforeAndAfterAll {
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    MiniClusterProvider.managed = true
-    MiniClusterProvider.set(new MiniCluster).start()
-  }
-
-  override def afterAll(): Unit = {
-    MiniClusterProvider.get.shutDown()
-    MiniClusterProvider.managed = false
-    super.afterAll()
-  }
+class StormCompatibilitySpec extends TestSpecBase {
 
 }
