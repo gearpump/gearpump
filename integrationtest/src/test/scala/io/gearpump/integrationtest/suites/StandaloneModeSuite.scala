@@ -15,20 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest
+package io.gearpump.integrationtest.suites
 
-import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
+import io.gearpump.integrationtest.MiniClusterProvider
+import io.gearpump.integrationtest.checklist._
+import io.gearpump.minicluster.MiniCluster
+import org.scalatest.{BeforeAndAfterAll, FlatSpec}
 
 /**
- * The abstract test spec
+ * Launch a Gearpump cluster in standalone mode and run all test specs
  */
-trait TestSpecBase extends FlatSpec with Matchers with BeforeAndAfter {
+class StandaloneModeSuite extends FlatSpec with BeforeAndAfterAll
+  with CommandLineSpec
+  with RestServiceSpec
+  with ConnectorKafkaSpec
+  with StormCompatibilitySpec
+  with StabilitySpec {
 
-  val cluster = MiniClusterProvider.get
-  val client = cluster.client
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    MiniClusterProvider.set(new MiniCluster).start()
+  }
 
-  before {
-    assert(cluster != null, "Configure MiniCluster properly in suite spec")
+  override def afterAll(): Unit = {
+    MiniClusterProvider.get.shutDown()
+    super.afterAll()
   }
 
 }

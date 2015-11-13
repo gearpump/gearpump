@@ -15,30 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.suites
+package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.MiniClusterProvider
-import io.gearpump.integrationtest.checklist.CoreSpec
-import io.gearpump.minicluster.MiniCluster
-import org.scalatest.{BeforeAndAfterAll, Suites}
+import io.gearpump.integrationtest.TestSpecBase
 
 /**
- * Run all test specs with a standalone cluster
+ * The test spec checks the command-line usage
  */
-class StandaloneClusterSuite extends Suites(
-  new CoreSpec
-) with BeforeAndAfterAll {
+trait CommandLineSpec extends TestSpecBase {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    MiniClusterProvider.managed = true
-    MiniClusterProvider.set(new MiniCluster).start()
+  "command `gear app`" should "submit an user application" in {
   }
 
-  override def afterAll(): Unit = {
-    MiniClusterProvider.get.shutDown()
-    MiniClusterProvider.managed = false
-    super.afterAll()
+  "command `gear info $app_id`" should "return particular application runtime information" in {
+  }
+
+  "command `gear info $wrong_app_id`" should "return an error" in {
+  }
+
+  "command `gear kill $app_id`" should "kill particular application" in {
+  }
+
+  "command `gear kill $wrong_app_id`" should "return an error" in {
+  }
+
+  "command `gear replay $app_id`" should "return replay the application from current min clock" in {
   }
 
 }

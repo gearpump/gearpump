@@ -1,4 +1,4 @@
-## gearpump-docker-for-integration-test
+## Getting Started
 
 Need Linux Kernel 3.10 (or higher) and Docker 1.7 (or higher). 
 
@@ -6,7 +6,7 @@ Need Linux Kernel 3.10 (or higher) and Docker 1.7 (or higher).
 2. Pull Docker image once `docker pull stanleyxu2005/gpct-jdk8`
 3. Run the test suites
 
-## Scale Test
+## Manual Test
 
 To launch a Gearpump cluster manually, you can run the commands as follows. You can launch so many worker containers, as you wish. But only one master for the time being.
 ```

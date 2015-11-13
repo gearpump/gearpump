@@ -20,9 +20,9 @@ package io.gearpump.integrationtest.checklist
 import io.gearpump.integrationtest.TestSpecBase
 
 /**
- * The test spec contains basic functional test cases
+ * The test spec checks REST service usage
  */
-class CoreSpec extends TestSpecBase {
+trait RestServiceSpec extends TestSpecBase {
 
   "query system version" should "return the current version number" in {
     client.queryVersion should not be empty
