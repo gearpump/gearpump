@@ -51,7 +51,7 @@ function codeTabs() {
         var buttonLabel = ""
       }
       tabBar.append(
-        '<li><a class="tab_' + lang + '" href="#' + id + '">' + buttonLabel + '</a></li>'
+        '<li><a href="#' + id + '">' + buttonLabel + '</a></li>'
       );
     });
 
@@ -64,7 +64,7 @@ function codeTabs() {
     // while retaining the scroll position
     e.preventDefault();
     var scrollOffset = $(this).offset().top - $(document).scrollTop();
-    $("." + $(this).attr('class')).tab('show');
+    $(this).tab('show');
     $(document).scrollTop($(this).offset().top - scrollOffset);
   });
   $("table").each(function() {
