@@ -47,20 +47,14 @@ object ContainerLaunchContext {
     val classPaths = yarnConf.getStrings(
       YarnConfiguration.YARN_APPLICATION_CLASSPATH,
       YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH.mkString(File.pathSeparator))
-    val allPaths = Option(classPaths) match {
-      case Some(paths) =>
-        paths
-      case None =>
-        Array("")
-    }
-    allPaths :+ Environment.PWD.$()+File.separator+"*"+File.pathSeparator
+    val allPaths = Option(classPaths).getOrElse(Array(""))
 
-    Map(Environment.CLASSPATH.name -> allPaths.reduceLeft((a,b) => {
-      a + File.pathSeparator + b
-    }))
+    allPaths :+ Environment.PWD.$() + File.separator + "*" + File.pathSeparator
+
+    Map(Environment.CLASSPATH.name -> allPaths.map(_.trim).mkString(File.pathSeparator))
   }
 
-  private def  getAMLocalResourcesMap: Map[String, LocalResource] = {
+  private def getAMLocalResourcesMap: Map[String, LocalResource] = {
     Try({
       val fs = getFs(yarnConf)
       val version = appConfig.getEnv("version")
