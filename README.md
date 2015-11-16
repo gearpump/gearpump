@@ -1,10 +1,10 @@
 
-## GearPump [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master) 
- 
-Web site: http://gearpump.io 
- 
+## GearPump [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
+
+Web site: http://gearpump.io
+
 [![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](https://github.com/gearpump/gearpump/releases)
- 
+
 GearPump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
@@ -54,15 +54,15 @@ Check guide [Get Started](http://www.gearpump.io/site/0.6/userguide/#get-started
 ```
 
   After the build, there will be a package file gearpump-${version}.tar.gz generated under target/ folder.
-  
-  To build scala document, use 
+
+  To build scala document, use
 ```bash
    ## Will generate the scala doc under target/scala_2.xx/unidoc/
    sbt unidoc
 ```  
-  
+
   **NOTE:**
-The build requires network connection. If you are behind an enterprise proxy, make sure you have set the proxy in your env before running the build commands. 
+The build requires network connection. If you are behind an enterprise proxy, make sure you have set the proxy in your env before running the build commands.
 For windows:
 
 ```bash
@@ -79,6 +79,23 @@ export HTTPS_PROXT= http://host:port
 
 After the build, the package directory layout looks like this: [Layout](http://www.gearpump.io/site/0.6/userguide/#gearpump-package-structure)
 
+## How to run Gearpump integration test
+Gearpump has an integration test system which is based on Docker.
+
+### Prerequisite of integration test
+To run Gearpump integration test, we first must have Docker installed in your PATH.
+
+And you need to have Docker well configured if you are behind firewall.
+You can run command `docker pull stanleyxu2005/gpct-jdk8` to check whether you have Docker installed and well configured.
+
+#### Set docker proxy if you behind a firewall
+In ubuntu, you can modify file `/etc/default/docker` and enable the http_proxy setting.
+
+### Run integration test
+After Docker well configured, you can run the whole integration test via command:
+```bash
+sbt it:test
+```
 
 ## Concepts
 
@@ -130,5 +147,3 @@ Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/L
 The netty transport code work is based on [Apache Storm](http://storm.apache.org). Thanks Apache Storm contributors.
 
 Thanks to Jetbrains for providing [IntelliJ IDEA Free Open Source License](https://www.jetbrains.com/buy/opensource/?product=idea).
-
-
