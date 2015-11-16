@@ -192,7 +192,8 @@ object Build extends sbt.Build {
     base = file("."),
     settings = commonSettings ++ noPublish ++ unidocSettings ++ projectListWithDoc
   ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
-      examples, storm, yarn, external_hbase, packProject, external_hadoopfs)
+      examples, storm, yarn, external_hbase, packProject, external_hadoopfs,
+      integration_test).settings(Defaults.itSettings : _*)
 
   lazy val core = Project(
     id = "gearpump-core",
@@ -429,8 +430,9 @@ object Build extends sbt.Build {
     settings = commonSettings ++ Seq(
       libraryDependencies ++= Seq(
         "com.lihaoyi" %% "upickle" % upickleVersion,
-        "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+        "org.scalatest" %% "scalatest" % scalaTestVersion % "it"
       )
     )
-  ) dependsOn(streaming % "test->test; provided")
+  ).configs(IntegrationTest).settings(Defaults.itSettings : _*)
+   .dependsOn(streaming % "test->test; provided")
 }
