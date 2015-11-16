@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.minicluster
+package io.gearpump.integrationtest
 
 import org.apache.log4j.Logger
 
@@ -33,6 +33,14 @@ object Docker {
       .split("\n").filter(_.nonEmpty)
   }
 
+  def containerIsRunning(name: String): Boolean = {
+    shellExecAndCaptureOutput(s"docker ps -q --filter 'name=$name'", s"LIST $name").nonEmpty
+  }
+
+  def containerExists(name: String): Boolean = {
+    shellExecAndCaptureOutput(s"docker ps -q -a --filter 'name=$name'", s"LIST $name").nonEmpty
+  }
+
   /**
    * @throws RuntimeException in case particular container is created already
    */
@@ -40,14 +48,6 @@ object Docker {
     if (!shellExec(s"docker run $options --name $name $image $args", s"CREATE $name")) {
       throw new RuntimeException(s"Failed to run container '$name'.")
     }
-  }
-
-  def containerIsRunning(name: String): Boolean = {
-    shellExecAndCaptureOutput(s"docker ps -q --filter 'name=$name'", s"LIST $name").nonEmpty
-  }
-
-  def containerExists(name: String): Boolean = {
-    shellExecAndCaptureOutput(s"docker ps -q -a --filter 'name=$name'", s"LIST $name").nonEmpty
   }
 
   def exec(name: String, command: String): Boolean = {

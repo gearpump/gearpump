@@ -15,24 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest
+package io.gearpump.integrationtest.minicluster
 
-import io.gearpump.integrationtest.minicluster.MiniCluster
+object Util {
 
-/**
- * Provides an instance of SUT.
- *
- * By default it will instantiate a standalone Gearpump mini cluster.
- */
-object MiniClusterProvider {
-
-  private var instance = new MiniCluster
-
-  def get = instance
-
-  def set(instance: MiniCluster): MiniCluster = {
-    this.instance = instance
-    instance
+  def encodeUriComponent(s: String): String = {
+    try {
+      java.net.URLEncoder.encode(s, "UTF-8")
+        .replaceAll("\\+", "%20")
+        .replaceAll("\\%21", "!")
+        .replaceAll("\\%27", "'")
+        .replaceAll("\\%28", "(")
+        .replaceAll("\\%29", ")")
+        .replaceAll("\\%7E", "~")
+    } catch {
+      case ex: Throwable => s
+    }
   }
 
 }

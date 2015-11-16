@@ -15,24 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest
+package io.gearpump.integrationtest.kafka
 
-import io.gearpump.integrationtest.minicluster.MiniCluster
+import io.gearpump.integrationtest.Docker
 
 /**
- * Provides an instance of SUT.
- *
- * By default it will instantiate a standalone Gearpump mini cluster.
+ * This class maintains a single node Kafka cluster with integrated Zookeeper.
  */
-object MiniClusterProvider {
+class KafkaCluster {
 
-  private var instance = new MiniCluster
+  private val DOCKER_IMAGE = "spotify/kafka"
+  private val HOST = "kafka0"
 
-  def get = instance
-
-  def set(instance: MiniCluster): MiniCluster = {
-    this.instance = instance
-    instance
+  def start(): Unit = {
+    Docker.run(HOST, "-d", "", DOCKER_IMAGE)
   }
+
+  def shutDown(): Unit = {
+    Docker.killAndRemove(HOST)
+  }
+
+  def getHostIpAddr: String = {
+    Docker.execAndCaptureOutput(HOST, "hostname -i")
+  }
+
+  def getZookeeperPort = 2181
+
+  def getBrokerPort = 9092
 
 }

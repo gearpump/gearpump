@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.minicluster
+package io.gearpump.integrationtest.minicluster
 
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+import io.gearpump.integrationtest.Docker
 import upickle.default._
 
 /**
@@ -73,24 +74,6 @@ class RestClient(host: String, port: Int) {
 
   private def callFromRoot(endpoint: String, options: String = ""): String = {
     Docker.execAndCaptureOutput(host, s"curl -s $options $host:$port/$endpoint")
-  }
-
-  private object Util {
-
-    def encodeUriComponent(s: String): String = {
-      try {
-        java.net.URLEncoder.encode(s, "UTF-8")
-          .replaceAll("\\+", "%20")
-          .replaceAll("\\%21", "!")
-          .replaceAll("\\%27", "'")
-          .replaceAll("\\%28", "(")
-          .replaceAll("\\%29", ")")
-          .replaceAll("\\%7E", "~")
-      } catch {
-        case ex: Throwable => s
-      }
-    }
-
   }
 
 }
