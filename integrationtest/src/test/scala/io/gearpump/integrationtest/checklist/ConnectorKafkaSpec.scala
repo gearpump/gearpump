@@ -15,20 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest
+package io.gearpump.integrationtest.checklist
 
-import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
+import io.gearpump.integrationtest.TestSpecBase
 
 /**
- * The abstract test spec
+ * The test spec checks the Kafka datasource connector
  */
-trait TestSpecBase extends FlatSpec with Matchers with BeforeAndAfter {
-
-  val cluster = MiniClusterProvider.get
-  val client = cluster.client
-
-  before {
-    assert(cluster != null, "Configure MiniCluster properly in suite spec")
-  }
+trait ConnectorKafkaSpec extends TestSpecBase {
 
 }

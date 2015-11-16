@@ -37,7 +37,7 @@ object Docker {
    * @throws RuntimeException in case particular container is created already
    */
   def run(name: String, options: String, args: String, image: String): Unit = {
-    if (!shellExec(s"docker run $options --name $name $image $args", s" RUN $name")) {
+    if (!shellExec(s"docker run $options --name $name $image $args", s"CREATE $name")) {
       throw new RuntimeException(s"Failed to run container '$name'.")
     }
   }

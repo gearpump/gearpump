@@ -35,10 +35,4 @@ object MiniClusterProvider {
     instance
   }
 
-  /**
-   * `false` means every test spec will have to start/shutdown cluster manually.
-   * `true` means a test suite will take care of cluster start/shutdown.
-   */
-  var managed: Boolean = false
-
 }

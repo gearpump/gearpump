@@ -20,15 +20,15 @@ case "$1" in
   master)
     shift
     JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname)"
-    nohup sh $SUT_HOME/bin/master "$@" &
+    nohup sh ${SUT_HOME}/bin/master "$@" &
     if [ -z "$(jps | grep Services)" ]; then
       JAVA_OPTS="$JAVA_OPTS -Dgearpump.services.host=$(hostname)"
-      nohup sh $SUT_HOME/bin/services &
+      nohup sh ${SUT_HOME}/bin/services &
     fi
     ;;
   worker)
     JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname -i)"
-    nohup sh $SUT_HOME/bin/worker &
+    nohup sh ${SUT_HOME}/bin/worker &
     ;;
   *)
     echo "Usage: master|worker [ARGS]"
