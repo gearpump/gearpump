@@ -19,7 +19,7 @@ package io.gearpump.integrationtest.suites
 
 import io.gearpump.integrationtest.MiniClusterProvider
 import io.gearpump.integrationtest.checklist._
-import io.gearpump.minicluster.MiniCluster
+import io.gearpump.integrationtest.minicluster.MiniCluster
 import org.scalatest.{BeforeAndAfterAll, FlatSpec}
 
 /**

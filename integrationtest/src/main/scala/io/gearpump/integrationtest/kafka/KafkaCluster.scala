@@ -17,7 +17,7 @@
  */
 package io.gearpump.integrationtest.kafka
 
-import io.gearpump.minicluster.Docker
+import io.gearpump.integrationtest.Docker
 
 /**
  * This class maintains a single node Kafka cluster with integrated Zookeeper.

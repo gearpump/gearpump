@@ -15,7 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.minicluster
+package io.gearpump.integrationtest.minicluster
+
+import io.gearpump.integrationtest.Docker
 
 import scala.sys.process._
 
