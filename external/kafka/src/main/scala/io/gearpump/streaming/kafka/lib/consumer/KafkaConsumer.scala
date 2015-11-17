@@ -51,7 +51,7 @@ object KafkaConsumer {
 }
 
 /**
- * uses kafka [[SimpleConsumer]] to consume and iterate over messages from a kafka [[TopicAndPartition]]
+ * uses kafka kafka.consumer.SimpleConsumer to consume and iterate over messages from a kafka kafka.common.TopicAndPartition.
  */
 class KafkaConsumer(consumer: SimpleConsumer,
                     topic: String,

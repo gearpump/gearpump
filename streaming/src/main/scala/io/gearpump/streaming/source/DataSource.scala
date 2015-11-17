@@ -45,7 +45,7 @@ trait DataSource extends java.io.Serializable {
 
   /**
    * open connection to data source
-   * invoked in onStart() method of [[Task]]
+   * invoked in onStart() method of [[io.gearpump.streaming.source.DataSourceTask]]
    * @param context is the task context at runtime
    * @param startTime is the start time of system
    */
@@ -53,15 +53,15 @@ trait DataSource extends java.io.Serializable {
 
   /**
    * read a number of messages from data source.
-   * invoked in each onNext() method of [[Task]]
+   * invoked in each onNext() method of [[io.gearpump.streaming.source.DataSourceTask]]
    * @param batchSize max number of messages to read
-   * @return a list of messages wrapped in [[Message]]
+   * @return a list of messages wrapped in [[io.gearpump.Message]]
    */
   def read(batchSize: Int): List[Message]
 
   /**
-   * close connection to data source
-   * invoked in onStop() method of [[Task]]
+   * close connection to data source.
+   * invoked in onStop() method of [[io.gearpump.streaming.source.DataSourceTask]]
    */
   def close(): Unit
 }

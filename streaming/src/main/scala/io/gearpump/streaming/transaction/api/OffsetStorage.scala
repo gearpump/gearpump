@@ -32,16 +32,14 @@ object OffsetStorage {
   /**
    * Overflow means the looked up time is
    * larger than the maximum stored TimeStamp
-   * @param max Offset with the max TimeStamp
    */
-  case class Overflow(max: Array[Byte]) extends Throwable
+  case class Overflow(maxTimestamp: Array[Byte]) extends Throwable
 
   /**
    * Underflow means the looked up time is
    * smaller than the minimum stored TimeStamp
-   * @param min Offset with the min TimeStamp
    */
-  case class Underflow(min: Array[Byte]) extends Throwable
+  case class Underflow(minTimestamp: Array[Byte]) extends Throwable
 }
 
 /**
@@ -53,6 +51,8 @@ trait OffsetStorage {
    * return the corresponding Offset if the time is
    * in the range of stored TimeStamps or one of the
    * failure info (StorageEmpty, Overflow, Underflow)
+   * @param time the time to look for
+   * @return the corresponding offset if the time is in the range, otherwise failure
    */
   def lookUp(time: TimeStamp): Try[Array[Byte]]
   def append(time: TimeStamp, offset: Array[Byte]): Unit

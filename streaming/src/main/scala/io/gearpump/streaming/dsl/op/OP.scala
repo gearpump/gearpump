@@ -33,7 +33,6 @@ sealed trait Op {
 /**
  * When translated to running DAG, SlaveOP can be attach to MasterOP or other SlaveOP
  * "Attach" means running in same Actor.
- *
  */
 trait SlaveOp[T] extends Op
 
@@ -76,7 +75,6 @@ trait OpEdge
  *
  * For example, map, flatmap operation doesn't require network shuffle, we can use Direct
  * to represent the relation with upstream operators.
- *
  */
 case object Direct extends OpEdge
 
@@ -85,7 +83,6 @@ case object Direct extends OpEdge
  *
  * For example, map, flatmap operation doesn't require network shuffle, we can use Direct
  * to represent the relation with upstream operators.
- *
  */
 case object Shuffle extends OpEdge
 
