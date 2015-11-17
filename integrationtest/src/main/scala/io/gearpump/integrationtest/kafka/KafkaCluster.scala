@@ -23,20 +23,18 @@ import io.gearpump.integrationtest.Docker
  * This class maintains a single node Kafka cluster with integrated Zookeeper.
  */
 class KafkaCluster {
-
-  private val DOCKER_IMAGE = "spotify/kafka"
-  private val HOST = "kafka0"
+  import io.gearpump.integrationtest.kafka.KafkaCluster._
 
   def start(): Unit = {
-    Docker.run(HOST, "-d", "", DOCKER_IMAGE)
+    Docker.run(KAFKA_HOST, s"-d -h $KAFKA_HOST", "", KAFKA_DOCKER_IMAGE)
   }
 
   def shutDown(): Unit = {
-    Docker.killAndRemove(HOST)
+    Docker.killAndRemove(KAFKA_HOST)
   }
 
-  def getHostIpAddr: String = {
-    Docker.execAndCaptureOutput(HOST, "hostname -i")
+  def getHostname: String = {
+    Docker.execAndCaptureOutput(KAFKA_HOST, "hostname")
   }
 
   def getZookeeperPort = 2181
@@ -44,3 +42,10 @@ class KafkaCluster {
   def getBrokerPort = 9092
 
 }
+
+object KafkaCluster {
+  val KAFKA_DOCKER_IMAGE = "spotify/kafka"
+  val KAFKA_HOST = "kafka0"
+  val KAFKA_HOME = "/opt/kafka_2.11-0.8.2.1/"
+}
+
