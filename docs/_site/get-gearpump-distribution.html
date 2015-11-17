@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>Get Gearpump Distribution - GearPump 0.6.2-SNAPSHOT Documentation</title>
+  
+   <meta name="description" content="How to Get Your Gearpump Distribution">
+  
+
+  
+
+  <link rel="stylesheet" href="css/bootstrap-3.3.5.min.css">
+  <style>
+    body {
+      padding-top: 60px;
+      padding-bottom: 40px;
+    }
+  </style>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/pygments-default.css">
+  <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
+</head>
+<body>
+  <!--[if lt IE 7]>
+    <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
+  <![endif]-->
+
+  <div class="navbar navbar-inverse navbar-fixed-top" id="topbar">
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#/">GearPump
+          <span class="label label-primary" style="font-size: .6em">0.6.2-SNAPSHOT</span>
+        </a>
+      </div>
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <li><a href="index.html">Overview</a></li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Introduction<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="submit-your-1st-application.html">Submit Your 1st Application</a></li>
+              <li><a href="commandline.html">Client Command Line</a></li>
+              <li class="divider"></li>
+              <li><a href="basic-concepts.html">Basic Concepts</a></li>
+              <li><a href="features.html">Technical Highlights</a></li>
+              <li><a href="usecases.html">Use Cases</a></li>
+              <li><a href="message-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="performance-report.html">Performance</a></li>
+              <li><a href="gearpump-internals.html">Gearpump Internals</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Deploying<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="dropdown-header">Deployment</li>
+              <li><a href="deployment-docker.html">Docker</a><li>
+              <li><a href="deployment-local.html">Local</a><li>
+              <li><a href="deployment-standalone.html">Standalone</a></li>
+              <li><a href="deployment-yarn.html">YARN</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-ha.html">High Availability</a></li>
+              <li><a href="deployment-msg-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="deployment-configuration.html">Configuration</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-security.html">Security</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Programming Guide<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="dev-write-1st-app.html">Write Your 1st App</a></li>
+              <li><a href="dev-custom-serializer.html">Customized Message Passing</a></li>
+              <li class="divider"></li>
+              <li><a href="api/scala/index.html">Scala API</a></li>
+              <li><a href="api/java/index.html">Java API</a></li>
+              <li><a href="dev-rest-api.html">RESTful API</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-connectors.html">Gearpump Connectors</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-storm.html">Storm Compatibility</a></li>
+              <!--
+              <li><a href="dev-samoa.html">Samoa Compatibility</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-iot.html">Gearpump with IoT</a></li>
+              -->
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">More<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="how-to-contribute.html">How to Contribute</a></li>
+              <li><a href="coding-style.html">Coding Style</a></li>
+              <li class="divider"></li>
+              <li><a href="faq.html">FAQ</a><li>
+              <li><a href="about.html">About</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="content">
+   
+    <h1 class="title">How to Get Your Gearpump Distribution</h1>
+   
+
+   <h3 id="prepare-the-binary">Prepare the binary</h3>
+<p>You can either download pre-build release package or choose to build from source code.</p>
+
+<h4 id="download-release-binary">Download Release Binary</h4>
+
+<p>If you choose to use pre-build package, then you don&#8217;t need to build from source code. The release package can be downloaded from:</p>
+
+<h5 id="httpwwwgearpumpiositedownloadshttpwwwgearpumpiositedownloads"><a href="http://www.gearpump.io/site/downloads/">http://www.gearpump.io/site/downloads/</a></h5>
+
+<h4 id="build-from-source-code">Build from Source code</h4>
+
+<p>If you choose to build the package from source code yourself, you can follow these steps:</p>
+
+<p>1). Clone the GearPump repository</p>
+
+<div class="highlight"><pre><code class="language-bash">  git clone https://github.com/gearpump/gearpump.git
+  <span class="nb">cd </span>gearpump</code></pre></div>
+
+<p>2). Build package</p>
+
+<div class="highlight"><pre><code class="language-bash">  <span class="c">## Please use scala 2.11</span>
+  <span class="c">## The target package path: target/gearpump-$VERSION.tar.gz</span>
+  sbt clean assembly packArchive <span class="c">## Or use: sbt clean assembly pack-archive</span></code></pre></div>
+
+<p>After the build, there will be a package file gearpump-${version}.tar.gz generated under target/ folder.</p>
+
+<p><strong>NOTE:</strong>
+  Please set JAVA_HOME environment before the build.</p>
+
+<p>On linux:</p>
+
+<div class="highlight"><pre><code class="language-bash">  <span class="nb">export </span><span class="nv">JAVA_HOME</span><span class="o">={</span>path/to/jdk/root/path<span class="o">}</span></code></pre></div>
+
+<p>On Windows:</p>
+
+<div class="highlight"><pre><code class="language-bash">  <span class="nb">set </span><span class="nv">JAVA_HOME</span><span class="o">={</span>path/to/jdk/root/path<span class="o">}</span></code></pre></div>
+
+<p><strong>NOTE:</strong>
+The build requires network connection. If you are behind an enterprise proxy, make sure you have set the proxy in your env before running the build commands.
+For windows:</p>
+
+<div class="highlight"><pre><code class="language-bash">Set <span class="nv">HTTP_PROXY</span><span class="o">=</span>http://host:port
+<span class="nb">set </span><span class="nv">HTTPS_PROXT</span><span class="o">=</span> http://host:port</code></pre></div>
+
+<p>For Linux:</p>
+
+<div class="highlight"><pre><code class="language-bash"><span class="nb">export </span><span class="nv">HTTP_PROXY</span><span class="o">=</span>http://host:port
+<span class="nb">export </span><span class="nv">HTTPS_PROXT</span><span class="o">=</span> http://host:port</code></pre></div>
+
+<h3 id="gearpump-package-structure">Gearpump package structure</h3>
+
+<p>You need to flatten the .tar.gz file to use it, on Linux, you can</p>
+
+<div class="highlight"><pre><code class="language-bash"><span class="c">## please replace ${version} below with actual version used</span>
+tar  -zxvf gearpump-<span class="k">${</span><span class="nv">version</span><span class="k">}</span>.tar.gz</code></pre></div>
+
+<p>After decompression, the directory structure looks like picture 1.</p>
+
+<p><img src="/img/layout.png" alt="Layout" /></p>
+
+<p>Under bin/ folder, there are script files for Linux(bash script) and Windows(.bat script).</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>script</th>
+      <th>function</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>local</td>
+      <td>You can start the Gearpump cluster in single JVM(local mode), or in a distributed cluster(cluster mode). To start the cluster in local mode, you can use the local /local.bat helper scripts, it is very useful for developing or troubleshooting.</td>
+    </tr>
+    <tr>
+      <td>master</td>
+      <td>To start Gearpump in cluster mode, you need to start one or more master nodes, which represent the global resource management center. master/master.bat is launcher script to boot the master node.</td>
+    </tr>
+    <tr>
+      <td>worker</td>
+      <td>To start Gearpump in cluster mode, you also need to start several workers, with each worker represent a set of local resources. worker/worker.bat is launcher script to start the worker node.</td>
+    </tr>
+    <tr>
+      <td>services</td>
+      <td>This script is used to start backend REST service and other services for frontend UI dashboard.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Please check <a href="commandline.html">Command Line Syntax</a> for more information for each script.</p>
+
+
+  </div> <!-- /container -->
+
+  <script src="js/vendor/jquery-2.1.4.min.js"></script>
+  <script src="js/vendor/bootstrap-3.3.5.min.js"></script>
+  <script src="js/vendor/anchor-1.1.1.min.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- MathJax Section -->
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      TeX: { equationNumbers: { autoNumber: "AMS" } }
+    });
+  </script>
+  <script>
+    // Note that we load MathJax this way to work with local file (file://), HTTP and HTTPS.
+    // We could use "//cdn.mathjax...", but that won't support "file://".
+    (function(d, script) {
+      script = d.createElement('script');
+      script.type = 'text/javascript';
+      script.async = true;
+      script.onload = function(){
+        MathJax.Hub.Config({
+          tex2jax: {
+            inlineMath: [ ["$", "$"], ["\\\\(","\\\\)"] ],
+            displayMath: [ ["$$","$$"], ["\\[", "\\]"] ],
+            processEscapes: true,
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+          }
+        });
+      };
+      script.src = ('https:' == document.location.protocol ? 'https://' : 'http://') +
+        'cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+      d.getElementsByTagName('head')[0].appendChild(script);
+    }(document));
+  </script>
+</body>
+</html>

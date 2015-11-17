@@ -1,0 +1,610 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>cluster - io.gearpump.cluster</title>
+          <meta name="description" content="cluster - io.gearpump.cluster" />
+          <meta name="keywords" content="cluster io.gearpump.cluster" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'io.gearpump.cluster.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="io">io</a>.<a href="../package.html" class="extype" name="io.gearpump">gearpump</a></p>
+        <h1>cluster</h1><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cluster</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.cluster.AppDescription" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AppDescriptionextendsProductwithSerializable"></a>
+      <a id="AppDescription:AppDescription"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AppDescription.html"><span class="name">AppDescription</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="appMaster">appMaster: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="userConfig">userConfig: <a href="UserConfig.html" class="extype" name="io.gearpump.cluster.UserConfig">UserConfig</a></span>, <span name="clusterConfig">clusterConfig: <span class="extype" name="com.typesafe.config.Config">Config</span> = <span class="symbol">ConfigFactory.empty()</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@AppDescriptionextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This contains all information to run an application
+</p>
+    </li><li name="io.gearpump.cluster.AppJar" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AppJarextendsProductwithSerializable"></a>
+      <a id="AppJar:AppJar"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AppJar.html"><span class="name">AppJar</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="filePath">filePath: <a href="../jarstore/FilePath.html" class="extype" name="io.gearpump.jarstore.FilePath">FilePath</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@AppJarextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Jar file container in the cluster
+</p>
+    </li><li name="io.gearpump.cluster.AppMasterContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AppMasterContextextendsProductwithSerializable"></a>
+      <a id="AppMasterContext:AppMasterContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AppMasterContext.html"><span class="name">AppMasterContext</span></a><span class="params">(<span name="appId">appId: <span class="extype" name="scala.Int">Int</span></span>, <span name="username">username: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="resource">resource: <a href="scheduler/Resource.html" class="extype" name="io.gearpump.cluster.scheduler.Resource">Resource</a></span>, <span name="workerInfo">workerInfo: <a href="appmaster/WorkerInfo.html" class="extype" name="io.gearpump.cluster.appmaster.WorkerInfo">WorkerInfo</a></span>, <span name="appJar">appJar: <span class="extype" name="scala.Option">Option</span>[<a href="AppJar.html" class="extype" name="io.gearpump.cluster.AppJar">AppJar</a>]</span>, <span name="masterProxy">masterProxy: <span class="extype" name="akka.actor.ActorRef">ActorRef</span></span>, <span name="registerData">registerData: <a href="AppMasterRegisterData.html" class="extype" name="io.gearpump.cluster.AppMasterRegisterData">AppMasterRegisterData</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@AppMasterContextextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This contains context information when starting an AppMaster
+</p>
+    </li><li name="io.gearpump.cluster.AppMasterRegisterData" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AppMasterRegisterDataextendsAnyRef"></a>
+      <a id="AppMasterRegisterData:AppMasterRegisterData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="AppMasterRegisterData.html"><span class="name">AppMasterRegisterData</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@AppMasterRegisterDataextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.Application" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ApplicationextendsAnyRef"></a>
+      <a id="Application:Application"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Application.html"><span class="name">Application</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@ApplicationextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.ApplicationMaster" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ApplicationMasterextendsActor"></a>
+      <a id="ApplicationMaster:ApplicationMaster"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ApplicationMaster.html"><span class="name">ApplicationMaster</span></a><span class="result"> extends <span class="extype" name="akka.actor.Actor">Actor</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@ApplicationMasterextendsActor" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used for verification.</p><div class="fullcomment"><div class="comment cmt"><p>Used for verification. All AppMaster must extend this interface
+</p></div></div>
+    </li><li name="io.gearpump.cluster.ClusterConfig" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClusterConfigextendsAnyRef"></a>
+      <a id="ClusterConfig:ClusterConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ClusterConfig.html"><span class="name">ClusterConfig</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@ClusterConfigextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Please use ClusterConfig.load to construct this object
+</p>
+    </li><li name="io.gearpump.cluster.ClusterConfigSource" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ClusterConfigSourceextendsSerializable"></a>
+      <a id="ClusterConfigSource:ClusterConfigSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ClusterConfigSource.html"><span class="name">ClusterConfigSource</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@ClusterConfigSourceextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Data Source of ClusterConfig</p><div class="fullcomment"><div class="comment cmt"><p>Data Source of ClusterConfig</p><p>Please use ClusterConfigSource.apply(filePath) to construct this object
+</p></div></div>
+    </li><li name="io.gearpump.cluster.ExecutorContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExecutorContextextendsProductwithSerializable"></a>
+      <a id="ExecutorContext:ExecutorContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExecutorContext.html"><span class="name">ExecutorContext</span></a><span class="params">(<span name="executorId">executorId: <span class="extype" name="scala.Int">Int</span></span>, <span name="worker">worker: <a href="appmaster/WorkerInfo.html" class="extype" name="io.gearpump.cluster.appmaster.WorkerInfo">WorkerInfo</a></span>, <span name="appId">appId: <span class="extype" name="scala.Int">Int</span></span>, <span name="appName">appName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="appMaster">appMaster: <span class="extype" name="akka.actor.ActorRef">ActorRef</span></span>, <span name="resource">resource: <a href="scheduler/Resource.html" class="extype" name="io.gearpump.cluster.scheduler.Resource">Resource</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@ExecutorContextextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">TODO: ExecutorContext doesn't belong here.</p><div class="fullcomment"><div class="comment cmt"><p>TODO: ExecutorContext doesn't belong here.
+Need to move to other places
+</p></div></div>
+    </li><li name="io.gearpump.cluster.ExecutorJVMConfig" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExecutorJVMConfigextendsProductwithSerializable"></a>
+      <a id="ExecutorJVMConfig:ExecutorJVMConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExecutorJVMConfig.html"><span class="name">ExecutorJVMConfig</span></a><span class="params">(<span name="classPath">classPath: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="jvmArguments">jvmArguments: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="mainClass">mainClass: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="arguments">arguments: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="jar">jar: <span class="extype" name="scala.Option">Option</span>[<a href="AppJar.html" class="extype" name="io.gearpump.cluster.AppJar">AppJar</a>]</span>, <span name="username">username: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="executorAkkaConfig">executorAkkaConfig: <span class="extype" name="com.typesafe.config.Config">Config</span> = <span class="symbol">ConfigFactory.empty()</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@ExecutorJVMConfigextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">jvmArguments</dt><dd class="cmt"><p>java arguments like -Dxx=yy</p></dd><dt class="param">mainClass</dt><dd class="cmt"><p>Executor main class name like io.gearpump.xx.AppMaster</p></dd><dt class="param">arguments</dt><dd class="cmt"><p>Executor command line arguments</p></dd><dt class="param">jar</dt><dd class="cmt"><p>application jar</p></dd><dt class="param">executorAkkaConfig</dt><dd class="cmt"><p>Akka config used to initialize the actor system of this executor. It will
+use io.gearpump.util.Constants.GEARPUMP_CUSTOM_CONFIG_FILE to pass the config to executor
+process</p></dd></dl></div>
+    </li><li name="io.gearpump.cluster.UserConfig" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UserConfigextendsSerializable"></a>
+      <a id="UserConfig:UserConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="UserConfig.html"><span class="name">UserConfig</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@UserConfigextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Immutable configuration
+</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.cluster.AppMasterToMaster" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AppMasterToMaster"></a>
+      <a id="AppMasterToMaster:AppMasterToMaster"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="AppMasterToMaster$.html"><span class="name">AppMasterToMaster</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@AppMasterToMaster" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.AppMasterToWorker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AppMasterToWorker"></a>
+      <a id="AppMasterToWorker:AppMasterToWorker"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="AppMasterToWorker$.html"><span class="name">AppMasterToWorker</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@AppMasterToWorker" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.Application" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Application"></a>
+      <a id="Application:Application"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Application$.html"><span class="name">Application</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@Application" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.ClientToMaster" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClientToMaster"></a>
+      <a id="ClientToMaster:ClientToMaster"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ClientToMaster$.html"><span class="name">ClientToMaster</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@ClientToMaster" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Application Flow
+</p>
+    </li><li name="io.gearpump.cluster.ClusterConfig" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClusterConfig"></a>
+      <a id="ClusterConfig:ClusterConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ClusterConfig$.html"><span class="name">ClusterConfig</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@ClusterConfig" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.ClusterConfigSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClusterConfigSource"></a>
+      <a id="ClusterConfigSource:ClusterConfigSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ClusterConfigSource$.html"><span class="name">ClusterConfigSource</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@ClusterConfigSource" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.MasterToAppMaster" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MasterToAppMaster"></a>
+      <a id="MasterToAppMaster:MasterToAppMaster"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MasterToAppMaster$.html"><span class="name">MasterToAppMaster</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@MasterToAppMaster" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.MasterToClient" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MasterToClient"></a>
+      <a id="MasterToClient:MasterToClient"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MasterToClient$.html"><span class="name">MasterToClient</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@MasterToClient" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.MasterToWorker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MasterToWorker"></a>
+      <a id="MasterToWorker:MasterToWorker"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MasterToWorker$.html"><span class="name">MasterToWorker</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@MasterToWorker" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.UserConfig" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UserConfig"></a>
+      <a id="UserConfig:UserConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="UserConfig$.html"><span class="name">UserConfig</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@UserConfig" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.WorkerToAppMaster" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WorkerToAppMaster"></a>
+      <a id="WorkerToAppMaster:WorkerToAppMaster"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WorkerToAppMaster$.html"><span class="name">WorkerToAppMaster</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@WorkerToAppMaster" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.WorkerToMaster" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WorkerToMaster"></a>
+      <a id="WorkerToMaster:WorkerToMaster"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WorkerToMaster$.html"><span class="name">WorkerToMaster</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@WorkerToMaster" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Cluster Bootup Flow
+</p>
+    </li><li name="io.gearpump.cluster.appmaster" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="appmaster"></a>
+      <a id="appmaster:appmaster"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="appmaster/package.html"><span class="name">appmaster</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@appmaster" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.client" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="client"></a>
+      <a id="client:client"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="client/package.html"><span class="name">client</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@client" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.main" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="main"></a>
+      <a id="main:main"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="main/package.html"><span class="name">main</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@main" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.master" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="master"></a>
+      <a id="master:master"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="master/package.html"><span class="name">master</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@master" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.scheduler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="scheduler"></a>
+      <a id="scheduler:scheduler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="scheduler/package.html"><span class="name">scheduler</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@scheduler" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.cluster.worker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="worker"></a>
+      <a id="worker:worker"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="worker/package.html"><span class="name">worker</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.cluster.package@worker" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

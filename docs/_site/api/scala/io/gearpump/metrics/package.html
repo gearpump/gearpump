@@ -1,0 +1,258 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>metrics - io.gearpump.metrics</title>
+          <meta name="description" content="metrics - io.gearpump.metrics" />
+          <meta name="keywords" content="metrics io.gearpump.metrics" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'io.gearpump.metrics.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="io">io</a>.<a href="../package.html" class="extype" name="io.gearpump">gearpump</a></p>
+        <h1>metrics</h1><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">metrics</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.metrics.AkkaReporter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AkkaReporterextendsMetricsReporterService.ReportTo"></a>
+      <a id="AkkaReporter:AkkaReporter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AkkaReporter.html"><span class="name">AkkaReporter</span></a><span class="result"> extends <a href="MetricsReporterService$$ReportTo.html" class="extype" name="io.gearpump.metrics.MetricsReporterService.ReportTo">ReportTo</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package@AkkaReporterextendsMetricsReporterService.ReportTo" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A reporter class for logging metrics values to a remote actor periodically
+</p>
+    </li><li name="io.gearpump.metrics.Counter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CounterextendsAnyRef"></a>
+      <a id="Counter:Counter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Counter.html"><span class="name">Counter</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package@CounterextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">sampleRate: take a data point for every sampleRate...</p>
+    </li><li name="io.gearpump.metrics.Histogram" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HistogramextendsAnyRef"></a>
+      <a id="Histogram:Histogram"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Histogram.html"><span class="name">Histogram</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package@HistogramextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">sampleRate: take a data point for every sampleRate...</p>
+    </li><li name="io.gearpump.metrics.JvmMetricsSet" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JvmMetricsSetextendsMetricSet"></a>
+      <a id="JvmMetricsSet:JvmMetricsSet"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="JvmMetricsSet.html"><span class="name">JvmMetricsSet</span></a><span class="result"> extends <span class="extype" name="io.gearpump.codahale.metrics.MetricSet">MetricSet</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package@JvmMetricsSetextendsMetricSet" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.metrics.Meter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MeterextendsAnyRef"></a>
+      <a id="Meter:Meter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Meter.html"><span class="name">Meter</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package@MeterextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.metrics.Metrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MetricsextendsExtension"></a>
+      <a id="Metrics:Metrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Metrics.html"><span class="name">Metrics</span></a><span class="result"> extends <span class="extype" name="akka.actor.Extension">Extension</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package@MetricsextendsExtension" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.metrics.MetricsReporterService" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MetricsReporterServiceextendsActor"></a>
+      <a id="MetricsReporterService:MetricsReporterService"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MetricsReporterService.html"><span class="name">MetricsReporterService</span></a><span class="result"> extends <span class="extype" name="akka.actor.Actor">Actor</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package@MetricsReporterServiceextendsActor" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.metrics.Metrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Metrics"></a>
+      <a id="Metrics:Metrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Metrics$.html"><span class="name">Metrics</span></a><span class="result"> extends <span class="extype" name="akka.actor.ExtensionId">ExtensionId</span>[<a href="Metrics.html" class="extype" name="io.gearpump.metrics.Metrics">Metrics</a>] with <span class="extype" name="akka.actor.ExtensionIdProvider">ExtensionIdProvider</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package@Metrics" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.metrics.MetricsReporterService" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MetricsReporterService"></a>
+      <a id="MetricsReporterService:MetricsReporterService"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MetricsReporterService$.html"><span class="name">MetricsReporterService</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.metrics.package@MetricsReporterService" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

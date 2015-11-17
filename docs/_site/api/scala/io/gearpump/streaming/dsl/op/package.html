@@ -1,0 +1,367 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>op - io.gearpump.streaming.dsl.op</title>
+          <meta name="description" content="op - io.gearpump.streaming.dsl.op" />
+          <meta name="keywords" content="op io.gearpump.streaming.dsl.op" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'io.gearpump.streaming.dsl.op.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="io">io</a>.<a href="../../../package.html" class="extype" name="io.gearpump">gearpump</a>.<a href="../../package.html" class="extype" name="io.gearpump.streaming">streaming</a>.<a href="../package.html" class="extype" name="io.gearpump.streaming.dsl">dsl</a></p>
+        <h1>op</h1><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">op</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.streaming.dsl.op.DataSinkOp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DataSinkOp[T]extendsParameterizedOp[T]withProductwithSerializable"></a>
+      <a id="DataSinkOp[T]:DataSinkOp[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DataSinkOp.html"><span class="name">DataSinkOp</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="dataSink">dataSink: <a href="../TypedDataSink.html" class="extype" name="io.gearpump.streaming.dsl.TypedDataSink">TypedDataSink</a>[<span class="extype" name="io.gearpump.streaming.dsl.op.DataSinkOp.T">T</span>]</span>, <span name="parallelism">parallelism: <span class="extype" name="scala.Int">Int</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="evidence$6">evidence$6: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="io.gearpump.streaming.dsl.op.DataSinkOp.T">T</span>]</span>)</span><span class="result"> extends <a href="ParameterizedOp.html" class="extype" name="io.gearpump.streaming.dsl.op.ParameterizedOp">ParameterizedOp</a>[<span class="extype" name="io.gearpump.streaming.dsl.op.DataSinkOp.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@DataSinkOp[T]extendsParameterizedOp[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.DataSourceOp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DataSourceOp[T]extendsParameterizedOp[T]withProductwithSerializable"></a>
+      <a id="DataSourceOp[T]:DataSourceOp[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DataSourceOp.html"><span class="name">DataSourceOp</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="dataSource">dataSource: <a href="../TypedDataSource.html" class="extype" name="io.gearpump.streaming.dsl.TypedDataSource">TypedDataSource</a>[<span class="extype" name="io.gearpump.streaming.dsl.op.DataSourceOp.T">T</span>]</span>, <span name="parallelism">parallelism: <span class="extype" name="scala.Int">Int</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="evidence$5">evidence$5: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="io.gearpump.streaming.dsl.op.DataSourceOp.T">T</span>]</span>)</span><span class="result"> extends <a href="ParameterizedOp.html" class="extype" name="io.gearpump.streaming.dsl.op.ParameterizedOp">ParameterizedOp</a>[<span class="extype" name="io.gearpump.streaming.dsl.op.DataSourceOp.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@DataSourceOp[T]extendsParameterizedOp[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.FlatMapOp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FlatMapOp[T,R]extendsSlaveOp[T]withProductwithSerializable"></a>
+      <a id="FlatMapOp[T,R]:FlatMapOp[T,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapOp.html"><span class="name">FlatMapOp</span></a><span class="tparams">[<span name="T">T</span>, <span name="R">R</span>]</span><span class="params">(<span name="fun">fun: (<span class="extype" name="io.gearpump.streaming.dsl.op.FlatMapOp.T">T</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="io.gearpump.streaming.dsl.op.FlatMapOp.R">R</span>]</span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="evidence$1">evidence$1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="io.gearpump.streaming.dsl.op.FlatMapOp.T">T</span>]</span>)</span><span class="result"> extends <a href="SlaveOp.html" class="extype" name="io.gearpump.streaming.dsl.op.SlaveOp">SlaveOp</a>[<span class="extype" name="io.gearpump.streaming.dsl.op.FlatMapOp.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@FlatMapOp[T,R]extendsSlaveOp[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.GroupByOp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GroupByOp[T,R]extendsParameterizedOp[T]withProductwithSerializable"></a>
+      <a id="GroupByOp[T,R]:GroupByOp[T,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="GroupByOp.html"><span class="name">GroupByOp</span></a><span class="tparams">[<span name="T">T</span>, <span name="R">R</span>]</span><span class="params">(<span name="fun">fun: (<span class="extype" name="io.gearpump.streaming.dsl.op.GroupByOp.T">T</span>) ⇒ <span class="extype" name="io.gearpump.streaming.dsl.op.GroupByOp.R">R</span></span>, <span name="parallism">parallism: <span class="extype" name="scala.Int">Int</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="evidence$3">evidence$3: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="io.gearpump.streaming.dsl.op.GroupByOp.T">T</span>]</span>)</span><span class="result"> extends <a href="ParameterizedOp.html" class="extype" name="io.gearpump.streaming.dsl.op.ParameterizedOp">ParameterizedOp</a>[<span class="extype" name="io.gearpump.streaming.dsl.op.GroupByOp.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@GroupByOp[T,R]extendsParameterizedOp[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.MasterOp" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MasterOpextendsOp"></a>
+      <a id="MasterOp:MasterOp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MasterOp.html"><span class="name">MasterOp</span></a><span class="result"> extends <a href="Op.html" class="extype" name="io.gearpump.streaming.dsl.op.Op">Op</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@MasterOpextendsOp" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.MergeOp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MergeOpextendsMasterOpwithProductwithSerializable"></a>
+      <a id="MergeOp:MergeOp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MergeOp.html"><span class="name">MergeOp</span></a><span class="params">(<span name="source">source: <a href="Op.html" class="extype" name="io.gearpump.streaming.dsl.op.Op">Op</a></span>, <span name="target">target: <a href="Op.html" class="extype" name="io.gearpump.streaming.dsl.op.Op">Op</a></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="MasterOp.html" class="extype" name="io.gearpump.streaming.dsl.op.MasterOp">MasterOp</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@MergeOpextendsMasterOpwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.Op" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="OpextendsAnyRef"></a>
+      <a id="Op:Op"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Op.html"><span class="name">Op</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@OpextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Operators for the DSL
+</p>
+    </li><li name="io.gearpump.streaming.dsl.op.OpChain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OpChainextendsOpwithProductwithSerializable"></a>
+      <a id="OpChain:OpChain"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OpChain.html"><span class="name">OpChain</span></a><span class="params">(<span name="ops">ops: <span class="extype" name="scala.List">List</span>[<a href="Op.html" class="extype" name="io.gearpump.streaming.dsl.op.Op">Op</a>]</span>)</span><span class="result"> extends <a href="Op.html" class="extype" name="io.gearpump.streaming.dsl.op.Op">Op</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@OpChainextendsOpwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Contains operators which can be chained to single one.</p><div class="fullcomment"><div class="comment cmt"><p>Contains operators which can be chained to single one.</p><p>For example, flatmap().map().reduce() can be chained to single operator as
+no data shuffling is required.</p></div><dl class="paramcmts block"><dt class="param">ops</dt><dd class="cmt"><p>list of operations
+</p></dd></dl></div>
+    </li><li name="io.gearpump.streaming.dsl.op.OpEdge" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="OpEdgeextendsAnyRef"></a>
+      <a id="OpEdge:OpEdge"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="OpEdge.html"><span class="name">OpEdge</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@OpEdgeextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.ParameterizedOp" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ParameterizedOp[T]extendsMasterOp"></a>
+      <a id="ParameterizedOp[T]:ParameterizedOp[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ParameterizedOp.html"><span class="name">ParameterizedOp</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="MasterOp.html" class="extype" name="io.gearpump.streaming.dsl.op.MasterOp">MasterOp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@ParameterizedOp[T]extendsMasterOp" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.ProcessorOp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ProcessorOp[T&lt;:io.gearpump.streaming.task.Task]extendsParameterizedOp[T]withProductwithSerializable"></a>
+      <a id="ProcessorOp[T&lt;:Task]:ProcessorOp[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ProcessorOp.html"><span class="name">ProcessorOp</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../../task/Task.html" class="extype" name="io.gearpump.streaming.task.Task">Task</a></span>]</span><span class="params">(<span name="processor">processor: <span class="extype" name="scala.Predef.Class">Class</span>[<span class="extype" name="io.gearpump.streaming.dsl.op.ProcessorOp.T">T</span>]</span>, <span name="parallism">parallism: <span class="extype" name="scala.Int">Int</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="evidence$4">evidence$4: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="io.gearpump.streaming.dsl.op.ProcessorOp.T">T</span>]</span>)</span><span class="result"> extends <a href="ParameterizedOp.html" class="extype" name="io.gearpump.streaming.dsl.op.ParameterizedOp">ParameterizedOp</a>[<span class="extype" name="io.gearpump.streaming.dsl.op.ProcessorOp.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@ProcessorOp[T&lt;:io.gearpump.streaming.task.Task]extendsParameterizedOp[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.ReduceOp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReduceOp[T]extendsSlaveOp[T]withProductwithSerializable"></a>
+      <a id="ReduceOp[T]:ReduceOp[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ReduceOp.html"><span class="name">ReduceOp</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="fun">fun: (<span class="extype" name="io.gearpump.streaming.dsl.op.ReduceOp.T">T</span>, <span class="extype" name="io.gearpump.streaming.dsl.op.ReduceOp.T">T</span>) ⇒ <span class="extype" name="io.gearpump.streaming.dsl.op.ReduceOp.T">T</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="evidence$2">evidence$2: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="io.gearpump.streaming.dsl.op.ReduceOp.T">T</span>]</span>)</span><span class="result"> extends <a href="SlaveOp.html" class="extype" name="io.gearpump.streaming.dsl.op.SlaveOp">SlaveOp</a>[<span class="extype" name="io.gearpump.streaming.dsl.op.ReduceOp.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@ReduceOp[T]extendsSlaveOp[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.dsl.op.SlaveOp" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SlaveOp[T]extendsOp"></a>
+      <a id="SlaveOp[T]:SlaveOp[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SlaveOp.html"><span class="name">SlaveOp</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="Op.html" class="extype" name="io.gearpump.streaming.dsl.op.Op">Op</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@SlaveOp[T]extendsOp" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">When translated to running DAG, SlaveOP can be attach to MasterOP or other SlaveOP
+&quot;Attach&quot; means running in same Actor.</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.streaming.dsl.op.Direct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Direct"></a>
+      <a id="Direct:Direct"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Direct$.html"><span class="name">Direct</span></a><span class="result"> extends <a href="OpEdge.html" class="extype" name="io.gearpump.streaming.dsl.op.OpEdge">OpEdge</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@Direct" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The upstream OP and downstream OP doesn't require network data shuffle.</p><div class="fullcomment"><div class="comment cmt"><p>The upstream OP and downstream OP doesn't require network data shuffle.</p><p>For example, map, flatmap operation doesn't require network shuffle, we can use Direct
+to represent the relation with upstream operators.
+</p></div></div>
+    </li><li name="io.gearpump.streaming.dsl.op.Shuffle" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Shuffle"></a>
+      <a id="Shuffle:Shuffle"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Shuffle$.html"><span class="name">Shuffle</span></a><span class="result"> extends <a href="OpEdge.html" class="extype" name="io.gearpump.streaming.dsl.op.OpEdge">OpEdge</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.gearpump.streaming.dsl.op.package@Shuffle" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The upstream OP and downstream OP DOES require network data shuffle.</p><div class="fullcomment"><div class="comment cmt"><p>The upstream OP and downstream OP DOES require network data shuffle.</p><p>For example, map, flatmap operation doesn't require network shuffle, we can use Direct
+to represent the relation with upstream operators.
+</p></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

@@ -18,16 +18,13 @@
 package io.gearpump.streaming.appmaster
 
 import com.typesafe.config.Config
-import io.gearpump.streaming.DAG
-import io.gearpump.streaming.appmaster.TaskLocator.Locality
-import io.gearpump.streaming.task.TaskId
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
-import TaskLocator.{WorkerLocality, NonLocality, Locality}
-import TaskScheduler.{ Location, TaskStatus}
+import io.gearpump.streaming.DAG
+import io.gearpump.streaming.appmaster.TaskLocator.{Locality, WorkerLocality}
+import io.gearpump.streaming.appmaster.TaskScheduler.{Location, TaskStatus}
+import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.LogUtil
 import org.slf4j.Logger
-
-import scala.collection.mutable
 
 /**
  * This schedules tasks to run for new allocated resources.
@@ -53,7 +50,7 @@ trait TaskScheduler {
    *
    * @param workerId which worker this resource is located.
    * @param executorId which executorId this resource belongs to.
-   * @return
+   * @return a list of tasks
    */
   def schedule(workerId : Int, executorId: Int, resource: Resource) : List[TaskId]
 
@@ -62,7 +59,7 @@ trait TaskScheduler {
    * ResourceRequest for all failed tasks on that executor.
    *
    * @param executorId executor that failed
-   * @return
+   * @return resource requests of the failed executor
    */
   def executorFailed(executorId: Int) : Array[ResourceRequest]
 }

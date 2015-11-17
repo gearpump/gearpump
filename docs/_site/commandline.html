@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>Gearpump Client Commandline - GearPump 0.6.2-SNAPSHOT Documentation</title>
+  
+   <meta name="description" content="Gearpump Client Commandline">
+  
+
+  
+
+  <link rel="stylesheet" href="css/bootstrap-3.3.5.min.css">
+  <style>
+    body {
+      padding-top: 60px;
+      padding-bottom: 40px;
+    }
+  </style>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/pygments-default.css">
+  <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
+</head>
+<body>
+  <!--[if lt IE 7]>
+    <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
+  <![endif]-->
+
+  <div class="navbar navbar-inverse navbar-fixed-top" id="topbar">
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#/">GearPump
+          <span class="label label-primary" style="font-size: .6em">0.6.2-SNAPSHOT</span>
+        </a>
+      </div>
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <li><a href="index.html">Overview</a></li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Introduction<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="submit-your-1st-application.html">Submit Your 1st Application</a></li>
+              <li><a href="commandline.html">Client Command Line</a></li>
+              <li class="divider"></li>
+              <li><a href="basic-concepts.html">Basic Concepts</a></li>
+              <li><a href="features.html">Technical Highlights</a></li>
+              <li><a href="usecases.html">Use Cases</a></li>
+              <li><a href="message-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="performance-report.html">Performance</a></li>
+              <li><a href="gearpump-internals.html">Gearpump Internals</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Deploying<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="dropdown-header">Deployment</li>
+              <li><a href="deployment-docker.html">Docker</a><li>
+              <li><a href="deployment-local.html">Local</a><li>
+              <li><a href="deployment-standalone.html">Standalone</a></li>
+              <li><a href="deployment-yarn.html">YARN</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-ha.html">High Availability</a></li>
+              <li><a href="deployment-msg-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="deployment-configuration.html">Configuration</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-security.html">Security</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Programming Guide<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="dev-write-1st-app.html">Write Your 1st App</a></li>
+              <li><a href="dev-custom-serializer.html">Customized Message Passing</a></li>
+              <li class="divider"></li>
+              <li><a href="api/scala/index.html">Scala API</a></li>
+              <li><a href="api/java/index.html">Java API</a></li>
+              <li><a href="dev-rest-api.html">RESTful API</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-connectors.html">Gearpump Connectors</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-storm.html">Storm Compatibility</a></li>
+              <!--
+              <li><a href="dev-samoa.html">Samoa Compatibility</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-iot.html">Gearpump with IoT</a></li>
+              -->
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">More<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="how-to-contribute.html">How to Contribute</a></li>
+              <li><a href="coding-style.html">Coding Style</a></li>
+              <li class="divider"></li>
+              <li><a href="faq.html">FAQ</a><li>
+              <li><a href="about.html">About</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="content">
+   
+    <h1 class="title">Gearpump Client Commandline</h1>
+   
+
+   <p>The commands can be found at: &#8220;bin&#8221; folder of Gearpump binary.</p>
+
+<p><strong>NOTE:</strong> on MS Windows platform, please use window shell gear.bat script instead. bash script doesn&#8217;t work well in cygwin/mingw.</p>
+
+<h3 id="submit-an-new-application">Submit an new application</h3>
+
+<p>You can use the command <code>gear</code> under the bin directory to submit, query and terminate an application:</p>
+
+<div class="highlight"><pre><code class="language-bash">gear app <span class="o">[</span>-namePrefix &lt;application name prefix&gt;<span class="o">]</span> -jar xx.jar MainClass &lt;arg1&gt; &lt;arg2&gt; ...</code></pre></div>
+
+<h3 id="list-all-running-applications">List all running applications</h3>
+<p>To list all running applications:</p>
+
+<div class="highlight"><pre><code class="language-bash">gear info</code></pre></div>
+
+<h3 id="kill-a-running-application">Kill a running application</h3>
+<p>To kill an application:</p>
+
+<div class="highlight"><pre><code class="language-bash">gear <span class="nb">kill</span> -appid &lt;application id&gt;</code></pre></div>
+
+<h3 id="to-start-gearpump-shell">To start Gearpump shell</h3>
+<p>To start a Gearpump shell</p>
+
+<div class="highlight"><pre><code class="language-bash">gear shell</code></pre></div>
+
+
+  </div> <!-- /container -->
+
+  <script src="js/vendor/jquery-2.1.4.min.js"></script>
+  <script src="js/vendor/bootstrap-3.3.5.min.js"></script>
+  <script src="js/vendor/anchor-1.1.1.min.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- MathJax Section -->
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      TeX: { equationNumbers: { autoNumber: "AMS" } }
+    });
+  </script>
+  <script>
+    // Note that we load MathJax this way to work with local file (file://), HTTP and HTTPS.
+    // We could use "//cdn.mathjax...", but that won't support "file://".
+    (function(d, script) {
+      script = d.createElement('script');
+      script.type = 'text/javascript';
+      script.async = true;
+      script.onload = function(){
+        MathJax.Hub.Config({
+          tex2jax: {
+            inlineMath: [ ["$", "$"], ["\\\\(","\\\\)"] ],
+            displayMath: [ ["$$","$$"], ["\\[", "\\]"] ],
+            processEscapes: true,
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+          }
+        });
+      };
+      script.src = ('https:' == document.location.protocol ? 'https://' : 'http://') +
+        'cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+      d.getElementsByTagName('head')[0].appendChild(script);
+    }(document));
+  </script>
+</body>
+</html>

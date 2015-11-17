@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>Gearpump Security Guide - GearPump 0.6.2-SNAPSHOT Documentation</title>
+  
+   <meta name="description" content="Gearpump Security Guide">
+  
+
+  
+
+  <link rel="stylesheet" href="css/bootstrap-3.3.5.min.css">
+  <style>
+    body {
+      padding-top: 60px;
+      padding-bottom: 40px;
+    }
+  </style>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/pygments-default.css">
+  <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
+</head>
+<body>
+  <!--[if lt IE 7]>
+    <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
+  <![endif]-->
+
+  <div class="navbar navbar-inverse navbar-fixed-top" id="topbar">
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#/">GearPump
+          <span class="label label-primary" style="font-size: .6em">0.6.2-SNAPSHOT</span>
+        </a>
+      </div>
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <li><a href="index.html">Overview</a></li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Introduction<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="submit-your-1st-application.html">Submit Your 1st Application</a></li>
+              <li><a href="commandline.html">Client Command Line</a></li>
+              <li class="divider"></li>
+              <li><a href="basic-concepts.html">Basic Concepts</a></li>
+              <li><a href="features.html">Technical Highlights</a></li>
+              <li><a href="usecases.html">Use Cases</a></li>
+              <li><a href="message-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="performance-report.html">Performance</a></li>
+              <li><a href="gearpump-internals.html">Gearpump Internals</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Deploying<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="dropdown-header">Deployment</li>
+              <li><a href="deployment-docker.html">Docker</a><li>
+              <li><a href="deployment-local.html">Local</a><li>
+              <li><a href="deployment-standalone.html">Standalone</a></li>
+              <li><a href="deployment-yarn.html">YARN</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-ha.html">High Availability</a></li>
+              <li><a href="deployment-msg-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="deployment-configuration.html">Configuration</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-security.html">Security</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Programming Guide<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="dev-write-1st-app.html">Write Your 1st App</a></li>
+              <li><a href="dev-custom-serializer.html">Customized Message Passing</a></li>
+              <li class="divider"></li>
+              <li><a href="api/scala/index.html">Scala API</a></li>
+              <li><a href="api/java/index.html">Java API</a></li>
+              <li><a href="dev-rest-api.html">RESTful API</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-connectors.html">Gearpump Connectors</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-storm.html">Storm Compatibility</a></li>
+              <!--
+              <li><a href="dev-samoa.html">Samoa Compatibility</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-iot.html">Gearpump with IoT</a></li>
+              -->
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">More<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="how-to-contribute.html">How to Contribute</a></li>
+              <li><a href="coding-style.html">Coding Style</a></li>
+              <li class="divider"></li>
+              <li><a href="faq.html">FAQ</a><li>
+              <li><a href="about.html">About</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="content">
+   
+    <h1 class="title">Gearpump Security Guide</h1>
+   
+
+   <p>Until now Gearpump support being launched in a secured Yarn cluster and writing to secured HBase, here secured means Kerberos enabled. 
+Further security related feature is in progress.</p>
+
+<h2 id="how-to-launch-gearpump-in-a-secured-yarn-cluster">How to launch GearPump in a secured Yarn cluster</h2>
+<p>Suppose user <code>gear</code> will luanch the Gearpump, corresponding principal should be created in KDC server.</p>
+
+<ol>
+  <li>Create HDFS folder /user/gear/, make sure all read-write rights are granted for user <code>gear</code></li>
+  <li>Upload the gearpump-0.6.2-SNAPSHOT.tar.gz jars to HDFS folder: /user/gear/, you can refer to <a href="get-gearpump-distribution.html">How to get gearpump distribution</a> to get the Gearpump binary.</li>
+  <li>Modify the config file <code>conf/yarn.conf.template</code> or create your own config file</li>
+  <li>You must do <code>kinit</code> before accessing the Yarn cluster, then run 
+  <code>bash
+  bin/yarnclient -version gearpump-0.6.2-SNAPSHOT -config conf/yarn.conf
+ </code></li>
+</ol>
+
+<h2 id="how-to-write-to-secured-hbase">How to write to secured HBase</h2>
+<p>When the remote HBase is security enabled, a kerberos keytab and the corresponding principal name need to be
+provided for the gearpump-hbase connector. Specifically, the UserConfig object passed into the HBaseSink should contain
+{(&#8220;gearpump.keytab.file&#8221;, &#8220;\$keytab&#8221;), (&#8220;gearpump.kerberos.principal&#8221;, &#8220;\$principal&#8221;)}, example code:</p>
+
+<div class="highlight"><pre><code class="language-scala"><span class="k">val</span> <span class="n">appConfig</span> <span class="k">=</span> <span class="nc">UserConfig</span><span class="o">.</span><span class="n">empty</span>
+      <span class="o">.</span><span class="n">withString</span><span class="o">(</span><span class="s">&quot;gearpump.kerberos.principal&quot;</span><span class="o">,</span> <span class="s">&quot;$principal&quot;</span><span class="o">)</span>
+      <span class="o">.</span><span class="n">withBytes</span><span class="o">(</span><span class="s">&quot;gearpump.keytab.file&quot;</span><span class="o">,</span> <span class="s">&quot;$keytabContent&quot;</span><span class="o">)</span>
+<span class="k">val</span> <span class="n">sink</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">HBaseSink</span><span class="o">(</span><span class="n">appConfig</span><span class="o">,</span> <span class="s">&quot;$tableName&quot;</span><span class="o">)</span>
+<span class="k">val</span> <span class="n">sinkProcessor</span> <span class="k">=</span> <span class="nc">DataSinkProcessor</span><span class="o">(</span><span class="n">sink</span><span class="o">,</span> <span class="s">&quot;$sinkNum&quot;</span><span class="o">)</span></code></pre></div>
+
+<p>Note here the keytab file set into config should be a serialized file.</p>
+
+<h2 id="future-plan">Future Plan</h2>
+
+<h3 id="more-external-components-support">More external components support</h3>
+<ol>
+  <li>HDFS</li>
+  <li>Kafka</li>
+</ol>
+
+<h3 id="authenticationkerberos">Authentication(Kerberos)</h3>
+<p>Since Gearpump’s Master-Worker structure is similar to HDFS’s NameNode-DataNode and Yarn’s ResourceManager-NodeManager, we may follow the way they use.</p>
+
+<ol>
+  <li>User create kerberos principal and keytab for Gearpump.</li>
+  <li>Deploy the keytab files to all the cluster nodes.</li>
+  <li>Configure Gearpump’s conf file, specify kerberos principal and local keytab file localtion.</li>
+  <li>Start Master and Worker.</li>
+</ol>
+
+<p>Every application have a submitter user. We will separate the application from different user, like different log folder for different applications. 
+Only authenticated user can submit the application to Gearpump&#8217;s Master.</p>
+
+<h3 id="authorization">Authorization</h3>
+<p>Hopefully more on this soon</p>
+
+
+  </div> <!-- /container -->
+
+  <script src="js/vendor/jquery-2.1.4.min.js"></script>
+  <script src="js/vendor/bootstrap-3.3.5.min.js"></script>
+  <script src="js/vendor/anchor-1.1.1.min.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- MathJax Section -->
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      TeX: { equationNumbers: { autoNumber: "AMS" } }
+    });
+  </script>
+  <script>
+    // Note that we load MathJax this way to work with local file (file://), HTTP and HTTPS.
+    // We could use "//cdn.mathjax...", but that won't support "file://".
+    (function(d, script) {
+      script = d.createElement('script');
+      script.type = 'text/javascript';
+      script.async = true;
+      script.onload = function(){
+        MathJax.Hub.Config({
+          tex2jax: {
+            inlineMath: [ ["$", "$"], ["\\\\(","\\\\)"] ],
+            displayMath: [ ["$$","$$"], ["\\[", "\\]"] ],
+            processEscapes: true,
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+          }
+        });
+      };
+      script.src = ('https:' == document.location.protocol ? 'https://' : 'http://') +
+        'cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+      d.getElementsByTagName('head')[0].appendChild(script);
+    }(document));
+  </script>
+</body>
+</html>

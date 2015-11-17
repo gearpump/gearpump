@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>Gearpump Configuration - GearPump 0.6.2-SNAPSHOT Documentation</title>
+  
+   <meta name="description" content="Gearpump Configuration">
+  
+
+  
+
+  <link rel="stylesheet" href="css/bootstrap-3.3.5.min.css">
+  <style>
+    body {
+      padding-top: 60px;
+      padding-bottom: 40px;
+    }
+  </style>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/pygments-default.css">
+  <script src="js/vendor/modernizr-2.6.1-respond-1.1.0.min.js"></script>
+</head>
+<body>
+  <!--[if lt IE 7]>
+    <p class="chromeframe">You are using an outdated browser. <a href="http://browsehappy.com/">Upgrade your browser today</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to better experience this site.</p>
+  <![endif]-->
+
+  <div class="navbar navbar-inverse navbar-fixed-top" id="topbar">
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#/">GearPump
+          <span class="label label-primary" style="font-size: .6em">0.6.2-SNAPSHOT</span>
+        </a>
+      </div>
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <li><a href="index.html">Overview</a></li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Introduction<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="submit-your-1st-application.html">Submit Your 1st Application</a></li>
+              <li><a href="commandline.html">Client Command Line</a></li>
+              <li class="divider"></li>
+              <li><a href="basic-concepts.html">Basic Concepts</a></li>
+              <li><a href="features.html">Technical Highlights</a></li>
+              <li><a href="usecases.html">Use Cases</a></li>
+              <li><a href="message-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="performance-report.html">Performance</a></li>
+              <li><a href="gearpump-internals.html">Gearpump Internals</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Deploying<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="dropdown-header">Deployment</li>
+              <li><a href="deployment-docker.html">Docker</a><li>
+              <li><a href="deployment-local.html">Local</a><li>
+              <li><a href="deployment-standalone.html">Standalone</a></li>
+              <li><a href="deployment-yarn.html">YARN</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-ha.html">High Availability</a></li>
+              <li><a href="deployment-msg-delivery.html">Reliable Message Delivery</a></li>
+              <li><a href="deployment-configuration.html">Configuration</a></li>
+              <li class="divider"></li>
+              <li><a href="deployment-security.html">Security</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Programming Guide<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="dev-write-1st-app.html">Write Your 1st App</a></li>
+              <li><a href="dev-custom-serializer.html">Customized Message Passing</a></li>
+              <li class="divider"></li>
+              <li><a href="api/scala/index.html">Scala API</a></li>
+              <li><a href="api/java/index.html">Java API</a></li>
+              <li><a href="dev-rest-api.html">RESTful API</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-connectors.html">Gearpump Connectors</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-storm.html">Storm Compatibility</a></li>
+              <!--
+              <li><a href="dev-samoa.html">Samoa Compatibility</a></li>
+              <li class="divider"></li>
+              <li><a href="dev-iot.html">Gearpump with IoT</a></li>
+              -->
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">More<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="how-to-contribute.html">How to Contribute</a></li>
+              <li><a href="coding-style.html">Coding Style</a></li>
+              <li class="divider"></li>
+              <li><a href="faq.html">FAQ</a><li>
+              <li><a href="about.html">About</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="content">
+   
+    <h1 class="title">Gearpump Configuration</h1>
+   
+
+   <h2 id="gearpump-configuration">Gearpump Configuration</h2>
+
+<p>The configuration can be changed at conf/gear.conf.
+If you change the configuration, you need to restart the daemon process(master, worker) to make the change effective.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">config item</th>
+      <th style="text-align: left">default value</th>
+      <th style="text-align: left">description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">gearpump.hostname</td>
+      <td style="text-align: left">&#8220;127.0.0.1&#8221;</td>
+      <td style="text-align: left">hostname of current machine. If you are using local mode, then set this to 127.0.0.1, if you are using cluster mode, make sure this hostname can be accessed by other machines.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.cluster.masters</td>
+      <td style="text-align: left">[&#8220;127.0.0.1:3000&#8221;]</td>
+      <td style="text-align: left">Config to set the master nodes of the cluster. If there are multiple master in the list, then the master nodes runs in HA mode.  ### For example, you may start three master, on node1: bin/master -ip node1 -port 3000, on node2: bin/master -ip node2 -port 3000, on node3: bin/master -ip node3 -port 3000, then you need to set the cluster.masters = [&#8220;node1:3000&#8221;,&#8221;node2:3000&#8221;,&#8221;node3:3000&#8221;]</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.task-dispatcher</td>
+      <td style="text-align: left">&#8220;akka.actor.pined-dispatcher&#8221;</td>
+      <td style="text-align: left">default dispatcher for task actor</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.metrics.enabled</td>
+      <td style="text-align: left">false</td>
+      <td style="text-align: left">flag to enable the metrics system</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.metrics.sample-rate</td>
+      <td style="text-align: left">10</td>
+      <td style="text-align: left">We will take one metric out of ${sample.rate}</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.metrics.report-interval-ms</td>
+      <td style="text-align: left">15000</td>
+      <td style="text-align: left">we will report once every 15 seconds</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.metrics.reporter</td>
+      <td style="text-align: left">&#8220;logfile&#8221;</td>
+      <td style="text-align: left">available value: &#8220;graphite&#8221;, &#8220;akka&#8221;, &#8220;logfile&#8221; which write the metrics data to different places.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.metrics.graphite.host</td>
+      <td style="text-align: left">&#8220;127.0.0.1&#8221;</td>
+      <td style="text-align: left">when set the reporter = &#8220;graphite&#8221;, the target graphite host.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.metrics.graphite.port</td>
+      <td style="text-align: left">2003</td>
+      <td style="text-align: left">when set the reporter = &#8220;graphite&#8221;, the target graphite port</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.retainHistoryData.hours</td>
+      <td style="text-align: left">72</td>
+      <td style="text-align: left">max hours of history data to retain, Note: Due to implementation limitation(we store all history in memory), please don&#8217;t set this to too big which may exhaust memory.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.retainHistoryData.intervalMs</td>
+      <td style="text-align: left">3600000</td>
+      <td style="text-align: left"># time interval between two data points for history data (unit: ms) Usually this value is set to a big value so that we only store coarse-grain data</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.retainRecentData.seconds</td>
+      <td style="text-align: left">300</td>
+      <td style="text-align: left">max seconds of recent data to retain, tHis is for the fine-grain data</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.retainRecentData.intervalMs</td>
+      <td style="text-align: left">15000</td>
+      <td style="text-align: left">time interval between two data points for recent data (unit: ms)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.log.daemon.dir</td>
+      <td style="text-align: left">&#8220;logs&#8221;</td>
+      <td style="text-align: left">The log directory for daemon processes(relative to current working directory)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.log.application.dir</td>
+      <td style="text-align: left">&#8220;logs&#8221;</td>
+      <td style="text-align: left">The log directory for applications(relative to current working directory)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.serializers</td>
+      <td style="text-align: left">a map</td>
+      <td style="text-align: left">custom serializer for streaming application</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.worker.slots</td>
+      <td style="text-align: left">100</td>
+      <td style="text-align: left">How many slots each worker contains</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.appmaster.vmargs</td>
+      <td style="text-align: left">&#8221;&#8221;</td>
+      <td style="text-align: left">JVM arguments for AppMaster</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.appmaster.extraClasspath</td>
+      <td style="text-align: left">&#8221;&#8221;</td>
+      <td style="text-align: left">JVM default class path for AppMaster</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.executor.vmargs</td>
+      <td style="text-align: left">&#8221;&#8221;</td>
+      <td style="text-align: left">JVM arguments for executor</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.executor.extraClasspath</td>
+      <td style="text-align: left">&#8221;&#8221;</td>
+      <td style="text-align: left">JVM default class path for executor</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.jarstore.rootpath</td>
+      <td style="text-align: left">&#8220;jarstore/&#8221;</td>
+      <td style="text-align: left">Define where the submitted jar file will be stored at. This path follows the hadoop path schema, For HDFS, use hdfs://host:port/path/; For FTP, use ftp://host:port/path; If you want to store on master nodes, then use local directory. jarstore.rootpath = &#8220;jarstore/&#8221; will points to relative directory where master is started. jarstore.rootpath = &#8220;/jarstore/&#8221; will points to absolute directory on master server</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.scheduling.scheduler-class</td>
+      <td style="text-align: left">&#160;</td>
+      <td style="text-align: left">Default value is &#8220;io.gearpump.cluster.scheduler.PriorityScheduler&#8221;. Class to schedule the applications.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.services.host</td>
+      <td style="text-align: left">127.0.0.1</td>
+      <td style="text-align: left">dashboard UI host address</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.services.port</td>
+      <td style="text-align: left">8090</td>
+      <td style="text-align: left">dashboard UI host port</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.services.ws</td>
+      <td style="text-align: left">8091</td>
+      <td style="text-align: left">web socket service port for long connection.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.netty.buffer-size</td>
+      <td style="text-align: left">5242880</td>
+      <td style="text-align: left">&#160;</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.netty.max-retries</td>
+      <td style="text-align: left">30</td>
+      <td style="text-align: left">&#160;</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.netty.base-sleep-ms</td>
+      <td style="text-align: left">100</td>
+      <td style="text-align: left">&#160;</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.netty.max-sleep-ms</td>
+      <td style="text-align: left">1000</td>
+      <td style="text-align: left">&#160;</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.netty.message-batch-size</td>
+      <td style="text-align: left">262144</td>
+      <td style="text-align: left">&#160;</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gearpump.netty.fulsh-check-interval</td>
+      <td style="text-align: left">10</td>
+      <td style="text-align: left">&#160;</td>
+    </tr>
+  </tbody>
+</table>
+
+
+  </div> <!-- /container -->
+
+  <script src="js/vendor/jquery-2.1.4.min.js"></script>
+  <script src="js/vendor/bootstrap-3.3.5.min.js"></script>
+  <script src="js/vendor/anchor-1.1.1.min.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- MathJax Section -->
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      TeX: { equationNumbers: { autoNumber: "AMS" } }
+    });
+  </script>
+  <script>
+    // Note that we load MathJax this way to work with local file (file://), HTTP and HTTPS.
+    // We could use "//cdn.mathjax...", but that won't support "file://".
+    (function(d, script) {
+      script = d.createElement('script');
+      script.type = 'text/javascript';
+      script.async = true;
+      script.onload = function(){
+        MathJax.Hub.Config({
+          tex2jax: {
+            inlineMath: [ ["$", "$"], ["\\\\(","\\\\)"] ],
+            displayMath: [ ["$$","$$"], ["\\[", "\\]"] ],
+            processEscapes: true,
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+          }
+        });
+      };
+      script.src = ('https:' == document.location.protocol ? 'https://' : 'http://') +
+        'cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
+      d.getElementsByTagName('head')[0].appendChild(script);
+    }(document));
+  </script>
+</body>
+</html>

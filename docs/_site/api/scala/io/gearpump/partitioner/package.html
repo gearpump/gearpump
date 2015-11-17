@@ -1,0 +1,333 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>partitioner - io.gearpump.partitioner</title>
+          <meta name="description" content="partitioner - io.gearpump.partitioner" />
+          <meta name="keywords" content="partitioner io.gearpump.partitioner" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'io.gearpump.partitioner.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="io">io</a>.<a href="../package.html" class="extype" name="io.gearpump">gearpump</a></p>
+        <h1>partitioner</h1><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">partitioner</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.partitioner.BroadcastPartitioner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BroadcastPartitionerextendsMulticastPartitioner"></a>
+      <a id="BroadcastPartitioner:BroadcastPartitioner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BroadcastPartitioner.html"><span class="name">BroadcastPartitioner</span></a><span class="result"> extends <a href="MulticastPartitioner.html" class="extype" name="io.gearpump.partitioner.MulticastPartitioner">MulticastPartitioner</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@BroadcastPartitionerextendsMulticastPartitioner" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.partitioner.CoLocationPartitioner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CoLocationPartitionerextendsUnicastPartitioner"></a>
+      <a id="CoLocationPartitioner:CoLocationPartitioner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CoLocationPartitioner.html"><span class="name">CoLocationPartitioner</span></a><span class="result"> extends <a href="UnicastPartitioner.html" class="extype" name="io.gearpump.partitioner.UnicastPartitioner">UnicastPartitioner</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@CoLocationPartitionerextendsUnicastPartitioner" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Will have the same parallelism with last processor
+And each task in current processor will co-locate with task of last processor
+</p>
+    </li><li name="io.gearpump.partitioner.HashPartitioner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HashPartitionerextendsUnicastPartitioner"></a>
+      <a id="HashPartitioner:HashPartitioner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HashPartitioner.html"><span class="name">HashPartitioner</span></a><span class="result"> extends <a href="UnicastPartitioner.html" class="extype" name="io.gearpump.partitioner.UnicastPartitioner">UnicastPartitioner</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@HashPartitionerextendsUnicastPartitioner" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Only make sense when the message has implemented the hashCode()
+Otherwise, it will use Object.hashCode(), which will not return
+same hash code after serialization and deserialization.</p>
+    </li><li name="io.gearpump.partitioner.MulticastPartitioner" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MulticastPartitionerextendsPartitioner"></a>
+      <a id="MulticastPartitioner:MulticastPartitioner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MulticastPartitioner.html"><span class="name">MulticastPartitioner</span></a><span class="result"> extends <a href="Partitioner.html" class="extype" name="io.gearpump.partitioner.Partitioner">Partitioner</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@MulticastPartitionerextendsPartitioner" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.partitioner.Partitioner" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PartitionerextendsSerializable"></a>
+      <a id="Partitioner:Partitioner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Partitioner.html"><span class="name">Partitioner</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@PartitionerextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.partitioner.PartitionerByClassName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PartitionerByClassNameextendsPartitionerFactorywithSerializable"></a>
+      <a id="PartitionerByClassName:PartitionerByClassName"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitionerByClassName.html"><span class="name">PartitionerByClassName</span></a><span class="result"> extends <a href="PartitionerFactory.html" class="extype" name="io.gearpump.partitioner.PartitionerFactory">PartitionerFactory</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@PartitionerByClassNameextendsPartitionerFactorywithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.partitioner.PartitionerDescription" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PartitionerDescriptionextendsProductwithSerializable"></a>
+      <a id="PartitionerDescription:PartitionerDescription"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitionerDescription.html"><span class="name">PartitionerDescription</span></a><span class="params">(<span name="partitionerFactory">partitionerFactory: <a href="PartitionerFactory.html" class="extype" name="io.gearpump.partitioner.PartitionerFactory">PartitionerFactory</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@PartitionerDescriptionextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">partitionerFactory</dt><dd class="cmt"><p>
+</p></dd></dl></div>
+    </li><li name="io.gearpump.partitioner.PartitionerFactory" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PartitionerFactoryextendsAnyRef"></a>
+      <a id="PartitionerFactory:PartitionerFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitionerFactory.html"><span class="name">PartitionerFactory</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@PartitionerFactoryextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.partitioner.PartitionerObject" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PartitionerObjectextendsPartitionerFactorywithSerializable"></a>
+      <a id="PartitionerObject:PartitionerObject"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitionerObject.html"><span class="name">PartitionerObject</span></a><span class="result"> extends <a href="PartitionerFactory.html" class="extype" name="io.gearpump.partitioner.PartitionerFactory">PartitionerFactory</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@PartitionerObjectextendsPartitionerFactorywithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.partitioner.ShuffleGroupingPartitioner" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ShuffleGroupingPartitionerextendsUnicastPartitioner"></a>
+      <a id="ShuffleGroupingPartitioner:ShuffleGroupingPartitioner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ShuffleGroupingPartitioner.html"><span class="name">ShuffleGroupingPartitioner</span></a><span class="result"> extends <a href="UnicastPartitioner.html" class="extype" name="io.gearpump.partitioner.UnicastPartitioner">UnicastPartitioner</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@ShuffleGroupingPartitionerextendsUnicastPartitioner" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The idea of ShuffleGroupingPartitioner is derived from Storm.</p><div class="fullcomment"><div class="comment cmt"><p>The idea of ShuffleGroupingPartitioner is derived from Storm.
+Messages are randomly distributed across the downstream's tasks in a way such that
+each task is guaranteed to get an equal number of messages.
+</p></div></div>
+    </li><li name="io.gearpump.partitioner.ShufflePartitioner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ShufflePartitionerextendsUnicastPartitioner"></a>
+      <a id="ShufflePartitioner:ShufflePartitioner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ShufflePartitioner.html"><span class="name">ShufflePartitioner</span></a><span class="result"> extends <a href="UnicastPartitioner.html" class="extype" name="io.gearpump.partitioner.UnicastPartitioner">UnicastPartitioner</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@ShufflePartitionerextendsUnicastPartitioner" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Round Robin partition the data.</p>
+    </li><li name="io.gearpump.partitioner.UnicastPartitioner" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="UnicastPartitionerextendsPartitioner"></a>
+      <a id="UnicastPartitioner:UnicastPartitioner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="UnicastPartitioner.html"><span class="name">UnicastPartitioner</span></a><span class="result"> extends <a href="Partitioner.html" class="extype" name="io.gearpump.partitioner.Partitioner">Partitioner</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@UnicastPartitionerextendsPartitioner" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.partitioner.Partitioner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Partitioner"></a>
+      <a id="Partitioner:Partitioner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Partitioner$.html"><span class="name">Partitioner</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.gearpump.partitioner.package@Partitioner" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

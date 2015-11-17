@@ -1,0 +1,721 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>task - io.gearpump.streaming.task</title>
+          <meta name="description" content="task - io.gearpump.streaming.task" />
+          <meta name="keywords" content="task io.gearpump.streaming.task" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'io.gearpump.streaming.task.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="io">io</a>.<a href="../../package.html" class="extype" name="io.gearpump">gearpump</a>.<a href="../package.html" class="extype" name="io.gearpump.streaming">streaming</a></p>
+        <h1>task</h1><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">task</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.gearpump.streaming.task.Ack" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AckextendsProductwithSerializable"></a>
+      <a id="Ack:Ack"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Ack.html"><span class="name">Ack</span></a><span class="params">(<span name="taskId">taskId: <a href="TaskId.html" class="extype" name="io.gearpump.streaming.task.TaskId">TaskId</a></span>, <span name="seq">seq: <span class="extype" name="scala.Short">Short</span></span>, <span name="actualReceivedNum">actualReceivedNum: <span class="extype" name="scala.Short">Short</span></span>, <span name="sessionId">sessionId: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@AckextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.AckRequest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AckRequestextendsProductwithSerializable"></a>
+      <a id="AckRequest:AckRequest"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AckRequest.html"><span class="name">AckRequest</span></a><span class="params">(<span name="taskId">taskId: <a href="TaskId.html" class="extype" name="io.gearpump.streaming.task.TaskId">TaskId</a></span>, <span name="seq">seq: <span class="extype" name="scala.Short">Short</span></span>, <span name="sessionId">sessionId: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@AckRequestextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.ClockEvent" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ClockEventextendsAnyRef"></a>
+      <a id="ClockEvent:ClockEvent"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ClockEvent.html"><span class="name">ClockEvent</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@ClockEventextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.ExpressTransport" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ExpressTransportextendsAnyRef"></a>
+      <a id="ExpressTransport:ExpressTransport"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ExpressTransport.html"><span class="name">ExpressTransport</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@ExpressTransportextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.GetUpstreamMinClock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GetUpstreamMinClockextendsClockEventwithProductwithSerializable"></a>
+      <a id="GetUpstreamMinClock:GetUpstreamMinClock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="GetUpstreamMinClock.html"><span class="name">GetUpstreamMinClock</span></a><span class="params">(<span name="taskId">taskId: <a href="TaskId.html" class="extype" name="io.gearpump.streaming.task.TaskId">TaskId</a></span>)</span><span class="result"> extends <a href="ClockEvent.html" class="extype" name="io.gearpump.streaming.task.ClockEvent">ClockEvent</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@GetUpstreamMinClockextendsClockEventwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.InitialAckRequest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InitialAckRequestextendsProductwithSerializable"></a>
+      <a id="InitialAckRequest:InitialAckRequest"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="InitialAckRequest.html"><span class="name">InitialAckRequest</span></a><span class="params">(<span name="taskId">taskId: <a href="TaskId.html" class="extype" name="io.gearpump.streaming.task.TaskId">TaskId</a></span>, <span name="sessionId">sessionId: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@InitialAckRequestextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.LatencyProbe" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LatencyProbeextendsProductwithSerializable"></a>
+      <a id="LatencyProbe:LatencyProbe"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="LatencyProbe.html"><span class="name">LatencyProbe</span></a><span class="params">(<span name="timestamp">timestamp: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@LatencyProbeextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.LatestMinClock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LatestMinClockextendsProductwithSerializable"></a>
+      <a id="LatestMinClock:LatestMinClock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="LatestMinClock.html"><span class="name">LatestMinClock</span></a><span class="params">(<span name="clock">clock: <a href="../../package.html#TimeStamp=Long" class="extmbr" name="io.gearpump.TimeStamp">TimeStamp</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@LatestMinClockextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.ReportCheckpointClock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReportCheckpointClockextendsProductwithSerializable"></a>
+      <a id="ReportCheckpointClock:ReportCheckpointClock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ReportCheckpointClock.html"><span class="name">ReportCheckpointClock</span></a><span class="params">(<span name="taskId">taskId: <a href="TaskId.html" class="extype" name="io.gearpump.streaming.task.TaskId">TaskId</a></span>, <span name="clock">clock: <a href="../../package.html#TimeStamp=Long" class="extmbr" name="io.gearpump.TimeStamp">TimeStamp</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@ReportCheckpointClockextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.SendLater" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SendLaterextendsAnyRef"></a>
+      <a id="SendLater:SendLater"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SendLater.html"><span class="name">SendLater</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@SendLaterextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.SendMessageLoss" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SendMessageLossextendsProductwithSerializable"></a>
+      <a id="SendMessageLoss:SendMessageLoss"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SendMessageLoss.html"><span class="name">SendMessageLoss</span></a><span class="params">()</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@SendMessageLossextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.SerializedMessage" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SerializedMessageextendsProductwithSerializable"></a>
+      <a id="SerializedMessage:SerializedMessage"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializedMessage.html"><span class="name">SerializedMessage</span></a><span class="params">(<span name="timeStamp">timeStamp: <a href="../../package.html#TimeStamp=Long" class="extmbr" name="io.gearpump.TimeStamp">TimeStamp</a></span>, <span name="bytes">bytes: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@SerializedMessageextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.SerializedMessageSerializer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SerializedMessageSerializerextendsTaskMessageSerializer[io.gearpump.streaming.task.SerializedMessage]"></a>
+      <a id="SerializedMessageSerializer:SerializedMessageSerializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializedMessageSerializer.html"><span class="name">SerializedMessageSerializer</span></a><span class="result"> extends <a href="TaskMessageSerializer.html" class="extype" name="io.gearpump.streaming.task.TaskMessageSerializer">TaskMessageSerializer</a>[<a href="SerializedMessage.html" class="extype" name="io.gearpump.streaming.task.SerializedMessage">SerializedMessage</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@SerializedMessageSerializerextendsTaskMessageSerializer[io.gearpump.streaming.task.SerializedMessage]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.StartClock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StartClockextendsProductwithSerializable"></a>
+      <a id="StartClock:StartClock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StartClock.html"><span class="name">StartClock</span></a><span class="params">(<span name="clock">clock: <a href="../../package.html#TimeStamp=Long" class="extmbr" name="io.gearpump.TimeStamp">TimeStamp</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@StartClockextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.StartTime" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StartTimeextendsProductwithSerializable"></a>
+      <a id="StartTime:StartTime"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StartTime.html"><span class="name">StartTime</span></a><span class="params">(<span name="startTime">startTime: <a href="../../package.html#TimeStamp=Long" class="extmbr" name="io.gearpump.TimeStamp">TimeStamp</a> = <span class="symbol">0</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@StartTimeextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.StreamingTransportSerializer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamingTransportSerializerextendsITransportMessageSerializer"></a>
+      <a id="StreamingTransportSerializer:StreamingTransportSerializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingTransportSerializer.html"><span class="name">StreamingTransportSerializer</span></a><span class="result"> extends <a href="../../transport/netty/ITransportMessageSerializer.html" class="extype" name="io.gearpump.transport.netty.ITransportMessageSerializer">ITransportMessageSerializer</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@StreamingTransportSerializerextendsITransportMessageSerializer" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.Subscriber" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SubscriberextendsProductwithSerializable"></a>
+      <a id="Subscriber:Subscriber"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Subscriber.html"><span class="name">Subscriber</span></a><span class="params">(<span name="processorId">processorId: <span class="extype" name="scala.Int">Int</span></span>, <span name="partitionerDescription">partitionerDescription: <a href="../../partitioner/PartitionerDescription.html" class="extype" name="io.gearpump.partitioner.PartitionerDescription">PartitionerDescription</a></span>, <span name="parallelism">parallelism: <span class="extype" name="scala.Int">Int</span></span>, <span name="lifeTime">lifeTime: <a href="../LifeTime.html" class="extype" name="io.gearpump.streaming.LifeTime">LifeTime</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@SubscriberextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Each processor can have multiple downstream subscribers.</p><div class="fullcomment"><div class="comment cmt"><p>Each processor can have multiple downstream subscribers.</p><p>For example: When processor A subscribe to processor B, then the output of B will be
+pushed to processor A.
+</p></div><dl class="paramcmts block"><dt class="param">processorId</dt><dd class="cmt"><p>subscriber processor Id</p></dd><dt class="param">partitionerDescription</dt><dd class="cmt"><p>subscriber partitioner
+</p></dd></dl></div>
+    </li><li name="io.gearpump.streaming.task.Subscription" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SubscriptionextendsAnyRef"></a>
+      <a id="Subscription:Subscription"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Subscription.html"><span class="name">Subscription</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@SubscriptionextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This manage the output and message clock for single downstream processor
+</p>
+    </li><li name="io.gearpump.streaming.task.Task" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TaskextendsTaskInterface"></a>
+      <a id="Task:Task"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Task.html"><span class="name">Task</span></a><span class="result"> extends <a href="TaskInterface.html" class="extype" name="io.gearpump.streaming.task.TaskInterface">TaskInterface</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskextendsTaskInterface" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.TaskActor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskActorextendsActorwithExpressTransportwithTimeOutScheduler"></a>
+      <a id="TaskActor:TaskActor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskActor.html"><span class="name">TaskActor</span></a><span class="result"> extends <span class="extype" name="akka.actor.Actor">Actor</span> with <a href="ExpressTransport.html" class="extype" name="io.gearpump.streaming.task.ExpressTransport">ExpressTransport</a> with <a href="../../util/TimeOutScheduler.html" class="extype" name="io.gearpump.util.TimeOutScheduler">TimeOutScheduler</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskActorextendsActorwithExpressTransportwithTimeOutScheduler" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.TaskContext" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TaskContextextendsAnyRef"></a>
+      <a id="TaskContext:TaskContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskContext.html"><span class="name">TaskContext</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskContextextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This provides context information for a task.</p>
+    </li><li name="io.gearpump.streaming.task.TaskContextData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskContextDataextendsProductwithSerializable"></a>
+      <a id="TaskContextData:TaskContextData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskContextData.html"><span class="name">TaskContextData</span></a><span class="params">(<span name="executorId">executorId: <span class="extype" name="scala.Int">Int</span></span>, <span name="appId">appId: <span class="extype" name="scala.Int">Int</span></span>, <span name="appName">appName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="appMaster">appMaster: <span class="extype" name="akka.actor.ActorRef">ActorRef</span></span>, <span name="parallelism">parallelism: <span class="extype" name="scala.Int">Int</span></span>, <span name="life">life: <a href="../LifeTime.html" class="extype" name="io.gearpump.streaming.LifeTime">LifeTime</a></span>, <span name="subscribers">subscribers: <span class="extype" name="scala.List">List</span>[<a href="Subscriber.html" class="extype" name="io.gearpump.streaming.task.Subscriber">Subscriber</a>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskContextDataextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.TaskId" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskIdextendsProductwithSerializable"></a>
+      <a id="TaskId:TaskId"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskId.html"><span class="name">TaskId</span></a><span class="params">(<span name="processorId">processorId: <a href="../package.html#ProcessorId=Int" class="extmbr" name="io.gearpump.streaming.ProcessorId">ProcessorId</a></span>, <span name="index">index: <a href="../package.html#TaskIndex=Int" class="extmbr" name="io.gearpump.streaming.TaskIndex">TaskIndex</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskIdextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.TaskInterface" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TaskInterfaceextendsAnyRef"></a>
+      <a id="TaskInterface:TaskInterface"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskInterface.html"><span class="name">TaskInterface</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskInterfaceextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Streaming Task interface
+</p>
+    </li><li name="io.gearpump.streaming.task.TaskMessageSerializer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TaskMessageSerializer[T]extendsAnyRef"></a>
+      <a id="TaskMessageSerializer[T]:TaskMessageSerializer[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskMessageSerializer.html"><span class="name">TaskMessageSerializer</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskMessageSerializer[T]extendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.TaskWrapper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskWrapperextendsTaskContextwithTaskInterface"></a>
+      <a id="TaskWrapper:TaskWrapper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskWrapper.html"><span class="name">TaskWrapper</span></a><span class="result"> extends <a href="TaskContext.html" class="extype" name="io.gearpump.streaming.task.TaskContext">TaskContext</a> with <a href="TaskInterface.html" class="extype" name="io.gearpump.streaming.task.TaskInterface">TaskInterface</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskWrapperextendsTaskContextwithTaskInterface" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This provides TaskContext for user defined tasks</p>
+    </li><li name="io.gearpump.streaming.task.UpdateClock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UpdateClockextendsClockEventwithProductwithSerializable"></a>
+      <a id="UpdateClock:UpdateClock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UpdateClock.html"><span class="name">UpdateClock</span></a><span class="params">(<span name="taskId">taskId: <a href="TaskId.html" class="extype" name="io.gearpump.streaming.task.TaskId">TaskId</a></span>, <span name="time">time: <a href="../../package.html#TimeStamp=Long" class="extmbr" name="io.gearpump.TimeStamp">TimeStamp</a></span>)</span><span class="result"> extends <a href="ClockEvent.html" class="extype" name="io.gearpump.streaming.task.ClockEvent">ClockEvent</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@UpdateClockextendsClockEventwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.UpstreamMinClock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UpstreamMinClockextendsProductwithSerializable"></a>
+      <a id="UpstreamMinClock:UpstreamMinClock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UpstreamMinClock.html"><span class="name">UpstreamMinClock</span></a><span class="params">(<span name="latestMinClock">latestMinClock: <a href="../../package.html#TimeStamp=Long" class="extmbr" name="io.gearpump.TimeStamp">TimeStamp</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@UpstreamMinClockextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.gearpump.streaming.task.GetLatestMinClock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GetLatestMinClock"></a>
+      <a id="GetLatestMinClock:GetLatestMinClock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GetLatestMinClock$.html"><span class="name">GetLatestMinClock</span></a><span class="result"> extends <a href="ClockEvent.html" class="extype" name="io.gearpump.streaming.task.ClockEvent">ClockEvent</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@GetLatestMinClock" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.GetStartClock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GetStartClock"></a>
+      <a id="GetStartClock:GetStartClock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GetStartClock$.html"><span class="name">GetStartClock</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@GetStartClock" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.SerializerResolver" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SerializerResolver"></a>
+      <a id="SerializerResolver:SerializerResolver"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializerResolver$.html"><span class="name">SerializerResolver</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@SerializerResolver" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.Subscriber" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Subscriber"></a>
+      <a id="Subscriber:Subscriber"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Subscriber$.html"><span class="name">Subscriber</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@Subscriber" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.Subscription" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Subscription"></a>
+      <a id="Subscription:Subscription"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Subscription$.html"><span class="name">Subscription</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@Subscription" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.TaskActor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskActor"></a>
+      <a id="TaskActor:TaskActor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskActor$.html"><span class="name">TaskActor</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskActor" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.TaskId" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskId"></a>
+      <a id="TaskId:TaskId"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskId$.html"><span class="name">TaskId</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskId" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li><li name="io.gearpump.streaming.task.TaskUtil" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TaskUtil"></a>
+      <a id="TaskUtil:TaskUtil"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskUtil$.html"><span class="name">TaskUtil</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.gearpump.streaming.task.package@TaskUtil" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>
