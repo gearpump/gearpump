@@ -21,10 +21,9 @@ package io.gearpump.streaming.kafka.lib
 import java.util.Properties
 
 import io.gearpump.streaming.kafka.KafkaSource
-import io.gearpump.streaming.kafka.lib.consumer.FetchThread
 import io.gearpump.streaming.kafka.lib.grouper.{KafkaDefaultGrouper, KafkaGrouper}
-import kafka.consumer.ConsumerConfig
 import io.gearpump.util.LogUtil
+import kafka.consumer.ConsumerConfig
 import org.slf4j.Logger
 
 object KafkaSourceConfig {
@@ -44,7 +43,7 @@ object KafkaSourceConfig {
 }
 
 /**
- * this class extends kafka [[ConsumerConfig]] with specific configs for [[KafkaSource]]
+ * this class extends kafka kafka.consumer.ConsumerConfig with specific configs for [[KafkaSource]]
  * @param consumerProps kafka consumer config
  */
 class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends java.io.Serializable  {
@@ -63,7 +62,7 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
   /**
    * set kafka consumer topics
    * @param topics comma-separated string
-   * @return new KafkaConfig based on this but with [[CONSUMER_TOPICS]] set to given value
+   * @return new KafkaConfig based on this but with [[io.gearpump.streaming.kafka.lib.KafkaSourceConfig.CONSUMER_TOPICS]] set to given value
    */
   def withConsumerTopics(topics: String): KafkaSourceConfig = {
     consumerProps.setProperty(CONSUMER_TOPICS, topics)
@@ -78,11 +77,11 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
   }
 
   /**
-   * [[FetchThread]] will sleep for a while if no more messages or
-   * the incoming queue size is above the [[FETCH_THRESHOLD]]
+   * [[consumer.FetchThread]] will sleep for a while if no more messages or
+   * the incoming queue size is above the [[io.gearpump.streaming.kafka.lib.KafkaSourceConfig.FETCH_THRESHOLD]]
    * this is to set sleep interval
    * @param sleepMS sleep interval in milliseconds
-   * @return new KafkaConfig based on this but with [[FETCH_SLEEP_MS]] set to given value
+   * @return new KafkaConfig based on this but with [[io.gearpump.streaming.kafka.lib.KafkaSourceConfig.FETCH_SLEEP_MS]] set to given value
    */
   def withFetchSleepMS(sleepMS: Int): KafkaSourceConfig = {
     consumerProps.setProperty(FETCH_SLEEP_MS, sleepMS + "")
@@ -91,7 +90,7 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
 
   /**
    * [[consumer.FetchThread]] will sleep for a while if no more messages or
-   * the incoming queue size is above the [[FETCH_THRESHOLD]]
+   * the incoming queue size is above the [[io.gearpump.streaming.kafka.lib.KafkaSourceConfig.FETCH_THRESHOLD]]
    * this is to get sleep interval
    * @return sleep interval in milliseconds
    */
@@ -103,7 +102,7 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
    * [[consumer.FetchThread]] stops fetching new messages if its incoming queue
    * size is above the threshold and starts again when the queue size is below it
    * @param threshold queue size
-   * @return new KafkaConfig based on this but with [[FETCH_THRESHOLD]] set to give value
+   * @return new KafkaConfig based on this but with [[io.gearpump.streaming.kafka.lib.KafkaSourceConfig.FETCH_THRESHOLD]] set to give value
    */
   def withFetchThreshold(threshold: Int): KafkaSourceConfig = {
     consumerProps.setProperty(FETCH_THRESHOLD, threshold + "")
@@ -112,7 +111,7 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
 
   /**
    *
-   * [[consumer.FetchThread]] stops fetching new messages if its incoming queue
+   * [[io.gearpump.streaming.kafka.lib.consumer.FetchThread]] stops fetching new messages if its incoming queue
    * size is above the threshold and starts again when the queue size is below it
    * @return fetch threshold
    */
@@ -121,11 +120,11 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
   }
 
   /**
-   * set [[KafkaGrouper]], whose corresponding [[KafkaGrouper]]
-   * defines how [[kafka.common.TopicAndPartition]]s are mapped to source tasks
+   * set [[io.gearpump.streaming.kafka.lib.grouper.KafkaGrouper]], which
+   * defines how kafka.common.TopicAndPartitions are mapped to source tasks
    *
    * @param className name of the factory class
-   * @return new KafkaConfig based on this but with [[GROUPER_CLASS]] set to given value
+   * @return new KafkaConfig based on this but with [[io.gearpump.streaming.kafka.lib.KafkaSourceConfig.GROUPER_CLASS]] set to given value
    */
   def withGrouper(className: String): KafkaSourceConfig = {
     consumerProps.setProperty(GROUPER_CLASS, className)
@@ -133,8 +132,8 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
   }
 
   /**
-   * get [[KafkaGrouper]] instance, whose corresponding [[KafkaGrouper]]
-   * defines how [[kafka.common.TopicAndPartition]]s are mapped to source tasks
+   * get [[io.gearpump.streaming.kafka.lib.grouper.KafkaGrouper]] instance, which
+   * defines how kafka.common.TopicAndPartitions are mapped to source tasks
    * @return
    */
   def getGrouper: KafkaGrouper = {

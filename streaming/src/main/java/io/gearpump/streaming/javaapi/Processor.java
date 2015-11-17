@@ -43,13 +43,13 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
   }
 
   /**
-   * Create a Source Processor
-   * @param dataSink
-   * @param parallelism
-   * @param description
-   * @param taskConf
-   * @param system
-   * @return
+   * Create a Sink Processor
+   * @param dataSink  the data sink itself
+   * @param parallelism  the parallelism of this processor
+   * @param description  the description for this processor
+   * @param taskConf     the configuration for this processor
+   * @param system       actor system
+   * @return   the new created sink processor
    */
   public static Processor<DataSinkTask> sink(DataSink dataSink, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
     io.gearpump.streaming.Processor<DataSinkTask> p = DataSinkProcessor.apply(dataSink, parallelism, description, taskConf, system);
@@ -57,13 +57,13 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
   }
 
   /**
-   * Create a Sink Processor
-   * @param source
-   * @param parallelism
-   * @param description
-   * @param taskConf
-   * @param system
-   * @return
+   * Create a Source Processor
+   * @param source    the data source itself
+   * @param parallelism   the parallelism of this processor
+   * @param description   the description of this processor
+   * @param taskConf      the configuration of this processor
+   * @param system        actor system
+   * @return              the new created source processor
    */
   public static Processor<DataSourceTask> source(DataSource source, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
     io.gearpump.streaming.Processor<DataSourceTask> p = DataSourceProcessor.apply(source, parallelism, description, taskConf, system);
@@ -78,8 +78,8 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
   }
 
   /**
-   *
-   * @param taskClass Class\<T extends Task\> implementation class of this processor
+   *  Create a general processor with user specified task logic.
+   * @param taskClass  task implementation class of this processor (shall be a derived class from {@link Task}
    * @param parallelism, how many initial tasks you want to use
    * @param description, some text to describe this processor
    * @param taskConf, Processor specific configuration

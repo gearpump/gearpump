@@ -24,10 +24,9 @@ import io.gearpump.cluster.UserConfig
 
 /**
  * utility that helps user to create a DAG ending in [[DataSink]]
- * user should pass in a [[DataSink]]
+ * user should pass in a [[DataSink]].
  *
- *  here is an example to build a DAG that does word count and write to KafkaSink
- *
+ * here is an example to build a DAG that does word count and write to KafkaSink
  * {{{
  *    val split = Processor[Split](1)
  *    val sum = Processor[Sum](1)
