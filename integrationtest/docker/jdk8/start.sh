@@ -30,6 +30,11 @@ case "$1" in
     JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname -i)"
     nohup sh ${SUT_HOME}/bin/worker &
     ;;
+  gear)
+    shift
+    #JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname)"
+    nohup sh ${SUT_HOME}/bin/gear "$@" &
+    ;;
   *)
     echo "Usage: master|worker [ARGS]"
     ;;
