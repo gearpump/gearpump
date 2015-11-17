@@ -23,16 +23,15 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorRef
 import backtype.storm.generated._
-import io.gearpump.experiments.storm.Commands.GetClusterInfo
-import Commands._
+import io.gearpump.experiments.storm.Commands.{GetClusterInfo, _}
+import io.gearpump.util.ActorUtil.askActor
 import org.apache.thrift7.protocol.TBinaryProtocol
 import org.apache.thrift7.server.{THsHaServer, TServer}
 import org.apache.thrift7.transport.TNonblockingServerSocket
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import io.gearpump.util.ActorUtil.{askActor}
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object GearpumpThriftServer {
   val THRIFT_PORT = 6627
@@ -57,7 +56,7 @@ object GearpumpThriftServer {
 
     override def submitTopology(name: String, uploadedJarLocation: String, jsonConf: String, topology: StormTopology): Unit = {
       val ask = askActor(handler, Submit(name, uploadedJarLocation, jsonConf, topology, new SubmitOptions(TopologyInitialStatus.ACTIVE)))
-      Await.result(ask, 10 seconds)
+      Await.result(ask, 30 seconds)
     }
 
     override def killTopologyWithOpts(name: String, options: KillOptions): Unit = {

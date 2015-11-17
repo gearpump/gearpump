@@ -28,7 +28,6 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpec}
 class StandaloneModeSuite extends FlatSpec with BeforeAndAfterAll
   with CommandLineSpec
   with RestServiceSpec
-  with ConnectorKafkaSpec
   with StormCompatibilitySpec
   with StabilitySpec {
 
