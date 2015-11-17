@@ -29,23 +29,23 @@ object Docker {
   private val LOG = Logger.getLogger(Docker.getClass)
 
   def listContainers(): Seq[String] = {
-    shellExecAndCaptureOutput("docker ps -q -a", "LIST -a")
+    shellExecAndCaptureOutput("docker ps -q -a", "LIST")
       .split("\n").filter(_.nonEmpty)
   }
 
   def containerIsRunning(name: String): Boolean = {
-    shellExecAndCaptureOutput(s"docker ps -q --filter 'name=$name'", s"LIST $name").nonEmpty
+    shellExecAndCaptureOutput(s"docker ps -q --filter 'name=$name'", s"FIND $name").nonEmpty
   }
 
   def containerExists(name: String): Boolean = {
-    shellExecAndCaptureOutput(s"docker ps -q -a --filter 'name=$name'", s"LIST $name").nonEmpty
+    shellExecAndCaptureOutput(s"docker ps -q -a --filter 'name=$name'", s"FIND $name").nonEmpty
   }
 
   /**
    * @throws RuntimeException in case particular container is created already
    */
   def run(name: String, options: String, args: String, image: String): Unit = {
-    if (!shellExec(s"docker run $options --name $name $image $args", s"CREATE $name")) {
+    if (!shellExec(s"docker run $options --name $name $image $args", s"MAKE $name")) {
       throw new RuntimeException(s"Failed to run container '$name'.")
     }
   }
@@ -66,14 +66,16 @@ object Docker {
   }
 
   private def shellExec(command: String, sender: String): Boolean = {
-    LOG.info(s"$sender -> `$command`")
-    command.! == 0
+    LOG.debug(s"$sender -> `$command`")
+    val retval = command.!
+    LOG.debug(s"$sender <- `$retval`")
+    retval == 0
   }
 
   private def shellExecAndCaptureOutput(command: String, sender: String): String = {
-    LOG.info(s"$sender -> `$command`")
+    LOG.debug(s"$sender => `$command`")
     val output = command.!!.trim
-    LOG.info(s"$sender <- `$output`")
+    LOG.debug(s"$sender <= `$output`")
     output
   }
 
