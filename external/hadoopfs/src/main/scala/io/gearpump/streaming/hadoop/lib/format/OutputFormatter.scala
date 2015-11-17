@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,21 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.external.hbase.dsl
+package io.gearpump.streaming.hadoop.lib.format
 
-import io.gearpump.cluster.UserConfig
-import io.gearpump.external.hbase.HBaseSink
-import io.gearpump.streaming.dsl.Stream
-import Stream.Sink
+import io.gearpump.Message
+import org.apache.hadoop.io.Writable
 
-class HBaseDSLSink[T](stream: Stream[T]) {
-  def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink[T](userConfig, table), parallism, userConfig, description)
-  }
-}
+trait OutputFormatter extends Serializable{
+  def getKeyClass: Class[_ <: Writable]
 
-object HBaseDSLSink {
-  implicit def streamToHBaseDSLSink[T](stream: Stream[T]): HBaseDSLSink[T] = {
-    new HBaseDSLSink[T](stream)
-  }
+  def getValueClass: Class[_ <: Writable]
+
+  def getKey(message: Message): Writable
+
+  def getValue(message: Message): Writable
 }

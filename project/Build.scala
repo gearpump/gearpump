@@ -451,7 +451,8 @@ object Build extends sbt.Build {
     settings = commonSettings ++
         Seq(
           libraryDependencies ++= Seq(
-            "org.apache.hadoop" % "hadoop-common" % clouderaVersion  % "provided"
+            "org.apache.hadoop" % "hadoop-common" % clouderaVersion  % "provided",
+            "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion % "provided"
           )
         )
   ) dependsOn(streaming % "test->test; provided")
