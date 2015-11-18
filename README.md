@@ -16,11 +16,11 @@ pump	that	consists of	only	two	gears,	but	is	very	powerful at	streaming water.
 
 We model streaming within the Akka actor hierarchy.
 
-![](https://raw.githubusercontent.com/gearpump/gearpump/master/doc/actor_hierarchy.png)
+![](https://raw.githubusercontent.com/gearpump/gearpump/master/docs/img/actor_hierarchy.png)
 
 Per initial benchmarks we are able to process 11 million messages/second (100 bytes per message) with a 17ms latency on a 4-node cluster.
 
-![](https://raw.githubusercontent.com/gearpump/gearpump/master/doc/dashboard.png)
+![](https://raw.githubusercontent.com/gearpump/gearpump/master/docs/img/dashboard.png)
 
 For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/site/0.6/performance/)
 
