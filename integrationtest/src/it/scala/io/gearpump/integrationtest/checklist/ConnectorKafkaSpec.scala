@@ -28,7 +28,7 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 class ConnectorKafkaSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   val cluster = MiniClusterProvider.get
-  val client = cluster.client
+  val client = cluster.restClient
   val kafkaCluster = new KafkaCluster
 
   override def beforeAll: Unit = {
@@ -50,7 +50,7 @@ class ConnectorKafkaSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val sinkTopic = "topic2"
 
     val jar = cluster.queryBuiltInExampleJars("kafka-").head
-    val appsCount = client.queryApps().size
+    val appsCount = client.listApps().size
     val appId = appsCount + 1
 
     // exercise
