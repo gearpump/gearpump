@@ -325,7 +325,8 @@ object Build extends sbt.Build {
             exclude("ring", "ring-core")
             exclude("ring", "ring-devel")
             exclude("ring", "ring-jetty-adapter")
-            exclude("ring", "ring-servlet")
+            exclude("ring", "ring-servlet"),
+         "org.apache.storm" % "storm-starter" % stormVersion
         )
       )
   ) dependsOn (streaming % "test->test; compile->compile")
