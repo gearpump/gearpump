@@ -17,6 +17,8 @@
  */
 package io.gearpump.integrationtest.checklist
 
+import io.gearpump.cluster.MasterToAppMaster
+import io.gearpump.cluster.MasterToAppMaster.AppMasterData
 import io.gearpump.integrationtest.TestSpecBase
 
 /**
@@ -25,58 +27,58 @@ import io.gearpump.integrationtest.TestSpecBase
 trait RestServiceSpec extends TestSpecBase {
 
   "query system version" should "return the current version number" in {
-    client.queryVersion should not be empty
+    client.queryVersion() should not be empty
   }
 
   "submit application (wordcount)" should "return status of running the application" in {
     // setup
     val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-    val appsCount = client.queryApps().size
-    val appId = appsCount + 1
+    val expectedAppName = "wordCount"
+    client.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
 
     // exercise
     val success = client.submitApp(jar)
-    Thread.sleep(5000)
-    success shouldEqual true
-    val actual = client.queryApp(appId)
+    success shouldBe true
+    val actualApp = queryActiveAppByNameAndVerify(expectedAppName)
+    killAppAndVerify(actualApp.appId)
+  }
 
-    // verify
-    actual.appId shouldEqual appId
-    actual.status shouldEqual "active"
-    actual.appName shouldEqual "wordCount"
-    killAppAndVerify(appId)
+  private def queryActiveAppByNameAndVerify(appName: String, timeout: Int = 15 * 1000): AppMasterData = {
+    var app: Option[AppMasterData] = None
+    var timeTook = 0
+    while (app.isEmpty || timeTook > timeout) {
+      app = client.listActiveApps().find(_.appName == appName)
+      Thread.sleep(1000)
+      timeTook += 1000
+    }
+
+    val actual = app.orNull
+    actual should not be null
+    actual.status shouldEqual MasterToAppMaster.AppMasterActive
+    actual.appName shouldEqual appName
+    actual
   }
 
   "submit same application twice" should "return an error at the second submission" in {
     // setup
     val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-    val appsCount = client.queryApps().size
-    val appId = appsCount + 1
+    val expectedAppName = "wordCount"
+    client.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
+    client.submitApp(jar) shouldBe true
+    val expectedApp = queryActiveAppByNameAndVerify(expectedAppName)
 
     // exercise
-    var success = client.submitApp(jar)
-    Thread.sleep(5000)
-    success shouldEqual true
-    val actual = client.queryApp(appId)
-
-    // verify
-    actual.appId shouldEqual appId
-    actual.status shouldEqual "active"
-    actual.appName shouldEqual "wordCount"
-
-    // exercise
-    success = client.submitApp(jar)
-    Thread.sleep(5000)
-    success shouldEqual false
-
-    killAppAndVerify(appId)
+    val success = client.submitApp(jar)
+    success shouldBe false
+    killAppAndVerify(expectedApp.appId)
   }
 
   private def killAppAndVerify(appId: Int): Unit = {
     client.killApp(appId)
-    val actual = client.queryApp(appId)
-    actual.appId shouldEqual appId
-    actual.status shouldEqual "inactive"
+
+    val actualApp = client.queryApp(appId)
+    actualApp.appId shouldEqual appId
+    actualApp.status shouldEqual MasterToAppMaster.AppMasterInActive
   }
 
 }
