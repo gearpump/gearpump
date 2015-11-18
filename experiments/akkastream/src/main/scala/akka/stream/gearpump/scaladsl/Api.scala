@@ -18,11 +18,14 @@
 
 package akka.stream.gearpump.scaladsl
 
-import akka.stream.Attributes
-import akka.stream.gearpump.module.{ReduceModule, GroupByModule, DummySink, DummySource, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.{FlowShape, Graph, Attributes}
+import akka.stream.gearpump.module.{ProcessorModule, ReduceModule, GroupByModule, DummySink, DummySource, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
+import akka.stream.impl.Stages.Map
+import akka.stream.scaladsl.{FlowOps, Flow, Keep, Sink, Source}
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
+import io.gearpump.streaming.task.Task
 import org.reactivestreams.{Publisher, Subscriber}
 
 
@@ -50,12 +53,24 @@ object GearSource{
   /**
    * Construct a Source from Gearpump [[DataSource]].
    *
-   *    [[SourceTaskModule]] -> Sink
+   *    [[SourceTaskModule]] -> downstream Sink
    *
    */
   def from[OUT](source: DataSource): Source[OUT, Unit] = {
-    val taskSource = new Source[OUT, Unit](new SourceTaskModule(source))
+    val taskSource = new Source[OUT, Unit](new SourceTaskModule(source, UserConfig.empty))
     taskSource
+  }
+
+  /**
+   * Construct a Source from Gearpump [[io.gearpump.streaming.Processor]].
+   *
+   *    [[ProcessorModule]] -> downstream Sink
+   *
+   */
+  def from[OUT](processor: Class[_ <: Task], conf: UserConfig): Source[OUT, Unit] = {
+    val source = new Source(new DummySource[Unit](Attributes.name("dummy"), Source.shape("dummy")))
+    val flow = Processor.apply[Unit, OUT](processor, conf)
+    source.viaMat(flow)(Keep.right)
   }
 }
 
@@ -81,14 +96,26 @@ object GearSink {
   }
 
   /**
-   * Construct a Source from Gearpump [[DataSink]].
+   * Construct a Sink from Gearpump [[DataSink]].
    *
-   *    Source -> [[SinkTaskModule]]
+   *    Upstream Source -> [[SinkTaskModule]]
    *
    */
   def to[IN](sink: DataSink): Sink[IN, Unit] = {
-    val taskSink = new Sink[IN, Unit](new SinkTaskModule(sink))
+    val taskSink = new Sink[IN, Unit](new SinkTaskModule(sink, UserConfig.empty))
     taskSink
+  }
+
+  /**
+   * Construct a Sink from Gearpump [[io.gearpump.streaming.Processor]].
+   *
+   *    Upstream Source -> [[ProcessorModule]]
+   *
+   */
+  def to[IN](processor: Class[_ <: Task], conf: UserConfig): Sink[IN, Unit] = {
+    val sink = new Sink(new DummySink[Unit](Attributes.name("dummy"), Sink.shape("dummy")))
+    val flow = Processor.apply[IN, Unit](processor, conf)
+    flow.to(sink)
   }
 }
 
@@ -122,12 +149,142 @@ object GearSink {
  */
 object GroupBy{
   def apply[T, Group](groupBy: T=>Group): Flow[T, T, Unit] = {
-    new Flow[T, T, Unit](new GroupByModule(groupBy, Attributes.name("groupByModule")))
+    new Flow[T, T, Unit](new GroupByModule(groupBy))
   }
 }
 
+/**
+ * Aggregate on the data.
+ *
+ * val flow = Reduce({(a: Int, b: Int) => a + b})
+ *
+ *
+ */
 object Reduce{
   def apply[T](reduce: (T, T) => T): Flow[T, T, Unit] = {
-    new Flow[T, T, Unit](new ReduceModule(reduce, Attributes.name("reduceModule")))
+    new Flow[T, T, Unit](new ReduceModule(reduce))
   }
+}
+
+
+/**
+ * Create a Flow by providing a Gearpump Processor class and configuration
+ *
+ *
+ */
+object Processor{
+  def apply[In, Out](processor: Class[_ <: Task], conf: UserConfig): Flow[In, Out, Unit] = {
+    new Flow[In, Out, Unit](new ProcessorModule[In, Out, Unit](processor, conf))
+  }
+}
+
+object Implicits {
+
+  /**
+   * Help util to support reduce and groupBy
+   */
+  implicit class SourceOps[T, Mat](source: Source[T, Mat]) {
+
+    //TODO It is named as groupBy2 to avoid conflict with built-in
+    // groupBy. Eventually, we think the built-in groupBy should
+    // be replace with this implementation.
+    def groupBy2[Group](groupBy: T => Group): Source[T, Mat] = {
+      val stage = GroupBy.apply(groupBy)
+      source.via[T, Unit](stage)
+    }
+
+
+    def reduce(reduce: (T, T) => T): Source[T, Mat] = {
+      val stage = Reduce.apply(reduce)
+      source.via[T, Unit](stage)
+    }
+
+    def process[R](processor: Class[_ <: Task], conf: UserConfig): Source[R, Mat] = {
+      val stage = Processor.apply[T, R](processor, conf)
+      source.via(stage)
+    }
+  }
+
+  /**
+   * Help util to support reduce and groupBy
+   */
+  implicit class FlowOps[IN, OUT, Mat](flow: Flow[IN, OUT, Mat]) {
+    def groupBy2[Group](groupBy: OUT => Group): Flow[IN, OUT, Mat] = {
+      val stage = GroupBy.apply(groupBy)
+      flow.via(stage)
+    }
+
+    def reduce(reduce: (OUT, OUT) => OUT): Flow[IN, OUT, Mat] = {
+      val stage = Reduce.apply(reduce)
+      flow.via(stage)
+    }
+
+    def process[R](processor: Class[_ <: Task], conf: UserConfig): Flow[IN, R, Mat] = {
+      val stage = Processor.apply[OUT, R](processor, conf)
+      flow.via(stage)
+    }
+  }
+
+  /**
+   * Help util to support groupByKey and sum
+   */
+  implicit class KVSourceOps[K, V, Mat](source: Source[(K, V), Mat]) {
+
+    /**
+     * if it is a KV Pair, we can group the KV pair by the key.
+     * @return
+     */
+    def groupByKey: Source[(K, V), Mat] = {
+      val stage = GroupBy.apply(getTupleKey[K, V])
+      source.via(stage)
+    }
+
+    /**
+     * do sum on values
+     *
+     * Before doing this, you need to do groupByKey to group same key together
+     * , otherwise, it will do the sum no matter what current key is.
+     *
+     * @param numeric
+     * @return
+     */
+    def sumOnValue(implicit numeric: Numeric[V]): Source[(K, V), Mat] = {
+      val stage = Reduce.apply(sumByValue[K, V](numeric))
+      source.via(stage)
+    }
+  }
+
+  /**
+   * Help util to support groupByKey and sum
+   */
+  implicit class KVFlowOps[K, V, Mat](flow: Flow[(K, V), (K, V), Mat]) {
+
+    /**
+     * if it is a KV Pair, we can group the KV pair by the key.
+     * @return
+     */
+    def groupByKey: Flow[(K, V), (K, V), Mat] = {
+      val stage = GroupBy.apply(getTupleKey[K, V])
+      flow.via(stage)
+    }
+
+    /**
+     * do sum on values
+     *
+     * Before doing this, you need to do groupByKey to group same key together
+     * , otherwise, it will do the sum no matter what current key is.
+     *
+     * @param numeric
+     * @return
+     */
+    def sumOnValue(implicit numeric: Numeric[V]): Flow[(K, V), (K, V), Mat] = {
+      val stage = Reduce.apply(sumByValue[K, V](numeric))
+      flow.via(stage)
+    }
+  }
+
+  private def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
+
+  private def sumByValue[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V]
+    = (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
 }

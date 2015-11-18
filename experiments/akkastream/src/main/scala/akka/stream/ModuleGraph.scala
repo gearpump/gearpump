@@ -16,6 +16,12 @@
  * limitations under the License.
  */
 
+/**
+ *
+ * Part of the code is from akka project,
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.stream
 
 import _root_.io.gearpump.util

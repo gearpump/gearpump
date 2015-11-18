@@ -18,20 +18,34 @@
 
 package akka.stream.gearpump.module
 
+import akka.stream.impl.FlowModule
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.{Attributes, Inlet, Outlet, Shape, SinkShape, SourceShape}
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
+import io.gearpump.streaming.task.Task
 
 /**
  * [[GearpumpTaskModule]] represent modules that can be materialized as Gearpump Tasks.
+ *
+ * This is specially designed for Gearpump runtime. It is not supposed to be used
+ * for local materializer.
  * 
  */
-
 trait GearpumpTaskModule extends Module
 
+/**
+ * This is used to represent the Gearpump Data Source
+ * @param source
+ * @param conf
+ * @param shape
+ * @param attributes
+ * @tparam T
+ */
 final case class SourceTaskModule[T](
    source: DataSource,
+   conf: UserConfig,
    shape: SourceShape[T] = SourceShape[T](Outlet[T]("SourceTaskModule.out")),
    attributes: Attributes = Attributes.name("SourceTaskModule"))
   extends GearpumpTaskModule {
@@ -53,8 +67,17 @@ final case class SourceTaskModule[T](
   }
 }
 
+/**
+ * This is used to represent the Gearpump Data Sink
+ * @param sink
+ * @param conf
+ * @param shape
+ * @param attributes
+ * @tparam IN
+ */
 final case class SinkTaskModule[IN](
     sink: DataSink,
+    conf: UserConfig,
     shape: SinkShape[IN] = SinkShape[IN](Inlet[IN]("SinkTaskModule.in")),
     attributes: Attributes = Attributes.name("SinkTaskModule"))
   extends GearpumpTaskModule {
@@ -73,5 +96,29 @@ final case class SinkTaskModule[IN](
 
     if ((thatN eq null) || thisN == thatN) shape
     else shape.copy(inlet = Inlet(thatN + ".out"))
+  }
+}
+
+/**
+ * This is to represent the Gearpump Processor which has exact one input and one output
+ * @param processor
+ * @param conf
+ * @param attributes
+ * @tparam IN
+ * @tparam OUT
+ * @tparam Unit
+ */
+case class ProcessorModule[IN, OUT, Unit](
+    processor: Class[_ <: Task],
+    conf: UserConfig,
+    val attributes: Attributes = Attributes.name("processorModule"))
+  extends FlowModule[IN, OUT, Unit] with GearpumpTaskModule {
+
+  override def carbonCopy: Module = newInstance
+
+  protected def newInstance: ProcessorModule[IN,OUT, Unit] = new ProcessorModule[IN,OUT, Unit](processor, conf, attributes)
+
+  override def withAttributes(attributes: Attributes): ProcessorModule[IN,OUT, Unit] = {
+    new ProcessorModule[IN,OUT, Unit](processor, conf, attributes)
   }
 }

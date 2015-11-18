@@ -29,6 +29,9 @@ import io.gearpump.streaming.dsl.CollectionDataSource
  *  WordCount example
   * Test GroupBy
   */
+
+import akka.stream.gearpump.scaladsl.Implicits._
+
 object Test6 {
 
   def main(args: Array[String]): Unit = {
@@ -44,13 +47,10 @@ object Test6 {
     val source = GearSource.from[String](sourceData)
     source.mapConcat{line =>
       line.split(" ").toList
-    }.via(GroupBy{word: String =>
-      word
-    }).map(word => (word, 1))
-     .via(Reduce[(String, Int)]{(a, b) =>
+    }.groupBy2(x=>x).map(word => (word, 1))
+      .reduce({(a, b) =>
         (a._1, a._2 + b._2)
-      })
-     .log("word-count").runWith(sink)
+      }).log("word-count").runWith(sink)
 
     system.awaitTermination()
   }

@@ -21,7 +21,7 @@ package akka.stream.gearpump.materializer
 import akka.actor.ActorSystem
 import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.GearAttributes
-import akka.stream.gearpump.module.{ReduceModule, GroupByModule, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
+import akka.stream.gearpump.module.{ProcessorModule, ReduceModule, GroupByModule, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
 import akka.stream.gearpump.task.{BalanceTask, BroadcastTask, GraphTask, UnZip2Task, SinkBridgeTask, SourceBridgeTask}
 import akka.stream.impl.GenJunctions.{UnzipWith2Module, ZipWithModule}
 import akka.stream.impl.Junctions._
@@ -140,11 +140,16 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
       val parallelism = GearAttributes.count(module.attributes)
       val op = module match {
         case source: SourceTaskModule[t] =>
-          new DataSourceOp[t](source.source, parallelism, conf, "source")
+          val updatedConf = conf.withConfig(source.conf)
+          new DataSourceOp[t](source.source, parallelism, updatedConf, "source")
         case sink: SinkTaskModule[t] =>
-          new DataSinkOp[t](sink.sink, parallelism, conf, "sink")
+          val updatedConf = conf.withConfig(sink.conf)
+          new DataSinkOp[t](sink.sink, parallelism, updatedConf, "sink")
         case sourceBridge: SourceBridgeModule[_, _] =>
           new ProcessorOp(classOf[SourceBridgeTask], parallelism = 1, conf, "source")
+        case processor: ProcessorModule[_, _, _] =>
+          val updatedConf = conf.withConfig(processor.conf)
+          new ProcessorOp(processor.processor, parallelism, updatedConf, "source")
         case sinkBridge: SinkBridgeModule[_, _] =>
           new ProcessorOp(classOf[SinkBridgeTask], parallelism, conf, "sink")
         case groupBy: GroupByModule[t, g] =>
