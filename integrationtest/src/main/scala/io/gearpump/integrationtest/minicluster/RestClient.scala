@@ -17,6 +17,7 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.integrationtest.Docker
 import upickle.default._
@@ -28,13 +29,17 @@ class RestClient(host: String, port: Int) {
 
   private val apiPrefix = "api/v1.0"
 
-  def queryVersion: String = {
+  def queryVersion(): String = {
     callFromRoot("version")
   }
 
-  def queryApps(): List[AppMasterData] = {
+  def listApps(): List[AppMasterData] = {
     val resp = callApi("master/applist")
     read[AppMastersData](resp).appMasters
+  }
+
+  def listActiveApps(): List[AppMasterData] = {
+    listApps().filter(_.status == MasterToAppMaster.AppMasterActive)
   }
 
   def submitApp(jar: String, args: String = "", config: String = ""): Boolean = {
@@ -52,7 +57,11 @@ class RestClient(host: String, port: Int) {
 
   def queryApp(appId: Int): AppMasterData = {
     val resp = callApi(s"appmaster/$appId")
-    read[AppMasterData](resp)
+    try {
+      read[AppMasterData](resp)
+    } catch {
+      case ex: Throwable => null
+    }
   }
 
   /*

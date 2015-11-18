@@ -98,13 +98,13 @@ class MiniCluster(
   /**
    * @throws RuntimeException if service is not available for N retries
    */
-  private def expectRestServiceAvailable(retry: Int = 10, retryDelay: Int = 200): Unit = {
+  private def expectRestServiceAvailable(timeout: Int = 15 * 1000, retryDelay: Int = 200): Unit = {
     try {
-      client.queryVersion
+      client.queryVersion()
     } catch {
-      case ex if retry > 0 =>
+      case ex if timeout > 0 =>
         Thread.sleep(retryDelay)
-        expectRestServiceAvailable(retry - 1, retryDelay)
+        expectRestServiceAvailable(timeout - retryDelay, retryDelay)
     }
   }
 
