@@ -24,7 +24,6 @@ import io.gearpump.integrationtest.{Docker, TestSpecBase}
  */
 trait StormCompatibilitySpec extends TestSpecBase {
 
-
   "run storm over gearpump applications" should "succeed" in {
     val appsCount = client.queryApps().size
     val appId = appsCount + 1
@@ -37,6 +36,22 @@ trait StormCompatibilitySpec extends TestSpecBase {
     actual.appId shouldEqual appId
     actual.status shouldEqual "active"
     actual.appName shouldEqual "exclamation"
+  }
+
+  "storm over gearpump" should "support tick tuple" in {
+
+  }
+
+  "multilang storm over gearpump" should "support Python" in {
+
+  }
+
+  "storm over gearpump" should "support DRPC" in {
+
+  }
+
+  "storm over gearpump" should "support at-least-once semantics with Kafka" in {
+
   }
 
 }
