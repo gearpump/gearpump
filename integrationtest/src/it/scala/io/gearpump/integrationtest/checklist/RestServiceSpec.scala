@@ -27,17 +27,17 @@ import io.gearpump.integrationtest.TestSpecBase
 trait RestServiceSpec extends TestSpecBase {
 
   "query system version" should "return the current version number" in {
-    client.queryVersion() should not be empty
+    restClient.queryVersion() should not be empty
   }
 
   "submit application (wordcount)" should "return status of running the application" in {
     // setup
     val jar = cluster.queryBuiltInExampleJars("wordcount-").head
     val expectedAppName = "wordCount"
-    client.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
+    restClient.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
 
     // exercise
-    val success = client.submitApp(jar)
+    val success = restClient.submitApp(jar)
     success shouldBe true
     val actualApp = queryActiveAppByNameAndVerify(expectedAppName)
     killAppAndVerify(actualApp.appId)
@@ -47,7 +47,7 @@ trait RestServiceSpec extends TestSpecBase {
     var app: Option[AppMasterData] = None
     var timeTook = 0
     while (app.isEmpty || timeTook > timeout) {
-      app = client.listActiveApps().find(_.appName == appName)
+      app = restClient.listActiveApps().find(_.appName == appName)
       Thread.sleep(1000)
       timeTook += 1000
     }
@@ -63,20 +63,20 @@ trait RestServiceSpec extends TestSpecBase {
     // setup
     val jar = cluster.queryBuiltInExampleJars("wordcount-").head
     val expectedAppName = "wordCount"
-    client.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
-    client.submitApp(jar) shouldBe true
+    restClient.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
+    restClient.submitApp(jar) shouldBe true
     val expectedApp = queryActiveAppByNameAndVerify(expectedAppName)
 
     // exercise
-    val success = client.submitApp(jar)
+    val success = restClient.submitApp(jar)
     success shouldBe false
     killAppAndVerify(expectedApp.appId)
   }
 
   private def killAppAndVerify(appId: Int): Unit = {
-    client.killApp(appId)
+    restClient.killApp(appId)
 
-    val actualApp = client.queryApp(appId)
+    val actualApp = restClient.queryApp(appId)
     actualApp.appId shouldEqual appId
     actualApp.status shouldEqual MasterToAppMaster.AppMasterInActive
   }

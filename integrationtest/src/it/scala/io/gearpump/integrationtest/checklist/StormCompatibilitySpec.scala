@@ -25,9 +25,9 @@ import io.gearpump.integrationtest.{Docker, TestSpecBase}
 trait StormCompatibilitySpec extends TestSpecBase {
 
   "run storm over gearpump applications" should "succeed" in {
-    val appsCount = client.queryApps().size
+    val appsCount = restClient.listApps().size
     val appId = appsCount + 1
-    val actual = client.queryApp(appId)
+    val actual = restClient.queryApp(appId)
     Docker.exec(cluster.getMasterHosts.head, "/opt/storm -verbose -jar /opt/gearpump/lib/storm/storm-starter-0.9.5.jar " +
         "storm.starter.ExclamationTopology exclamation")
 

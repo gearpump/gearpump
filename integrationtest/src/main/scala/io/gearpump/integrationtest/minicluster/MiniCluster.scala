@@ -42,7 +42,8 @@ class MiniCluster(
     )
   }
 
-  def client = new RestClient(getMasterHosts.head, restServicePort)
+  def commandLineClient = new CommandLineClient(getMasterHosts.head)
+  def restClient = new RestClient(getMasterHosts.head, restServicePort)
 
   private val CLUSTER_OPTS = {
     MASTER_ADDRS.zipWithIndex.map { case (hostPort, index) =>
@@ -100,7 +101,7 @@ class MiniCluster(
    */
   private def expectRestServiceAvailable(timeout: Int = 15 * 1000, retryDelay: Int = 200): Unit = {
     try {
-      client.queryVersion()
+      restClient.queryVersion()
     } catch {
       case ex if timeout > 0 =>
         Thread.sleep(retryDelay)
