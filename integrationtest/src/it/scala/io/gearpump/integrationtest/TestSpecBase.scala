@@ -25,7 +25,8 @@ import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 trait TestSpecBase extends FlatSpec with Matchers with BeforeAndAfter {
 
   val cluster = MiniClusterProvider.get
-  val client = cluster.client
+  var commandLineClient = cluster.commandLineClient
+  val restClient = cluster.restClient
 
   before {
     assert(cluster != null, "Configure MiniCluster properly in suite spec")

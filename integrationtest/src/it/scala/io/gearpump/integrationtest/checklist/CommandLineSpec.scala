@@ -17,123 +17,115 @@
  */
 package io.gearpump.integrationtest.checklist
 
+import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.integrationtest.TestSpecBase
-import io.gearpump.integrationtest.minicluster.CommandClient
+import org.scalatest.BeforeAndAfter
 
 /**
  * The test spec checks the command-line usage
  */
-trait CommandLineSpec extends TestSpecBase {
+trait CommandLineSpec extends TestSpecBase with BeforeAndAfter {
 
-  val commandClient = new CommandClient(cluster.getMasterHosts.head)
-
-  "command `gear app`" should "submit an user application" in {
-    //submit
-    val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-    val appId = submitAppAndVerify(jar)
-
-    //verify
-    val actual = commandClient.queryApp(appId)
-    actual.contains(s"application: $appId, ") shouldEqual true
-    actual.contains(s"name: wordCount, ") shouldEqual true
-    actual.contains(s"status: active") shouldEqual true
-
-    killAppAndVerify(appId)
+  after {
+    restClient.listActiveApps().foreach(app => {
+      killAppAndVerify(app.appId)
+    })
   }
 
-  "command `gear info`" should "return particular application runtime information" in {
-    //submit
-    val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-    val appId = submitAppAndVerify(jar)
+  private def wordCountJar: String = {
+    cluster.queryBuiltInExampleJars("wordcount-").head
+  }
+  private val wordCountName = "wordCount"
 
-    //verify
-    val appsCount = commandClient.queryApps().length
-    appsCount shouldEqual appId
-    val actual = commandClient.queryApp(appId)
-    actual.contains(s"application: $appId, ") shouldEqual true
-    actual.contains(s"status: active") shouldEqual true
-    actual.contains(s"name: wordCount, ") shouldEqual true
+  "command `gear app`" should "submit an user application" in {
+    // exercise
+    val appId = expectSubmitAppSuccess(wordCountJar)
 
-    killAppAndVerify(appId)
+    // verify
+    val actual = commandLineClient.queryApp(appId)
+    actual should include(s"application: $appId, ")
+    actual should include(s"name: $wordCountName, ")
+    actual should include(s"status: ${MasterToAppMaster.AppMasterActive}")
+  }
+
+  "command `gear info`" should "return the same number of applications as REST api does" in {
+    val expectedAppCount = restClient.listApps().size
+    getAppsCount shouldEqual expectedAppCount
+
+    val expectedAppId = getNextAvailableAppId
+    val actualAppId = expectSubmitAppSuccess(wordCountJar)
+    actualAppId shouldEqual expectedAppId
+    getAppsCount shouldEqual expectedAppCount + 1
   }
 
   "command `gear app` submit same application twice" should "return an error at the second submission" in {
-    //submit
-    val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-    val appId = submitAppAndVerify(jar)
+    // setup
+    val appId = expectSubmitAppSuccess(wordCountJar)
+    val expectedApp = commandLineClient.queryApp(appId)
+    expectedApp should include(s"application: $appId, ")
+    expectedApp should include(s"name: $wordCountName, ")
+    expectedApp should include(s"status: ${MasterToAppMaster.AppMasterActive}")
 
-    //verify
-    val actual = commandClient.queryApp(appId)
-    actual.contains(s"application: $appId, ") shouldEqual true
-    actual.contains(s"name: wordCount, ") shouldEqual true
-    actual.contains(s"status: active") shouldEqual true
-
-    //submit twice
-    val success = commandClient.submitApp(jar)
-    Thread.sleep(5000)
-    success shouldEqual false
-
-    killAppAndVerify(appId)
+    // exercise
+    val success = commandLineClient.submitApp(wordCountJar)
+    success shouldBe false
   }
 
   "command `gear app` submit wrong jar name" should "return an error" in {
-    val jar = cluster.queryBuiltInExampleJars("wordcount-").head.replace("/", ".")
-
-    //exercise
-    val success = commandClient.submitApp(jar)
-    Thread.sleep(5000)
-    success shouldEqual false
+    // exercise
+    val success = commandLineClient.submitApp(wordCountJar + ".missing")
+    success shouldBe false
   }
 
   "command `gear kill $app_id`" should "kill particular application" in {
-    //submit
-    val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-    val appId = submitAppAndVerify(jar)
+    // setup
+    val appId = expectSubmitAppSuccess(wordCountJar)
 
-    //verify
-    val actual = commandClient.queryApp(appId)
-    actual.contains(s"application: $appId, ") shouldEqual true
-    actual.contains(s"status: active") shouldEqual true
-
-    killAppAndVerify(appId)
+    // exercise
+    val actual = commandLineClient.queryApp(appId)
+    actual should include(s"application: $appId, ")
+    actual should include(s"name: $wordCountName, ")
+    actual should include(s"status: ${MasterToAppMaster.AppMasterActive}")
   }
 
   "command `gear kill $wrong_app_id`" should "return an error" in {
-    //submit
-    val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-    val appId = submitAppAndVerify(jar)
+    // setup
+    val freeAppId = getNextAvailableAppId
 
-    //kill wrong appId and verify
-    commandClient.killApp(appId + 1)
-    Thread.sleep(5000)
-    val actual = commandClient.queryApp(appId)
-    actual.contains(s"application: $appId, ") shouldEqual true
-    actual.contains(s"status: active") shouldEqual true
-
-    killAppAndVerify(appId)
+    // exercise
+    val success = commandLineClient.killApp(freeAppId)
+    success shouldBe false
   }
 
   "command `gear replay $app_id`" should "return replay the application from current min clock" in {
   }
 
-  private def submitAppAndVerify(jar: String): Int = {
+  private def getAppsCount: Int = {
+    val apps = commandLineClient.queryApps()
+    apps should not be null
+    apps.length
+  }
+
+  private def getNextAvailableAppId: Int = {
+    getAppsCount + 1
+  }
+
+  private def expectSubmitAppSuccess(jar: String): Int = {
     //setup
-    val appsCount = commandClient.queryApps().length
+    val appsCount = getAppsCount
     val appId = appsCount + 1
 
     //exercise
-    val success = commandClient.submitApp(jar)
-    Thread.sleep(5000)
-    success shouldEqual true
+    val success = commandLineClient.submitApp(jar)
+    success shouldBe true
     appId
   }
 
   private def killAppAndVerify(appId: Int): Unit = {
-    commandClient.killApp(appId)
-    Thread.sleep(5000)
-    val actual = commandClient.queryApp(appId)
-    actual.contains(s"application: $appId, ") shouldEqual true
-    actual.contains(s"status: inactive") shouldEqual true
+    commandLineClient.killApp(appId)
+    val actual = commandLineClient.queryApp(appId)
+    actual should include(s"application: $appId, ")
+    actual should include(s"status: ${MasterToAppMaster.AppMasterInActive}")
   }
 
 }

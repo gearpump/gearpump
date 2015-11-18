@@ -22,30 +22,43 @@ import io.gearpump.integrationtest.Docker
 /**
  * A command client to operate a Gearpump cluster
  */
-class CommandClient(host: String) {
+class CommandLineClient(host: String) {
 
   def queryApps(): Array[String] = {
-    val appsInfo = gearCommand("info").split("\n").filter(_.contains("application"))
-    Thread.sleep(5000)
-    appsInfo
+    try {
+      gearCommand("info").split("\n").filter(_.contains("application"))
+    } catch {
+      case ex: Throwable => null
+    }
   }
 
   def queryApp(appId: Int): String = {
-    queryApps().filter(_.contains(s"application: $appId")).head
+    try {
+      queryApps().filter(_.contains(s"application: $appId")).head
+    } catch {
+      case ex: Throwable => null
+    }
   }
 
   def submitApp(jar: String, args: String = ""): Boolean = {
-    gearCommand("app", s"-jar $jar $args").contains("Submit application succeed")
+    try {
+      gearCommand("app", s"-jar $jar $args").contains("Submit application succeed")
+    } catch {
+      case ex: Throwable => false
+    }
   }
 
-  def killApp(appId: Int): Unit = {
-    gearCommand("kill", s"-appid $appId")
+  def killApp(appId: Int): Boolean = {
+    try {
+      gearCommand("kill", s"-appid $appId")
+      true
+    } catch {
+      case ex: Throwable => false
+    }
   }
 
   private def gearCommand(option: String, args: String = ""): String = {
     Docker.execAndCaptureOutput(host, s"/opt/start gear $option $args")
   }
-
-
 
 }
