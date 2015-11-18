@@ -32,7 +32,7 @@ bin/gear app -jar examples/gearpump-examples-assembly-{{site.GEARPUMP_VERSION}}.
 ###  Step 2: Congratulations, you've submitted your first application.
 
 To view the application status and metrics, start the Web UI services, and browse to [http://127.0.0.1:8090](http://127.0.0.1:8090) to check the status.
-![Dashboard](/img/dashboard.gif)
+![Dashboard](img/dashboard.gif)
 
 **NOTE:** the UI port setting can be defined in configuration, please check section [Configuration](deployment-configuration.html).
 

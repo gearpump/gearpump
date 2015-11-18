@@ -49,6 +49,6 @@ bin/services
 
 After UI is started, you can browser http://{web_ui_host}:8090 to view the cluster status.
 
-![Dashboard](/img/dashboard.gif)
+![Dashboard](img/dashboard.gif)
 
 **NOTE:** The UI port can be configured in gear.conf. Check [Configuration Guide](deployment-configuration.html) for information.

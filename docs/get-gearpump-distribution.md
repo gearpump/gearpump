@@ -77,7 +77,7 @@ tar  -zxvf gearpump-${version}.tar.gz
 
 After decompression, the directory structure looks like picture 1.
 
-![Layout](/img/layout.png)
+![Layout](img/layout.png)
 
 Under bin/ folder, there are script files for Linux(bash script) and Windows(.bat script).
 

@@ -64,4 +64,4 @@ For guide about how to install and configure Graphite, please check the Graphite
 
 Here is how it looks like for grafana dashboard:
 
-![Dashboard](/img/dashboard.png)
+![Dashboard](img/dashboard.png)
