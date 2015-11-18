@@ -13,7 +13,7 @@ System timestamp denotes the time of backend cluster system. Application timesta
 
 Gearpump follow master slave architecture. Every cluster contains one or more Master node, and several worker nodes. Worker node is responsible to manage local resources on single machine, and Master node is responsible to manage global resources of the whole cluster.
 
-![Actor Hierarchy](/img/actor_hierarchy.png)
+![Actor Hierarchy](img/actor_hierarchy.png)
 
 ### Application
 
@@ -29,12 +29,12 @@ When user submits an application to Master, Master will first find an available 
 
 To submit an application, a Gearpump client specifies a computation defined within a DAG and submits this to an active master. The SubmitApplication message is sent to the Master who then forwards this to an AppManager.
 
-![Submit App](/img/submit.png)
+![Submit App](img/submit.png)
 Figure: User Submit Application
 
 The AppManager locates an available worker and launches an AppMaster in a sub-process JVM of the worker. The AppMaster will then negotiate with the Master for Resource allocation in order to distribute the DAG as defined within the Application. The allocated workers will then launch Executors (new JVMs).
 
-![Launch Executors and Tasks](/img/submit2.png)
+![Launch Executors and Tasks](img/submit2.png)
 Figure: Launch Executors and Tasks
 
 ### Streaming Topology, Processor, and Task
@@ -42,12 +42,12 @@ Figure: Launch Executors and Tasks
 For streaming application type, each application contains a topology, which is a DAG (directed acyclic graph) to describe the data flow. Each node in the DAG is a processor. For example, for word count it contains two processors, Split and Sum. The Split processor splits a line to a list of words, then the Sum processor summarize the frequency of each word.
 An application is a DAG of processors. Each processor handles messages.
 
-![DAG](/img/dag.png)
+![DAG](img/dag.png)
 Figure: Processor DAG
 
 ### Streaming Task and Partitioner
 
 For streaming application type, Task is the minimum unit of parallelism. In runtime, each Processor is paralleled to a list of tasks, with different tasks running in different executor. You can define Partitioner to denote the data shuffling rule between upstream processor tasks and downstream processor tasks.
 
-![Data Shuffle](/img/shuffle.png)
+![Data Shuffle](img/shuffle.png)
 Figure: Task Data Shuffling

@@ -37,7 +37,7 @@ This section shows how to run an existing Storm jar in a local Gearpump cluster.
 
 When a client submits a Storm topology, Gearpump launches locally a simplified version of Storm's  Nimbus server `GearpumpNimbus`. `GearpumpNimbus` then translates topology to a directed acyclic graph (DAG) of Gearpump, which is submitted to Gearpump master and deployed as a Gearpump application. 
 
-![storm_gearpump_cluster](/img/storm_gearpump_cluster.png)
+![storm_gearpump_cluster](img/storm_gearpump_cluster.png)
 
 `GearpumpNimbus` supports the following methods
   
@@ -50,7 +50,7 @@ When a client submits a Storm topology, Gearpump launches locally a simplified v
 
 Here's an example of `WordCountTopology` with acker bolts (ackers) being translated into a Gearpump DAG.
 
-![storm_gearpump_dag](/img/storm_gearpump_dag.png)
+![storm_gearpump_dag](img/storm_gearpump_dag.png)
 
 Gearpump creates a `StormProducer` for each Storm spout and a `StormProcessor` for each Storm bolt (except for ackers) with the same parallelism, and wires them together using the same grouping strategy (partitioning in Gearpump) as in Storm. 
 
