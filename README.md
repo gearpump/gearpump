@@ -12,7 +12,7 @@ GearPump is a lightweight real-time big data streaming engine. It is inspired by
 The	name	GearPump	is	a	reference to	the	engineering term “gear	pump,”	which	is	a	super simple
 pump	that	consists of	only	two	gears,	but	is	very	powerful at	streaming water.
 
-![](http://www.gearpump.io/site/img/dashboard.gif)
+![](http://www.gearpump.io/img/dashboard.gif)
 
 We model streaming within the Akka actor hierarchy.
 
