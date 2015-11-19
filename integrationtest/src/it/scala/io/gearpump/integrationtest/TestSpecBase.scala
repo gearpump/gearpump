@@ -18,16 +18,35 @@
 package io.gearpump.integrationtest
 
 import io.gearpump.cluster.MasterToAppMaster
-import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
+import io.gearpump.integrationtest.minicluster.MiniCluster
+import io.gearpump.util.LogUtil
+import org.scalatest._
+import org.slf4j.Logger
 
 /**
- * The abstract test spec
- */
-trait TestSpecBase extends FlatSpec with Matchers with BeforeAndAfter {
+  * The abstract test spec
+  */
+trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfter with BeforeAndAfterAll {
+  val LOG: Logger = LogUtil.getLogger(getClass)
+  lazy val cluster = MiniClusterProvider.get
+  lazy val commandLineClient = cluster.commandLineClient
+  lazy val restClient = cluster.restClient
 
-  val cluster = MiniClusterProvider.get
-  val commandLineClient = cluster.commandLineClient
-  val restClient = cluster.restClient
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    if (!MiniClusterProvider.managed) {
+      LOG.info(s"Starting a default mini cluster")
+      MiniClusterProvider.set(new MiniCluster).start()
+    }
+  }
+
+  override def afterAll(): Unit = {
+    if (!MiniClusterProvider.managed) {
+      LOG.info(s"Shutting down the default mini cluster")
+      MiniClusterProvider.get.shutDown()
+    }
+    super.afterAll()
+  }
 
   before {
     assert(cluster != null, "Configure MiniCluster properly in suite spec")
@@ -46,5 +65,4 @@ trait TestSpecBase extends FlatSpec with Matchers with BeforeAndAfter {
     actual.appId shouldEqual appId
     actual.status shouldEqual MasterToAppMaster.AppMasterInActive
   }
-
 }

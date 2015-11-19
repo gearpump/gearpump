@@ -20,19 +20,22 @@ package io.gearpump.integrationtest.suites
 import io.gearpump.integrationtest.MiniClusterProvider
 import io.gearpump.integrationtest.checklist._
 import io.gearpump.integrationtest.minicluster.MiniCluster
-import org.scalatest.{BeforeAndAfterAll, FlatSpec}
+import org.scalatest._
 
 /**
- * Launch a Gearpump cluster in standalone mode and run all test specs
- */
-class StandaloneModeSuite extends FlatSpec with BeforeAndAfterAll
-  with CommandLineSpec
-  with RestServiceSpec
-  with StormCompatibilitySpec
-  with StabilitySpec {
+  * Launch a Gearpump cluster in standalone mode and run all test specs
+  */
+class StandaloneModeSuite extends Suites(
+  new CommandLineSpec,
+  new ConnectorKafkaSpec,
+  new RestServiceSpec,
+  new StabilitySpec,
+  new StormCompatibilitySpec
+) with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+    MiniClusterProvider.managed = true
     MiniClusterProvider.set(new MiniCluster).start()
   }
 

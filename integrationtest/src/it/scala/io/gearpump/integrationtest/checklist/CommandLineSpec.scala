@@ -21,66 +21,80 @@ import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.integrationtest.TestSpecBase
 
 /**
- * The test spec checks the command-line usage
- */
-trait CommandLineSpec extends TestSpecBase {
+  * The test spec checks the command-line usage
+  */
+class CommandLineSpec extends TestSpecBase {
 
   private def wordCountJar =
     cluster.queryBuiltInExampleJars("wordcount-").head
 
   private val wordCountName = "wordCount"
 
-  "use `gear app` to submit application" should "return its running status" in {
-    // exercise
-    val appId = expectSubmitAppSuccess(wordCountJar)
-    expectAppIsRunning(appId, wordCountName)
+  "use `gear app` to submit application" should {
+    "return its running status" in {
+      // exercise
+      val appId = expectSubmitAppSuccess(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
+    }
   }
 
-  "use `gear info` to list applications" should "return the same number as REST api does" in {
-    val expectedAppCount = restClient.listApps().size
-    getAppsCount shouldEqual expectedAppCount
+  "use `gear info` to list applications" should {
+    "return the same number as REST api does" in {
+      val expectedAppCount = restClient.listApps().size
+      getAppsCount shouldEqual expectedAppCount
 
-    val expectedAppId = getNextAvailableAppId
-    val actualAppId = expectSubmitAppSuccess(wordCountJar)
-    actualAppId shouldEqual expectedAppId
-    getAppsCount shouldEqual expectedAppCount + 1
+      val expectedAppId = getNextAvailableAppId
+      val actualAppId = expectSubmitAppSuccess(wordCountJar)
+      actualAppId shouldEqual expectedAppId
+      getAppsCount shouldEqual expectedAppCount + 1
+    }
   }
 
-  "use `gear app` to submit same application twice" should "return an error at the second submission" in {
-    // setup
-    val appId = expectSubmitAppSuccess(wordCountJar)
-    expectAppIsRunning(appId, wordCountName)
+  "use `gear app` to submit same application twice" should {
+    "return an error at the second submission" in {
+      // setup
+      val appId = expectSubmitAppSuccess(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
 
-    // exercise
-    val actualAppId = commandLineClient.submitApp(wordCountJar)
-    actualAppId shouldEqual -1
+      // exercise
+      val actualAppId = commandLineClient.submitApp(wordCountJar)
+      actualAppId shouldEqual -1
+    }
   }
 
-  "use `gear app` to submit non-exist application" should "return an error" in {
-    // exercise
-    val actualAppId = commandLineClient.submitApp(wordCountJar + ".missing")
-    actualAppId shouldEqual -1
+  "use `gear app` to submit non-exist application" should {
+    "return an error" in {
+      // exercise
+      val actualAppId = commandLineClient.submitApp(wordCountJar + ".missing")
+      actualAppId shouldEqual -1
+    }
   }
 
-  "use `gear kill` to kill application" should "be successful" in {
-    // setup
-    val appId = expectSubmitAppSuccess(wordCountJar)
+  "use `gear kill` to kill application" should {
+    "be successful" in {
+      // setup
+      val appId = expectSubmitAppSuccess(wordCountJar)
 
-    // exercise
-    val success = commandLineClient.killApp(appId)
-    success shouldBe true
+      // exercise
+      val success = commandLineClient.killApp(appId)
+      success shouldBe true
+    }
   }
 
-  "use `gear kill` to kill a non-exist application" should "return an error" in {
-    // setup
-    val freeAppId = getNextAvailableAppId
+  "use `gear kill` to kill a non-exist application" should {
+    "return an error" in {
+      // setup
+      val freeAppId = getNextAvailableAppId
 
-    // exercise
-    val success = commandLineClient.killApp(freeAppId)
-    success shouldBe false
+      // exercise
+      val success = commandLineClient.killApp(freeAppId)
+      success shouldBe false
+    }
   }
 
-  "use `gear replay` to replay the application from current min clock" should "be successful" in {
+  "use `gear replay` to replay the application from current min clock" should {
+    "be successful" in {
+    }
   }
 
   private def getAppsCount: Int = {

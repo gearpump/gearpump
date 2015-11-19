@@ -22,6 +22,6 @@ import io.gearpump.integrationtest.TestSpecBase
 /**
  * The test spec will perform destructive operations to check the stability
  */
-trait StabilitySpec extends TestSpecBase {
+class StabilitySpec extends TestSpecBase {
 
 }

@@ -30,9 +30,10 @@ object MiniClusterProvider {
 
   def get = instance
 
+  var managed = false
+
   def set(instance: MiniCluster): MiniCluster = {
     this.instance = instance
     instance
   }
-
 }

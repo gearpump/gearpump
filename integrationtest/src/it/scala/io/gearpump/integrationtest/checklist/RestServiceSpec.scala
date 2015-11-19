@@ -22,25 +22,29 @@ import io.gearpump.cluster.MasterToAppMaster.AppMasterData
 import io.gearpump.integrationtest.TestSpecBase
 
 /**
- * The test spec checks REST service usage
- */
-trait RestServiceSpec extends TestSpecBase {
+  * The test spec checks REST service usage
+  */
+class RestServiceSpec extends TestSpecBase {
 
-  "query system version" should "return the current version number" in {
-    restClient.queryVersion() should not be empty
+  "query system version" should {
+    "return the current version number" in {
+      restClient.queryVersion() should not be empty
+    }
   }
 
-  "submit application (wordcount)" should "return status of running the application" in {
-    // setup
-    val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-    val expectedAppName = "wordCount"
-    restClient.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
+  "submit application (wordcount)" should {
+    "return status of running the application" in {
+      // setup
+      val jar = cluster.queryBuiltInExampleJars("wordcount-").head
+      val expectedAppName = "wordCount"
+      restClient.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
 
-    // exercise
-    val success = restClient.submitApp(jar)
-    success shouldBe true
-    val actualApp = queryActiveAppByNameAndVerify(expectedAppName)
-    killAppAndVerify(actualApp.appId)
+      // exercise
+      val success = restClient.submitApp(jar)
+      success shouldBe true
+      val actualApp = queryActiveAppByNameAndVerify(expectedAppName)
+      killAppAndVerify(actualApp.appId)
+    }
   }
 
   private def queryActiveAppByNameAndVerify(appName: String, timeout: Int = 15 * 1000): AppMasterData = {
@@ -59,18 +63,20 @@ trait RestServiceSpec extends TestSpecBase {
     actual
   }
 
-  "submit same application twice" should "return an error at the second submission" in {
-    // setup
-    val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-    val expectedAppName = "wordCount"
-    restClient.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
-    restClient.submitApp(jar) shouldBe true
-    val expectedApp = queryActiveAppByNameAndVerify(expectedAppName)
+  "submit same application twice" should {
+    "return an error at the second submission" in {
+      // setup
+      val jar = cluster.queryBuiltInExampleJars("wordcount-").head
+      val expectedAppName = "wordCount"
+      restClient.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
+      restClient.submitApp(jar) shouldBe true
+      val expectedApp = queryActiveAppByNameAndVerify(expectedAppName)
 
-    // exercise
-    val success = restClient.submitApp(jar)
-    success shouldBe false
-    killAppAndVerify(expectedApp.appId)
+      // exercise
+      val success = restClient.submitApp(jar)
+      success shouldBe false
+      killAppAndVerify(expectedApp.appId)
+    }
   }
 
   private def killAppAndVerify(appId: Int): Unit = {

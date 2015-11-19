@@ -17,58 +17,58 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.MiniClusterProvider
+import io.gearpump.integrationtest.{TestSpecBase, MiniClusterProvider}
 import io.gearpump.integrationtest.kafka.KafkaCluster
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 /**
- * The test spec checks the Kafka datasource connector
- */
-class ConnectorKafkaSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+  * The test spec checks the Kafka datasource connector
+  */
+class ConnectorKafkaSpec extends TestSpecBase {
 
-  val cluster = MiniClusterProvider.get
-  val client = cluster.restClient
   val kafkaCluster = new KafkaCluster
 
   override def beforeAll(): Unit = {
-    cluster.start()
+    super.beforeAll()
     kafkaCluster.start()
   }
 
   override def afterAll(): Unit = {
-    cluster.shutDown()
+    super.afterAll()
     kafkaCluster.shutDown()
   }
 
-  "KafkaSource and KafaSink" should "read from and write to kafka" in {
-    val kafkaHostname = s"${kafkaCluster.getHostname}"
-    val zookeeperConnect = s"$kafkaHostname:${kafkaCluster.getZookeeperPort}"
-    val brokerList = s"$kafkaHostname:${kafkaCluster.getBrokerPort}"
-    val sourceTopic = "topic1"
-    val sinkTopic = "topic2"
+  "KafkaSource and KafaSink" should {
+    "read from and write to kafka" in {
+      val kafkaHostname = s"${kafkaCluster.getHostname}"
+      val zookeeperConnect = s"$kafkaHostname:${kafkaCluster.getZookeeperPort}"
+      val brokerList = s"$kafkaHostname:${kafkaCluster.getBrokerPort}"
+      val sourceTopic = "topic1"
+      val sinkTopic = "topic2"
 
-    val jar = cluster.queryBuiltInExampleJars("kafka-").head
-    val appsCount = client.listApps().size
-    val appId = appsCount + 1
+      val jar = cluster.queryBuiltInExampleJars("kafka-").head
+      val appsCount = restClient.listApps().size
+      val appId = appsCount + 1
 
-    // exercise
-    val args = Array("io.gearpump.streaming.examples.kafka.KafkaReadWrite",
-      "-zookeeperConnect", zookeeperConnect,
-      "-brokerList", brokerList,
-      "-sourceTopic", sourceTopic,
-      "-sinkTopic", sinkTopic).mkString(" ")
-    val success = client.submitApp(jar, args)
-    Thread.sleep(5000)
-    success shouldEqual true
-    val actual = client.queryApp(appId)
+      // exercise
+      val args = Array("io.gearpump.streaming.examples.kafka.KafkaReadWrite",
+        "-zookeeperConnect", zookeeperConnect,
+        "-brokerList", brokerList,
+        "-sourceTopic", sourceTopic,
+        "-sinkTopic", sinkTopic).mkString(" ")
+      val success = restClient.submitApp(jar, args)
+      Thread.sleep(5000)
+      success shouldEqual true
+      val actual = restClient.queryApp(appId)
 
-    actual.appId shouldEqual appId
-    actual.status shouldEqual "active"
-    actual.appName shouldEqual "KafkaReadWrite"
+      actual.appId shouldEqual appId
+      actual.status shouldEqual "active"
+      actual.appName shouldEqual "KafkaReadWrite"
 
-    val messageNum = 10000
-    kafkaCluster.produceDataToKafka(zookeeperConnect, brokerList, sourceTopic, messageNum)
-    kafkaCluster.getLatestOffset(brokerList, sinkTopic) shouldBe messageNum
+      val messageNum = 10000
+      kafkaCluster.produceDataToKafka(zookeeperConnect, brokerList, sourceTopic, messageNum)
+      kafkaCluster.getLatestOffset(brokerList, sinkTopic) shouldBe messageNum
+    }
   }
 
 }
