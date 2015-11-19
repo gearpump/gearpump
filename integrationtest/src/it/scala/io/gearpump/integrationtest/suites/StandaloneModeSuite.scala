@@ -23,14 +23,17 @@ import io.gearpump.integrationtest.minicluster.MiniCluster
 import org.scalatest._
 
 /**
-  * Launch a Gearpump cluster in standalone mode and run all test specs
-  */
+ * Launch a Gearpump cluster in standalone mode and run all test specs
+ */
 class StandaloneModeSuite extends Suites(
+
   new CommandLineSpec,
   new ConnectorKafkaSpec,
   new RestServiceSpec,
+  new ExampleSpec,
   new StabilitySpec,
   new StormCompatibilitySpec
+
 ) with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {

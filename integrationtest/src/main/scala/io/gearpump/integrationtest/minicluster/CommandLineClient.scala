@@ -35,7 +35,7 @@ class CommandLineClient(host: String) {
 
   def listRunningApps(): Array[String] =
     listApps().filter(
-      _.contains(s", status: ${MasterToAppMaster.AppMasterInActive}")
+      _.contains(s", status: ${MasterToAppMaster.AppMasterActive}")
     )
 
   def queryApp(appId: Int): String = try {
@@ -66,7 +66,8 @@ class CommandLineClient(host: String) {
     Docker.exec(host, s"/opt/start $command")
   }
 
-  private def execAndCaptureOutput(command: String): String =
+  private def execAndCaptureOutput(command: String): String = {
     Docker.execAndCaptureOutput(host, s"/opt/start $command")
+  }
 
 }

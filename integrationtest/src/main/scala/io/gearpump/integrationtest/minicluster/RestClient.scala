@@ -31,16 +31,18 @@ class RestClient(host: String, port: Int) {
     callFromRoot("version")
   }
 
-  def listApps(): List[AppMasterData] = {
+  def listApps(): List[AppMasterData] = try {
     val resp = callApi("master/applist")
     read[AppMastersData](resp).appMasters
+  } catch {
+    case ex: Throwable => List.empty
   }
 
-  def listActiveApps(): List[AppMasterData] = {
+  def listRunningApps(): List[AppMasterData] = {
     listApps().filter(_.status == MasterToAppMaster.AppMasterActive)
   }
 
-  def submitApp(jar: String, args: String = "", config: String = ""): Boolean = {
+  def submitApp(jar: String, args: String = "", config: String = ""): Boolean = try {
     var endpoint = "master/submitapp"
     if (args.length > 0) {
       endpoint += "?args=" + Util.encodeUriComponent(args)
@@ -51,15 +53,15 @@ class RestClient(host: String, port: Int) {
     }
     val resp = callApi(endpoint, options.map("-F " + _).mkString(" "))
     resp.contains("\"success\":true")
+  } catch {
+    case ex: Throwable => false
   }
 
-  def queryApp(appId: Int): AppMasterData = {
+  def queryApp(appId: Int): AppMasterData = try {
     val resp = callApi(s"appmaster/$appId")
-    try {
-      read[AppMasterData](resp)
-    } catch {
-      case ex: Throwable => null
-    }
+    read[AppMasterData](resp)
+  } catch {
+    case ex: Throwable => null
   }
 
   /*
@@ -71,8 +73,11 @@ class RestClient(host: String, port: Int) {
     }
     */
 
-  def killApp(appId: Int): Unit = {
-    callApi(s"appmaster/$appId", "-X DELETE")
+  def killApp(appId: Int): Boolean = try {
+    val resp = callApi(s"appmaster/$appId", "-X DELETE")
+    resp.contains("\"status\":\"success\"")
+  } catch {
+    case ex: Throwable => false
   }
 
   private def callApi(endpoint: String, options: String = ""): String = {
