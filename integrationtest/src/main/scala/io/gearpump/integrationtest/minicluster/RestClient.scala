@@ -17,15 +17,28 @@
  */
 package io.gearpump.integrationtest.minicluster
 
-import io.gearpump.cluster.MasterToAppMaster
+import akka.actor.{PoisonPill, ActorSystem}
+import io.gearpump.cluster.{ClusterConfig, MasterToAppMaster}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.integrationtest.Docker
+import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
+import io.gearpump.streaming.appmaster.StreamAppMasterSummary
+import io.gearpump.util.Graph
+import upickle.Js
 import upickle.default._
 
 /**
  * A REST client to operate a Gearpump cluster
  */
 class RestClient(host: String, port: Int) {
+  private val system = ActorSystem("restClient", ClusterConfig.load.default)
+
+  implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
+    case Js.Obj(verties, edges) =>
+      val vertexList = upickle.default.readJs[List[Int]](verties._2)
+      val edgeList = upickle.default.readJs[List[(Int, String, Int)]](edges._2)
+      Graph(vertexList, edgeList)
+  }
 
   def queryVersion(): String = {
     callFromRoot("version")
@@ -64,20 +77,55 @@ class RestClient(host: String, port: Int) {
     case ex: Throwable => null
   }
 
-  /*
-  def queryAppDetail(appId: Int): AppMasterSummary = {
-      val resp = callApi(s"appmaster/$appId?detail=true")
-      if (resp.startsWith("java.lang.Exception: Can not find Application:"))
-        null
-      else upickle.default.read[AppMasterSummary](resp)
+  def queryStreamingAppDetail(appId: Int): StreamAppMasterSummary = {
+    val resp = callApi(s"appmaster/$appId?detail=true")
+    if (resp.startsWith("java.lang.Exception: Can not find Application:"))
+      null
+    else upickle.default.read[StreamAppMasterSummary](resp)
+  }
+
+  def getExecutorInfos(appId: Int): List[ExecutorBrief] = {
+    val streamAppMasterSummary = queryStreamingAppDetail(appId)
+    if(streamAppMasterSummary != null) {
+      streamAppMasterSummary.executors
+    } else {
+      List.empty
     }
-    */
+  }
+
+  def killAppMaster(appId: Int): Boolean = {
+    val appMasterData = queryApp(appId)
+    if(appMasterData == null) {
+      false
+    } else {
+      val appMasterPath = appMasterData.appMasterPath
+      val appMaster = system.actorSelection(appMasterPath)
+      appMaster ! PoisonPill
+      true
+    }
+  }
+
+  def killExecutor(appId: Int, executorId: Int): Boolean = {
+    val executorBrief = getExecutorInfos(appId).find(_.executorId == executorId)
+    if(executorBrief.isEmpty) {
+      false
+    } else {
+      val executorPath = executorBrief.get.executor
+      val executor = system.actorSelection(executorPath)
+      executor ! PoisonPill
+      true
+    }
+  }
 
   def killApp(appId: Int): Boolean = try {
     val resp = callApi(s"appmaster/$appId", "-X DELETE")
     resp.contains("\"status\":\"success\"")
   } catch {
     case ex: Throwable => false
+  }
+
+  def close(): Unit = {
+    system.shutdown()
   }
 
   private def callApi(endpoint: String, options: String = ""): String = {
