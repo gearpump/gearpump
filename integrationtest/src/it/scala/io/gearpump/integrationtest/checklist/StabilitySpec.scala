@@ -25,14 +25,33 @@ import io.gearpump.integrationtest.TestSpecBase
 class StabilitySpec extends TestSpecBase {
 
   "kill appmaster" should {
-    "appmaster should be restarted without impact on the running application" in {
+    "restart the whole application" in {
+      val appId = commandLineClient.submitApp(wordCountJar)
+      val formerAppMaster = restClient.queryApp(appId).appMasterPath
+      retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      //Here make sure the application clock is stored in the Mastr
+      Thread.sleep(5000)
+      restClient.killAppMaster(appId) shouldBe true
 
+      retryUntil(restClient.queryApp(appId).appMasterPath != formerAppMaster)
+      val laterAppMaster = restClient.queryStreamingAppDetail(appId)
+      laterAppMaster.status shouldEqual "active"
+      assert(laterAppMaster.clock > 0)
     }
   }
 
   "kill executor" should {
     "will create a new executor and application will  replay from the latest application clock" in {
+      val appId = commandLineClient.submitApp(wordCountJar)
+      retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      val executorToKill = restClient.getExecutorInfos(appId).map(_.executorId).max
+      //Here make sure the application clock is stored in the Mastr
+      restClient.killExecutor(appId, executorToKill) shouldBe true
 
+      retryUntil(restClient.getExecutorInfos(appId).map(_.executorId).max > executorToKill)
+      val laterAppMaster = restClient.queryStreamingAppDetail(appId)
+      laterAppMaster.status shouldEqual "active"
+      assert(laterAppMaster.clock > 0)
     }
   }
 
