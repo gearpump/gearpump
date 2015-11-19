@@ -17,7 +17,7 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.{Docker, TestSpecBase}
+import io.gearpump.integrationtest.TestSpecBase
 
 /**
  * The test spec checks the compatibility of running Storm applications
@@ -28,7 +28,8 @@ trait StormCompatibilitySpec extends TestSpecBase {
     val appsCount = restClient.listApps().size
     val appId = appsCount + 1
     val actual = restClient.queryApp(appId)
-    Docker.exec(cluster.getMasterHosts.head, "/opt/storm -verbose -jar /opt/gearpump/lib/storm/storm-starter-0.9.5.jar " +
+    commandLineClient.execStormCommand(
+      "-verbose -jar /opt/gearpump/lib/storm/storm-starter-0.9.5.jar " +
         "storm.starter.ExclamationTopology exclamation")
 
     Thread.sleep(5000)

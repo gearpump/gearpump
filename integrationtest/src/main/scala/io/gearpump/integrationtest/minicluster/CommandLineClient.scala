@@ -17,48 +17,56 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.integrationtest.Docker
 
 /**
- * A command client to operate a Gearpump cluster
+ * A command-line client to operate a Gearpump cluster
  */
 class CommandLineClient(host: String) {
 
-  def queryApps(): Array[String] = {
-    try {
-      gearCommand("info").split("\n").filter(_.contains("application"))
-    } catch {
-      case ex: Throwable => null
-    }
+  def listApps(): Array[String] = try {
+    execAndCaptureOutput("gear info").split("\n").filter(
+      _.startsWith("application: ")
+    )
+  } catch {
+    case ex: Throwable => Array.empty
   }
 
-  def queryApp(appId: Int): String = {
-    try {
-      queryApps().filter(_.contains(s"application: $appId")).head
-    } catch {
-      case ex: Throwable => null
-    }
+  def listRunningApps(): Array[String] =
+    listApps().filter(
+      _.contains(s", status: ${MasterToAppMaster.AppMasterInActive}")
+    )
+
+  def queryApp(appId: Int): String = try {
+    listApps().filter(
+      _.startsWith(s"application: $appId")
+    ).head
+  } catch {
+    case ex: Throwable => ""
   }
 
-  def submitApp(jar: String, args: String = ""): Boolean = {
-    try {
-      gearCommand("app", s"-jar $jar $args").contains("Submit application succeed")
-    } catch {
-      case ex: Throwable => false
-    }
+  def submitApp(jar: String, args: String = ""): Int = try {
+    execAndCaptureOutput(s"gear app -jar $jar $args")
+      .replace("Submit application succeed. The application id is ", "")
+      .toInt
+  } catch {
+    case ex: Throwable => -1
   }
 
   def killApp(appId: Int): Boolean = {
-    try {
-      gearCommand("kill", s"-appid $appId")
-      true
-    } catch {
-      case ex: Throwable => false
-    }
+    exec(s"gear kill -appid $appId")
   }
 
-  private def gearCommand(option: String, args: String = ""): String = {
-    Docker.execAndCaptureOutput(host, s"/opt/start gear $option $args")
+  def execStormCommand(args: String): Boolean = {
+    exec(s"storm $args")
   }
+
+  private def exec(command: String): Boolean = {
+    Docker.exec(host, s"/opt/start $command")
+  }
+
+  private def execAndCaptureOutput(command: String): String =
+    Docker.execAndCaptureOutput(host, s"/opt/start $command")
 
 }

@@ -18,6 +18,7 @@
 package io.gearpump.integrationtest.minicluster
 
 import io.gearpump.integrationtest.Docker
+import org.apache.log4j.Logger
 
 import scala.sys.process._
 
@@ -32,6 +33,7 @@ class MiniCluster(
                    restServicePort: Int = 8090 // The port of REST service (Yarn integration might modify the value)
                    ) {
 
+  private val LOG = Logger.getLogger(MiniCluster.this.getClass)
   private val SUT_HOME = "/opt/gearpump"
   private val MOUNT_PATH = "pwd".!!.trim + "/output/target/pack"
   private val MOUNT_PATH_OPTS = s"-v $MOUNT_PATH:$SUT_HOME"
@@ -43,6 +45,7 @@ class MiniCluster(
   }
 
   def commandLineClient = new CommandLineClient(getMasterHosts.head)
+
   def restClient = new RestClient(getMasterHosts.head, restServicePort)
 
   private val CLUSTER_OPTS = {
@@ -99,13 +102,15 @@ class MiniCluster(
   /**
    * @throws RuntimeException if service is not available for N retries
    */
-  private def expectRestServiceAvailable(timeout: Int = 15 * 1000, retryDelay: Int = 200): Unit = {
+  private def expectRestServiceAvailable(retry: Int = 20): Unit = {
+    val RETRY_DELAY = 1000
     try {
-      restClient.queryVersion()
+      val response = restClient.queryVersion()
+      LOG.debug(s"Finish waiting for RestService available with response: $response.")
     } catch {
-      case ex if timeout > 0 =>
-        Thread.sleep(retryDelay)
-        expectRestServiceAvailable(timeout - retryDelay, retryDelay)
+      case ex if retry > 0 =>
+        Thread.sleep(RETRY_DELAY)
+        expectRestServiceAvailable(retry - 1)
     }
   }
 

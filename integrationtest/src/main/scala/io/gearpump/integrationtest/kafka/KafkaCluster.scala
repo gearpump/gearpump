@@ -23,7 +23,14 @@ import io.gearpump.integrationtest.Docker
  * This class maintains a single node Kafka cluster with integrated Zookeeper.
  */
 class KafkaCluster {
-  import io.gearpump.integrationtest.kafka.KafkaCluster._
+
+  private val KAFKA_DOCKER_IMAGE = "spotify/kafka"
+  private val KAFKA_HOST = "kafka0"
+  private val KAFKA_HOME = "/opt/kafka_2.11-0.8.2.1/"
+
+  def getZookeeperPort = 2181
+
+  def getBrokerPort = 9092
 
   def start(): Unit = {
     Docker.run(KAFKA_HOST, s"-d -h $KAFKA_HOST", "", KAFKA_DOCKER_IMAGE)
@@ -37,15 +44,21 @@ class KafkaCluster {
     Docker.execAndCaptureOutput(KAFKA_HOST, "hostname")
   }
 
-  def getZookeeperPort = 2181
+  def produceDataToKafka(zookeeperConnect: String, brokerList: String, sourceTopic: String, messageNum: Int): Unit = {
+    Docker.exec(KAFKA_HOST,
+      s"$KAFKA_HOME/bin/kafka-topics.sh --create --topic $sourceTopic --partitions 1 --replication-factor 1 " +
+        s"--zookeeper $zookeeperConnect"
+    )
 
-  def getBrokerPort = 9092
+    Docker.exec(KAFKA_HOST,
+      s"$KAFKA_HOME/bin/kafka-producer-perf-test.sh --topic $sourceTopic --messages $messageNum " +
+        s"--broker-list $brokerList")
+  }
+
+  def getLatestOffset(brokerList: String, sinkTopic: String): Int = {
+    val output = Docker.execAndCaptureOutput(KAFKA_HOST,
+      s"$KAFKA_HOME/bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list $brokerList --topic $sinkTopic --time -1")
+    output.split(":")(2).toInt
+  }
 
 }
-
-object KafkaCluster {
-  val KAFKA_DOCKER_IMAGE = "spotify/kafka"
-  val KAFKA_HOST = "kafka0"
-  val KAFKA_HOME = "/opt/kafka_2.11-0.8.2.1/"
-}
-

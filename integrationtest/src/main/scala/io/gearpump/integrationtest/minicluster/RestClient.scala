@@ -27,8 +27,6 @@ import upickle.default._
  */
 class RestClient(host: String, port: Int) {
 
-  private val apiPrefix = "api/v1.0"
-
   def queryVersion(): String = {
     callFromRoot("version")
   }
@@ -78,11 +76,11 @@ class RestClient(host: String, port: Int) {
   }
 
   private def callApi(endpoint: String, options: String = ""): String = {
-    callFromRoot(s"$apiPrefix/$endpoint", options)
+    callFromRoot(s"api/v1.0/$endpoint", options)
   }
 
   private def callFromRoot(endpoint: String, options: String = ""): String = {
-    Docker.execAndCaptureOutput(host, s"curl -s $options $host:$port/$endpoint")
+    Docker.execAndCaptureOutput(host, s"curl -s $options http://$host:$port/$endpoint")
   }
 
 }
