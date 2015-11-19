@@ -12,7 +12,4 @@ WORKDIR $SUT_HOME
 ADD start.sh /opt/start
 RUN chmod +x /opt/start
 
-ADD storm.sh /opt/storm
-RUN chmod +x /opt/storm
-
 ENTRYPOINT ["/opt/start"]

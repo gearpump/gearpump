@@ -17,9 +17,8 @@
  */
 package io.gearpump.integrationtest.checklist
 
+import io.gearpump.integrationtest.MiniClusterProvider
 import io.gearpump.integrationtest.kafka.KafkaCluster
-import io.gearpump.integrationtest.kafka.KafkaCluster._
-import io.gearpump.integrationtest.{Docker, MiniClusterProvider}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 /**
@@ -31,16 +30,15 @@ class ConnectorKafkaSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   val client = cluster.restClient
   val kafkaCluster = new KafkaCluster
 
-  override def beforeAll: Unit = {
+  override def beforeAll(): Unit = {
     cluster.start()
     kafkaCluster.start()
   }
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     cluster.shutDown()
     kafkaCluster.shutDown()
   }
-
 
   "KafkaSource and KafaSink" should "read from and write to kafka" in {
     val kafkaHostname = s"${kafkaCluster.getHostname}"
@@ -69,25 +67,8 @@ class ConnectorKafkaSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     actual.appName shouldEqual "KafkaReadWrite"
 
     val messageNum = 10000
-    produceDataToKafka(zookeeperConnect, brokerList, sourceTopic, messageNum)
-    getLatestOffset(brokerList, sinkTopic) shouldBe messageNum
+    kafkaCluster.produceDataToKafka(zookeeperConnect, brokerList, sourceTopic, messageNum)
+    kafkaCluster.getLatestOffset(brokerList, sinkTopic) shouldBe messageNum
   }
 
-  private def produceDataToKafka(zookeeperConnect: String, brokerList: String, sourceTopic: String, messageNum: Int): Unit = {
-    Docker.exec(KAFKA_HOST,
-      s"$KAFKA_HOME/bin/kafka-topics.sh --create --topic $sourceTopic --partitions 1 --replication-factor 1 " +
-      s"--zookeeper $zookeeperConnect"
-    )
-
-    Docker.exec(KAFKA_HOST,
-      s"$KAFKA_HOME/bin/kafka-producer-perf-test.sh --topic $sourceTopic --messages $messageNum " +
-      s"--broker-list $brokerList")
-
-  }
-
-  private def getLatestOffset(brokerList: String, sinkTopic: String): Int = {
-    val output = Docker.execAndCaptureOutput(KAFKA_HOST,
-      s"$KAFKA_HOME/bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list $brokerList --topic $sinkTopic --time -1")
-    output.split(":")(2).toInt
-  }
 }

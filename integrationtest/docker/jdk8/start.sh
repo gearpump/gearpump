@@ -16,33 +16,32 @@ fi
 export JAVA_OPTS
 JAVA_OPTS="$CLUSTER"
 
-case "$1" in
+COMMAND=$1
+shift
+
+case "$COMMAND" in
   master)
     # Will launch REST service as daemon and then launch master in foreground
-    shift
-    JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname)"
-    if [ -z "$(jps | grep Services)" ]; then
-      JAVA_OPTS="$JAVA_OPTS -Dgearpump.services.host=$(hostname)"
-      nohup sh ${SUT_HOME}/bin/services &
-    fi
-    nohup sh ${SUT_HOME}/bin/master "$@"
+    JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname) -Dgearpump.services.host=$(hostname)"
+    nohup sh "$SUT_HOME"/bin/services &
+    nohup sh "$SUT_HOME"/bin/master "$@"
     ;;
   worker)
     # Will launch a worker instance in foreground
     JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname -i)"
-    nohup sh ${SUT_HOME}/bin/worker
+    nohup sh "$SUT_HOME"/bin/worker
     ;;
-  gear)
-    # Will execute command `gear [ARGS]` and wait for response 
-    shift
+  gear|storm)
+    # Will execute command `gear` or `storm` with any number of arguments and wait for response
     JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname)"
-    sh ${SUT_HOME}/bin/gear "$@"
+    sh "$SUT_HOME"/bin/"$COMMAND" "$@"
     ;;
   *)
     echo "Usage:"
     echo "  master -ip [HOST] -port [PORT]"
     echo "  worker"
     echo "  gear [ARGS]"
+    echo "  storm [ARGS]"
     exit 1
     ;;
 esac

@@ -17,6 +17,7 @@
  */
 package io.gearpump.integrationtest
 
+import io.gearpump.cluster.MasterToAppMaster
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 
 /**
@@ -25,11 +26,25 @@ import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 trait TestSpecBase extends FlatSpec with Matchers with BeforeAndAfter {
 
   val cluster = MiniClusterProvider.get
-  var commandLineClient = cluster.commandLineClient
+  val commandLineClient = cluster.commandLineClient
   val restClient = cluster.restClient
 
   before {
     assert(cluster != null, "Configure MiniCluster properly in suite spec")
+    restClient.listActiveApps().size shouldEqual 0
+  }
+
+  after {
+    restClient.listActiveApps().foreach(app => {
+      killAppAndVerify(app.appId)
+    })
+  }
+
+  private def killAppAndVerify(appId: Int): Unit = {
+    commandLineClient.killApp(appId) shouldBe true
+    val actual = restClient.queryApp(appId)
+    actual.appId shouldEqual appId
+    actual.status shouldEqual MasterToAppMaster.AppMasterInActive
   }
 
 }
