@@ -30,10 +30,15 @@ object MiniClusterProvider {
 
   def get = instance
 
-  var managed = false
-
   def set(instance: MiniCluster): MiniCluster = {
     this.instance = instance
     instance
   }
+
+  /**
+   * Indicates whether test suite should create particular cluster. In case of false, every
+   * test spec will be responsible for cluster creation.
+   */
+  var managed = false
+
 }

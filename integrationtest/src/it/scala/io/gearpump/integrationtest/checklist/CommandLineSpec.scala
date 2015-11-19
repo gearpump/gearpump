@@ -21,37 +21,34 @@ import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.integrationtest.TestSpecBase
 
 /**
-  * The test spec checks the command-line usage
-  */
+ * The test spec checks the command-line usage
+ */
 class CommandLineSpec extends TestSpecBase {
 
-  private def wordCountJar =
-    cluster.queryBuiltInExampleJars("wordcount-").head
+  "use `gear info` to list applications" should {
+    "retrieve 0 application after cluster just started" in {
+      // exercise
+      getRunningAppCount shouldEqual 0
+    }
 
-  private val wordCountName = "wordCount"
+    "retrieve 1 application after the first application submission" in {
+      // setup
+      val appId = expectSubmitAppSuccess(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
+
+      // exercise
+      getRunningAppCount shouldEqual 1
+    }
+  }
 
   "use `gear app` to submit application" should {
-    "return its running status" in {
+    "find a running application after submission" in {
       // exercise
       val appId = expectSubmitAppSuccess(wordCountJar)
       expectAppIsRunning(appId, wordCountName)
     }
-  }
 
-  "use `gear info` to list applications" should {
-    "return the same number as REST api does" in {
-      val expectedAppCount = restClient.listApps().size
-      getAppsCount shouldEqual expectedAppCount
-
-      val expectedAppId = getNextAvailableAppId
-      val actualAppId = expectSubmitAppSuccess(wordCountJar)
-      actualAppId shouldEqual expectedAppId
-      getAppsCount shouldEqual expectedAppCount + 1
-    }
-  }
-
-  "use `gear app` to submit same application twice" should {
-    "return an error at the second submission" in {
+    "reject a repeated submission request while the application is running" in {
       // setup
       val appId = expectSubmitAppSuccess(wordCountJar)
       expectAppIsRunning(appId, wordCountName)
@@ -60,10 +57,8 @@ class CommandLineSpec extends TestSpecBase {
       val actualAppId = commandLineClient.submitApp(wordCountJar)
       actualAppId shouldEqual -1
     }
-  }
 
-  "use `gear app` to submit non-exist application" should {
-    "return an error" in {
+    "reject an invalid submission (the jar file path is incorrect)" in {
       // exercise
       val actualAppId = commandLineClient.submitApp(wordCountJar + ".missing")
       actualAppId shouldEqual -1
@@ -71,7 +66,7 @@ class CommandLineSpec extends TestSpecBase {
   }
 
   "use `gear kill` to kill application" should {
-    "be successful" in {
+    "a running application should be killed" in {
       // setup
       val appId = expectSubmitAppSuccess(wordCountJar)
 
@@ -79,10 +74,19 @@ class CommandLineSpec extends TestSpecBase {
       val success = commandLineClient.killApp(appId)
       success shouldBe true
     }
-  }
 
-  "use `gear kill` to kill a non-exist application" should {
-    "return an error" in {
+    "should fail when attempting to kill a stopped application" in {
+      // setup
+      val appId = expectSubmitAppSuccess(wordCountJar)
+      var success = commandLineClient.killApp(appId)
+      success shouldBe true
+
+      // exercise
+      success = commandLineClient.killApp(appId)
+      success shouldBe false
+    }
+
+    "should fail when attempting to kill a non-exist application" in {
       // setup
       val freeAppId = getNextAvailableAppId
 
@@ -93,17 +97,18 @@ class CommandLineSpec extends TestSpecBase {
   }
 
   "use `gear replay` to replay the application from current min clock" should {
-    "be successful" in {
+    "todo: description" in {
+      // todo: test code
     }
   }
 
-  private def getAppsCount: Int = {
-    val apps = commandLineClient.listApps()
-    apps should not be null
-    apps.length
+  private def getRunningAppCount: Int = {
+    commandLineClient.listRunningApps().length
   }
 
-  private def getNextAvailableAppId = getAppsCount + 1
+  private def getNextAvailableAppId: Int = {
+    commandLineClient.listApps().length + 1
+  }
 
   private def expectSubmitAppSuccess(jar: String): Int = {
     val appId = commandLineClient.submitApp(jar)

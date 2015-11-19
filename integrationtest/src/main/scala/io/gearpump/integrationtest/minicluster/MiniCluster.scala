@@ -33,7 +33,7 @@ class MiniCluster(
                    restServicePort: Int = 8090 // The port of REST service (Yarn integration might modify the value)
                    ) {
 
-  private val LOG = Logger.getLogger(MiniCluster.this.getClass)
+  private val LOG = Logger.getLogger(getClass)
   private val SUT_HOME = "/opt/gearpump"
   private val MOUNT_PATH = "pwd".!!.trim + "/output/target/pack"
   private val MOUNT_PATH_OPTS = s"-v $MOUNT_PATH:$SUT_HOME"
@@ -44,9 +44,9 @@ class MiniCluster(
     )
   }
 
-  def commandLineClient = new CommandLineClient(getMasterHosts.head)
+  lazy val commandLineClient = new CommandLineClient(getMasterHosts.head)
 
-  def restClient = new RestClient(getMasterHosts.head, restServicePort)
+  lazy val restClient = new RestClient(getMasterHosts.head, restServicePort)
 
   private val CLUSTER_OPTS = {
     MASTER_ADDRS.zipWithIndex.map { case (hostPort, index) =>

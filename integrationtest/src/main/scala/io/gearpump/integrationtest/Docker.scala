@@ -26,7 +26,7 @@ import scala.sys.process._
  */
 object Docker {
 
-  private val LOG = Logger.getLogger(Docker.getClass)
+  private val LOG = Logger.getLogger(getClass)
 
   def listContainers(): Seq[String] = {
     shellExecAndCaptureOutput("docker ps -q -a", "LIST")

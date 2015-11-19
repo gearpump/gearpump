@@ -17,16 +17,15 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.{TestSpecBase, MiniClusterProvider}
+import io.gearpump.integrationtest.TestSpecBase
 import io.gearpump.integrationtest.kafka.KafkaCluster
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 /**
-  * The test spec checks the Kafka datasource connector
-  */
+ * The test spec checks the Kafka datasource connector
+ */
 class ConnectorKafkaSpec extends TestSpecBase {
 
-  val kafkaCluster = new KafkaCluster
+  private val kafkaCluster = new KafkaCluster
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -34,8 +33,8 @@ class ConnectorKafkaSpec extends TestSpecBase {
   }
 
   override def afterAll(): Unit = {
-    super.afterAll()
     kafkaCluster.shutDown()
+    super.afterAll()
   }
 
   "KafkaSource and KafaSink" should {

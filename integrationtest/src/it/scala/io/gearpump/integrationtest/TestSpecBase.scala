@@ -19,42 +19,46 @@ package io.gearpump.integrationtest
 
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.integrationtest.minicluster.MiniCluster
-import io.gearpump.util.LogUtil
 import org.scalatest._
-import org.slf4j.Logger
+import org.apache.log4j.Logger
 
 /**
-  * The abstract test spec
-  */
+ * The abstract test spec
+ */
 trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfter with BeforeAndAfterAll {
-  val LOG: Logger = LogUtil.getLogger(getClass)
-  lazy val cluster = MiniClusterProvider.get
-  lazy val commandLineClient = cluster.commandLineClient
-  lazy val restClient = cluster.restClient
+
+  private val LOG = Logger.getLogger(getClass)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     if (!MiniClusterProvider.managed) {
-      LOG.info(s"Starting a default mini cluster")
+      LOG.info("Will test with a default standalone mini cluster")
       MiniClusterProvider.set(new MiniCluster).start()
     }
   }
 
   override def afterAll(): Unit = {
     if (!MiniClusterProvider.managed) {
-      LOG.info(s"Shutting down the default mini cluster")
+      LOG.info("Will shutdown the default mini cluster")
       MiniClusterProvider.get.shutDown()
     }
     super.afterAll()
   }
 
+  lazy val cluster = MiniClusterProvider.get
+  lazy val commandLineClient = cluster.commandLineClient
+  lazy val restClient = cluster.restClient
+
+  lazy val wordCountJar = cluster.queryBuiltInExampleJars("wordcount-").head
+  lazy val wordCountName = "wordCount"
+
   before {
     assert(cluster != null, "Configure MiniCluster properly in suite spec")
-    restClient.listActiveApps().size shouldEqual 0
+    restClient.listRunningApps().size shouldEqual 0
   }
 
   after {
-    restClient.listActiveApps().foreach(app => {
+    restClient.listRunningApps().foreach(app => {
       killAppAndVerify(app.appId)
     })
   }
@@ -65,4 +69,5 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfter with Befor
     actual.appId shouldEqual appId
     actual.status shouldEqual MasterToAppMaster.AppMasterInActive
   }
+
 }

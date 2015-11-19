@@ -22,36 +22,141 @@ import io.gearpump.cluster.MasterToAppMaster.AppMasterData
 import io.gearpump.integrationtest.TestSpecBase
 
 /**
-  * The test spec checks REST service usage
-  */
+ * The test spec checks REST service usage
+ */
 class RestServiceSpec extends TestSpecBase {
 
   "query system version" should {
-    "return the current version number" in {
+    "retrieve the current version number" in {
       restClient.queryVersion() should not be empty
     }
   }
 
-  "submit application (wordcount)" should {
-    "return status of running the application" in {
-      // setup
-      val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-      val expectedAppName = "wordCount"
-      restClient.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
+  "list applications" should {
+    "retrieve 0 application after cluster just started" in {
+      restClient.listRunningApps().size shouldEqual 0
+    }
 
+    "retrieve 1 application after the first application submission" in {
       // exercise
-      val success = restClient.submitApp(jar)
-      success shouldBe true
-      val actualApp = queryActiveAppByNameAndVerify(expectedAppName)
-      killAppAndVerify(actualApp.appId)
+      expectSubmitAppSuccess(wordCountJar)
+      expectAppIsRunning(wordCountName)
+      restClient.listRunningApps().size shouldEqual 1
     }
   }
 
-  private def queryActiveAppByNameAndVerify(appName: String, timeout: Int = 15 * 1000): AppMasterData = {
+  "submit application (wordcount)" should {
+    "find a running application after submission" in {
+      // exercise
+      expectSubmitAppSuccess(wordCountJar)
+      expectAppIsRunning(wordCountName)
+    }
+
+    "reject a repeated submission request while the application is running" in {
+      // setup
+      expectSubmitAppSuccess(wordCountJar)
+      expectAppIsRunning(wordCountName)
+
+      // exercise
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe false
+    }
+
+    "reject an invalid submission (the jar file path is incorrect)" in {
+      // exercise
+      val success = restClient.submitApp(wordCountJar + ".missing")
+      success shouldBe false
+    }
+
+    "find a running application with expected number of split and sum processors" in {
+    }
+
+    "find a running application with metrics value keeping changing" in {
+    }
+  }
+
+  "kill application" should {
+    "a running application should be killed" in {
+      // setup
+      expectSubmitAppSuccess(wordCountJar)
+      val app = expectAppIsRunning(wordCountName)
+
+      // exercise
+      killAppAndVerify(app.appId)
+    }
+
+    "should fail when attempting to kill a stopped application" in {
+      // setup
+      expectSubmitAppSuccess(wordCountJar)
+      val app = expectAppIsRunning(wordCountName)
+      killAppAndVerify(app.appId)
+
+      // exercise
+      val success = restClient.killApp(app.appId)
+      success shouldBe false
+    }
+
+    "should fail when attempting to kill a non-exist application" in {
+      // setup
+      val freeAppId = restClient.listApps().size + 1
+
+      // exercise
+      val success = restClient.killApp(freeAppId)
+      success shouldBe false
+    }
+  }
+
+  "cluster information" should {
+    "retrieve 1 master for a non-HA cluster" in {
+
+    }
+
+    "retrieve 0 worker, if cluster is started without any workers" in {
+      // todo: defect
+    }
+
+    "retrieve the same number of workers as cluster has" in {
+    }
+
+    "find a newly added worker instance" in {
+
+    }
+  }
+
+  "configuration" should {
+    "retrieve the configuration of master" in {
+
+    }
+
+    "retrieve the configuration of worker X" in {
+
+    }
+
+    "retrieve the configuration of executor X" in {
+
+    }
+
+    "retrieve the configuration of application X" in {
+
+    }
+  }
+
+  "application life-cycle" should {
+    "newly started application should be configured same as the previous one, after restart" in {
+
+    }
+  }
+
+  private def expectSubmitAppSuccess(jar: String): Unit = {
+    val success = restClient.submitApp(jar)
+    success shouldBe true
+  }
+
+  private def expectAppIsRunning(appName: String, timeout: Int = 15 * 1000): AppMasterData = {
     var app: Option[AppMasterData] = None
     var timeTook = 0
     while (app.isEmpty || timeTook > timeout) {
-      app = restClient.listActiveApps().find(_.appName == appName)
+      app = restClient.listRunningApps().find(_.appName == appName)
       Thread.sleep(1000)
       timeTook += 1000
     }
@@ -63,24 +168,9 @@ class RestServiceSpec extends TestSpecBase {
     actual
   }
 
-  "submit same application twice" should {
-    "return an error at the second submission" in {
-      // setup
-      val jar = cluster.queryBuiltInExampleJars("wordcount-").head
-      val expectedAppName = "wordCount"
-      restClient.listActiveApps().exists(_.appName == expectedAppName) shouldBe false
-      restClient.submitApp(jar) shouldBe true
-      val expectedApp = queryActiveAppByNameAndVerify(expectedAppName)
-
-      // exercise
-      val success = restClient.submitApp(jar)
-      success shouldBe false
-      killAppAndVerify(expectedApp.appId)
-    }
-  }
-
   private def killAppAndVerify(appId: Int): Unit = {
-    restClient.killApp(appId)
+    val success = restClient.killApp(appId)
+    success shouldBe true
 
     val actualApp = restClient.queryApp(appId)
     actualApp.appId shouldEqual appId

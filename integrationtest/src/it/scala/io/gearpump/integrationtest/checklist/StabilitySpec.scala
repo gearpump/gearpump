@@ -24,4 +24,32 @@ import io.gearpump.integrationtest.TestSpecBase
  */
 class StabilitySpec extends TestSpecBase {
 
+  "kill appmaster" should {
+    "appmaster should be restarted without impact on the running application" in {
+
+    }
+  }
+
+  "kill executor" should {
+    "will create a new executor and application will  replay from the latest application clock" in {
+
+    }
+  }
+
+  "kill worker" should {
+    "worker will not recover but all its executors will be migrated to other workers" in {
+
+    }
+
+    "application will hang, if the only one worker is killed" in {
+
+    }
+  }
+
+  "kill master" should {
+    "master will be down and all workers will attempt to reconnect and suicide after X seconds" in {
+      
+    }
+  }
+
 }

@@ -20,43 +20,27 @@ package io.gearpump.integrationtest.checklist
 import io.gearpump.integrationtest.TestSpecBase
 
 /**
- * The test spec checks the compatibility of running Storm applications
+ * The test spec will perform destructive operations to check the stability
  */
-class StormCompatibilitySpec extends TestSpecBase {
+class ExampleSpec extends TestSpecBase {
 
-  "run storm over gearpump applications" should {
-    "succeed" in {
-      val appsCount = restClient.listApps().size
-      val appId = appsCount + 1
-      commandLineClient.execStormCommand(
-        "-verbose -jar /opt/gearpump/lib/storm/storm-starter-0.9.5.jar " +
-          "storm.starter.ExclamationTopology exclamation")
-      val actual = restClient.queryApp(appId)
-
-      Thread.sleep(5000)
-
-      actual.appId shouldEqual appId
-      actual.status shouldEqual "active"
-      actual.appName shouldEqual "exclamation"
+  "distributed shell" should {
+    "todo" in {
     }
   }
 
-  "multilang storm over gearpump" should {
-    "support Python" in {
-
-    }
-  }
-
-  "storm over gearpump" should {
-    "support DRPC" in {
+  "dynamic dag" should {
+    "can retrieve a list of built-in partitioner classes" in {
 
     }
 
-    "support at-least-once semantics with Kafka" in {
-
+    "can change the parallelism of a processor" in {
     }
 
-    "support tick tuple" in {
+    "can change the description of a processor" in {
+    }
+
+    "can submit a dag as user application" in {
 
     }
   }
