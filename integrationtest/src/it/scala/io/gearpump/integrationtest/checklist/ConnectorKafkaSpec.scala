@@ -36,7 +36,7 @@ class ConnectorKafkaSpec extends TestSpecBase {
     kafkaCluster.shutDown()
     super.afterAll()
   }
-
+/*
   "KafkaSource and KafaSink" should {
     "read from and write to kafka" in {
       val kafkaHostname = s"${kafkaCluster.getHostname}"
@@ -69,5 +69,5 @@ class ConnectorKafkaSpec extends TestSpecBase {
       kafkaCluster.getLatestOffset(brokerList, sinkTopic) shouldBe messageNum
     }
   }
-
+*/
 }

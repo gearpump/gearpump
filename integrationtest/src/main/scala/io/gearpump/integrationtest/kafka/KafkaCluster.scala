@@ -33,11 +33,11 @@ class KafkaCluster {
   def getBrokerPort = 9092
 
   def start(): Unit = {
-    Docker.run(KAFKA_HOST, s"-d -h $KAFKA_HOST", "", KAFKA_DOCKER_IMAGE)
+    Docker.createAndStartContainer(KAFKA_HOST, s"-d -h $KAFKA_HOST", "", KAFKA_DOCKER_IMAGE)
   }
 
   def shutDown(): Unit = {
-    Docker.killAndRemove(KAFKA_HOST)
+    Docker.killAndRemoveContainer(KAFKA_HOST)
   }
 
   def getHostname: String = {

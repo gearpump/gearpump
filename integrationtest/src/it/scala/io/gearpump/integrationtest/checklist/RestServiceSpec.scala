@@ -20,6 +20,7 @@ package io.gearpump.integrationtest.checklist
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.AppMasterData
 import io.gearpump.integrationtest.TestSpecBase
+import io.gearpump.integrationtest.minicluster.Util
 
 /**
  * The test spec checks REST service usage
@@ -154,12 +155,10 @@ class RestServiceSpec extends TestSpecBase {
 
   private def expectAppIsRunning(appName: String, timeout: Int = 15 * 1000): AppMasterData = {
     var app: Option[AppMasterData] = None
-    var timeTook = 0
-    while (app.isEmpty || timeTook > timeout) {
+    Util.retryUntil({
       app = restClient.listRunningApps().find(_.appName == appName)
-      Thread.sleep(1000)
-      timeTook += 1000
-    }
+      app
+    }.nonEmpty)
 
     val actual = app.orNull
     actual should not be null

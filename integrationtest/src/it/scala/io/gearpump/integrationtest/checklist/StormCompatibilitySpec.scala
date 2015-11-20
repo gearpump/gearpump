@@ -18,6 +18,7 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.integrationtest.TestSpecBase
+import io.gearpump.integrationtest.minicluster.Util
 
 /**
  * The test spec checks the compatibility of running Storm applications
@@ -38,7 +39,7 @@ class StormCompatibilitySpec extends TestSpecBase {
       actual.appId shouldEqual appId
       actual.status shouldEqual "active"
       actual.appName shouldEqual "exclamation"
-      retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
     }
   }
 
@@ -70,7 +71,7 @@ class StormCompatibilitySpec extends TestSpecBase {
       actual.appId shouldEqual appId
       actual.status shouldEqual "active"
       actual.appName shouldEqual "slidingWindowCounts"
-      retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
     }
   }
 
