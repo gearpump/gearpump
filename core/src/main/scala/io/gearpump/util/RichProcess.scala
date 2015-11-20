@@ -20,11 +20,12 @@ package io.gearpump.util
 
 import scala.sys.process.Process
 
-trait ErrorSummary {
-  def summary: String
+trait ConsoleOutput {
+  def output: String
+  def error: String
 }
 
-class RichProcess(process: Process, val logger: ErrorSummary) extends Process {
+class RichProcess(process: Process, val logger: ConsoleOutput) extends Process {
   def exitValue() : scala.Int = process.exitValue()
   def destroy() : scala.Unit = process.destroy()
 }

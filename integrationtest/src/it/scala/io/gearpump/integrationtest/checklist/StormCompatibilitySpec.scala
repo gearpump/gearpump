@@ -25,21 +25,18 @@ import io.gearpump.integrationtest.minicluster.Util
  */
 class StormCompatibilitySpec extends TestSpecBase {
 
+  private val STORM_STARTER_JAR = "/opt/gearpump/lib/storm/storm-starter-0.9.5.jar"
+
   "run storm over gearpump applications" should {
     "succeed" in {
-      val appsCount = restClient.listApps().size
-      val appId = appsCount + 1
-      commandLineClient.execStormCommand(
-        "-verbose -jar /opt/gearpump/lib/storm/storm-starter-0.9.5.jar " +
-          "storm.starter.ExclamationTopology exclamation")
-      val actual = restClient.queryApp(appId)
-
+      // exercise
+      val appId = commandLineClient.submitStormApp(STORM_STARTER_JAR,
+        "storm.starter.ExclamationTopology exclamation")
       Thread.sleep(5000)
 
-      actual.appId shouldEqual appId
-      actual.status shouldEqual "active"
-      actual.appName shouldEqual "exclamation"
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      // verify
+      val actual = expectAppIsRunning(appId, "exclamation")
+      Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
     }
   }
 
@@ -59,19 +56,14 @@ class StormCompatibilitySpec extends TestSpecBase {
     }
 
     "support tick tuple" in {
-      val appsCount = restClient.listApps().size
-      val appId = appsCount + 1
-      commandLineClient.execStormCommand(
-        "-verbose -jar /opt/gearpump/lib/storm/storm-starter-0.9.5.jar " +
-          "storm.starter.RollingTopWords slidingWindowCounts remote")
-      val actual = restClient.queryApp(appId)
-
+      // exercise
+      val appId = commandLineClient.submitStormApp(STORM_STARTER_JAR,
+        "storm.starter.RollingTopWords slidingWindowCounts remote")
       Thread.sleep(5000)
 
-      actual.appId shouldEqual appId
-      actual.status shouldEqual "active"
-      actual.appName shouldEqual "slidingWindowCounts"
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      // verify
+      val actual = expectAppIsRunning(appId, "slidingWindowCounts")
+      Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
     }
   }
 

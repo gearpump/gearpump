@@ -18,9 +18,7 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.cluster.MasterToAppMaster.AppMasterData
 import io.gearpump.integrationtest.TestSpecBase
-import io.gearpump.integrationtest.minicluster.Util
 
 /**
  * The test spec checks REST service usage
@@ -40,8 +38,8 @@ class RestServiceSpec extends TestSpecBase {
 
     "retrieve 1 application after the first application submission" in {
       // exercise
-      expectSubmitAppSuccess(wordCountJar)
-      expectAppIsRunning(wordCountName)
+      val appId = restClient.submitApp(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
       restClient.listRunningApps().size shouldEqual 1
     }
   }
@@ -49,24 +47,24 @@ class RestServiceSpec extends TestSpecBase {
   "submit application (wordcount)" should {
     "find a running application after submission" in {
       // exercise
-      expectSubmitAppSuccess(wordCountJar)
-      expectAppIsRunning(wordCountName)
+      val appId = restClient.submitApp(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
     }
 
     "reject a repeated submission request while the application is running" in {
       // setup
-      expectSubmitAppSuccess(wordCountJar)
-      expectAppIsRunning(wordCountName)
+      var appId = restClient.submitApp(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
 
       // exercise
-      val success = restClient.submitApp(wordCountJar)
-      success shouldBe false
+      appId = restClient.submitApp(wordCountJar)
+      appId shouldEqual -1
     }
 
     "reject an invalid submission (the jar file path is incorrect)" in {
       // exercise
-      val success = restClient.submitApp(wordCountJar + ".missing")
-      success shouldBe false
+      val appId = restClient.submitApp(wordCountJar + ".missing")
+      appId shouldEqual -1
     }
 
     "find a running application with expected number of split and sum processors" in {
@@ -79,21 +77,21 @@ class RestServiceSpec extends TestSpecBase {
   "kill application" should {
     "a running application should be killed" in {
       // setup
-      expectSubmitAppSuccess(wordCountJar)
-      val app = expectAppIsRunning(wordCountName)
+      val appId = restClient.submitApp(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
 
       // exercise
-      killAppAndVerify(app.appId)
+      killAppAndVerify(appId)
     }
 
     "should fail when attempting to kill a stopped application" in {
       // setup
-      expectSubmitAppSuccess(wordCountJar)
-      val app = expectAppIsRunning(wordCountName)
-      killAppAndVerify(app.appId)
+      val appId = restClient.submitApp(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
+      killAppAndVerify(appId)
 
       // exercise
-      val success = restClient.killApp(app.appId)
+      val success = restClient.killApp(appId)
       success shouldBe false
     }
 
@@ -146,25 +144,6 @@ class RestServiceSpec extends TestSpecBase {
     "newly started application should be configured same as the previous one, after restart" in {
 
     }
-  }
-
-  private def expectSubmitAppSuccess(jar: String): Unit = {
-    val success = restClient.submitApp(jar)
-    success shouldBe true
-  }
-
-  private def expectAppIsRunning(appName: String, timeout: Int = 15 * 1000): AppMasterData = {
-    var app: Option[AppMasterData] = None
-    Util.retryUntil({
-      app = restClient.listRunningApps().find(_.appName == appName)
-      app
-    }.nonEmpty)
-
-    val actual = app.orNull
-    actual should not be null
-    actual.status shouldEqual MasterToAppMaster.AppMasterActive
-    actual.appName shouldEqual appName
-    actual
   }
 
   private def killAppAndVerify(appId: Int): Unit = {

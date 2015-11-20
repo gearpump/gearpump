@@ -82,7 +82,7 @@ object StormRunner extends AkkaApp with ArgumentsParser {
     system.shutdown()
 
     if (exit != 0) {
-      throw new Exception(s"failed to submit jar, exit code $exit, error summary: ${process.logger.summary}")
+      throw new Exception(s"failed to submit jar, exit code $exit, error summary: ${process.logger.error}")
     }
   }
 

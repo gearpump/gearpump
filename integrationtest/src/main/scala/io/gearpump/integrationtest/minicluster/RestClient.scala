@@ -23,6 +23,7 @@ import io.gearpump.integrationtest.Docker
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.ExecutorSummary
+import io.gearpump.services.MasterService.AppSubmissionResult
 import io.gearpump.util.{Constants, Graph}
 import upickle.Js
 import upickle.default._
@@ -54,7 +55,7 @@ class RestClient(host: String, port: Int) {
     listApps().filter(_.status == MasterToAppMaster.AppMasterActive)
   }
 
-  def submitApp(jar: String, args: String = "", config: String = ""): Boolean = try {
+  def submitApp(jar: String, args: String = "", config: String = ""): Int = try {
     var endpoint = "master/submitapp"
     if (args.length > 0) {
       endpoint += "?args=" + Util.encodeUriComponent(args)
@@ -64,9 +65,11 @@ class RestClient(host: String, port: Int) {
       options :+= s"conf=@$config"
     }
     val resp = callApi(endpoint, options.map("-F " + _).mkString(" "))
-    resp.contains("\"success\":true")
+    val result = read[AppSubmissionResult](resp)
+    assert(result.success)
+    result.appId
   } catch {
-    case ex: Throwable => false
+    case ex: Throwable => -1
   }
 
   def queryApp(appId: Int): AppMasterData = try {

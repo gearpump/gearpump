@@ -129,9 +129,9 @@ trait MasterService {
                     val argsArray = args.split(" +")
                     onComplete(Future(
                       MasterService.submitJar(jar.get, userConf, argsArray, system.settings.config))) {
-                      case Success(_) =>
+                      case Success(appId) =>
                         complete(write(
-                          MasterService.Status(success = true)))
+                          MasterService.AppSubmissionResult(success = true, appId = appId)))
                       case Failure(ex) =>
                         failWith(ex)
                     }
@@ -190,6 +190,8 @@ object MasterService {
 
   case class BuiltinPartitioners(partitioners: Array[String])
 
+  case class AppSubmissionResult(success: Boolean, appId: Int)
+
   case class Status(success: Boolean, reason: String = null)
 
   /**
@@ -197,13 +199,13 @@ object MasterService {
    * it to master. The temporary file will be removed after submission is done/failed.
    */
   def submitJar(jar: File, userConf: Option[File], extraArgs: Array[String],
-                sysConfig: Config): Unit = {
+                sysConfig: Config): Int = {
 
     try {
       val masters = sysConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
       val mastersOption = masters.zipWithIndex.map { kv =>
         val (master, index) = kv
-        s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.${index}=${master.host}:${master.port}"
+        s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.$index=${master.host}:${master.port}"
       }.toArray
 
       val hostname = sysConfig.getString(Constants.GEARPUMP_HOSTNAME)
@@ -220,8 +222,11 @@ object MasterService {
       val process = Util.startProcess(options, Util.getCurrentClassPath, mainClass, arguments)
       val retval = process.exitValue()
       if (retval != 0) {
-        throw new IOException(s"Process exit abnormally with code $retval, error summary: ${process.logger.summary}")
+        throw new IOException(s"Process exit abnormally with code $retval, error summary: ${process.logger.error}")
       }
+      process.logger.output.split("\n").last
+        .replace("Submit application succeed. The application id is ", "")
+        .toInt
     } finally {
       userConf.foreach(_.delete)
       jar.delete()

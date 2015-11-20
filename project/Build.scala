@@ -438,5 +438,8 @@ object Build extends sbt.Build {
       )
     )
   ).configs(IntegrationTest).settings(Defaults.itSettings : _*)
-   .dependsOn(streaming % "test->test; provided")
+   .dependsOn(
+     streaming % "test->test; provided",
+     services % "test->test; provided"
+   )
 }
