@@ -18,7 +18,8 @@
 package io.gearpump.integrationtest
 
 import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.integrationtest.minicluster.MiniCluster
+import io.gearpump.cluster.MasterToAppMaster.AppMasterData
+import io.gearpump.integrationtest.minicluster.{Util, MiniCluster}
 import org.scalatest._
 import org.apache.log4j.Logger
 
@@ -68,6 +69,32 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfter with Befor
     val actual = restClient.queryApp(appId)
     actual.appId shouldEqual appId
     actual.status shouldEqual MasterToAppMaster.AppMasterInActive
+  }
+
+  def expectAppIsRunning(appName: String): AppMasterData = {
+    val app = findRunningAppByName(appName)
+    expectAppIsRunning(app, appName)
+  }
+
+  def expectAppIsRunning(appId: Int, appName: String): AppMasterData = {
+    val app = restClient.queryApp(appId)
+    expectAppIsRunning(app, appName)
+  }
+
+  private def findRunningAppByName(name: String): AppMasterData = {
+    var app: Option[AppMasterData] = None
+    Util.retryUntil({
+      app = restClient.listRunningApps().find(_.appName == name)
+      app
+    }.nonEmpty)
+    app.orNull
+  }
+
+  private def expectAppIsRunning(app: AppMasterData, appName: String): AppMasterData = {
+    app should not be null
+    app.status shouldEqual MasterToAppMaster.AppMasterActive
+    app.appName shouldEqual appName
+    app
   }
 
 }

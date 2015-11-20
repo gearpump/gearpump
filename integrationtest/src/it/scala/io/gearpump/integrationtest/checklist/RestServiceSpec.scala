@@ -153,20 +153,6 @@ class RestServiceSpec extends TestSpecBase {
     success shouldBe true
   }
 
-  private def expectAppIsRunning(appName: String, timeout: Int = 15 * 1000): AppMasterData = {
-    var app: Option[AppMasterData] = None
-    Util.retryUntil({
-      app = restClient.listRunningApps().find(_.appName == appName)
-      app
-    }.nonEmpty)
-
-    val actual = app.orNull
-    actual should not be null
-    actual.status shouldEqual MasterToAppMaster.AppMasterActive
-    actual.appName shouldEqual appName
-    actual
-  }
-
   private def killAppAndVerify(appId: Int): Unit = {
     val success = restClient.killApp(appId)
     success shouldBe true

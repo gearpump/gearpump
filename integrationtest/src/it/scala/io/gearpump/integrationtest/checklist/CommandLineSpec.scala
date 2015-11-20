@@ -34,7 +34,7 @@ class CommandLineSpec extends TestSpecBase {
     "retrieve 1 application after the first application submission" in {
       // setup
       val appId = expectSubmitAppSuccess(wordCountJar)
-      expectAppIsRunning(appId, wordCountName)
+      expectAppIsRunningByPasingOutput(appId, wordCountName)
 
       // exercise
       getRunningAppCount shouldEqual 1
@@ -45,13 +45,13 @@ class CommandLineSpec extends TestSpecBase {
     "find a running application after submission" in {
       // exercise
       val appId = expectSubmitAppSuccess(wordCountJar)
-      expectAppIsRunning(appId, wordCountName)
+      expectAppIsRunningByPasingOutput(appId, wordCountName)
     }
 
     "reject a repeated submission request while the application is running" in {
       // setup
       val appId = expectSubmitAppSuccess(wordCountJar)
-      expectAppIsRunning(appId, wordCountName)
+      expectAppIsRunningByPasingOutput(appId, wordCountName)
 
       // exercise
       val actualAppId = commandLineClient.submitApp(wordCountJar)
@@ -116,7 +116,7 @@ class CommandLineSpec extends TestSpecBase {
     appId
   }
 
-  private def expectAppIsRunning(appId: Int, expectedName: String): Unit = {
+  private def expectAppIsRunningByPasingOutput(appId: Int, expectedName: String): Unit = {
     val actual = commandLineClient.queryApp(appId)
     actual should include(s"application: $appId, ")
     actual should include(s"name: $expectedName, ")
