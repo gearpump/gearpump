@@ -33,4 +33,15 @@ object Util {
     }
   }
 
+  def retryUntil(condition: => Boolean, retry: Int = 20): Unit = {
+    val RETRY_DELAY = 1000
+    try {
+      assert(condition)
+    } catch {
+      case ex if retry > 0 =>
+        Thread.sleep(RETRY_DELAY)
+        retryUntil(condition, retry - 1)
+    }
+  }
+
 }

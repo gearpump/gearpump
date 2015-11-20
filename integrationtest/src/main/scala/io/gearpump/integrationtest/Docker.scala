@@ -44,29 +44,29 @@ object Docker {
   /**
    * @throws RuntimeException in case particular container is created already
    */
-  def run(name: String, options: String, args: String, image: String): Unit = {
+  def createAndStartContainer(name: String, options: String, args: String, image: String): Unit = {
     if (!shellExec(s"docker run $options --name $name $image $args", s"MAKE $name")) {
       throw new RuntimeException(s"Failed to run container '$name'.")
     }
   }
 
-  def exec(name: String, command: String): Boolean = {
-    shellExec(s"docker exec $name $command", s"EXEC $name")
+  def killAndRemoveContainer(name: String): Boolean = {
+    shellExec(s"docker rm -f $name", s"STOP $name")
+  }
+
+  def exec(container: String, command: String): Boolean = {
+    shellExec(s"docker exec $container $command", s"EXEC $container")
   }
 
   /**
    * @throws RuntimeException in case retval != 0
    */
-  def execAndCaptureOutput(name: String, command: String): String = {
-    shellExecAndCaptureOutput(s"docker exec $name $command", s"EXEC $name")
+  def execAndCaptureOutput(container: String, command: String): String = {
+    shellExecAndCaptureOutput(s"docker exec $container $command", s"EXEC $container")
   }
 
-  def killProcessor(name: String, pid: Int): Boolean = {
-    exec(name, s"kill -9 $pid")
-  }
-
-  def killAndRemove(name: String): Boolean = {
-    shellExec(s"docker rm -f $name", s"STOP $name")
+  def killProcess(container: String, pid: Int, signal: String = "SIGKILL"): Boolean = {
+    exec(container, s"kill -$signal $pid")
   }
 
   private def shellExec(command: String, sender: String): Boolean = {

@@ -27,12 +27,11 @@ import io.gearpump.util.{Constants, Graph}
 import upickle.Js
 import upickle.default._
 
-import scala.util.Try
-
 /**
  * A REST client to operate a Gearpump cluster
  */
 class RestClient(host: String, port: Int) {
+
   implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
     case Js.Obj(verties, edges) =>
       val vertexList = upickle.default.readJs[List[Int]](verties._2)
@@ -84,38 +83,30 @@ class RestClient(host: String, port: Int) {
     else upickle.default.read[StreamAppMasterSummary](resp)
   }
 
-  def getExecutorSummary(appId: Int, executorId: Int): Option[ExecutorSummary] = {
+  def getExecutorSummary(appId: Int, executorId: Int): ExecutorSummary = {
     val resp = callApi(s"appmaster/$appId/executor/$executorId")
     if (resp.startsWith("java.lang.Exception"))
-      None
-    else Some(upickle.default.read[ExecutorSummary](resp))
+      null
+    else upickle.default.read[ExecutorSummary](resp)
   }
 
-  def getExecutorInfos(appId: Int): List[ExecutorBrief] = {
-    val streamAppMasterSummary = queryStreamingAppDetail(appId)
-    if(streamAppMasterSummary != null) {
-      streamAppMasterSummary.executors
-    } else {
-      List.empty
-    }
+  def getExecutorBrief(appId: Int): List[ExecutorBrief] = try {
+    queryStreamingAppDetail(appId).executors
+  } catch {
+    case ex: Throwable => List.empty
   }
 
   def killAppMaster(appId: Int): Boolean = {
     killExecutor(appId, Constants.APPMASTER_DEFAULT_EXECUTOR_ID)
   }
 
-  def killExecutor(appId: Int, executorId: Int): Boolean = {
-    var result = false
-    val executorSummary = getExecutorSummary(appId, executorId)
-    if(executorSummary.nonEmpty) {
-      val jvmInfo = executorSummary.get.jvmName.split("@")
-      val pid = Try(jvmInfo(0).toInt)
-      if(pid.isSuccess && jvmInfo.length == 2){
-        val hostName = jvmInfo(1)
-        result = Docker.exec(hostName, s"kill -9 ${pid.get}")
-      }
-    }
-    result
+  def killExecutor(appId: Int, executorId: Int): Boolean = try {
+    val jvmInfo = getExecutorSummary(appId, executorId).jvmName.split("@")
+    val pid = jvmInfo(0).toInt
+    val hostname = jvmInfo(1)
+    Docker.killProcess(hostname, pid)
+  } catch {
+    case ex: Throwable => false
   }
 
   def killApp(appId: Int): Boolean = try {

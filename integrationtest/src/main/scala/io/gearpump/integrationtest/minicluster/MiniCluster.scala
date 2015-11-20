@@ -76,7 +76,7 @@ class MiniCluster(
   private def cleanupDockerEnv(): Unit = {
     val containers = Docker.listContainers()
     if (containers.nonEmpty) {
-      Docker.killAndRemove(containers.mkString(" "))
+      Docker.killAndRemoveContainer(containers.mkString(" "))
     }
   }
 
@@ -85,7 +85,7 @@ class MiniCluster(
     val tunnelPortsOpt = tunnelPorts.map(port =>
       s"-p $port:$port").mkString(" ")
 
-    Docker.run(host, s"-d -h $host -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS $tunnelPortsOpt",
+    Docker.createAndStartContainer(host, s"-d -h $host -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS $tunnelPortsOpt",
       s"master -ip $host -port $port", dockerImage)
   }
 
@@ -94,7 +94,7 @@ class MiniCluster(
     val hostLinksOpt = getMasterHosts.map(master =>
       "--link " + master).mkString(" ")
 
-    Docker.run(host, s"-d $hostLinksOpt -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS",
+    Docker.createAndStartContainer(host, s"-d $hostLinksOpt -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS",
       "worker", dockerImage)
     workers :+= host
   }
@@ -102,16 +102,12 @@ class MiniCluster(
   /**
    * @throws RuntimeException if service is not available for N retries
    */
-  private def expectRestServiceAvailable(retry: Int = 20): Unit = {
-    val RETRY_DELAY = 1000
-    try {
+  private def expectRestServiceAvailable(): Unit = {
+    Util.retryUntil({
       val response = restClient.queryVersion()
       LOG.debug(s"Finish waiting for RestService available with response: $response.")
-    } catch {
-      case ex if retry > 0 =>
-        Thread.sleep(RETRY_DELAY)
-        expectRestServiceAvailable(retry - 1)
-    }
+      response
+    } != "")
   }
 
   def shutDown(): Unit = {
@@ -120,11 +116,11 @@ class MiniCluster(
   }
 
   private def removeMasterNode(host: String): Unit = {
-    Docker.killAndRemove(host)
+    Docker.killAndRemoveContainer(host)
   }
 
   def removeWorkerNode(host: String): Unit = {
-    if (Docker.killAndRemove(host)) {
+    if (Docker.killAndRemoveContainer(host)) {
       workers = workers.filter(_ != host)
     }
   }

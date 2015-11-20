@@ -17,7 +17,9 @@
  */
 package io.gearpump.integrationtest.checklist
 
+import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.integrationtest.TestSpecBase
+import io.gearpump.integrationtest.minicluster.Util
 
 /**
  * The test spec will perform destructive operations to check the stability
@@ -26,31 +28,42 @@ class StabilitySpec extends TestSpecBase {
 
   "kill appmaster" should {
     "restart the whole application" in {
+      // setup
       val appId = commandLineClient.submitApp(wordCountJar)
       val formerAppMaster = restClient.queryApp(appId).appMasterPath
-      retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
-      //Here make sure the application clock is stored in the Mastr
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      // Here make sure the application clock is stored in the Master
+      // todo: 5000 is sync period of clock service in source code
       Thread.sleep(5000)
-      restClient.killAppMaster(appId) shouldBe true
 
-      retryUntil(restClient.queryApp(appId).appMasterPath != formerAppMaster)
+      // exercise
+      restClient.killAppMaster(appId) shouldBe true
+      Util.retryUntil(restClient.queryApp(appId).appMasterPath != formerAppMaster)
+
+      // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
-      laterAppMaster.status shouldEqual "active"
+      laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
       assert(laterAppMaster.clock > 0)
     }
   }
 
   "kill executor" should {
     "will create a new executor and application will  replay from the latest application clock" in {
+      // setup
       val appId = commandLineClient.submitApp(wordCountJar)
-      retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
-      val executorToKill = restClient.getExecutorInfos(appId).map(_.executorId).max
-      //Here make sure the application clock is stored in the Mastr
-      restClient.killExecutor(appId, executorToKill) shouldBe true
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      val executorToKill = restClient.getExecutorBrief(appId).map(_.executorId).max
+      // Here make sure the application clock is stored in the Master
+      // todo: 5000 is sync period of clock service in source code
+      Thread.sleep(5000)
 
-      retryUntil(restClient.getExecutorInfos(appId).map(_.executorId).max > executorToKill)
+      // exercise
+      restClient.killExecutor(appId, executorToKill) shouldBe true
+      Util.retryUntil(restClient.getExecutorBrief(appId).map(_.executorId).max > executorToKill)
+
+      // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
-      laterAppMaster.status shouldEqual "active"
+      laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
       assert(laterAppMaster.clock > 0)
     }
   }
@@ -67,7 +80,7 @@ class StabilitySpec extends TestSpecBase {
 
   "kill master" should {
     "master will be down and all workers will attempt to reconnect and suicide after X seconds" in {
-      
+
     }
   }
 

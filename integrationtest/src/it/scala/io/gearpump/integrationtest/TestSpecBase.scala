@@ -70,14 +70,4 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfter with Befor
     actual.status shouldEqual MasterToAppMaster.AppMasterInActive
   }
 
-  def retryUntil(assertion: => Boolean, retry: Int = 20): Unit = {
-    val RETRY_DELAY = 1000
-    try {
-      assert(assertion)
-    } catch {
-      case ex if retry > 0 =>
-        Thread.sleep(RETRY_DELAY)
-        retryUntil(assertion, retry - 1)
-    }
-  }
 }
