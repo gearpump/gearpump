@@ -18,9 +18,10 @@
 package io.gearpump.integrationtest
 
 import io.gearpump.cluster.MasterToAppMaster
+import io.gearpump.cluster.MasterToAppMaster.AppMasterData
 import io.gearpump.integrationtest.minicluster.MiniCluster
-import org.scalatest._
 import org.apache.log4j.Logger
+import org.scalatest._
 
 /**
  * The abstract test spec
@@ -59,15 +60,16 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfter with Befor
 
   after {
     restClient.listRunningApps().foreach(app => {
-      killAppAndVerify(app.appId)
+      commandLineClient.killApp(app.appId) shouldBe true
     })
   }
 
-  private def killAppAndVerify(appId: Int): Unit = {
-    commandLineClient.killApp(appId) shouldBe true
-    val actual = restClient.queryApp(appId)
-    actual.appId shouldEqual appId
-    actual.status shouldEqual MasterToAppMaster.AppMasterInActive
+  def expectAppIsRunning(appId: Int, expectedAppName: String): AppMasterData = {
+    val app = restClient.queryApp(appId)
+    app should not be null
+    app.status shouldEqual MasterToAppMaster.AppMasterActive
+    app.appName shouldEqual expectedAppName
+    app
   }
 
 }

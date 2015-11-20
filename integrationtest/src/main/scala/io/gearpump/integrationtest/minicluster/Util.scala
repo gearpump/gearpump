@@ -33,7 +33,7 @@ object Util {
     }
   }
 
-  def retryUntil(condition: => Boolean, retry: Int = 20): Unit = {
+  def retryUntil(condition: => Boolean, retry: Int = 30): Unit = {
     val RETRY_DELAY = 1000
     try {
       assert(condition)

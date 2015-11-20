@@ -46,8 +46,16 @@ class CommandLineClient(host: String) {
     case ex: Throwable => ""
   }
 
-  def submitApp(jar: String, args: String = ""): Int = try {
-    execAndCaptureOutput(s"gear app -jar $jar $args")
+  def submitApp(jar: String, args: String = ""): Int = {
+    submitAppUse("gear app", jar, args)
+  }
+
+  def submitStormApp(jar: String, args: String = ""): Int = {
+    submitAppUse("storm", jar, args)
+  }
+
+  private def submitAppUse(launcher: String, jar: String, args: String = ""): Int = try {
+    execAndCaptureOutput(s"$launcher -jar $jar $args").split("\n").last
       .replace("Submit application succeed. The application id is ", "")
       .toInt
   } catch {
@@ -56,10 +64,6 @@ class CommandLineClient(host: String) {
 
   def killApp(appId: Int): Boolean = {
     exec(s"gear kill -appid $appId")
-  }
-
-  def execStormCommand(args: String): Boolean = {
-    exec(s"storm $args")
   }
 
   private def exec(command: String): Boolean = {
