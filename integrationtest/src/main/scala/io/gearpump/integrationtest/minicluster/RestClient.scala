@@ -17,22 +17,22 @@
  */
 package io.gearpump.integrationtest.minicluster
 
-import akka.actor.{PoisonPill, ActorSystem}
-import io.gearpump.cluster.{ClusterConfig, MasterToAppMaster}
+import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.integrationtest.Docker
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
-import io.gearpump.util.Graph
+import io.gearpump.streaming.executor.Executor.ExecutorSummary
+import io.gearpump.util.{Constants, Graph}
 import upickle.Js
 import upickle.default._
+
+import scala.util.Try
 
 /**
  * A REST client to operate a Gearpump cluster
  */
 class RestClient(host: String, port: Int) {
-  private val system = ActorSystem("restClient", ClusterConfig.load.default)
-
   implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
     case Js.Obj(verties, edges) =>
       val vertexList = upickle.default.readJs[List[Int]](verties._2)
@@ -84,6 +84,13 @@ class RestClient(host: String, port: Int) {
     else upickle.default.read[StreamAppMasterSummary](resp)
   }
 
+  def getExecutorSummary(appId: Int, executorId: Int): Option[ExecutorSummary] = {
+    val resp = callApi(s"appmaster/$appId/executor/$executorId")
+    if (resp.startsWith("java.lang.Exception"))
+      None
+    else Some(upickle.default.read[ExecutorSummary](resp))
+  }
+
   def getExecutorInfos(appId: Int): List[ExecutorBrief] = {
     val streamAppMasterSummary = queryStreamingAppDetail(appId)
     if(streamAppMasterSummary != null) {
@@ -94,27 +101,21 @@ class RestClient(host: String, port: Int) {
   }
 
   def killAppMaster(appId: Int): Boolean = {
-    val appMasterData = queryApp(appId)
-    if(appMasterData == null) {
-      false
-    } else {
-      val appMasterPath = appMasterData.appMasterPath
-      val appMaster = system.actorSelection(appMasterPath)
-      appMaster ! PoisonPill
-      true
-    }
+    killExecutor(appId, Constants.APPMASTER_DEFAULT_EXECUTOR_ID)
   }
 
   def killExecutor(appId: Int, executorId: Int): Boolean = {
-    val executorBrief = getExecutorInfos(appId).find(_.executorId == executorId)
-    if(executorBrief.isEmpty) {
-      false
-    } else {
-      val executorPath = executorBrief.get.executor
-      val executor = system.actorSelection(executorPath)
-      executor ! PoisonPill
-      true
+    var result = false
+    val executorSummary = getExecutorSummary(appId, executorId)
+    if(executorSummary.nonEmpty) {
+      val jvmInfo = executorSummary.get.jvmName.split("@")
+      val pid = Try(jvmInfo(0).toInt)
+      if(pid.isSuccess && jvmInfo.length == 2){
+        val hostName = jvmInfo(1)
+        result = Docker.exec(hostName, s"kill -9 ${pid.get}")
+      }
     }
+    result
   }
 
   def killApp(appId: Int): Boolean = try {
@@ -122,10 +123,6 @@ class RestClient(host: String, port: Int) {
     resp.contains("\"status\":\"success\"")
   } catch {
     case ex: Throwable => false
-  }
-
-  def close(): Unit = {
-    system.shutdown()
   }
 
   private def callApi(endpoint: String, options: String = ""): String = {

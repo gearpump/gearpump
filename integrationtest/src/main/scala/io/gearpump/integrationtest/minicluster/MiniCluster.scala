@@ -115,7 +115,6 @@ class MiniCluster(
   }
 
   def shutDown(): Unit = {
-    restClient.close()
     getWorkerHosts.foreach(removeWorkerNode)
     getMasterHosts.foreach(removeMasterNode)
   }

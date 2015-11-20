@@ -61,6 +61,10 @@ object Docker {
     shellExecAndCaptureOutput(s"docker exec $name $command", s"EXEC $name")
   }
 
+  def killProcessor(name: String, pid: Int): Boolean = {
+    exec(name, s"kill -9 $pid")
+  }
+
   def killAndRemove(name: String): Boolean = {
     shellExec(s"docker rm -f $name", s"STOP $name")
   }
