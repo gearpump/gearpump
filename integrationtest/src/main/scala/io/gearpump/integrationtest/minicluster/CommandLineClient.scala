@@ -50,10 +50,6 @@ class CommandLineClient(host: String) {
     submitAppUse("gear app", jar, args)
   }
 
-  def submitStormApp(jar: String, args: String = ""): Int = {
-    submitAppUse("storm", jar, args)
-  }
-
   private def submitAppUse(launcher: String, jar: String, args: String = ""): Int = try {
     execAndCaptureOutput(s"$launcher -jar $jar $args").split("\n").last
       .replace("Submit application succeed. The application id is ", "")
@@ -73,5 +69,4 @@ class CommandLineClient(host: String) {
   private def execAndCaptureOutput(command: String): String = {
     Docker.execAndCaptureOutput(host, s"/opt/start $command")
   }
-
 }

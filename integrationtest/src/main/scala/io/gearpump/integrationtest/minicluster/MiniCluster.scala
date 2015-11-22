@@ -17,10 +17,10 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import io.gearpump.integrationtest.Constants._
 import io.gearpump.integrationtest.Docker
 import org.apache.log4j.Logger
 
-import scala.sys.process._
 
 /**
  * This class is a test driver for end-to-end integration test.
@@ -34,9 +34,6 @@ class MiniCluster(
                    ) {
 
   private val LOG = Logger.getLogger(getClass)
-  private val SUT_HOME = "/opt/gearpump"
-  private val MOUNT_PATH = "pwd".!!.trim + "/output/target/pack"
-  private val MOUNT_PATH_OPTS = s"-v $MOUNT_PATH:$SUT_HOME"
 
   private val MASTER_ADDRS = {
     (0 to 0).map(index =>
@@ -48,11 +45,15 @@ class MiniCluster(
 
   lazy val restClient = new RestClient(getMasterHosts.head, restServicePort)
 
-  private val CLUSTER_OPTS = {
+  val CLUSTER_OPTS = {
     MASTER_ADDRS.zipWithIndex.map { case (hostPort, index) =>
       s"-Dgearpump.cluster.masters.$index=${hostPort._1}:${hostPort._2}"
     }.mkString(" ")
   }
+
+  // Masters's hostname will be exposed to worker node
+  val LINK_TO_MASTER_OPTS = getMasterHosts.map(master =>
+      "--link " + master).mkString(" ")
 
   private var workers: List[String] = List.empty
 
@@ -90,11 +91,7 @@ class MiniCluster(
   }
 
   def newWorkerNode(host: String): Unit = {
-    // Masters's hostname will be exposed to worker node
-    val hostLinksOpt = getMasterHosts.map(master =>
-      "--link " + master).mkString(" ")
-
-    Docker.createAndStartContainer(host, s"-d $hostLinksOpt -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS",
+    Docker.createAndStartContainer(host, s"-d $LINK_TO_MASTER_OPTS -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS",
       "worker", dockerImage)
     workers :+= host
   }

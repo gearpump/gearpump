@@ -19,7 +19,7 @@ package io.gearpump.integrationtest
 
 import org.apache.log4j.Logger
 
-import scala.sys.process._
+import io.gearpump.integrationtest.Shell._
 
 /**
  * The class is used to execute Docker commands.
@@ -69,18 +69,6 @@ object Docker {
     exec(container, s"kill -$signal $pid")
   }
 
-  private def shellExec(command: String, sender: String): Boolean = {
-    LOG.debug(s"$sender -> `$command`")
-    val retval = command.!
-    LOG.debug(s"$sender <- `$retval`")
-    retval == 0
-  }
 
-  private def shellExecAndCaptureOutput(command: String, sender: String): String = {
-    LOG.debug(s"$sender => `$command`")
-    val output = command.!!.trim
-    LOG.debug(s"$sender <= `$output`")
-    output
-  }
 
 }

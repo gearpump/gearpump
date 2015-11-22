@@ -36,6 +36,9 @@ case "$COMMAND" in
     JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname)"
     sh "$SUT_HOME"/bin/"$COMMAND" "$@"
     ;;
+  drpc)
+    java -server -Xmx768m -cp "$SUT_HOME"/lib/*:"$SUT_HOME"/lib/storm/* backtype.storm.daemon.drpc
+    ;;
   *)
     echo "Usage:"
     echo "  master -ip [HOST] -port [PORT]"

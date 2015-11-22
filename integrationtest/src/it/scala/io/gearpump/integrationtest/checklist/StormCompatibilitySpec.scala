@@ -19,51 +19,71 @@ package io.gearpump.integrationtest.checklist
 
 import io.gearpump.integrationtest.TestSpecBase
 import io.gearpump.integrationtest.minicluster.Util
+import io.gearpump.integrationtest.storm.StormClient
 
 /**
  * The test spec checks the compatibility of running Storm applications
  */
 class StormCompatibilitySpec extends TestSpecBase {
 
-  private val STORM_STARTER_JAR = "/opt/gearpump/lib/storm/storm-starter-0.9.5.jar"
+  private val stormClient = new StormClient(cluster, commandLineClient)
 
-  "run storm over gearpump applications" should {
-    "succeed" in {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    stormClient.start()
+  }
+
+  override def afterAll(): Unit = {
+    stormClient.shutDown()
+    super.afterAll()
+  }
+
+  "Storm over Gearpump" should {
+    "support basic topologies" in {
       // exercise
-      val appId = commandLineClient.submitStormApp(STORM_STARTER_JAR,
-        "storm.starter.ExclamationTopology exclamation")
+      val appId = stormClient.submitStormApp(
+        mainClass = "storm.starter.ExclamationTopology", args = "exclamation")
       Thread.sleep(5000)
 
       // verify
       val actual = expectAppIsRunning(appId, "exclamation")
       Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
     }
-  }
 
-  "multilang storm over gearpump" should {
-    "support Python" in {
+    "provide multilang support in python" in {
+      // commented out till python support is added to docker image
+/*      // exercise
+      val appId = stormClient.submitStormApp(config = "",
+        mainClass = "storm.starter.WordCountTopology", args = "wordcount")
+      Thread.sleep(5000)
 
+      // verify
+      val actual = expectAppIsRunning(appId, "wordcount")
+      Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)*/
     }
-  }
 
-  "storm over gearpump" should {
     "support DRPC" in {
-
-    }
-
-    "support at-least-once semantics with Kafka" in {
-
+      stormClient.submitStormApp(mainClass = "storm.starter.ReachTopology",
+        args = "reach")
+      val drpcClient = stormClient.getDRPCClient
+      drpcClient.execute("reach", "foo.com/blog/1") shouldBe "16"
+      drpcClient.execute("reach", "engineering.twitter.com/blog/5") shouldBe "14"
+      drpcClient.execute("reach", "notaurl.com") shouldBe "0"
     }
 
     "support tick tuple" in {
       // exercise
-      val appId = commandLineClient.submitStormApp(STORM_STARTER_JAR,
-        "storm.starter.RollingTopWords slidingWindowCounts remote")
+      val appId = stormClient.submitStormApp(mainClass = "storm.starter.RollingTopWords",
+        args = "slidingWindowCounts remote")
       Thread.sleep(5000)
 
       // verify
       val actual = expectAppIsRunning(appId, "slidingWindowCounts")
       Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
+    }
+
+    "support at-least-once semantics with Kafka" in {
+
     }
   }
 
