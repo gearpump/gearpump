@@ -463,6 +463,7 @@ object Build extends sbt.Build {
    .dependsOn(
      streaming % "test->test; provided",
      services % "test->test; provided",
-     external_kafka
+     external_kafka,
+     storm
    )
 }

@@ -36,12 +36,19 @@ case "$COMMAND" in
     JAVA_OPTS="$JAVA_OPTS -Dgearpump.hostname=$(hostname)"
     sh "$SUT_HOME"/bin/"$COMMAND" "$@"
     ;;
+  storm-drpc)
+    STORM_CONFIG="$SUT_HOME"/storm.yaml
+    echo "drpc.servers:" > "$STORM_CONFIG"
+    echo "      "-" "\"`ip route | awk '/default/ {print $3}'`\" >> "$STORM_CONFIG"
+    java -server -Xmx768m -cp "$SUT_HOME"/lib/*:"$SUT_HOME"/lib/storm/* backtype.storm.daemon.drpc
+    ;;
   *)
     echo "Usage:"
     echo "  master -ip [HOST] -port [PORT]"
     echo "  worker"
     echo "  gear [ARGS]"
     echo "  storm [ARGS]"
+    echo "  storm-drpc"
     exit 1
     ;;
 esac
