@@ -17,15 +17,19 @@
  */
 package io.gearpump.integrationtest.checklist
 
+import io.gearpump.integrationtest.kafka.{MessageLossDetector, KafkaCluster, SimpleKafkaReader, NumericalDataProducer}
+import io.gearpump.integrationtest.{Util, TestSpecBase}
 import io.gearpump.integrationtest.storm.StormClient
-import io.gearpump.integrationtest.{TestSpecBase, Util}
+import io.gearpump.util.LogUtil
+import org.slf4j.Logger
 
 /**
  * The test spec checks the compatibility of running Storm applications
  */
 class StormCompatibilitySpec extends TestSpecBase {
 
-  private val stormClient = new StormClient(cluster.getMastersAddresses)
+  private lazy val stormClient = new StormClient(cluster.getMastersAddresses)
+  private lazy val stormJar = cluster.queryBuiltInExampleJars("storm-").head
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -37,10 +41,26 @@ class StormCompatibilitySpec extends TestSpecBase {
     super.afterAll()
   }
 
+  def withKafkaCluster(testCode: KafkaCluster => Unit): Unit = {
+    val kafkaCluster = new KafkaCluster(cluster.getNetworkGateway, "kafka")
+    kafkaCluster.start()
+    testCode(kafkaCluster)
+    kafkaCluster.shutDown()
+  }
+
+  def withDataProducer(topic: String, brokerList: String)
+      (testCode: NumericalDataProducer => Unit): Unit = {
+    val producer = new NumericalDataProducer(topic, brokerList)
+    producer.start()
+    testCode(producer)
+    producer.stop()
+  }
+
   "Storm over Gearpump" should {
-    "support basic topologies" in {
+   "support basic topologies" in {
       // exercise
-      val appId = stormClient.submitStormApp(
+
+      val appId = stormClient.submitStormApp(stormJar,
         mainClass = "storm.starter.ExclamationTopology", args = "exclamation")
 
       // verify
@@ -48,10 +68,10 @@ class StormCompatibilitySpec extends TestSpecBase {
       Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
     }
 
-    "support to run a python version of wordcount (multilang support)" in {
+   "support to run a python version of wordcount (multilang support)" in {
       // exercise
-      val appId = stormClient.submitStormApp(mainClass = "storm.starter.WordCountTopology",
-        args = "wordcount")
+      val appId = stormClient.submitStormApp(stormJar,
+        mainClass = "storm.starter.WordCountTopology", args = "wordcount")
 
       // verify
       expectAppIsRunning(appId, "wordcount")
@@ -62,8 +82,8 @@ class StormCompatibilitySpec extends TestSpecBase {
       // ReachTopology computes the Twitter url reached by users and their followers
       // using Storm Distributed RPC feature
       // input (user and follower) data are already prepared in memory
-      stormClient.submitStormApp(mainClass = "storm.starter.ReachTopology",
-        args = "reach")
+      stormClient.submitStormApp(stormJar,
+        mainClass = "storm.starter.ReachTopology", args = "reach")
       val drpcClient = stormClient.getDRPCClient(cluster.getNetworkGateway)
 
       // verify
@@ -76,18 +96,54 @@ class StormCompatibilitySpec extends TestSpecBase {
 
     "support tick tuple" in {
       // exercise
-      val appId = stormClient.submitStormApp(mainClass = "storm.starter.RollingTopWords",
-        args = "slidingWindowCounts remote")
+      val appId = stormClient.submitStormApp(stormJar,
+        mainClass = "storm.starter.RollingTopWords", args = "slidingWindowCounts remote")
 
       // verify
       val actual = expectAppIsRunning(appId, "slidingWindowCounts")
       Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
     }
 
-    "support at-least-once semantics with Kafka" in {
+    "support at-least-once semantics with Storm's Kafka connector" in withKafkaCluster {
+      kafkaCluster =>
+        val sourcePartitionNum = 2
+        val sinkPartitionNum = 1
+        val zookeeper = kafkaCluster.getZookeeperConnectString
+        val brokerList = kafkaCluster.getBrokerListConnectString
+        val sourceTopic = "topic1"
+        val sinkTopic = "topic2"
+        val appsCount = restClient.listApps().length
+        val appId = appsCount + 1
 
+        kafkaCluster.createTopic(sourceTopic, sourcePartitionNum)
+
+        // generate number sequence (1, 2, 3, ...) to the topic
+        withDataProducer(sourceTopic, brokerList) { producer =>
+          val appName = "storm_kafka"
+
+          stormClient.submitStormApp(stormJar,
+            mainClass = "io.gearpump.streaming.examples.storm.StormKafkaTopology",
+            args = s"$appName $sourcePartitionNum $sinkPartitionNum $sourceTopic $sinkTopic $zookeeper $brokerList")
+
+          expectAppIsRunning(appId, appName)
+          Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+
+          // kill executor and verify at-least-once is guaranteed on application restart
+          val executorToKill = restClient.queryExecutorBrief(appId).map(_.executorId).max
+          restClient.killExecutor(appId, executorToKill) shouldBe true
+          Util.retryUntil(restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill)
+
+          // verify no message loss
+          val detector = new MessageLossDetector(producer.lastWriteNum)
+          val kafkaReader = new SimpleKafkaReader(detector, sinkTopic, host = kafkaCluster.advertisedHost,
+            port = kafkaCluster.advertisedPort)
+
+          Util.retryUntil {
+            kafkaReader.read()
+            detector.allReceived
+          }
+       }
     }
   }
 
 }
-

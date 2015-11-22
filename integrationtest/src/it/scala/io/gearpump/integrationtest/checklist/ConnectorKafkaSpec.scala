@@ -17,10 +17,8 @@
  */
 package io.gearpump.integrationtest.checklist
 
+import io.gearpump.integrationtest.{Util, TestSpecBase}
 import io.gearpump.integrationtest.kafka._
-import io.gearpump.integrationtest.{TestSpecBase, Util}
-
-import scala.collection.mutable
 
 /**
  * The test spec checks the Kafka datasource connector
@@ -34,7 +32,6 @@ class ConnectorKafkaSpec extends TestSpecBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     kafkaCluster.start()
-    Util.retryUntil(kafkaCluster.isAlive())
   }
 
   override def afterAll(): Unit = {
@@ -99,7 +96,6 @@ class ConnectorKafkaSpec extends TestSpecBase {
       // verify #2
       val executorToKill = restClient.queryExecutorBrief(appId).map(_.executorId).max
       restClient.killExecutor(appId, executorToKill) shouldBe true
-      producer.stop()
       Util.retryUntil(restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill)
 
       // verify #3
@@ -111,21 +107,6 @@ class ConnectorKafkaSpec extends TestSpecBase {
         detector.allReceived
       })
     }
-  }
-
-  class MessageLossDetector(totalNum: Int) extends ResultVerifier {
-
-    private val bitSets = new mutable.BitSet(totalNum)
-
-    override def onNext(msg: String): Unit = {
-      val num = msg.toInt
-      bitSets.add(num)
-    }
-
-    def allReceived: Boolean = {
-      bitSets.size == totalNum
-    }
-
   }
 
 }
