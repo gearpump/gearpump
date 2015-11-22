@@ -119,7 +119,7 @@ class HadoopCheckpointStore(
           case tempRegex(start) =>
             val startTime = start.toLong
             if (timestamp >= startTime) {
-              val newFile = new Path(dir, s"checkpoints-\$startTime-$timestamp.store")
+              val newFile = new Path(dir, s"checkpoints-$startTime-$timestamp.store")
               fs.rename(new Path(dir, fileName), newFile)
               checkpointFile = Some(newFile)
             }
