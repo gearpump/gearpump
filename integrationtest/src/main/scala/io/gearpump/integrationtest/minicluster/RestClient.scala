@@ -19,6 +19,7 @@ package io.gearpump.integrationtest.minicluster
 
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+import io.gearpump.cluster.MasterToClient.HistoryMetrics
 import io.gearpump.integrationtest.Docker
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
@@ -84,6 +85,12 @@ class RestClient(host: String, port: Int) {
     if (resp.startsWith("java.lang.Exception: Can not find Application:"))
       null
     else upickle.default.read[StreamAppMasterSummary](resp)
+  }
+
+  def queryStreamingAppMetrics(appId: Int, current: Boolean): HistoryMetrics = {
+    val args = if (current) "?readLatest=true" else ""
+    val resp = callApi(s"appmaster/$appId/metrics/app$appId.processor*$args")
+    upickle.default.read[HistoryMetrics](resp)
   }
 
   def getExecutorSummary(appId: Int, executorId: Int): ExecutorSummary = {
