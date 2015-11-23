@@ -175,6 +175,19 @@ class RestServiceSpec extends TestSpecBase {
     }
 
     "can obtain master's metrics and the metrics will keep changing" in {
+      // exercise
+      Util.retryUntil(
+        restClient.queryMasterMetrics(current = true).metrics.nonEmpty,
+        timeout = duration.Duration(5, MINUTES))
+      val actual = restClient.queryMasterMetrics(current = true)
+      actual.path shouldEqual s"master"
+      assert(actual.metrics.head.time > 0)
+      val formerMetricsDump = actual.metrics.toString()
+
+      Util.retryUntil({
+        val laterMetrics = restClient.queryMasterMetrics(current = true).metrics
+        laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
+      }, timeout = duration.Duration(5, MINUTES))
     }
 
     "can obtain workers' metrics and the metrics will keep changing" in {
@@ -182,19 +195,23 @@ class RestServiceSpec extends TestSpecBase {
   }
 
   "configuration" should {
-    "retrieve the configuration of master" in {
+    "retrieve the configuration of master and match particular values" in {
+      // exercise
+      val actual = restClient.queryMasterConfig()
+      actual.hasPath("gearpump") shouldBe true
+      actual.hasPath("gearpump.cluster") shouldBe true
+      actual.getString("gearpump.hostname") shouldEqual cluster.getMasterHosts.head
+    }
+
+    "retrieve the configuration of worker X and match particular values" in {
 
     }
 
-    "retrieve the configuration of worker X" in {
+    "retrieve the configuration of executor X and match particular values" in {
 
     }
 
-    "retrieve the configuration of executor X" in {
-
-    }
-
-    "retrieve the configuration of application X" in {
+    "retrieve the configuration of application X and match particular values" in {
 
     }
   }

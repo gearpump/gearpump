@@ -68,7 +68,7 @@ class ExampleSpec extends TestSpecBase {
       laterProcessor0.description shouldEqual expectedDescription
     }
 
-    "can submit a dag as user application" in {
+    "can compose a wordcount application from scratch" in {
 
     }
   }

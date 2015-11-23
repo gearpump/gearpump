@@ -17,10 +17,12 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.cluster.MasterToClient.HistoryMetrics
 import io.gearpump.integrationtest.{Docker, Util}
+import io.gearpump.services.AppMasterService.Status
 import io.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners}
 import io.gearpump.streaming.ProcessorDescription
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
@@ -78,6 +80,11 @@ class RestClient(host: String, port: Int) {
     read[AppMasterData](resp)
   }
 
+  def queryAppMasterConfig(appId: Int): Config = {
+    val resp = callApi(s"appmaster/$appId/config")
+    ConfigFactory.parseString(resp)
+  }
+
   def queryStreamingAppDetail(appId: Int): StreamAppMasterSummary = {
     val resp = callApi(s"appmaster/$appId?detail=true")
     upickle.default.read[StreamAppMasterSummary](resp)
@@ -102,6 +109,33 @@ class RestClient(host: String, port: Int) {
     val args = if (current) "?readLatest=true" else ""
     val resp = callApi(s"appmaster/$appId/metrics/app$appId.executor*$args")
     upickle.default.read[HistoryMetrics](resp)
+  }
+
+  def queryExecutorConfig(appId: Int, executorId: Int): Config = {
+    val resp = callApi(s"appmaster/$appId/executor/$executorId/config")
+    ConfigFactory.parseString(resp)
+  }
+
+  def queryMasterMetrics(current: Boolean): HistoryMetrics = {
+    val args = if (current) "?readLatest=true" else ""
+    val resp = callApi(s"master/metrics/master?$args")
+    upickle.default.read[HistoryMetrics](resp)
+  }
+
+  def queryMasterConfig(): Config = {
+    val resp = callApi("master/config")
+    ConfigFactory.parseString(resp)
+  }
+
+  def queryWorkerMetrics(workerId: Int, current: Boolean): HistoryMetrics = {
+    val args = if (current) "?readLatest=true" else ""
+    val resp = callApi(s"worker/$workerId/metrics/worker$workerId?$args")
+    upickle.default.read[HistoryMetrics](resp)
+  }
+
+  def queryWorkerConfig(workerId: Int): Config = {
+    val resp = callApi(s"worker/$workerId/config")
+    ConfigFactory.parseString(resp)
   }
 
   def queryBuiltInPartitioners(): Array[String] = {
@@ -136,6 +170,13 @@ class RestClient(host: String, port: Int) {
   def killApp(appId: Int): Boolean = try {
     val resp = callApi(s"appmaster/$appId", CRUD_DELETE)
     resp.contains("\"status\":\"success\"")
+  } catch {
+    case ex: Throwable => false
+  }
+
+  def restartApp(appId: Int): Boolean = try {
+    val resp = callApi(s"appmaster/$appId/restart", CRUD_POST)
+    upickle.default.read[Status](resp).success
   } catch {
     case ex: Throwable => false
   }
