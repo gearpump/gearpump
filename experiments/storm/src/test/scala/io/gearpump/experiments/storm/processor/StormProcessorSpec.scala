@@ -46,7 +46,7 @@ class StormProcessorSpec extends WordSpec with Matchers with MockitoSugar {
     "pass message to GearpumpBolt onNext" in {
       val message = mock[Message]
       val gearpumpBolt = mock[GearpumpBolt]
-      val freq = 5L
+      val freq = 5
       when(gearpumpBolt.getTickFrequency).thenReturn(Some(freq))
       val taskContext = MockUtil.mockTaskContext
       val userConfig = UserConfig.empty

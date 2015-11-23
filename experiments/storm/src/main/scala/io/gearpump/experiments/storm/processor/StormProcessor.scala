@@ -31,7 +31,7 @@ import org.slf4j.Logger
 import scala.concurrent.duration.Duration
 
 object StormProcessor {
-  val TICK = Message("tick")
+  private[storm] val TICK = Message("tick")
 }
 
 /**
@@ -55,18 +55,18 @@ private[storm] class StormProcessor(gearpumpBolt: GearpumpBolt,
   }
 
   override def onNext(message: Message): Unit = {
-    message.msg match {
-      case "tick" =>
+    message match {
+      case TICK =>
         freqOpt.foreach { freq =>
-          scheduleTick(freq)
           gearpumpBolt.tick(freq)
+          scheduleTick(freq)
         }
       case _ =>
         gearpumpBolt.next(message)
     }
   }
 
-  private def scheduleTick(freq: Long): Unit = {
+  private def scheduleTick(freq: Int): Unit = {
     taskContext.scheduleOnce(Duration(freq, TimeUnit.SECONDS)){ self ! TICK }
   }
 }

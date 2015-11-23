@@ -22,6 +22,7 @@ import java.util.{List => JList}
 
 import backtype.storm.task.GeneralTopologyContext
 import backtype.storm.tuple.{Tuple, TupleImpl}
+import io.gearpump.TimeStamp
 
 
 /**
@@ -41,8 +42,8 @@ private[storm] class GearpumpTuple(
    * @param topologyContext topology context used for all tasks
    * @return a Tuple
    */
-  def toTuple(topologyContext: GeneralTopologyContext): Tuple = {
-    new TupleImpl(topologyContext, values, sourceTaskId, sourceStreamId, null)
+  def toTuple(topologyContext: GeneralTopologyContext, timestamp: TimeStamp): Tuple = {
+    TimedTuple(topologyContext, values, sourceTaskId, sourceStreamId, timestamp)
   }
 
 
@@ -62,5 +63,9 @@ private[storm] class GearpumpTuple(
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }
+
+case class TimedTuple(topologyContext: GeneralTopologyContext, tuple: JList[AnyRef],
+    sourceTaskId: Integer, sourceStreamId: String, timestamp: TimeStamp)
+  extends TupleImpl(topologyContext, tuple, sourceTaskId, sourceStreamId, null)
 
 
