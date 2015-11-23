@@ -15,12 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.minicluster
+package io.gearpump.integrationtest
+
+import org.apache.log4j.Logger
 
 import scala.concurrent._
 import scala.concurrent.duration._
 
 object Util {
+
+  private val LOG = Logger.getLogger(getClass)
 
   def encodeUriComponent(s: String): String = {
     try {
@@ -37,11 +41,12 @@ object Util {
   }
 
   def retryUntil(condition: => Boolean, timeout: Duration = duration.Duration(30, SECONDS)): Unit = {
-    val RETRY_DELAY = duration.Duration(1, SECONDS)
+    val RETRY_DELAY = duration.Duration(2, SECONDS)
     try {
       assert(condition)
     } catch {
       case ex if timeout.toMillis > 0 =>
+        LOG.info(s"Will sleep ${RETRY_DELAY.toSeconds} seconds and try again")
         Thread.sleep(RETRY_DELAY.toMillis)
         retryUntil(condition, timeout - RETRY_DELAY)
     }

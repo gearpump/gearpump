@@ -18,8 +18,7 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.integrationtest.TestSpecBase
-import io.gearpump.integrationtest.minicluster.Util
+import io.gearpump.integrationtest.{Util, TestSpecBase}
 
 /**
  * The test spec will perform destructive operations to check the stability
@@ -52,14 +51,14 @@ class StabilitySpec extends TestSpecBase {
       // setup
       val appId = commandLineClient.submitApp(wordCountJar)
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
-      val executorToKill = restClient.getExecutorBrief(appId).map(_.executorId).max
+      val executorToKill = restClient.queryExecutorBrief(appId).map(_.executorId).max
       // Here make sure the application clock is stored in the Master
       // todo: 5000 is sync period of clock service in source code
       Thread.sleep(5000)
 
       // exercise
       restClient.killExecutor(appId, executorToKill) shouldBe true
-      Util.retryUntil(restClient.getExecutorBrief(appId).map(_.executorId).max > executorToKill)
+      Util.retryUntil(restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill)
 
       // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
