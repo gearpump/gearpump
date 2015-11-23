@@ -17,14 +17,18 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.cluster.MasterToClient.HistoryMetrics
-import io.gearpump.integrationtest.Docker
+import io.gearpump.integrationtest.{Docker, Util}
+import io.gearpump.services.AppMasterService.Status
+import io.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners}
+import io.gearpump.streaming.ProcessorDescription
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
+import io.gearpump.streaming.appmaster.DagManager.{DAGOperationResult, ReplaceProcessor}
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.ExecutorSummary
-import io.gearpump.services.MasterService.AppSubmissionResult
 import io.gearpump.util.{Constants, Graph}
 import upickle.Js
 import upickle.default._
@@ -45,14 +49,12 @@ class RestClient(host: String, port: Int) {
     callFromRoot("version")
   }
 
-  def listApps(): List[AppMasterData] = try {
+  def listApps(): Array[AppMasterData] = {
     val resp = callApi("master/applist")
-    read[AppMastersData](resp).appMasters
-  } catch {
-    case ex: Throwable => List.empty
+    read[AppMastersData](resp).appMasters.toArray
   }
 
-  def listRunningApps(): List[AppMasterData] = {
+  def listRunningApps(): Array[AppMasterData] = {
     listApps().filter(_.status == MasterToAppMaster.AppMasterActive)
   }
 
@@ -73,18 +75,19 @@ class RestClient(host: String, port: Int) {
     case ex: Throwable => -1
   }
 
-  def queryApp(appId: Int): AppMasterData = try {
+  def queryApp(appId: Int): AppMasterData = {
     val resp = callApi(s"appmaster/$appId")
     read[AppMasterData](resp)
-  } catch {
-    case ex: Throwable => null
+  }
+
+  def queryAppMasterConfig(appId: Int): Config = {
+    val resp = callApi(s"appmaster/$appId/config")
+    ConfigFactory.parseString(resp)
   }
 
   def queryStreamingAppDetail(appId: Int): StreamAppMasterSummary = {
     val resp = callApi(s"appmaster/$appId?detail=true")
-    if (resp.startsWith("java.lang.Exception: Can not find Application:"))
-      null
-    else upickle.default.read[StreamAppMasterSummary](resp)
+    upickle.default.read[StreamAppMasterSummary](resp)
   }
 
   def queryStreamingAppMetrics(appId: Int, current: Boolean): HistoryMetrics = {
@@ -93,17 +96,62 @@ class RestClient(host: String, port: Int) {
     upickle.default.read[HistoryMetrics](resp)
   }
 
-  def getExecutorSummary(appId: Int, executorId: Int): ExecutorSummary = {
+  def queryExecutorSummary(appId: Int, executorId: Int): ExecutorSummary = {
     val resp = callApi(s"appmaster/$appId/executor/$executorId")
-    if (resp.startsWith("java.lang.Exception"))
-      null
-    else upickle.default.read[ExecutorSummary](resp)
+    upickle.default.read[ExecutorSummary](resp)
   }
 
-  def getExecutorBrief(appId: Int): List[ExecutorBrief] = try {
-    queryStreamingAppDetail(appId).executors
+  def queryExecutorBrief(appId: Int): Array[ExecutorBrief] = {
+    queryStreamingAppDetail(appId).executors.toArray
+  }
+
+  def queryExecutorMetrics(appId: Int, current: Boolean): HistoryMetrics = {
+    val args = if (current) "?readLatest=true" else ""
+    val resp = callApi(s"appmaster/$appId/metrics/app$appId.executor*$args")
+    upickle.default.read[HistoryMetrics](resp)
+  }
+
+  def queryExecutorConfig(appId: Int, executorId: Int): Config = {
+    val resp = callApi(s"appmaster/$appId/executor/$executorId/config")
+    ConfigFactory.parseString(resp)
+  }
+
+  def queryMasterMetrics(current: Boolean): HistoryMetrics = {
+    val args = if (current) "?readLatest=true" else ""
+    val resp = callApi(s"master/metrics/master?$args")
+    upickle.default.read[HistoryMetrics](resp)
+  }
+
+  def queryMasterConfig(): Config = {
+    val resp = callApi("master/config")
+    ConfigFactory.parseString(resp)
+  }
+
+  def queryWorkerMetrics(workerId: Int, current: Boolean): HistoryMetrics = {
+    val args = if (current) "?readLatest=true" else ""
+    val resp = callApi(s"worker/$workerId/metrics/worker$workerId?$args")
+    upickle.default.read[HistoryMetrics](resp)
+  }
+
+  def queryWorkerConfig(workerId: Int): Config = {
+    val resp = callApi(s"worker/$workerId/config")
+    ConfigFactory.parseString(resp)
+  }
+
+  def queryBuiltInPartitioners(): Array[String] = {
+    val resp = callApi("master/partitioners")
+    upickle.default.read[BuiltinPartitioners](resp).partitioners
+  }
+
+  def replaceStreamingAppProcessor(appId: Int, replaceMe: ProcessorDescription): Boolean = try {
+    val replaceOperation = new ReplaceProcessor(replaceMe.id, replaceMe)
+    val args = upickle.default.write(replaceOperation)
+    val resp = callApi(s"appmaster/$appId/dynamicdag?args=" + Util.encodeUriComponent(args),
+      CRUD_POST + " -F ignore=ignore")
+    upickle.default.read[DAGOperationResult](resp)
+    true
   } catch {
-    case ex: Throwable => List.empty
+    case ex: Throwable => false
   }
 
   def killAppMaster(appId: Int): Boolean = {
@@ -111,7 +159,7 @@ class RestClient(host: String, port: Int) {
   }
 
   def killExecutor(appId: Int, executorId: Int): Boolean = try {
-    val jvmInfo = getExecutorSummary(appId, executorId).jvmName.split("@")
+    val jvmInfo = queryExecutorSummary(appId, executorId).jvmName.split("@")
     val pid = jvmInfo(0).toInt
     val hostname = jvmInfo(1)
     Docker.killProcess(hostname, pid)
@@ -120,11 +168,21 @@ class RestClient(host: String, port: Int) {
   }
 
   def killApp(appId: Int): Boolean = try {
-    val resp = callApi(s"appmaster/$appId", "-X DELETE")
+    val resp = callApi(s"appmaster/$appId", CRUD_DELETE)
     resp.contains("\"status\":\"success\"")
   } catch {
     case ex: Throwable => false
   }
+
+  def restartApp(appId: Int): Boolean = try {
+    val resp = callApi(s"appmaster/$appId/restart", CRUD_POST)
+    upickle.default.read[Status](resp).success
+  } catch {
+    case ex: Throwable => false
+  }
+
+  private val CRUD_POST = "-X POST"
+  private val CRUD_DELETE = "-X DELETE"
 
   private def callApi(endpoint: String, options: String = ""): String = {
     callFromRoot(s"api/v1.0/$endpoint", options)

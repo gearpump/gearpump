@@ -17,7 +17,7 @@
  */
 package io.gearpump.integrationtest.minicluster
 
-import io.gearpump.integrationtest.Docker
+import io.gearpump.integrationtest.{Util, Docker}
 import org.apache.log4j.Logger
 
 import scala.sys.process._

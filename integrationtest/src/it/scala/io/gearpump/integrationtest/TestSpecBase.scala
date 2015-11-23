@@ -66,7 +66,6 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfter with Befor
 
   def expectAppIsRunning(appId: Int, expectedAppName: String): AppMasterData = {
     val app = restClient.queryApp(appId)
-    app should not be null
     app.status shouldEqual MasterToAppMaster.AppMasterActive
     app.appName shouldEqual expectedAppName
     app
