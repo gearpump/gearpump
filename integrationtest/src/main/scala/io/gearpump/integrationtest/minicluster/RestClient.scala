@@ -20,11 +20,11 @@ package io.gearpump.integrationtest.minicluster
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.cluster.MasterToClient.HistoryMetrics
-import io.gearpump.integrationtest.{Util, Docker}
+import io.gearpump.integrationtest.{Docker, Util}
+import io.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners}
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.ExecutorSummary
-import io.gearpump.services.MasterService.AppSubmissionResult
 import io.gearpump.util.{Constants, Graph}
 import upickle.Js
 import upickle.default._
@@ -45,12 +45,12 @@ class RestClient(host: String, port: Int) {
     callFromRoot("version")
   }
 
-  def listApps(): List[AppMasterData] = {
+  def listApps(): Array[AppMasterData] = {
     val resp = callApi("master/applist")
-    read[AppMastersData](resp).appMasters
+    read[AppMastersData](resp).appMasters.toArray
   }
 
-  def listRunningApps(): List[AppMasterData] = {
+  def listRunningApps(): Array[AppMasterData] = {
     listApps().filter(_.status == MasterToAppMaster.AppMasterActive)
   }
 
@@ -92,13 +92,19 @@ class RestClient(host: String, port: Int) {
     upickle.default.read[ExecutorSummary](resp)
   }
 
-  def queryExecutorBrief(appId: Int): List[ExecutorBrief] = {
-    queryStreamingAppDetail(appId).executors
+  def queryExecutorBrief(appId: Int): Array[ExecutorBrief] = {
+    queryStreamingAppDetail(appId).executors.toArray
   }
 
-  def queryBuiltInPartitioners(): List[String] = {
-    val resp = callApi("/master/partitioners")
-    upickle.default.read[List[String]](resp)
+  def queryExecutorMetrics(appId: Int, current: Boolean): HistoryMetrics = {
+    val args = if (current) "?readLatest=true" else ""
+    val resp = callApi(s"appmaster/$appId/metrics/app$appId.executor*$args")
+    upickle.default.read[HistoryMetrics](resp)
+  }
+
+  def queryBuiltInPartitioners(): Array[String] = {
+    val resp = callApi("master/partitioners")
+    upickle.default.read[BuiltinPartitioners](resp).partitioners
   }
 
   def killAppMaster(appId: Int): Boolean = {

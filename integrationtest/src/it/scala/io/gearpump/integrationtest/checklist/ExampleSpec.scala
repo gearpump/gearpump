@@ -31,10 +31,23 @@ class ExampleSpec extends TestSpecBase {
 
   "dynamic dag" should {
     "can retrieve a list of built-in partitioner classes" in {
-
+      val partitioners = restClient.queryBuiltInPartitioners()
+      partitioners.length should be > 0
+      partitioners.foreach(clazz =>
+        clazz should startWith("io.gearpump.partitioner.")
+      )
     }
 
+    lazy val dynamicDagJar = cluster.queryBuiltInExampleJars("complexdag-").head
+    lazy val dynamicDagName = "dag"
+
     "can change the parallelism of a processor" in {
+      // setup
+      val appId = restClient.submitApp(dynamicDagJar)
+      expectAppIsRunning(appId, dynamicDagName)
+
+      // exercise
+
     }
 
     "can change the description of a processor" in {

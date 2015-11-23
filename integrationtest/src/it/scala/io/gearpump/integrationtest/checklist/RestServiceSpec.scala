@@ -18,7 +18,7 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.integrationtest.{Util, TestSpecBase}
+import io.gearpump.integrationtest.{TestSpecBase, Util}
 
 import scala.concurrent.duration
 import scala.concurrent.duration._
@@ -36,14 +36,14 @@ class RestServiceSpec extends TestSpecBase {
 
   "list applications" should {
     "retrieve 0 application after cluster just started" in {
-      restClient.listRunningApps().size shouldEqual 0
+      restClient.listRunningApps().length shouldEqual 0
     }
 
     "retrieve 1 application after the first application submission" in {
       // exercise
       val appId = restClient.submitApp(wordCountJar)
       expectAppIsRunning(appId, wordCountName)
-      restClient.listRunningApps().size shouldEqual 1
+      restClient.listRunningApps().length shouldEqual 1
     }
   }
 
@@ -86,7 +86,7 @@ class RestServiceSpec extends TestSpecBase {
       sumProcessor.parallelism shouldEqual sumNum
     }
 
-    "able to obtain application metrics and the metrics will keep changing" in {
+    "can obtain application metrics and the metrics will keep changing" in {
       // setup
       val appId = restClient.submitApp(wordCountJar)
       expectAppIsRunning(appId, wordCountName)
@@ -102,6 +102,26 @@ class RestServiceSpec extends TestSpecBase {
 
       Util.retryUntil({
         val actualMetrics2 = restClient.queryStreamingAppMetrics(appId, current = true).metrics
+        actualMetrics2.nonEmpty && actualMetrics2.toString() != referenceMetrics1
+      }, timeout = duration.Duration(5, MINUTES))
+    }
+
+    "can obtain application corresponding executors' metrics and the metrics will keep changing" in {
+      // setup
+      val appId = restClient.submitApp(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
+
+      // exercise
+      Util.retryUntil(
+        restClient.queryExecutorMetrics(appId, current = true).metrics.nonEmpty,
+        timeout = duration.Duration(5, MINUTES))
+      val actual = restClient.queryExecutorMetrics(appId, current = true)
+      actual.path shouldEqual s"app$appId.executor*"
+      assert(actual.metrics.head.time > 0)
+      val referenceMetrics1 = actual.metrics.toString()
+
+      Util.retryUntil({
+        val actualMetrics2 = restClient.queryExecutorMetrics(appId, current = true).metrics
         actualMetrics2.nonEmpty && actualMetrics2.toString() != referenceMetrics1
       }, timeout = duration.Duration(5, MINUTES))
     }
@@ -130,7 +150,7 @@ class RestServiceSpec extends TestSpecBase {
 
     "should fail when attempting to kill a non-exist application" in {
       // setup
-      val freeAppId = restClient.listApps().size + 1
+      val freeAppId = restClient.listApps().length + 1
 
       // exercise
       val success = restClient.killApp(freeAppId)
@@ -152,6 +172,12 @@ class RestServiceSpec extends TestSpecBase {
 
     "find a newly added worker instance" in {
 
+    }
+
+    "can obtain master's metrics and the metrics will keep changing" in {
+    }
+
+    "can obtain workers' metrics and the metrics will keep changing" in {
     }
   }
 
