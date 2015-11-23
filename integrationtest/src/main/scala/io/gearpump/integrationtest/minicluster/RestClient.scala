@@ -22,7 +22,9 @@ import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.cluster.MasterToClient.HistoryMetrics
 import io.gearpump.integrationtest.{Docker, Util}
 import io.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners}
+import io.gearpump.streaming.ProcessorDescription
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
+import io.gearpump.streaming.appmaster.DagManager.{DAGOperationResult, ReplaceProcessor}
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.ExecutorSummary
 import io.gearpump.util.{Constants, Graph}
@@ -107,6 +109,17 @@ class RestClient(host: String, port: Int) {
     upickle.default.read[BuiltinPartitioners](resp).partitioners
   }
 
+  def replaceStreamingAppProcessor(appId: Int, replaceMe: ProcessorDescription): Boolean = try {
+    val replaceOperation = new ReplaceProcessor(replaceMe.id, replaceMe)
+    val args = upickle.default.write(replaceOperation)
+    val resp = callApi(s"appmaster/$appId/dynamicdag?args=" + Util.encodeUriComponent(args),
+      CRUD_POST + " -F ignore=ignore")
+    upickle.default.read[DAGOperationResult](resp)
+    true
+  } catch {
+    case ex: Throwable => false
+  }
+
   def killAppMaster(appId: Int): Boolean = {
     killExecutor(appId, Constants.APPMASTER_DEFAULT_EXECUTOR_ID)
   }
@@ -121,11 +134,14 @@ class RestClient(host: String, port: Int) {
   }
 
   def killApp(appId: Int): Boolean = try {
-    val resp = callApi(s"appmaster/$appId", "-X DELETE")
+    val resp = callApi(s"appmaster/$appId", CRUD_DELETE)
     resp.contains("\"status\":\"success\"")
   } catch {
     case ex: Throwable => false
   }
+
+  private val CRUD_POST = "-X POST"
+  private val CRUD_DELETE = "-X DELETE"
 
   private def callApi(endpoint: String, options: String = ""): String = {
     callFromRoot(s"api/v1.0/$endpoint", options)

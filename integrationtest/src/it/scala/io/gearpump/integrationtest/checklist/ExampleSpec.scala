@@ -17,7 +17,9 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.TestSpecBase
+import io.gearpump.integrationtest.{TestSpecBase, Util}
+import io.gearpump.streaming._
+import io.gearpump.streaming.appmaster.ProcessorSummary
 
 /**
  * The test spec will perform destructive operations to check the stability
@@ -41,16 +43,29 @@ class ExampleSpec extends TestSpecBase {
     lazy val dynamicDagJar = cluster.queryBuiltInExampleJars("complexdag-").head
     lazy val dynamicDagName = "dag"
 
-    "can change the parallelism of a processor" in {
+    "can change the parallelism and description of a processor" in {
       // setup
       val appId = restClient.submitApp(dynamicDagJar)
       expectAppIsRunning(appId, dynamicDagName)
+      val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
+      val processor0 = formerProcessors.get(0).get
+      val expectedProcessorId = formerProcessors.size
+      val expectedParallelism = processor0.parallelism + 1
+      val expectedDescription = processor0.description + "new"
+      val replaceMe = new ProcessorDescription(processor0.id, processor0.taskClass, expectedParallelism,
+        description = expectedDescription)
 
       // exercise
-
-    }
-
-    "can change the description of a processor" in {
+      val success = restClient.replaceStreamingAppProcessor(appId, replaceMe)
+      success shouldBe true
+      var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
+      Util.retryUntil({
+        laterProcessors = restClient.queryStreamingAppDetail(appId).processors
+        laterProcessors.size == formerProcessors.size + 1
+      })
+      val laterProcessor0 = laterProcessors.get(expectedProcessorId).get
+      laterProcessor0.parallelism shouldEqual expectedParallelism
+      laterProcessor0.description shouldEqual expectedDescription
     }
 
     "can submit a dag as user application" in {

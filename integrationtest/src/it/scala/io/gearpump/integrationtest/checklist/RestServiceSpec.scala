@@ -98,11 +98,11 @@ class RestServiceSpec extends TestSpecBase {
       val actual = restClient.queryStreamingAppMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.processor*"
       assert(actual.metrics.head.time > 0)
-      val referenceMetrics1 = actual.metrics.toString()
+      val formerMetricsDump = actual.metrics.toString()
 
       Util.retryUntil({
-        val actualMetrics2 = restClient.queryStreamingAppMetrics(appId, current = true).metrics
-        actualMetrics2.nonEmpty && actualMetrics2.toString() != referenceMetrics1
+        val laterMetrics = restClient.queryStreamingAppMetrics(appId, current = true).metrics
+        laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
       }, timeout = duration.Duration(5, MINUTES))
     }
 
@@ -118,11 +118,11 @@ class RestServiceSpec extends TestSpecBase {
       val actual = restClient.queryExecutorMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.executor*"
       assert(actual.metrics.head.time > 0)
-      val referenceMetrics1 = actual.metrics.toString()
+      val formerMetricsDump = actual.metrics.toString()
 
       Util.retryUntil({
-        val actualMetrics2 = restClient.queryExecutorMetrics(appId, current = true).metrics
-        actualMetrics2.nonEmpty && actualMetrics2.toString() != referenceMetrics1
+        val laterMetrics = restClient.queryExecutorMetrics(appId, current = true).metrics
+        laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
       }, timeout = duration.Duration(5, MINUTES))
     }
   }
