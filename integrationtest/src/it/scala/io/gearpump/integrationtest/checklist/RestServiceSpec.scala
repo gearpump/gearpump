@@ -18,9 +18,7 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
-import io.gearpump.integrationtest.TestSpecBase
-import io.gearpump.integrationtest.minicluster.Util
+import io.gearpump.integrationtest.{Util, TestSpecBase}
 
 import scala.concurrent.duration
 import scala.concurrent.duration._

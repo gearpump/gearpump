@@ -17,8 +17,7 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.TestSpecBase
-import io.gearpump.integrationtest.minicluster.Util
+import io.gearpump.integrationtest.{Util, TestSpecBase}
 
 /**
  * The test spec checks the compatibility of running Storm applications

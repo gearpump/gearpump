@@ -20,7 +20,7 @@ package io.gearpump.integrationtest.minicluster
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.cluster.MasterToClient.HistoryMetrics
-import io.gearpump.integrationtest.Docker
+import io.gearpump.integrationtest.{Util, Docker}
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.ExecutorSummary
@@ -45,11 +45,9 @@ class RestClient(host: String, port: Int) {
     callFromRoot("version")
   }
 
-  def listApps(): List[AppMasterData] = try {
+  def listApps(): List[AppMasterData] = {
     val resp = callApi("master/applist")
     read[AppMastersData](resp).appMasters
-  } catch {
-    case ex: Throwable => List.empty
   }
 
   def listRunningApps(): List[AppMasterData] = {
@@ -73,18 +71,14 @@ class RestClient(host: String, port: Int) {
     case ex: Throwable => -1
   }
 
-  def queryApp(appId: Int): AppMasterData = try {
+  def queryApp(appId: Int): AppMasterData = {
     val resp = callApi(s"appmaster/$appId")
     read[AppMasterData](resp)
-  } catch {
-    case ex: Throwable => null
   }
 
   def queryStreamingAppDetail(appId: Int): StreamAppMasterSummary = {
     val resp = callApi(s"appmaster/$appId?detail=true")
-    if (resp.startsWith("java.lang.Exception: Can not find Application:"))
-      null
-    else upickle.default.read[StreamAppMasterSummary](resp)
+    upickle.default.read[StreamAppMasterSummary](resp)
   }
 
   def queryStreamingAppMetrics(appId: Int, current: Boolean): HistoryMetrics = {
@@ -93,17 +87,18 @@ class RestClient(host: String, port: Int) {
     upickle.default.read[HistoryMetrics](resp)
   }
 
-  def getExecutorSummary(appId: Int, executorId: Int): ExecutorSummary = {
+  def queryExecutorSummary(appId: Int, executorId: Int): ExecutorSummary = {
     val resp = callApi(s"appmaster/$appId/executor/$executorId")
-    if (resp.startsWith("java.lang.Exception"))
-      null
-    else upickle.default.read[ExecutorSummary](resp)
+    upickle.default.read[ExecutorSummary](resp)
   }
 
-  def getExecutorBrief(appId: Int): List[ExecutorBrief] = try {
+  def queryExecutorBrief(appId: Int): List[ExecutorBrief] = {
     queryStreamingAppDetail(appId).executors
-  } catch {
-    case ex: Throwable => List.empty
+  }
+
+  def queryBuiltInPartitioners(): List[String] = {
+    val resp = callApi("/master/partitioners")
+    upickle.default.read[List[String]](resp)
   }
 
   def killAppMaster(appId: Int): Boolean = {
@@ -111,7 +106,7 @@ class RestClient(host: String, port: Int) {
   }
 
   def killExecutor(appId: Int, executorId: Int): Boolean = try {
-    val jvmInfo = getExecutorSummary(appId, executorId).jvmName.split("@")
+    val jvmInfo = queryExecutorSummary(appId, executorId).jvmName.split("@")
     val pid = jvmInfo(0).toInt
     val hostname = jvmInfo(1)
     Docker.killProcess(hostname, pid)
