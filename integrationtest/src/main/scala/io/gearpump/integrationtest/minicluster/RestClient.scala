@@ -25,6 +25,9 @@ import io.gearpump.integrationtest.{Docker, Util}
 import io.gearpump.services.AppMasterService.Status
 import io.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners}
 import io.gearpump.streaming.ProcessorDescription
+import io.gearpump.cluster.AppMasterToMaster.MasterData
+import io.gearpump.cluster.master.MasterSummary
+import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
 import io.gearpump.streaming.appmaster.DagManager.{DAGOperationResult, ReplaceProcessor}
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
@@ -47,6 +50,24 @@ class RestClient(host: String, port: Int) {
 
   def queryVersion(): String = {
     callFromRoot("version")
+  }
+
+  def listMasters(): List[(String, Int)] = {
+    queryMaster().cluster
+  }
+
+  def queryMaster(): MasterSummary = {
+    val resp = callApi("master")
+    read[MasterData](resp).masterDescription
+  }
+
+  def listWorkers(): List[WorkerSummary] = {
+    val resp = callApi("master/workerlist")
+    read[List[WorkerSummary]](resp)
+  }
+
+  def listRunningWorkers(): List[WorkerSummary] = {
+    listWorkers().filter(_.state == MasterToAppMaster.AppMasterActive)
   }
 
   def listApps(): Array[AppMasterData] = {

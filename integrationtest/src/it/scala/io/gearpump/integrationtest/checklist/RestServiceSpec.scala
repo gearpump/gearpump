@@ -22,6 +22,7 @@ import io.gearpump.integrationtest.{TestSpecBase, Util}
 
 import scala.concurrent.duration
 import scala.concurrent.duration._
+import io.gearpump.cluster.master.MasterStatus
 
 /**
  * The test spec checks REST service usage
@@ -160,18 +161,67 @@ class RestServiceSpec extends TestSpecBase {
 
   "cluster information" should {
     "retrieve 1 master for a non-HA cluster" in {
+      // setup
+      val expectedMastersCount = cluster.getMasterHosts.size
+      val expectedMaster = cluster.getMasters.head
 
-    }
-
-    "retrieve 0 worker, if cluster is started without any workers" in {
-      // todo: defect
+      // exercise
+      val masters = restClient.listMasters()
+      val masterSummary = restClient.queryMaster()
+      masters.size shouldEqual expectedMastersCount
+      masters.head shouldEqual expectedMaster
+      masterSummary.aliveFor should be > 0L
+      masterSummary.masterStatus shouldEqual MasterStatus.Synced
     }
 
     "retrieve the same number of workers as cluster has" in {
+      // setup
+      val expectedWorkersCount = cluster.getWorkerHosts.size
+
+      // exercise
+      val runningWorkers = restClient.listRunningWorkers()
+      runningWorkers.size shouldEqual expectedWorkersCount
+      runningWorkers.foreach { worker =>
+        worker.state shouldEqual MasterToAppMaster.AppMasterActive
+      }
     }
 
     "find a newly added worker instance" in {
+      // setup
+      val oldWorkersCount = restClient.listRunningWorkers().size
+      val workerName = "newWorker"
 
+      // exercise
+      try {
+        cluster.newWorkerNode(workerName)
+        Util.retryUntil(restClient.listRunningWorkers().size > oldWorkersCount)
+        restClient.listRunningWorkers().size shouldEqual (oldWorkersCount + 1)
+      } finally {
+        cluster.removeWorkerNode(workerName)
+        Util.retryUntil(restClient.listRunningWorkers().size == oldWorkersCount)
+      }
+    }
+
+    "retrieve 0 worker, if cluster is started without any workers" in {
+      // setup
+      val originWorkersCount = cluster.getWorkerHosts.size
+
+      // exercise
+      try {
+        restClient.listRunningWorkers().size shouldEqual originWorkersCount
+        while (cluster.getWorkerHosts.nonEmpty) {
+          cluster.removeWorkerNode(cluster.getWorkerHosts.head)
+          val workersCount = cluster.getWorkerHosts.size
+          Util.retryUntil(restClient.listRunningWorkers().size == workersCount)
+          restClient.listRunningWorkers().size shouldEqual workersCount
+        }
+        restClient.listRunningWorkers().size shouldEqual 0
+      } finally {
+        (0 until originWorkersCount).foreach { index =>
+          cluster.newWorkerNode(s"worker$index")
+        }
+        Util.retryUntil(restClient.listRunningWorkers().size == originWorkersCount)
+      }
     }
 
     "can obtain master's metrics and the metrics will keep changing" in {
