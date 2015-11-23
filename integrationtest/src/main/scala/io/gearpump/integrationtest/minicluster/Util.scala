@@ -17,6 +17,9 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import scala.concurrent._
+import scala.concurrent.duration._
+
 object Util {
 
   def encodeUriComponent(s: String): String = {
@@ -33,14 +36,14 @@ object Util {
     }
   }
 
-  def retryUntil(condition: => Boolean, retry: Int = 30): Unit = {
-    val RETRY_DELAY = 1000
+  def retryUntil(condition: => Boolean, timeout: Duration = duration.Duration(30, SECONDS)): Unit = {
+    val RETRY_DELAY = duration.Duration(1, SECONDS)
     try {
       assert(condition)
     } catch {
-      case ex if retry > 0 =>
-        Thread.sleep(RETRY_DELAY)
-        retryUntil(condition, retry - 1)
+      case ex if timeout.toMillis > 0 =>
+        Thread.sleep(RETRY_DELAY.toMillis)
+        retryUntil(condition, timeout - RETRY_DELAY)
     }
   }
 

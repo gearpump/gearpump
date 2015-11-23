@@ -18,7 +18,12 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.cluster.MasterToAppMaster
+import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
 import io.gearpump.integrationtest.TestSpecBase
+import io.gearpump.integrationtest.minicluster.Util
+
+import scala.concurrent.duration
+import scala.concurrent.duration._
 
 /**
  * The test spec checks REST service usage
@@ -67,10 +72,40 @@ class RestServiceSpec extends TestSpecBase {
       appId shouldEqual -1
     }
 
-    "find a running application with expected number of split and sum processors" in {
+    "submit a wordcount application with 4 split and 3 sum processors and expect parallelism of processors match the given number" in {
+      // setup
+      val splitNum = 4
+      val sumNum = 3
+
+      // exercise
+      val appId = restClient.submitApp(wordCountJar, s"-split $splitNum -sum $sumNum")
+      expectAppIsRunning(appId, wordCountName)
+      val processors = restClient.queryStreamingAppDetail(appId).processors
+      processors.size shouldEqual 2
+      val splitProcessor = processors.get(0).get
+      splitProcessor.parallelism shouldEqual splitNum
+      val sumProcessor = processors.get(1).get
+      sumProcessor.parallelism shouldEqual sumNum
     }
 
-    "find a running application with metrics value keeping changing" in {
+    "able to obtain application metrics and the metrics will keep changing" in {
+      // setup
+      val appId = restClient.submitApp(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
+
+      // exercise
+      Util.retryUntil(
+        restClient.queryStreamingAppMetrics(appId, current = true).metrics.nonEmpty,
+        timeout = duration.Duration(5, MINUTES))
+      val actual = restClient.queryStreamingAppMetrics(appId, current = true)
+      actual.path shouldEqual s"app$appId.processor*"
+      assert(actual.metrics.head.time > 0)
+      val referenceMetrics1 = actual.metrics.toString()
+
+      Util.retryUntil({
+        val actualMetrics2 = restClient.queryStreamingAppMetrics(appId, current = true).metrics
+        actualMetrics2.nonEmpty && actualMetrics2.toString() != referenceMetrics1
+      }, timeout = duration.Duration(5, MINUTES))
     }
   }
 
