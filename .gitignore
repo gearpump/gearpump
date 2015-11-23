@@ -5,6 +5,7 @@ logs/
 # Scala
 *.class
 *.log
+_site/
 .cache/
 .history/
 .lib/

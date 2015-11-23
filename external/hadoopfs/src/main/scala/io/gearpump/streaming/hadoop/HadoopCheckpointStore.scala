@@ -58,10 +58,10 @@ class HadoopCheckpointStore(
 
   /**
    * persists a pair of timestamp and checkpoint, which
-   *   1. creates a temporary checkpoint file, checkpoints-$startTime.store, if not exist
+   *   1. creates a temporary checkpoint file, checkpoints-\$startTime.store, if not exist
    *   2. writes out (timestamp, checkpoint) and marks rotation
    *   3. rotates checkpoint file if needed
-   *     a. renames temporary checkpoint file to checkpoints-$startTime-$endTime.store
+   *     a. renames temporary checkpoint file to checkpoints-\$startTime-\$endTime.store
    *     b. closes current writer and reset
    *     c. rotation rotates
    */
@@ -92,11 +92,11 @@ class HadoopCheckpointStore(
    * recovers checkpoint given timestamp, which
    *   1. returns None if no store exists
    *   2. searches checkpoint stores for
-   *     a. complete store checkpoints-$startTime-$endTime.store
+   *     a. complete store checkpoints-\$startTime-\$endTime.store
    *         where startTime <= timestamp <= endTime
-   *     b. temporary store checkpoints-$startTime.store
+   *     b. temporary store checkpoints-\$startTime.store
    *         where startTime <= timestamp
-   *   3. renames store to checkpoints-$startTime-$endTime.store
+   *   3. renames store to checkpoints-\$startTime-\$endTime.store
    *   4. deletes all stores whose name has a startTime larger than timestamp
    *   5. looks for the checkpoint in the found store
    */

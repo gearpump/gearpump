@@ -21,6 +21,7 @@ package io.gearpump.experiments.storm.util
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.{HashMap => JHashMap, Map => JMap}
 
+import backtype.storm.Config
 import backtype.storm.generated.StormTopology
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
@@ -136,5 +137,23 @@ class StormUtilSpec extends PropSpec with PropertyChecks with Matchers with Mock
     mod(10, -3) shouldBe -2
     mod(-2, 5) shouldBe 3
     mod(-1, -2) shouldBe -1
+  }
+
+  property("get where ack enabled") {
+    val conf: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
+    ackEnabled(conf) shouldBe false
+    conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, new Integer(0))
+    ackEnabled(conf) shouldBe false
+    conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, null)
+    ackEnabled(conf) shouldBe true
+    forAll(Gen.chooseNum[Int](Int.MinValue, Int.MaxValue)) {
+      (ackers: Int) =>
+        conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, new Integer(ackers))
+        if (ackers == 0) {
+          ackEnabled(conf) shouldBe false
+        } else {
+          ackEnabled(conf) shouldBe true
+        }
+    }
   }
 }

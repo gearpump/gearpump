@@ -1,17 +1,16 @@
+import BuildExample.examples
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import sbt.Keys._
 import sbt._
-import sbtassembly.Plugin.AssemblyKeys._
-import sbtassembly.Plugin._
-import xerial.sbt.Sonatype._
-
-import BuildExample.examples
 import Pack.packProject
 import org.scalajs.sbtplugin.cross.CrossProject
+import sbtassembly.Plugin.AssemblyKeys._
+import sbtassembly.Plugin._
 import sbtunidoc.Plugin.UnidocKeys._
 import sbtunidoc.Plugin._
+import xerial.sbt.Sonatype._
 
 
 object Build extends sbt.Build {
@@ -36,7 +35,7 @@ object Build extends sbt.Build {
   val stormVersion = "0.9.5"
   val slf4jVersion = "1.7.7"
   val gsCollectionsVersion = "6.2.0"
-  
+
   val crossScalaVersionNumbers = Seq("2.10.5", "2.11.5")
   val scalaVersionNumber = crossScalaVersionNumbers.last
   val sprayVersion = "1.3.2"
@@ -83,11 +82,11 @@ object Build extends sbt.Build {
 
       pgpPassphrase := Option(System.getenv().get("PASSPHRASE")).map(_.toArray),
       credentials += Credentials(
-                   "Sonatype Nexus Repository Manager", 
-                   "oss.sonatype.org", 
-                   System.getenv().get("SONATYPE_USERNAME"), 
+                   "Sonatype Nexus Repository Manager",
+                   "oss.sonatype.org",
+                   System.getenv().get("SONATYPE_USERNAME"),
                    System.getenv().get("SONATYPE_PASSWORD")),
-      
+
       pomIncludeRepository := { _ => false },
 
       publishTo := {
@@ -177,20 +176,43 @@ object Build extends sbt.Build {
       )
   )
 
+  lazy val javadocSettings = Seq(
+    addCompilerPlugin("org.spark-project" %% "genjavadoc-plugin" %
+      "0.9-spark0" cross CrossVersion.full),
+    scalacOptions += s"-P:genjavadoc:out=${target.value}/java"
+  )
+
   val myAssemblySettings = assemblySettings ++ Seq(
     test in assembly := {},
     assemblyOption in assembly ~= { _.copy(includeScala = false) },
     jarName in assembly := { s"${name.value.split("-").last}-${scalaVersion.value}-${version.value}-assembly.jar" }
   )
 
-  val projectListWithDoc = Seq(
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(core, streaming, external_kafka, external_monoid, external_serializer, external_hbase, external_hadoopfs, daemon, streaming)
+  val projectsWithDoc = inProjects(core, streaming, external_kafka, external_monoid, external_serializer, external_hbase, external_hadoopfs, daemon, streaming)
+
+  lazy val gearpumpUnidocSetting = scalaJavaUnidocSettings ++ Seq(
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := projectsWithDoc,
+    unidocProjectFilter in (JavaUnidoc, unidoc) := projectsWithDoc,
+
+    unidocAllSources in (ScalaUnidoc, unidoc) := {
+      ignoreUndocumentedPackages((unidocAllSources in (ScalaUnidoc, unidoc)).value)
+    },
+
+    // Skip class names containing $ and some internal packages in Javadocs
+    unidocAllSources in (JavaUnidoc, unidoc) := {
+      ignoreUndocumentedPackages((unidocAllSources in (JavaUnidoc, unidoc)).value)
+    }
   )
+
+  private def ignoreUndocumentedPackages(packages: Seq[Seq[File]]): Seq[Seq[File]] = {
+    packages //.map(_.filterNot(_.getName.contains("$")))
+      .map(_.filterNot(_.getCanonicalPath.contains("akka")))
+  }
 
   lazy val root = Project(
     id = "gearpump",
     base = file("."),
-    settings = commonSettings ++ noPublish ++ unidocSettings ++ projectListWithDoc
+    settings = commonSettings ++ noPublish ++ gearpumpUnidocSetting
   ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
       examples, storm, yarn, external_hbase, packProject, external_hadoopfs,
       integration_test).settings(Defaults.itSettings : _*)
@@ -210,7 +232,7 @@ object Build extends sbt.Build {
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
-    settings = commonSettings ++ streamingDependencies
+    settings = commonSettings ++ javadocSettings ++ streamingDependencies
   )  dependsOn(core % "test->test; compile->compile", daemon % "test->test")
 
   lazy val external_kafka = Project(

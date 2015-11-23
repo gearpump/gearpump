@@ -18,11 +18,20 @@
 
 package io.gearpump.experiments.storm.producer
 
+import java.util.concurrent.TimeUnit
+
+import akka.actor.Actor.Receive
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpSpout
 import io.gearpump.experiments.storm.util._
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import io.gearpump.streaming.task._
+
+import scala.concurrent.duration.Duration
+
+object StormProducer {
+  private[storm] val TIMEOUT = Message("timeout")
+}
 
 /**
  * this is runtime container for Storm spout
@@ -30,19 +39,51 @@ import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
                                    taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
+  import io.gearpump.experiments.storm.producer.StormProducer._
 
   def this(taskContext: TaskContext, conf: UserConfig) = {
     this(StormUtil.getGearpumpStormComponent(taskContext, conf)(taskContext.system)
       .asInstanceOf[GearpumpSpout], taskContext, conf)
   }
 
+  private val timeoutOpt = gearpumpSpout.getMessageTimeout
+
   override def onStart(startTime: StartTime): Unit = {
     gearpumpSpout.start(startTime)
+    if (gearpumpSpout.ackEnabled) {
+      getCheckpointClock
+    }
+    timeoutOpt.foreach(scheduleTimeout)
     self ! Message("start")
   }
 
   override def onNext(msg: Message): Unit = {
-    gearpumpSpout.next(msg)
+    msg match {
+      case TIMEOUT =>
+        timeoutOpt.foreach { timeout =>
+          gearpumpSpout.timeout(timeout)
+          scheduleTimeout(timeout)
+        }
+      case _ =>
+        gearpumpSpout.next(msg)
+    }
     self ! Message("continue")
+  }
+
+  override def receiveUnManagedMessage: Receive = {
+    case CheckpointClock(optClock) =>
+      optClock.foreach { clock =>
+        gearpumpSpout.checkpoint(clock)
+      }
+      getCheckpointClock
+  }
+
+  def getCheckpointClock: Unit = {
+    taskContext.scheduleOnce(Duration(StormConstants.CHECKPOINT_INTERVAL_SECS,
+      TimeUnit.SECONDS))(taskContext.appMaster ! GetCheckpointClock)
+  }
+
+  private def scheduleTimeout(timeout: Int): Unit = {
+    taskContext.scheduleOnce(Duration(timeout, TimeUnit.SECONDS)){ self ! TIMEOUT }
   }
 }

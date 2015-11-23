@@ -80,7 +80,7 @@ object ActorUtil {
   /**
    * TODO:
    * Currently we explicitly require the master contacts to be started with this path pattern
-   * s"akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER"
+   * 'akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER'
    *
    */
   def getMasterActorPath(master: HostPort): ActorPath = {

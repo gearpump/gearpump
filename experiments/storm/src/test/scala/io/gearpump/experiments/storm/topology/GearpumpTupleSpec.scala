@@ -21,6 +21,7 @@ import java.util.{List => JList}
 
 import backtype.storm.task.GeneralTopologyContext
 import backtype.storm.tuple.Fields
+import io.gearpump.TimeStamp
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
@@ -38,22 +39,25 @@ class GearpumpTupleSpec extends PropSpec with PropertyChecks with Matchers with 
       sourceStreamId <- Gen.alphaStr
     } yield new GearpumpTuple(values, new Integer(sourceTaskId), sourceStreamId, null)
 
-    forAll(tupleGen, Gen.alphaStr) { (gearpumpTuple: GearpumpTuple, componentId: String) =>
-      val topologyContext = mock[GeneralTopologyContext]
-      val fields = new Fields(gearpumpTuple.values.map(_.asInstanceOf[String]): _*)
-      when(topologyContext.getComponentId(gearpumpTuple.sourceTaskId)).thenReturn(componentId)
-      when(topologyContext.getComponentOutputFields(
-        componentId, gearpumpTuple.sourceStreamId)).thenReturn(fields)
+    forAll(tupleGen, Gen.alphaStr, Gen.chooseNum[Long](0, Long.MaxValue)) {
+      (gearpumpTuple: GearpumpTuple, componentId: String, timestamp: TimeStamp) =>
+        val topologyContext = mock[GeneralTopologyContext]
+        val fields = new Fields(gearpumpTuple.values.map(_.asInstanceOf[String]): _*)
+        when(topologyContext.getComponentId(gearpumpTuple.sourceTaskId)).thenReturn(componentId)
+        when(topologyContext.getComponentOutputFields(
+          componentId, gearpumpTuple.sourceStreamId)).thenReturn(fields)
 
-      val tuple = gearpumpTuple.toTuple(topologyContext)
+        val tuple = gearpumpTuple.toTuple(topologyContext, timestamp)
 
-      tuple.getValues shouldBe gearpumpTuple.values
-      tuple.getSourceTask shouldBe gearpumpTuple.sourceTaskId
-      tuple.getSourceComponent shouldBe componentId
-      tuple.getSourceStreamId shouldBe gearpumpTuple.sourceStreamId
-      tuple.getMessageId shouldBe null
-      tuple.getFields shouldBe fields
-
+        tuple shouldBe a [TimedTuple]
+        val timedTuple = tuple.asInstanceOf[TimedTuple]
+        timedTuple.getValues shouldBe gearpumpTuple.values
+        timedTuple.getSourceTask shouldBe gearpumpTuple.sourceTaskId
+        timedTuple.getSourceComponent shouldBe componentId
+        timedTuple.getSourceStreamId shouldBe gearpumpTuple.sourceStreamId
+        timedTuple.getMessageId shouldBe null
+        timedTuple.getFields shouldBe fields
+        timedTuple.timestamp shouldBe timestamp
     }
   }
 
