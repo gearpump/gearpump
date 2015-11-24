@@ -165,7 +165,7 @@ class RestServiceSpec extends TestSpecBase {
       // exercise
       val masters = restClient.listMasters()
       val masterSummary = restClient.queryMaster()
-      masters.size shouldEqual expectedMastersCount
+      masters.length shouldEqual expectedMastersCount
       masters.head shouldEqual expectedMaster
       masterSummary.aliveFor should be > 0L
       masterSummary.masterStatus shouldEqual MasterStatus.Synced
@@ -177,7 +177,7 @@ class RestServiceSpec extends TestSpecBase {
 
       // exercise
       val runningWorkers = restClient.listRunningWorkers()
-      runningWorkers.size shouldEqual expectedWorkersCount
+      runningWorkers.length shouldEqual expectedWorkersCount
       runningWorkers.foreach { worker =>
         worker.state shouldEqual MasterToAppMaster.AppMasterActive
       }
@@ -185,17 +185,17 @@ class RestServiceSpec extends TestSpecBase {
 
     "find a newly added worker instance" in {
       // setup
-      val oldWorkersCount = restClient.listRunningWorkers().size
+      val oldWorkersCount = restClient.listRunningWorkers().length
       val workerName = "newWorker"
 
       // exercise
       try {
         cluster.newWorkerNode(workerName)
-        Util.retryUntil(restClient.listRunningWorkers().size > oldWorkersCount)
-        restClient.listRunningWorkers().size shouldEqual (oldWorkersCount + 1)
+        Util.retryUntil(restClient.listRunningWorkers().length > oldWorkersCount)
+        restClient.listRunningWorkers().length shouldEqual (oldWorkersCount + 1)
       } finally {
         cluster.removeWorkerNode(workerName)
-        Util.retryUntil(restClient.listRunningWorkers().size == oldWorkersCount)
+        Util.retryUntil(restClient.listRunningWorkers().length == oldWorkersCount)
       }
     }
 
@@ -205,39 +205,53 @@ class RestServiceSpec extends TestSpecBase {
 
       // exercise
       try {
-        restClient.listRunningWorkers().size shouldEqual originWorkersCount
+        restClient.listRunningWorkers().length shouldEqual originWorkersCount
         while (cluster.getWorkerHosts.nonEmpty) {
           cluster.removeWorkerNode(cluster.getWorkerHosts.head)
           val workersCount = cluster.getWorkerHosts.size
-          Util.retryUntil(restClient.listRunningWorkers().size == workersCount)
-          restClient.listRunningWorkers().size shouldEqual workersCount
+          Util.retryUntil(restClient.listRunningWorkers().length == workersCount)
+          restClient.listRunningWorkers().length shouldEqual workersCount
         }
-        restClient.listRunningWorkers().size shouldEqual 0
+        restClient.listRunningWorkers().length shouldEqual 0
       } finally {
         (0 until originWorkersCount).foreach { index =>
           cluster.newWorkerNode(s"worker$index")
         }
-        Util.retryUntil(restClient.listRunningWorkers().size == originWorkersCount)
+        Util.retryUntil(restClient.listRunningWorkers().length == originWorkersCount)
       }
     }
 
     "can obtain master's metrics and the metrics will keep changing" in {
       // exercise
-      Util.retryUntil(
-        restClient.queryMasterMetrics(current = true).metrics.nonEmpty,
-        attempts = 30, interval = 15.seconds)
+      expectMetricsAvailable(
+        restClient.queryMasterMetrics(current = true).metrics.nonEmpty)
       val actual = restClient.queryMasterMetrics(current = true)
       actual.path shouldEqual s"master"
       assert(actual.metrics.head.time > 0)
       val formerMetricsDump = actual.metrics.toString()
 
-      Util.retryUntil({
+      expectMetricsAvailable({
         val laterMetrics = restClient.queryMasterMetrics(current = true).metrics
         laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
-      }, attempts = 30, interval = 15.seconds)
+      })
     }
 
     "can obtain workers' metrics and the metrics will keep changing" in {
+      // exercise
+      restClient.listRunningWorkers().foreach { worker =>
+        val workerId = worker.workerId
+        expectMetricsAvailable(
+          restClient.queryWorkerMetrics(workerId, current = true).metrics.nonEmpty)
+        val actual = restClient.queryWorkerMetrics(workerId, current = true)
+        actual.path shouldEqual s"worker$workerId"
+        assert(actual.metrics.head.time > 0)
+        val formerMetricsDump = actual.metrics.toString()
+
+        expectMetricsAvailable({
+          val laterMetrics = restClient.queryWorkerMetrics(workerId, current = true).metrics
+          laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
+        })
+      }
     }
   }
 
@@ -251,15 +265,33 @@ class RestServiceSpec extends TestSpecBase {
     }
 
     "retrieve the configuration of worker X and match particular values" in {
-
+      // exercise
+      restClient.listRunningWorkers().foreach { worker =>
+        val actual = restClient.queryWorkerConfig(worker.workerId)
+        actual.hasPath("gearpump") shouldBe true
+        actual.hasPath("gearpump.worker") shouldBe true
+      }
     }
 
     "retrieve the configuration of executor X and match particular values" in {
-
+      // exercise
+      val appId = restClient.submitApp(wordCountJar)
+      restClient.queryExecutorBrief(appId).foreach { executor =>
+        val executorId = executor.executorId
+        val actual = restClient.queryExecutorConfig(appId, executorId)
+        actual.hasPath("gearpump") shouldBe true
+        actual.hasPath("gearpump.executor") shouldBe true
+        actual.getInt("gearpump.applicationId") shouldEqual appId
+        actual.getInt("gearpump.executorId") shouldEqual executorId
+      }
     }
 
     "retrieve the configuration of application X and match particular values" in {
-
+      // exercise
+      val appId = restClient.submitApp(wordCountJar)
+      val actual = restClient.queryAppMasterConfig(appId)
+      actual.hasPath("gearpump") shouldBe true
+      actual.hasPath("gearpump.appmaster") shouldBe true
     }
   }
 

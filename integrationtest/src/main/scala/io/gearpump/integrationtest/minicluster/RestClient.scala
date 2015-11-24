@@ -52,21 +52,16 @@ class RestClient(host: String, port: Int) {
     callFromRoot("version")
   }
 
-  def listMasters(): List[(String, Int)] = {
-    queryMaster().cluster
+  def listMasters(): Array[(String, Int)] = {
+    queryMaster().cluster.toArray
   }
 
-  def queryMaster(): MasterSummary = {
-    val resp = callApi("master")
-    read[MasterData](resp).masterDescription
-  }
-
-  def listWorkers(): List[WorkerSummary] = {
+  def listWorkers(): Array[WorkerSummary] = {
     val resp = callApi("master/workerlist")
-    read[List[WorkerSummary]](resp)
+    read[List[WorkerSummary]](resp).toArray
   }
 
-  def listRunningWorkers(): List[WorkerSummary] = {
+  def listRunningWorkers(): Array[WorkerSummary] = {
     listWorkers().filter(_.state == MasterToAppMaster.AppMasterActive)
   }
 
@@ -135,6 +130,11 @@ class RestClient(host: String, port: Int) {
   def queryExecutorConfig(appId: Int, executorId: Int): Config = {
     val resp = callApi(s"appmaster/$appId/executor/$executorId/config")
     ConfigFactory.parseString(resp)
+  }
+
+  def queryMaster(): MasterSummary = {
+    val resp = callApi("master")
+    read[MasterData](resp).masterDescription
   }
 
   def queryMasterMetrics(current: Boolean): HistoryMetrics = {
