@@ -12,9 +12,11 @@ trait ResultVerifier {
 }
 
 class SimpleKafkaReader(val msgReceiver: ResultVerifier, topic: String, partition: Int = 0, host: String, port: Int) {
+
   private val consumer = new SimpleConsumer(host, port, 100000, 64 * 1024, "")
-  private val iterator = consumer.fetch(new FetchRequestBuilder().addFetch(topic, partition, 0, Int.MaxValue).build())
-    .messageSet(topic, 0).iterator
+  private val iterator = consumer.fetch(
+    new FetchRequestBuilder().addFetch(topic, partition, 0, Int.MaxValue).build()
+  ).messageSet(topic, 0).iterator
 
   def read(): Unit = {
     while (iterator.hasNext) {
@@ -25,4 +27,5 @@ class SimpleKafkaReader(val msgReceiver: ResultVerifier, topic: String, partitio
       }
     }
   }
+
 }

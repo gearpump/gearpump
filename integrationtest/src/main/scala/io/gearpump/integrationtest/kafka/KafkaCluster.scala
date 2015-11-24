@@ -28,12 +28,11 @@ class KafkaCluster(val advertisedHost: String, val advertisedPort: Int = 9092) {
   private val KAFKA_HOST = "kafka0"
   private val KAFKA_HOME = "/opt/kafka_2.11-0.8.2.1/"
 
-  def getZookeeperPort = 2181
-
-  def getBrokerPort = 9092
+  private val ZOOKEEPER_PORT = 2181
+  private val BROKER_PORT = 9092
 
   def start(): Unit = {
-    val tunnelPortsOpt = s"-p $getZookeeperPort:$getZookeeperPort -p $getBrokerPort:$getBrokerPort"
+    val tunnelPortsOpt = s"-p $ZOOKEEPER_PORT:$ZOOKEEPER_PORT -p $BROKER_PORT:$BROKER_PORT"
     val env = s"--env ADVERTISED_HOST=$advertisedHost --env ADVERTISED_PORT=$advertisedPort"
     Docker.createAndStartContainer(KAFKA_HOST, s"-d -h $KAFKA_HOST $tunnelPortsOpt $env", "", KAFKA_DOCKER_IMAGE)
   }
@@ -42,8 +41,14 @@ class KafkaCluster(val advertisedHost: String, val advertisedPort: Int = 9092) {
     Docker.killAndRemoveContainer(KAFKA_HOST)
   }
 
-  def getHostname: String = {
-    Docker.execAndCaptureOutput(KAFKA_HOST, "hostname")
+  private lazy val hostIPAddr = Docker.execAndCaptureOutput(KAFKA_HOST, "hostname -i")
+
+  def getZookeeperConnectString: String = {
+    s"$hostIPAddr:$ZOOKEEPER_PORT"
+  }
+
+  def getBrokerListConnectString: String = {
+    s"$hostIPAddr:$BROKER_PORT"
   }
 
   def createTopic(zookeeperConnect: String, sourceTopic: String, partitions: Int = 1): Unit = {
