@@ -11,7 +11,8 @@ trait ResultVerifier {
   def onNext(msg: String): Unit
 }
 
-class SimpleKafkaReader(val msgReceiver: ResultVerifier, topic: String, partition: Int = 0, host: String, port: Int) {
+class SimpleKafkaReader(verifier: ResultVerifier, topic: String, partition: Int = 0,
+                        host: String, port: Int) {
 
   private val consumer = new SimpleConsumer(host, port, 100000, 64 * 1024, "")
   private val iterator = consumer.fetch(
@@ -22,7 +23,7 @@ class SimpleKafkaReader(val msgReceiver: ResultVerifier, topic: String, partitio
     while (iterator.hasNext) {
       Injection.invert[String, Array[Byte]](Utils.readBytes(iterator.next().message.payload)) match {
         case Success(msg) =>
-          msgReceiver.onNext(msg)
+          verifier.onNext(msg)
         case Failure(e) => throw e
       }
     }

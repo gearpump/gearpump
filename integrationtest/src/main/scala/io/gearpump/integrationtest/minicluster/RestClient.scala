@@ -52,10 +52,6 @@ class RestClient(host: String, port: Int) {
     callFromRoot("version")
   }
 
-  def listMasters(): Array[(String, Int)] = {
-    queryMaster().cluster.toArray
-  }
-
   def listWorkers(): Array[WorkerSummary] = {
     val resp = callApi("master/workerlist")
     read[List[WorkerSummary]](resp).toArray

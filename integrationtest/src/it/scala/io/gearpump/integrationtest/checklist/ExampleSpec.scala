@@ -69,7 +69,7 @@ class ExampleSpec extends TestSpecBase {
     }
 
     "can compose a wordcount application from scratch" in {
-
+      // todo: blocked by #1450
     }
   }
 

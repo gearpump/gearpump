@@ -32,17 +32,13 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfterEach with B
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    if (!MiniClusterProvider.managed) {
-      LOG.info("Will test with a default standalone mini cluster")
-      MiniClusterProvider.set(new MiniCluster).start()
-    }
+    LOG.info("Will test with a default standalone mini cluster")
+    MiniClusterProvider.get.start()
   }
 
   override def afterAll(): Unit = {
-    if (!MiniClusterProvider.managed) {
-      LOG.info("Will shutdown the default mini cluster")
-      MiniClusterProvider.get.shutDown()
-    }
+    LOG.info("Will shutdown the default mini cluster")
+    MiniClusterProvider.get.shutDown()
     super.afterAll()
   }
 
@@ -53,13 +49,21 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfterEach with B
   lazy val wordCountJar = cluster.queryBuiltInExampleJars("wordcount-").head
   lazy val wordCountName = "wordCount"
 
-  override def beforeEach = {
+  var restartClusterRequired: Boolean = false
+
+  override def beforeEach() = {
     assert(cluster != null, "Configure MiniCluster properly in suite spec")
-    restClient.listRunningApps().size shouldEqual 0
+    if (restartClusterRequired) {
+      restartClusterRequired = false
+      LOG.info("Will restart the cluster before running this test case")
+      cluster.restart()
+    }
+    cluster.isAlive shouldBe true
+    restClient.listRunningApps().isEmpty shouldBe true
   }
 
-  override def afterEach = {
-    if (cluster.isAlive()) {
+  override def afterEach() = {
+    if (!restartClusterRequired && cluster.isAlive) {
       restClient.listRunningApps().foreach(app => {
         commandLineClient.killApp(app.appId) shouldBe true
       })

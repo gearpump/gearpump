@@ -17,51 +17,39 @@
  */
 package io.gearpump.integrationtest.minicluster
 
-import io.gearpump.integrationtest.{Util, Docker}
+import io.gearpump.integrationtest.{Docker, Util}
 import org.apache.log4j.Logger
 
-import scala.sys.process._
+import scala.collection.mutable.ListBuffer
 
 /**
  * This class is a test driver for end-to-end integration test.
  */
-class MiniCluster(
-                   workerNum: Int = 2, // Each worker will launch a new Docker container
-                   tunnelPorts: Set[Int] = Set.empty, // Ports that need to be forwarded
-                   dockerImage: String = "stanleyxu2005/gpct-jdk8", // The Docker image to be tested with
-                   masterPort: Int = 3000, // The port of master endpoint
-                   restServicePort: Int = 8090 // The port of REST service (Yarn integration might modify the value)
-                   ) {
+class MiniCluster {
 
   private val LOG = Logger.getLogger(getClass)
   private val SUT_HOME = "/opt/gearpump"
-  private val MOUNT_PATH = "pwd".!!.trim + "/output/target/pack"
-  private val MOUNT_PATH_OPTS = s"-v $MOUNT_PATH:$SUT_HOME"
 
+  private val REST_SERVICE_PORT = 8090
+  private val MASTER_PORT = 3000
   private val MASTER_ADDRS = {
     (0 to 0).map(index =>
-      ("master" + index, masterPort)
+      ("master" + index, MASTER_PORT)
     )
   }
 
   lazy val commandLineClient = new CommandLineClient(getMasterHosts.head)
 
-  lazy val restClient = new RestClient(getMasterHosts.head, restServicePort)
+  lazy val restClient = new RestClient(getMasterHosts.head, REST_SERVICE_PORT)
 
-  private val CLUSTER_OPTS = {
-    MASTER_ADDRS.zipWithIndex.map { case (hostPort, index) =>
-      s"-Dgearpump.cluster.masters.$index=${hostPort._1}:${hostPort._2}"
-    }.mkString(" ")
-  }
+  private var workers: ListBuffer[String] = ListBuffer.empty
 
-  private var workers: List[String] = List.empty
-
-  def start(): Unit = {
+  def start(workerNum: Int = 2): Unit = {
     cleanupDockerEnv()
 
     // Masters' membership cannot be modified at runtime
     MASTER_ADDRS.foreach({ case (host, port) =>
-      newMasterNode(host, port)
+      addMasterNode(host, port)
     })
     // We consider the cluster is started, when the REST services are ready.
     expectRestServiceAvailable()
@@ -69,7 +57,7 @@ class MiniCluster(
     // Workers' membership can be modified at runtime
     (0 to workerNum - 1).foreach(index => {
       val host = "worker" + index
-      newWorkerNode(host)
+      addWorkerNode(host)
     })
   }
 
@@ -80,23 +68,15 @@ class MiniCluster(
     }
   }
 
-  private def newMasterNode(host: String, port: Int): Unit = {
-    // Setup port forwarding from master node to host machine for testing
-    val tunnelPortsOpt = tunnelPorts.map(port =>
-      s"-p $port:$port").mkString(" ")
-
-    Docker.createAndStartContainer(host, s"-d -h $host -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS $tunnelPortsOpt",
-      s"master -ip $host -port $port", dockerImage)
+  private def addMasterNode(host: String, port: Int): Unit = {
+    val container = new BaseContainer(host, s"master -ip $host -port $port", MASTER_ADDRS)
+    container.createAndStart()
   }
 
-  def newWorkerNode(host: String): Unit = {
-    // Masters's hostname will be exposed to worker node
-    val hostLinksOpt = getMasterHosts.map(master =>
-      "--link " + master).mkString(" ")
-
-    Docker.createAndStartContainer(host, s"-d $hostLinksOpt -e CLUSTER=$CLUSTER_OPTS $MOUNT_PATH_OPTS",
-      "worker", dockerImage)
-    workers :+= host
+  def addWorkerNode(host: String): Unit = {
+    val container = new BaseContainer(host, "worker", MASTER_ADDRS)
+    container.createAndStart()
+    workers += host
   }
 
   /**
@@ -110,17 +90,21 @@ class MiniCluster(
     } != "")
   }
 
-  def isAlive(): Boolean = {
+  def isAlive: Boolean = {
     getMasterHosts.exists(nodeIsOnline)
   }
 
-  def getDockerMachineIp(): String = {
+  def getNetworkGateway: String = {
     Docker.execAndCaptureOutput(MASTER_ADDRS.head._1, "ip route").split("\\s+")(2)
   }
 
   def shutDown(): Unit = {
-    getWorkerHosts.foreach(removeWorkerNode)
-    getMasterHosts.foreach(removeMasterNode)
+    val removalHosts = (getMasterHosts ++ getWorkerHosts).toSet
+      .filter(nodeIsOnline).toArray
+    if (removalHosts.length > 0) {
+      Docker.killAndRemoveContainer(removalHosts)
+    }
+    workers.clear()
   }
 
   def removeMasterNode(host: String): Unit = {
@@ -128,12 +112,16 @@ class MiniCluster(
   }
 
   def removeWorkerNode(host: String): Unit = {
-    if (Docker.killAndRemoveContainer(host)) {
-      workers = workers.filter(_ != host)
-    }
+    workers -= host
+    Docker.killAndRemoveContainer(host)
   }
 
-  def getMasters = {
+  def restart(): Unit = {
+    shutDown()
+    start()
+  }
+
+  def getMastersAddresses = {
     MASTER_ADDRS
   }
 
@@ -149,9 +137,13 @@ class MiniCluster(
     Docker.containerIsRunning(host)
   }
 
-  def queryBuiltInExampleJars(subtext: String): Seq[String] = {
+  private lazy val builtInExampleJars = {
     Docker.execAndCaptureOutput(getMasterHosts.head, s"find $SUT_HOME/examples")
-      .split("\n").filter(_.contains(subtext))
+      .split("\n").filter(_.endsWith(".jar"))
+  }
+
+  def queryBuiltInExampleJars(subtext: String): Seq[String] = {
+    builtInExampleJars.filter(_.contains(subtext))
   }
 
 }

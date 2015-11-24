@@ -17,78 +17,91 @@
  */
 package io.gearpump.integrationtest
 
-import org.apache.log4j.Logger
-
-import scala.sys.process._
-
 /**
  * The class is used to execute Docker commands.
  */
 object Docker {
 
-  private val LOG = Logger.getLogger(getClass)
-
   def listContainers(): Seq[String] = {
-    shellExecAndCaptureOutput("docker ps -q -a", "LIST")
+    ShellExec.execAndCaptureOutput("docker ps -q -a", "LIST")
       .split("\n").filter(_.nonEmpty)
   }
 
   def containerIsRunning(name: String): Boolean = {
-    shellExecAndCaptureOutput(s"docker ps -q --filter 'name=$name'", s"FIND $name").nonEmpty
+    ShellExec.execAndCaptureOutput(s"docker ps -q --filter 'name=$name'", s"FIND $name").nonEmpty
   }
 
-  def getContainerIp(container: String): String = {
-    Docker.inspect(container, "--format={{.NetworkSettings.IPAddress}}")
+  def getContainerIPAddr(name: String): String = {
+    Docker.inspect(name, "--format={{.NetworkSettings.IPAddress}}")
   }
 
   def containerExists(name: String): Boolean = {
-    shellExecAndCaptureOutput(s"docker ps -q -a --filter 'name=$name'", s"FIND $name").nonEmpty
+    ShellExec.execAndCaptureOutput(s"docker ps -q -a --filter 'name=$name'", s"FIND $name").nonEmpty
   }
 
   /**
    * @throws RuntimeException in case particular container is created already
    */
-  def createAndStartContainer(name: String, options: String, args: String, image: String): Unit = {
-    if (!shellExec(s"docker run $options --name $name $image $args", s"MAKE $name")) {
-      throw new RuntimeException(s"Failed to run container '$name'.")
+  def createAndStartContainer(name: String, image: String, command: String,
+                              environ: Map[String, String] = Map.empty, // key, value
+                              volumes: Map[String, String] = Map.empty, // from, to
+                              knownHosts: Set[String] = Set.empty,
+                              tunnelPorts: Set[Int] = Set.empty): String = {
+    val optsBuilder = new StringBuilder
+    optsBuilder.append("-d") // run in background
+    optsBuilder.append(" -h " + name) // use container name as hostname
+    optsBuilder.append(" -v /etc/localtime:/etc/localtime:ro") // synchronize timezone settings
+
+    environ.foreach { case (key, value) =>
+      optsBuilder.append(s" -e $key=$value")
     }
+    volumes.foreach { case (from, to) =>
+      optsBuilder.append(s" -v $from:$to")
+    }
+    knownHosts.foreach(host =>
+      optsBuilder.append(" --link " + host)
+    )
+    tunnelPorts.foreach(port =>
+      optsBuilder.append(s" -p $port:$port")
+    )
+
+    createAndStartContainer(name, optsBuilder.toString(), command, image)
+  }
+
+  /**
+   * @throws RuntimeException in case particular container is created already
+   */
+  def createAndStartContainer(name: String, options: String, command: String, image: String): String = {
+    ShellExec.execAndCaptureOutput(s"docker run $options --name $name $image $command", s"MAKE $name")
   }
 
   def killAndRemoveContainer(name: String): Boolean = {
-    shellExec(s"docker rm -f $name", s"STOP $name")
+    ShellExec.exec(s"docker rm -f $name", s"STOP $name")
+  }
+
+  def killAndRemoveContainer(names: Array[String]): Boolean = {
+    assert(names.length > 0)
+    val args = names.mkString(" ")
+    ShellExec.exec(s"docker rm -f $args", s"STOP MUL.")
   }
 
   def exec(container: String, command: String): Boolean = {
-    shellExec(s"docker exec $container $command", s"EXEC $container")
+    ShellExec.exec(s"docker exec $container $command", s"EXEC $container")
   }
 
   def inspect(container: String, option: String): String = {
-    shellExecAndCaptureOutput(s"docker inspect $option $container", s"EXEC $container")
+    ShellExec.execAndCaptureOutput(s"docker inspect $option $container", s"EXEC $container")
   }
 
   /**
    * @throws RuntimeException in case retval != 0
    */
   def execAndCaptureOutput(container: String, command: String): String = {
-    shellExecAndCaptureOutput(s"docker exec $container $command", s"EXEC $container")
+    ShellExec.execAndCaptureOutput(s"docker exec $container $command", s"EXEC $container")
   }
 
   def killProcess(container: String, pid: Int, signal: String = "SIGKILL"): Boolean = {
     exec(container, s"kill -$signal $pid")
-  }
-
-  private def shellExec(command: String, sender: String): Boolean = {
-    LOG.debug(s"$sender -> `$command`")
-    val retval = command.!
-    LOG.debug(s"$sender <- `$retval`")
-    retval == 0
-  }
-
-  private def shellExecAndCaptureOutput(command: String, sender: String): String = {
-    LOG.debug(s"$sender => `$command`")
-    val output = command.!!.trim
-    LOG.debug(s"$sender <= `$output`")
-    output
   }
 
 }

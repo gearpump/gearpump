@@ -35,10 +35,4 @@ object MiniClusterProvider {
     instance
   }
 
-  /**
-   * Indicates whether test suite should create particular cluster. In case of false, every
-   * test spec will be responsible for cluster creation.
-   */
-  var managed = false
-
 }
