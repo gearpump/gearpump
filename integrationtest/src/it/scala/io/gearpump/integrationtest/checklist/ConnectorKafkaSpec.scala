@@ -17,8 +17,8 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.{Util, TestSpecBase}
 import io.gearpump.integrationtest.kafka._
+import io.gearpump.integrationtest.{TestSpecBase, Util}
 
 import scala.collection.mutable
 
@@ -42,7 +42,7 @@ class ConnectorKafkaSpec extends TestSpecBase {
 
   override def afterEach = {
     super.afterEach
-    if(producer != null) {
+    if (producer != null) {
       producer.stop()
       producer = null
     }
@@ -50,9 +50,8 @@ class ConnectorKafkaSpec extends TestSpecBase {
 
   "KafkaSource and KafaSink" should {
     "read from and write to kafka" in {
-      val kafkaHostname = s"${kafkaCluster.getHostname}"
-      val zookeeperConnect = s"$kafkaHostname:${kafkaCluster.getZookeeperPort}"
-      val brokerList = s"$kafkaHostname:${kafkaCluster.getBrokerPort}"
+      val zookeeperConnect = kafkaCluster.getZookeeperConnectString
+      val brokerList = kafkaCluster.getBrokerListConnectString
       val sourceTopic = "topic1"
       val sinkTopic = "topic2"
 
@@ -71,19 +70,15 @@ class ConnectorKafkaSpec extends TestSpecBase {
         "-sinkTopic", sinkTopic).mkString(" ")
       restClient.submitApp(jar, args)
       val actual = restClient.queryApp(appId)
-
-      actual.appId shouldEqual appId
-      actual.status shouldEqual "active"
-      actual.appName shouldEqual "KafkaReadWrite"
-
+      expectAppIsRunning(appId, "KafkaReadWrite")
       Util.retryUntil(kafkaCluster.getLatestOffset(brokerList, sinkTopic) == messageNum)
     }
   }
 
   "Gearpump with Kafka" should {
     "support at least once" in {
-      val zookeeperConnect = s"${kafkaCluster.getHostname}:${kafkaCluster.getZookeeperPort}"
-      val brokerList = s"${kafkaCluster.advertisedHost}:${kafkaCluster.advertisedPort}"
+      val zookeeperConnect = kafkaCluster.getZookeeperConnectString
+      val brokerList = kafkaCluster.getBrokerListConnectString
       val sourcePartitionNum = 2
       val sourceTopic = "topic3"
       val sinkTopic = "topic4"
@@ -135,4 +130,5 @@ class ConnectorKafkaSpec extends TestSpecBase {
       bitSets.size == totalNum
     }
   }
+
 }

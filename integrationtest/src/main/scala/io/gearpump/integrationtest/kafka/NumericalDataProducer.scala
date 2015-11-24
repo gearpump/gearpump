@@ -20,11 +20,12 @@ package io.gearpump.integrationtest.kafka
 import java.util.Properties
 
 import com.twitter.bijection.Injection
-import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.log4j.Logger
 
 class NumericalDataProducer(topic: String, bootstrapServers: String) {
+
   private val LOG = Logger.getLogger(getClass)
   private val producer = createProducer
   private val WRITE_SLEEP_NANOS = 10
@@ -34,8 +35,8 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
     produceThread.start()
   }
 
-  def stop(): Unit= {
-    if(produceThread.isAlive) {
+  def stop(): Unit = {
+    if (produceThread.isAlive) {
       produceThread.interrupt()
       produceThread.join()
     }
@@ -50,7 +51,7 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
 
   private val produceThread = new Thread(new Runnable {
     override def run(): Unit = {
-      try{
+      try {
         while (!Thread.currentThread.isInterrupted) {
           lastWriteNum += 1
           val msg = Injection[String, Array[Byte]](lastWriteNum.toString)
@@ -63,4 +64,5 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
       }
     }
   })
+
 }
