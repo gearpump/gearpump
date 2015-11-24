@@ -27,7 +27,8 @@ import scala.collection.mutable
  */
 class ConnectorKafkaSpec extends TestSpecBase {
 
-  private lazy val kafkaCluster = new KafkaCluster(cluster.getDockerMachineIp())
+  private lazy val kafkaCluster = new KafkaCluster(cluster.getNetworkGateway)
+  private lazy val kafkaJar = cluster.queryBuiltInExampleJars("kafka-").head
   private var producer: NumericalDataProducer = null
 
   override def beforeAll(): Unit = {
@@ -40,85 +41,79 @@ class ConnectorKafkaSpec extends TestSpecBase {
     super.afterAll()
   }
 
-  override def afterEach = {
-    super.afterEach
+  override def afterEach() = {
+    super.afterEach()
     if (producer != null) {
       producer.stop()
       producer = null
     }
   }
 
-  "KafkaSource and KafaSink" should {
+  "KafkaSource and KafkaSink" should {
     "read from and write to kafka" in {
-      val zookeeperConnect = kafkaCluster.getZookeeperConnectString
-      val brokerList = kafkaCluster.getBrokerListConnectString
+      // setup
       val sourceTopic = "topic1"
       val sinkTopic = "topic2"
-
-      val jar = cluster.queryBuiltInExampleJars("kafka-").head
-      val appsCount = restClient.listApps().length
-      val appId = appsCount + 1
       val messageNum = 10000
-
-      kafkaCluster.produceDataToKafka(zookeeperConnect, brokerList, sourceTopic, messageNum)
+      kafkaCluster.produceDataToKafka(sourceTopic, messageNum)
 
       // exercise
       val args = Array("io.gearpump.streaming.examples.kafka.KafkaReadWrite",
-        "-zookeeperConnect", zookeeperConnect,
-        "-brokerList", brokerList,
+        "-zookeeperConnect", kafkaCluster.getZookeeperConnectString,
+        "-brokerList", kafkaCluster.getBrokerListConnectString,
         "-sourceTopic", sourceTopic,
         "-sinkTopic", sinkTopic).mkString(" ")
-      restClient.submitApp(jar, args)
-      val actual = restClient.queryApp(appId)
+      val appId = restClient.submitApp(kafkaJar, args)
+
+      // verify
       expectAppIsRunning(appId, "KafkaReadWrite")
-      Util.retryUntil(kafkaCluster.getLatestOffset(brokerList, sinkTopic) == messageNum)
+      Util.retryUntil(kafkaCluster.getLatestOffset(sinkTopic) == messageNum)
     }
   }
 
   "Gearpump with Kafka" should {
-    "support at least once" in {
-      val zookeeperConnect = kafkaCluster.getZookeeperConnectString
-      val brokerList = kafkaCluster.getBrokerListConnectString
+    "support at-least-once message delivery" in {
+      // setup
       val sourcePartitionNum = 2
       val sourceTopic = "topic3"
       val sinkTopic = "topic4"
-      val appsCount = restClient.listApps().length
-      val appId = appsCount + 1
-
-      //Generate number sequence to the topic, start from number 1
-      kafkaCluster.createTopic(zookeeperConnect, sourceTopic, sourcePartitionNum)
-      producer = new NumericalDataProducer(sourceTopic, brokerList)
+      // Generate number sequence (1, 2, 3, ...) to the topic
+      kafkaCluster.createTopic(sourceTopic, sourcePartitionNum)
+      producer = new NumericalDataProducer(sourceTopic, kafkaCluster.getBrokerListConnectString)
       producer.start()
 
       // exercise
-      val jar = cluster.queryBuiltInExampleJars("kafka-").head
       val args = Array("io.gearpump.streaming.examples.kafka.KafkaReadWrite",
-        "-zookeeperConnect", zookeeperConnect,
-        "-brokerList", brokerList,
+        "-zookeeperConnect", kafkaCluster.getZookeeperConnectString,
+        "-brokerList", kafkaCluster.getBrokerListConnectString,
         "-sourceTopic", sourceTopic,
         "-sinkTopic", sinkTopic,
         "-source", sourcePartitionNum).mkString(" ")
-      restClient.submitApp(jar, args)
+      val appId = restClient.submitApp(kafkaJar, args)
 
+      // verify #1
       expectAppIsRunning(appId, "KafkaReadWrite")
-
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+
+      // verify #2
       val executorToKill = restClient.queryExecutorBrief(appId).map(_.executorId).max
       restClient.killExecutor(appId, executorToKill) shouldBe true
       producer.stop()
-
       Util.retryUntil(restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill)
 
+      // verify #3
       val detector = new MessageLossDetector(producer.lastWriteNum)
-      val kafkaReader = new SimpleKafkaReader(detector, sinkTopic, host = kafkaCluster.advertisedHost, port = kafkaCluster.advertisedPort)
-      Util.retryUntil {
+      val kafkaReader = new SimpleKafkaReader(detector, sinkTopic,
+        host = kafkaCluster.advertisedHost, port = kafkaCluster.advertisedPort)
+      Util.retryUntil({
         kafkaReader.read()
         detector.allReceived
-      }
+      })
     }
   }
 
   class MessageLossDetector(totalNum: Int) extends ResultVerifier {
+
     private val bitSets = new mutable.BitSet(totalNum)
 
     override def onNext(msg: String): Unit = {
@@ -129,6 +124,7 @@ class ConnectorKafkaSpec extends TestSpecBase {
     def allReceived: Boolean = {
       bitSets.size == totalNum
     }
+
   }
 
 }

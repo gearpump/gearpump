@@ -60,7 +60,8 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
           Thread.sleep(0, WRITE_SLEEP_NANOS)
         }
       } catch {
-        case e: InterruptedException => LOG.info("fetch thread got interrupted exception")
+        case ex: InterruptedException =>
+          LOG.info("message producing is stopped by an interrupt")
       }
     }
   })

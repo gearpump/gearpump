@@ -18,32 +18,21 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.integrationtest.minicluster.MiniCluster
-import io.gearpump.integrationtest.{MiniClusterProvider, TestSpecBase, Util}
-
-import scala.concurrent.duration
-import scala.concurrent.duration._
+import io.gearpump.integrationtest.{TestSpecBase, Util}
 
 /**
  * The test spec will perform destructive operations to check the stability
  */
 class StabilitySpec extends TestSpecBase {
 
-  override def afterAll() = {
-    if (MiniClusterProvider.managed) {
-      MiniClusterProvider.set(new MiniCluster).start()
-    }
-  }
-
   "kill appmaster" should {
     "restart the whole application" in {
       // setup
+      restartClusterRequired = true
       val appId = commandLineClient.submitApp(wordCountJar)
       val formerAppMaster = restClient.queryApp(appId).appMasterPath
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
-      // Here make sure the application clock is stored in the Master
-      // todo: 5000 is sync period of clock service in source code
-      Thread.sleep(5000)
+      ensureClockStoredInMaster()
 
       // exercise
       restClient.killAppMaster(appId) shouldBe true
@@ -52,19 +41,18 @@ class StabilitySpec extends TestSpecBase {
       // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
       laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
-      assert(laterAppMaster.clock > 0)
+      laterAppMaster.clock should be > 0L
     }
   }
 
   "kill executor" should {
     "will create a new executor and application will  replay from the latest application clock" in {
       // setup
+      restartClusterRequired = true
       val appId = commandLineClient.submitApp(wordCountJar)
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
       val executorToKill = restClient.queryExecutorBrief(appId).map(_.executorId).max
-      // Here make sure the application clock is stored in the Master
-      // todo: 5000 is sync period of clock service in source code
-      Thread.sleep(5000)
+      ensureClockStoredInMaster()
 
       // exercise
       restClient.killExecutor(appId, executorToKill) shouldBe true
@@ -73,19 +61,18 @@ class StabilitySpec extends TestSpecBase {
       // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
       laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
-      assert(laterAppMaster.clock > 0)
+      laterAppMaster.clock should be > 0L
     }
   }
 
   "kill worker" should {
     "worker will not recover but all its executors will be migrated to other workers" in {
       // setup
+      restartClusterRequired = true
       val appId = commandLineClient.submitApp(wordCountJar)
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
       val maximalExecutorId = restClient.queryExecutorBrief(appId).map(_.executorId).max
-      // Here make sure the application clock is stored in the Master
-      // todo: 5000 is sync period of clock service in source code
-      Thread.sleep(5000)
+      ensureClockStoredInMaster()
 
       val workerToKill = cluster.getWorkerHosts.head
       cluster.removeWorkerNode(workerToKill)
@@ -93,17 +80,26 @@ class StabilitySpec extends TestSpecBase {
       // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
       laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
-      assert(laterAppMaster.clock > 0)
+      laterAppMaster.clock should be > 0L
     }
   }
 
   "kill master" should {
     "master will be down and all workers will attempt to reconnect and suicide after X seconds" in {
+      // setup
+      restartClusterRequired = true
       val masters = cluster.getMasterHosts
+
+      // exercise
       masters.foreach(cluster.removeMasterNode)
       val aliveWorkers = cluster.getWorkerHosts
       Util.retryUntil(aliveWorkers.forall(worker => !cluster.nodeIsOnline(worker)))
     }
+  }
+
+  private def ensureClockStoredInMaster(): Unit = {
+    // todo: 5000ms is a fixed sync period in clock service. we wait for 5000ms to assume the clock is stored
+    Thread.sleep(5000)
   }
 
 }

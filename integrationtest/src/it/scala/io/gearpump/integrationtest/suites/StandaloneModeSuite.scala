@@ -37,14 +37,8 @@ class StandaloneModeSuite extends Suites(
 ) with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
+    MiniClusterProvider.set(new MiniCluster)
     super.beforeAll()
-    MiniClusterProvider.managed = true
-    MiniClusterProvider.set(new MiniCluster).start()
-  }
-
-  override def afterAll(): Unit = {
-    MiniClusterProvider.get.shutDown()
-    super.afterAll()
   }
 
 }

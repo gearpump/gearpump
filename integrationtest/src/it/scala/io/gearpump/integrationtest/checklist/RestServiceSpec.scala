@@ -19,6 +19,7 @@ package io.gearpump.integrationtest.checklist
 
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.master.MasterStatus
+import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.integrationtest.{TestSpecBase, Util}
 
 import scala.concurrent.duration._
@@ -96,7 +97,10 @@ class RestServiceSpec extends TestSpecBase {
         restClient.queryStreamingAppMetrics(appId, current = true).metrics.nonEmpty)
       val actual = restClient.queryStreamingAppMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.processor*"
-      assert(actual.metrics.head.time > 0)
+      actual.metrics.foreach(metric => {
+        metric.time should be > 0L
+        metric.value should not be null
+      })
       val formerMetricsDump = actual.metrics.toString()
 
       expectMetricsAvailable({
@@ -115,7 +119,10 @@ class RestServiceSpec extends TestSpecBase {
         restClient.queryExecutorMetrics(appId, current = true).metrics.nonEmpty)
       val actual = restClient.queryExecutorMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.executor*"
-      assert(actual.metrics.head.time > 0)
+      actual.metrics.foreach(metric => {
+        metric.time should be > 0L
+        metric.value should not be null
+      })
       val formerMetricsDump = actual.metrics.toString()
 
       expectMetricsAvailable({
@@ -158,15 +165,9 @@ class RestServiceSpec extends TestSpecBase {
 
   "cluster information" should {
     "retrieve 1 master for a non-HA cluster" in {
-      // setup
-      val expectedMastersCount = cluster.getMasterHosts.size
-      val expectedMaster = cluster.getMasters.head
-
       // exercise
-      val masters = restClient.listMasters()
       val masterSummary = restClient.queryMaster()
-      masters.length shouldEqual expectedMastersCount
-      masters.head shouldEqual expectedMaster
+      masterSummary.cluster shouldEqual cluster.getMastersAddresses
       masterSummary.aliveFor should be > 0L
       masterSummary.masterStatus shouldEqual MasterStatus.Synced
     }
@@ -176,8 +177,11 @@ class RestServiceSpec extends TestSpecBase {
       val expectedWorkersCount = cluster.getWorkerHosts.size
 
       // exercise
-      val runningWorkers = restClient.listRunningWorkers()
-      runningWorkers.length shouldEqual expectedWorkersCount
+      var runningWorkers: Array[WorkerSummary] = Array.empty
+      Util.retryUntil({
+        runningWorkers = restClient.listRunningWorkers()
+        runningWorkers.length == expectedWorkersCount
+      })
       runningWorkers.foreach { worker =>
         worker.state shouldEqual MasterToAppMaster.AppMasterActive
       }
@@ -185,40 +189,27 @@ class RestServiceSpec extends TestSpecBase {
 
     "find a newly added worker instance" in {
       // setup
-      val oldWorkersCount = restClient.listRunningWorkers().length
+      restartClusterRequired = true
+      val formerWorkersCount = cluster.getWorkerHosts.length
+      Util.retryUntil(restClient.listRunningWorkers().length == formerWorkersCount)
       val workerName = "newWorker"
 
       // exercise
-      try {
-        cluster.newWorkerNode(workerName)
-        Util.retryUntil(restClient.listRunningWorkers().length > oldWorkersCount)
-        restClient.listRunningWorkers().length shouldEqual (oldWorkersCount + 1)
-      } finally {
-        cluster.removeWorkerNode(workerName)
-        Util.retryUntil(restClient.listRunningWorkers().length == oldWorkersCount)
-      }
+      cluster.addWorkerNode(workerName)
+      Util.retryUntil(restClient.listRunningWorkers().length > formerWorkersCount)
+      cluster.getWorkerHosts.length shouldEqual formerWorkersCount + 1
+      restClient.listRunningWorkers().length shouldEqual formerWorkersCount + 1
     }
 
     "retrieve 0 worker, if cluster is started without any workers" in {
       // setup
-      val originWorkersCount = cluster.getWorkerHosts.size
+      restartClusterRequired = true
+      cluster.shutDown()
 
       // exercise
-      try {
-        restClient.listRunningWorkers().length shouldEqual originWorkersCount
-        while (cluster.getWorkerHosts.nonEmpty) {
-          cluster.removeWorkerNode(cluster.getWorkerHosts.head)
-          val workersCount = cluster.getWorkerHosts.size
-          Util.retryUntil(restClient.listRunningWorkers().length == workersCount)
-          restClient.listRunningWorkers().length shouldEqual workersCount
-        }
-        restClient.listRunningWorkers().length shouldEqual 0
-      } finally {
-        (0 until originWorkersCount).foreach { index =>
-          cluster.newWorkerNode(s"worker$index")
-        }
-        Util.retryUntil(restClient.listRunningWorkers().length == originWorkersCount)
-      }
+      cluster.start(workerNum = 0)
+      cluster.getWorkerHosts.length shouldEqual 0
+      restClient.listRunningWorkers().length shouldEqual 0
     }
 
     "can obtain master's metrics and the metrics will keep changing" in {
@@ -227,7 +218,10 @@ class RestServiceSpec extends TestSpecBase {
         restClient.queryMasterMetrics(current = true).metrics.nonEmpty)
       val actual = restClient.queryMasterMetrics(current = true)
       actual.path shouldEqual s"master"
-      assert(actual.metrics.head.time > 0)
+      actual.metrics.foreach(metric => {
+        metric.time should be > 0L
+        metric.value should not be null
+      })
       val formerMetricsDump = actual.metrics.toString()
 
       expectMetricsAvailable({
@@ -244,7 +238,10 @@ class RestServiceSpec extends TestSpecBase {
           restClient.queryWorkerMetrics(workerId, current = true).metrics.nonEmpty)
         val actual = restClient.queryWorkerMetrics(workerId, current = true)
         actual.path shouldEqual s"worker$workerId"
-        assert(actual.metrics.head.time > 0)
+        actual.metrics.foreach(metric => {
+          metric.time should be > 0L
+          metric.value should not be null
+        })
         val formerMetricsDump = actual.metrics.toString()
 
         expectMetricsAvailable({
@@ -261,7 +258,7 @@ class RestServiceSpec extends TestSpecBase {
       val actual = restClient.queryMasterConfig()
       actual.hasPath("gearpump") shouldBe true
       actual.hasPath("gearpump.cluster") shouldBe true
-      actual.getString("gearpump.hostname") shouldEqual cluster.getMasterHosts.head
+      actual.getString("gearpump.hostname") shouldEqual cluster.getMasterHosts.mkString(",")
     }
 
     "retrieve the configuration of worker X and match particular values" in {
