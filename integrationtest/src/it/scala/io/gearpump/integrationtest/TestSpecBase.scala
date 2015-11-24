@@ -59,9 +59,11 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfterEach with B
   }
 
   override def afterEach = {
-    restClient.listRunningApps().foreach(app => {
-      commandLineClient.killApp(app.appId) shouldBe true
-    })
+    if (cluster.isAlive()) {
+      restClient.listRunningApps().foreach(app => {
+        commandLineClient.killApp(app.appId) shouldBe true
+      })
+    }
   }
 
   def expectAppIsRunning(appId: Int, expectedAppName: String): AppMasterData = {

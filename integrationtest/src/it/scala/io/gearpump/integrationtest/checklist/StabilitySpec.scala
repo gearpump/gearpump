@@ -18,12 +18,22 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.integrationtest.{Util, TestSpecBase}
+import io.gearpump.integrationtest.minicluster.MiniCluster
+import io.gearpump.integrationtest.{MiniClusterProvider, TestSpecBase, Util}
+
+import scala.concurrent.duration
+import scala.concurrent.duration._
 
 /**
  * The test spec will perform destructive operations to check the stability
  */
 class StabilitySpec extends TestSpecBase {
+
+  override def afterAll() = {
+    if (MiniClusterProvider.managed) {
+      MiniClusterProvider.set(new MiniCluster).start()
+    }
+  }
 
   "kill appmaster" should {
     "restart the whole application" in {
@@ -69,17 +79,30 @@ class StabilitySpec extends TestSpecBase {
 
   "kill worker" should {
     "worker will not recover but all its executors will be migrated to other workers" in {
+      // setup
+      val appId = commandLineClient.submitApp(wordCountJar)
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      val maximalExecutorId = restClient.queryExecutorBrief(appId).map(_.executorId).max
+      // Here make sure the application clock is stored in the Master
+      // todo: 5000 is sync period of clock service in source code
+      Thread.sleep(5000)
 
-    }
-
-    "application will hang, if the only one worker is killed" in {
-
+      val workerToKill = cluster.getWorkerHosts.head
+      cluster.removeWorkerNode(workerToKill)
+      Util.retryUntil(restClient.queryExecutorBrief(appId).map(_.executorId).max > maximalExecutorId)
+      // verify
+      val laterAppMaster = restClient.queryStreamingAppDetail(appId)
+      laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
+      assert(laterAppMaster.clock > 0)
     }
   }
 
   "kill master" should {
     "master will be down and all workers will attempt to reconnect and suicide after X seconds" in {
-
+      val masters = cluster.getMasterHosts
+      masters.foreach(cluster.removeMasterNode)
+      val aliveWorkers = cluster.getWorkerHosts
+      Util.retryUntil(aliveWorkers.forall(worker => !cluster.nodeIsOnline(worker)), duration.Duration(40, SECONDS))
     }
   }
 

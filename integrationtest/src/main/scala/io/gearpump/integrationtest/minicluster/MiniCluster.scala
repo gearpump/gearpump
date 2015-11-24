@@ -110,6 +110,10 @@ class MiniCluster(
     } != "")
   }
 
+  def isAlive(): Boolean = {
+    getMasterHosts.exists(nodeIsOnline)
+  }
+
   def getDockerMachineIp(): String = {
     Docker.execAndCaptureOutput(MASTER_ADDRS.head._1, "ip route").split("\\s+")(2)
   }
@@ -119,7 +123,7 @@ class MiniCluster(
     getMasterHosts.foreach(removeMasterNode)
   }
 
-  private def removeMasterNode(host: String): Unit = {
+  def removeMasterNode(host: String): Unit = {
     Docker.killAndRemoveContainer(host)
   }
 

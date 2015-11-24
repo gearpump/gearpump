@@ -41,7 +41,7 @@ class KafkaCluster(val advertisedHost: String, val advertisedPort: Int = 9092) {
     Docker.killAndRemoveContainer(KAFKA_HOST)
   }
 
-  private lazy val hostIPAddr = Docker.execAndCaptureOutput(KAFKA_HOST, "hostname -i")
+  private lazy val hostIPAddr = Docker.getContainerIp(KAFKA_HOST)
 
   def getZookeeperConnectString: String = {
     s"$hostIPAddr:$ZOOKEEPER_PORT"
