@@ -18,11 +18,10 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.cluster.MasterToAppMaster
+import io.gearpump.cluster.master.MasterStatus
 import io.gearpump.integrationtest.{TestSpecBase, Util}
 
-import scala.concurrent.duration
 import scala.concurrent.duration._
-import io.gearpump.cluster.master.MasterStatus
 
 /**
  * The test spec checks REST service usage
@@ -93,18 +92,17 @@ class RestServiceSpec extends TestSpecBase {
       expectAppIsRunning(appId, wordCountName)
 
       // exercise
-      Util.retryUntil(
-        restClient.queryStreamingAppMetrics(appId, current = true).metrics.nonEmpty,
-        timeout = duration.Duration(5, MINUTES))
+      expectMetricsAvailable(
+        restClient.queryStreamingAppMetrics(appId, current = true).metrics.nonEmpty)
       val actual = restClient.queryStreamingAppMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.processor*"
       assert(actual.metrics.head.time > 0)
       val formerMetricsDump = actual.metrics.toString()
 
-      Util.retryUntil({
+      expectMetricsAvailable({
         val laterMetrics = restClient.queryStreamingAppMetrics(appId, current = true).metrics
         laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
-      }, timeout = duration.Duration(5, MINUTES))
+      })
     }
 
     "can obtain application corresponding executors' metrics and the metrics will keep changing" in {
@@ -113,18 +111,17 @@ class RestServiceSpec extends TestSpecBase {
       expectAppIsRunning(appId, wordCountName)
 
       // exercise
-      Util.retryUntil(
-        restClient.queryExecutorMetrics(appId, current = true).metrics.nonEmpty,
-        timeout = duration.Duration(5, MINUTES))
+      expectMetricsAvailable(
+        restClient.queryExecutorMetrics(appId, current = true).metrics.nonEmpty)
       val actual = restClient.queryExecutorMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.executor*"
       assert(actual.metrics.head.time > 0)
       val formerMetricsDump = actual.metrics.toString()
 
-      Util.retryUntil({
+      expectMetricsAvailable({
         val laterMetrics = restClient.queryExecutorMetrics(appId, current = true).metrics
         laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
-      }, timeout = duration.Duration(5, MINUTES))
+      })
     }
   }
 
@@ -228,7 +225,7 @@ class RestServiceSpec extends TestSpecBase {
       // exercise
       Util.retryUntil(
         restClient.queryMasterMetrics(current = true).metrics.nonEmpty,
-        timeout = duration.Duration(5, MINUTES))
+        attempts = 30, interval = 15.seconds)
       val actual = restClient.queryMasterMetrics(current = true)
       actual.path shouldEqual s"master"
       assert(actual.metrics.head.time > 0)
@@ -237,7 +234,7 @@ class RestServiceSpec extends TestSpecBase {
       Util.retryUntil({
         val laterMetrics = restClient.queryMasterMetrics(current = true).metrics
         laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
-      }, timeout = duration.Duration(5, MINUTES))
+      }, attempts = 30, interval = 15.seconds)
     }
 
     "can obtain workers' metrics and the metrics will keep changing" in {
@@ -279,6 +276,10 @@ class RestServiceSpec extends TestSpecBase {
     val actualApp = restClient.queryApp(appId)
     actualApp.appId shouldEqual appId
     actualApp.status shouldEqual MasterToAppMaster.AppMasterInActive
+  }
+
+  private def expectMetricsAvailable(condition: => Boolean): Unit = {
+    Util.retryUntil(condition, attempts = 30, interval = 15.seconds)
   }
 
 }

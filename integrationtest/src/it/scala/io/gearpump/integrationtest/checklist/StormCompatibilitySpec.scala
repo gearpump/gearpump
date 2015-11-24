@@ -31,7 +31,6 @@ class StormCompatibilitySpec extends TestSpecBase {
       // exercise
       val appId = commandLineClient.submitStormApp(STORM_STARTER_JAR,
         "storm.starter.ExclamationTopology exclamation")
-      Thread.sleep(5000)
 
       // verify
       val actual = expectAppIsRunning(appId, "exclamation")
@@ -58,7 +57,6 @@ class StormCompatibilitySpec extends TestSpecBase {
       // exercise
       val appId = commandLineClient.submitStormApp(STORM_STARTER_JAR,
         "storm.starter.RollingTopWords slidingWindowCounts remote")
-      Thread.sleep(5000)
 
       // verify
       val actual = expectAppIsRunning(appId, "slidingWindowCounts")
