@@ -37,6 +37,10 @@ object Docker {
     shellExecAndCaptureOutput(s"docker ps -q --filter 'name=$name'", s"FIND $name").nonEmpty
   }
 
+  def getContainerIp(container: String): String = {
+    Docker.inspect(container, "--format={{.NetworkSettings.IPAddress}}")
+  }
+
   def containerExists(name: String): Boolean = {
     shellExecAndCaptureOutput(s"docker ps -q -a --filter 'name=$name'", s"FIND $name").nonEmpty
   }
@@ -56,6 +60,10 @@ object Docker {
 
   def exec(container: String, command: String): Boolean = {
     shellExec(s"docker exec $container $command", s"EXEC $container")
+  }
+
+  def inspect(container: String, option: String): String = {
+    shellExecAndCaptureOutput(s"docker inspect $option $container", s"EXEC $container")
   }
 
   /**
