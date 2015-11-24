@@ -19,7 +19,6 @@ package io.gearpump.integrationtest
 
 import org.apache.log4j.Logger
 
-import scala.concurrent._
 import scala.concurrent.duration._
 
 object Util {
@@ -40,15 +39,25 @@ object Util {
     }
   }
 
-  def retryUntil(condition: => Boolean, timeout: Duration = duration.Duration(30, SECONDS)): Unit = {
-    val RETRY_DELAY = duration.Duration(2, SECONDS)
-    try {
-      assert(condition)
-    } catch {
-      case ex if timeout.toMillis > 0 =>
-        LOG.info(s"Will sleep ${RETRY_DELAY.toSeconds} seconds and try again")
-        Thread.sleep(RETRY_DELAY.toMillis)
-        retryUntil(condition, timeout - RETRY_DELAY)
+  def retryUntil(condition: => Boolean, attempts: Int = 30,
+                 interval: Duration = 2.seconds): Unit = {
+    var success = false
+    var attemptsLeft = attempts
+
+    while (!success && attemptsLeft > 0) {
+      try {
+        attemptsLeft -= 1
+        success = condition
+        assert(success)
+      } catch {
+        case ex if attemptsLeft > 0 =>
+          LOG.info(s"condition is not met. will test again in ${interval.toSeconds}s ($attemptsLeft attempts left)")
+          Thread.sleep(interval.toMillis)
+      }
+    }
+    if (!success) {
+      throw new RuntimeException(
+        s"condition is not met after (${interval.toSeconds}s attempting")
     }
   }
 
