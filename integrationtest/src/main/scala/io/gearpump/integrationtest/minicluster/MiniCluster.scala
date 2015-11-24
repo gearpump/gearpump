@@ -125,6 +125,10 @@ class MiniCluster(
     }
   }
 
+  def getMasters = {
+    MASTER_ADDRS
+  }
+
   def getMasterHosts = {
     MASTER_ADDRS.map({ case (host, port) => host })
   }
