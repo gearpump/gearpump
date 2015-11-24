@@ -102,7 +102,7 @@ class StabilitySpec extends TestSpecBase {
       val masters = cluster.getMasterHosts
       masters.foreach(cluster.removeMasterNode)
       val aliveWorkers = cluster.getWorkerHosts
-      Util.retryUntil(aliveWorkers.forall(worker => !cluster.nodeIsOnline(worker)), duration.Duration(40, SECONDS))
+      Util.retryUntil(aliveWorkers.forall(worker => !cluster.nodeIsOnline(worker)))
     }
   }
 
