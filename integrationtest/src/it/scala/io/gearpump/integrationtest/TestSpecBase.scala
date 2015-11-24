@@ -26,7 +26,7 @@ import org.scalatest._
 /**
  * The abstract test spec
  */
-trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfter with BeforeAndAfterAll {
+trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
 
   private val LOG = Logger.getLogger(getClass)
 
@@ -53,12 +53,12 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfter with Befor
   lazy val wordCountJar = cluster.queryBuiltInExampleJars("wordcount-").head
   lazy val wordCountName = "wordCount"
 
-  before {
+  override def beforeEach = {
     assert(cluster != null, "Configure MiniCluster properly in suite spec")
     restClient.listRunningApps().size shouldEqual 0
   }
 
-  after {
+  override def afterEach = {
     restClient.listRunningApps().foreach(app => {
       commandLineClient.killApp(app.appId) shouldBe true
     })

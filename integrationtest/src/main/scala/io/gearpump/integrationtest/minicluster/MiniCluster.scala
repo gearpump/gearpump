@@ -110,6 +110,10 @@ class MiniCluster(
     } != "")
   }
 
+  def getDockerMachineIp(): String = {
+    Docker.execAndCaptureOutput(MASTER_ADDRS.head._1, "ip route").split("\\s+")(2)
+  }
+
   def shutDown(): Unit = {
     getWorkerHosts.foreach(removeWorkerNode)
     getMasterHosts.foreach(removeMasterNode)

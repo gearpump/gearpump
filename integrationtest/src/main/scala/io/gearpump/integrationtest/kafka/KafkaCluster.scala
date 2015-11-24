@@ -22,7 +22,7 @@ import io.gearpump.integrationtest.Docker
 /**
  * This class maintains a single node Kafka cluster with integrated Zookeeper.
  */
-class KafkaCluster {
+class KafkaCluster(val advertisedHost: String, val advertisedPort: Int = 9092) {
 
   private val KAFKA_DOCKER_IMAGE = "spotify/kafka"
   private val KAFKA_HOST = "kafka0"
@@ -33,7 +33,9 @@ class KafkaCluster {
   def getBrokerPort = 9092
 
   def start(): Unit = {
-    Docker.createAndStartContainer(KAFKA_HOST, s"-d -h $KAFKA_HOST", "", KAFKA_DOCKER_IMAGE)
+    val tunnelPortsOpt = s"-p $getZookeeperPort:$getZookeeperPort -p $getBrokerPort:$getBrokerPort"
+    val env = s"--env ADVERTISED_HOST=$advertisedHost --env ADVERTISED_PORT=$advertisedPort"
+    Docker.createAndStartContainer(KAFKA_HOST, s"-d -h $KAFKA_HOST $tunnelPortsOpt $env", "", KAFKA_DOCKER_IMAGE)
   }
 
   def shutDown(): Unit = {
@@ -42,6 +44,13 @@ class KafkaCluster {
 
   def getHostname: String = {
     Docker.execAndCaptureOutput(KAFKA_HOST, "hostname")
+  }
+
+  def createTopic(zookeeperConnect: String, sourceTopic: String, partitions: Int = 1): Unit = {
+    Docker.exec(KAFKA_HOST,
+      s"$KAFKA_HOME/bin/kafka-topics.sh --create --topic $sourceTopic --partitions $partitions --replication-factor 1 " +
+        s"--zookeeper $zookeeperConnect"
+    )
   }
 
   def produceDataToKafka(zookeeperConnect: String, brokerList: String, sourceTopic: String, messageNum: Int): Unit = {
