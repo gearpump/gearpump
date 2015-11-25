@@ -39,25 +39,24 @@ object Util {
     }
   }
 
-  def retryUntil(condition: => Boolean, attempts: Int = 30,
-                 interval: Duration = 2.seconds): Unit = {
-    var success = false
+  def retryUntil(condition: => Boolean, attempts: Int = 20,
+                 interval: Duration = 3.seconds): Unit = {
+    var met = false
     var attemptsLeft = attempts
 
-    while (!success && attemptsLeft > 0) {
+    while (!met) {
       try {
         attemptsLeft -= 1
-        success = condition
-        assert(success)
+        met = condition
+        if (!met) {
+          throw new RuntimeException(
+            s"condition is not met after ${attempts - attemptsLeft} retries")
+        }
       } catch {
         case ex if attemptsLeft > 0 =>
-          LOG.info(s"condition is not met. will test again in ${interval.toSeconds}s ($attemptsLeft attempts left)")
+          LOG.debug(s"condition is not met, retry in ${interval.toSeconds}s ($attemptsLeft attempts left)")
           Thread.sleep(interval.toMillis)
       }
-    }
-    if (!success) {
-      throw new RuntimeException(
-        s"condition is not met after (${interval.toSeconds}s attempting")
     }
   }
 

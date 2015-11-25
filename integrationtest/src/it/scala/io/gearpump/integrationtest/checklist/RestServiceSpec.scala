@@ -326,7 +326,7 @@ class RestServiceSpec extends TestSpecBase {
   }
 
   private def expectMetricsAvailable(condition: => Boolean): Unit = {
-    Util.retryUntil(condition, attempts = 30, interval = 15.seconds)
+    Util.retryUntil(condition, interval = 15.seconds)
   }
 
 }
