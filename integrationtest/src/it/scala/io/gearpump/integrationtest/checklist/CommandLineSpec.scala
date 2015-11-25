@@ -116,11 +116,11 @@ class CommandLineSpec extends TestSpecBase {
     appId
   }
 
+
   private def expectAppIsRunningByParsingOutput(appId: Int, expectedName: String): Unit = {
     val actual = commandLineClient.queryApp(appId)
     actual should include(s"application: $appId, ")
     actual should include(s"name: $expectedName, ")
     actual should include(s"status: ${MasterToAppMaster.AppMasterActive}")
   }
-
 }

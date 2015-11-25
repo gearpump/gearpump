@@ -51,8 +51,7 @@ class MiniCluster {
     MASTER_ADDRS.foreach({ case (host, port) =>
       addMasterNode(host, port)
     })
-    // We consider the cluster is started, when the REST services are ready.
-    expectRestServiceAvailable()
+    expectClusterAvailable()
 
     // Workers' membership can be modified at runtime
     (0 to workerNum - 1).foreach(index => {
@@ -82,12 +81,12 @@ class MiniCluster {
   /**
    * @throws RuntimeException if service is not available for N retries
    */
-  private def expectRestServiceAvailable(): Unit = {
+  private def expectClusterAvailable(): Unit = {
     Util.retryUntil({
-      val response = restClient.queryVersion()
-      LOG.debug(s"Finish waiting for RestService available with response: $response.")
-      response
-    } != "")
+      val response = restClient.queryMaster()
+      LOG.debug(s"Finish waiting for cluster available with response: $response.")
+      response.aliveFor > 0
+    })
   }
 
   def isAlive: Boolean = {
