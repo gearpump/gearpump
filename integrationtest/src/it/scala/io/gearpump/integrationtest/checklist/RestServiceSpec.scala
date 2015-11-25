@@ -294,7 +294,25 @@ class RestServiceSpec extends TestSpecBase {
 
   "application life-cycle" should {
     "newly started application should be configured same as the previous one, after restart" in {
+      // setup
+      val originSplitNum = 4
+      val originSumNum = 3
+      val originAppId = restClient.submitApp(wordCountJar, s"-split $originSplitNum -sum $originSumNum")
+      expectAppIsRunning(originAppId, wordCountName)
+      val originAppDetail = restClient.queryStreamingAppDetail(originAppId)
 
+      // exercise
+      Util.retryUntil(restClient.restartApp(originAppId))
+      val killedApp = restClient.queryApp(originAppId)
+      killedApp.appId shouldEqual originAppId
+      killedApp.status shouldEqual MasterToAppMaster.AppMasterInActive
+      val runningApps = restClient.listRunningApps()
+      runningApps.length shouldEqual 1
+      val newAppDetail = restClient.queryStreamingAppDetail(runningApps.head.appId)
+      newAppDetail.appName shouldEqual originAppDetail.appName
+      newAppDetail.processors.size shouldEqual originAppDetail.processors.size
+      newAppDetail.processors.get(0).get.parallelism shouldEqual originSplitNum
+      newAppDetail.processors.get(1).get.parallelism shouldEqual originSumNum
     }
   }
 
