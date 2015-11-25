@@ -17,7 +17,7 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.{TestSpecBase, Util}
+import io.gearpump.integrationtest.{Docker, TestSpecBase, Util}
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.ProcessorSummary
 
@@ -27,7 +27,26 @@ import io.gearpump.streaming.appmaster.ProcessorSummary
 class ExampleSpec extends TestSpecBase {
 
   "distributed shell" should {
-    "todo" in {
+    "works properly" in {
+      val distShellJar = cluster.queryBuiltInExampleJars("distributedshell-").head
+      val mainClass = "io.gearpump.examples.distributedshell.DistributedShell"
+      val clientClass = "io.gearpump.examples.distributedshell.DistributedShellClient"
+      val appId = restClient.submitApp(distShellJar, mainClass)
+      expectAppIsRunning(appId, "DistributedShell")
+      val args = Array(
+        clientClass,
+        "-appid", appId.toString,
+        "-command", "hostname"
+      )
+      val expectedHostNames = cluster.getWorkerHosts.map(Docker.execAndCaptureOutput(_, "hostname"))
+
+      def verify(): Boolean = {
+        val result = commandLineClient.submitAppAndCaptureOutput(distShellJar, args.mkString(" ")).split("\n").
+          filterNot(line => line.startsWith("[INFO]") || line.isEmpty)
+        expectedHostNames.forall(result.contains)
+      }
+
+      Util.retryUntil(verify())
     }
   }
 

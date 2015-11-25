@@ -46,6 +46,10 @@ class CommandLineClient(host: String) {
     case ex: Throwable => ""
   }
 
+  def submitAppAndCaptureOutput(jar: String, args: String = ""): String = {
+    execAndCaptureOutput(s"gear app -verbose true -jar $jar $args")
+  }
+
   def submitApp(jar: String, args: String = ""): Int = {
     submitAppUse("gear app", jar, args)
   }
