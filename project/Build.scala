@@ -86,7 +86,7 @@ object Build extends sbt.Build {
                    "oss.sonatype.org",
                    System.getenv().get("SONATYPE_USERNAME"),
                    System.getenv().get("SONATYPE_PASSWORD")),
-
+      
       pomIncludeRepository := { _ => false },
 
       publishTo := {
@@ -146,7 +146,8 @@ object Build extends sbt.Build {
 
   val streamingDependencies = Seq(
     libraryDependencies ++= Seq(
-      "com.github.intel-hadoop" % "gearpump-shaded-gs-collections" % gsCollectionsVersion
+      "com.github.intel-hadoop" % "gearpump-shaded-gs-collections" % gsCollectionsVersion,
+      "com.typesafe.akka" %% "akka-stream-experimental" % "1.0"
     )
   )
 
@@ -214,7 +215,7 @@ object Build extends sbt.Build {
     base = file("."),
     settings = commonSettings ++ noPublish ++ gearpumpUnidocSetting
   ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
-      examples, storm, yarn, external_hbase, packProject, external_hadoopfs,
+      examples, storm, akkastream, yarn, external_hbase, packProject, external_hadoopfs, 
       integration_test).settings(Defaults.itSettings : _*)
 
   lazy val core = Project(
@@ -316,6 +317,15 @@ object Build extends sbt.Build {
 
     relativeSourceMaps := true,
     jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value))
+
+  lazy val akkastream = Project(
+    id = "gearpump-experiments-akkastream",
+    base = file("experiments/akkastream"),
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+      Seq(
+        mainClass in (Compile, packageBin) := Some("akka.stream.gearpump.example.Test")
+      )
+  ) dependsOn (streaming % "test->test; provided", daemon % "test->test; provided")
 
   lazy val storm = Project(
     id = "gearpump-experiments-storm",

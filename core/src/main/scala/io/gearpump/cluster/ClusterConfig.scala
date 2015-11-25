@@ -21,8 +21,8 @@ package io.gearpump.cluster
 import java.io.File
 import com.typesafe.config.{ConfigValueFactory, Config, ConfigFactory, ConfigParseOptions}
 import io.gearpump.util.Constants._
-import io.gearpump.util.{FileUtils, Constants, LogUtil}
-
+import io.gearpump.util.{Util, FileUtils, Constants, LogUtil}
+import scala.collection.JavaConversions._
 
 /**
  *
@@ -63,6 +63,7 @@ class ClusterConfig private(systemProperties : Config, custom : Config,
 
     convert(config)
   }
+
 
   def ui: Config = {
     val config = systemProperties.withFallback(custom)

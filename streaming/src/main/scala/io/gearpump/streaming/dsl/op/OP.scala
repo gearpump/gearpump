@@ -18,41 +18,43 @@
 
 package io.gearpump.streaming.dsl.op
 
-import io.gearpump.streaming.dsl.{TypedDataSource, TypedDataSink}
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.task.Task
-
-import scala.reflect.ClassTag
 
 /**
  * Operators for the DSL
  */
 sealed trait Op {
   def description: String
+  def conf: UserConfig
 }
 
 /**
  * When translated to running DAG, SlaveOP can be attach to MasterOP or other SlaveOP
  * "Attach" means running in same Actor.
+ *
  */
 trait SlaveOp[T] extends Op
 
-case class FlatMapOp[T: ClassTag, R](fun: (T) => TraversableOnce[R], description: String) extends SlaveOp[T]
+case class FlatMapOp[T, R](fun: (T) => TraversableOnce[R], description: String, conf: UserConfig = UserConfig.empty) extends SlaveOp[T]
 
-case class ReduceOp[T: ClassTag](fun: (T, T) =>T, description: String) extends SlaveOp[T]
+case class ReduceOp[T](fun: (T, T) =>T, description: String, conf: UserConfig = UserConfig.empty) extends SlaveOp[T]
 
 trait MasterOp extends Op
 
 trait ParameterizedOp[T] extends MasterOp
 
-case class MergeOp(source: Op, target: Op, description: String) extends MasterOp
+case class MergeOp(description: String, override val conf: UserConfig = UserConfig.empty) extends MasterOp
 
-case class GroupByOp[T: ClassTag, R](fun: T => R, parallism: Int, description: String) extends ParameterizedOp[T]
+case class GroupByOp[T, R](fun: T => R, parallelism: Int, description: String, override val conf: UserConfig = UserConfig.empty) extends ParameterizedOp[T]
 
-case class ProcessorOp[T <: Task: ClassTag](processor: Class[T], parallism: Int, description: String) extends ParameterizedOp[T]
+case class ProcessorOp[T <: Task](processor: Class[T], parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
-case class DataSourceOp[T: ClassTag](dataSource: TypedDataSource[T], parallelism: Int, description: String) extends ParameterizedOp[T]
+case class DataSourceOp[T](dataSource: DataSource, parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
-case class DataSinkOp[T: ClassTag](dataSink: TypedDataSink[T], parallelism: Int, description: String) extends ParameterizedOp[T]
+case class DataSinkOp[T](dataSink: DataSink, parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
 /**
  * Contains operators which can be chained to single one.
@@ -66,6 +68,13 @@ case class OpChain(ops: List[Op]) extends Op {
   def last: Op = ops.last
 
   def description: String = null
+
+  override def conf: UserConfig = {
+    // the head's conf has priority
+    ops.reverse.foldLeft(UserConfig.empty){(conf, op) =>
+      conf.withConfig(op.conf)
+    }
+  }
 }
 
 trait OpEdge
@@ -75,6 +84,7 @@ trait OpEdge
  *
  * For example, map, flatmap operation doesn't require network shuffle, we can use Direct
  * to represent the relation with upstream operators.
+ *
  */
 case object Direct extends OpEdge
 
@@ -83,6 +93,7 @@ case object Direct extends OpEdge
  *
  * For example, map, flatmap operation doesn't require network shuffle, we can use Direct
  * to represent the relation with upstream operators.
+ *
  */
 case object Shuffle extends OpEdge
 

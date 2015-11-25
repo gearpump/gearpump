@@ -19,6 +19,7 @@
 package io.gearpump.streaming.appmaster
 
 import java.util
+import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, Cancellable, Stash}
@@ -50,7 +51,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   private var healthCheckScheduler : Cancellable = null
   private var snapshotScheduler : Cancellable = null
 
-  override def receive = Map.empty
+  override def receive = null
 
   override def preStart() : Unit = {
     LOG.info("Initializing Clock service, get snapshotted StartClock ....")
@@ -270,7 +271,7 @@ object ClockService {
       } else {
         //clock not advancing
         if (now > minClock.systemClock + stallingThresholdMilliseconds) {
-          LOG.warn(s"Clock has not advanced for ${(now - minClock.systemClock)/1000} seconds since ${minClock}...")
+          LOG.warn(s"Clock has not advanced for ${(now - minClock.systemClock)/1000} seconds since ${minClock.prettyPrint}...")
           isClockStalling = true
         }
       }
@@ -298,7 +299,11 @@ object ClockService {
   }
 
   object HealthChecker {
-    case class ClockValue(systemClock: TimeStamp, appClock: TimeStamp)
+    case class ClockValue(systemClock: TimeStamp, appClock: TimeStamp) {
+      def prettyPrint: String = {
+        "(system clock: " + new Date(systemClock).toString + ", app clock: " + appClock + ")"
+      }
+    }
   }
 
   object ProcessorClocks {

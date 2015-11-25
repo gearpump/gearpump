@@ -55,6 +55,16 @@ final class UserConfig(private val _config: Map[String, String])  extends Serial
     }
   }
 
+  def without(key: String): UserConfig = {
+    val config = _config - key
+    new UserConfig(config)
+  }
+
+  def filter(p: ((String, String)) => Boolean): UserConfig = {
+    val updated = _config.filter(p)
+    new UserConfig(updated)
+  }
+
   def getBoolean(key: String): Option[Boolean] = {
     _config.get(key).map(_.toBoolean)
   }

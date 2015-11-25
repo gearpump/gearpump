@@ -22,46 +22,81 @@ import scala.language.implicitConversions
 
 /**
  * Application DAG
+ *
  */
 class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serializable{
 
-  private val _vertices = mutable.Set.empty[N] ++ Option(vertexList).getOrElse(List.empty[N])
-  private val _edges = mutable.Set.empty[(N, E, N)] ++ Option(edgeList).getOrElse(List.empty[(N, E, N)])
+  private val _vertices = mutable.Set.empty[N]
+  private val _edges = mutable.Set.empty[(N, E, N)]
+
+  // This is used to ensure the output of this Graph is always stable
+  // Like method vertices(), or edges()
+  private var _indexs = Map.empty[Any, Int]
+  private var _nextIndex = 0
+  private def nextId: Int = {
+    val result = _nextIndex
+    _nextIndex += 1
+    result
+  }
+
+  private def init(): Unit = {
+    Option(vertexList).getOrElse(List.empty[N]).foreach(addVertex(_))
+    Option(edgeList).getOrElse(List.empty[(N, E, N)]).foreach(addEdge(_))
+  }
+
+  init()
 
   def addVertex(vertex : N): Unit = {
-    _vertices.add(vertex)
+    val result = _vertices.add(vertex)
+    if (result) {
+      _indexs += vertex -> nextId
+    }
+  }
+
+  def addEdge(edge: (N, E, N)): Unit = {
+    val result = _edges.add(edge)
+    if (result) {
+      _indexs += edge -> nextId
+    }
   }
 
   def vertices: List[N] = {
-    _vertices.toList
+    // sort the vertex so that we can keep the order for mapVertex
+    _vertices.toList.sortBy(_indexs(_))
   }
 
   def outDegreeOf(node : N): Int = {
-    _edges.count(_._1 == node)
+    edges.count(_._1 == node)
   }
 
   def inDegreeOf(node: N): Int = {
-    _edges.count(_._3 == node)
+    edges.count(_._3 == node)
   }
 
   def outgoingEdgesOf(node : N): List[(N, E, N)]  = {
-    _edges.toList.filter(_._1 == node)
+    edges.filter(_._1 == node)
   }
 
   def incomingEdgesOf(node: N): List[(N, E, N)] = {
-    _edges.toList.filter(_._3 == node)
+    edges.filter(_._3 == node)
   }
 
   def removeVertex(node: N): Unit = {
     _vertices.remove(node)
+    _indexs -= node
     val toBeRemoved = incomingEdgesOf(node) ++ outgoingEdgesOf(node)
-    toBeRemoved.foreach(_edges.remove(_))
+    toBeRemoved.foreach(removeEdge(_))
+  }
+
+  private def removeEdge(edge: (N, E, N)): Unit = {
+    _indexs -= edge
+    _edges.remove(edge)
   }
 
   def addEdge(node1 : N, edge: E, node2: N): Unit = {
     addVertex(node1)
     addVertex(node2)
-    _edges.add((node1, edge, node2))
+    addEdge((node1, edge, node2))
   }
 
   /**
@@ -71,13 +106,14 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
    * @return
    */
   def mapVertex[NewNode](fun: N => NewNode): Graph[NewNode, E] = {
-    val vertexMap: Map[N, NewNode] = vertices.map(node => (node, fun(node))).toMap
-    val newNodes = vertexMap.values.toList
+    val vertexes = vertices.map(node => (node, fun(node)))
+
+    val vertexMap: Map[N, NewNode] = vertexes.toMap
 
     val newEdges = edges.map { edge =>
       (vertexMap(edge._1), edge._2, vertexMap(edge._3))
     }
-    new Graph(newNodes, newEdges)
+    new Graph(vertexes.map(_._2), newEdges)
   }
 
   /**
@@ -94,11 +130,11 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
   }
 
   def edgesOf(node : N): List[(N, E, N)] = {
-    (incomingEdgesOf(node) ++ outgoingEdgesOf(node)).toSet.toList
+    (incomingEdgesOf(node) ++ outgoingEdgesOf(node)).toSet[(N, E, N)].toList.sortBy(_indexs(_))
   }
 
   def edges: List[(N, E, N)] = {
-    _edges.toList
+    _edges.toList.sortBy(_indexs(_))
   }
 
   def addGraph(other : Graph[N, E]) : Graph[N, E] = {
@@ -142,13 +178,14 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
   }
 
   private def removeZeroInDegree: List[N] = {
-    val toBeRemoved = vertices.filter(inDegreeOf(_) == 0)
+    val toBeRemoved = vertices.filter(inDegreeOf(_) == 0).sortBy(_indexs(_))
     toBeRemoved.foreach(removeVertex(_))
     toBeRemoved
   }
 
   /**
    * Return an iterator of vertex in topological order
+   * The node returned by Iterator is stable sorted.
    */
   def topologicalOrderIterator: Iterator[N] = {
     val newGraph = copy
