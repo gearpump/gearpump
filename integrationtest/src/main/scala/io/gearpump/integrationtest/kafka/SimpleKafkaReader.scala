@@ -12,17 +12,20 @@ trait ResultVerifier {
 }
 
 class SimpleKafkaReader(verifier: ResultVerifier, topic: String, partition: Int = 0,
-                        host: String, port: Int) {
+  host: String, port: Int) {
 
   private val consumer = new SimpleConsumer(host, port, 100000, 64 * 1024, "")
-  private val iterator = consumer.fetch(
-    new FetchRequestBuilder().addFetch(topic, partition, 0, Int.MaxValue).build()
-  ).messageSet(topic, 0).iterator
+  private var offset = 0L
 
   def read(): Unit = {
-    while (iterator.hasNext) {
-      Injection.invert[String, Array[Byte]](Utils.readBytes(iterator.next().message.payload)) match {
+    val messageSet = consumer.fetch(
+      new FetchRequestBuilder().addFetch(topic, partition, offset, Int.MaxValue).build()
+    ).messageSet(topic, partition)
+
+    for (messageAndOffset <- messageSet) {
+      Injection.invert[String, Array[Byte]](Utils.readBytes(messageAndOffset.message.payload)) match {
         case Success(msg) =>
+          offset = messageAndOffset.nextOffset
           verifier.onNext(msg)
         case Failure(e) => throw e
       }
