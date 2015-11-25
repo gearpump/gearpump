@@ -28,7 +28,7 @@ object Docker {
   }
 
   def containerIsRunning(name: String): Boolean = {
-    ShellExec.execAndCaptureOutput(s"docker ps -q --filter 'name=$name'", s"FIND $name").nonEmpty
+    ShellExec.execAndCaptureOutput(s"docker ps -q --filter name=$name", s"FIND $name").nonEmpty
   }
 
   def getContainerIPAddr(name: String): String = {
@@ -36,7 +36,7 @@ object Docker {
   }
 
   def containerExists(name: String): Boolean = {
-    ShellExec.execAndCaptureOutput(s"docker ps -q -a --filter 'name=$name'", s"FIND $name").nonEmpty
+    ShellExec.execAndCaptureOutput(s"docker ps -q -a --filter name=$name", s"FIND $name").nonEmpty
   }
 
   /**

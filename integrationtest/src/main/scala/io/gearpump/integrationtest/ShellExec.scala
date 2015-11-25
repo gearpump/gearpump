@@ -46,7 +46,7 @@ object ShellExec {
           p.exitValue()
       }
 
-    LOG.debug(s"$sender <- `$retval`")
+    LOG.debug(s"$sender <- exit $retval")
     retval == 0
   }
 
@@ -70,10 +70,10 @@ object ShellExec {
     val preview = if (output.length > PREVIEW_MAX_LENGTH)
       output.substring(0, PREVIEW_MAX_LENGTH) + "\n..." else output
 
-    LOG.debug(s"$sender <= `$preview` with exit code $retval")
+    LOG.debug(s"$sender <= `$preview` exit $retval")
     if (retval != 0) {
       throw new RuntimeException(
-        s"failed to execute command. exit code=$retval, command=`$command`")
+        s"exited ($retval) by executing `$command`")
     }
     output
   }

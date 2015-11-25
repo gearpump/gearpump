@@ -20,6 +20,8 @@ package io.gearpump.integrationtest.checklist
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.integrationtest.{TestSpecBase, Util}
 
+import scala.concurrent.duration.Duration
+
 /**
  * The test spec will perform destructive operations to check the stability
  */
@@ -36,6 +38,7 @@ class StabilitySpec extends TestSpecBase {
 
       // exercise
       restClient.killAppMaster(appId) shouldBe true
+      // todo: how long master will begin to recover and how much time for the recovering?
       Util.retryUntil(restClient.queryApp(appId).appMasterPath != formerAppMaster)
 
       // verify
@@ -46,7 +49,7 @@ class StabilitySpec extends TestSpecBase {
   }
 
   "kill executor" should {
-    "will create a new executor and application will  replay from the latest application clock" in {
+    "will create a new executor and application will replay from the latest application clock" in {
       // setup
       restartClusterRequired = true
       val appId = commandLineClient.submitApp(wordCountJar)
@@ -56,6 +59,7 @@ class StabilitySpec extends TestSpecBase {
 
       // exercise
       restClient.killExecutor(appId, executorToKill) shouldBe true
+      // todo: how long appmaster will begin to recover and how much time for the recovering?
       Util.retryUntil(restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill)
 
       // verify
@@ -72,11 +76,14 @@ class StabilitySpec extends TestSpecBase {
       val appId = commandLineClient.submitApp(wordCountJar)
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
       val maximalExecutorId = restClient.queryExecutorBrief(appId).map(_.executorId).max
+      val workerToKill = cluster.getWorkerHosts.head
       ensureClockStoredInMaster()
 
-      val workerToKill = cluster.getWorkerHosts.head
+      // exercise
       cluster.removeWorkerNode(workerToKill)
+      // todo: how long master will begin to recover and how much time for the recovering?
       Util.retryUntil(restClient.queryExecutorBrief(appId).map(_.executorId).max > maximalExecutorId)
+
       // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
       laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
@@ -89,9 +96,15 @@ class StabilitySpec extends TestSpecBase {
       // setup
       restartClusterRequired = true
       val masters = cluster.getMasterHosts
+      val config = restClient.queryMasterConfig()
+      val shutDownTimeout = Duration(config.getString("master.akka.cluster.auto-down-unreachable-after"))
 
       // exercise
       masters.foreach(cluster.removeMasterNode)
+      info(s"will sleep ${shutDownTimeout.toSeconds}s and then check workers are down")
+      Thread.sleep(shutDownTimeout.toMillis)
+
+      // verify
       val aliveWorkers = cluster.getWorkerHosts
       Util.retryUntil(aliveWorkers.forall(worker => !cluster.nodeIsOnline(worker)))
     }
