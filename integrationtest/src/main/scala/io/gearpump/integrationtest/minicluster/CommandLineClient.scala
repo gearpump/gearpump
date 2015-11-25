@@ -25,12 +25,10 @@ import io.gearpump.integrationtest.Docker
  */
 class CommandLineClient(host: String) {
 
-  def listApps(): Array[String] = try {
+  def listApps(): Array[String] = {
     execAndCaptureOutput("gear info").split("\n").filter(
       _.startsWith("application: ")
     )
-  } catch {
-    case ex: Throwable => Array.empty
   }
 
   def listRunningApps(): Array[String] =

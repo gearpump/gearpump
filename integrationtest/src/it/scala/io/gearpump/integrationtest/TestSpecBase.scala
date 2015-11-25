@@ -19,7 +19,6 @@ package io.gearpump.integrationtest
 
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.AppMasterData
-import io.gearpump.integrationtest.minicluster.MiniCluster
 import org.apache.log4j.Logger
 import org.scalatest._
 
