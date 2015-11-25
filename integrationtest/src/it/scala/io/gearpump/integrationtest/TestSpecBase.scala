@@ -61,7 +61,7 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfterEach with B
   }
 
   override def afterEach() = {
-    if (restartClusterRequired) {
+    if (restartClusterRequired || !cluster.isAlive) {
       restartClusterRequired = false
       LOG.info("Will restart the cluster for next test case")
       cluster.restart()

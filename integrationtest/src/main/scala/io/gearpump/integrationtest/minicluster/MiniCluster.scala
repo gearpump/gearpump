@@ -84,7 +84,7 @@ class MiniCluster {
   private def expectClusterAvailable(): Unit = {
     Util.retryUntil({
       val response = restClient.queryMaster()
-      LOG.debug(s"Finish waiting for cluster available with response: $response.")
+      LOG.info(s"cluster is now available with response: $response.")
       response.aliveFor > 0
     })
   }
