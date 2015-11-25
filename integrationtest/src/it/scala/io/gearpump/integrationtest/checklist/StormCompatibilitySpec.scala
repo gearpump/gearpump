@@ -48,16 +48,14 @@ class StormCompatibilitySpec extends TestSpecBase {
       Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
     }
 
-    "provide multilang support in python" in {
-      // commented out till python support is added to docker image
-      // exercise
-/*      val appId = stormClient.submitStormApp(mainClass = "storm.starter.WordCountTopology",
+    "support to run a python version of wordcount (multilang support)" in {
+/*      // exercise
+      val appId = stormClient.submitStormApp(mainClass = "storm.starter.WordCountTopology",
         args = "wordcount")
-      Thread.sleep(5000)
 
       // verify
-      val actual = expectAppIsRunning(appId, "wordcount")
-      Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)*/
+      expectAppIsRunning(appId, "wordcount")
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)*/
     }
 
     "support DRPC" in {
@@ -67,6 +65,8 @@ class StormCompatibilitySpec extends TestSpecBase {
       stormClient.submitStormApp(mainClass = "storm.starter.ReachTopology",
         args = "reach")
       val drpcClient = stormClient.getDRPCClient(cluster.getNetworkGateway)
+
+      // verify
       Util.retryUntil {
         drpcClient.execute("reach", "notaurl.com") == "0"
       }

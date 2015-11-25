@@ -32,13 +32,17 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfterEach with B
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    LOG.info("Will test with a default standalone mini cluster")
-    MiniClusterProvider.get.start()
+    if (!MiniClusterProvider.managed) {
+      LOG.info("Will test with a default standalone mini cluster")
+      MiniClusterProvider.get.start()
+    }
   }
 
   override def afterAll(): Unit = {
-    LOG.info("Will shutdown the default mini cluster")
-    MiniClusterProvider.get.shutDown()
+    if (!MiniClusterProvider.managed) {
+      LOG.info("Will shutdown the default mini cluster")
+      MiniClusterProvider.get.shutDown()
+    }
     super.afterAll()
   }
 
@@ -53,17 +57,16 @@ trait TestSpecBase extends WordSpec with Matchers with BeforeAndAfterEach with B
 
   override def beforeEach() = {
     assert(cluster != null, "Configure MiniCluster properly in suite spec")
-    if (restartClusterRequired) {
-      restartClusterRequired = false
-      LOG.info("Will restart the cluster before running this test case")
-      cluster.restart()
-    }
     cluster.isAlive shouldBe true
     restClient.listRunningApps().isEmpty shouldBe true
   }
 
   override def afterEach() = {
-    if (!restartClusterRequired && cluster.isAlive) {
+    if (restartClusterRequired) {
+      restartClusterRequired = false
+      LOG.info("Will restart the cluster for next test case")
+      cluster.restart()
+    } else {
       restClient.listRunningApps().foreach(app => {
         commandLineClient.killApp(app.appId) shouldBe true
       })

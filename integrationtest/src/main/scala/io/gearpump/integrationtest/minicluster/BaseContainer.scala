@@ -28,7 +28,7 @@ class BaseContainer(val host: String, command: String,
                     masterAddrs: Seq[(String, Int)],
                     tunnelPorts: Set[Int] = Set.empty) {
 
-  private val IMAGE_NAME = "stanleyxu2005/gpct-jdk8"
+  private val IMAGE_NAME = "stanleyxu2005/gpct-jdk8:4"
   private val SUT_LOCAL_PATH = "pwd".!!.trim + "/output/target/pack"
   val SUT_HOME = "/opt/gearpump"
 
@@ -40,7 +40,7 @@ class BaseContainer(val host: String, command: String,
 
   def createAndStart(): String = {
     Docker.createAndStartContainer(host, IMAGE_NAME, command,
-      environ = Map("CLUSTER" -> CLUSTER_OPTS),
+      environ = Map("JAVA_OPTS" -> CLUSTER_OPTS),
       volumes = Map(SUT_LOCAL_PATH -> SUT_HOME),
       knownHosts = masterAddrs.map(_._1).filter(_ != host).toSet,
       tunnelPorts = tunnelPorts)

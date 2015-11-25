@@ -8,13 +8,11 @@ if [ ! -d "$SUT_HOME/bin" ]; then
   exit 1
 fi
 
-if [ -z "$CLUSTER" ]; then
-  echo "FATAL: Environment variable 'CLUSTER' is NOT set."
+if [ -z "JAVA_OPTS" ]; then
+  echo "FATAL: Environment variable 'JAVA_OPTS' is NOT set."
   exit 1
 fi
-
 export JAVA_OPTS
-JAVA_OPTS="$CLUSTER"
 
 COMMAND=$1
 shift
@@ -37,19 +35,25 @@ case "$COMMAND" in
     sh "$SUT_HOME"/bin/"$COMMAND" "$@"
     ;;
   storm-drpc)
-    STORM_CONFIG="$SUT_HOME"/storm.yaml
-    echo "drpc.servers:" > "$STORM_CONFIG"
-    echo "      "-" "\"`ip route | awk '/default/ {print $3}'`\" >> "$STORM_CONFIG"
-    java -server -Xmx768m -cp "$SUT_HOME"/lib/*:"$SUT_HOME"/lib/storm/* backtype.storm.daemon.drpc
+    # Will launch a Storm DRPC daemon
+    LIB_HOME="$SUT_HOME"/lib
+    cat > "$SUT_HOME"/storm.yaml <<- YAML
+drpc.servers:
+  - `ip route | awk '/default/ {print $3}'`
+YAML
+    java -server -Xmx768m -cp "$LIB_HOME"/*:"$LIB_HOME"/storm/* backtype.storm.daemon.drpc
     ;;
   *)
-    echo "Usage:"
-    echo "  master -ip [HOST] -port [PORT]"
-    echo "  worker"
-    echo "  gear [ARGS]"
-    echo "  storm [ARGS]"
-    echo "  storm-drpc"
+    cat <<- USAGE
+Gearpump Commands:
+  master -ip [HOST] -port [PORT]
+  worker
+  gear (app|info|kill) [ARGS]
+  storm [ARGS]
+
+Storm Commands:
+  storm-drpc
+USAGE
     exit 1
     ;;
 esac
-
