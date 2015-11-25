@@ -326,7 +326,9 @@ class RestServiceSpec extends TestSpecBase {
   }
 
   private def expectMetricsAvailable(condition: => Boolean): Unit = {
-    Util.retryUntil(condition, interval = 15.seconds)
+    val config = restClient.queryMasterConfig()
+    val reportInterval = Duration(config.getString("gearpump.metrics.report-interval-ms") + "ms")
+    Util.retryUntil(condition, interval = reportInterval)
   }
 
 }
