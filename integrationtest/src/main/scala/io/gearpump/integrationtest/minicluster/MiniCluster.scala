@@ -21,6 +21,7 @@ import io.gearpump.integrationtest.{Docker, Util}
 import org.apache.log4j.Logger
 
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration._
 
 /**
  * This class is a test driver for end-to-end integration test.
@@ -86,7 +87,7 @@ class MiniCluster {
       val response = restClient.queryMaster()
       LOG.info(s"cluster is now available with response: $response.")
       response.aliveFor > 0
-    })
+    }, interval=20.seconds)
   }
 
   def isAlive: Boolean = {
