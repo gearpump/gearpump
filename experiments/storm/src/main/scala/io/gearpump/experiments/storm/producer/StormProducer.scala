@@ -46,21 +46,21 @@ private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
       .asInstanceOf[GearpumpSpout], taskContext, conf)
   }
 
-  private val timeoutOpt = gearpumpSpout.getMessageTimeout
+  private val timeoutMillis = gearpumpSpout.getMessageTimeout
 
   override def onStart(startTime: StartTime): Unit = {
     gearpumpSpout.start(startTime)
     if (gearpumpSpout.ackEnabled) {
       getCheckpointClock
     }
-    timeoutOpt.foreach(scheduleTimeout)
+    timeoutMillis.foreach(scheduleTimeout)
     self ! Message("start")
   }
 
   override def onNext(msg: Message): Unit = {
     msg match {
       case TIMEOUT =>
-        timeoutOpt.foreach { timeout =>
+        timeoutMillis.foreach { timeout =>
           gearpumpSpout.timeout(timeout)
           scheduleTimeout(timeout)
         }
@@ -79,11 +79,11 @@ private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
   }
 
   def getCheckpointClock: Unit = {
-    taskContext.scheduleOnce(Duration(StormConstants.CHECKPOINT_INTERVAL_SECS,
-      TimeUnit.SECONDS))(taskContext.appMaster ! GetCheckpointClock)
+    taskContext.scheduleOnce(Duration(StormConstants.CHECKPOINT_INTERVAL_MILLIS,
+      TimeUnit.MILLISECONDS))(taskContext.appMaster ! GetCheckpointClock)
   }
 
-  private def scheduleTimeout(timeout: Int): Unit = {
-    taskContext.scheduleOnce(Duration(timeout, TimeUnit.SECONDS)){ self ! TIMEOUT }
+  private def scheduleTimeout(timeout: Long): Unit = {
+    taskContext.scheduleOnce(Duration(timeout, TimeUnit.MILLISECONDS)){ self ! TIMEOUT }
   }
 }
