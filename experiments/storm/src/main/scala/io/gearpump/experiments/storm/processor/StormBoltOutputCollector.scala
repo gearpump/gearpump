@@ -23,7 +23,8 @@ import java.util.{Collection => JCollection, List => JList}
 import backtype.storm.task.IOutputCollector
 import backtype.storm.tuple.Tuple
 import io.gearpump.experiments.storm.topology.TimedTuple
-import io.gearpump.experiments.storm.util.{StormConstants, StormOutputCollector}
+import io.gearpump.experiments.storm.util.StormOutputCollector
+import io.gearpump.experiments.storm.util.StormConstants._
 import io.gearpump.streaming.task.ReportCheckpointClock
 
 /**
@@ -54,9 +55,9 @@ private[storm] class StormBoltOutputCollector(collector: StormOutputCollector) e
         val taskContext = collector.taskContext
         val upstreamMinClock = taskContext.upstreamMinClock
         if (reportTime <= upstreamMinClock && upstreamMinClock <= maxAckTime) {
-          reportTime = upstreamMinClock
+          reportTime = upstreamMinClock /  CHECKPOINT_INTERVAL_MILLIS * CHECKPOINT_INTERVAL_MILLIS
           taskContext.appMaster ! ReportCheckpointClock(taskContext.taskId, reportTime)
-          reportTime += StormConstants.CHECKPOINT_INTERVAL_SECS
+          reportTime += CHECKPOINT_INTERVAL_MILLIS
         }
       case _ =>
         // ignore other tuples

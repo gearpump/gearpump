@@ -36,8 +36,10 @@ private[storm] class StormSpoutOutputCollector(
   private var pendingMessage: Option[PendingMessage] = None
 
   override def emit(streamId: String, values: JList[AnyRef], messageId: Object): JList[Integer] = {
+    val curTime = System.currentTimeMillis()
+    collector.setTimestamp(curTime)
     val outTasks = collector.emit(streamId, values)
-    setPendingOrAck(messageId)
+    setPendingOrAck(messageId, curTime, curTime)
     outTasks
   }
 
@@ -46,8 +48,10 @@ private[storm] class StormSpoutOutputCollector(
   }
 
   override def emitDirect(taskId: Int, streamId: String, values: JList[AnyRef], messageId: Object): Unit = {
+    val curTime = System.currentTimeMillis()
+    collector.setTimestamp(curTime)
     collector.emitDirect(taskId, streamId, values)
-    setPendingOrAck(messageId)
+    setPendingOrAck(messageId, curTime, curTime)
   }
 
 
@@ -60,12 +64,12 @@ private[storm] class StormSpoutOutputCollector(
     }
   }
 
-  def failPendingMessage(timeout: Int): Unit = {
+  def failPendingMessage(timeoutMillis: Long): Unit = {
     pendingMessage.foreach { case PendingMessage(id, _, startTime) =>
-      if (System.currentTimeMillis() - startTime >= timeout) {
+      if (System.currentTimeMillis() - startTime >= timeoutMillis) {
         spout.fail(id)
+        reset
       }
-      reset
     }
   }
 
@@ -73,15 +77,11 @@ private[storm] class StormSpoutOutputCollector(
     pendingMessage = None
   }
 
-  private def setPendingOrAck(messageId: Object): Unit = {
-    val curTime = System.currentTimeMillis()
+  private def setPendingOrAck(messageId: Object, startTime: TimeStamp, messageTime: TimeStamp): Unit = {
     if (ackEnabled && pendingMessage.isEmpty) {
-      val startTime = curTime
-      val messageTime = curTime
       pendingMessage = Some(PendingMessage(messageId, messageTime, startTime))
     } else {
       spout.ack(messageId)
     }
-    collector.setTimestamp(curTime)
   }
 }
