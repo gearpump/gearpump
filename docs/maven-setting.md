@@ -65,12 +65,6 @@ And you will need to add following repositories to get above dependencies resolv
 </repository>
 
 <repository>
-    <id>non</id>
-    <name>non</name>
-    <url>http://dl.bintray.com/non/maven</url>
-</repository>
-
-<repository>
     <id>maven-repo</id>
     <name>maven-repo</name>
     <url>http://repo.maven.apache.org/maven2</url>

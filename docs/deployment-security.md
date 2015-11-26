@@ -9,14 +9,14 @@ Until now Gearpump support being launched in a secured Yarn cluster and writing 
 Further security related feature is in progress.
 
 ## How to launch GearPump in a secured Yarn cluster
-Suppose user ```gear``` will luanch the Gearpump, corresponding principal should be created in KDC server.
+Suppose user ```gearpump``` will launch gearpump on YARN, then the corresponding principal `gearpump` should be created in KDC server.
 
-1. Create HDFS folder /user/gear/, make sure all read-write rights are granted for user ```gear```
-2. Upload the gearpump-{{ site.GEARPUMP_VERSION }}.tar.gz jars to HDFS folder: /user/gear/, you can refer to [How to get gearpump distribution](get-gearpump-distribution.html) to get the Gearpump binary.
-3. Modify the config file ```conf/yarn.conf.template``` or create your own config file
+1. Create HDFS folder /user/gearpump/, make sure all read-write rights are granted for user ```gearpump```
+2. Upload the gearpump-pack-2.11.5-{{ site.GEARPUMP_VERSION }}.tar.gz jars to HDFS folder: /user/gearpump/, you can refer to [How to get gearpump distribution](get-gearpump-distribution.html) to get the Gearpump binary.
+3. Modify the config file ```conf/yarn.conf``` or create your own config file
 4. You must do ```kinit``` before accessing the Yarn cluster, then run 
   ``` bash
-  bin/yarnclient -version gearpump-{{ site.GEARPUMP_VERSION }} -config conf/yarn.conf
+  bin/yarnclient -version gearpump-pack-2.11.5-{{ site.GEARPUMP_VERSION }} -config conf/yarn.conf
   ```
   
 ## How to write to secured HBase

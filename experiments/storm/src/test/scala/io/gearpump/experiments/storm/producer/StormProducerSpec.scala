@@ -51,7 +51,7 @@ class StormProducerSpec extends WordSpec with Matchers with MockitoSugar {
     "pass message to GearpumpBolt onNext" in {
       val message = mock[Message]
       val gearpumpSpout = mock[GearpumpSpout]
-      val timeout = 5
+      val timeout = 5L
       when(gearpumpSpout.getMessageTimeout).thenReturn(Some(timeout))
       val taskContext = MockUtil.mockTaskContext
       implicit val actorSystem = taskContext.system

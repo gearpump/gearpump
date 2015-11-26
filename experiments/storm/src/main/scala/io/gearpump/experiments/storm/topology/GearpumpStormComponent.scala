@@ -20,7 +20,7 @@ package io.gearpump.experiments.storm.topology
 
 import java.io.{File, FileOutputStream, IOException}
 import java.util.jar.JarFile
-import java.util.{HashMap => JHashMap, LinkedList => JLinkedList, List => JList, Map => JMap}
+import java.util.{HashMap => JHashMap, List => JList, Map => JMap}
 
 import akka.actor.ActorRef
 import akka.pattern.ask
@@ -135,11 +135,14 @@ object GearpumpStormComponent {
       spout.nextTuple()
     }
 
-    def getMessageTimeout: Option[Int] = {
+    /**
+     * @return timeout in milliseconds if enabled
+     */
+    def getMessageTimeout: Option[Long] = {
       StormUtil.getBoolean(config, Config.TOPOLOGY_ENABLE_MESSAGE_TIMEOUTS).flatMap {
         timeoutEnabled =>
           if (timeoutEnabled) {
-            StormUtil.getInt(config, Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS)
+            StormUtil.getInt(config, Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS).map(_ * 1000L)
           } else {
             None
           }
@@ -150,8 +153,8 @@ object GearpumpStormComponent {
       collector.ackPendingMessage(clock)
     }
 
-    def timeout(timeout: Int): Unit = {
-      collector.failPendingMessage(timeout)
+    def timeout(timeoutMillis: Long): Unit = {
+      collector.failPendingMessage(timeoutMillis)
     }
   }
 
