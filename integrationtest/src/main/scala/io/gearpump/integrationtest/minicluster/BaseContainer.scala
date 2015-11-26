@@ -28,7 +28,7 @@ class BaseContainer(val host: String, command: String,
                     masterAddrs: Seq[(String, Int)],
                     tunnelPorts: Set[Int] = Set.empty) {
 
-  private val IMAGE_NAME = "stanleyxu2005/gpct-jdk8:4"
+  private val IMAGE_NAME = "stanleyxu2005/gearpump-launcher"
   private val SUT_LOCAL_PATH = "pwd".!!.trim + "/output/target/pack"
   val SUT_HOME = "/opt/gearpump"
 
