@@ -49,13 +49,13 @@ class StormCompatibilitySpec extends TestSpecBase {
     }
 
     "support to run a python version of wordcount (multilang support)" in {
-/*      // exercise
+      // exercise
       val appId = stormClient.submitStormApp(mainClass = "storm.starter.WordCountTopology",
         args = "wordcount")
 
       // verify
       expectAppIsRunning(appId, "wordcount")
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)*/
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
     }
 
     "support DRPC" in {
