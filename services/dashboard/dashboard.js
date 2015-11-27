@@ -21,12 +21,13 @@ angular.module('dashboard', [
 
       $urlRouterProvider
         .when('', '/')
-        .when('/', '/cluster/master')
+        .when('/', '/cluster')
+        .when('/cluster', '/cluster/master')/*
         .otherwise(function($injector, $location) {
           // redirects to parent state (recursively)
           var parentUrl = _.initial($location.path().split('/')).join('/');
           $location.path(parentUrl);
-        });
+        })*/;
 
       $stateProvider
         .state('cluster', {
