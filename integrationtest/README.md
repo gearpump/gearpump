@@ -2,10 +2,10 @@
 
 To run the integration test, you need a Linux with Kernel version >= 3.10 and Docker 1.7 (or higher). The test framework will use two Docker images. They will be downloaded at the first time, when you launching the tests. You can also prepare them manually:
 
- * [The Gearpump Cluster Launcher and Storm Client](https://hub.docker.com/r/stanleyxu2005/gpct-jdk8)
-   `docker pull stanleyxu2005/gpct-jdk8`
- * [The standalone single node Kafka cluster with Zookeeper](https://hub.docker.com/r/spotify/kafka/)
-   `docker pull spotify/kafka`
+ * [The Gearpump Cluster Launcher and Storm Client](https://hub.docker.com/r/stanleyxu2005/gearpump-launcher)
+   `docker pull stanleyxu2005/gearpump-launcher`
+ * [The standalone single node Kafka cluster with Zookeeper](https://hub.docker.com/r/stanleyxu2005/kafka)
+   `docker pull stanleyxu2005/kafka`
 
 ### Install Docker
 
@@ -33,14 +33,14 @@ docker run -d \
  -v $GEARPUMP_HOME:/opt/gearpump \
  -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 \
  -p 8090:8090 \
- stanleyxu2005/gpct-jdk8 \
+ stanleyxu2005/gearpump-launcher \
  master -ip master0 -port 3000
 
 docker run -d \
  --link master0 \
  -v $GEARPUMP_HOME:/opt/gearpump \
  -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 \
- stanleyxu2005/gpct-jdk8 \
+ stanleyxu2005/gearpump-launcher \
  worker
 ```
 

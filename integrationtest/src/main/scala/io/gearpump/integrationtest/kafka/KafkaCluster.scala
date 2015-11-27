@@ -17,16 +17,16 @@
  */
 package io.gearpump.integrationtest.kafka
 
-import io.gearpump.integrationtest.Docker
+import io.gearpump.integrationtest.{Docker, Util}
 
 /**
  * This class maintains a single node Kafka cluster with integrated Zookeeper.
  */
 class KafkaCluster(val advertisedHost: String) {
 
-  private val KAFKA_DOCKER_IMAGE = "spotify/kafka"
+  private val KAFKA_DOCKER_IMAGE = "stanleyxu2005/kafka"
   private val KAFKA_HOST = "kafka0"
-  private val KAFKA_HOME = "/opt/kafka_2.11-0.8.2.1/"
+  private val KAFKA_HOME = "/opt/kafka/"
   private val ZOOKEEPER_PORT = 2181
   private val BROKER_PORT = 9092
   val advertisedPort = BROKER_PORT
@@ -38,9 +38,10 @@ class KafkaCluster(val advertisedHost: String) {
         "ADVERTISED_PORT" -> BROKER_PORT.toString),
       tunnelPorts = Set(ZOOKEEPER_PORT, BROKER_PORT)
     )
+    Util.retryUntil(isAlive)
   }
 
-  def isAlive(): Boolean = {
+  def isAlive: Boolean = {
     !listTopics().contains("Connection refused")
   }
 
