@@ -49,7 +49,7 @@ object DistributedShellClient extends AkkaApp with ArgumentsParser  {
     val appMaster = context.resolveAppID(appid)
     LOG.info(s"Resolved appMaster $appid address $appMaster, sending command $command")
     val future = (appMaster ? ShellCommand(command)).map { result =>
-      LOG.info(s"Result: $result")
+      LOG.info(s"Result: \n$result")
       context.close()
     }
     Await.ready(future, Duration(60, TimeUnit.SECONDS))

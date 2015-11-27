@@ -15,17 +15,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.integrationtest.suites
 
-package io.gearpump.util
+import io.gearpump.integrationtest.MiniClusterProvider
+import io.gearpump.integrationtest.checklist._
+import io.gearpump.integrationtest.minicluster.MiniCluster
+import org.scalatest._
 
-import scala.sys.process.Process
+/**
+ * Launch a Gearpump cluster in standalone mode and run all test specs
+ */
+class StandaloneModeSuite extends Suites(
 
-trait ConsoleOutput {
-  def output: String
-  def error: String
-}
+  new CommandLineSpec,
+  new ConnectorKafkaSpec,
+  new RestServiceSpec,
+  new ExampleSpec,
+  new StabilitySpec,
+  new StormCompatibilitySpec
 
-class RichProcess(process: Process, val logger: ConsoleOutput) extends Process {
-  def exitValue() : scala.Int = process.exitValue()
-  def destroy() : scala.Unit = process.destroy()
+) with BeforeAndAfterAll {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    MiniClusterProvider.managed = true
+    MiniClusterProvider.set(new MiniCluster).start()
+  }
+
+  override def afterAll(): Unit = {
+    MiniClusterProvider.get.shutDown()
+    super.afterAll()
+  }
+
 }
