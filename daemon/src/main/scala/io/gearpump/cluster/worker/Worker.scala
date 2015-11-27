@@ -397,7 +397,7 @@ private[cluster] object Worker {
             if (exit == 0) {
               Success(0)
             } else {
-              Failure(new Exception(s"Executor exit with failure, exit value: $exit, error summary: ${info.process.logger.summary}"))
+              Failure(new Exception(s"Executor exit with failure, exit value: $exit, error summary: ${info.process.logger.error}"))
             }
           }
         }

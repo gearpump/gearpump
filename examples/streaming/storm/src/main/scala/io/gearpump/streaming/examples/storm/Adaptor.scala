@@ -15,17 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.streaming.examples.storm
 
-package io.gearpump.util
+import backtype.storm.topology.{OutputFieldsDeclarer, BasicOutputCollector}
+import backtype.storm.topology.base.BaseBasicBolt
+import backtype.storm.tuple.{Fields, Values, Tuple}
+import storm.kafka.bolt.mapper.FieldNameBasedTupleToKafkaMapper
 
-import scala.sys.process.Process
+class Adaptor extends BaseBasicBolt {
+  private var id = 0L
 
-trait ConsoleOutput {
-  def output: String
-  def error: String
-}
+  override def execute(tuple: Tuple, collector: BasicOutputCollector): Unit = {
+    val bytes = tuple.getBinary(0)
+    collector.emit(new Values(s"$id".getBytes, bytes))
+    id += 1
+  }
 
-class RichProcess(process: Process, val logger: ConsoleOutput) extends Process {
-  def exitValue() : scala.Int = process.exitValue()
-  def destroy() : scala.Unit = process.destroy()
+  override def declareOutputFields(declarer: OutputFieldsDeclarer): Unit = {
+    declarer.declare(new Fields(FieldNameBasedTupleToKafkaMapper.BOLT_KEY,
+      FieldNameBasedTupleToKafkaMapper.BOLT_MESSAGE))
+  }
 }

@@ -15,17 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.integrationtest
 
-package io.gearpump.util
+import io.gearpump.integrationtest.minicluster.MiniCluster
 
-import scala.sys.process.Process
+/**
+ * Provides an instance of SUT.
+ *
+ * By default it will instantiate a standalone Gearpump mini cluster.
+ */
+object MiniClusterProvider {
 
-trait ConsoleOutput {
-  def output: String
-  def error: String
-}
+  private var instance = new MiniCluster
 
-class RichProcess(process: Process, val logger: ConsoleOutput) extends Process {
-  def exitValue() : scala.Int = process.exitValue()
-  def destroy() : scala.Unit = process.destroy()
+  def get = instance
+
+  def set(instance: MiniCluster): MiniCluster = {
+    this.instance = instance
+    instance
+  }
+
+  /**
+   * Indicates whether test suite should create particular cluster. In case of false, every
+   * test spec will be responsible for cluster creation.
+   */
+  var managed = false
+
 }
