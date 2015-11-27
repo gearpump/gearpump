@@ -38,7 +38,7 @@ class StormSerializerPoolSpec extends PropSpec with PropertyChecks with Matchers
 
   property("StormSerializerPool should create and manage StormSerializer") {
     val taskContext = MockUtil.mockTaskContext
-    val serializerPool = new StormSerializerPool
+    val serializerPool = new StormSerializationFramework
     val system = taskContext.system.asInstanceOf[ExtendedActorSystem]
     implicit val actorSystem = system
     val stormConfig = Utils.readDefaultConfig.asInstanceOf[JMap[AnyRef, AnyRef]]

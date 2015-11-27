@@ -2,19 +2,40 @@
 layout: global
 title: Gearpump Customize Serializer
 ---
-#### Define Custom Message Serializer
 
-We use library [kryo](https://github.com/EsotericSoftware/kryo) and [akka-kryo library](https://github.com/romix/akka-kryo-serialization). If you have special Message type, you can choose to define your own serializer explicitly. If you have not defined your own custom serializer, the system will use Kryo to serialize it at best effort.
+#### Gearpump Serialization
 
-When you have determined that you want to define a custom serializer, you can do this in two ways.
+Gearpump has a built-in serialization framework with a shaded Kryo version, which allows you to customize how a specific message type can be serialized. 
+
+##### Register a class before serialization.
+
+Note, to use built-in kryo serialization framework, Gearpump requires all classes to be registered explicitly before using, no matter you want to use a custom serializer or not. If not using custom serializer, Gearpump will use default com.esotericsoftware.kryo.serializers.FieldSerializer to serialize the class. 
+
+To register a class, you need to change the configuration file gear.conf(or application.conf if you want it only take effect for single application).
+
+```
+gearpump {
+  serializers {
+    ## We will use default FieldSerializer to serialize this class type
+    "io.gearpump.UserMessage" = ""
+    
+    ## we will use custom serializer to serialize this class type
+    "io.gearpump.UserMessage2" = "io.gearpump.UserMessageSerializer"
+  }
+}
+```
+
+##### How to define a custom serializer for built-in kryo serialization framework
+
+When you decide that you want to define a custom serializer, you can do this in two ways.
 
 Please note that Gearpump shaded the original Kryo dependency. The package name ```com.esotericsoftware``` was relocated to ```io.gearpump.esotericsoftware```. So in the following customization, you should import corresponding shaded classes, the example code will show that part.
 
-##### System Level Serializer
+###### System Level Serializer
 
 If the serializer is widely used, you can define a global serializer which is avaiable to all applications(or worker or master) in the system.
 
-###### Step1: you first need to develop a java library which contains the custom serializer class. here is an example:
+####### Step1: you first need to develop a java library which contains the custom serializer class. here is an example:
 
 ```scala
 package io.gearpump
@@ -38,11 +59,11 @@ class UserMessageSerializer extends Serializer[UserMessage] {
 }
 ```
 
-###### Step2: Distribute the libraries
+####### Step2: Distribute the libraries
 
 Distribute the jar file to lib/ folder of every Gearpump installation in the cluster.
 
-###### Step3: change gear.conf on every machine of the cluster:
+####### Step3: change gear.conf on every machine of the cluster:
 
 ```
 gearpump {
@@ -52,12 +73,12 @@ gearpump {
 }
 ```
 
-##### All set!
+####### All set!
 
-#### Define Application level custom serializer
+###### Define Application level custom serializer
 If all you want is to define an application level serializer, which is only visible to current application AppMaster and Executors(including tasks), you can follow a different approach.
 
-###### Step1: Define your custom Serializer class
+####### Step1: Define your custom Serializer class
 
 You should include the Serializer class in your application jar. Here is an example to define a custom serializer:
 
@@ -83,11 +104,10 @@ class UserMessageSerializer extends Serializer[UserMessage] {
 }
 ```
 
-###### Step2: Define a config file to include the custom serializer definition. For example, we can create a file called: myconf.conf
-
+####### Step2: Put a application.conf in your classpath on Client machine where you submit the application, 
 
 ```
-### content of myconf.conf
+### content of application.conf
 gearpump {
   serializers {
     "io.gearpump.UserMessage" = "io.gearpump.UserMessageSerializer"
@@ -95,57 +115,19 @@ gearpump {
 }
 ```
 
-###### Step3: Add the conf into AppDescription
+####### Step3: All set!
 
-Let's take WordCount as an example:
 
-```scala
-object WordCount extends App with ArgumentsParser {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
-  val RUN_FOR_EVER = -1
+##### Advanced: Choose another serialization framework
 
-  override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption[String]("<host1:port1,host2:port2,host3:port3>", required = true),
-    "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(4)),
-    "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(4)),
-    "runseconds"-> CLIOption[Int]("<how long to run this example, set to -1 if run forever>", required = false, defaultValue = Some(60))
-  )
+Note: This is only for advanced user which require deep customization of Gearpump platform.
 
-  def application(config: ParseResult) : AppDescription = {
-    val splitNum = config.getInt("split")
-    val sumNum = config.getInt("sum")
-    val partitioner = new HashPartitioner()
-    val split = TaskDescription(classOf[Split].getName, splitNum)
-    val sum = TaskDescription(classOf[Sum].getName, sumNum)
+There are other serialization framework besides Kryo, like Protobuf. If user don't want to use the built-in kryo serialization framework, he can customize a new serialization framework. 
 
-    //=======================================
-    // Attention!
-    //=======================================
-    val app = AppDescription("wordCount", UserConfig.empty, Graph(split ~ partitioner ~> sum),
-      ClusterConfigSource("/path/to/myconf.conf"))
+basically, user need to define in gear.conf(or application.conf for single application's scope) file like this:
 
-    app
-  }
-
-  val config = parse(args)
-  val context = ClientContext(config.getString("master"))
-  implicit val system = context.system
-  val appId = context.submit(application(config))
-  Thread.sleep(config.getInt("runseconds") * 1000)
-  context.shutdown(appId)
-  context.close()
-}
-
+```bash
+gearpump.serialization-framework = "io.gearpump.serializer.CustomSerializationFramework"
 ```
 
-Maybe you have noticed, we have add a custom config to the Application
-
-```scala
-//=======================================
-    // Attention!
-    //=======================================
-    val app = AppDescription("wordCount", UserConfig.empty, Graph(split ~ partitioner ~> sum),
-      ClusterConfigSource("/path/to/myconf.conf"))
-```
-
-###### Step4: All set!
+Please find an example in gearpump storm module, search "StormSerializationFramework" in source code.

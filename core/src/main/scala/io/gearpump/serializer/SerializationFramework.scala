@@ -20,20 +20,27 @@ package io.gearpump.serializer
 import akka.actor.ExtendedActorSystem
 import io.gearpump.cluster.UserConfig
 
-class FastKryoSerializerPool extends SerializerPool{
-  private var system: ExtendedActorSystem = null
+/**
+ * User are allowed to use a customized serialization framework by extending this
+ * interface.
+ *
+ */
+trait SerializationFramework {
+  def init(system: ExtendedActorSystem, config: UserConfig)
 
-  private lazy val pool = new ThreadLocal[Serializer]() {
-    override def initialValue(): Serializer = {
-      new FastKryoSerializer(system)
-    }
-  }
-
-  override def init(system: ExtendedActorSystem, config: UserConfig): Unit = {
-    this.system = system
-  }
-
-  override def get(): Serializer = {
-    pool.get()
-  }
+  /**
+   *
+   * Need to be thread safe
+   *
+   * Get a serializer to use.
+   * Note: this method can be called in a multi-thread environment. It's the
+   * responsibility of SerializationFramework Developer to assure this method
+   * is thread safe.
+   *
+   * To be thread-safe, one recommendation would be using a thread local pool
+   * to maintain reference to Serializer of same thread.
+   *
+   * @return
+   */
+  def get(): Serializer
 }

@@ -20,7 +20,7 @@ package io.gearpump.streaming.executor
 import akka.actor.{Actor, ActorSystem}
 import akka.testkit.TestProbe
 import io.gearpump.cluster.{TestUtil, UserConfig}
-import io.gearpump.serializer.SerializerPool
+import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.ProcessorDescription
 import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.executor.TaskLauncherSpec.{MockTask, MockTaskActor}
@@ -62,7 +62,7 @@ object TaskLauncherSpec {
       val taskContextData : TaskContextData,
       userConf : UserConfig,
       val task: TaskWrapper,
-      serializer: SerializerPool) extends Actor {
+      serializer: SerializationFramework) extends Actor {
     def receive: Receive = null
   }
 
