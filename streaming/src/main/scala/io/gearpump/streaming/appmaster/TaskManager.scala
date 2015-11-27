@@ -146,7 +146,7 @@ private[appmaster] class TaskManager(
       LOG.info(s"All tasks have been launched; send Task locations to all executors")
       val taskLocations = taskRegistry.getTaskLocations
       (clockService ? ChangeToNewDAG(state.dag)).map { _ =>
-        startClock.map(clock => executorManager ! BroadCast(StartAllTasks(taskLocations, clock)))
+        startClock.map(clock => executorManager ! BroadCast(StartAllTasks(taskLocations, clock, state.dag.version)))
       }
 
       val recoverState = StateData(state.dag, new TaskRegistry(appId, state.dag.tasks))

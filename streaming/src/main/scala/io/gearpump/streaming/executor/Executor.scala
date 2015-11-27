@@ -126,7 +126,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       sender ! TasksLaunched
     }
 
-    case StartAllTasks(taskLocations, startClock) =>
+    case StartAllTasks(taskLocations, startClock, dagVersion) =>
       LOG.info(s"TaskLocations Ready...")
       val result = taskLocations.locations.filter(location => !location._1.equals(express.localHost)).flatMap { kv =>
         val (host, taskIdList) = kv
@@ -140,6 +140,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           }
         }
       }
+      taskArgumentStore.removeNewerVersion(dagVersion)
+      taskArgumentStore.removeObsoleteVersion
       context.become(applicationReady orElse terminationWatch)
 
     case registered: TaskRegistered =>
@@ -174,8 +176,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
     case RestartTasks(dagVersion) =>
       LOG.info(s"Executor received restart tasks")
+      val tasksToRestart = tasks.keys.count(taskArgumentStore.get(dagVersion, _).nonEmpty)
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
-      context.become(restartingTask(dagVersion, remain = tasks.keys.size, restarted = Map.empty[TaskId, ActorRef]))
+      context.become(restartingTask(dagVersion, remain = tasksToRestart, needRestart = List.empty[TaskId]))
 
       tasks.values.foreach {
         case (task, sessionId) => task ! PoisonPill
@@ -207,20 +210,21 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     appMaster ! MessageLoss(executorId, taskId, cause)
   }
 
-  def restartingTask(dagVersion: Int, remain: Int, restarted: Map[TaskId, ActorRef]): Receive =
-    terminationWatch orElse launchTasksHandler orElse {
+  def restartingTask(dagVersion: Int, remain: Int, needRestart: List[TaskId]): Receive = terminationWatch orElse {
     case TaskStopped(actor) =>
       for (taskId <- getTaskId(actor)) {
-        for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
-          val task = launchTask(taskId, taskArgument)
-          context.watch(task)
-          val newRestarted = restarted + (taskId -> task)
+        if (taskArgumentStore.get(dagVersion, taskId).nonEmpty) {
+          val newNeedRestart = needRestart :+ taskId
           val newRemain = remain - 1
           if (newRemain == 0) {
-            tasks ++= newRestarted.mapValues((_, NONE_SESSION))
+            val newRestarted = newNeedRestart.map{ taskId_ =>
+              taskId_ -> launchTask(taskId_, taskArgumentStore.get(dagVersion, taskId_).get)
+            }.toMap
+
+            tasks = newRestarted.mapValues((_, NONE_SESSION))
             context.become(launchTasksHandler orElse terminationWatch)
           } else {
-            context.become(restartingTask(dagVersion, newRemain, newRestarted))
+            context.become(restartingTask(dagVersion, newRemain, newNeedRestart))
           }
         }
       }
@@ -273,6 +277,13 @@ object Executor {
       store = store.map{ kv =>
         val (k, list) = kv
         (k, list.take(1))
+      }
+    }
+
+    def removeNewerVersion(currentVersion: Int): Unit = {
+      store = store.map{ kv =>
+        val (k, list) = kv
+        (k, list.filter(_.dagVersion <= currentVersion))
       }
     }
   }
