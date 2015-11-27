@@ -34,6 +34,7 @@ class ConnectorKafkaSpec extends TestSpecBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     kafkaCluster.start()
+    Util.retryUntil(kafkaCluster.isAlive())
   }
 
   override def afterAll(): Unit = {

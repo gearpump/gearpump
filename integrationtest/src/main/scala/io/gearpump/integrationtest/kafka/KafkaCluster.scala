@@ -40,11 +40,21 @@ class KafkaCluster(val advertisedHost: String) {
     )
   }
 
+  def isAlive(): Boolean = {
+    !listTopics().contains("Connection refused")
+  }
+
   def shutDown(): Unit = {
     Docker.killAndRemoveContainer(KAFKA_HOST)
   }
 
   private lazy val hostIPAddr = Docker.getContainerIPAddr(KAFKA_HOST)
+
+  def listTopics(): String = {
+    Docker.execAndCaptureOutput(KAFKA_HOST,
+      s"$KAFKA_HOME/bin/kafka-topics.sh" +
+        s" --zookeeper $getZookeeperConnectString -list")
+  }
 
   def getZookeeperConnectString: String = {
     s"$hostIPAddr:$ZOOKEEPER_PORT"
