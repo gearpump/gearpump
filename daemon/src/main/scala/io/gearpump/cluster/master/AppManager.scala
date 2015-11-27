@@ -135,7 +135,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
           LOG.info(s"Shutdown AppMaster at ${Option(worker).map(_.path).orNull}, appId: $appId, executorId: $executorId")
           cleanApplicationData(appId)
           val shutdown = ShutdownExecutor(appId, executorId, s"AppMaster $appId shutdown requested by master...")
-          sendMsgWithTimeOutCallBack(worker, shutdown, 30, shutDownExecutorTimeOut())
+          sendMsgWithTimeOutCallBack(worker, shutdown, 30000, shutDownExecutorTimeOut())
           sender ! ShutdownApplicationResult(Success(appId))
         case None =>
           val errorMsg = s"Failed to find regisration information for appId: $appId"

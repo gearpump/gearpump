@@ -31,9 +31,53 @@ To kill an application:
 gear kill -appid <application id>
 ```
 
-### To start Gearpump shell
-To start a Gearpump shell
+### Submit a storm application to Gearpump Cluster
+For example, to submit a storm application jar:
 
 ```bash
-gear shell
-```  
+storm -verbose -config storm.yaml -jar storm-starter-${STORM_VERSION}.jar storm.starter.ExclamationTopology exclamation
+```
+
+[Storm Compatibility Guide](dev-storm.html)
+
+### Start Gearpump Cluster on YARN
+To start a Gearpump Cluster on YARN, you can:
+
+```bash
+yarnclient -version gearpump-0.6.2 -config conf/yarn.conf
+```
+
+Please check [YARN Deployment Guide](deployment-yarn.html) for more information.
+
+### Start a local cluster
+Masters and workers will be started in one machine:
+
+```bash
+local
+```
+
+Check [Deployment Guide for Local Cluster](deployment-local.html) for more information.
+
+### Start master daemons
+
+```bash
+master -ip <Ip address> -port <port where this master is hooking>
+```
+
+Please check [Deployment for Standalone mode](deployment-standalone.html) for more information.
+
+### Start worker daemons
+
+```bash
+worker
+```
+
+Please check [Deployment for Standalone mode](deployment-standalone.html) for more information.
+
+### Start UI server
+
+To start UI server, you can:
+
+```bash
+services
+```

@@ -58,7 +58,7 @@ class TestActor(mock: ActorRef) extends Actor with TimeOutScheduler {
   }
 
   def sendMsgToIgnore(): Unit = {
-    sendMsgWithTimeOutCallBack(target, Echo, 2, sendMsgTimeOut())
+    sendMsgWithTimeOutCallBack(target, Echo, 2000, sendMsgTimeOut())
   }
   
   private def sendMsgTimeOut(): Unit = {
