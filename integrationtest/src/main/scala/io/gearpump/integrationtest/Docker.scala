@@ -47,6 +47,10 @@ object Docker {
                               volumes: Map[String, String] = Map.empty, // from, to
                               knownHosts: Set[String] = Set.empty,
                               tunnelPorts: Set[Int] = Set.empty): String = {
+    if (containerExists(name)) {
+      killAndRemoveContainer(name)
+    }
+
     val optsBuilder = new StringBuilder
     optsBuilder.append("-d") // run in background
     optsBuilder.append(" -h " + name) // use container name as hostname

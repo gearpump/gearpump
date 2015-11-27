@@ -17,11 +17,9 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.kafka.{MessageLossDetector, KafkaCluster, SimpleKafkaReader, NumericalDataProducer}
-import io.gearpump.integrationtest.{Util, TestSpecBase}
+import io.gearpump.integrationtest.kafka.{KafkaCluster, MessageLossDetector, NumericalDataProducer, SimpleKafkaReader}
 import io.gearpump.integrationtest.storm.StormClient
-import io.gearpump.util.LogUtil
-import org.slf4j.Logger
+import io.gearpump.integrationtest.{TestSpecBase, Util}
 
 /**
  * The test spec checks the compatibility of running Storm applications
@@ -33,6 +31,7 @@ class StormCompatibilitySpec extends TestSpecBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+    cluster.isAlive shouldBe true
     stormClient.start()
   }
 

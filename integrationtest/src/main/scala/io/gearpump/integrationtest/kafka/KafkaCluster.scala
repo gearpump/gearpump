@@ -17,15 +17,15 @@
  */
 package io.gearpump.integrationtest.kafka
 
-import io.gearpump.integrationtest.{Util, Docker}
-import kafka.utils.ZkUtils
-import org.I0Itec.zkclient.ZkClient
+import io.gearpump.integrationtest.{Docker, Util}
+import org.apache.log4j.Logger
 
 /**
  * This class maintains a single node Kafka cluster with integrated Zookeeper.
  */
 class KafkaCluster(val advertisedHost: String, zkChroot: String = "") {
 
+  private val LOG = Logger.getLogger(getClass)
   private val KAFKA_DOCKER_IMAGE = "spotify/kafka"
   private val KAFKA_HOST = "kafka0"
   private val KAFKA_HOME = "/opt/kafka_2.11-0.8.2.1/"
@@ -41,10 +41,11 @@ class KafkaCluster(val advertisedHost: String, zkChroot: String = "") {
         "ZK_CHROOT" -> zkChroot),
       tunnelPorts = Set(ZOOKEEPER_PORT, BROKER_PORT)
     )
-    Util.retryUntil(isAlive())
+    Util.retryUntil(isAlive)
+    LOG.info("kafka cluster is started.")
   }
 
-  def isAlive(): Boolean = {
+  def isAlive: Boolean = {
     !listTopics().contains("Connection refused")
   }
 
