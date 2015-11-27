@@ -44,4 +44,4 @@ If you change the configuration, you need to restart the daemon process(master, 
 | gearpump.netty.max-sleep-ms | 1000 |
 | gearpump.netty.message-batch-size | 262144 |
 | gearpump.netty.fulsh-check-interval | 10 |
-| serialization-framework | Serialization framework to use, by default we will use kryo |
+| serialization-framework | "io.gearpump.serializer.FastKryoSerializationFramework" | Gearpump has built-in serialization framework using Kryo. User are allowed to use a different serialization framework, like Protobuf. See io.gearpump.serializer.FastKryoSerializationFramework to find how a custom serialization framework can be defined |

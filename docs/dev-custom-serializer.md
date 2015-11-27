@@ -3,11 +3,9 @@ layout: global
 title: Gearpump Customize Serializer
 ---
 
-#### Gearpump Serialization
-
 Gearpump has a built-in serialization framework with a shaded Kryo version, which allows you to customize how a specific message type can be serialized. 
 
-##### Register a class before serialization.
+#### Register a class before serialization.
 
 Note, to use built-in kryo serialization framework, Gearpump requires all classes to be registered explicitly before using, no matter you want to use a custom serializer or not. If not using custom serializer, Gearpump will use default com.esotericsoftware.kryo.serializers.FieldSerializer to serialize the class. 
 
@@ -25,17 +23,17 @@ gearpump {
 }
 ```
 
-##### How to define a custom serializer for built-in kryo serialization framework
+#### How to define a custom serializer for built-in kryo serialization framework
 
 When you decide that you want to define a custom serializer, you can do this in two ways.
 
 Please note that Gearpump shaded the original Kryo dependency. The package name ```com.esotericsoftware``` was relocated to ```io.gearpump.esotericsoftware```. So in the following customization, you should import corresponding shaded classes, the example code will show that part.
 
-###### System Level Serializer
+##### System Level Serializer
 
 If the serializer is widely used, you can define a global serializer which is avaiable to all applications(or worker or master) in the system.
 
-####### Step1: you first need to develop a java library which contains the custom serializer class. here is an example:
+###### Step1: you first need to develop a java library which contains the custom serializer class. here is an example:
 
 ```scala
 package io.gearpump
@@ -59,11 +57,11 @@ class UserMessageSerializer extends Serializer[UserMessage] {
 }
 ```
 
-####### Step2: Distribute the libraries
+###### Step2: Distribute the libraries
 
 Distribute the jar file to lib/ folder of every Gearpump installation in the cluster.
 
-####### Step3: change gear.conf on every machine of the cluster:
+###### Step3: change gear.conf on every machine of the cluster:
 
 ```
 gearpump {
@@ -73,12 +71,12 @@ gearpump {
 }
 ```
 
-####### All set!
+###### All set!
 
-###### Define Application level custom serializer
+##### Define Application level custom serializer
 If all you want is to define an application level serializer, which is only visible to current application AppMaster and Executors(including tasks), you can follow a different approach.
 
-####### Step1: Define your custom Serializer class
+###### Step1: Define your custom Serializer class
 
 You should include the Serializer class in your application jar. Here is an example to define a custom serializer:
 
@@ -104,7 +102,7 @@ class UserMessageSerializer extends Serializer[UserMessage] {
 }
 ```
 
-####### Step2: Put a application.conf in your classpath on Client machine where you submit the application, 
+###### Step2: Put a application.conf in your classpath on Client machine where you submit the application, 
 
 ```
 ### content of application.conf
@@ -115,10 +113,10 @@ gearpump {
 }
 ```
 
-####### Step3: All set!
+###### Step3: All set!
 
 
-##### Advanced: Choose another serialization framework
+#### Advanced: Choose another serialization framework
 
 Note: This is only for advanced user which require deep customization of Gearpump platform.
 
