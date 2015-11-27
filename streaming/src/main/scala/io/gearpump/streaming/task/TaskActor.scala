@@ -25,7 +25,7 @@ import akka.actor._
 import io.gearpump.cluster.UserConfig
 import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import io.gearpump.metrics.Metrics
-import io.gearpump.serializer.SerializerPool
+import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.AppMasterToExecutor.{TaskRejected, _}
 import io.gearpump.streaming.ExecutorToAppMaster._
 import io.gearpump.streaming.{Constants, ProcessorId}
@@ -38,11 +38,11 @@ class TaskActor(
     val taskContextData : TaskContextData,
     userConf : UserConfig,
     val task: TaskWrapper,
-    inputSerializerPool: SerializerPool)
+    inputSerializerPool: SerializationFramework)
   extends Actor with ExpressTransport  with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
 
-  def serializerPool: SerializerPool = inputSerializerPool
+  def serializerPool: SerializationFramework = inputSerializerPool
 
   import Constants._
   import io.gearpump.streaming.task.TaskActor._

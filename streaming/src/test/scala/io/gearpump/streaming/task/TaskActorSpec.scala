@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory
 import io.gearpump.Message
 import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
 import io.gearpump.partitioner.{HashPartitioner, Partitioner}
-import io.gearpump.serializer.{FastKryoSerializer, SerializerPool}
+import io.gearpump.serializer.{FastKryoSerializer, SerializationFramework}
 import io.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, Start, TaskChanged}
 import io.gearpump.streaming.task.TaskActorSpec.TestTask
 import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
@@ -52,13 +52,13 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   var mockMaster: TestProbe = null
   var taskContext1: TaskContextData = null
 
-  var mockSerializerPool: SerializerPool = null
+  var mockSerializerPool: SerializationFramework = null
 
   override def beforeEach() = {
     startActorSystem()
     mockMaster = TestProbe()(getActorSystem)
 
-    mockSerializerPool = mock(classOf[SerializerPool])
+    mockSerializerPool = mock(classOf[SerializationFramework])
     val serializer = new FastKryoSerializer(getActorSystem.asInstanceOf[ExtendedActorSystem])
     when(mockSerializerPool.get()).thenReturn(serializer)
 
