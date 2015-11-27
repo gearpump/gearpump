@@ -1,6 +1,7 @@
 Gearpump 0.7.0
 ===================
 Highlights: 
+---------------
 1. New end-to-end integration test, better test coverage (#1243 Thanks to contribution by Stanley, Tianlun, Huafeng, Kewei)
 2. Storm binary compatibility. (still has some limitation)
 3. New Document site(#1506).
