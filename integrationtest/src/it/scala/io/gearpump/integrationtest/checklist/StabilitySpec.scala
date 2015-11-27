@@ -30,7 +30,6 @@ class StabilitySpec extends TestSpecBase {
   "kill appmaster" should {
     "restart the whole application" in {
       // setup
-      restartClusterRequired = true
       val appId = commandLineClient.submitApp(wordCountJar)
       val formerAppMaster = restClient.queryApp(appId).appMasterPath
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
@@ -51,7 +50,6 @@ class StabilitySpec extends TestSpecBase {
   "kill executor" should {
     "will create a new executor and application will replay from the latest application clock" in {
       // setup
-      restartClusterRequired = true
       val appId = commandLineClient.submitApp(wordCountJar)
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
       val executorToKill = restClient.queryExecutorBrief(appId).map(_.executorId).max
