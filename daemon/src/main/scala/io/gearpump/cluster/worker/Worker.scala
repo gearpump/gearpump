@@ -70,6 +70,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   jarStoreService.init(systemConfig, context.system)
 
   private val ioPool = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
+  private val resourceUpdateTimeoutMs = 30000 //milliseconds
 
   private var totalSlots: Int = 0
 
@@ -115,7 +116,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       context.watch(masterInfo.master)
       this.LOG = LogUtil.getLogger(getClass, worker = id)
       LOG.info(s"Worker is registered. actor path: ${ActorUtil.getFullPath(context.system, self.path)} ....")
-      sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+      sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource), resourceUpdateTimeoutMs, updateResourceTimeOut())
       context.become(service)
   }
 
@@ -188,7 +189,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
   private def reportResourceToMaster: Unit = {
     sendMsgWithTimeOutCallBack(masterInfo.master,
-      ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+      ResourceUpdate(self, id, resource), resourceUpdateTimeoutMs, updateResourceTimeOut())
   }
 
   private def executorActorRef(appId: Int, executorId: Int): Option[ActorRef] = {
@@ -220,7 +221,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
           resource = resource + allocated.get
           executorsInfo -= actor
           allocatedResources = allocatedResources - actor
-          sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), 30, updateResourceTimeOut())
+          sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource), resourceUpdateTimeoutMs, updateResourceTimeOut())
         }
       }
   }

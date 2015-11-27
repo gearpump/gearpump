@@ -12,7 +12,7 @@ You can either download pre-build release package or choose to build from source
 
 If you choose to use pre-build package, then you don't need to build from source code. The release package can be downloaded from:
 
-##### [http://www.gearpump.io/site/downloads/](http://www.gearpump.io/site/downloads/)
+##### [Download page](/download.html)
 
 #### Build from Source code
 
