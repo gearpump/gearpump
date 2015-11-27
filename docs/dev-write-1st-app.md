@@ -173,7 +173,7 @@ After all these, you need to package everything into a uber jar and submit the j
 ### Advanced topic
 For a real application, you definitely need to define your own customized message passing between processors.
 Customized message needs customized serializer to help message passing over wire.
-Check [this guide](dev-connectors.html) for how to customize serializer.
+Check [this guide](dev-custom-serializer.html) for how to customize serializer.
 
 ### Gearpump for Non-Streaming Usage
 Gearpump is also able to as a base platform to develop non-streaming applications. See [this guide](dev-non-streaming-example.html) on how to use Gearpump to develop a distributed shell.
