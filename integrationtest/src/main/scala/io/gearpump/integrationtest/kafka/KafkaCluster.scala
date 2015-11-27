@@ -17,12 +17,14 @@
  */
 package io.gearpump.integrationtest.kafka
 
-import io.gearpump.integrationtest.Docker
+import io.gearpump.integrationtest.{Util, Docker}
+import kafka.utils.ZkUtils
+import org.I0Itec.zkclient.ZkClient
 
 /**
  * This class maintains a single node Kafka cluster with integrated Zookeeper.
  */
-class KafkaCluster(val advertisedHost: String) {
+class KafkaCluster(val advertisedHost: String, zkChroot: String = "") {
 
   private val KAFKA_DOCKER_IMAGE = "spotify/kafka"
   private val KAFKA_HOST = "kafka0"
@@ -35,9 +37,11 @@ class KafkaCluster(val advertisedHost: String) {
     Docker.createAndStartContainer(KAFKA_HOST, KAFKA_DOCKER_IMAGE, "",
       environ = Map(
         "ADVERTISED_HOST" -> advertisedHost,
-        "ADVERTISED_PORT" -> BROKER_PORT.toString),
+        "ADVERTISED_PORT" -> BROKER_PORT.toString,
+        "ZK_CHROOT" -> zkChroot),
       tunnelPorts = Set(ZOOKEEPER_PORT, BROKER_PORT)
     )
+    Util.retryUntil(isAlive())
   }
 
   def isAlive(): Boolean = {
@@ -57,37 +61,37 @@ class KafkaCluster(val advertisedHost: String) {
   }
 
   def getZookeeperConnectString: String = {
-    s"$hostIPAddr:$ZOOKEEPER_PORT"
+    s"$hostIPAddr:$ZOOKEEPER_PORT/$zkChroot"
   }
 
   def getBrokerListConnectString: String = {
     s"$hostIPAddr:$BROKER_PORT"
   }
 
-  def createTopic(sourceTopic: String, partitions: Int = 1): Unit = {
+  def createTopic(topic: String, partitions: Int = 1): Unit = {
     Docker.exec(KAFKA_HOST,
       s"$KAFKA_HOME/bin/kafka-topics.sh" +
         s" --zookeeper $getZookeeperConnectString" +
-        s" --create --topic $sourceTopic --partitions $partitions --replication-factor 1")
+        s" --create --topic $topic --partitions $partitions --replication-factor 1")
   }
 
-  def produceDataToKafka(sourceTopic: String, messageNum: Int): Unit = {
+  def produceDataToKafka(topic: String, messageNum: Int): Unit = {
     Docker.exec(KAFKA_HOST,
       s"$KAFKA_HOME/bin/kafka-topics.sh" +
         s" --zookeeper $getZookeeperConnectString" +
-        s" --create --topic $sourceTopic --partitions 1 --replication-factor 1")
+        s" --create --topic $topic --partitions 1 --replication-factor 1")
 
     Docker.exec(KAFKA_HOST,
       s"$KAFKA_HOME/bin/kafka-producer-perf-test.sh" +
         s" --broker-list $getBrokerListConnectString" +
-        s" --topic $sourceTopic --messages $messageNum")
+        s" --topic $topic --messages $messageNum")
   }
 
-  def getLatestOffset(sinkTopic: String): Int = {
+  def getLatestOffset(topic: String): Int = {
     val output = Docker.execAndCaptureOutput(KAFKA_HOST,
       s"$KAFKA_HOME/bin/kafka-run-class.sh kafka.tools.GetOffsetShell" +
         s" --broker-list $getBrokerListConnectString " +
-        s" --topic $sinkTopic --time -1")
+        s" --topic $topic --time -1")
     output.split(":")(2).toInt
   }
 

@@ -27,7 +27,6 @@ class StormClient(masterAddrs: Seq[(String, Int)]) {
 
   private val STORM_HOST = "storm0"
   private val STORM_CMD = "/opt/start storm"
-  private val STORM_STARTER_JAR = "/opt/gearpump/lib/storm/storm-starter-0.9.5.jar"
   private val STORM_DRPC = "storm-drpc"
   private val CONFIG_FILE = "storm.yaml"
   private val clientContainer = new BaseContainer(STORM_HOST, STORM_DRPC, masterAddrs, Set(6627, 3772, 3773))
@@ -36,10 +35,10 @@ class StormClient(masterAddrs: Seq[(String, Int)]) {
     clientContainer.createAndStart()
   }
 
-  def submitStormApp(mainClass: String = "",  args: String = ""): Int = {
+  def submitStormApp(jar: String, mainClass: String, args: String = ""): Int = {
     try {
       Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_CMD -config $CONFIG_FILE " +
-          s"-jar $STORM_STARTER_JAR $mainClass $args")
+          s"-jar $jar $mainClass $args")
           .split("\n").last
           .replace("Submit application succeed. The application id is ", "")
           .toInt
