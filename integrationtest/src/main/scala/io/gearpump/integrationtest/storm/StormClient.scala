@@ -29,30 +29,35 @@ class StormClient(masterAddrs: Seq[(String, Int)]) {
   private val STORM_CMD = "/opt/start storm"
   private val STORM_DRPC = "storm-drpc"
   private val CONFIG_FILE = "storm.yaml"
-  private val clientContainer = new BaseContainer(STORM_HOST, STORM_DRPC, masterAddrs, Set(6627, 3772, 3773))
+  private val NIMBUS_THRIFT_PORT = 6627
+  private val DRPC_PORT = 3772
+  private val DRPC_INVOCATIONS_PORT = 3773
+
+  private val container = new BaseContainer(STORM_HOST, STORM_DRPC, masterAddrs,
+    tunnelPorts = Set(NIMBUS_THRIFT_PORT, DRPC_PORT, DRPC_INVOCATIONS_PORT))
 
   def start(): Unit = {
-    clientContainer.createAndStart()
+    container.createAndStart()
   }
 
   def submitStormApp(jar: String, mainClass: String, args: String = ""): Int = {
     try {
       Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_CMD -config $CONFIG_FILE " +
-          s"-jar $jar $mainClass $args")
-          .split("\n").last
-          .replace("Submit application succeed. The application id is ", "")
-          .toInt
+        s"-jar $jar $mainClass $args")
+        .split("\n").last
+        .replace("Submit application succeed. The application id is ", "")
+        .toInt
     } catch {
       case ex: Throwable => -1
     }
   }
 
   def getDRPCClient(drpcServerIp: String): DRPCClient = {
-    new DRPCClient(drpcServerIp, 3772)
+    new DRPCClient(drpcServerIp, DRPC_PORT)
   }
 
   def shutDown(): Unit = {
-    clientContainer.killAndRemove()
+    container.killAndRemove()
   }
 
 }

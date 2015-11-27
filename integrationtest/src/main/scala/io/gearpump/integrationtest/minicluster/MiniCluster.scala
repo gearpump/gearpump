@@ -21,7 +21,6 @@ import io.gearpump.integrationtest.{Docker, Util}
 import org.apache.log4j.Logger
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration._
 
 /**
  * This class is a test driver for end-to-end integration test.
@@ -46,8 +45,6 @@ class MiniCluster {
   private var workers: ListBuffer[String] = ListBuffer.empty
 
   def start(workerNum: Int = 2): Unit = {
-    cleanupDockerEnv()
-
     // Masters' membership cannot be modified at runtime
     MASTER_ADDRS.foreach({ case (host, port) =>
       addMasterNode(host, port)
@@ -59,13 +56,6 @@ class MiniCluster {
       val host = "worker" + index
       addWorkerNode(host)
     })
-  }
-
-  private def cleanupDockerEnv(): Unit = {
-    val containers = Docker.listContainers()
-    if (containers.nonEmpty) {
-      Docker.killAndRemoveContainer(containers.mkString(" "))
-    }
   }
 
   private def addMasterNode(host: String, port: Int): Unit = {
@@ -87,7 +77,7 @@ class MiniCluster {
       val response = restClient.queryMaster()
       LOG.info(s"cluster is now available with response: $response.")
       response.aliveFor > 0
-    }, interval=20.seconds)
+    })
   }
 
   def isAlive: Boolean = {
@@ -118,6 +108,9 @@ class MiniCluster {
 
   def restart(): Unit = {
     shutDown()
+    Util.retryUntil(
+      !(getMasterHosts ++ getWorkerHosts).exists(Docker.containerExists))
+    LOG.info("all containers have been killed. restarting...")
     start()
   }
 

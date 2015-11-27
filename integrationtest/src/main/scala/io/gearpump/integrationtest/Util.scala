@@ -39,8 +39,8 @@ object Util {
     }
   }
 
-  def retryUntil(condition: => Boolean, attempts: Int = 20,
-                 interval: Duration = 3.seconds): Unit = {
+  def retryUntil(condition: => Boolean, attempts: Int = 15,
+                 interval: Duration = 20.seconds): Unit = {
     var met = false
     var attemptsLeft = attempts
 
@@ -54,7 +54,7 @@ object Util {
         }
       } catch {
         case ex if attemptsLeft > 0 =>
-          LOG.debug(s"condition is not met, retry in ${interval.toSeconds}s ($attemptsLeft attempts left)")
+          LOG.debug(s"condition is not met (maybe machine is slow). retry in ${interval.toSeconds}s ($attemptsLeft attempts left)")
           Thread.sleep(interval.toMillis)
       }
     }
