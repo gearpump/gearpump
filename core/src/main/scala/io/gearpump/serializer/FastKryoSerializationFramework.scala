@@ -20,8 +20,20 @@ package io.gearpump.serializer
 import akka.actor.ExtendedActorSystem
 import io.gearpump.cluster.UserConfig
 
-trait SerializerPool {
-  def init(system: ExtendedActorSystem, config: UserConfig)
+class FastKryoSerializationFramework extends SerializationFramework{
+  private var system: ExtendedActorSystem = null
 
-  def get(): Serializer
+  private lazy val pool = new ThreadLocal[Serializer]() {
+    override def initialValue(): Serializer = {
+      new FastKryoSerializer(system)
+    }
+  }
+
+  override def init(system: ExtendedActorSystem, config: UserConfig): Unit = {
+    this.system = system
+  }
+
+  override def get(): Serializer = {
+    pool.get()
+  }
 }

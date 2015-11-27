@@ -26,7 +26,7 @@ import com.typesafe.config.Config
 import io.gearpump.cluster.{ExecutorContext, UserConfig}
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
-import io.gearpump.serializer.SerializerPool
+import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.AppMasterToExecutor.{MsgLostException, TasksChanged, TasksLaunched, _}
 import io.gearpump.streaming.Constants._
 import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask}
@@ -241,12 +241,12 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     }
   }
 
-  private def getSerializerPool(): SerializerPool = {
+  private def getSerializerPool(): SerializationFramework = {
     val system = context.system.asInstanceOf[ExtendedActorSystem]
     val clazz = Class.forName(systemConfig.getString(Constants.GEARPUMP_SERIALIZER_POOL))
-    val pool = clazz.newInstance().asInstanceOf[SerializerPool]
+    val pool = clazz.newInstance().asInstanceOf[SerializationFramework]
     pool.init(system, userConf)
-    pool.asInstanceOf[SerializerPool]
+    pool.asInstanceOf[SerializationFramework]
   }
 }
 

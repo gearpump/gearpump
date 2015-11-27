@@ -44,3 +44,4 @@ If you change the configuration, you need to restart the daemon process(master, 
 | gearpump.netty.max-sleep-ms | 1000 |
 | gearpump.netty.message-batch-size | 262144 |
 | gearpump.netty.fulsh-check-interval | 10 |
+| serialization-framework | Serialization framework to use, by default we will use kryo |

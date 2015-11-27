@@ -27,9 +27,9 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpTuple
 import io.gearpump.experiments.storm.util.StormConstants._
-import io.gearpump.serializer.{SerializerPool, Serializer}
+import io.gearpump.serializer.{SerializationFramework, Serializer}
 
-class StormSerializerPool extends SerializerPool {
+class StormSerializationFramework extends SerializationFramework {
   private var stormConfig: JMap[AnyRef, AnyRef] = null
   private var pool: ThreadLocal[Serializer] = null
 

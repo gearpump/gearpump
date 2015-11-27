@@ -24,12 +24,12 @@ import io.gearpump.streaming.ProcessorDescription
 import io.gearpump.streaming.task._
 import io.gearpump.streaming.util.ActorPathUtil
 import io.gearpump.cluster.{ExecutorContext, UserConfig}
-import io.gearpump.serializer.SerializerPool
+import io.gearpump.serializer.SerializationFramework
 import TaskLauncher.TaskArgument
 import io.gearpump.util.Constants
 
 trait ITaskLauncher {
-  def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory, serializer: SerializerPool): Map[TaskId, ActorRef]
+  def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory, serializer: SerializationFramework): Map[TaskId, ActorRef]
 }
 
 class TaskLauncher(
@@ -41,7 +41,7 @@ class TaskLauncher(
     taskActorClass: Class[_ <: Actor])
   extends ITaskLauncher{
 
-  override def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory, serializer: SerializerPool): Map[TaskId, ActorRef] = {
+  override def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory, serializer: SerializationFramework): Map[TaskId, ActorRef] = {
     import argument.{processorDescription, subscribers}
 
     val taskConf = userConf.withConfig(processorDescription.taskConf)
