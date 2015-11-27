@@ -8,6 +8,8 @@ We use library [kryo](https://github.com/EsotericSoftware/kryo) and [akka-kryo l
 
 When you have determined that you want to define a custom serializer, you can do this in two ways.
 
+Please note that Gearpump shaded the original Kryo dependency. The package name ```com.esotericsoftware``` was relocated to ```io.gearpump.esotericsoftware```. So in the following customization, you should import corresponding shaded classes, the example code will show that part.
+
 ##### System Level Serializer
 
 If the serializer is widely used, you can define a global serializer which is avaiable to all applications(or worker or master) in the system.
@@ -15,16 +17,23 @@ If the serializer is widely used, you can define a global serializer which is av
 ###### Step1: you first need to develop a java library which contains the custom serializer class. here is an example:
 
 ```scala
-class MessageSerializer extends Serializer[Message] {
-  override def write(kryo: Kryo, output: Output, obj: Message) = {
-    output.writeLong(obj.timestamp)
-    kryo.writeClassAndObject(output, obj.msg)
+package io.gearpump
+
+import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
+import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
+
+class UserMessage(longField: Long, intField: Int)
+
+class UserMessageSerializer extends Serializer[UserMessage] {
+  override def write(kryo: Kryo, output: Output, obj: UserMessage) = {
+    output.writeLong(obj.longField)
+    output.writeInt(obj.intField)
   }
 
-  override def read(kryo: Kryo, input: Input, typ: Class[Message]): Message = {
-    var timeStamp = input.readLong()
-    val msg = kryo.readClassAndObject(input)
-    new Message(msg.asInstanceOf[java.io.Serializable], timeStamp)
+  override def read(kryo: Kryo, input: Input, typ: Class[UserMessage]): UserMessage = {
+    val longField = input.readLong()
+    val intField = input.readInt()
+    new UserMessage(longField, intField)
   }
 }
 ```
@@ -38,7 +47,7 @@ Distribute the jar file to lib/ folder of every Gearpump installation in the clu
 ```
 gearpump {
   serializers {
-    "io.gearpump.Message" = "your.serializer.class"
+    "io.gearpump.UserMessage" = "io.gearpump.UserMessageSerializer"
   }
 }
 ```
@@ -53,16 +62,23 @@ If all you want is to define an application level serializer, which is only visi
 You should include the Serializer class in your application jar. Here is an example to define a custom serializer:
 
 ```scala
-class MessageSerializer extends Serializer[Message] {
-  override def write(kryo: Kryo, output: Output, obj: Message) = {
-    output.writeLong(obj.timestamp)
-    kryo.writeClassAndObject(output, obj.msg)
+package io.gearpump
+
+import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
+import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
+
+class UserMessage(longField: Long, intField: Int)
+
+class UserMessageSerializer extends Serializer[UserMessage] {
+  override def write(kryo: Kryo, output: Output, obj: UserMessage) = {
+    output.writeLong(obj.longField)
+    output.writeInt(obj.intField)
   }
 
-  override def read(kryo: Kryo, input: Input, typ: Class[Message]): Message = {
-    var timeStamp = input.readLong()
-    val msg = kryo.readClassAndObject(input)
-    new Message(msg.asInstanceOf[java.io.Serializable], timeStamp)
+  override def read(kryo: Kryo, input: Input, typ: Class[UserMessage]): UserMessage = {
+    val longField = input.readLong()
+    val intField = input.readInt()
+    new UserMessage(longField, intField)
   }
 }
 ```
@@ -74,7 +90,7 @@ class MessageSerializer extends Serializer[Message] {
 ### content of myconf.conf
 gearpump {
   serializers {
-    "io.gearpump.Message" = "your.serializer.class"
+    "io.gearpump.UserMessage" = "io.gearpump.UserMessageSerializer"
   }
 }
 ```
