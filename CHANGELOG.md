@@ -1,3 +1,77 @@
+Gearpump 0.7.0
+===================
+Highlights: 
+1. New end-to-end integration test, better test coverage (#1243 Thanks to contribution by Stanley, Tianlun, Huafeng, Kewei)
+2. Storm binary compatibility. (still has some limitation)
+3. New Document site(#1506).
+4. Secure YARN and secure HBase support(#1458)
+5. spray is replaced by akka-http (#1261)
+6. New serialization implementation(#1445 allow user to custom a serialization framework).
+
+Change log:
+---------------------
+- #1627, refine on custom serialization doc.
+- #1624, fix the worker report resource timeout settings.
+- #1384: removed wrong page redirection
+- #1243: provide an integration test suite
+- #1607 fix NONE_SESSION when restart tasks
+- #1609, fix storm message timestamp bugs
+- #1579 Additional documentation changes
+- #1536, support storm ack
+- #1581, fix HadoopCheckpointStore
+- #1506 Totally reorganize documentation
+- #1538 fix yarn application classpath
+- #1519 fix performance regression
+- #1485 no more pending messages in ExpressTransport
+- #1458, enable secured HBase
+- #1496, fix StormSerializer Kryo buffer overflow
+- #1478: click on location button will copy text to clipboard
+- #1491, fix ContainerLaunchContextSpec
+- #1489, remove terminated executor from ExecutorManager
+- #1481, improve storm over gearpump perf
+- #1479: add uptime field in service interface
+- #1481, fix storm performance
+- #1482, fix TaskScheduler over schedules when multiple executors down at once
+- #1458 support launching Gearpump in secured Yarn cluster
+- #1476 fix serialization in transport layer
+- #1470: updated a broken dashboard dependency
+- #1463, fix storm config
+- #1465 fix DistributedShell
+- #1462 pass user config to SerializerPool
+- #1453: allows use DEL to remove processor/edge- 
+- #491: Added support for composing DAG from scratch
+- #1449 fix copy file to local in LocalJarStoreService- 
+- #1387 decouple serializer for Message
+- #1445 refactor serialization implementation
+- #1343, support Storm emitDirect and DirectGrouping
+- #809: static resources are now sent to client gzipped
+- #1438: polished modify processor dialog
+- #1423: show full error log in a popup
+- #1423: show error message when uploading is failed and polished the dialog
+- #1430: turn off illegal header warning
+- #1428, add unidoc plugin which allow us to build the scaladoc for the whole project(include all sub-projects)
+- #1228, add data source and data sink for java api
+- #1228, further simplify the java interface
+- #1422: removed if-modified-since header. it is not relevant and is handled very different by different web servers
+- #1228, add java interface for Graph API
+- #1411: chart will always fill data points for 15 minutes
+- #1261, #1127, replace spray with akka-http
+- #1373 add duplicated edge detecting
+- #1412: add 'no-cache' header in ajax responses
+- #1194 add graph cycle detection
+- #491, add a rest api to acquire Gearpump's built-in partitioners
+- #1405: now the number of executors is back
+- #1371: a right way to show historical metrics (2) added committed… 
+- #1402, fix NoneGroupingPartitioner
+- #1399: in application overview page the task count of executor wa…
+- #1397, allow KafkaSink to receive Message of bytes
+- #1395, cross publishSigned
+- #1374 remove jars of yarn in executor's classpath
+- #1266: should exclude dead edges
+- #1238, adds BroadcastPartitioner
+- #1381 test on travis out of memory
+- #1379, support storm tick tuple
+
 Gearpump 0.6.1
 ==========================
 Highlight: new version UI dashboard.
