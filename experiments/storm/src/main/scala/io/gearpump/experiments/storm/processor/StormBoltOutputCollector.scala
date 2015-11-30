@@ -30,7 +30,8 @@ import io.gearpump.streaming.task.ReportCheckpointClock
 /**
  * this is used by Storm bolt to emit messages
  */
-private[storm] class StormBoltOutputCollector(collector: StormOutputCollector) extends IOutputCollector {
+private[storm] class StormBoltOutputCollector(collector: StormOutputCollector,
+    ackEnabled: Boolean = false) extends IOutputCollector {
   private var reportTime = 0L
   private var maxAckTime = 0L
 
@@ -49,18 +50,20 @@ private[storm] class StormBoltOutputCollector(collector: StormOutputCollector) e
   }
 
   override def ack(tuple: Tuple): Unit = {
-    tuple match {
-      case timedTuple: TimedTuple =>
-        maxAckTime = Math.max(maxAckTime, timedTuple.timestamp)
-        val taskContext = collector.taskContext
-        val upstreamMinClock = taskContext.upstreamMinClock
-        if (reportTime <= upstreamMinClock && upstreamMinClock <= maxAckTime) {
-          reportTime = upstreamMinClock /  CHECKPOINT_INTERVAL_MILLIS * CHECKPOINT_INTERVAL_MILLIS
-          taskContext.appMaster ! ReportCheckpointClock(taskContext.taskId, reportTime)
-          reportTime += CHECKPOINT_INTERVAL_MILLIS
-        }
-      case _ =>
+    if (ackEnabled) {
+      tuple match {
+        case timedTuple: TimedTuple =>
+          maxAckTime = Math.max(maxAckTime, timedTuple.timestamp)
+          val taskContext = collector.taskContext
+          val upstreamMinClock = taskContext.upstreamMinClock
+          if (reportTime <= upstreamMinClock && upstreamMinClock <= maxAckTime) {
+            reportTime = upstreamMinClock / CHECKPOINT_INTERVAL_MILLIS * CHECKPOINT_INTERVAL_MILLIS
+            taskContext.appMaster ! ReportCheckpointClock(taskContext.taskId, reportTime)
+            reportTime += CHECKPOINT_INTERVAL_MILLIS
+          }
+        case _ =>
         // ignore other tuples
+      }
     }
   }
 

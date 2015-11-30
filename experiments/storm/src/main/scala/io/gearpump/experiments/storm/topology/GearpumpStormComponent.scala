@@ -210,7 +210,7 @@ object GearpumpStormComponent {
       topologyContext = getTopologyContext(dag, taskId)
       generalTopologyContext = getGeneralTopologyContext(dag)
       collector = getOutputCollector(taskContext, topologyContext)
-      val delegate = new StormBoltOutputCollector(collector)
+      val delegate = new StormBoltOutputCollector(collector, StormUtil.ackEnabled(config))
       bolt.prepare(config, topologyContext, new OutputCollector(delegate))
     }
 
