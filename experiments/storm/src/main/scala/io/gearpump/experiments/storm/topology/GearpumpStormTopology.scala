@@ -76,7 +76,7 @@ object GearpumpStormTopology {
       }
     } catch {
       case e: FileNotFoundException =>
-        LOG.error(s"failed to find config file $configFile")
+        LOG.warn(s"failed to find config file $configFile")
       case t: Throwable =>
         LOG.error(t.getMessage)
     }
