@@ -62,7 +62,7 @@ public class WordCount {
 
     // submit
     int appId = masterClient.submit(app);
-    System.out.println("Application Id is " + Integer.toString(appId));
+    System.out.println("Submit application succeed. The application id is " + Integer.toString(appId));
 
     // clean resource
     masterClient.close();
