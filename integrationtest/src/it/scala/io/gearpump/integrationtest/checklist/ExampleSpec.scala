@@ -50,7 +50,40 @@ class ExampleSpec extends TestSpecBase {
     }
   }
 
+  "wordcount" should {
+    val wordCountJarName = "wordcount-"
+    behave like streamingApplication(wordCountJarName, wordCountName)
+
+    "can submit immediately after killing a former one" in {
+      // setup
+      val formerAppId = restClient.submitApp(wordCountJar)
+      expectAppIsRunning(formerAppId, wordCountName)
+      Util.retryUntil(restClient.queryStreamingAppDetail(formerAppId).clock > 0)
+      restClient.killApp(formerAppId)
+
+      // exercise
+      val appId = restClient.submitApp(wordCountJar)
+      expectAppIsRunning(appId, wordCountName)
+    }
+  }
+
+  "wordcount(java)" should {
+    val wordCountJavaJarName = "wordcountjava-"
+    val wordCountJavaName = "wordcountJava"
+    behave like streamingApplication(wordCountJavaJarName, wordCountJavaName)
+  }
+
+  "sol" should {
+    val solJarName = "sol-"
+    val solName = "sol"
+    behave like streamingApplication(solJarName, solName)
+  }
+
   "dynamic dag" should {
+    val dynamicDagJarName = "complexdag-"
+    val dynamicDagName = "dag"
+    behave like streamingApplication(dynamicDagJarName, dynamicDagName)
+
     "can retrieve a list of built-in partitioner classes" in {
       val partitioners = restClient.queryBuiltInPartitioners()
       partitioners.length should be > 0
@@ -59,13 +92,29 @@ class ExampleSpec extends TestSpecBase {
       )
     }
 
-    lazy val dynamicDagJar = cluster.queryBuiltInExampleJars("complexdag-").head
-    lazy val dynamicDagName = "dag"
+    "can compose a wordcount application from scratch" in {
+      // todo: blocked by #1450
+    }
+  }
+
+  def streamingApplication(jarName: String, appName: String): Unit = {
+    lazy val jar = cluster.queryBuiltInExampleJars(jarName).head
+
+    "can obtain application clock and the clock will keep changing" in {
+      // setup
+      val appId = restClient.submitApp(jar)
+      expectAppIsRunning(appId, appName)
+
+      // exercise
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      val formerClock = restClient.queryStreamingAppDetail(appId).clock
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > formerClock)
+    }
 
     "can change the parallelism and description of a processor" in {
       // setup
-      val appId = restClient.submitApp(dynamicDagJar)
-      expectAppIsRunning(appId, dynamicDagName)
+      val appId = restClient.submitApp(jar)
+      expectAppIsRunning(appId, appName)
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       val processor0 = formerProcessors.get(0).get
       val expectedProcessorId = formerProcessors.size
@@ -85,10 +134,6 @@ class ExampleSpec extends TestSpecBase {
       val laterProcessor0 = laterProcessors.get(expectedProcessorId).get
       laterProcessor0.parallelism shouldEqual expectedParallelism
       laterProcessor0.description shouldEqual expectedDescription
-    }
-
-    "can compose a wordcount application from scratch" in {
-      // todo: blocked by #1450
     }
   }
 
