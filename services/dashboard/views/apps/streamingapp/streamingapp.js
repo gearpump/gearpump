@@ -40,11 +40,25 @@ angular.module('dashboard')
         app0.processorLevels, app0.dag.edgeList);
 
       app0.$subscribe($scope, function(app) {
+        updateAppDetails(app);
+      }, /*onerror=*/ function() {
+        // manually reset status fields on an error response
+        var app = angular.copy($scope.app);
+        app.status = 'terminated';
+        app.isRunning = false;
+        _.forEach(app.executors, function(executor) {
+          executor.status = 'terminated';
+          executor.isRunning = false;
+        });
+        updateAppDetails(app);
+      });
+
+      function updateAppDetails(app) {
         $scope.app = app;
         $scope.uptimeCompact = buildCompactDuration(app.uptime);
         $scope.dag.setData(app.clock, app.processors,
           app.processorLevels, app.dag.edgeList);
-      });
+      }
 
       models.$get.appStallingProcessors(app0.appId)
         .then(function(processors) {

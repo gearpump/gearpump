@@ -43,12 +43,18 @@ angular.module('dashboard')
           var oldModel;
           var model = decodeFn(response.data, args);
 
-          model.$subscribe = function(scope, onData) {
+          model.$subscribe = function(scope, onData, onError) {
             restapi.subscribe(path, scope, function(data) {
-              var newModel = decodeFn(data, args);
-              if (!_.isEqual(newModel, oldModel)) {
-                onData(newModel);
-                oldModel = newModel;
+              try {
+                var newModel = decodeFn(data, args);
+                if (!_.isEqual(newModel, oldModel)) {
+                  oldModel = newModel;
+                  return onData(newModel);
+                }
+              } catch (ex) {
+                if (angular.isFunction(onError)) {
+                  return onError(data);
+                }
               }
             }, (args || {}).period);
           };
