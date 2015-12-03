@@ -50,10 +50,13 @@ angular.module('dashboard')
           var fn = function() {
             $http.get(restapiV1Root + path)
               .then(function(response) {
-                if (!shouldCancel) {
-                  shouldCancel = !onData || onData(response.data);
+                if (!shouldCancel && angular.isFunction(onData)) {
+                  shouldCancel = onData(response.data);
                 }
               }, function(response) {
+                if (!shouldCancel && angular.isFunction(onData)) {
+                  shouldCancel = onData(response.data);
+                }
               })
               .finally(function() {
                 if (!shouldCancel) {
