@@ -26,7 +26,7 @@ import com.typesafe.config.Config
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster._
-import io.gearpump.cluster.MasterToClient.{MasterConfig, ResolveWorkerIdResult}
+import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, MasterConfig, ResolveWorkerIdResult}
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToMaster._
 import io.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVFailed, GetKVSuccess, PutKV}
@@ -146,7 +146,12 @@ private[cluster] class Master extends Actor with Stash {
 
   def metricsService : Receive = {
     case query: QueryHistoryMetrics =>
-      historyMetricsService.foreach(_ forward query)
+      if (historyMetricsService.isEmpty) {
+        // return empty metrics so that we don't hang the UI
+        sender ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
+      } else {
+        historyMetricsService.get forward query
+      }
   }
 
   def appMasterMsgHandler : Receive = {

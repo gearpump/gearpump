@@ -24,7 +24,7 @@ import akka.actor._
 import io.gearpump._
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
-import io.gearpump.cluster.MasterToClient.LastFailure
+import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, LastFailure}
 import io.gearpump.cluster._
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
@@ -213,7 +213,12 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 //      val client = sender()
 //      actorSystem.eventStream.subscribe(client, classOf[MetricType])
     case query: QueryHistoryMetrics =>
-      historyMetricsService.foreach(_ forward query)
+      if (historyMetricsService.isEmpty) {
+        // return empty metrics so that we don't hang the UI
+        sender ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
+      } else {
+        historyMetricsService.get forward query
+      }
     case getStalling: GetStallingTasks =>
       clockService.foreach(_ forward getStalling)
     case replaceDAG: ReplaceProcessor =>

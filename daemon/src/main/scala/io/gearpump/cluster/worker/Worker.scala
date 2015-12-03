@@ -30,7 +30,7 @@ import io.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
 import io.gearpump.cluster.{ExecutorJVMConfig, ClusterConfig}
-import io.gearpump.cluster.MasterToClient.WorkerConfig
+import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, WorkerConfig}
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToAppMaster._
 import io.gearpump.cluster.WorkerToMaster._
@@ -89,7 +89,12 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 
   def metricsService : Receive = {
     case query: QueryHistoryMetrics =>
-      historyMetricsService.foreach(_ forward query)
+      if (historyMetricsService.isEmpty) {
+        // return empty metrics so that we don't hang the UI
+        sender ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
+      } else {
+        historyMetricsService.get forward query
+      }
   }
 
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
