@@ -64,7 +64,8 @@ object WordCount extends AkkaApp with ArgumentsParser {
       case None => ClientContext(akkaConf)
     }
 
-    val appId = context.submit(application(config))
+    val app = application(config)
+    context.submit(app)
     context.close()
     localCluster.map(_.stop)
   }
