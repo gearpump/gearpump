@@ -74,11 +74,7 @@ public class WordCount {
       masterClient = new ClientContext(akkaConf);
     }
 
-    // submit
-    int appId = masterClient.submit(app);
-    System.out.println("Submit application succeed. The application id is " + Integer.toString(appId));
-
-    // clean resource
+    masterClient.submit(app);
     masterClient.close();
 
     if (localCluster != null) {

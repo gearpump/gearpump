@@ -224,9 +224,8 @@ object MasterService {
       if (retval != 0) {
         throw new IOException(s"Process exit abnormally with code $retval, error summary: ${process.logger.error}")
       }
-      process.logger.output.split("\n").last
-        .replace("Submit application succeed. The application id is ", "")
-        .toInt
+      process.logger.output
+        .split(" ").last.toInt
     } finally {
       userConf.foreach(_.delete)
       jar.delete()

@@ -53,9 +53,8 @@ class CommandLineClient(host: String) {
   }
 
   private def submitAppUse(launcher: String, jar: String, args: String = ""): Int = try {
-    execAndCaptureOutput(s"$launcher -jar $jar $args").split("\n").last
-      .replace("Submit application succeed. The application id is ", "")
-      .toInt
+    execAndCaptureOutput(s"$launcher -jar $jar $args")
+      .split(" ").last.toInt
   } catch {
     case ex: Throwable => -1
   }

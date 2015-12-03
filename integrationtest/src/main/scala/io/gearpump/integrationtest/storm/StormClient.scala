@@ -44,9 +44,7 @@ class StormClient(masterAddrs: Seq[(String, Int)]) {
     try {
       Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_CMD -config $CONFIG_FILE " +
         s"-jar $jar $mainClass $args")
-        .split("\n").last
-        .replace("Submit application succeed. The application id is ", "")
-        .toInt
+        .split(" ").last.toInt
     } catch {
       case ex: Throwable => -1
     }
