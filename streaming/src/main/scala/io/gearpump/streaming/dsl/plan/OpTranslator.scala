@@ -19,8 +19,9 @@
 package io.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
+import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.{Processor, Constants}
-import io.gearpump.streaming.dsl.{TypedDataSink, TypedDataSource}
 import io.gearpump.streaming.dsl.op._
 import io.gearpump.streaming.task.{StartTime, TaskContext, Task}
 import io.gearpump._
@@ -38,38 +39,43 @@ import scala.collection.TraversableOnce
  */
 class OpTranslator extends java.io.Serializable {
   val LOG: Logger = LogUtil.getLogger(getClass)
+
   def translate(ops: OpChain)(implicit system: ActorSystem): Processor[_ <: Task] = {
+
+    val baseConfig = ops.conf
+
     ops.ops.head match {
       case op: MasterOp =>
         val tail = ops.ops.tail
         val func = toFunction(tail)
-        val userConfig = UserConfig.empty.withValue(GEARPUMP_STREAMING_OPERATOR, func)
+        val userConfig = baseConfig.withValue(GEARPUMP_STREAMING_OPERATOR, func)
 
         op match {
-          case DataSourceOp(dataSource, parallism, description) =>
+          case DataSourceOp(dataSource, parallism, conf, description) =>
             Processor[SourceTask[Object, Object]](parallism,
               description = description + "." + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SOURCE, dataSource))
-          case groupby@ GroupByOp(_, parallism, description) =>
+              userConfig.withValue(GEARPUMP_STREAMING_SOURCE, dataSource))
+          case groupby@ GroupByOp(_, parallism, description, _) =>
             Processor[GroupByTask[Object, Object, Object]](parallism,
               description = description + "." + func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_GROUPBY_FUNCTION, groupby))
+              userConfig.withValue(GEARPUMP_STREAMING_GROUPBY_FUNCTION, groupby))
           case merge: MergeOp =>
             Processor[TransformTask[Object, Object]](1,
               description = op.description + "." + func.description,
-              taskConf = userConfig)
-          case ProcessorOp(processor, parallism, description) =>
+              userConfig)
+          case ProcessorOp(processor, parallism, conf, description) =>
             DefaultProcessor(parallism,
               description = description + "." + func.description,
-              taskConf = null, processor)
-          case DataSinkOp(dataSink, parallelism, description) =>
+              userConfig, processor)
+          case DataSinkOp(dataSink, parallelism, conf, description) =>
             Processor[SinkTask[Object]](parallelism,
-              description = func.description,
-              taskConf = userConfig.withValue(GEARPUMP_STREAMING_SINK, dataSink))
+              description = description + func.description,
+              userConfig.withValue(GEARPUMP_STREAMING_SINK, dataSink))
         }
       case op: SlaveOp[_] =>
         val func = toFunction(ops.ops)
-        val userConfig = UserConfig.empty.withValue(GEARPUMP_STREAMING_OPERATOR, func)
+        val userConfig = baseConfig.withValue(GEARPUMP_STREAMING_OPERATOR, func)
+
         Processor[TransformTask[Object, Object]](1,
           description = func.description,
           taskConf = userConfig)
@@ -109,7 +115,7 @@ object OpTranslator {
     //should never be called
     override def process(value: T) = None
 
-    override def description: String = null
+    override def description: String = ""
   }
 
   class AndThen[IN, MIDDLE, OUT](first: SingleInputFunction[IN, MIDDLE], second: SingleInputFunction[MIDDLE, OUT]) extends SingleInputFunction[IN, OUT] {
@@ -178,11 +184,11 @@ object OpTranslator {
     }
   }
 
-  class SourceTask[T, OUT](source: TypedDataSource[T], operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class SourceTask[T, OUT](source: DataSource, operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
     def this(taskContext: TaskContext, userConf: UserConfig) = {
       this(
-        userConf.getValue[TypedDataSource[T]](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
+        userConf.getValue[DataSource](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
         userConf.getValue[SingleInputFunction[T, OUT]](GEARPUMP_STREAMING_OPERATOR)(taskContext.system),
         taskContext, userConf)
     }
@@ -241,9 +247,9 @@ object OpTranslator {
     }
   }
 
-  class SinkTask[T](dataSink: TypedDataSink[T], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class SinkTask[T](dataSink: DataSink, taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
     def this(taskContext: TaskContext, userConf: UserConfig) = {
-      this(userConf.getValue[TypedDataSink[T]](GEARPUMP_STREAMING_SINK)(taskContext.system).get, taskContext, userConf)
+      this(userConf.getValue[DataSink](GEARPUMP_STREAMING_SINK)(taskContext.system).get, taskContext, userConf)
     }
 
     override def onStart(startTime: StartTime): Unit = {
@@ -258,5 +264,4 @@ object OpTranslator {
       dataSink.close()
     }
   }
-
 }

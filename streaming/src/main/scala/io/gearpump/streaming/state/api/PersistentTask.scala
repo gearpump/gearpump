@@ -93,6 +93,3 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
     taskContext.appMaster ! ReportCheckpointClock(taskContext.taskId, timestamp)
   }
 }
-
-
-

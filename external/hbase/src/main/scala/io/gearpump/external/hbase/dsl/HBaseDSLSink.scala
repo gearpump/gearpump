@@ -22,16 +22,14 @@ import io.gearpump.external.hbase.HBaseSink
 import io.gearpump.streaming.dsl.Stream
 import Stream.Sink
 
-import scala.reflect.ClassTag
-
-class HBaseDSLSink[T: ClassTag](stream: Stream[T]) {
+class HBaseDSLSink[T](stream: Stream[T]) {
   def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink(userConfig, table), parallism, description)
+    stream.sink(HBaseSink[T](userConfig, table), parallism, description)
   }
 }
 
 object HBaseDSLSink {
-  implicit def streamToHBaseDSLSink[T: ClassTag](stream: Stream[T]): HBaseDSLSink[T] = {
+  implicit def streamToHBaseDSLSink[T](stream: Stream[T]): HBaseDSLSink[T] = {
     new HBaseDSLSink[T](stream)
   }
 }

@@ -21,6 +21,7 @@ package io.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
+import io.gearpump.cluster.local.LocalCluster
 import io.gearpump.cluster.master.{Master => MasterActor}
 import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import io.gearpump.util.Constants._
@@ -65,21 +66,22 @@ object Local extends AkkaApp with ArgumentsParser {
 
     if(masters.size != 1 && masters.head.host != local) {
       LOG.error(s"The ${Constants.GEARPUMP_CLUSTER_MASTERS} is not match with ${Constants.GEARPUMP_HOSTNAME}")
-      System.exit(0)
+
+    } else {
+
+      val hostPort = masters.head
+      implicit val system = ActorSystem(MASTER, akkaConf.
+        withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port))
+      )
+
+      val master = system.actorOf(Props[MasterActor], MASTER)
+      val masterPath = ActorUtil.getSystemAddress(system).toString + s"/user/$MASTER"
+
+      0.until(workerCount).foreach { id =>
+        system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)
+      }
+
+      system.awaitTermination()
     }
-
-    val hostPort = masters.head
-    implicit val system = ActorSystem(MASTER, akkaConf.
-      withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port))
-    )
-
-    val master = system.actorOf(Props[MasterActor], MASTER)
-    val masterPath = ActorUtil.getSystemAddress(system).toString + s"/user/$MASTER"
-
-    0.until(workerCount).foreach { id =>
-      system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)
-    }
-
-    system.awaitTermination()
   }
 }

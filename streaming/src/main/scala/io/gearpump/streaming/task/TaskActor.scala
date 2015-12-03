@@ -102,7 +102,20 @@ class TaskActor(
 
   def onStop() : Unit = task.onStop()
 
+  /**
+   * output to a downstream by specifying a arrayIndex
+   * @param arrayIndex, this is not same as ProcessorId
+   * @param msg
+   */
+  def output(arrayIndex: Int, msg: Message) : Unit = {
+    LOG.debug("[output]: " + msg.msg)
+    var count = 0
+    count +=  this.subscriptions(arrayIndex)._2.sendMessage(msg)
+    sendThroughput.mark(count)
+  }
+
   def output(msg : Message) : Unit = {
+    LOG.debug("[output]: " + msg.msg)
     var count = 0
     this.subscriptions.foreach{ subscription =>
       count += subscription._2.sendMessage(msg)
@@ -115,6 +128,7 @@ class TaskActor(
   }
 
   final override def preStart() : Unit = {
+
     val register = RegisterTask(taskId, executorId, local)
     LOG.info(s"$register")
     executor ! register
@@ -146,6 +160,7 @@ class TaskActor(
             LOG.debug(s"Sending ack back, target taskId: $targetTask, my task: $taskId, received message: ${ack.actualReceivedNum}")
           case m : Message =>
             count += 1
+            LOG.debug("[input]: " + m.msg)
             onNext(m)
           case other =>
             // un-managed message
@@ -165,14 +180,17 @@ class TaskActor(
   def waitForStartClock : Receive = {
     case start@ Start(clock, sessionId) =>
       this.sessionId = sessionId
+
       LOG.info(s"received $start")
+
       this.upstreamMinClock = clock
 
       subscriptions = subscribers.map { subscriber =>
         (subscriber.processorId ,
           new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
             maxPendingMessageCount, ackOnceEveryMessageCount))
-      }
+      }.sortBy(_._1)
+
       subscriptions.foreach(_._2.start)
 
       // clean up history message in the queue
@@ -209,10 +227,8 @@ class TaskActor(
     case inputMessage: SerializedMessage =>
       val message = Message(serializerPool.get().deserialize(inputMessage.bytes), inputMessage.timeStamp)
       receiveMessage(message, sender(), handler)
-
     case inputMessage: Message =>
       receiveMessage(inputMessage, sender(), handler)
-
     case upstream@ UpstreamMinClock(upstreamClock) =>
       this.upstreamMinClock = upstreamClock
       val update = UpdateClock(taskId, minClock)
@@ -233,6 +249,8 @@ class TaskActor(
               maxPendingMessageCount, ackOnceEveryMessageCount)
             subscription.start
             subscriptions :+= (subscriber.processorId, subscription)
+            // sort, keep the order
+            subscriptions = subscriptions.sortBy(_._1)
         }
       }
       sender ! TaskChanged(taskId, dagVersion)
@@ -274,10 +292,12 @@ object TaskActor {
 
   // If the message comes from an unknown source, securityChecker will drop it
   class SecurityChecker(task_id: TaskId, self : ActorRef) {
+
     private val LOG: Logger = LogUtil.getLogger(getClass, task = task_id)
 
     // Use mutable HashMap for performance optimization
     private val receivedMsgCount = new IntShortHashMap()
+
 
     // Tricky performance optimization to save memory.
     // We store the session Id in the uid of ActorPath

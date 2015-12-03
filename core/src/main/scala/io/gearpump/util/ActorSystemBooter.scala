@@ -93,7 +93,7 @@ object ActorSystemBooter  {
 
   object RegisterActorSystemTimeOut
 
-  class Daemon(name : String, reportBack : String) extends Actor {
+  class Daemon(val name : String, reportBack : String) extends Actor {
     val LOG: Logger = LogUtil.getLogger(getClass, context = name)
 
     val username = Option(System.getProperty(Constants.GEARPUMP_USERNAME)).getOrElse("not_defined")

@@ -22,6 +22,7 @@ import com.typesafe.config.Config;
 import io.gearpump.cluster.ClusterConfig;
 import io.gearpump.cluster.UserConfig;
 import io.gearpump.cluster.client.ClientContext;
+import io.gearpump.cluster.local.LocalCluster;
 import io.gearpump.partitioner.HashPartitioner;
 import io.gearpump.partitioner.Partitioner;
 import io.gearpump.streaming.javaapi.Graph;
@@ -56,9 +57,22 @@ public class WordCount {
     UserConfig conf = UserConfig.empty();
     StreamApplication app = new StreamApplication("wordcountJava", conf, graph);
 
-    // create master client
-    // It will read the master settings under gearpump.cluster.masters
-    ClientContext masterClient = new ClientContext(akkaConf);
+
+    LocalCluster localCluster = null;
+    if (System.getProperty("DEBUG") != null) {
+      localCluster = new LocalCluster(akkaConf);
+      localCluster.start();
+    }
+
+    ClientContext masterClient = null;
+
+    if (localCluster != null) {
+      masterClient = localCluster.newClientContext();
+    } else {
+      // create master client
+      // It will read the master settings under gearpump.cluster.masters
+      masterClient = new ClientContext(akkaConf);
+    }
 
     // submit
     int appId = masterClient.submit(app);
@@ -66,5 +80,9 @@ public class WordCount {
 
     // clean resource
     masterClient.close();
+
+    if (localCluster != null) {
+      localCluster.stop();
+    }
   }
 }

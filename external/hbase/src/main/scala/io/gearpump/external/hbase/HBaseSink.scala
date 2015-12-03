@@ -20,7 +20,6 @@ package io.gearpump.external.hbase
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.dsl.TypedDataSink
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.TaskContext
 import io.gearpump.Message
@@ -93,11 +92,11 @@ object HBaseSink {
   val COLUMN_FAMILY = "hbase.table.column.family"
   val COLUMN_NAME = "hbase.table.column.name"
 
-  def apply[T](userconfig: UserConfig, tableName: String): HBaseSink with TypedDataSink[T] = {
-    new HBaseSink(userconfig, tableName) with TypedDataSink[T]
+  def apply[T](userconfig: UserConfig, tableName: String): HBaseSink = {
+    new HBaseSink(userconfig, tableName)
   }
 
-  def apply[T](userconfig: UserConfig, tableName: String, configuration: Configuration): HBaseSink with TypedDataSink[T] = {
-    new HBaseSink(userconfig, tableName, configuration) with TypedDataSink[T]
+  def apply[T](userconfig: UserConfig, tableName: String, configuration: Configuration): HBaseSink = {
+    new HBaseSink(userconfig, tableName, configuration)
   }
 }

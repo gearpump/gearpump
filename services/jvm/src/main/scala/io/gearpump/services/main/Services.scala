@@ -19,14 +19,21 @@
 package io.gearpump.services.main
 
 import akka.actor.ActorSystem
+import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
+import io.gearpump.cluster.main.{CLIOption, ArgumentsParser}
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.services.RestServices
 import io.gearpump.util.LogUtil.ProcessType
 import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
-object Services extends AkkaApp {
+object Services extends AkkaApp with ArgumentsParser {
+
+  override val options: Array[(String, CLIOption[Any])] = Array(
+    "master" -> CLIOption("<host:port>", required = false))
+
+  override val description = "UI Server"
 
   override def akkaConfig: Config = {
     ClusterConfig.load.ui
@@ -36,13 +43,23 @@ object Services extends AkkaApp {
     Console.println("UI Server")
   }
 
-  override def main(akkaConf: Config, args: Array[String]): Unit = {
+  override def main(inputAkkaConf: Config, args: Array[String]): Unit = {
     val LOG: Logger = {
-      LogUtil.loadConfiguration(akkaConf, ProcessType.UI)
+      LogUtil.loadConfiguration(inputAkkaConf, ProcessType.UI)
       LogUtil.getLogger(getClass)
     }
 
+    val argConfig = parse(args)
+
+    var akkaConf = inputAkkaConf
+
     import scala.collection.JavaConversions._
+    if (argConfig.exists("master")) {
+      val master = argConfig.getString("master")
+      akkaConf = akkaConf.withValue(Constants.GEARPUMP_CLUSTER_MASTERS,
+        ConfigValueFactory.fromIterable(List(master)))
+    }
+
     val masterCluster = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
 
     implicit val system = ActorSystem("services" , akkaConf)

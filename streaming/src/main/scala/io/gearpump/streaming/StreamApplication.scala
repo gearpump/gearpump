@@ -84,7 +84,7 @@ object LifeTime {
   val Immortal = LifeTime(0L, Long.MaxValue)
 }
 
-class StreamApplication(override val name : String,  inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, PartitionerDescription])
+class StreamApplication(override val name : String,  val inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, PartitionerDescription])
   extends Application {
   require(!dag.hasDuplicatedEdge(), "Graph should not have duplicated edges")
 
