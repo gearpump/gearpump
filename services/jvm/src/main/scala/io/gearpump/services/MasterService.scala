@@ -126,7 +126,7 @@ trait MasterService {
                   if (jar.isEmpty) {
                     failWith(new Exception("jar file not supplied"))
                   } else {
-                    val argsArray = args.split(" +")
+                    val argsArray = args.split(" +").filter(_.nonEmpty)
                     onComplete(Future(
                       MasterService.submitJar(jar.get, userConf, argsArray, system.settings.config))) {
                       case Success(appId) =>
