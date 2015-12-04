@@ -137,7 +137,6 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-http-core-experimental" % "1.0",
       "com.typesafe.akka" %% "akka-stream-experimental" % "1.0",
       "com.typesafe.akka" %% "akka-http-spray-json-experimental"% "1.0",
-      "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
       "commons-logging" % "commons-logging" % commonsLoggingVersion,
       "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
       "org.apache.hadoop" % "hadoop-common" % clouderaVersion  % "provided"

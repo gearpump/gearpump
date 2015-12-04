@@ -52,7 +52,7 @@ object Pack extends sbt.Build {
           ),
           packLibDir := Map(
             "lib" -> new ProjectsToPack(core.id, streaming.id),
-            "lib/daemon" -> new ProjectsToPack(daemon.id).exclude(core.id),
+            "lib/daemon" -> new ProjectsToPack(daemon.id).exclude(core.id, streaming.id),
             "lib/yarn" -> new ProjectsToPack(yarn.id).exclude(services.id, daemon.id),
             "lib/services" -> new ProjectsToPack(services.id).exclude(daemon.id),
             "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id)

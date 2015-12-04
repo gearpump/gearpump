@@ -90,6 +90,7 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ noPublish ++ 
         Seq(
           libraryDependencies ++= Seq(
+            "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
             "commons-lang" % "commons-lang" % commonsLangVersion,
             "commons-io" % "commons-io" % commonsIOVersion,
             "io.spray" %%  "spray-can"       % sprayVersion,

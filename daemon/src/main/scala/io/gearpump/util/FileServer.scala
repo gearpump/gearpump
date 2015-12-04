@@ -19,34 +19,33 @@ package io.gearpump.util
 
 
 import java.io.File
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.marshalling.{ToResponseMarshallable, Marshal}
+import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, MediaTypes, Multipart, _}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.stream.io.{SynchronousFileSink, SynchronousFileSource}
+import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.stream.scaladsl.{Sink, Source}
 import io.gearpump.jarstore.FilePath
+import io.gearpump.util.FileDirective._
 import io.gearpump.util.FileServer.Port
-import spray.json.{JsonFormat, RootJsonFormat}
-import scala.concurrent.{ExecutionContext, Future}
 import spray.json.DefaultJsonProtocol._
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import FileDirective._
+import spray.json.JsonFormat
+
+import scala.concurrent.{ExecutionContext, Future}
 
 class FileServer(system: ActorSystem, host: String, port: Int = 0, rootDirectory: File) {
   import system.dispatcher
   implicit val actorSystem = system
   implicit val materializer = ActorMaterializer()
   implicit def ec: ExecutionContext = system.dispatcher
-
-  import FileServer.filePathFormat
 
   val route: Route = {
     path("upload") {
