@@ -17,8 +17,13 @@
  */
 package io.gearpump.streaming.hadoop.lib
 
+import java.io.File
+
+import io.gearpump.cluster.UserConfig
+import io.gearpump.util.{FileUtils, Constants}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
+import org.apache.hadoop.security.UserGroupInformation
 
 private[hadoop] object HadoopUtil {
 
@@ -47,6 +52,27 @@ private[hadoop] object HadoopUtil {
     fs match {
       case localFs: LocalFileSystem => localFs.getRawFileSystem
       case _ => fs
+    }
+  }
+
+  def login(userConfig: UserConfig, configuration: Configuration): Unit = {
+    if(UserGroupInformation.isSecurityEnabled) {
+      val principal = userConfig.getString(Constants.GEARPUMP_KERBEROS_PRINCIPAL)
+      val keytabContent = userConfig.getBytes(Constants.GEARPUMP_KEYTAB_FILE)
+      if(principal.isEmpty || keytabContent.isEmpty) {
+        val errorMsg = s"HDFS is security enabled, user should provide kerberos principal in " +
+          s"${Constants.GEARPUMP_KERBEROS_PRINCIPAL} and keytab file in ${Constants.GEARPUMP_KEYTAB_FILE}"
+        throw new Exception(errorMsg)
+      }
+      val keytabFile = File.createTempFile("login", ".keytab")
+      FileUtils.writeByteArrayToFile(keytabFile, keytabContent.get)
+      keytabFile.setExecutable(false)
+      keytabFile.setWritable(false)
+      keytabFile.setReadable(true, true)
+
+      UserGroupInformation.setConfiguration(configuration)
+      UserGroupInformation.loginUserFromKeytab(principal.get, keytabFile.getAbsolutePath)
+      keytabFile.delete()
     }
   }
 }

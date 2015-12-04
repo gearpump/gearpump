@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,21 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.external.hbase.dsl
+package io.gearpump.streaming.hadoop.lib.format
 
-import io.gearpump.cluster.UserConfig
-import io.gearpump.external.hbase.HBaseSink
-import io.gearpump.streaming.dsl.Stream
-import Stream.Sink
+import io.gearpump.Message
+import org.apache.hadoop.io.{LongWritable, Writable, Text}
 
-class HBaseDSLSink[T](stream: Stream[T]) {
-  def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink[T](userConfig, table), parallism, userConfig, description)
-  }
-}
+class DefaultSequenceFormatter extends OutputFormatter{
+  override def getKey(message: Message): Writable = new LongWritable(message.timestamp)
 
-object HBaseDSLSink {
-  implicit def streamToHBaseDSLSink[T](stream: Stream[T]): HBaseDSLSink[T] = {
-    new HBaseDSLSink[T](stream)
-  }
+  override def getValue(message: Message): Writable = new Text(message.msg.asInstanceOf[String])
+
+  override def getKeyClass: Class[_ <: Writable] = classOf[LongWritable]
+
+  override def getValueClass: Class[_ <: Writable] = classOf[Text]
 }
