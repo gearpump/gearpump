@@ -18,6 +18,7 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.integrationtest.{Docker, TestSpecBase, Util}
+import io.gearpump.metrics.Metrics.Meter
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.ProcessorSummary
 
@@ -27,7 +28,7 @@ import io.gearpump.streaming.appmaster.ProcessorSummary
 class ExampleSpec extends TestSpecBase {
 
   "distributed shell" should {
-    "works properly" in {
+    "execute commands on machines where its executors are running" in {
       val distShellJar = cluster.queryBuiltInExampleJars("distributedshell-").head
       val mainClass = "io.gearpump.examples.distributedshell.DistributedShell"
       val clientClass = "io.gearpump.examples.distributedshell.DistributedShellClient"
@@ -51,8 +52,8 @@ class ExampleSpec extends TestSpecBase {
   }
 
   "wordcount" should {
-    val wordCountJarName = "wordcount-"
-    behave like streamingApplication(wordCountJarName, wordCountName)
+    val wordCountJarNamePrefix = "wordcount-"
+    behave like streamingApplication(wordCountJarNamePrefix, wordCountName)
 
     "can submit immediately after killing a former one" in {
       // setup
@@ -68,21 +69,60 @@ class ExampleSpec extends TestSpecBase {
   }
 
   "wordcount(java)" should {
-    val wordCountJavaJarName = "wordcountjava-"
+    val wordCountJavaJarNamePrefix = "wordcountjava-"
     val wordCountJavaName = "wordcountJava"
-    behave like streamingApplication(wordCountJavaJarName, wordCountJavaName)
+    behave like streamingApplication(wordCountJavaJarNamePrefix, wordCountJavaName)
   }
 
   "sol" should {
-    val solJarName = "sol-"
+    val solJarNamePrefix = "sol-"
     val solName = "sol"
-    behave like streamingApplication(solJarName, solName)
+    behave like streamingApplication(solJarNamePrefix, solName)
+
+    "can replace sum processor with wordcount's sum processor (new processor will have metrics)" in {
+      // setup
+      val jar = cluster.queryBuiltInExampleJars(solJarNamePrefix).head
+      val appId = restClient.submitApp(jar)
+      expectAppIsRunning(appId, solName)
+      val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
+      val formerSumProcessor = formerProcessors.get(1).get
+      val uploadedJar = restClient.uploadJar(wordCountJar)
+      val expectedProcessorId = formerProcessors.size
+      val expectedProcessorDescription = "replaced processor description"
+      val newTaskClass = "io.gearpump.streaming.examples.wordcount.Sum"
+      val replaceMe = new ProcessorDescription(formerSumProcessor.id, newTaskClass,
+        formerSumProcessor.parallelism, expectedProcessorDescription,
+        jar = uploadedJar)
+
+      // exercise
+      val success = restClient.replaceStreamingAppProcessor(appId, replaceMe)
+      success shouldBe true
+      var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
+      Util.retryUntil({
+        laterProcessors = restClient.queryStreamingAppDetail(appId).processors
+        laterProcessors.size == formerProcessors.size + 1
+      })
+
+      // verify
+      val laterSumProcessor = laterProcessors.get(expectedProcessorId).get
+      laterSumProcessor.parallelism shouldEqual formerSumProcessor.parallelism
+      laterSumProcessor.description shouldEqual expectedProcessorDescription
+      laterSumProcessor.taskClass shouldEqual newTaskClass
+      Util.retryUntil({
+        val actual = restClient.queryStreamingAppMetrics(appId, current = false,
+          path = "processor" + expectedProcessorId)
+        val throughput = actual.metrics.filter(_.value.name.endsWith("receiveThroughput"))
+        throughput.size should be > 0
+        val hasThroughput = throughput.forall(_.value.asInstanceOf[Meter].count > 0L)
+        hasThroughput
+      })
+    }
   }
 
   "dynamic dag" should {
-    val dynamicDagJarName = "complexdag-"
+    val dynamicDagJarNamePrefix = "complexdag-"
     val dynamicDagName = "dag"
-    behave like streamingApplication(dynamicDagJarName, dynamicDagName)
+    behave like streamingApplication(dynamicDagJarNamePrefix, dynamicDagName)
 
     "can retrieve a list of built-in partitioner classes" in {
       val partitioners = restClient.queryBuiltInPartitioners()
@@ -97,8 +137,8 @@ class ExampleSpec extends TestSpecBase {
     }
   }
 
-  def streamingApplication(jarName: String, appName: String): Unit = {
-    lazy val jar = cluster.queryBuiltInExampleJars(jarName).head
+  def streamingApplication(jarNamePrefix: String, appName: String): Unit = {
+    lazy val jar = cluster.queryBuiltInExampleJars(jarNamePrefix).head
 
     "can obtain application clock and the clock will keep changing" in {
       // setup
