@@ -173,6 +173,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         taskActor.foreach(_._1 forward ChangeTask(taskId, dagVersion, life, subscribers))
       }
       sender ! TasksChanged
+      context.become(launchTasksHandler orElse terminationWatch)
 
     case RestartTasks(dagVersion) =>
       LOG.info(s"Executor received restart tasks")

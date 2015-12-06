@@ -208,6 +208,12 @@ class TaskActor(
   def stashMessages: Receive = handleMessages(() => Unit)
 
   def handleMessages(handler: () => Unit): Receive = {
+    case start@ Start(clock, sessionId) =>
+      this.sessionId = sessionId
+      this.upstreamMinClock = clock
+      subscriptions.foreach(_._2.start)
+      doHandleMessage
+      context.become(handleMessages(doHandleMessage))
     case ackRequest: InitialAckRequest =>
       val ackResponse = securityChecker.handleInitialAckRequest(ackRequest)
       if (null != ackResponse) {
@@ -247,13 +253,13 @@ class TaskActor(
           case None =>
             val subscription = new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
               maxPendingMessageCount, ackOnceEveryMessageCount)
-            subscription.start
             subscriptions :+= (subscriber.processorId, subscription)
             // sort, keep the order
             subscriptions = subscriptions.sortBy(_._1)
         }
       }
       sender ! TaskChanged(taskId, dagVersion)
+      context.become(stashMessages)
     case LatencyProbe(timeStamp) =>
       receiveLatency.update(System.currentTimeMillis() - timeStamp)
     case send: SendMessageLoss =>
