@@ -18,7 +18,7 @@
 package io.gearpump.integrationtest.minicluster
 
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.MasterToAppMaster
+import io.gearpump.cluster.{AppJar, MasterToAppMaster}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.cluster.MasterToClient.HistoryMetrics
 import io.gearpump.integrationtest.{Docker, Util}
@@ -102,9 +102,9 @@ class RestClient(host: String, port: Int) {
     upickle.default.read[StreamAppMasterSummary](resp)
   }
 
-  def queryStreamingAppMetrics(appId: Int, current: Boolean): HistoryMetrics = {
+  def queryStreamingAppMetrics(appId: Int, current: Boolean, path: String = "processor*"): HistoryMetrics = {
     val args = if (current) "?readLatest=true" else ""
-    val resp = callApi(s"appmaster/$appId/metrics/app$appId.processor*$args")
+    val resp = callApi(s"appmaster/$appId/metrics/app$appId.$path$args")
     upickle.default.read[HistoryMetrics](resp)
   }
 
@@ -158,6 +158,11 @@ class RestClient(host: String, port: Int) {
   def queryBuiltInPartitioners(): Array[String] = {
     val resp = callApi("master/partitioners")
     upickle.default.read[BuiltinPartitioners](resp).partitioners
+  }
+
+  def uploadJar(localFilePath: String): AppJar = {
+    val resp = callApi(s"master/uploadjar -F jar=@$localFilePath", CRUD_POST)
+    upickle.default.read[AppJar](resp)
   }
 
   def replaceStreamingAppProcessor(appId: Int, replaceMe: ProcessorDescription): Boolean = try {
