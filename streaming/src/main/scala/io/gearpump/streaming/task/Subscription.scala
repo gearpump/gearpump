@@ -51,7 +51,6 @@ class Subscription(
   import subscriber.{parallelism, partitionerDescription, processorId}
 
   // Don't worry if this store negative number. We will wrap the Short
-  private var started = false
   private val messageCount: Array[Short] = new Array[Short](parallelism)
   private val pendingMessageCount: Array[Short] = new Array[Short](parallelism)
   private val candidateMinClockSince: Array[Short] = new Array[Short](parallelism)
@@ -83,11 +82,8 @@ class Subscription(
   }
 
   def start: Unit = {
-    if(!started) {
-      val ackRequest = InitialAckRequest(taskId, sessionId)
-      transport.transport(ackRequest, allTasks: _*)
-      this.started = true
-    }
+    val ackRequest = InitialAckRequest(taskId, sessionId)
+    transport.transport(ackRequest, allTasks: _*)
   }
 
   def sendMessage(msg: Message): Int = {
@@ -190,7 +186,7 @@ class Subscription(
   }
 
   def allowSendingMoreMessages() : Boolean = {
-    (maxPendingCount < maxPendingMessageCount) && started
+    maxPendingCount < maxPendingMessageCount
   }
 
   private def updateMaxPendingCount() : Unit = {
