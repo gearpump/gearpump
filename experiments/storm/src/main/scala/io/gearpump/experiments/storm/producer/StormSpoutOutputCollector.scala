@@ -23,8 +23,6 @@ import java.util.{List => JList}
 import backtype.storm.spout.{ISpout, ISpoutOutputCollector}
 import io.gearpump.TimeStamp
 import io.gearpump.experiments.storm.util.StormOutputCollector
-import io.gearpump.util.LogUtil
-import org.slf4j.Logger
 
 case class PendingMessage(id: Object, messageTime: TimeStamp, startTime: TimeStamp)
 
@@ -33,7 +31,10 @@ case class PendingMessage(id: Object, messageTime: TimeStamp, startTime: TimeSta
  */
 private[storm] class StormSpoutOutputCollector(
     collector: StormOutputCollector, spout: ISpout, ackEnabled: Boolean) extends ISpoutOutputCollector {
+
+  private var checkpointClock = 0L
   private var pendingMessage: Option[PendingMessage] = None
+  private var nextPendingMessage: Option[PendingMessage] = None
 
   override def emit(streamId: String, values: JList[AnyRef], messageId: Object): JList[Integer] = {
     val curTime = System.currentTimeMillis()
@@ -56,10 +57,13 @@ private[storm] class StormSpoutOutputCollector(
 
 
   def ackPendingMessage(checkpointClock: TimeStamp): Unit = {
-    pendingMessage.foreach { case PendingMessage(id, messageTime, _) =>
-      if (messageTime <= checkpointClock) {
-        spout.ack(id)
-        reset
+    this.checkpointClock = checkpointClock
+    nextPendingMessage.foreach { case PendingMessage(_, messageTime, _) =>
+      if (messageTime <= this.checkpointClock) {
+        pendingMessage.foreach { case PendingMessage(id, _, _) =>
+          spout.ack(id)
+          reset
+        }
       }
     }
   }
@@ -74,12 +78,23 @@ private[storm] class StormSpoutOutputCollector(
   }
 
   private def reset: Unit = {
-    pendingMessage = None
+    pendingMessage = nextPendingMessage
+    nextPendingMessage = None
   }
 
   private def setPendingOrAck(messageId: Object, startTime: TimeStamp, messageTime: TimeStamp): Unit = {
-    if (ackEnabled && pendingMessage.isEmpty) {
-      pendingMessage = Some(PendingMessage(messageId, messageTime, startTime))
+    if (ackEnabled) {
+      val newPendingMessage = PendingMessage(messageId, messageTime, startTime)
+      pendingMessage match {
+        case Some(msg) =>
+          if (nextPendingMessage.isEmpty && msg.messageTime <= this.checkpointClock) {
+            nextPendingMessage = Some(newPendingMessage)
+          } else {
+            spout.ack(messageId)
+          }
+        case None =>
+          pendingMessage = Some(newPendingMessage)
+      }
     } else {
       spout.ack(messageId)
     }
