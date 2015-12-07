@@ -21,7 +21,10 @@ package io.gearpump.services
 import java.io.File
 
 import akka.actor.{ActorRef}
+import akka.http.scaladsl.model.{FormData, Multipart}
+import akka.http.scaladsl.server.{Route, Directive, StandardRoute}
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
+import akka.stream.ActorMaterializer
 import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
@@ -50,28 +53,39 @@ trait AppMasterService  {
   def appMasterRoute = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
     implicit def ec: ExecutionContext = system.dispatcher
+    implicit val materializer = ActorMaterializer()
 
     pathPrefix("api" / s"$REST_VERSION" / "appmaster" / IntNumber ) { appId =>
       path("dynamicdag") {
-        post {
-          parameters(ParamMagnet("args")) { args: String =>
+        parameters(ParamMagnet("args")) { args: String =>
+
+          def replaceProcessor(dagOperation: DAGOperation): Route = {
+            onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
+              case Success(value) =>
+                complete(write(value))
+              case Failure(ex) =>
+                failWith(ex)
+            }
+          }
+
+          val msg = java.net.URLDecoder.decode(args)
+          val dagOperation = read[DAGOperation](msg)
+          (post & entity(as[Multipart.FormData])) { _ =>
             uploadFile { fileMap =>
               val jar = fileMap.get("jar").map(_.file)
-              val msg = java.net.URLDecoder.decode(args)
-              var dagOperation = read[DAGOperation](msg)
-              if(jar.nonEmpty) {
+              if (jar.nonEmpty) {
                 dagOperation match {
                   case replace: ReplaceProcessor =>
                     val description = replace.newProcessorDescription.copy(jar = Util.uploadJar(jar.get, getJarStoreService))
-                    dagOperation = replace.copy(newProcessorDescription = description)
+                    val dagOperationWithJar = replace.copy(newProcessorDescription = description)
+                    replaceProcessor(dagOperationWithJar)
                 }
-              }
-              onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
-                case Success(value) =>
-                  complete(write(value))
-                case Failure(ex) => failWith(ex)
+              } else {
+                replaceProcessor(dagOperation)
               }
             }
+          } ~ (post & entity(as[FormData])) { _ =>
+            replaceProcessor(dagOperation)
           }
         }
       } ~

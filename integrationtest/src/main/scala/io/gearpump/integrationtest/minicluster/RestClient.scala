@@ -168,8 +168,7 @@ class RestClient(host: String, port: Int) {
   def replaceStreamingAppProcessor(appId: Int, replaceMe: ProcessorDescription): Boolean = try {
     val replaceOperation = new ReplaceProcessor(replaceMe.id, replaceMe)
     val args = upickle.default.write(replaceOperation)
-    val resp = callApi(s"appmaster/$appId/dynamicdag?args=" + Util.encodeUriComponent(args),
-      CRUD_POST + " -F ignore=ignore")
+    val resp = callApi(s"appmaster/$appId/dynamicdag?args=" + Util.encodeUriComponent(args), CRUD_POST)
     upickle.default.read[DAGOperationResult](resp)
     true
   } catch {
