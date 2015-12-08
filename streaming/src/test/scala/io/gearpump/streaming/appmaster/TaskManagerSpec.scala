@@ -204,14 +204,14 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
         RegisterTask(launch.taskId.head, executorId, HostPort("127.0.0.1:3000"))
     }
 
+    // taskmanager should return the latest start clock to task(0,0)
+    clockService.expectMsg(GetStartClock)
+    clockService.reply(StartClock(0))
+
     // step8: Task is started. registerTask.
     val registerTask1 = executorManager.expectMsgPF()(launchTaskMatch)
     taskManager.tell(registerTask1, executor.ref)
     executor.expectMsgType[TaskRegistered]
-
-    // taskmanager should return the latest start clock to task(0,0)
-    clockService.expectMsg(GetStartClock)
-    clockService.reply(StartClock(0))
 
     val registerTask2 = executorManager.expectMsgPF()(launchTaskMatch)
     taskManager.tell(registerTask2, executor.ref)

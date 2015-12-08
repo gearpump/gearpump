@@ -132,7 +132,7 @@ class TaskActor(
     val register = RegisterTask(taskId, executorId, local)
     LOG.info(s"$register")
     executor ! register
-    context.become(waitForStartClock orElse stashMessages)
+    context.become(waitForTaskRegistered)
   }
 
   def minClockAtCurrentTask: TimeStamp = {
@@ -177,58 +177,63 @@ class TaskActor(
     }
   }
 
-  def waitForStartClock : Receive = {
-    case start@ Start(clock, sessionId) =>
-      this.sessionId = sessionId
+  private def init: Unit = {
+    LOG.info(s"received start, clock: $upstreamMinClock, sessionId: $sessionId")
+    subscriptions = subscribers.map { subscriber =>
+      (subscriber.processorId ,
+        new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
+          maxPendingMessageCount, ackOnceEveryMessageCount))
+    }.sortBy(_._1)
 
-      LOG.info(s"received $start")
+    subscriptions.foreach(_._2.start)
 
-      this.upstreamMinClock = clock
 
-      subscriptions = subscribers.map { subscriber =>
-        (subscriber.processorId ,
-          new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
-            maxPendingMessageCount, ackOnceEveryMessageCount))
-      }.sortBy(_._1)
+    // Put this as the last step so that the subscription is already initialized.
+    // Message sending in current Task before onStart will not be delivered to
+    // target
+    onStart(new StartTime(upstreamMinClock))
 
-      subscriptions.foreach(_._2.start)
-
-      // clean up history message in the queue
-      doHandleMessage()
-
-      // Put this as the last step so that the subscription is already initialized.
-      // Message sending in current Task before onStart will not be delivered to
-      // target
-      onStart(new StartTime(clock))
-
-      appMaster ! GetUpstreamMinClock(taskId)
-      context.become(handleMessages(doHandleMessage))
+    appMaster ! GetUpstreamMinClock(taskId)
+    context.become(handleMessages)
   }
 
-  def stashMessages: Receive = handleMessages(() => Unit)
+  def waitForTaskRegistered: Receive = {
+    case start@ TaskRegistered(_, sessionId, startClock) =>
+      this.sessionId = sessionId
+      this.upstreamMinClock = startClock
+      context.become(waitForStartClock)
+  }
 
-  def handleMessages(handler: () => Unit): Receive = {
+  def waitForStartClock : Receive = {
+    case start: StartTask =>
+      init
+    case initialAckRequest: InitialAckRequest =>
+      init
+      handleMessages.apply(initialAckRequest)
+  }
+
+  def handleMessages: Receive = {
     case ackRequest: InitialAckRequest =>
       val ackResponse = securityChecker.handleInitialAckRequest(ackRequest)
       if (null != ackResponse) {
         queue.add(SendAck(ackResponse, ackRequest.taskId))
-        handler()
+        doHandleMessage()
       }
     case ackRequest: AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
       val ackResponse = securityChecker.generateAckResponse(ackRequest, sender)
       if (null != ackResponse) {
         queue.add(SendAck(ackResponse, ackRequest.taskId))
-        handler()
+        doHandleMessage()
       }
     case ack: Ack =>
       subscriptions.find(_._1 == ack.taskId.processorId).foreach(_._2.receiveAck(ack))
-      handler()
+      doHandleMessage()
     case inputMessage: SerializedMessage =>
       val message = Message(serializerPool.get().deserialize(inputMessage.bytes), inputMessage.timeStamp)
-      receiveMessage(message, sender(), handler)
+      receiveMessage(message, sender())
     case inputMessage: Message =>
-      receiveMessage(inputMessage, sender(), handler)
+      receiveMessage(inputMessage, sender())
     case upstream@ UpstreamMinClock(upstreamClock) =>
       this.upstreamMinClock = upstreamClock
       val update = UpdateClock(taskId, minClock)
@@ -261,7 +266,7 @@ class TaskActor(
       throw new MsgLostException
     case other: AnyRef =>
       queue.add(other)
-      handler()
+      doHandleMessage()
   }
 
   def minClock: TimeStamp = {
@@ -270,12 +275,12 @@ class TaskActor(
 
   def getUpstreamMinClock: TimeStamp = upstreamMinClock
 
-  private def receiveMessage(msg: Message, sender: ActorRef, handler: () => Unit): Unit = {
+  private def receiveMessage(msg: Message, sender: ActorRef): Unit = {
     val messageAfterCheck = securityChecker.checkMessage(msg, sender)
     messageAfterCheck match {
       case Some(msg) =>
         queue.add(msg)
-        handler()
+        doHandleMessage()
       case None =>
         //Todo: Indicate the error and avoid the LOG flood
         //LOG.error(s"Task $taskId drop message $msg")

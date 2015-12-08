@@ -38,16 +38,16 @@ object AppMasterToExecutor {
    */
   case class ChangeTasks(taskId: List[TaskId], dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
 
-  case object TasksChanged
+  case class TasksChanged(taskIds: List[TaskId])
 
   case class ChangeTask(taskId: TaskId, dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
 
   case class TaskChanged(taskId: TaskId, dagVersion: Int)
 
-  case class Start(startClock : TimeStamp, sessionId: Int)
+  case class StartTask(taskId: TaskId)
 
   case class StartAllTasks(taskLocations: TaskLocations, startClock: TimeStamp, dagVersion: Int)
-  case class TaskRegistered(taskId: TaskId, sessionId: Int)
+  case class TaskRegistered(taskId: TaskId, sessionId: Int, startClock: TimeStamp)
   case class TaskRejected(taskId: TaskId)
 
   case object RestartClockService

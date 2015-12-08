@@ -24,7 +24,7 @@ import io.gearpump.Message
 import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
 import io.gearpump.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.serializer.{FastKryoSerializer, SerializationFramework}
-import io.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, Start, TaskChanged}
+import io.gearpump.streaming.AppMasterToExecutor.{StartTask, TaskRegistered, ChangeTask, MsgLostException, TaskChanged}
 import io.gearpump.streaming.task.TaskActorSpec.TestTask
 import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import io.gearpump.util.Graph._
@@ -72,7 +72,8 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     "register itself to AppMaster when started" in {
       val mockTask = mock(classOf[TaskWrapper])
       val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
-      testActor ! Start(0, Util.randInt)
+      testActor ! TaskRegistered(taskId1, 0, Util.randInt)
+      testActor ! StartTask(taskId1)
 
       implicit val system = getActorSystem
       val ack = Ack(taskId2, 100, 99, testActor.underlyingActor.sessionId)
@@ -84,7 +85,8 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     "respond to ChangeTask" in {
       val mockTask = mock(classOf[TaskWrapper])
       val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
-      testActor ! Start(0, Util.randInt)
+      testActor ! TaskRegistered(taskId1, 0, Util.randInt)
+      testActor ! StartTask(taskId1)
       mockMaster.expectMsgType[GetUpstreamMinClock]
 
       mockMaster.send(testActor, ChangeTask(taskId1, 1, LifeTime.Immortal, List.empty[Subscriber]))
@@ -96,8 +98,8 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       val msg = Message("test")
 
       val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1, UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
-
-      testActor.tell(Start(0, Util.randInt), mockMaster.ref)
+      testActor.tell(TaskRegistered(taskId1, 0, Util.randInt), mockMaster.ref)
+      testActor.tell(StartTask(taskId1), mockMaster.ref)
 
       testActor.tell(msg, testActor)
 
