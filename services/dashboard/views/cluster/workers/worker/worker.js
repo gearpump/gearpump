@@ -99,24 +99,42 @@ angular.module('dashboard')
       updateExecutorsTable();
 
       worker0.$subscribe($scope, function(worker) {
+        updateWorkerDetails(worker);
+      }, /*onerror=*/function() {
+        // manually reset status fields on an error response
+        var worker = angular.copy($scope.worker);
+        worker.state = 'terminated';
+        worker.isRunning = false;
+        _.forEach(worker.executors, function(executor) {
+          executor.status = 'terminated';
+          executor.isRunning = false;
+        });
+        updateWorkerDetails(worker);
+        return true; // cancel subscription
+      });
+
+      function updateWorkerDetails(worker) {
         $scope.worker = worker;
         updateOverviewTable(worker);
         updateExecutorsTable();
-      });
+      }
 
       apps0.$subscribe($scope, function(apps) {
         $scope.apps = apps;
         updateExecutorsTable();
+        return !$scope.worker.isRunning;
       });
 
       // JvmMetricsChartsCtrl will watch `$scope.metrics` and `$scope.historicalMetrics`.
       $scope.metrics = metrics0.$data();
       metrics0.$subscribe($scope, function(metrics) {
         $scope.metrics = metrics;
+        return !$scope.worker.isRunning;
       });
       $scope.historicalMetrics = historicalMetrics0.$data();
       historicalMetrics0.$subscribe($scope, function(metrics) {
         $scope.historicalMetrics = metrics;
+        return !$scope.worker.isRunning;
       });
     }])
 ;

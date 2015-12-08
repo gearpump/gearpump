@@ -48,6 +48,7 @@ angular.module('dashboard')
           executor.isRunning = false;
         });
         updateAppDetails(app);
+        return true; // cancel subscription
       });
 
       function updateAppDetails(app) {

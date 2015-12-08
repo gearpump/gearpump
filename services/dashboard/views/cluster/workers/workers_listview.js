@@ -46,7 +46,7 @@ angular.module('dashboard')
         $scope.workersTable.rows = _.map(workers, function(worker) {
           return {
             id: {href: worker.pageUrl, text: worker.workerId},
-            state: {tooltip: worker.state, condition: worker.isHealthy ? 'good' : 'concern', shape: 'stripe'},
+            state: {tooltip: worker.state, condition: worker.isRunning ? 'good' : 'concern', shape: 'stripe'},
             location: worker.location,
             aliveFor: worker.aliveFor,
             slots: {current: worker.slots.used, max: worker.slots.total, usage: worker.slots.usage},
