@@ -40,7 +40,7 @@ trait WorkerService {
 
   private val LOG = LogUtil.getLogger(getClass)
 
-  def workerRoute: Route = {
+  val workerRoute = encodeResponse {
     implicit def ec: ExecutionContext = system.dispatcher
 
     pathPrefix("api" / s"$REST_VERSION" / "worker" / IntNumber) { workerId =>

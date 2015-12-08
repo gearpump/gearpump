@@ -51,11 +51,15 @@ angular.module('dashboard')
       }
 
       $scope.$watch('metrics', function(metrics) {
-        updateMetricsTable(metrics);
+        if (metrics) {
+          updateMetricsTable(metrics);
+        }
       });
 
       $scope.$watch('historicalMetrics', function(metrics) {
-        updateMetricsCharts(metrics);
+        if (metrics) {
+          updateMetricsCharts(metrics);
+        }
       });
 
       var lineChartOptionBase = {

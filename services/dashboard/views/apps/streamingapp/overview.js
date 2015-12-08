@@ -13,19 +13,12 @@ angular.module('dashboard')
         .state('streamingapp.overview', {
           url: '', /* default page */
           templateUrl: 'views/apps/streamingapp/overview.html',
-          controller: 'StreamingAppOverviewCtrl',
-          resolve: {
-            historicalMetrics0: ['$stateParams', 'models', 'conf', function($stateParams, models, conf) {
-              return models.$get.appHistoricalMetrics($stateParams.appId,
-                conf.metricsChartSamplingRate, conf.metricsChartDataCount);
-            }]
-          }
+          controller: 'StreamingAppOverviewCtrl'
         });
     }])
 
-  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder',
-    'helper', 'historicalMetrics0',
-    function($scope, $ptb, helper, historicalMetrics0) {
+  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder', 'helper', 'conf', 'models',
+    function($scope, $ptb, helper, conf, models) {
       'use strict';
 
       $scope.appSummary = [
@@ -54,9 +47,19 @@ angular.module('dashboard')
         updateSummaryTable(app);
       });
 
-      $scope.historicalMetrics = historicalMetrics0.$data();
-      historicalMetrics0.$subscribe($scope, function(metrics) {
-        $scope.historicalMetrics = metrics;
+      $scope.$on('$destroy', function() {
+        $scope.destroyed = true;
       });
+      models.$subscribe($scope,
+        function() {
+          return models.$get.appHistoricalMetrics($scope.app.appId,
+            conf.metricsChartSamplingRate, conf.metricsChartDataCount);
+        },
+        function(historicalMetrics0) {
+          $scope.historicalMetrics = historicalMetrics0.$data();
+          historicalMetrics0.$subscribe($scope, function(metrics) {
+            $scope.historicalMetrics = metrics;
+          });
+        });
     }])
 ;

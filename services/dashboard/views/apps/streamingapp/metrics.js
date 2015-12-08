@@ -22,8 +22,8 @@ angular.module('dashboard')
       'use strict';
 
       var lookup = {
-        'Message Receive Throughput': 'dag.metrics.meter.receiveThroughput',
         'Message Send Throughput': 'dag.metrics.meter.sendThroughput',
+        'Message Receive Throughput': 'dag.metrics.meter.receiveThroughput',
         'Average Message Processing Time': 'dag.metrics.histogram.processTime',
         'Average Message Receive Latency': 'dag.metrics.histogram.receiveLatency'
       };

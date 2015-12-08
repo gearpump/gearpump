@@ -17,23 +17,14 @@ angular.module('dashboard')
           resolve: {
             executor0: ['$stateParams', 'models', function($stateParams, models) {
               return models.$get.appExecutor($stateParams.appId, $stateParams.executorId);
-            }],
-            metrics0: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.appExecutorMetrics(
-                $stateParams.appId, $stateParams.executorId);
-            }],
-            historicalMetrics0: ['$stateParams', 'models', 'conf', function($stateParams, models, conf) {
-              return models.$get.appExecutorHistoricalMetrics(
-                $stateParams.appId, $stateParams.executorId,
-                conf.metricsChartSamplingRate, conf.metricsChartDataCount);
             }]
           }
         });
     }])
 
   .controller('StreamingAppExecutorCtrl', ['$scope', '$stateParams', '$propertyTableBuilder',
-    'helper', 'restapi', 'executor0', 'metrics0', 'historicalMetrics0',
-    function($scope, $stateParams, $ptb, helper, restapi, executor0, metrics0, historicalMetrics0) {
+    'helper', 'restapi', 'conf', 'models', 'executor0',
+    function($scope, $stateParams, $ptb, helper, restapi, conf, models, executor0) {
       'use strict';
 
       $scope.overviewTable = [
@@ -66,13 +57,29 @@ angular.module('dashboard')
       });
 
       // JvmMetricsChartsCtrl will watch `$scope.metrics` and `$scope.historicalMetrics`.
-      $scope.metrics = metrics0.$data();
-      metrics0.$subscribe($scope, function(metrics) {
-        $scope.metrics = metrics;
+      $scope.$on('$destroy', function() {
+        $scope.destroyed = true;
       });
-      $scope.historicalMetrics = historicalMetrics0.$data();
-      historicalMetrics0.$subscribe($scope, function(metrics) {
-        $scope.historicalMetrics = metrics;
-      });
+      models.$subscribe($scope,
+        function() {
+          return models.$get.appExecutorMetrics($scope.app.appId, executor0.id);
+        },
+        function(metrics0) {
+          $scope.metrics = metrics0.$data();
+          metrics0.$subscribe($scope, function(metrics) {
+            $scope.metrics = metrics;
+          });
+        });
+      models.$subscribe($scope,
+        function() {
+          return models.$get.appExecutorHistoricalMetrics($scope.app.appId, executor0.id,
+            conf.metricsChartSamplingRate, conf.metricsChartDataCount);
+        },
+        function(historicalMetrics0) {
+          $scope.historicalMetrics = historicalMetrics0.$data();
+          historicalMetrics0.$subscribe($scope, function(metrics) {
+            $scope.historicalMetrics = metrics;
+          });
+        });
     }])
 ;

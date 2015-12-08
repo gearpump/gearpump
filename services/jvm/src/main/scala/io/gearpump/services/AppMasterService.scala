@@ -50,7 +50,7 @@ trait AppMasterService  {
   def master: ActorRef
   implicit def system: ActorSystem
 
-  def appMasterRoute = {
+  def appMasterRoute = encodeResponse {
     implicit val timeout = Constants.FUTURE_TIMEOUT
     implicit def ec: ExecutionContext = system.dispatcher
     implicit val materializer = ActorMaterializer()
