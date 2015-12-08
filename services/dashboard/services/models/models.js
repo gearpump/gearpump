@@ -119,7 +119,7 @@ angular.module('dashboard')
             // extra properties
             jvm: decoder._jvm(obj.jvmName),
             location: decoder._location(obj.actorPath),
-            isHealthy: obj.state === 'active',
+            isRunning: obj.state === 'active',
             slots: {
               usage: util.usage(slotsUsed, obj.totalSlots),
               used: slotsUsed,

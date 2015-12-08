@@ -34,7 +34,7 @@ angular.module('dashboard')
       }
 
       var restapiV1Root = conf.restapiRoot + '/api/' + conf.restapiProtocol;
-      return {
+      var self = {
         /**
          * Retrieve data from rest service endpoint (HTTP GET) periodically in an angular scope.
          */
@@ -48,8 +48,8 @@ angular.module('dashboard')
 
           interval = interval || conf.restapiQueryInterval;
           var fn = function() {
-            $http.get(restapiV1Root + path)
-              .then(function(response) {
+            var promise = self.get(path);
+            promise.then(function(response) {
                 if (!shouldCancel && angular.isFunction(onData)) {
                   shouldCancel = onData(response.data);
                 }
@@ -68,7 +68,7 @@ angular.module('dashboard')
         },
 
         get: function(path) {
-          return $http.get(restapiV1Root + path);
+          return $http.get(restapiV1Root + path, {timeout: conf.restapiQueryTimeout});
         },
 
         /** Get data from server periodically until an user cancellation or scope exit. */
@@ -239,6 +239,7 @@ angular.module('dashboard')
           fn();
         }
       };
+      return self;
     }
   ])
 ;

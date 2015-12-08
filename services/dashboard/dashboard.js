@@ -69,8 +69,9 @@ angular.module('dashboard', [
   .constant('conf', {
     restapiProtocol: 'v1.0',
     restapiRoot: location.origin,
-    restapiQueryInterval: 2000, // 2 second
+    restapiQueryInterval: 2 * 1000, // 2 seconds
+    restapiQueryTimeout: 30 * 1000, // 30 seconds
     metricsChartDataCount: 4 * 5, // 5 minutes data
-    metricsChartSamplingRate: 1000 * 15 // 15 second
+    metricsChartSamplingRate: 15 * 1000 // 15 seconds
   })
 ;

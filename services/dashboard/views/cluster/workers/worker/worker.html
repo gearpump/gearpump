@@ -3,8 +3,8 @@
   <div class="row">
     <div class="col-md-6">
       <h4>
-        Worker
-        <indicator condition="{{worker.isHealthy?'good':'concern'}}"
+        Worker {{worker.workerId}}
+        <indicator condition="{{worker.isRunning ? 'good' : ''}}"
                    tooltip="{{worker.state}}"></indicator>
       </h4>
       <h5>
