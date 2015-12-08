@@ -46,7 +46,9 @@ angular.module('dashboard')
       });
 
       $scope.$watchCollection('historicalMetrics', function(metrics) {
-        updateHistoricalMetricsCharts(metrics);
+        if (metrics) {
+          updateHistoricalMetricsCharts(metrics);
+        }
       });
 
       function updateHistoricalMetricsCharts(metrics) {

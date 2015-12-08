@@ -18,9 +18,6 @@ angular.module('dashboard')
           resolve: {
             app0: ['$stateParams', 'models', function($stateParams, models) {
               return models.$get.app($stateParams.appId);
-            }],
-            metrics0: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.appMetrics($stateParams.appId);
             }]
           }
         });
@@ -29,8 +26,8 @@ angular.module('dashboard')
 /**
  * This controller is used to obtain app. All nested views will read status from here.
  */
-  .controller('StreamingAppCtrl', ['$scope', '$state', '$filter', 'conf', 'app0', 'metrics0', 'models',
-    function($scope, $state, $filter, conf, app0, metrics0, models) {
+  .controller('StreamingAppCtrl', ['$scope', '$state', '$filter', 'conf', 'app0', 'models',
+    function($scope, $state, $filter, conf, app0, models) {
       'use strict';
 
       $scope.$state = $state; // required by streamingapp.html
@@ -68,10 +65,19 @@ angular.module('dashboard')
           });
         });
 
-      $scope.dag.updateMetricsArray(metrics0.$data());
-      metrics0.$subscribe($scope, function(metrics) {
-        $scope.dag.updateMetricsArray(metrics);
+      $scope.$on('$destroy', function() {
+        $scope.destroyed = true;
       });
+      models.$subscribe($scope,
+        function() {
+          return models.$get.appMetrics(app0.appId);
+        },
+        function(metrics0) {
+          $scope.dag.updateMetricsArray(metrics0.$data());
+          metrics0.$subscribe($scope, function(metrics) {
+            $scope.dag.updateMetricsArray(metrics);
+          });
+        });
 
       // Angular template cannot call the function directly, so export a function.
       $scope.size = function(obj) {

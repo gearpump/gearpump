@@ -61,7 +61,7 @@ trait MasterService {
 
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
-  def masterRoute: Route = {
+  val masterRoute = encodeResponse {
     pathPrefix("api" / s"$REST_VERSION" / "master") {
       extractMaterializer { implicit mat: akka.stream.Materializer =>
         pathEnd {

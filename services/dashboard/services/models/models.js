@@ -6,8 +6,8 @@
 angular.module('dashboard')
 
 /** TODO: to be absorbed as scalajs */
-  .factory('models', ['restapi', 'locator', 'StreamingDag', 'Metrics',
-    function(restapi, locator, StreamingDag, Metrics) {
+  .factory('models', ['conf', 'restapi', 'locator', 'StreamingDag', 'Metrics',
+    function(conf, restapi, locator, StreamingDag, Metrics) {
       'use strict';
 
       var util = {
@@ -403,6 +403,20 @@ angular.module('dashboard')
 
       return {
         $get: getter,
+        /** Attempts to get model and then subscribe changes as long as the scope is valid. */
+        $subscribe: function(scope, getModelFn, onData) {
+          function trySubscribe() {
+            if (scope.destroyed) {
+              return;
+            }
+            getModelFn().then(function(data) {
+              onData(data);
+            }, /*onerror=*/function(response) {
+              setTimeout(trySubscribe, conf.restapiQueryInterval);
+            });
+          }
+          trySubscribe();
+        },
         // TODO: scalajs should return a app.details object with dag, if it is a streaming application.
         createDag: function(clock, processors, levels, edges) {
           var dag = new StreamingDag(clock, processors, levels, edges);
