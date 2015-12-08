@@ -18,6 +18,7 @@
 
 package io.gearpump.experiments.yarn.master
 
+import java.io.FileNotFoundException
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
@@ -39,6 +40,8 @@ import org.apache.hadoop.yarn.client.api.async.NMClientAsync
 import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.slf4j.Logger
+
+import scala.util.Try
 
 object AmActorProtocol {
 
@@ -367,6 +370,12 @@ object YarnApplicationMaster extends App with ArgumentsParser {
     }
   }
 
-  apply(args)
+  Try(apply(args)).recover{
+    case ex:FileNotFoundException =>
+      Console.err.println(s"${ex.getMessage}\n" +
+        s"try to check if your gearpump version is right " +
+        s"or HDFS was correctly configured.")
+    case ex => help; throw ex
+  }
 }
 

@@ -18,6 +18,8 @@
 
 package io.gearpump.experiments.yarn
 
+import java.nio.file.{Files, Paths}
+
 import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.mockito.Mockito._
 import org.scalatest.FlatSpecLike
@@ -29,10 +31,26 @@ class ContainerLaunchContextSpec extends FlatSpecLike with MockitoSugar {
   "A ContainerLaunchContext object" should "create new ContainerLaunchContext" in {
     val command = "foo"
     val hdfsRoot = "hdfs"
+    val mockVersion = "mockVersion"
     val yarnConfig = mock[YarnConfiguration]
     val appConfig = mock[AppConfig]
+
     when(appConfig.getEnv(Constants.HDFS_ROOT)).thenReturn(hdfsRoot)
-    ContainerLaunchContext(yarnConfig, appConfig)(command) should not be
-      theSameInstanceAs(ContainerLaunchContext(yarnConfig, appConfig)(command))
+    when(appConfig.getEnv("version")).thenReturn(mockVersion)
+    when(yarnConfig.get("fs.defaultFS", "file:///")).thenReturn("file:///")
+
+    try {
+      Files.createDirectory(Paths.get(hdfsRoot))
+      Files.createDirectory(Paths.get(s"$hdfsRoot/conf"))
+      Files.createFile(Paths.get(s"$hdfsRoot/mockVersion.tar.gz"))
+      ContainerLaunchContext(yarnConfig, appConfig)(command) should not be
+        theSameInstanceAs(ContainerLaunchContext(yarnConfig, appConfig)(command))
+    } catch {
+      case e: Throwable => throw e
+    } finally {
+      Files.delete(Paths.get(s"$hdfsRoot/mockVersion.tar.gz"))
+      Files.delete(Paths.get(s"$hdfsRoot/conf"))
+      Files.delete(Paths.get(hdfsRoot))
+    }
   }
 }

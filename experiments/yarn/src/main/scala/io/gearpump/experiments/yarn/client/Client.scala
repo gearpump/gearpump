@@ -17,7 +17,7 @@
  */
 package io.gearpump.experiments.yarn.client
 
-import java.io._
+import java.io.{File,FileNotFoundException}
 
 import com.typesafe.config.ConfigFactory
 import io.gearpump.experiments.yarn
@@ -248,7 +248,7 @@ class Client(configuration: AppConfig, yarnConf: YarnConfiguration, yarnClient: 
 }
 
 object Client extends App with ArgumentsParser {
-  
+
   case class ClusterResources(totalFreeMemory: Long, totalContainers: Int, nodeManagersFreeMemory: Map[String, Long])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -277,5 +277,11 @@ object Client extends App with ArgumentsParser {
     new Client(appConfig, conf, client, containerLaunchContext, fileSystem).deploy()
   }
 
-  Try(apply()).recover{case ex => help; throw ex}
+  Try(apply()).recover{
+    case ex:FileNotFoundException =>
+      Console.err.println(s"${ex.getMessage}\n" +
+        s"try to check if your gearpump version is right " +
+        s"or HDFS was correctly configured.")
+    case ex => help; throw ex
+  }
 }
