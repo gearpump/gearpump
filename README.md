@@ -3,7 +3,7 @@
 
 Web site: http://gearpump.io
 
-[![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](https://github.com/gearpump/gearpump/releases)
+[![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](http://www.gearpump.io/download.html)
 
 GearPump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
@@ -22,7 +22,7 @@ Per initial benchmarks we are able to process 11 million messages/second (100 by
 
 ![](https://raw.githubusercontent.com/gearpump/gearpump/master/docs/img/dashboard.png)
 
-For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/site/0.6/performance/)
+For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/releases/latest/performance-report.html)
 
 ## Design Document
 
@@ -30,11 +30,11 @@ There is a 20 pages technical paper on typesafe blog, with technical highlights 
 
 ## Introduction and Motivation
 
-Check [Introduction](http://www.gearpump.io/site/0.6/userguide/#introduction)
+Check [Introduction](http://www.gearpump.io/overview.html)
 
 ## Getting Started
 
-Check guide [Get Started](http://www.gearpump.io/site/0.6/userguide/#get-started)
+Check guide [Get Started](http://www.gearpump.io/releases/latest/submit-your-1st-application.html)
 
 ## How to Build
 
@@ -77,7 +77,6 @@ export HTTP_PROXY=http://host:port
 export HTTPS_PROXT= http://host:port
 ```
 
-After the build, the package directory layout looks like this: [Layout](http://www.gearpump.io/site/0.6/userguide/#gearpump-package-structure)
 
 ## How to run Gearpump integration test
 Gearpump has an integration test system which is based on Docker.
@@ -99,19 +98,16 @@ sbt it:test
 
 ## Concepts
 
-Check guide [Concepts](http://www.gearpump.io/site/0.6/userguide/#concepts)
+Check guide [Concepts](http://www.gearpump.io/releases/latest/basic-concepts.html)
 
 ## How to write a GearPump Application
 
-Check guide [Streaming Application Developer Guide](http://www.gearpump.io/site/0.6/userguide/#streaming-application-developer-guide)
+Check guide [Streaming Application Developer Guide](http://www.gearpump.io/releases/latest/dev-write-1st-app.html)
 
-## How to manage the cluster
-
-Check [Admin Guide](http://www.gearpump.io/site/0.6/userguide/#admin-guide)
 
 # Maven dependencies
 
-Check [Maven settings](http://www.gearpump.io/site/downloads/downloads/#maven)
+Check [Maven settings](http://www.gearpump.io/releases/latest/maven-setting.html)
 
 ## Further information
 
