@@ -461,7 +461,7 @@ object Build extends sbt.Build {
   lazy val integration_test = Project(
     id = "gearpump-integration-test",
     base = file("integrationtest"),
-    settings = commonSettings ++ Seq(
+    settings = commonSettings ++ noPublish ++ Seq(
       testOptions in IntegrationTest += Tests.Filter(itTestFilter),
       libraryDependencies ++= Seq(
         "com.lihaoyi" %% "upickle" % upickleVersion,
