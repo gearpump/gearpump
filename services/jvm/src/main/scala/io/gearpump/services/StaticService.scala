@@ -21,10 +21,13 @@ package io.gearpump.services
 import java.net.URL
 import java.util.jar.Manifest
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 
 trait StaticService  {
+
+  implicit def system: ActorSystem
 
   val version = {
     val manifest = getManifest(this.getClass)
@@ -57,6 +60,10 @@ trait StaticService  {
       get {
         complete(version)
       }
+    } ~
+    path("terminate") {
+      system.shutdown()
+      complete(StatusCodes.NotFound)
     } ~
     path(Rest) { path =>
       getFromResource("%s" format path)
