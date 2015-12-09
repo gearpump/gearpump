@@ -270,7 +270,7 @@ object Build extends sbt.Build {
       "com.lihaoyi" %% "upickle" % upickleVersion,
       "org.webjars" % "angularjs" % "1.4.4",
       "org.webjars" % "angular-ui-router" % "0.2.15",
-      "org.webjars" % "bootstrap" % "3.3.5",
+      "org.webjars" % "bootstrap" % "3.3.6",
       "org.webjars" % "d3js" % "3.5.5",
       "org.webjars" % "momentjs" % "2.10.3",
       "org.webjars" % "lodash" % "3.10.1",
@@ -287,7 +287,7 @@ object Build extends sbt.Build {
       "org.webjars" % "font-awesome" % "4.4.0",
       "org.webjars.bower" % "clipboard.js" % "0.1.1",
       "org.webjars.npm" % "dashing-deps" % "0.0.8",
-      "org.webjars.npm" % "dashing" % "0.2.8"
+      "org.webjars.npm" % "dashing" % "0.3.3"
   ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
 
   lazy val serviceJSSettings = Seq(

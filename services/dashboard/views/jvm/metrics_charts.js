@@ -10,9 +10,9 @@ angular.module('dashboard')
       'use strict';
 
       $scope.jvmMetricsTable = [
-        $ptb.bytes('Memory Total').done(),
-        $ptb.bytes('Memory Committed').done(),
-        $ptb.bytes('Memory Used').done(),
+        $ptb.number('Memory Total').done(),
+        $ptb.number('Memory Committed').done(),
+        $ptb.number('Memory Used').done(),
         $ptb.number('Total Thread Count').done(),
         $ptb.number('Daemon Thread Count').done()
       ];

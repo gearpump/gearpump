@@ -55,6 +55,7 @@ angular.module('dashboard')
 
       $scope.executorsTable = {
         cols: [
+          $stb.indicator().key('status').canSort().styleClass('td-no-padding').done(),
           $stb.link('Executor ID').key('executors').canSort().styleClass('col-md-4').done(),
           $stb.link('Application').key('id').canSort().sortDefault().styleClass('col-md-4').done(),
           $stb.number('Slots').key('slots').canSort().styleClass('col-md-4').done()
@@ -81,6 +82,7 @@ angular.module('dashboard')
               (executor.executorId === -1 ?
                 'appmaster' : 'executor' + executor.executorId);
             return {
+              status: {condition: 'good', shape: 'stripe'}, // always be good
               id: {href: app.pageUrl, text: app.appName},
               executors: {href: executorPageUrl, text: executorPath},
               slots: executor.slots

@@ -58,13 +58,18 @@ angular.module('dashboard')
           app.processorLevels, app.dag.edgeList);
       }
 
-      models.$get.appStallingProcessors(app0.appId)
-        .then(function(processors) {
-          $scope.dag.setStallingTasks(Object.keys(processors.$data()));
-          processors.$subscribe($scope, function(data) {
-            $scope.dag.setStallingTasks(Object.keys(data));
+      models.$get.appStallingTasks(app0.appId)
+        .then(function(tasks0) {
+          updateStallingTasks(tasks0.$data());
+          tasks0.$subscribe($scope, function(tasks) {
+            updateStallingTasks(tasks);
           });
         });
+      function updateStallingTasks(tasks) {
+        $scope.appClockConcern = ($scope.app.isRunning && Object.keys(tasks).length) ?
+          "Application clock does not go forward. Please check processors in DAG tab." : undefined;
+        $scope.dag.setStallingTasks(tasks);
+      }
 
       $scope.$on('$destroy', function() {
         $scope.destroyed = true;
