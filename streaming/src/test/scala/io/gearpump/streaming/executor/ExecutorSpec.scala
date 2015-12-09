@@ -72,13 +72,15 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     verify(taskLauncher, times(1)).launch(any(), any(), any(), any())
 
     executor ! StartAllTasks(TaskLocations(Map.empty), 0, 0)
-    task.expectMsgType[Start]
-    task.expectMsgType[Start]
+    task.expectMsgType[StartTask]
+    task.expectMsgType[StartTask]
 
     val changeTasks = ChangeTasks(taskIds, dagVersion = 1, life = LifeTime(0, Long.MaxValue), List.empty[Subscriber])
 
     client.send(executor, changeTasks)
-    client.expectMsg(TasksChanged)
+    client.expectMsgType[TasksChanged]
+
+    executor ! StartAllTasks(TaskLocations(Map.empty), 0, 1)
 
     task.expectMsgType[ChangeTask]
     task.expectMsgType[ChangeTask]

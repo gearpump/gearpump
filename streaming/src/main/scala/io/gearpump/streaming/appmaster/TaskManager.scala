@@ -115,8 +115,9 @@ private[appmaster] class TaskManager(
     case Event(TasksLaunched, state) =>
       // We will track all launched task by message RegisterTask
       stay
-    case Event(TasksChanged, state) =>
-      // We will track all changed task by message TaskChanged.
+    case Event(TasksChanged(tasks), state) =>
+      tasks.foreach(task =>state.taskChangeRegistry.taskChanged(task))
+      checkApplicationReady(state)
       stay
     case Event(RegisterTask(taskId, executorId, host), state) =>
       val client = sender
@@ -125,7 +126,9 @@ private[appmaster] class TaskManager(
       if (status == Accept) {
         LOG.info(s"RegisterTask($taskId) TaskLocation: $host, Executor: $executorId")
         val sessionId = ids.newSessionId
-        client ! TaskRegistered(taskId, sessionId)
+
+        startClock.foreach(clock => client ! TaskRegistered(taskId, sessionId, clock))
+
         checkApplicationReady(state)
       } else {
         sender ! TaskRejected(taskId)
