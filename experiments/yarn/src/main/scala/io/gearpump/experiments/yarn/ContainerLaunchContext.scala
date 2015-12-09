@@ -34,7 +34,6 @@ import org.apache.hadoop.yarn.util.{ConverterUtils, Records}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
-import scala.util.{Failure, Success, Try}
 
 object ContainerLaunchContext {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -55,21 +54,14 @@ object ContainerLaunchContext {
   }
 
   private def getAMLocalResourcesMap: Map[String, LocalResource] = {
-    Try({
-      val fs = getFs(yarnConf)
-      val version = appConfig.getEnv("version")
-      val hdfsRoot = appConfig.getEnv(HDFS_ROOT)
-      Map(
-        "pack" -> newYarnAppResource(fs, new Path(s"$hdfsRoot/$version.tar.gz"),
-          LocalResourceType.ARCHIVE, LocalResourceVisibility.APPLICATION),
-        "yarnConf" -> newYarnAppResource(fs, new Path(s"$hdfsRoot/conf"),
-          LocalResourceType.FILE, LocalResourceVisibility.APPLICATION))
-    }) match {
-      case Success(map) =>
-        map
-      case Failure(throwable) =>
-        Map.empty[String, LocalResource]
-    }
+    val fs = getFs(yarnConf)
+    val version = appConfig.getEnv("version")
+    val hdfsRoot = appConfig.getEnv(HDFS_ROOT)
+    Map(
+      "pack" -> newYarnAppResource(fs, new Path(s"$hdfsRoot/$version.tar.gz"),
+        LocalResourceType.ARCHIVE, LocalResourceVisibility.APPLICATION),
+      "yarnConf" -> newYarnAppResource(fs, new Path(s"$hdfsRoot/conf"),
+        LocalResourceType.FILE, LocalResourceVisibility.APPLICATION))
   }
 
   private def newYarnAppResource(fs: FileSystem, path: Path,
