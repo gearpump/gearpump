@@ -26,11 +26,13 @@ import io.gearpump.TimeStamp
 import io.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
 import io.gearpump.metrics.Metrics._
+import io.gearpump.metrics.MetricsAggregator
 import io.gearpump.util.Constants._
-import io.gearpump.util.HistoryMetricsService.{MetricsStore, HistoryMetricsConfig}
+import io.gearpump.util.HistoryMetricsService.{SkipAllAggregator, DummyMetricsAggregator, MetricsStore, HistoryMetricsConfig}
 import org.slf4j.Logger
 
 import scala.collection.mutable.ListBuffer
+import scala.util.Try
 
 /**
  * Metrics service to serve history metrics data
@@ -80,11 +82,26 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
     result.toList
   }
 
-  def commandHandler: Receive = {
+  private var aggregators: Map[String, MetricsAggregator] = Map("" -> new DummyMetricsAggregator)
 
+  def commandHandler: Receive = {
     //path accept syntax ? *, ? will match one char, * will match at least one char
-    case QueryHistoryMetrics(inputPath, readLatest) =>
-      sender ! HistoryMetrics(inputPath, fetchMetricsHistory(inputPath, readLatest))
+    case QueryHistoryMetrics(inputPath, readLatest, aggregatorClazz) =>
+
+       val aggregator = {
+         if (!aggregators.contains(aggregatorClazz)) {
+           val aggregatorTry = Try(Class.forName(aggregatorClazz).newInstance().asInstanceOf[MetricsAggregator])
+           if (aggregatorTry.isSuccess) {
+             aggregators += aggregatorClazz -> aggregatorTry.get
+           } else {
+             LOG.error("Cannot apply aggregator " + aggregatorClazz, aggregatorTry.failed.get)
+             aggregators += aggregatorClazz -> new SkipAllAggregator
+           }
+         }
+         aggregators(aggregatorClazz)
+       }
+
+      sender ! HistoryMetrics(inputPath, aggregator.aggregate(fetchMetricsHistory(inputPath, readLatest)))
    }
 }
 
@@ -376,5 +393,14 @@ object HistoryMetricsService {
     override def readLatest: List[HistoryMetricsItem] = {
       recent.readLatest
     }
+  }
+
+  class DummyMetricsAggregator extends MetricsAggregator {
+    def aggregate(input: List[HistoryMetricsItem]): List[HistoryMetricsItem] = input
+  }
+
+  class SkipAllAggregator extends MetricsAggregator {
+    private val empty = List.empty[HistoryMetricsItem]
+    def aggregate(input: List[HistoryMetricsItem]): List[HistoryMetricsItem] = empty
   }
 }

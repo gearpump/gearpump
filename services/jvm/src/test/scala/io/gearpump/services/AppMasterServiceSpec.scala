@@ -58,7 +58,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
         case AppMasterDataDetailRequest(appId) =>
           sender ! GeneralAppMasterSummary(appId)
           KeepRunning
-        case QueryHistoryMetrics(path, _) =>
+        case QueryHistoryMetrics(path, _, _) =>
           sender ! HistoryMetrics(path, List.empty[HistoryMetricsItem])
           KeepRunning
         case GetLastFailure(appId) =>

@@ -46,7 +46,7 @@ class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest with WorkerServ
         case QueryWorkerConfig(appId) =>
           sender ! WorkerConfig(null)
           KeepRunning
-        case QueryHistoryMetrics(path, _) =>
+        case QueryHistoryMetrics(path, _, _) =>
           sender ! HistoryMetrics(path, List.empty[HistoryMetricsItem])
           KeepRunning
       }
