@@ -59,8 +59,12 @@ object Constants {
   // whether turn on GC log, true or false
   val GEARPUMP_VERBOSE_GC = "gearpump.verbose-gc"
 
-  //the time out for Future
-  val FUTURE_TIMEOUT = akka.util.Timeout(90, TimeUnit.SECONDS)
+  // the time out for Future, like ask.
+  // !Important! This global timeout setting will also impact the UI
+  // responsive time if set to too big. Please make sure you have
+  // enough justification to change this global setting, otherwise
+  // please use your local timeout setting instead.
+  val FUTURE_TIMEOUT = akka.util.Timeout(15, TimeUnit.SECONDS)
 
   val APPMASTER_DEFAULT_EXECUTOR_ID = -1
 
