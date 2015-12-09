@@ -12,6 +12,7 @@
       <metrics
         ng-if="app.clock"
         caption="Application Clock"
+        help="{{appClockConcern}}" remark-type="warning"
         value="{{app.clock|date:'HH:mm:ss'}}"
         sub-text="{{app.clock|date:'yyyy/MM/dd'}}"></metrics>
       <metrics

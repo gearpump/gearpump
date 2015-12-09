@@ -86,7 +86,7 @@ angular.module('dashboard')
             var hierarchyLevel = data.hierarchyLevels[processorId];
             var visNode = visNodes.get(processorId);
             var size = d3.round(suggestRadiusFn(weight), 1);
-            var color = $vis.nodeColor(processor.stalling);
+            var color = $vis.nodeColor(processor.isStalled);
             if (!visNode || visNode.label !== label || visNode.size !== size ||
               (visNode.color && visNode.color !== color)) {
               diff.push({

@@ -161,6 +161,11 @@ angular.module('dashboard')
             type: obj.hasOwnProperty('dag') ? 'streaming' : ''
           });
 
+          if (!moment(Number(obj.clock)).isValid()) {
+            console.warn({message: 'invalid application clock', clock: obj.clock});
+            delete obj.clock;
+          }
+
           // upickle conversion 1: streaming app related decoding
           obj.processors = util.flatten(obj.processors);
           obj.processorLevels = util.flatten(obj.processorLevels);
@@ -222,8 +227,13 @@ angular.module('dashboard')
             return Metrics.$auto(obj, /*addMeta=*/true);
           });
         },
-        appStallingProcessors: function(wrapper) {
-          return _.groupBy(wrapper.tasks, 'processorId');
+        /** Return a map. the key is processor id, the value is an array of its stalling tasks */
+        appStallingTasks: function(wrapper) {
+          var result = _.groupBy(wrapper.tasks, 'processorId');
+          _.forEach(result, function(processor, processorId) {
+            result[processorId] = _.pluck(processor, 'index');
+          });
+          return result;
         },
         metrics: function(wrapper, args) {
           var metrics = decoder._metrics(wrapper);
@@ -385,9 +395,9 @@ angular.module('dashboard')
             '/appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId,
             period, count);
         },
-        appStallingProcessors: function(appId) {
+        appStallingTasks: function(appId) {
           return get('/appmaster/' + appId + '/stallingtasks',
-            decoder.appStallingProcessors);
+            decoder.appStallingTasks);
         },
         _metrics: function(pathPrefix, path) {
           return get(pathPrefix + path + '?readLatest=true',

@@ -123,7 +123,7 @@ angular.module('dashboard')
         _.forEach(processors, function(_, key) {
           var processorId = parseInt(key); // JavaScript object key type is always string
           weights[processorId] = this._calculateProcessorWeight(processorId);
-          processors[key].stalling = processorId in this.stallingTasks;
+          processors[key].isStalled = key in this.stallingTasks;
         }, this);
 
         var bandwidths = {};
