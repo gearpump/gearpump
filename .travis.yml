@@ -7,12 +7,13 @@ script:
 - echo "TRAVIS_BRANCH" $TRAVIS_BRANCH
 - echo "TRAVIS_TAG" $TRAVIS_TAG
 - echo "repo" $TRAVIS_REPO_SLUG
-- if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]];
-    then sbt -jvm-opts project/travis/jvmopts clean coverage +test | grep -v -E "Resolving ";
+- skipLogs="Resolving |Compiling |Done updating|Updating |scoverage|coverage-report";
+  if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]];
+    then sbt -jvm-opts project/travis/jvmopts clean coverage +test | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_BRANCH == "master" ]];
-    then sbt clean +publish | grep -v -E "Resolving ";
+    then sbt clean +publish | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_TAG != "" ]];
-    then sbt clean +assembly +packArchiveZip | grep -v -E "Resolving ";
+    then sbt clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
   fi  
 jdk:
 - oraclejdk7
