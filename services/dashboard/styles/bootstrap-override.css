@@ -154,6 +154,11 @@ html, body {
   font-size: 0.95em;
 }
 
+/* Specify the size of modal dialog */
+.modal-dialog {
+  width: 520px;
+}
+
 /* Make the feedback icon of a form input control clickable (2 rules) */
 .clickable {
   pointer-events: auto;

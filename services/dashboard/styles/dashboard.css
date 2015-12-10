@@ -99,7 +99,6 @@ h4, table > caption {
 /* Help text */
 .help-text {
   border-bottom: thin dotted;
-  cursor: help;
 }
 
 /* Drop-box (2 rules) */

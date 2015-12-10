@@ -7,8 +7,9 @@
         <h4>Modify Processor
           <span ng-bind="processorId"></span></h4>
 
-        <p style="padding-top: 4px; padding-bottom: 14px;">Note that change processor JAR or task class or parallelism
-          will create a new processor instance.</p>
+        <p style="padding-top: 4px; padding-bottom: 14px;">System will replace existing processor
+          with a new one, if any of these fields (processor JAR, task class or parallelism) are
+          changed.</p>
 
         <div ng-show="shouldNoticeSubmitFailed">
           <div class="alert alert-danger alert-dismissible" role="alert">
@@ -24,95 +25,37 @@
           </div>
         </div>
 
-        <form name="form">
-          <div class="row" style="margin-bottom: 18px">
+        <form name="form" class="form-horizontal">
+          <!-- right margin align to cancel button right -->
+          <div style="margin-bottom: 18px">
             <!-- input 1 -->
-            <div ng-hide="changeParallelismOnly">
-              <div class="col-sm-4">
-                <label class="form-label-vertical" for="jarFileInput">New Processor JAR</label>
-              </div>
-              <div class="col-sm-8">
-                <div class="form-group has-feedback">
-                  <input id="jarFileInput" readonly
-                         type="text" class="form-control input-sm"
-                         ng-value="names['jar']"/>
-                  <!-- Toggle buttons -->
-                  <span ng-hide="names['jar']"
-                        class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
-                        ngf-select ng-model="jar" accept=".jar" ngf-accept="'.jar'"></span>
-                  <span ng-show="names['jar']"
-                        class="glyphicon glyphicon-trash form-control-feedback form-control-feedback-sm clickable"
-                        ng-click="clear('jar')"></span>
-                </div>
-              </div>
-            </div>
+            <form-control
+              ng-hide="changeParallelismOnly"
+              type="upload" label="Processor JAR" autofocus="true"
+              ng-model="jar" accept-pattern=".jar"></form-control>
             <!-- input 2 -->
-            <div ng-hide="changeParallelismOnly"
-                 ng-class="{'has-error': !validTaskClass}">
-              <div class="col-sm-4">
-                <label class="form-label-vertical" for="taskClassInput">New Task Class</label>
-              </div>
-              <div class="col-sm-8">
-                <div class="form-group">
-                  <input id="taskClassInput"
-                         type="text" class="form-control input-sm"
-                         ng-model="taskClass"/>
-                </div>
-              </div>
-            </div>
+            <form-control
+              ng-hide="changeParallelismOnly"
+              type="class" label="Task Class"
+              ng-model="taskClass"
+              invalid="invalid.taskClass"></form-control>
             <!-- input 3 -->
-            <div ng-class="{'has-error': !validParallelism}">
-              <div class="col-sm-4">
-                <label class="form-label-vertical" for="parallelismInput">New Parallelism</label>
-                <remark tooltip="The number of tasks that will be allocated by the processor"></remark>
-              </div>
-              <div class="col-sm-8">
-                <div class="form-group">
-                  <input id="parallelismInput"
-                         type="number" class="form-control input-sm"
-                         ng-model="parallelism"/>
-                </div>
-              </div>
-            </div>
+            <form-control
+              ng-hide="changeParallelismOnly"
+              type="text" label="Description"
+              ng-model="description"
+              invalid="invalid.description"></form-control>
             <!-- input 4 -->
-            <div ng-hide="changeParallelismOnly">
-              <div class="col-sm-4">
-                <label class="form-label-vertical" for="descriptionInput">Description</label>
-                <remark tooltip="Optional to provide processor description"></remark>
-              </div>
-              <div class="col-sm-8">
-                <div class="form-group">
-                  <input id="descriptionInput"
-                         type="text" class="form-control input-sm"
-                         ng-model="description"/>
-                </div>
-              </div>
-            </div>
+            <form-control
+              type="integer" min="1" label="Parallelism"
+              ng-model="parallelism"
+              invalid="invalid.parallelism"></form-control>
             <!-- input 5 -->
-            <div ng-hide="changeParallelismOnly">
-              <div class="col-sm-4"
-                   ng-class="{'has-error': form.date.$invalid || form.time.$invalid}">
-                <label class="form-label-vertical" for="transitTimeInput">Transit Time</label>
-              </div>
-              <div class="col-sm-4"
-                   ng-class="{'has-error': form.date.$invalid}">
-                <div class="form-group">
-                  <input id="transitTimeInput"
-                         type="text" size="10" class="form-control" placeholder="Date" name="date"
-                         ng-model="transitDate" data-date-format="yyyy-MM-dd"
-                         date-type="string" autoclose="true" bs-datepicker/>
-                </div>
-              </div>
-              <div class="col-sm-4"
-                   ng-class="{'has-error': form.time.$invalid}">
-                <div class="form-group">
-                  <input type="text" size="8" class="form-control" placeholder="Time" name="time"
-                         ng-model="transitTime" ng-click="fillDefaultTime()" data-time-format="HH:mm:ss"
-                         hour-step="-1" minute-step="-1" second-step="-1" time-type="string"
-                         arrow-behavior="picker" bs-timepicker/>
-                </div>
-              </div>
-            </div>
+            <form-control
+              type="datetime" label="Transit Time"
+              help="The modification will take effect immediately, if transition time is not specified or past already."
+              ng-model="transitTime"
+              invalid="invalid.transitTime"></form-control>
           </div>
         </form>
       </div>

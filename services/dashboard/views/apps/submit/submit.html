@@ -6,7 +6,8 @@
           <span>&times;</span></button>
         <h4>Submit Application</h4>
 
-        <p style="padding-top: 4px; padding-bottom: 14px;">Upload self contained JAR file and launch it immediately.</p>
+        <p style="padding-top: 4px; padding-bottom: 14px;">Application will be launched immediately,
+          after the JAR file is uploaded.</p>
 
         <div ng-show="shouldNoticeSubmitFailed">
           <div class="alert alert-danger alert-dismissible" role="alert">
@@ -26,52 +27,23 @@
           </div>
         </div>
 
-        <form>
-          <div class="row" style="margin-bottom: 18px">
+        <form name="form" class="form-horizontal">
+          <!-- right margin align to cancel button right -->
+          <div style="margin-bottom: 18px">
             <!-- input 1 -->
-            <div class="col-sm-4">
-              <label class="form-label-vertical" for="jarFileInput">Application JAR</label>
-            </div>
-            <div class="col-sm-8">
-              <div class="form-group has-feedback">
-                <input id="jarFileInput" readonly
-                       type="text" class="form-control input-sm"
-                       ng-value="names['jar']"/>
-                <span class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
-                      ngf-select ng-model="jar" accept=".jar" ngf-accept="'.jar'"></span>
-              </div>
-            </div>
+            <form-control
+              type="upload" label="Application JAR" required="true" autofocus="true"
+              ng-model="jar" accept-pattern=".jar"></form-control>
             <!-- input 2 -->
-            <div class="col-sm-4">
-              <label class="form-label-vertical" for="configFileInput">Config File</label>
-              <remark tooltip="Optional to provide a config file to override default behaviors"></remark>
-            </div>
-            <div class="col-sm-8">
-              <div class="form-group has-feedback">
-                <input id="configFileInput" readonly
-                       type="text" class="form-control input-sm"
-                       ng-value="names['conf']"/>
-                <!-- Toggle buttons -->
-                <span ng-hide="names['conf']"
-                      class="glyphicon glyphicon-folder-open form-control-feedback form-control-feedback-sm clickable"
-                      ngf-select ng-model="conf" accept=".conf" ngf-accept="'.conf'"></span>
-                <span ng-show="names['conf']"
-                      class="glyphicon glyphicon-trash form-control-feedback form-control-feedback-sm clickable"
-                      ng-click="clear('conf')"></span>
-              </div>
-            </div>
+            <form-control
+              type="upload" label="Config File"
+              help="Provide a config file to override default behaviors (optional)"
+              ng-model="conf" accept-pattern=".conf"></form-control>
             <!-- input 3 -->
-            <div class="col-sm-4">
-              <label class="form-label-vertical" for="launchArgsInput">Launch Arguments</label>
-              <remark
-                tooltip="Optional to provide extra launch arguments. E.g. WordCount can use &quot;-split 2 -sum 1&quot;"></remark>
-            </div>
-            <div class="col-sm-8">
-              <div class="form-group">
-                <input id="launchArgsInput" type="text"
-                       class="form-control input-sm" ng-model="extraArgs"/>
-              </div>
-            </div>
+            <form-control
+              type="text" label="Arguments"
+              help="Application specific launch arguments (optional). E.g. WordCount can use &quot;-split 2 -sum 1&quot;"
+              ng-model="launchArgs"></form-control>
           </div>
         </form>
       </div>

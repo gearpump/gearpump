@@ -8,37 +8,19 @@ angular.module('dashboard')
     function($scope, restapi) {
       'use strict';
 
-      $scope.files = {};
-      $scope.names = {};
-
-      $scope.clear = function(name) {
-        $scope.files[name] = null;
-        $scope.names[name] = ''; // must be '', otherwise MSIE will not response expectedly
-      };
-
-      ['jar', 'conf'].forEach(function(name) {
-        $scope.clear(name);
-        $scope.$watch(name, function(files) {
-          if (Array.isArray(files) && files.length) {
-            $scope.files[name] = files[0];
-            $scope.names[name] = files[0].name;
-          }
-        });
-      });
-
       $scope.canSubmit = function() {
-        return $scope.files.jar && !$scope.uploading;
+        return $scope.jar && !$scope.uploading;
       };
 
       $scope.submit = function() {
-        var files = [$scope.files.jar];
+        var files = [$scope.jar];
         var fileFormNames = ['jar'];
-        if ($scope.files.conf) {
-          files.push($scope.files.conf);
+        if ($scope.conf) {
+          files.push($scope.conf);
           fileFormNames.push('conf');
         }
         $scope.uploading = true;
-        restapi.submitUserApp(files, fileFormNames, $scope.extraArgs, function(response) {
+        restapi.submitUserApp(files, fileFormNames, $scope.launchArgs, function(response) {
           $scope.shouldNoticeSubmitFailed = !response.success;
           $scope.uploading = false;
           if (response.success) {

@@ -285,7 +285,7 @@ object Build extends sbt.Build {
       "org.webjars" % "font-awesome" % "4.4.0",
       "org.webjars.bower" % "clipboard.js" % "0.1.1",
       "org.webjars.npm" % "dashing-deps" % "0.0.8",
-      "org.webjars.npm" % "dashing" % "0.3.5"
+      "org.webjars.npm" % "dashing" % "0.3.6"
   ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
 
   lazy val serviceJSSettings = Seq(

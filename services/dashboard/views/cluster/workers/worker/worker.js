@@ -69,6 +69,7 @@ angular.module('dashboard')
           worker.slots.total
           /* placeholder for quick links, but they do not need to be updated */
         ]);
+        $scope.uptimeCompact = helper.readableDuration(worker.aliveFor);
       }
 
       function updateExecutorsTable() {
