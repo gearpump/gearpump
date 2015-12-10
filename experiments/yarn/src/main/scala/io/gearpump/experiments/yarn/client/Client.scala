@@ -19,10 +19,21 @@ package io.gearpump.experiments.yarn.client
 
 import java.io.{File,FileNotFoundException}
 
+import java.util.concurrent.TimeUnit
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import com.typesafe.config.ConfigFactory
+import io.gearpump.cluster.AppMasterToMaster.MasterData
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.experiments.yarn
 import io.gearpump.experiments.yarn.{AppConfig, ContainerLaunchContext}
-import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
+import io.gearpump.services._
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.yarn.api.ApplicationConstants
@@ -34,6 +45,7 @@ import org.apache.hadoop.yarn.util.{Apps, Records}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 
@@ -53,15 +65,15 @@ trait ClientAPI {
   def getYarnConf: YarnConfiguration
   def getAppEnv: Map[String, String]
   def getAMCapability: Resource
-  def waitForTerminalState(appId: ApplicationId): Unit
+  def waitForTerminalState(appId: ApplicationId): ApplicationReport
   def start(): Boolean
   def submit(): Try[ApplicationId]
 }
 
 class Client(configuration: AppConfig, yarnConf: YarnConfiguration, yarnClient: YarnClient,
              containerLaunchContext: (String) => ContainerLaunchContext, fileSystem: FileSystem) extends ClientAPI {
-  import yarn.Constants._
   import Client._
+  import yarn.Constants._
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def getConfiguration = configuration
@@ -71,6 +83,8 @@ class Client(configuration: AppConfig, yarnConf: YarnConfiguration, yarnClient: 
 
   private val version = configuration.getEnv("version")
   private val confOnYarn = getEnv(HDFS_ROOT) + "/conf/"
+  private val restURI = s"api/$REST_VERSION"
+
 
   private[client] def getMemory(envVar: String): Int = {
     try {
@@ -161,7 +175,7 @@ class Client(configuration: AppConfig, yarnConf: YarnConfiguration, yarnClient: 
     (appReport, appState)
   }
 
-  def waitForTerminalState(appId: ApplicationId): Unit = {
+  def waitForTerminalState(appId: ApplicationId): ApplicationReport = {
     var appReport = yarnClient.getApplicationReport(appId)
     var appState = appReport.getYarnApplicationState
     var terminalState = false
@@ -186,7 +200,7 @@ class Client(configuration: AppConfig, yarnConf: YarnConfiguration, yarnClient: 
           appReport = ar
           appState = as
         case YarnApplicationState.RUNNING =>
-          LOG.info(s"Application $appId is $appState")
+          LOG.info(s"Application $appId is $appState trackingURL=${appReport.getTrackingUrl}")
           terminalState = true
         case unknown: YarnApplicationState =>
           LOG.info(s"Application $appId is $appState")
@@ -195,6 +209,43 @@ class Client(configuration: AppConfig, yarnConf: YarnConfiguration, yarnClient: 
           appState = as
       }
       Thread.sleep(1000)
+    }
+    appReport
+  }
+
+  def logMasters(report: ApplicationReport): Unit = {
+    import upickle.default.read
+    implicit val system = ActorSystem("httpclient")
+    implicit val materializer = ActorMaterializer()
+    import concurrent.ExecutionContext.Implicits.global
+    LOG.info(s"trackingURL=${report.getTrackingUrl}")
+    val trackingURL = new java.net.URL(report.getTrackingUrl)
+    system.scheduler.scheduleOnce(Duration(5, TimeUnit.SECONDS)) {
+      LOG.info(s"host=${trackingURL.getHost} port=${trackingURL.getPort} uri=/proxy/${report.getApplicationId}/$restURI/master")
+      lazy val trackingURLConnectionFlow: Flow[HttpRequest, HttpResponse, Any] =
+        Http().outgoingConnection(trackingURL.getHost, trackingURL.getPort)
+      val response = Source.single(RequestBuilding.Get(s"/proxy/${report.getApplicationId}/$restURI/master")).via(trackingURLConnectionFlow).runWith(Sink.head)
+      response.foreach(response => {
+        response.status match {
+          case StatusCodes.OK =>
+            LOG.info(s"status code=${StatusCodes.OK.intValue}")
+            Unmarshal(response.entity).to[String].onComplete(result => {
+              result match {
+                case Success(data) =>
+                  val masterData = read[MasterData](data)
+                  LOG.info(s"leader=${masterData.masterDescription.leader._1}:${masterData.masterDescription.leader._2}")
+                  val cluster=masterData.masterDescription.cluster.map(p=>{p._1+":"+p._2}).mkString(",")
+                  LOG.info("masters=" + cluster)
+                case Failure(throwable) =>
+                  LOG.error("Failed to fetch masters", throwable)
+              }
+              system.shutdown()
+            })
+          case value =>
+            LOG.error(s"Bad status code=${value.intValue}")
+            system.shutdown()
+        }
+      })
     }
   }
 
@@ -234,7 +285,8 @@ class Client(configuration: AppConfig, yarnConf: YarnConfiguration, yarnClient: 
         case true =>
           submit() match {
             case Success(appId) =>
-              waitForTerminalState(appId)
+              val report = waitForTerminalState(appId)
+              logMasters(report)
             case Failure(throwable) =>
               LOG.error("Failed to submit", throwable)
           }
