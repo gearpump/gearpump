@@ -51,7 +51,7 @@ object ClientToMaster {
 
   case object QueryMasterConfig
 
-  case class QueryHistoryMetrics(path: String, readLatest: Boolean = false)
+  case class QueryHistoryMetrics(path: String, readLatest: Boolean = false, aggregatorClazz: String = "")
 
   case class GetStallingTasks(appId: Int)
 

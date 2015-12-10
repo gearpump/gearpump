@@ -26,6 +26,15 @@ import io.gearpump.partitioner.PartitionerDescription
 import SubDAGManager.ResourceRequestDetail
 import io.gearpump.util.Graph
 
+/**
+ *
+ * With SubDAGManager, we allows a DAG to be partitioned into several
+ * parts, with each part use its own jar file.
+ *
+ * @param appId
+ * @param appName
+ * @param config
+ */
 class SubDAGManager(appId : Int, appName: String, config: Config) {
   private var taskSchedulers = Map.empty[AppJar, TaskScheduler]
   private var executorAndSchedulers = Map.empty[Int, (AppJar, TaskScheduler)]
