@@ -35,12 +35,13 @@ angular.module('dashboard')
       'use strict';
 
       $scope.masterInfoTable = [
-        $ptb.text('Leader').help('The central coordinator').done(),
+        $ptb.text('JVM Info').help('Format: PID@hostname').done(),
+        $ptb.text('Leader').done(),
         $ptb.text('Master Members').done(),
         $ptb.tag('Status').done(),
         $ptb.duration('Up Time').done(),
         $ptb.button('Quick Links').values([
-          {href: master0.configLink, text: 'Config', class: 'btn-xs'},
+          {href: master0.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
           helper.withClickToCopy({text: 'Home Dir.', class: 'btn-xs'}, master0.homeDirectory),
           helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, master0.logFile),
           helper.withClickToCopy({text: 'Jar Store', class: 'btn-xs'}, master0.jarStore)
@@ -49,6 +50,7 @@ angular.module('dashboard')
 
       function updateSummaryTable(master) {
         $ptb.$update($scope.masterInfoTable, [
+          master.jvmName,
           master.leader,
           master.cluster,
           {text: master.masterStatus, condition: master.isHealthy ? 'good' : 'concern'},

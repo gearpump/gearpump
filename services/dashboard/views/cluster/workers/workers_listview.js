@@ -29,14 +29,20 @@ angular.module('dashboard')
 
       $scope.workersTable = {
         cols: [
+          // group 1/3 (4-col)
           $stb.indicator().key('state').canSort('state.condition+"_"+aliveFor').styleClass('td-no-padding').done(),
           $stb.link('ID').key('id').canSort().styleClass('col-md-1').done(),
-          $stb.text('Location').key('location').canSort().sortDefault().styleClass('col-md-3').done(),
+          $stb.text('Address').key('akkaAddr').canSort().sortDefault().styleClass('col-md-1').done(),
+          $stb.text('JVM Info').key('jvm').canSort()
+            .help('Format: PID@hostname')
+            .styleClass('col-md-2 hidden-xs').done(),
+          // group 2/3 (5-col)
           $stb.number('Executors').key('executors').canSort().styleClass('col-md-1').done(),
           $stb.progressbar('Slots Usage').key('slots').sortBy('slots.usage')
             .help('Slot is a minimal compute unit. The usage indicates the computation capacity.')
             .styleClass('col-md-1').done(),
-          $stb.duration('Up Time').key('aliveFor').canSort().styleClass('col-md-3').done(),
+          $stb.duration('Up Time').key('aliveFor').canSort().styleClass('col-md-3 hidden-xs').done(),
+          // group 3/3 (3-col)
           $stb.button('Quick Links').key(['detail', 'conf']).styleClass('col-md-3').done()
         ],
         rows: null
@@ -47,12 +53,13 @@ angular.module('dashboard')
           return {
             id: {href: worker.pageUrl, text: worker.workerId},
             state: {tooltip: worker.state, condition: worker.isRunning ? 'good' : 'concern', shape: 'stripe'},
-            location: worker.location,
+            akkaAddr: worker.akkaAddr,
+            jvm: worker.jvmName,
             aliveFor: worker.aliveFor,
             slots: {current: worker.slots.used, max: worker.slots.total, usage: worker.slots.usage},
             executors: worker.executors.length || 0,
             detail: {href: worker.pageUrl, text: 'Details', class: 'btn-xs btn-primary'},
-            conf: {href: worker.configLink, text: 'Config', class: 'btn-xs'}
+            conf: {href: worker.configLink, target: '_blank', text: 'Config', class: 'btn-xs'}
           };
         });
       }

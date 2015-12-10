@@ -30,23 +30,30 @@ angular.module('dashboard')
       $scope.processorInfoTable = [
         $ptb.text('Task Class').done(),
         $ptb.number('Parallelism').done(),
-        $ptb.text('Inputs').done(),
-        $ptb.text('Outputs').done(),
+        $ptb.text('Processing Type').done(),
         $ptb.datetime('Birth Time').done(),
         $ptb.datetime('Death Time').done()
       ];
+
+      function describeProcessorType(inputs, outputs) {
+        if (inputs === 0) {
+          return outputs > 0 ? 'Source Processor (%s out)'.replace('%s', outputs) : 'Orphan';
+        } else if (outputs === 0) {
+          return inputs > 0 ? 'Sink Processor (%s in)'.replace('%s', inputs): 'Orphan';
+        }
+        return 'Transit Processor (%s in, %s out)'.replace('%s', inputs).replace('%s', outputs);
+      }
 
       function updateProcessorInfoTable(processor) {
         var connections = $scope.dag.calculateProcessorConnections(processor.id);
         $ptb.$update($scope.processorInfoTable, [
           processor.taskClass,
           processor.parallelism,
-          connections.inputs + ' processor(s)',
-          connections.outputs + ' processor(s)',
+          describeProcessorType(connections.inputs, connections.outputs),
           processor.life.birth <= 0 ?
             'Start with the application' : processor.life.birth,
           processor.life.death === '9223372036854775807' /* Long.max */ ?
-            'Not scheduled' : processor.life.death
+            'Not specified' : processor.life.death
         ]);
 
         $scope.tasks = {

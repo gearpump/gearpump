@@ -48,10 +48,17 @@ body {
 th.td-no-padding {
   padding-left: 0 !important;
   padding-right: 0 !important;
+  width: 8px;
 }
 
 td.td-no-padding {
   padding: 0 !important;
+}
+
+/* Reset table and heading top margin/padding value */
+h4, table > caption {
+  padding-top: 0;
+  margin-top: 0;
 }
 
 /* todo: experimental style for tooltip panel */

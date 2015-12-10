@@ -79,7 +79,7 @@ angular.module('dashboard')
           });
           return result;
         },
-        _location: function(actorPath) {
+        _akkaAddr: function(actorPath) {
           return actorPath
             .split('@')[1]
             .split('/')[0];
@@ -118,7 +118,7 @@ angular.module('dashboard')
           return angular.merge(obj, {
             // extra properties
             jvm: decoder._jvm(obj.jvmName),
-            location: decoder._location(obj.actorPath),
+            akkaAddr: decoder._akkaAddr(obj.actorPath),
             isRunning: obj.state === 'active',
             slots: {
               usage: util.usage(slotsUsed, obj.totalSlots),
@@ -143,9 +143,10 @@ angular.module('dashboard')
           return angular.merge(obj, {
             // extra properties
             isRunning: obj.status === 'active',
-            location: decoder._location(obj.appMasterPath),
+            akkaAddr: decoder._akkaAddr(obj.appMasterPath),
             // extra methods
             pageUrl: locator.app(obj.appId, obj.type),
+            configLink: restapi.appConfigLink(obj.appId),
             terminate: function() {
               return restapi.killApp(obj.appId);
             },

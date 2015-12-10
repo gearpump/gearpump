@@ -27,13 +27,15 @@ angular.module('dashboard')
     function($scope, $stateParams, $ptb, helper, restapi, conf, models, executor0) {
       'use strict';
 
+      $scope.executorName = executor0.id === -1 ?
+        'AppMaster' : ('Executor ' + executor0.id);
       $scope.overviewTable = [
-        $ptb.text('ID').done(),
+        $ptb.text('JVM Info').help('Format: PID@hostname').done(),
         $ptb.text('Actor Path').done(),
         $ptb.link('Worker').done(),
         $ptb.number('Task Count').done(),
         $ptb.button('Quick Links').values([
-            {href: restapi.appExecutorConfigLink($scope.app.appId, executor0.id), text: 'Config', class: 'btn-xs'},
+            {href: restapi.appExecutorConfigLink($scope.app.appId, executor0.id), target: '_blank', text: 'Config', class: 'btn-xs'},
             helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, executor0.logFile)
           ]
         ).done()
@@ -41,7 +43,7 @@ angular.module('dashboard')
 
       function updateOverviewTable(executor) {
         $ptb.$update($scope.overviewTable, [
-          executor.id,
+          executor.jvmName,
           executor.actorPath,
           {href: executor.workerPageUrl, text: 'Worker ' + executor.workerId},
           executor.taskCount
