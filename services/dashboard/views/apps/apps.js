@@ -48,17 +48,18 @@ angular.module('dashboard')
 
       $scope.appsTable = {
         cols: [
+          // group 1/3 (4-col)
           $stb.indicator().key('state').canSort('state.condition+"_"+submissionTime').styleClass('td-no-padding').done(),
           $stb.link('ID').key('id').canSort().done(),
-          $stb.link('Name').key('name').canSort('name.text').styleClass('col-md-2').done(),
+          $stb.link('Name').key('name').canSort('name.text').styleClass('col-md-1').done(),
+          $stb.text('Address').key('akkaAddr').canSort().styleClass('col-md-3 hidden-sm hidden-xs').done(),
+          // group 2/3 (5-col)
           $stb.datetime('Submission Time').key('submissionTime').canSort().sortDefaultDescent().styleClass('col-md-1').done(),
           $stb.datetime('Start Time').key('startTime').canSort().styleClass('col-md-1').done(),
           $stb.datetime('Stop Time').key('stopTime').canSort().styleClass('col-md-1').done(),
           $stb.text('User').key('user').canSort().styleClass('col-md-2').done(),
-          $stb.text('Location').key('location').canSort()
-            .help('The location where application master is running at')
-            .styleClass('col-md-2 hidden-sm hidden-xs').done(),
-          $stb.button('Actions').key(['view', 'kill', 'restart']).styleClass('col-md-3').done()
+          // group 3/3 (3-col)
+          $stb.button('Actions').key(['view', 'config', 'kill', 'restart']).styleClass('col-md-3').done()
         ],
         rows: null
       };
@@ -69,20 +70,21 @@ angular.module('dashboard')
             id: {href: app.pageUrl, text: app.appId},
             name: {href: app.pageUrl, text: app.appName},
             state: {tooltip: app.status, condition: app.isRunning ? 'good' : '', shape: 'stripe'},
-            location: app.location,
+            akkaAddr: app.akkaAddr,
             user: app.user,
             submissionTime: app.submissionTime,
             startTime: app.startTime,
             stopTime: app.finishTime || '-',
-            view: {href: app.pageUrl, text: 'Details', class: 'btn-xs btn-primary', hide: !app.isRunning},
+            view: {href: app.pageUrl, text: 'Details', class: 'btn-xs btn-primary', disabled: !app.isRunning},
+            config: {href: app.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
             kill: {
-              text: 'Kill', class: 'btn-xs', hide: !app.isRunning,
+              text: 'Kill', class: 'btn-xs', disabled: !app.isRunning,
               click: function() {
                 app.terminate();
               }
             },
             restart: {
-              text: 'Restart', class: 'btn-xs', hide: !app.isRunning,
+              text: 'Restart', class: 'btn-xs', disabled: !app.isRunning,
               click: function() {
                 app.restart();
               }

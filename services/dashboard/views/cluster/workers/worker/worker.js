@@ -42,12 +42,11 @@ angular.module('dashboard')
       'use strict';
 
       $scope.overviewTable = [
-        $ptb.text('ID').done(),
-        $ptb.text('Location').done(),
+        $ptb.text('JVM Info').help('Format: PID@hostname').done(),
         $ptb.text('Actor Path').done(),
         $ptb.number('Slots Capacity').done(),
         $ptb.button('Quick Links').values([
-          {href: worker0.configLink, text: 'Config', class: 'btn-xs'},
+          {href: worker0.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
           helper.withClickToCopy({text: 'Home Dir.', class: 'btn-xs'}, worker0.homeDirectory),
           helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, worker0.logFile)
         ]).done()
@@ -65,8 +64,7 @@ angular.module('dashboard')
 
       function updateOverviewTable(worker) {
         $ptb.$update($scope.overviewTable, [
-          worker.workerId,
-          worker.location,
+          worker.jvmName,
           worker.actorPath,
           worker.slots.total
           /* placeholder for quick links, but they do not need to be updated */
@@ -112,7 +110,6 @@ angular.module('dashboard')
           executor.isRunning = false;
         });
         updateWorkerDetails(worker);
-        return true; // cancel subscription
       });
 
       function updateWorkerDetails(worker) {
@@ -124,19 +121,16 @@ angular.module('dashboard')
       apps0.$subscribe($scope, function(apps) {
         $scope.apps = apps;
         updateExecutorsTable();
-        return !$scope.worker.isRunning;
       });
 
       // JvmMetricsChartsCtrl will watch `$scope.metrics` and `$scope.historicalMetrics`.
       $scope.metrics = metrics0.$data();
       metrics0.$subscribe($scope, function(metrics) {
         $scope.metrics = metrics;
-        return !$scope.worker.isRunning;
       });
       $scope.historicalMetrics = historicalMetrics0.$data();
       historicalMetrics0.$subscribe($scope, function(metrics) {
         $scope.historicalMetrics = metrics;
-        return !$scope.worker.isRunning;
       });
     }])
 ;

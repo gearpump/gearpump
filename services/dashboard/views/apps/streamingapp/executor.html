@@ -1,15 +1,6 @@
 <div class="col-md-6">
-  <h4 ng-if="executor.id === -1">AppMaster</h4>
-  <h4 ng-if="executor.id !== -1">
-    Executor # <span ng-bind="executor.id"></span>
-  </h4>
-  <h5>
-    <span ng-bind="executor.jvmName"></span>
-    <remark tooltip="PID: {{executor.jvm.pid}} Hostname: {{executor.jvm.hostname}}"></remark>
-  </h5>
-
   <property-table
-    caption="Overview"
+    caption="{{executorName}}"
     props-bind="overviewTable"
     prop-name-class="col-sm-4 bold"
     prop-value-class="col-sm-8 actor-path">

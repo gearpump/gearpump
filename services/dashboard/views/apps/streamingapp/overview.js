@@ -23,20 +23,20 @@ angular.module('dashboard')
 
       $scope.appSummary = [
         $ptb.text('ID').done(),
+        $ptb.text('Actor Path').done(),
         $ptb.datetime('Start Time').done(),
         $ptb.text('User').done(),
-        $ptb.text('Actor Path').done(),
         $ptb.button('Quick Links').done()
       ];
 
       function updateSummaryTable(app) {
         $ptb.$update($scope.appSummary, [
           app.appId,
+          app.actorPath,
           app.startTime,
           app.user,
-          app.actorPath,
           [
-            {href: app.configLink, text: 'Config', class: 'btn-xs'},
+            {href: app.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
             helper.withClickToCopy({text: 'Home Dir.', class: 'btn-xs'}, app.homeDirectory),
             helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, app.logFile)
           ]

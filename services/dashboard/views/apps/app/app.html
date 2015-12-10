@@ -7,4 +7,12 @@
   <h5 ng-bind="app.description"></h5>
 </div>
 
+<div class="col-md-12">
+  <ul class="nav nav-tabs nav-tabs-underlined" bs-navbar>
+    <li data-match-route="/apps/app/\d+(/overview)?$">
+      <a href="#/apps/app/{{app.appId}}">Overview</a>
+    </li>
+  </ul>
+</div>
+
 <div ui-view></div>

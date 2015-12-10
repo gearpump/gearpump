@@ -7,15 +7,11 @@
         <indicator condition="{{worker.isRunning ? 'good' : ''}}"
                    tooltip="{{worker.state}}"></indicator>
       </h4>
-      <h5>
-        <span ng-bind="worker.jvmName"></span>
-        <remark tooltip="PID: {{worker.jvm.pid}} Hostname: {{worker.jvm.hostname}}"></remark>
-      </h5>
     </div>
     <div class="col-md-2 col-sm-3 col-xs-6">
       <metrics
         caption="Up Time"
-        help="Running for {{worker.aliveFor|duration}}"
+        help="Running for {{worker.aliveFor|duration}}" remark-type="info"
         value="{{(worker.aliveFor / 1000 / 3600).toFixed(0)}}" unit="hr"></metrics>
     </div>
     <div class="col-md-2 col-sm-3 hidden-xs">
@@ -25,8 +21,8 @@
         value="{{worker.slots.usage|number:1}}" unit="%"></metrics>
     </div>
     <div class="col-md-2 col-sm-3 hidden-xs">
-      <metrics value="{{worker.executors.length}}" unit="executor"></metrics>
-      <metrics value="{{appsCount}}" unit="application"></metrics>
+      <metrics value="{{worker.executors.length}}" unit="executor" unit-plural="executors"></metrics>
+      <metrics value="{{appsCount}}" unit="application" unit-plural="applications"></metrics>
     </div>
   </div>
   <hr/>

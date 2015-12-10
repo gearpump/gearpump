@@ -23,17 +23,19 @@ angular.module('dashboard')
 
       $scope.appSummary = [
         $ptb.text('ID').done(),
-        $ptb.datetime('Start Time').done(),
         $ptb.text('Actor Path').done(),
+        $ptb.datetime('Start Time').done(),
+        $ptb.text('User').done(),
         $ptb.button('Quick Links').done()
       ];
 
       $scope.$watch('app', function(app) {
         $ptb.$update($scope.appSummary, [
           app.appId,
-          app.startTime,
           app.actorPath,
-          {href: app.configLink, text: 'Config', class: 'btn-xs'}
+          app.startTime,
+          app.user,
+          {href: app.configLink, target: '_blank', text: 'Config', class: 'btn-xs'}
         ]);
       });
     }])

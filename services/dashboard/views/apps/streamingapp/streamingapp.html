@@ -23,12 +23,12 @@
     <div class="col-md-2 col-sm-3 hidden-xs">
       <metrics
         caption="Up Time"
-        help="Running for {{app.uptime|duration}}"
+        help="Running for {{app.uptime|duration}}" remark-type="info"
         value="{{uptimeCompact.value}}" unit="{{uptimeCompact.unit}}"></metrics>
     </div>
     <div class="col-md-2 col-sm-3 hidden-xs">
-      <metrics value="{{dag.getNumOfProcessors()}}" unit="processor"></metrics>
-      <metrics value="{{size(app.executors)}}" unit="executor"></metrics>
+      <metrics value="{{dag.getNumOfProcessors()}}" unit="processor" unit-plural="processors"></metrics>
+      <metrics value="{{size(app.executors)}}" unit="executor" unit-plural="executors"></metrics>
     </div>
   </div>
 </div>
