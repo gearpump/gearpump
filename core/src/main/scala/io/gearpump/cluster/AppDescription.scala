@@ -23,6 +23,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.jarstore.FilePath
+import io.gearpump.util.Util
 
 import scala.reflect.ClassTag
 
@@ -55,7 +56,8 @@ object Application {
   }
 
   def ApplicationToAppDescription(app: Application)(implicit system: ActorSystem): AppDescription = {
-    AppDescription(app.name, app.appMaster.getName, app.userConfig, system.settings.config)
+    val cleanConfig = Util.filterOutOrigin(system.settings.config, "reference.conf")
+    AppDescription(app.name, app.appMaster.getName, app.userConfig, cleanConfig)
   }
 }
 

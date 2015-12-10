@@ -84,16 +84,7 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
 
   import scala.collection.JavaConverters._
   private def getSubmissionConfig(config: Config): Config = {
-    val filterReferenceConf = config.entrySet().asScala.foldLeft(ConfigFactory.empty()){(config, entry) =>
-      val key = entry.getKey
-      val value = entry.getValue
-      val origin = value.origin()
-      if (origin.resource() == "reference.conf"){
-        config
-      } else {
-        config.withValue(key, value)
-      }
-    }
+    val filterReferenceConf = Util.filterOutOrigin(config, "reference.conf")
 
     val filterJvmReservedKeys = ClusterConfig.JVM_RESERVED_PROPERTIES.foldLeft(filterReferenceConf){(config, key) =>
       config.withoutPath(key)
