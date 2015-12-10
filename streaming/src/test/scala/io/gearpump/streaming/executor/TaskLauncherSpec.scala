@@ -43,6 +43,7 @@ class TaskLauncherSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     system.shutdown()
+    system.awaitTermination()
   }
 
   it should "able to launch tasks" in {

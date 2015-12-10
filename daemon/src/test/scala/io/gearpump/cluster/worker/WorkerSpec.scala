@@ -82,6 +82,7 @@ class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with Mas
       worker.tell(UpdateResourceFailed("Test resource update failed", new Exception()), mockMaster.ref)
       mockMaster.expectTerminated(worker, 5 seconds)
       workerSystem.shutdown()
+      workerSystem.awaitTermination()
     }
   }
 

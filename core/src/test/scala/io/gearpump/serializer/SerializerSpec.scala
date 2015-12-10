@@ -57,6 +57,7 @@ class SerializerSpec extends FlatSpec with Matchers with MockitoSugar {
 
     assert(anotherA.isInstanceOf[ClassA])
     system.shutdown()
+    system.awaitTermination()
   }
 }
 

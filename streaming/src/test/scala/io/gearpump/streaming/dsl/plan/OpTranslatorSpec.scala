@@ -112,6 +112,7 @@ class OpTranslatorSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
     val values = peopleCaptor.getAllValues().asScala.map(input => input.msg.asInstanceOf[String])
     assert(values.mkString(",") == "1,2,22,3,33,333")
     system.shutdown
+    system.awaitTermination()
   }
 
   "MergeTask" should "accept two stream and apply the attached operator" in {

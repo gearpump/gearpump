@@ -42,7 +42,7 @@ object DistributeServiceClient extends AkkaApp with ArgumentsParser{
 
   override def help : Unit = {
     super.help
-    Console.println(s"-D<name>=<value> set a property to the service")
+    Console.err.println(s"-D<name>=<value> set a property to the service")
   }
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {

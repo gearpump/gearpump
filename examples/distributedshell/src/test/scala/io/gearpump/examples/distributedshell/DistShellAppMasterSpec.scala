@@ -65,6 +65,7 @@ class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
 
   after {
     system.shutdown()
+    system.awaitTermination()
   }
 
 }

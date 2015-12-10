@@ -100,7 +100,7 @@ Change log:
 
 Gearpump 0.5.0
 ==========================
-Hihglights:
+Highlights:
 ----------------
 1. Rename package name to io.gearpump
 
@@ -140,7 +140,7 @@ Change log:
 - #339, add Hadoop-compatible CheckpointStore
 - #1278, Optimize the build script for scalajs.
 - #1285, fix travis deploy build script
-- #1241 shade akka-kryo-serializarion
+- #1241 shade akka-kryo-serialization
 - #1278 split services into 2 projects for scala.js
 - #1290, purify state dependencies
 - #1289, construct HTable at cluster side
@@ -151,16 +151,16 @@ gearpump-0.4.2
 Change logs:
 --------------------
  - #1217, Remove unnecessary dependencies from project core
- - #1249, seperate classpath for different daemon tools
+ - #1249, separate classpath for different daemon tools
  - #1254, Add error reporting service and UI
  - #1251, refine the build package layout.
  - #1253, Partitioner instance is wrongly shared by multiple tasks
- - #1223: stalling status might not be updated expectedly
+ - #1223: stalling status might not be updated in expected way
  - #1257, return error information when rest api failed.
  - #1258: support filter metrics
  - #1245, Replace processor won't work for data source
  - #1267, print services help into to console
- - #1269: could not specify transit time (2) impromved time picker select behavior
+ - #1269: could not specify transit time (2) improved time picker select behavior
  - #1241 shade guava, gs-collections and codahale-metric
  - #1275, fix HealthChecker
  - #1273, refine the metrics UI
@@ -192,7 +192,7 @@ Highlights:
  1. Better YARN support, and error handling.
  2. UI allow user to submit a application directly
  3. Split framework lib with application lib, to reduce class path pollution(ongoing). (#1017)
- 4. Exacly once mesage processing API (#6).
+ 4. Exactly once message processing API (#6).
  5. Improved Data Connector with Kafka, and Hbase. (#1012)
  6. Dynamic DAG(#101). Which allow user to replace a computation processor(e.g. Change the parallelism, or change to upgraded implementation Task class)
 
@@ -261,7 +261,7 @@ Change list
  - #959, LOG in TimeoutScheduler causes JVM exit 
  - #935 improve the application clock 
  - #659, remove kafka integration test 
- - #947 optimize checkMessage performance in TashActor 
+ - #947 optimize checkMessage performance in TaskActor
  - #945, [NPE regression] Partitioner is null 
  - #941, allow user to define custom partitioner by REST 
  - #890: add cloudera manager integration support for gearpump 
@@ -297,7 +297,7 @@ Change list
  - #741 refine example
  - #817 split examples jar into multiple jars
  - #824, allow to use default partitioner when defining a DAG
- - #829, add some handly operator like groupByKey, sum, for KV Stream
+ - #829, add some handy operator like groupByKey, sum, for KV Stream
  - #831: uses pagination control to speedup table rendering
  - #816: use multi-select control to select tasks
  - #840: task charts data were incorrect
@@ -328,7 +328,7 @@ Change list
  - #719 add Kafka Source and HBase Sink for dsl
  - #905: Upgrade sbt-pack from 0.6.8 to 0.6.9
  - #602: dashboard will freeze when server is unreachable
- - #907: calculate application clock update frequence for a 30 second time frame
+ - #907: calculate application clock update frequency for a 30 second time frame
  - #919: vis.js's version was not updated 
 
 gearpump-0.3.4
@@ -460,12 +460,12 @@ Change List:
  - #456, Use visdag to render the graph DAG
  - #464， Travis bower integration
  - #394, fix kafka producer hang issue
- - #468, For test code, the ClockService will throw excepton when the DAG is not defined
+ - #468, For test code, the ClockService will throw exception when the DAG is not defined
  - #465, fix appname prefix bug
  - #461, AppMasterSpec and WorkServiceSpec UT are failing 
  - #270, Create a force-direct dag 
  - #453, Add rest service to serve master info 
- - #423, refactor task by seperating TaskActor and Task
+ - #423, refactor task by separating TaskActor and Task
  - #422, add worker rest api
  - #449: avoid load external resource by removing all CDN external links
  - #397 refactor distributed shell by using new Cluster API
@@ -524,7 +524,7 @@ Change List:
  - #306, ClassNotFound for customized Application type
  - #299 fix SeqFileStreamProcessorSpec
  - #320 fix dead lock in StreamTestUtil.createEchoTaskActor
- - #317, allow user to customize the akka system config for appmaste… 
+ - #317, allow user to customize the akka system config for appmaster
  - #244, add KafkaUtilSpec and kafka integration test
 
 gearpump-0.2
@@ -545,12 +545,12 @@ Highlights:
 Change list:
 -------------------
  - #274 AppMaster cannot connect to worker if there are multiple interface on one machine 
- - #272 Too many dead log mesages in the log
+ - #272 Too many dead log messages in the log
  - #266 Kafka grouper conf is incorrect 
  - #259 fix stream replay api and impl
  - #245 jacoco conflict with codecov
  - #244 Add more unit test for better test coverage
- - #242 Add application sumbittor username so that we can seperate the logs for different user
+ - #242 Add application submitter username so that we can separate the logs for different user
  - #239 REST AppMasterService test failed
  - #237 Add more information in log line
  - #233 Add TIMEOUT for interactive messages between two parties

@@ -46,6 +46,7 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with Mo
 
   override def afterAll(): Unit = {
     system.shutdown()
+    system.awaitTermination()
   }
 
   it should "translate the DSL to a DAG" in {

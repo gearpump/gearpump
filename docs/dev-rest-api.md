@@ -140,7 +140,7 @@ Sample Response:
         "netty" : {
             "base-sleep-ms" : 100,
             "buffer-size" : 5242880,
-            "fulsh-check-interval" : 10,
+            "flush-check-interval" : 10,
             "max-retries" : 30,
             "max-sleep-ms" : 1000,
             "message-batch-size" : 262144

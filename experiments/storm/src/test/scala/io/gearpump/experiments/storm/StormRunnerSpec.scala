@@ -53,5 +53,6 @@ class StormRunnerSpec extends FlatSpec with Matchers {
     client.expectMsg(AppKilled("app", 0))
 
     system.shutdown()
+    system.awaitTermination()
   }
 }

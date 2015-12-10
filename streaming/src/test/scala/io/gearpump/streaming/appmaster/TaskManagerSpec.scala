@@ -80,6 +80,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   override def afterEach(): Unit = {
     system.shutdown()
+    system.awaitTermination()
   }
 
   it should "recover by requesting new executors when executor stopped unexpectedly" in {

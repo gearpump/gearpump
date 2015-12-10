@@ -52,6 +52,7 @@ class NumberGeneratorProcessorSpec extends WordSpec with Matchers {
       //mockTaskActor.expectMsgType[Message]
 
       system.shutdown()
+      system.awaitTermination()
     }
   }
 }

@@ -50,6 +50,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
 
   override def afterAll = {
     system.shutdown()
+    system.awaitTermination()
   }
 
   private def startExecutorSystems = {

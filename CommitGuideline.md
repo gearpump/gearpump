@@ -1,4 +1,4 @@
-This documents are for commitors which have direct write permission to intel-hadoop/gearpump
+This documents are for committers which have direct write permission to intel-hadoop/gearpump
 
 Commit Guideline
 ========================

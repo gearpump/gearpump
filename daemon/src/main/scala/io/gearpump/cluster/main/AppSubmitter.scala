@@ -37,7 +37,8 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     "namePrefix" -> CLIOption[String]("<application name prefix>", required = false, defaultValue = Some("")),
     "jar" -> CLIOption("<application>.jar", required = true),
-    "verbose" -> CLIOption("<print verbose log on console>", required = false, defaultValue = Some(false)))
+    "verbose" -> CLIOption("<print verbose log on console>", required = false, defaultValue = Some(false)),
+    "config" -> CLIOption("custom configuration file", required = false, defaultValue = None))
 
   def main(akkaConf: Config, args: Array[String]): Unit = {
 

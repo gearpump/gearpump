@@ -75,5 +75,6 @@ class DistServiceAppMasterSpec extends WordSpec with Matchers with BeforeAndAfte
 
   after {
     system.shutdown()
+    system.awaitTermination()
   }
 }

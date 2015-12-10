@@ -29,7 +29,8 @@ object Kill extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "appid" -> CLIOption("<application id>", required = true))
+    "appid" -> CLIOption("<application id>", required = true),
+    "config" -> CLIOption("custom configuration file", required = false, defaultValue = None))
 
   override val description = "Kill an application with application Id"
 

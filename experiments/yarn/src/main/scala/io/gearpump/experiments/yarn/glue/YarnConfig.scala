@@ -16,16 +16,20 @@
  * limitations under the License.
  */
 
-package io.gearpump.experiments.yarn.master
+package io.gearpump.experiments.yarn.glue
 
-import akka.testkit.TestKit
-import org.scalatest.{BeforeAndAfterAll, Suite}
+import java.io.{OutputStream, OutputStreamWriter}
 
-trait StopSystemAfterAll extends BeforeAndAfterAll {
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.yarn.conf.YarnConfiguration
 
-  this: TestKit with Suite =>
-  override protected def afterAll () {
-    super.afterAll ()
-    system.shutdown ()
+/**
+ * wrapper for yarn configuration
+ */
+case class YarnConfig(conf: YarnConfiguration = new YarnConfiguration(new Configuration(true))) {
+  def writeXml(out: java.io.Writer): Unit = conf.writeXml(out)
+
+  def resourceManager: String = {
+    conf.get("yarn.resourcemanager.hostname")
   }
 }

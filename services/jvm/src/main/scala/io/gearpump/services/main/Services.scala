@@ -32,7 +32,8 @@ object Services extends AkkaApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption("<host:port>", required = false),
-    "config" -> CLIOption("<provide a custom configuration file>", required = false))
+    "config" -> CLIOption("<provide a custom configuration file>", required = false),
+    "supervisor" -> CLIOption("<Supervisor Actor Path>", required = false, Some("")))
 
   override val description = "UI Server"
 
@@ -66,6 +67,9 @@ object Services extends AkkaApp with ArgumentsParser {
       akkaConf = akkaConf.withValue(Constants.GEARPUMP_CLUSTER_MASTERS,
         ConfigValueFactory.fromIterable(List(master)))
     }
+
+    akkaConf = akkaConf.withValue(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH,
+      ConfigValueFactory.fromAnyRef(argConfig.getString("supervisor")))
 
     val masterCluster = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
 

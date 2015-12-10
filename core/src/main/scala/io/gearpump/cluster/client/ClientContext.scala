@@ -84,9 +84,7 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
 
   import scala.collection.JavaConverters._
   private def getSubmissionConfig(config: Config): Config = {
-    val filterReferenceConf = Util.filterOutOrigin(config, "reference.conf")
-    val filterJvmReservedKeys = ClusterConfig.filterOutJvmReservedKeys(filterReferenceConf)
-    filterJvmReservedKeys
+    ClusterConfig.filterOutDefaultConfig(config)
   }
 
   private def submit(app : AppDescription, jarPath: String) : Int = {

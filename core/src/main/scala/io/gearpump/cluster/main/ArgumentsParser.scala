@@ -43,30 +43,20 @@ trait  ArgumentsParser {
   val ignoreUnknownArgument = false
 
   def help: Unit = {
-    Console.println(s"Help: $description")
-    var usage = List(s"${removeTrailingDollarChar(this.getClass.getName)} " +
-      options.map(kv => s"-${kv._1} ${kv._2.description}").mkString(" ") +
-      " " +
-      remainArgs.map(k => s"<$k>").mkString(" "))
+    Console.err.println(s"\nHelp: $description")
+    var usage = List.empty[String]
     options.map(kv => if(kv._2.required) {
-      usage = usage :+ s"-${kv._1}  (required:${kv._2.required})"
+      usage = usage :+ s"-${kv._1} (required:${kv._2.required})${kv._2.description}"
     } else {
-      usage = usage :+ s"-${kv._1}  (required:${kv._2.required}, default:${kv._2.defaultValue.getOrElse("")})"
+      usage = usage :+ s"-${kv._1} (required:${kv._2.required}, default:${kv._2.defaultValue.getOrElse("")})${kv._2.description}"
     })
-    usage.foreach(Console.println(_))
+    usage :+= remainArgs.map(k => s"<$k>").mkString(" ")
+    usage.foreach(Console.err.println(_))
   }
 
   def parse(args: Array[String]): ParseResult = {
     val syntax = Syntax(options, remainArgs, ignoreUnknownArgument)
     ArgumentsParser.parse(syntax, args)
-  }
-
-  private def removeTrailingDollarChar(className : String) : String = {
-    if (className.endsWith("$")) {
-      className.dropRight(1)
-    } else {
-      className
-    }
   }
 
   val description: String = ""
@@ -110,7 +100,7 @@ object ArgumentsParser {
           doParse(rest)
 
         case value :: rest =>
-          Console.println(s"Warning: get unknown argument $value, maybe it is a main class")
+          Console.err.println(s"Warning: get unknown argument $value, maybe it is a main class")
           remain ++= value :: rest
           doParse(Nil)
       }

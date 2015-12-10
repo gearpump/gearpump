@@ -7,6 +7,7 @@ object Pack extends sbt.Build {
   val daemonClassPath = Seq(
     "${PROG_HOME}/conf",
     "${PROG_HOME}/lib/daemon/*",
+     // This is for DFSJarStore
     "${PROG_HOME}/lib/yarn/*"
   )
 
@@ -22,6 +23,7 @@ object Pack extends sbt.Build {
     "${PROG_HOME}/lib/daemon/*",
     "${PROG_HOME}/lib/services/*",
     "${PROG_HOME}/lib/yarn/*",
+    "${PROG_HOME}/conf/yarnconf",
     "/etc/hadoop/conf",
     "/etc/hbase/conf"
   )
@@ -61,6 +63,7 @@ object Pack extends sbt.Build {
           ),
           packExclude := Seq(thisProjectRef.value.project),
           packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
+          packResourceDir += (baseDirectory.value / ".." / "yarnconf" -> "conf/yarnconf"),
           packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
           packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / CrossVersion.binaryScalaVersion(scalaVersion.value) -> "examples"),
 
@@ -75,7 +78,6 @@ object Pack extends sbt.Build {
             "services" -> serviceClassPath,
             "yarnclient" -> yarnClassPath,
             "storm" -> stormClassPath
-
           ),
 
           packArchivePrefix := name.value + "-" + scalaVersion.value

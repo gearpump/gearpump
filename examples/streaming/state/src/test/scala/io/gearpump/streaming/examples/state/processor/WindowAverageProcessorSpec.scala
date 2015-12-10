@@ -79,5 +79,6 @@ class WindowAverageProcessorSpec extends PropSpec with PropertyChecks with Match
     }
 
     system.shutdown()
+    system.awaitTermination()
   }
 }

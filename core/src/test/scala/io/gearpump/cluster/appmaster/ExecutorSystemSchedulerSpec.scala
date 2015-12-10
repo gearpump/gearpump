@@ -66,6 +66,7 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
 
   override def afterEach(): Unit = {
     system.shutdown()
+    system.awaitTermination()
   }
 
   private def launcherStarted(launcher: TestProbe): Option[ExecutorSystemLauncherStarted] = {

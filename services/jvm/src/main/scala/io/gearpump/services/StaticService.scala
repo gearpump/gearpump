@@ -20,7 +20,7 @@ package io.gearpump.services
 
 import java.net.URL
 import java.util.jar.Manifest
-
+import io.gearpump.util.Constants
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
@@ -49,6 +49,11 @@ trait StaticService  {
     path("version") {
       get {
         complete(version)
+      }
+    } ~
+    path("supervisor-actor-path") {
+      get {
+        complete(system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH))
       }
     } ~
     path("terminate") {

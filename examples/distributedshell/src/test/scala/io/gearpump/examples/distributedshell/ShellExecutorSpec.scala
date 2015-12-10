@@ -55,6 +55,7 @@ class ShellExecutorSpec extends WordSpec with Matchers {
         ShellCommandResult(executorId, result)))
 
       system.shutdown()
+      system.awaitTermination()
     }
   }
 }

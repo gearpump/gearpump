@@ -3,7 +3,7 @@
  1. Better YARN support, and error handling.
  2. UI allow user to submit a application directly
  3. Split framework lib with application lib, to reduce class path pollution(ongoing). (#1017)
- 4. Exacly once mesage processing API (#6).
+ 4. Exactly once message processing API (#6).
  5. Improved Data Connector with Kafka, and Hbase. (#1012)
  6. Dynamic DAG(#101). Which allow user to replace a computation processor(e.g. Change the parallelism, or change to upgraded implementation Task class)
 

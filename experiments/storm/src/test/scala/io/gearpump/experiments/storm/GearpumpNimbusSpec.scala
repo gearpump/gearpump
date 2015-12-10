@@ -62,6 +62,7 @@ class GearpumpNimbusSpec extends WordSpec with Matchers with MockitoSugar {
       handler.expectMsgType[Kill]
 
       system.shutdown()
+      system.awaitTermination()
     }
   }
 }

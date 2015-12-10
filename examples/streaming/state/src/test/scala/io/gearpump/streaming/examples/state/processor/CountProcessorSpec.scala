@@ -73,5 +73,6 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
     }
 
     system.shutdown()
+    system.awaitTermination()
   }
 }

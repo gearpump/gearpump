@@ -80,6 +80,7 @@ object StormRunner extends AkkaApp with ArgumentsParser {
     thriftServer.close()
     clientContext.close()
     system.shutdown()
+    system.awaitTermination()
 
     if (exit != 0) {
       throw new Exception(s"failed to submit jar, exit code $exit, error summary: ${process.logger.error}")

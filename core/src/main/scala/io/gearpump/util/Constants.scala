@@ -21,6 +21,7 @@ package io.gearpump.util
 import java.util.concurrent.TimeUnit
 
 import io.gearpump.partitioner._
+import java.io.File
 
 object Constants {
   val MASTER_WATCHER = "masterwatcher"
@@ -119,9 +120,7 @@ object Constants {
   //Service related
   val GEARPUMP_SERVICE_HTTP = "gearpump.services.http"
   val GEARPUMP_SERVICE_HOST = "gearpump.services.host"
-
-  //The folders are under ${GEARPUMP_HOME}
-  val EXECUTOR_CLASSPATH_WHILTELIST = Array("conf", "lib")
+  val GEARPUMP_SERVICE_SUPERVISOR_PATH = "gearpump.services.supervisor-actor-path"
 
   //The partitioners provided by Gearpump
   val BUILTIN_PARTITIONERS = Array(
