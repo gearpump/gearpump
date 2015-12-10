@@ -1,5 +1,5 @@
 <div class="modal" tabindex="-1">
-  <div class="modal-dialog" style="width: 520px">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-body">
         <button type="button" class="close" ng-click="$hide()">
@@ -7,8 +7,8 @@
         <h4 ng-if="edge.id >= 0">Modify Edge</h4>
         <h4 ng-if="!(edge.id >= 0)">New Edge</h4>
 
-        <p style="padding-top: 4px; padding-bottom: 14px;">Note that connection should NOT build a direct/indirect
-          cycle.</p>
+        <p style="padding-top: 4px; padding-bottom: 14px;">Make sure that processors
+          do NOT build a direct/indirect cycle.</p>
 
         <form name="form" class="form-horizontal">
           <!-- right margin align to cancel button right -->

@@ -12,7 +12,7 @@
       <metrics
         caption="Up Time"
         help="Running for {{worker.aliveFor|duration}}" remark-type="info"
-        value="{{(worker.aliveFor / 1000 / 3600).toFixed(0)}}" unit="hr"></metrics>
+        value="{{uptimeCompact.value}}" unit="{{uptimeCompact.unit}}"></metrics>
     </div>
     <div class="col-md-2 col-sm-3 hidden-xs">
       <metrics

@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
 /** Provides widgets/directive related helper functions */
-  .factory('helper', function() {
+  .factory('helper', ['$filter', function($filter) {
     'use strict';
 
     return {
@@ -18,7 +18,15 @@ angular.module('dashboard')
             clipboard.copy(text);
           }
         });
+      },
+      /* Returns a readable duration component. */
+      readableDuration: function(millis) {
+        var pieces = $filter('duration')(millis).split(' ');
+        return {
+          value: Math.max(0, pieces[0]),
+          unit: pieces.length > 1 ? pieces[1] : ''
+        };
       }
     };
-  })
+  }])
 ;
