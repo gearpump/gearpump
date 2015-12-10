@@ -21,7 +21,7 @@ package io.gearpump.util
 import java.io.File
 import java.net.URI
 import java.net.ServerSocket
-import com.typesafe.config.Config
+import com.typesafe.config.{ConfigFactory, Config}
 import io.gearpump.cluster.AppJar
 import io.gearpump.jarstore.{FilePath, JarStoreService}
 import io.gearpump.transport.HostPort
@@ -106,6 +106,29 @@ object Util {
   def uploadJar(jarFile: File, jarStoreService: JarStoreService): AppJar = {
     val remotePath = jarStoreService.copyFromLocal(jarFile)
     AppJar(jarFile.getName, remotePath)
+  }
+
+  /**
+   * This util can be used to filter out configuration from specific origin
+   *
+   * For example, if you want to filter out configuration from reference.conf
+   * Then you can use like this:
+   *
+   * filterOutOrigin(config, "reference.conf")
+   *
+   */
+  import scala.collection.JavaConverters._
+  def filterOutOrigin(config: Config, originFile: String): Config = {
+    config.entrySet().asScala.foldLeft(ConfigFactory.empty()) { (config, entry) =>
+      val key = entry.getKey
+      val value = entry.getValue
+      val origin = value.origin()
+      if (origin.resource() == originFile) {
+        config
+      } else {
+        config.withValue(key, value)
+      }
+    }
   }
 
   case class JvmSetting(vmargs : Array[String], classPath : Array[String])
