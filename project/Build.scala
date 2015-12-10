@@ -370,6 +370,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
+          "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
           "org.apache.hadoop" % "hadoop-mapreduce-client-core" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided",

@@ -46,7 +46,15 @@ object AppMasterToExecutor {
 
   case class StartTask(taskId: TaskId)
 
-  case class StartAllTasks(taskLocations: TaskLocations, startClock: TimeStamp, dagVersion: Int)
+  case class TaskLocationsReady(taskLocations: TaskLocations, dagVersion: Int)
+
+  case class TaskLocationsReceived(dagVersion: Int, executorId: ExecutorId)
+
+  case class TaskLocationsRejected(dagVersion: Int, executorId: ExecutorId, reason: String, ex: Throwable)
+
+  case class StartAllTasks(dagVersion: Int)
+
+  case class StartDynamicDag(dagVersion: Int)
   case class TaskRegistered(taskId: TaskId, sessionId: Int, startClock: TimeStamp)
   case class TaskRejected(taskId: TaskId)
 

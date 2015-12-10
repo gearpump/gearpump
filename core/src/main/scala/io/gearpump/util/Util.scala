@@ -18,9 +18,9 @@
 
 package io.gearpump.util
 
-import java.io.File
-import java.net.URI
-import java.net.ServerSocket
+import java.io.{DataInputStream, FileInputStream, File}
+import java.net.{URL, URI, ServerSocket}
+import java.util.jar.Manifest
 import com.typesafe.config.{ConfigFactory, Config}
 import io.gearpump.cluster.AppJar
 import io.gearpump.jarstore.{FilePath, JarStoreService}
@@ -28,7 +28,7 @@ import io.gearpump.transport.HostPort
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.sys.process.{ProcessLogger, Process}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object Util {
   val LOG = LogUtil.getLogger(getClass)
@@ -43,6 +43,23 @@ object Util {
     val classpath = System.getProperty("java.class.path")
     val classpathList = classpath.split(File.pathSeparator)
     classpathList
+  }
+
+  def version: String = {
+    val home = System.getProperty(Constants.GEARPUMP_HOME)
+    val version = Try {
+      val versionFile = new DataInputStream(new FileInputStream(new File(home, "VERSION")))
+      val version = versionFile.readLine().replace("version:=", "")
+      versionFile.close()
+      version
+    }
+    version match {
+      case Success(version) =>
+        version
+      case Failure(ex) =>
+        LOG.error("failed to read VERSION file, " + ex.getMessage)
+        "Unknown-Version"
+    }
   }
 
   def startProcess(options : Array[String], classPath : Array[String], mainClass : String,

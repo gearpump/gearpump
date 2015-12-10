@@ -34,7 +34,6 @@ import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.executor.Executor._
 import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.task.{Subscriber, TaskId}
-import io.gearpump.streaming.task.TaskActor._
 import io.gearpump.transport.{Express, HostPort}
 import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, TimeOutScheduler}
@@ -44,7 +43,10 @@ import org.slf4j.Logger
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-
+// TODO: What if Executor stuck in state DynamicDag and cannot get out???
+// For example, due to some message loss when there is network glitch.
+// Executor will hang there for ever???
+//
 class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher: ITaskLauncher)
   extends Actor with TimeOutScheduler{
 
@@ -61,7 +63,14 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private val systemConfig = context.system.settings.config
   private val serializerPool = getSerializerPool()
-  private val registerTaskTimeout = systemConfig.getLong(GEARPUMP_STREAMING_REGISTER_TASK_TIMEOUT_MS)
+
+  private var state = State.ACTIVE
+  private var transitionStart = 0L // state transition start, in unix time
+  private var transitionEnd = 0L // state transition end, in unix time
+  private val transitWarningThreshold = 5000 // ms,
+
+  // start health check Ticks
+  self ! HealthCheck
 
   LOG.info(s"Executor ${executorId} has been started, start to register itself...")
   LOG.info(s"Executor actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
@@ -122,109 +131,162 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     }
   }
 
-  def dynamicDag(dagVersion: Int, launched: List[TaskId], changed: List[ChangeTask]): Receive = executorService orElse {
-    case launch@ LaunchTasks(taskIds, version, processorDescription, subscribers: List[Subscriber]) => {
-      assertVersion(dagVersion, version, clue = launch)
+  def dynamicDagPhase1(dagVersion: Int, launched: List[TaskId], changed: List[ChangeTask], registered: List[TaskId]): Receive = {
+    state = State.DYNAMIC_DAG_PHASE1
+    box({
+      case launch@LaunchTasks(taskIds, version, processorDescription, subscribers: List[Subscriber]) => {
+        assertVersion(dagVersion, version, clue = launch)
 
-      LOG.info(s"Launching Task $taskIds for app: ${appId}")
-      val taskArgument = TaskArgument(version, processorDescription, subscribers)
-      taskIds.foreach(taskArgumentStore.add(_, taskArgument))
-      val newAdded = launcher.launch(taskIds, taskArgument, context, serializerPool)
-      newAdded.foreach { newAddedTask =>
-        context.watch(newAddedTask._2)
+        LOG.info(s"Launching Task $taskIds for app: ${appId}")
+        val taskArgument = TaskArgument(version, processorDescription, subscribers)
+        taskIds.foreach(taskArgumentStore.add(_, taskArgument))
+        val newAdded = launcher.launch(taskIds, taskArgument, context, serializerPool)
+        newAdded.foreach { newAddedTask =>
+          context.watch(newAddedTask._2)
+        }
+        tasks ++= newAdded
+        sender ! TasksLaunched
+        context.become(dynamicDagPhase1(version, launched ++ taskIds, changed, registered))
       }
-      tasks ++= newAdded
-      sender ! TasksLaunched
-      context.become(dynamicDag(version, launched ++ taskIds, changed))
+      case change@ChangeTasks(taskIds, version, life, subscribers) =>
+        assertVersion(dagVersion, version, clue = change)
+
+        LOG.info(s"Change Tasks $taskIds for app: ${appId}, verion: $life, $dagVersion, $subscribers")
+
+        val newChangedTasks = taskIds.map { taskId =>
+          for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
+            val processorDescription = taskArgument.processorDescription.copy(life = life)
+            taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription, subscribers))
+          }
+          ChangeTask(taskId, dagVersion, life, subscribers)
+        }
+        sender ! TasksChanged(taskIds)
+        context.become(dynamicDagPhase1(dagVersion, launched, changed ++ newChangedTasks, registered))
+
+      case locations@TaskLocationsReady(taskLocations, version) =>
+        LOG.info(s"TaskLocations Ready...")
+        assertVersion(dagVersion, version, clue = locations)
+
+        // Check whether all tasks has been registered.
+        if ((launched.toSet -- registered.toSet).isEmpty) {
+          // Confirm all tasks has been registered.
+          val result = taskLocations.locations.filter(location => !location._1.equals(express.localHost)).flatMap { kv =>
+            val (host, taskIdList) = kv
+            taskIdList.map(taskId => (TaskId.toLong(taskId), host))
+          }
+
+          val replyTo = sender
+          express.startClients(taskLocations.locations.keySet).foreach { _ =>
+            express.remoteAddressMap.send(result)
+            express.remoteAddressMap.future().foreach { _ =>
+              LOG.info(s"sending TaskLocationsReceived back to appmaster")
+              replyTo ! TaskLocationsReceived(version, executorId)
+            }
+          }
+          context.become(dynamicDagPhase2(dagVersion, launched, changed))
+        } else {
+          LOG.error("Inconsistency between AppMaser and Executor! AppMaster thinks DynamicDag transition is ready, " +
+            "while Executor have not get all tasks registered, that task will not be functional...")
+          //reject TaskLocations...
+          val missedTasks = (launched.toSet -- registered.toSet).toList
+          val errorMsg = ("We have not received TaskRegistered for following tasks: " + missedTasks.mkString(", "))
+          LOG.error(errorMsg)
+          sender ! TaskLocationsRejected(dagVersion, executorId, errorMsg, null)
+          // stay with current status...
+        }
+
+      case confirm: TaskRegistered =>
+        tasks.get(confirm.taskId).foreach {
+          case actorRef: ActorRef =>
+            tasks += confirm.taskId -> actorRef
+            actorRef forward confirm
+        }
+        context.become(dynamicDagPhase1(dagVersion, launched, changed, registered :+ confirm.taskId))
+
+      case rejected: TaskRejected =>
+        // means this task shoud not exists...
+        tasks.get(rejected.taskId).foreach {
+          case task: ActorRef => task ! PoisonPill
+        }
+        tasks -= rejected.taskId
+        LOG.error(s"Task ${rejected.taskId} is rejected by AppMaster, shutting down it...")
+
+      case register: RegisterTask =>
+        appMaster ! register
+    })
+  }
+
+  def dynamicDagPhase2(dagVersion: Int, launched: List[TaskId], changed: List[ChangeTask]): Receive = {
+    LOG.info("Transit to dynamic Dag Phase2")
+    state = State.DYNAMIC_DAG_PHASE2
+    box {
+      case startAll@StartAllTasks(version) =>
+        LOG.info(s"Start All Tasks...")
+        assertVersion(dagVersion, version, clue = startAll)
+
+        launched.foreach(taskId => tasks.get(taskId).foreach(_ ! StartTask(taskId)))
+        changed.foreach(changeTask => tasks.get(changeTask.taskId).foreach(_ ! changeTask))
+
+        taskArgumentStore.removeNewerVersion(dagVersion)
+        taskArgumentStore.removeObsoleteVersion
+        context.become(applicationReady(dagVersion))
     }
-    case change@ChangeTasks(taskIds, version, life, subscribers) =>
-      assertVersion(dagVersion, version, clue = change)
+  }
 
-      LOG.info(s"Change Tasks $taskIds for app: ${appId}, verion: $life, $dagVersion, $subscribers")
+  def applicationReady(dagVersion: Int): Receive = {
+    state = State.ACTIVE
+    transitionEnd = System.currentTimeMillis()
 
-      val newChangedTasks = taskIds.map { taskId =>
-        for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
-          val processorDescription = taskArgument.processorDescription.copy(life = life)
-          taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription, subscribers))
+    if (dagVersion != NOT_INITIALIZED) {
+      LOG.info("Transit to state Application Ready. This transition takes " + (transitionEnd - transitionStart) + " milliseconds")
+    }
+    box {
+      case start: StartDynamicDag =>
+        LOG.info("received StartDynamicDag")
+        if (start.dagVersion > dagVersion) {
+          transitionStart = System.currentTimeMillis()
+          LOG.info(s"received $start, Executor transit to dag version: ${start.dagVersion} from current version $dagVersion")
+          context.become(dynamicDagPhase1(start.dagVersion, List.empty[TaskId], List.empty[ChangeTask], List.empty[TaskId]))
         }
-        ChangeTask(taskId, dagVersion, life, subscribers)
-      }
-      sender ! TasksChanged(taskIds)
-      context.become(dynamicDag(dagVersion, launched, changed ++ newChangedTasks))
-
-    case startAll@StartAllTasks(taskLocations, startClock, version) =>
-      LOG.info(s"TaskLocations Ready...")
-      assertVersion(dagVersion, version, clue = startAll)
-
-      val result = taskLocations.locations.filter(location => !location._1.equals(express.localHost)).flatMap { kv =>
-        val (host, taskIdList) = kv
-        taskIdList.map(taskId => (TaskId.toLong(taskId), host))
-      }
-      express.startClients(taskLocations.locations.keySet).map { _ =>
-        express.remoteAddressMap.send(result)
-        express.remoteAddressMap.future().map { _ =>
-          launched.foreach(taskId => tasks.get(taskId).foreach(_ ! StartTask(taskId)))
-          changed.foreach(changeTask => tasks.get(changeTask.taskId).foreach(_ ! changeTask))
+      case launch: LaunchTasks =>
+        if (launch.dagVersion > dagVersion) {
+          transitionStart = System.currentTimeMillis()
+          LOG.info(s"received $launch, Executor transit to dag version: ${launch.dagVersion} from current version $dagVersion")
+          context.become(dynamicDagPhase1(launch.dagVersion, List.empty[TaskId], List.empty[ChangeTask], List.empty[TaskId]))
+          self forward launch
         }
-      }
-      taskArgumentStore.removeNewerVersion(dagVersion)
-      taskArgumentStore.removeObsoleteVersion
-      context.become(applicationReady(dagVersion))
 
-    case registered: TaskRegistered =>
-      tasks.get(registered.taskId).foreach {
-        case actorRef: ActorRef =>
-          tasks += registered.taskId -> actorRef
-          actorRef forward registered
-      }
-    case rejected: TaskRejected =>
-      tasks.get(rejected.taskId).foreach {
-        case task: ActorRef => task ! PoisonPill
-      }
-      tasks -= rejected.taskId
-      LOG.error(s"Task ${rejected.taskId} is rejected by AppMaster, shutting down it...")
-
-    case register: RegisterTask =>
-      sendMsgWithTimeOutCallBack(appMaster, register, registerTaskTimeout, timeOutHandler(register.taskId))
+      case change: ChangeTasks =>
+        if (change.dagVersion > dagVersion) {
+          transitionStart = System.currentTimeMillis()
+          LOG.info(s"received $change, Executor transit to dag version: ${change.dagVersion} from current version $dagVersion")
+          context.become(dynamicDagPhase1(change.dagVersion, List.empty[TaskId], List.empty[ChangeTask], List.empty[TaskId]))
+          self forward change
+        }
+    }
   }
 
-  def applicationReady(dagVersion: Int): Receive = executorService orElse {
-    case launch: LaunchTasks =>
-      LOG.info(s"received $launch, Executor transit to dag version: ${launch.dagVersion} from current version $dagVersion")
-      context.become(dynamicDag(launch.dagVersion, List.empty[TaskId], List.empty[ChangeTask]))
-      self forward launch
+  def restartingTasks(dagVersion: Int, remain: Int, needRestart: List[TaskId]): Receive = {
+    state = State.RECOVERY
+    box {
+      case TaskStopped(actor) =>
+        for (taskId <- getTaskId(actor)) {
+          if (taskArgumentStore.get(dagVersion, taskId).nonEmpty) {
+            val newNeedRestart = needRestart :+ taskId
+            val newRemain = remain - 1
+            if (newRemain == 0) {
+              val newRestarted = newNeedRestart.map{ taskId_ =>
+                taskId_ -> launchTask(taskId_, taskArgumentStore.get(dagVersion, taskId_).get)
+              }.toMap
 
-    case change: ChangeTasks =>
-      LOG.info(s"received $change, Executor transit to dag version: ${change.dagVersion} from current version $dagVersion")
-      context.become(dynamicDag(change.dagVersion, List.empty[TaskId], List.empty[ChangeTask]))
-      self forward change
-  }
-
-  private val timeOutHandler = (taskId: TaskId) => {
-    val cause = s"Failed to register task $taskId to AppMaster of application $appId, " +
-      s"executor id is $executorId, treat it as MessageLoss"
-    LOG.error(cause)
-    appMaster ! MessageLoss(executorId, taskId, cause)
-  }
-
-  def restartingTasks(dagVersion: Int, remain: Int, needRestart: List[TaskId]): Receive = executorService orElse {
-    case TaskStopped(actor) =>
-      for (taskId <- getTaskId(actor)) {
-        if (taskArgumentStore.get(dagVersion, taskId).nonEmpty) {
-          val newNeedRestart = needRestart :+ taskId
-          val newRemain = remain - 1
-          if (newRemain == 0) {
-            val newRestarted = newNeedRestart.map{ taskId_ =>
-              taskId_ -> launchTask(taskId_, taskArgumentStore.get(dagVersion, taskId_).get)
-            }.toMap
-
-            tasks = newRestarted
-            context.become(dynamicDag(dagVersion, newNeedRestart, List.empty[ChangeTask]))
-          } else {
-            context.become(restartingTasks(dagVersion, newRemain, newNeedRestart))
+              tasks = newRestarted
+              context.become(dynamicDagPhase1(dagVersion, newNeedRestart, List.empty[ChangeTask], List.empty[TaskId]))
+            } else {
+              context.become(restartingTasks(dagVersion, newRemain, newNeedRestart))
+            }
           }
         }
-      }
+    }
   }
 
   val terminationWatch: Receive = {
@@ -251,6 +313,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   }
 
   def executorService: Receive = terminationWatch orElse onRestartTasks orElse {
+    case taskChanged: TaskChanged =>
+      //skip
     case get: GetExecutorSummary =>
       val logFile = LogUtil.applicationLogDir(systemConfig)
       val processorTasks = tasks.keySet.groupBy(_.processorId).mapValues(_.toList).view.force
@@ -259,13 +323,19 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         worker.workerId,
         address,
         logFile.getAbsolutePath,
-        "active",
+        state,
         tasks.size,
         processorTasks,
         jvmName = ManagementFactory.getRuntimeMXBean().getName())
 
     case query: QueryExecutorConfig =>
       sender ! ExecutorConfig(systemConfig)
+    case HealthCheck =>
+      context.system.scheduler.scheduleOnce(3 second)(HealthCheck)
+      if (state != State.ACTIVE && (transitionEnd - transitionStart) > transitWarningThreshold) {
+        LOG.error(s"Executor status: " + state +
+          s", it takes too long(${transitionEnd - transitionStart}) to do transition")
+      }
   }
 
   private def getSerializerPool(): SerializationFramework = {
@@ -274,6 +344,15 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     val pool = clazz.newInstance().asInstanceOf[SerializationFramework]
     pool.init(system, userConf)
     pool.asInstanceOf[SerializationFramework]
+  }
+
+  private def unHandled: Receive = {
+    case other =>
+      LOG.info(s"Received unknown message $other")
+  }
+
+  private def box(receive: Receive): Receive = {
+    executorService orElse receive orElse unHandled
   }
 }
 
@@ -339,4 +418,13 @@ object Executor {
   case class ExecutorConfig(config: Config)
 
   class DagVersionMismatchException(msg: String) extends Exception(msg)
+
+  object State {
+    val ACTIVE = "active"
+    val DYNAMIC_DAG_PHASE1 = "dynamic_dag_phase1"
+    val DYNAMIC_DAG_PHASE2 = "dynamic_dag_phase2"
+    val RECOVERY = "dag_recovery"
+  }
+
+  object HealthCheck
 }

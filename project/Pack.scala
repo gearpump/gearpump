@@ -48,7 +48,9 @@ object Pack extends sbt.Build {
             "local" -> Seq("-server", "-DlogFilename=local", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
             "master" -> Seq("-server", "-DlogFilename=master", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
             "worker" -> Seq("-server", "-DlogFilename=worker", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "services" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost")
+            "services" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "yarnclient" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "storm" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost")
           ),
           packLibDir := Map(
             "lib" -> new ProjectsToPack(core.id, streaming.id),

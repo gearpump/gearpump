@@ -177,7 +177,7 @@ class TaskActor(
     }
   }
 
-  private def init: Unit = {
+  private def onStartClock: Unit = {
     LOG.info(s"received start, clock: $upstreamMinClock, sessionId: $sessionId")
     subscriptions = subscribers.map { subscriber =>
       (subscriber.processorId ,
@@ -187,6 +187,11 @@ class TaskActor(
 
     subscriptions.foreach(_._2.start)
 
+    import scala.collection.JavaConverters._
+    stashQueue.asScala.foreach{item =>
+      handleMessages(item.sender).apply(item.msg)
+    }
+    stashQueue.clear()
 
     // Put this as the last step so that the subscription is already initialized.
     // Message sending in current Task before onStart will not be delivered to
@@ -194,7 +199,7 @@ class TaskActor(
     onStart(new StartTime(upstreamMinClock))
 
     appMaster ! GetUpstreamMinClock(taskId)
-    context.become(handleMessages)
+    context.become(handleMessages(sender))
   }
 
   def waitForTaskRegistered: Receive = {
@@ -204,15 +209,16 @@ class TaskActor(
       context.become(waitForStartClock)
   }
 
+  private val stashQueue = new util.LinkedList[MessageAndSender]()
+
   def waitForStartClock : Receive = {
     case start: StartTask =>
-      init
-    case initialAckRequest: InitialAckRequest =>
-      init
-      handleMessages.apply(initialAckRequest)
+      onStartClock
+    case other: AnyRef =>
+      stashQueue.add(MessageAndSender(other, sender()))
   }
 
-  def handleMessages: Receive = {
+  def handleMessages(sender: => ActorRef): Receive = {
     case ackRequest: InitialAckRequest =>
       val ackResponse = securityChecker.handleInitialAckRequest(ackRequest)
       if (null != ackResponse) {
@@ -231,9 +237,9 @@ class TaskActor(
       doHandleMessage()
     case inputMessage: SerializedMessage =>
       val message = Message(serializerPool.get().deserialize(inputMessage.bytes), inputMessage.timeStamp)
-      receiveMessage(message, sender())
+      receiveMessage(message, sender)
     case inputMessage: Message =>
-      receiveMessage(inputMessage, sender())
+      receiveMessage(inputMessage, sender)
     case upstream@ UpstreamMinClock(upstreamClock) =>
       this.upstreamMinClock = upstreamClock
       val update = UpdateClock(taskId, minClock)
@@ -358,4 +364,6 @@ object TaskActor {
   case object FLUSH
 
   val NONE_SESSION = -1
+
+  case class MessageAndSender(msg: AnyRef, sender: ActorRef)
 }

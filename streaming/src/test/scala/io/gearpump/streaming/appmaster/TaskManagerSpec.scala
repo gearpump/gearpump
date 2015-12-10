@@ -20,8 +20,8 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
-import io.gearpump.streaming.AppMasterToExecutor.{StartAllTasks, TaskRegistered, LaunchTasks}
-import io.gearpump.streaming.DAG
+import io.gearpump.streaming.AppMasterToExecutor.{StartAllTasks, TaskLocationsReceived, StartDynamicDag, TaskLocationsReady, TaskRegistered, LaunchTasks}
+import io.gearpump.streaming.{ProcessorId, DAG, LifeTime, ProcessorDescription}
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAGSuccess, ChangeToNewDAG}
@@ -29,7 +29,7 @@ import io.gearpump.streaming.appmaster.DagManager.{TaskLaunchData, GetLatestDAG,
 import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorResourceUsageSummary, SetTaskManager, StartExecutorsTimeOut, StartExecutors}
 import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
 import io.gearpump.streaming.task.{StartTime, TaskContext, GetStartClock, Subscriber}
-import io.gearpump.Message
+import io.gearpump.{TimeStamp, Message}
 import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.{AppJar, TestUtil, UserConfig}
@@ -40,12 +40,11 @@ import io.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
 import io.gearpump.streaming.appmaster.ExecutorManager._
-import io.gearpump.streaming.appmaster.SubDAGManager.ResourceRequestDetail
+import io.gearpump.streaming.appmaster.JarScheduler.ResourceRequestDetail
 import io.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
 import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
 import io.gearpump.streaming.executor.Executor.RestartTasks
 import io.gearpump.streaming.task._
-import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
@@ -152,7 +151,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val appMaster = TestProbe()
     val executor = TestProbe()
 
-    val scheduler = mock(classOf[SubDAGManager])
+    val scheduler = mock(classOf[JarScheduler])
 
     val dagManager = TestProbe()
 
@@ -175,6 +174,8 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     dagManager.reply(LatestDAG(dag))
 
     // step4: Start remote Executors.
+    // received Broadcast
+    executorManager.expectMsg(BroadCast(StartDynamicDag(dag.version)))
     executorManager.expectMsgType[StartExecutors]
 
     when(scheduler.scheduleTask(mockJar, workerId, executorId, resource))
@@ -217,20 +218,31 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     taskManager.tell(registerTask2, executor.ref)
     executor.expectMsgType[TaskRegistered]
 
-    // Tell executor Manager the updated usage status of executors.
-    executorManager.expectMsgType[ExecutorResourceUsageSummary]
+    // step9: start broadcasting TaskLocations.
+    import scala.concurrent.duration._
+    assert(executorManager.expectMsgPF(5 seconds) {
+      case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[TaskLocationsReady]
+    })
 
-    // step9: Tell ClockService to update DAG.
+    //step10: Executor confirm it has received TaskLocationsReceived(version, executorId)
+    taskManager.tell(TaskLocationsReceived(dag.version, executorId), executor.ref)
+
+
+    // step11: Tell ClockService to update DAG.
     clockService.expectMsgType[ChangeToNewDAG]
-    clockService.reply(ChangeToNewDAGSuccess)
+    clockService.reply(ChangeToNewDAGSuccess(Map.empty[ProcessorId, TimeStamp]))
 
-    // step10: After we get reply from ClockService, start broadcasting TaskLocations.
+
+    //step12: start all tasks
     import scala.concurrent.duration._
     assert(executorManager.expectMsgPF(5 seconds) {
       case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[StartAllTasks]
     })
 
-    // step11: transition from DynamicDAG to ApplicationReady
+    // step13, Tell executor Manager the updated usage status of executors.
+    executorManager.expectMsgType[ExecutorResourceUsageSummary]
+
+    // step14: transition from DynamicDAG to ApplicationReady
     Env(executorManager, clockService, appMaster, executor, taskManager, scheduler)
   }
 }
@@ -242,7 +254,7 @@ object TaskManagerSpec {
     appMaster: TestProbe,
     executor: TestProbe,
     taskManager: ActorRef,
-    scheduler: SubDAGManager)
+    scheduler: JarScheduler)
 
   class Task1(taskContext : TaskContext, userConf : UserConfig)
     extends Task(taskContext, userConf) {

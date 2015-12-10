@@ -24,6 +24,10 @@ import io.gearpump.util.Graph
 
 case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, PartitionerDescription]) extends Serializable {
 
+  def isEmpty: Boolean = {
+    processors.isEmpty
+  }
+
   def taskCount: Int = {
     processors.foldLeft(0) { (count, task) =>
       count + task._2.parallelism

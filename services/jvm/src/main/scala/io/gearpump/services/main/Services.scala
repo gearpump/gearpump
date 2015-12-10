@@ -31,7 +31,8 @@ import org.slf4j.Logger
 object Services extends AkkaApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "master" -> CLIOption("<host:port>", required = false))
+    "master" -> CLIOption("<host:port>", required = false),
+    "config" -> CLIOption("<provide a custom configuration file>", required = false))
 
   override val description = "UI Server"
 
@@ -44,14 +45,20 @@ object Services extends AkkaApp with ArgumentsParser {
   }
 
   override def main(inputAkkaConf: Config, args: Array[String]): Unit = {
+
+    val argConfig = parse(args)
+    var akkaConf =
+      if (argConfig.exists("config")) {
+        ClusterConfig.load(argConfig.getString("config")).ui
+      } else {
+        inputAkkaConf
+      }
+
     val LOG: Logger = {
-      LogUtil.loadConfiguration(inputAkkaConf, ProcessType.UI)
+      LogUtil.loadConfiguration(akkaConf, ProcessType.UI)
       LogUtil.getLogger(getClass)
     }
 
-    val argConfig = parse(args)
-
-    var akkaConf = inputAkkaConf
 
     import scala.collection.JavaConversions._
     if (argConfig.exists("master")) {

@@ -458,11 +458,12 @@ private[cluster] object Worker {
 
     private def filterDaemonLib(classPath: Array[String]): Array[String] = {
       val classPathWhiteList = getClassPathWhiteList(config)
-      classPath.filter{ path =>
+      classPath.filter(_ != null).filter{ path =>
         //The path may represent a file or folder
         val file = new File(path)
+        val parent = Option(file.getParentFile).map(_.getAbsolutePath)
         classPathWhiteList.contains(file.getAbsolutePath) ||
-          classPathWhiteList.contains(file.getParentFile.getAbsolutePath)
+          classPathWhiteList.contains(parent.getOrElse(null))
       }
     }
   }

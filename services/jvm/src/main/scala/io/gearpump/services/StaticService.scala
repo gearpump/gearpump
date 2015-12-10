@@ -24,23 +24,13 @@ import java.util.jar.Manifest
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
+import io.gearpump.util.Util
 
 trait StaticService  {
 
   implicit def system: ActorSystem
 
-  val version = {
-    val manifest = getManifest(this.getClass)
-    manifest.getMainAttributes.getValue("Implementation-Version")
-  }
-
-  private def getManifest(myClass : Class[_]): Manifest = {
-    val resource = "/" + myClass.getName().replace(".", "/") + ".class"
-    val fullPath = myClass.getResource(resource).toString()
-    val archivePath = fullPath.substring(0, fullPath.length() - resource.length())
-    val input = new URL(archivePath + "/META-INF/MANIFEST.MF").openStream()
-    new Manifest(input)
-  }
+  val version = Util.version
 
   // Optionally compresses the response with Gzip or Deflate, if the client accepts
   // compressed responses.

@@ -43,6 +43,7 @@ object Constants {
   val GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS = "gearpump.worker.executor-share-same-jvm-as-worker"
 
   val GEARPUMP_HOME = "gearpump.home"
+  val GEARPUMP_FULL_SCALA_VERSION = "gearpump.binary-version-with-scala-version"
   val GEARPUMP_HOSTNAME = "gearpump.hostname"
   val GEARPUMP_APPMASTER_ARGS = "gearpump.appmaster.vmargs"
   val GEARPUMP_APPMASTER_EXTRA_CLASSPATH = "gearpump.appmaster.extraClasspath"
