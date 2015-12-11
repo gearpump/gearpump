@@ -263,7 +263,8 @@ object Build extends sbt.Build {
   lazy val services: Project = services_full.jvm.
     settings(serviceJvmSettings: _*).
     settings(compile in Compile <<= (compile in Compile) dependsOn (fastOptJS in (serviceJS, Compile))).
-    dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile;provided")
+    dependsOn(streaming % "test->test;compile->compile", daemon % "test->test;compile->compile;provided",
+      storm % "test->test;compile->compile; provided")
 
   lazy val serviceJvmSettings = commonSettings ++ noPublish ++ Seq(
     libraryDependencies ++= Seq(
