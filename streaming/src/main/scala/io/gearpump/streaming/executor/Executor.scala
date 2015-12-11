@@ -152,7 +152,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       sender ! TasksChanged(taskIds)
       context.become(dynamicDag(dagVersion, launched, changed ++ newChangedTasks))
 
-    case startAll@StartAllTasks(taskLocations, startClock, version) =>
+    case startAll@StartAllTasks(taskLocations, version) =>
       LOG.info(s"TaskLocations Ready...")
       assertVersion(dagVersion, version, clue = startAll)
 

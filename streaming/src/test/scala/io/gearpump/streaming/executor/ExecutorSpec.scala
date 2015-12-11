@@ -71,7 +71,7 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
     verify(taskLauncher, times(1)).launch(any(), any(), any(), any())
 
-    executor ! StartAllTasks(TaskLocations(Map.empty), 0, 0)
+    executor ! StartAllTasks(TaskLocations(Map.empty), 0)
     task.expectMsgType[StartTask]
     task.expectMsgType[StartTask]
 
@@ -80,7 +80,7 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     client.send(executor, changeTasks)
     client.expectMsgType[TasksChanged]
 
-    executor ! StartAllTasks(TaskLocations(Map.empty), 0, 1)
+    executor ! StartAllTasks(TaskLocations(Map.empty), 1)
 
     task.expectMsgType[ChangeTask]
     task.expectMsgType[ChangeTask]

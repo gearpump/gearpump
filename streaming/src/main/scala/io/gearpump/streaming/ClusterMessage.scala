@@ -46,7 +46,7 @@ object AppMasterToExecutor {
 
   case class StartTask(taskId: TaskId)
 
-  case class StartAllTasks(taskLocations: TaskLocations, startClock: TimeStamp, dagVersion: Int)
+  case class StartAllTasks(taskLocations: TaskLocations, dagVersion: Int)
   case class TaskRegistered(taskId: TaskId, sessionId: Int, startClock: TimeStamp)
   case class TaskRejected(taskId: TaskId)
 
