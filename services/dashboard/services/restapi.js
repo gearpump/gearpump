@@ -33,7 +33,7 @@ angular.module('dashboard')
         return {success: false, error: errorMessage, stackTrace: stackTrace};
       }
 
-      var restapiV1Root = conf.restapiRoot + '/api/' + conf.restapiProtocol;
+      var restapiV1Root = conf.restapiRoot + 'api/' + conf.restapiProtocol + '/';
       var self = {
         /**
          * Retrieve data from rest service endpoint (HTTP GET) periodically in an angular scope.
@@ -82,41 +82,41 @@ angular.module('dashboard')
 
         /** Kill a running application */
         killApp: function(appId) {
-          var url = restapiV1Root + '/appmaster/' + appId;
+          var url = restapiV1Root + 'appmaster/' + appId;
           return $http.delete(url);
         },
 
         /** Restart a running application and return a promise */
         restartAppAsync: function(appId) {
-          var url = restapiV1Root + '/appmaster/' + appId + '/restart';
+          var url = restapiV1Root + 'appmaster/' + appId + '/restart';
           return $http.post(url);
         },
 
         /** Return the config link of an application */
         appConfigLink: function(appId) {
-          return restapiV1Root + '/appmaster/' + appId + '/config';
+          return restapiV1Root + 'appmaster/' + appId + '/config';
         },
 
         /** Return the config link of an application */
         appExecutorConfigLink: function(appId, executorId) {
-          return restapiV1Root + '/appmaster/' + appId + '/executor/' + executorId + '/config';
+          return restapiV1Root + 'appmaster/' + appId + '/executor/' + executorId + '/config';
         },
 
         /** Return the config link of a worker */
         workerConfigLink: function(workerId) {
-          return restapiV1Root + '/worker/' + workerId + '/config';
+          return restapiV1Root + 'worker/' + workerId + '/config';
         },
 
         /** Return the config link of the master */
         masterConfigLink: function() {
-          return restapiV1Root + '/master/config';
+          return restapiV1Root + 'master/config';
         },
 
         /** Submit an user defined application with user configuration */
         submitUserApp: function(files, formFormNames, args, onComplete) {
           var params = args ? '?args=' + encodeURIComponent(args) : '';
           var upload = Upload.upload({
-            url: restapiV1Root + '/master/submitapp' + params,
+            url: restapiV1Root + 'master/submitapp' + params,
             method: 'POST',
             file: files,
             fileFormDataName: formFormNames
@@ -136,7 +136,7 @@ angular.module('dashboard')
 
         /** Submit an user defined application with user configuration */
         submitDag: function(args, onComplete) {
-          var url = restapiV1Root + '/master/submitdag';
+          var url = restapiV1Root + 'master/submitdag';
           return $http.post(url, args).then(function(response) {
             if (onComplete) {
               onComplete(decodeSuccessResponse(response.data));
@@ -151,7 +151,7 @@ angular.module('dashboard')
         /** Upload a set of JAR files */
         uploadJars: function(files, onComplete) {
           var upload = Upload.upload({
-            url: restapiV1Root + '/master/uploadjar',
+            url: restapiV1Root + 'master/uploadjar',
             method: 'POST',
             file: files,
             fileFormDataName: 'jar'
@@ -170,7 +170,7 @@ angular.module('dashboard')
 
         /** Replace a dag processor at runtime */
         replaceDagProcessor: function(files, formFormNames, appId, oldProcessorId, newProcessorDescription, onComplete) {
-          var url = restapiV1Root + '/appmaster/' + appId + '/dynamicdag';
+          var url = restapiV1Root + 'appmaster/' + appId + '/dynamicdag';
           var args = {
             "$type": 'io.gearpump.streaming.appmaster.DagManager.ReplaceProcessor',
             oldProcessorId: oldProcessorId,
@@ -215,7 +215,7 @@ angular.module('dashboard')
             $timeout.cancel(timeoutPromise);
           });
           var fn = function() {
-            $http.get(conf.restapiRoot + '/version')
+            $http.get(conf.restapiRoot + 'version')
               .then(function(response) {
                 var serviceWasUnreachable = noticeWindow.$isShown;
                 noticeWindow.$promise.then(noticeWindow.hide);

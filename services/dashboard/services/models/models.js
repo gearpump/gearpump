@@ -334,70 +334,70 @@ angular.module('dashboard')
 
       var getter = {
         master: function() {
-          return get('/master',
+          return get('master',
             decoder.master);
         },
         masterMetrics: function() {
-          return getter._metrics('/master/metrics/', 'master');
+          return getter._metrics('master/metrics/', 'master');
         },
         masterHistoricalMetrics: function(period, points) {
-          return getter._historicalMetrics('/master/metrics/', 'master',
+          return getter._historicalMetrics('master/metrics/', 'master',
             period, points);
         },
         partitioners: function() {
-          return get('/master/partitioners',
+          return get('master/partitioners',
             decoder.partitioners);
         },
         workers: function() {
-          return get('/master/workerlist',
+          return get('master/workerlist',
             decoder.workers);
         },
         worker: function(workerId) {
-          return get('/worker/' + workerId,
+          return get('worker/' + workerId,
             decoder.worker);
         },
         workerMetrics: function(workerId) {
-          return getter._metrics('/worker/' + workerId + '/metrics/', 'worker' + workerId);
+          return getter._metrics('worker/' + workerId + '/metrics/', 'worker' + workerId);
         },
         workerHistoricalMetrics: function(workerId, period, points) {
-          return getter._historicalMetrics('/worker/' + workerId + '/metrics/', 'worker' + workerId,
+          return getter._historicalMetrics('worker/' + workerId + '/metrics/', 'worker' + workerId,
             period, points);
         },
         apps: function() {
-          return get('/master/applist',
+          return get('master/applist',
             decoder.apps);
         },
         app: function(appId) {
-          return get('/appmaster/' + appId + '?detail=true',
+          return get('appmaster/' + appId + '?detail=true',
             decoder.app);
         },
         /** Note that executor related metrics will be excluded. */
         appMetrics: function(appId) {
           var params = '?readLatest=true';
-          return get('/appmaster/' + appId + '/metrics/app' + appId + '.processor*' + params,
+          return get('appmaster/' + appId + '/metrics/app' + appId + '.processor*' + params,
             decoder.appMetricsOld);
         },
         appHistoricalMetrics: function(appId, period, points) {
-          return get('/appmaster/' + appId + '/metrics/app' + appId + '.processor*',
+          return get('appmaster/' + appId + '/metrics/app' + appId + '.processor*',
             decoder.historicalMetricsDesampled, {
               period: period, points: points
             });
         },
         appExecutor: function(appId, executorId) {
-          return get('/appmaster/' + appId + '/executor/' + executorId,
+          return get('appmaster/' + appId + '/executor/' + executorId,
             decoder.appExecutor);
         },
         appExecutorMetrics: function(appId, executorId) {
           return getter._metrics(
-            '/appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId);
+            'appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId);
         },
         appExecutorHistoricalMetrics: function(appId, executorId, period, count) {
           return getter._historicalMetrics(
-            '/appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId,
+            'appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId,
             period, count);
         },
         appStallingTasks: function(appId) {
-          return get('/appmaster/' + appId + '/stallingtasks',
+          return get('appmaster/' + appId + '/stallingtasks',
             decoder.appStallingTasks);
         },
         _metrics: function(pathPrefix, path) {
