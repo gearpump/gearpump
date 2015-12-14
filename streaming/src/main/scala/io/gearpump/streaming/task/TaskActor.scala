@@ -26,7 +26,7 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import io.gearpump.metrics.Metrics
 import io.gearpump.serializer.SerializationFramework
-import io.gearpump.streaming.AppMasterToExecutor.{TaskRejected, _}
+import io.gearpump.streaming.AppMasterToExecutor._
 import io.gearpump.streaming.ExecutorToAppMaster._
 import io.gearpump.streaming.{Constants, ProcessorId}
 import io.gearpump.util.{LogUtil, TimeOutScheduler}
@@ -46,6 +46,7 @@ class TaskActor(
     inputSerializerPool: SerializationFramework)
   extends Actor with ExpressTransport  with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
+  private var _minClock: TimeStamp = 0L
 
   def serializerPool: SerializationFramework = inputSerializerPool
 
@@ -137,12 +138,6 @@ class TaskActor(
     context.become(waitForTaskRegistered)
   }
 
-  def minClockAtCurrentTask: TimeStamp = {
-    this.subscriptions.foldLeft(Long.MaxValue){ (clock, subscription) =>
-      Math.min(clock, subscription._2.minClock)
-    }
-  }
-
   private def allowSendingMoreMessages(): Boolean = {
     subscriptions.forall(_._2.allowSendingMoreMessages())
   }
@@ -227,7 +222,7 @@ class TaskActor(
       }
     case ackRequest: AckRequest =>
       //enqueue to handle the ackRequest and send back ack later
-      val ackResponse = securityChecker.generateAckResponse(ackRequest, sender)
+      val ackResponse = securityChecker.generateAckResponse(ackRequest, sender, ackOnceEveryMessageCount)
       if (null != ackResponse) {
         queue.add(SendAck(ackResponse, ackRequest.taskId))
         doHandleMessage()
@@ -242,19 +237,31 @@ class TaskActor(
       receiveMessage(inputMessage, sender)
     case upstream@ UpstreamMinClock(upstreamClock) =>
       this.upstreamMinClock = upstreamClock
-      val latestMinClock = minClock
-      val update = UpdateClock(taskId, latestMinClock)
+
+      val subMinClock = subscriptions.foldLeft(Long.MaxValue) { (min, sub) =>
+        val subMin = sub._2.minClock
+        // a subscription is holding back the _minClock;
+        // we send AckRequest to its tasks to push _minClock forward
+        if (subMin == _minClock) {
+          sub._2.sendAckRequestOnStallingTime(_minClock)
+        }
+        Math.min(min, subMin)
+      }
+
+      _minClock = Math.max(life.birth, Math.min(upstreamMinClock, subMinClock))
+
+      val update = UpdateClock(taskId, _minClock)
       context.system.scheduler.scheduleOnce(CLOCK_REPORT_INTERVAL) {
         appMaster ! update
       }
 
       // check whether current task is dead.
-      if (latestMinClock > life.death) {
+      if (_minClock > life.death) {
         // There will be no more message received...
         val unRegister = UnRegisterTask(taskId, executorId)
         executor ! unRegister
 
-        LOG.info(s"Sending $unRegister, current minclock: $latestMinClock, life: $life")
+        LOG.info(s"Sending $unRegister, current minclock: ${_minClock}, life: $life")
       }
 
     case ChangeTask(_, dagVersion, life, subscribers) =>
@@ -285,10 +292,14 @@ class TaskActor(
       doHandleMessage()
   }
 
-  def minClock: TimeStamp = {
-    Math.max(life.birth, Math.min(upstreamMinClock, minClockAtCurrentTask))
-  }
+  /**
+   * @return min clock of this task
+   */
+  def minClock: TimeStamp = _minClock
 
+  /**
+   * @return min clock of upstream task
+   */
   def getUpstreamMinClock: TimeStamp = upstreamMinClock
 
   private def receiveMessage(msg: Message, sender: ActorRef): Unit = {
@@ -341,9 +352,12 @@ object TaskActor {
       }
     }
 
-    def generateAckResponse(ackRequest: AckRequest, sender: ActorRef): Ack = {
+    def generateAckResponse(ackRequest: AckRequest, sender: ActorRef, incrementCount: Int): Ack = {
       val sessionId = ackRequest.sessionId
       if (receivedMsgCount.containsKey(sessionId)) {
+        // we increment more count for each AckRequest
+        // to throttle the number of unacked AckRequest
+        receivedMsgCount.put(sessionId, (receivedMsgCount.get(sessionId) + incrementCount).toShort)
         Ack(task_id, ackRequest.seq, receivedMsgCount.get(sessionId), ackRequest.sessionId)
       } else {
         LOG.error(s"get unknown AckRequest $ackRequest from ${sender.toString()}")
