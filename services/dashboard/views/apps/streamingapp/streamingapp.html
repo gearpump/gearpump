@@ -46,11 +46,13 @@
       <a href="#/apps/streamingapp/{{app.appId}}/dag">DAG</a>
     </li>
     <!-- following tabs are hidden by default -->
-    <li ng-if="$state.current.name === 'streamingapp.processor'" class="active">
-      <a href="#">Processor</a>
+    <li ng-if="$state.current.name === 'streamingapp.processor'"
+        class="active">
+      <a href="javascript:">Processor</a>
     </li>
-    <li ng-if="$state.current.name === 'streamingapp.executor'" class="active">
-      <a href="#">Executor</a>
+    <li ng-if="$state.current.name === 'streamingapp.executor'"
+        class="active">
+      <a href="javascript:">Executor</a>
     </li>
   </ul>
 </div>

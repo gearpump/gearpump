@@ -70,9 +70,7 @@ angular.module('dashboard')
         $scope.dag.setStallingTasks(tasks);
       }
       $scope.switchToDagTab = function() {
-        if ($state.current != 'streamingapp.dag') {
-          $state.go('streamingapp.dag');
-        }
+        $state.go('streamingapp.dag');
       };
 
       $scope.$on('$destroy', function() {
