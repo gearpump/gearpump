@@ -30,7 +30,7 @@ import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.scalatest.{Matchers, WordSpec}
 
-class SubDAGManagerSpec extends WordSpec with Matchers {
+class JarSchedulerSpec extends WordSpec with Matchers {
   val mockJar1 = AppJar("jar1", FilePath("path"))
   val mockJar2 = AppJar("jar2", FilePath("path"))
   val task1 = ProcessorDescription(id = 0, taskClass = classOf[TestTask1].getName, parallelism = 1, jar = mockJar1)
@@ -38,9 +38,9 @@ class SubDAGManagerSpec extends WordSpec with Matchers {
   val task3 = ProcessorDescription(id = 2, taskClass = classOf[TestTask2].getName, parallelism = 2, jar = mockJar2)
   val dag = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
 
-  "SubDAGManager" should {
+  "JarScheduler" should {
     "schedule tasks depends on app jar" in {
-      val manager = new SubDAGManager(0, "APP", ConfigFactory.empty())
+      val manager = new JarScheduler(0, "APP", ConfigFactory.empty())
       manager.setDag(dag)
       val requests = Array(ResourceRequest(Resource(2)))
       assert(manager.getRequestDetails().length == 1)

@@ -112,10 +112,10 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   for (dag <- getDAG) {
     val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
     clockService = Some(context.actorOf(Props(new ClockService(dag, store))))
-    val subDAGManager = new SubDAGManager(appId, app.name, systemConfig)
+    val jarScheduler = new JarScheduler(appId, app.name, systemConfig)
 
     taskManager = Some(context.actorOf(Props(new TaskManager(appContext.appId, dagManager,
-      subDAGManager, executorManager, clockService.get, self, app.name))))
+      jarScheduler, executorManager, clockService.get, self, app.name))))
   }
 
   override def receive : Receive =

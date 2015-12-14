@@ -27,10 +27,10 @@ import io.gearpump.transport.HostPort
 import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-class TaskRegistry(appId: Int, expectedTasks: List[TaskId],
+class TaskRegistry(expectedTasks: List[TaskId],
     var registeredTasks: Map[TaskId, TaskLocation] = Map.empty[TaskId, TaskLocation]) {
 
-  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
+  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   private val totalTaskCount = expectedTasks.size
 
@@ -57,8 +57,21 @@ class TaskRegistry(appId: Int, expectedTasks: List[TaskId],
     TaskLocations(taskLocations)
   }
 
+  def getTaskExecutorMap: Map[TaskId, ExecutorId] = {
+    getTaskLocations.locations.flatMap { pair =>
+      val (hostPort, taskSet) = pair
+      taskSet.map{ taskId =>
+        (taskId, getExecutorId(taskId).getOrElse(-1))
+      }
+    }
+  }
+
   def getExecutorId(taskId: TaskId): Option[Int] = {
     registeredTasks.get(taskId).map(_.executorId)
+  }
+
+  def executors: List[ExecutorId] = {
+    registeredTasks.toList.map(_._2.executorId)
   }
 
   def isAllTasksRegistered: Boolean = {

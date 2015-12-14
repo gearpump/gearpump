@@ -102,12 +102,13 @@ object LogUtil {
     PropertyConfigurator.configure(props)
   }
 
-  private def loadConfiguration: Properties = {
+  def loadConfiguration: Properties = {
     val props = new Properties()
     val log4jConfStream = getClass().getClassLoader.getResourceAsStream("log4j.properties")
     if(log4jConfStream!=null) {
       props.load(log4jConfStream)
     }
+    log4jConfStream.close()
     props
   }
 

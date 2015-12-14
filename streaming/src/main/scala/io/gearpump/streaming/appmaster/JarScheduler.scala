@@ -23,19 +23,19 @@ import io.gearpump.streaming.{ProcessorDescription, DAG}
 import io.gearpump.cluster.AppJar
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.partitioner.PartitionerDescription
-import SubDAGManager.ResourceRequestDetail
+import JarScheduler.ResourceRequestDetail
 import io.gearpump.util.Graph
 
 /**
  *
- * With SubDAGManager, we allows a DAG to be partitioned into several
+ * With JarScheduler, we allows a DAG to be partitioned into several
  * parts, with each part use its own jar file.
  *
  * @param appId
  * @param appName
  * @param config
  */
-class SubDAGManager(appId : Int, appName: String, config: Config) {
+class JarScheduler(appId : Int, appName: String, config: Config) {
   private var taskSchedulers = Map.empty[AppJar, TaskScheduler]
   private var executorAndSchedulers = Map.empty[Int, (AppJar, TaskScheduler)]
 
@@ -73,6 +73,6 @@ class SubDAGManager(appId : Int, appName: String, config: Config) {
   }
 }
 
-object SubDAGManager{
+object JarScheduler{
   case class ResourceRequestDetail(jar: AppJar, requests: Array[ResourceRequest])
 }

@@ -31,7 +31,7 @@ class TaskRegistrySpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val task1 = TaskId(0, 1)
     val task2 = TaskId(0, 2)
 
-    val register = new TaskRegistry(appId = 0, expectedTasks = List(task0, task1, task2))
+    val register = new TaskRegistry(expectedTasks = List(task0, task1, task2))
     val host1 = HostPort("127.0.0.1:3000")
     val host2 = HostPort("127.0.0.1:3001")
 

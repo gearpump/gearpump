@@ -19,6 +19,7 @@ package io.gearpump.streaming.executor
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
 import io.gearpump.streaming.task.Subscriber
 import io.gearpump.cluster.appmaster.WorkerInfo
@@ -28,6 +29,7 @@ import io.gearpump.streaming.AppMasterToExecutor._
 import io.gearpump.streaming.executor.TaskLauncherSpec.MockTask
 import io.gearpump.streaming.task.{Subscriber, TaskId}
 import io.gearpump.streaming.{LifeTime, ProcessorDescription}
+import io.gearpump.transport.HostPort
 import org.mockito.Matchers._
 import org.mockito.Mockito.{times, _}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
@@ -71,7 +73,20 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
     verify(taskLauncher, times(1)).launch(any(), any(), any(), any())
 
-    executor ! StartAllTasks(TaskLocations(Map.empty), 0, 0)
+    executor ! RegisterTask(TaskId(0, 0), executorId, HostPort("localhost:80"))
+    executor ! RegisterTask(TaskId(0, 1), executorId, HostPort("localhost:80"))
+
+    executor ! TaskRegistered(TaskId(0, 0), 0, 0)
+
+    task.expectMsgType[TaskRegistered]
+
+    executor ! TaskRegistered(TaskId(0, 1), 0, 0)
+
+    task.expectMsgType[TaskRegistered]
+
+    executor ! TaskLocationsReady(TaskLocations(Map.empty), dagVersion = 0)
+    executor ! StartAllTasks(dagVersion = 0)
+
     task.expectMsgType[StartTask]
     task.expectMsgType[StartTask]
 
@@ -80,7 +95,8 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     client.send(executor, changeTasks)
     client.expectMsgType[TasksChanged]
 
-    executor ! StartAllTasks(TaskLocations(Map.empty), 0, 1)
+    executor ! TaskLocationsReady(TaskLocations(Map.empty), 1)
+    executor ! StartAllTasks(dagVersion = 1)
 
     task.expectMsgType[ChangeTask]
     task.expectMsgType[ChangeTask]

@@ -57,10 +57,7 @@ object Application {
 
   def ApplicationToAppDescription(app: Application)(implicit system: ActorSystem): AppDescription = {
     val filterReferenceConf = Util.filterOutOrigin(system.settings.config, "reference.conf")
-    val filterJvmReservedKeys = ClusterConfig.JVM_RESERVED_PROPERTIES.foldLeft(filterReferenceConf){(config, key) =>
-      config.withoutPath(key)
-    }
-
+    val filterJvmReservedKeys = ClusterConfig.filterOutJvmReservedKeys(filterReferenceConf)
     AppDescription(app.name, app.appMaster.getName, app.userConfig, filterJvmReservedKeys)
   }
 }

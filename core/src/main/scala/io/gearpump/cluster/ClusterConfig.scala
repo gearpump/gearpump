@@ -43,15 +43,15 @@ class ClusterConfig private(systemProperties : Config, custom : Config,
                 windows: Config, all: Config) {
   def master : Config = {
 
-    val config = systemProperties.withFallback(custom)
-      .withFallback(masterConfig.getConfig(MASTER)).
+    val config = systemProperties.withFallback(masterConfig.getConfig(MASTER))
+      .withFallback(custom).
       withFallback(baseConfig).withFallback(all)
     convert(config)
   }
 
   def worker : Config = {
-    val config = systemProperties.withFallback(custom)
-      .withFallback(workerConfig.getConfig(WORKER)).
+    val config = systemProperties.withFallback(workerConfig.getConfig(WORKER))
+      .withFallback(custom).
       withFallback(baseConfig).withFallback(all)
 
     convert(config)
@@ -66,8 +66,8 @@ class ClusterConfig private(systemProperties : Config, custom : Config,
 
 
   def ui: Config = {
-    val config = systemProperties.withFallback(custom)
-      .withFallback(uiConfig.getConfig(UI))
+    val config = systemProperties.withFallback(uiConfig.getConfig(UI))
+      .withFallback(custom)
       .withFallback(baseConfig).withFallback(all)
 
     convert(config)
@@ -175,9 +175,9 @@ object ClusterConfig {
     val custom = user.withFallback(cluster)
 
     // check whether config is valid
-    validateConfig(custom)
+    val cleaned = sanity(custom)
 
-    val all = ConfigFactory.load(custom)
+    val all = ConfigFactory.load(cleaned)
 
     val master = all.withOnlyPath(MASTER)
     val base = all.withOnlyPath(BASE)
@@ -188,7 +188,7 @@ object ClusterConfig {
     val systemProperties = getSystemProperties
 
     new ClusterConfig(systemProperties = systemProperties,
-      custom  = custom, masterConfig  = master,
+      custom  = cleaned, masterConfig  = master,
       workerConfig = worker,
       uiConfig = ui,
       base = base,
@@ -207,16 +207,8 @@ object ClusterConfig {
     }
   }
 
-  /**
-  * throw ConfigValidationException if fails
-  */
-  private def validateConfig(config: Config): Unit = {
-    import scala.collection.JavaConverters._
-    config.root.entrySet().asScala.map(_.getKey).map { key =>
-      if (JVM_RESERVED_PROPERTIES.contains(key)) {
-        throw new ConfigValidationException(s"Found invalid config section: $key, these keys are reserved by JVM system ${JVM_RESERVED_PROPERTIES}")
-      }
-    }
+  private def sanity(config: Config): Config = {
+    filterOutJvmReservedKeys(config)
   }
 
   def saveConfig(conf : Config, file : File) : Unit = {
@@ -225,4 +217,11 @@ object ClusterConfig {
   }
 
   class ConfigValidationException(msg: String) extends Exception(msg: String)
+
+  def filterOutJvmReservedKeys(input: Config): Config = {
+    val filterJvmReservedKeys = JVM_RESERVED_PROPERTIES.foldLeft(input) { (config, key) =>
+      config.withoutPath(key)
+    }
+    filterJvmReservedKeys
+  }
 }
