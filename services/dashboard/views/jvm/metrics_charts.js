@@ -64,7 +64,7 @@ angular.module('dashboard')
 
       var lineChartOptionBase = {
         height: '168px',
-        seriesStacked: false,
+        seriesStacked: true,
         visibleDataPointsNum: conf.metricsChartDataCount,
         data: _.times(conf.metricsChartDataCount, function() {
           return {x: '', y: '-'};

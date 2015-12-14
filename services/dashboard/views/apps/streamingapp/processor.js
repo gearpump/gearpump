@@ -75,17 +75,26 @@ angular.module('dashboard')
 
       updateProcessorInfoTable($scope.processor);
 
-      var skewData = $scope.dag.getReceivedMessages($scope.processor.id).rate;
       var skewDataOption = {
         height: '110px',
-        color: 'rgb(66,180,230)',
+        colors: ['rgb(93,201,242)'],
+        seriesNames: [''],
+        barMinWidth: 10,
+        barMinSpacing: 2,
         valueFormatter: function(value) {
           return Number(value).toFixed(0) + ' msg/s';
         },
         data: _.map($scope.tasks.available, function(taskName, i) {
-          return {x: taskName, y: skewData[i]};
+          return {x: taskName, y: '-'};
         })
       };
+
+      $scope.$watchCollection('dag.metrics.meter', function() {
+        var data = $scope.dag.getReceivedMessages($scope.processor.id).rate;
+        $scope.receiveSkewChart.data = _.map($scope.tasks.available, function(taskName, i) {
+          return {x: taskName, y: data[i]};
+        });
+      });
 
       $scope.receiveSkewChart = {
         options: skewDataOption
