@@ -1,12 +1,13 @@
 <div class="modal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-md">
     <div class="modal-content">
-      <div class="modal-body">
+      <div class="modal-header">
         <button type="button" class="close" ng-click="$hide()">
           <span>&times;</span></button>
         <h4>Modify Processor
           <span ng-bind="processorId"></span></h4>
-
+      </div>
+      <div class="modal-body">
         <p style="padding-top: 4px; padding-bottom: 14px;">System will replace existing processor
           with a new one, if any of these fields (processor JAR, task class or parallelism) are
           changed.</p>

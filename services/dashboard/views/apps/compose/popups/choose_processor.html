@@ -1,12 +1,13 @@
 <div class="modal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-md">
     <div class="modal-content">
-      <div class="modal-body">
+      <div class="modal-header">
         <button type="button" class="close" ng-click="$hide()">
           <span>&times;</span></button>
         <h4 ng-if="processor.id >= 0">Modify Processor</h4>
         <h4 ng-if="!(processor.id >= 0)">New Processor</h4>
-
+      </div>
+      <div class="modal-body">
         <p style="padding-top: 4px; padding-bottom: 14px;">Make sure that the given
           task class can be found in uploaded JAR files.</p>
 
