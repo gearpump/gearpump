@@ -26,7 +26,7 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import io.gearpump.metrics.Metrics
 import io.gearpump.serializer.SerializationFramework
-import io.gearpump.streaming.AppMasterToExecutor.{TaskRejected, _}
+import io.gearpump.streaming.AppMasterToExecutor._
 import io.gearpump.streaming.ExecutorToAppMaster._
 import io.gearpump.streaming.{Constants, ProcessorId}
 import io.gearpump.util.{LogUtil, TimeOutScheduler}
@@ -41,6 +41,7 @@ class TaskActor(
     inputSerializerPool: SerializationFramework)
   extends Actor with ExpressTransport  with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
+  private var curTaskMinClock: TimeStamp = 0L
 
   def serializerPool: SerializationFramework = inputSerializerPool
 
@@ -135,7 +136,7 @@ class TaskActor(
     context.become(waitForTaskRegistered)
   }
 
-  def minClockAtCurrentTask: TimeStamp = {
+  def getCurTaskMinClock: TimeStamp = {
     this.subscriptions.foldLeft(Long.MaxValue){ (clock, subscription) =>
       Math.min(clock, subscription._2.minClock)
     }
@@ -242,6 +243,16 @@ class TaskActor(
       receiveMessage(inputMessage, sender)
     case upstream@ UpstreamMinClock(upstreamClock) =>
       this.upstreamMinClock = upstreamClock
+      val newMinClock = getCurTaskMinClock
+      if (newMinClock == curTaskMinClock) {
+        var i = 0
+        while (i < subscriptions.length) {
+          subscriptions(i)._2.sendAckRequestToPending(curTaskMinClock)
+          i += 1
+        }
+      }
+      curTaskMinClock = newMinClock
+      val minClock = Math.max(life.birth, Math.min(upstreamMinClock, curTaskMinClock))
       val update = UpdateClock(taskId, minClock)
       context.system.scheduler.scheduleOnce(CLOCK_REPORT_INTERVAL) {
         appMaster ! update
@@ -273,10 +284,6 @@ class TaskActor(
     case other: AnyRef =>
       queue.add(other)
       doHandleMessage()
-  }
-
-  def minClock: TimeStamp = {
-    Math.max(life.birth, Math.min(upstreamMinClock, minClockAtCurrentTask))
   }
 
   def getUpstreamMinClock: TimeStamp = upstreamMinClock

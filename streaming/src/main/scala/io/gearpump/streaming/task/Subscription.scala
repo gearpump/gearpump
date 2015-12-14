@@ -57,6 +57,7 @@ class Subscription(
 
   private val minClockValue: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
   private val candidateMinClock: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
+  private val allowForMoreAckRequest: Array[Boolean] = Array.fill(parallelism)(false)
 
   private var maxPendingCount: Short = 0
 
@@ -112,8 +113,7 @@ class Subscription(
       updateMaxPendingCount()
 
       if (messageCount(partition) % ackOnceEveryMessageCount == 0) {
-        val ackRequest = AckRequest(taskId, messageCount(partition), sessionId)
-        transport.transport(ackRequest, targetTask)
+        sendAckRequest(targetTask)
       }
 
       if (messageCount(partition) % maxPendingMessageCount == 0) {
@@ -159,6 +159,7 @@ class Subscription(
 
     val index = ack.taskId.index
 
+    allowForMoreAckRequest(index) = true
     if (ack.sessionId == sessionId) {
       if (ack.actualReceivedNum == ack.seq) {
         if ((ack.seq - candidateMinClockSince(index)).toShort >= 0) {
@@ -187,6 +188,26 @@ class Subscription(
 
   def allowSendingMoreMessages() : Boolean = {
     maxPendingCount < maxPendingMessageCount
+  }
+
+  def sendAckRequestToPending(curTaskMinClock: TimeStamp): Unit = {
+    var i = 0
+    while (i < parallelism) {
+      if (minClockValue(i) == curTaskMinClock &&
+          allowForMoreAckRequest(i) &&
+          pendingMessageCount(i) > 0 &&
+          pendingMessageCount(i) < maxPendingMessageCount) {
+        val targetTask = TaskId(processorId, i)
+        sendAckRequest(targetTask)
+      }
+      i += 1
+    }
+  }
+
+  private def sendAckRequest(targetTask: TaskId): Unit = {
+    val ackRequest = AckRequest(taskId, messageCount(targetTask.index), sessionId)
+    transport.transport(ackRequest, targetTask)
+    allowForMoreAckRequest(targetTask.index) = false
   }
 
   private def updateMaxPendingCount() : Unit = {
