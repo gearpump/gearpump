@@ -19,7 +19,7 @@ angular.module('dashboard')
 
       $scope.invalid = {};
       $scope.canReplace = function() {
-        return _.every($scope.invalid, false) && $scope.isDirty();
+        return !_.includes($scope.invalid, true) && $scope.isDirty();
       };
 
       $scope.isDirty = function() {

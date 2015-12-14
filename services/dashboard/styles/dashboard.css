@@ -101,7 +101,7 @@ h4, table > caption {
   border-bottom: thin dotted;
 }
 
-/* Drop-box (2 rules) */
+/* Drop-box (3 rules) */
 .dropbox {
   background: #f8f8f8;
   border: 4px dashed #ddd;
@@ -109,6 +109,12 @@ h4, table > caption {
   padding: 10px;
 }
 
+.dropbox .glyphicon {
+  font-size: 36px;
+  color: #ddd;
+  padding: 4px auto 12px auto;
+}
+
 .dropbox-dragover {
-  border-color: #448bc8;
+  border-color: #aaa;
 }

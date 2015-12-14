@@ -12,7 +12,7 @@
       <metrics
         ng-if="app.clock"
         caption="Application Clock"
-        help="{{appClockConcern}}" remark-type="warning"
+        help="{{appClockConcern}}" remark-type="warning" click-help="switchToDagTab()"
         value="{{app.clock|date:'HH:mm:ss'}}"
         sub-text="{{app.clock|date:'yyyy/MM/dd'}}"></metrics>
       <metrics

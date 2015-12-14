@@ -66,9 +66,14 @@ angular.module('dashboard')
         });
       function updateStallingTasks(tasks) {
         $scope.appClockConcern = ($scope.app.isRunning && Object.keys(tasks).length) ?
-          "Application clock does not go forward. Please check processors in DAG tab." : undefined;
+          "Application clock does not go forward. Click here to check red processor(s)." : undefined;
         $scope.dag.setStallingTasks(tasks);
       }
+      $scope.switchToDagTab = function() {
+        if ($state.current != 'streamingapp.dag') {
+          $state.go('streamingapp.dag');
+        }
+      };
 
       $scope.$on('$destroy', function() {
         $scope.destroyed = true;

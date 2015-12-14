@@ -41,7 +41,7 @@ angular.module('dashboard')
         } else if (outputs === 0) {
           return inputs > 0 ? 'Sink Processor (%s in)'.replace('%s', inputs): 'Orphan';
         }
-        return 'Transit Processor (%s in, %s out)'.replace('%s', inputs).replace('%s', outputs);
+        return 'Transit Processor (%s in %s out)'.replace('%s', inputs).replace('%s', outputs);
       }
 
       function updateProcessorInfoTable(processor) {

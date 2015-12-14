@@ -60,9 +60,7 @@ angular.module('dashboard')
           };
 
           model.$data = function() {
-            return _.omit(model, function(value) {
-              return _.isFunction(value);
-            });
+            return _.omit(model, _.isFunction);
           };
 
           return model;

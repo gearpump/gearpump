@@ -1,11 +1,12 @@
 <div class="modal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-md">
     <div class="modal-content">
-      <div class="modal-body">
+      <div class="modal-header">
         <button type="button" class="close" ng-click="$hide()">
           <span>&times;</span></button>
         <h4>Submit Application</h4>
-
+      </div>
+      <div class="modal-body">
         <p style="padding-top: 4px; padding-bottom: 14px;">Application will be launched immediately,
           after the JAR file is uploaded.</p>
 
@@ -37,7 +38,6 @@
             <!-- input 2 -->
             <form-control
               type="upload" label="Config File"
-              help="Provide a config file to override default behaviors (optional)"
               ng-model="conf" accept-pattern=".conf"></form-control>
             <!-- input 3 -->
             <form-control
