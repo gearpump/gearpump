@@ -276,7 +276,7 @@ object Build extends sbt.Build {
       "org.webjars" % "lodash" % "3.10.1",
       "org.webjars" % "font-awesome" % "4.5.0",
       "org.webjars.bower" % "angular-loading-bar" % "0.8.0",
-      "org.webjars.bower" % "angular-smart-table" % "2.1.5",
+      "org.webjars.bower" % "angular-smart-table" % "2.1.6",
       "org.webjars.bower" % "angular-motion" % "0.4.3",
       "org.webjars.bower" % "bootstrap-additions" % "0.3.1",
       "org.webjars.bower" % "angular-strap" % "2.3.5",
@@ -285,7 +285,7 @@ object Build extends sbt.Build {
       "org.webjars.bower" % "vis" % "4.7.0",
       "org.webjars.bower" % "clipboard.js" % "0.1.1",
       "org.webjars.npm" % "dashing-deps" % "0.0.8",
-      "org.webjars.npm" % "dashing" % "0.3.7"
+      "org.webjars.npm" % "dashing" % "0.3.8"
   ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
 
   lazy val serviceJSSettings = Seq(

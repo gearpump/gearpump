@@ -65,32 +65,33 @@ angular.module('dashboard')
       };
 
       function updateTable(apps) {
-        $scope.appsTable.rows = _.map(apps, function(app) {
-          return {
-            id: {href: app.pageUrl, text: app.appId},
-            name: {href: app.pageUrl, text: app.appName},
-            state: {tooltip: app.status, condition: app.isRunning ? 'good' : '', shape: 'stripe'},
-            akkaAddr: app.akkaAddr,
-            user: app.user,
-            submissionTime: app.submissionTime,
-            startTime: app.startTime,
-            stopTime: app.finishTime || '-',
-            view: {href: app.pageUrl, text: 'Details', class: 'btn-xs btn-primary', disabled: !app.isRunning},
-            config: {href: app.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
-            kill: {
-              text: 'Kill', class: 'btn-xs', disabled: !app.isRunning,
-              click: function() {
-                app.terminate();
+        $scope.appsTable.rows = $stb.$update($scope.appsTable.rows,
+          _.map(apps, function(app) {
+            return {
+              id: {href: app.pageUrl, text: app.appId},
+              name: {href: app.pageUrl, text: app.appName},
+              state: {tooltip: app.status, condition: app.isRunning ? 'good' : '', shape: 'stripe'},
+              akkaAddr: app.akkaAddr,
+              user: app.user,
+              submissionTime: app.submissionTime,
+              startTime: app.startTime,
+              stopTime: app.finishTime || '-',
+              view: {href: app.pageUrl, text: 'Details', class: 'btn-xs btn-primary', disabled: !app.isRunning},
+              config: {href: app.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
+              kill: {
+                text: 'Kill', class: 'btn-xs', disabled: !app.isRunning,
+                click: function() {
+                  app.terminate();
+                }
+              },
+              restart: {
+                text: 'Restart', class: 'btn-xs', disabled: !app.isRunning,
+                click: function() {
+                  app.restart();
+                }
               }
-            },
-            restart: {
-              text: 'Restart', class: 'btn-xs', disabled: !app.isRunning,
-              click: function() {
-                app.restart();
-              }
-            }
-          };
-        });
+            };
+          }));
       }
 
       updateTable(apps0.$data());

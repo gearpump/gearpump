@@ -1,26 +1,26 @@
 <!-- todo: create a header directive -->
 <div class="col-md-12">
   <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-6 col-sm-4">
       <h4>
         Worker {{worker.workerId}}
         <indicator condition="{{worker.isRunning ? 'good' : ''}}"
                    tooltip="{{worker.state}}"></indicator>
       </h4>
     </div>
-    <div class="col-md-2 col-sm-3 col-xs-6">
+    <div class="col-sm-2 col-xs-4">
       <metrics
         caption="Up Time"
         help="Running for {{worker.aliveFor|duration}}" remark-type="info"
         value="{{uptimeCompact.value}}" unit="{{uptimeCompact.unit}}"></metrics>
     </div>
-    <div class="col-md-2 col-sm-3 hidden-xs">
+    <div class="col-sm-2 col-xs-4">
       <metrics
         caption="Slots Usage"
         help="Slot is a minimal compute unit. The usage indicates the computation capacity."
         value="{{worker.slots.usage|number:1}}" unit="%"></metrics>
     </div>
-    <div class="col-md-2 col-sm-3 hidden-xs">
+    <div class="col-sm-2 col-xs-4">
       <metrics value="{{worker.executors.length}}" unit="executor" unit-plural="executors"></metrics>
       <metrics value="{{appsCount}}" unit="application" unit-plural="applications"></metrics>
     </div>
@@ -32,8 +32,8 @@
   <property-table
     caption="Overview"
     props-bind="overviewTable"
-    prop-name-class="col-sm-4 bold"
-    prop-value-class="col-sm-8 actor-path">
+    prop-name-class="col-xs-4 bold"
+    prop-value-class="col-xs-8 actor-path">
   </property-table>
 
   <sortable-table

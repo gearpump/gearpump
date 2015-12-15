@@ -55,9 +55,9 @@ angular.module('dashboard')
       $scope.executorsTable = {
         cols: [
           $stb.indicator().key('status').canSort().styleClass('td-no-padding').done(),
-          $stb.link('Executor ID').key('executors').canSort().styleClass('col-md-4').done(),
-          $stb.link('Application').key('id').canSort().sortDefault().styleClass('col-md-4').done(),
-          $stb.number('Slots').key('slots').canSort().styleClass('col-md-4').done()
+          $stb.link('Application').key('id').canSort().sortDefault().styleClass('col-xs-4').done(),
+          $stb.link('Executor ID').key('executors').canSort().styleClass('col-xs-4').done(),
+          $stb.number('Slots').key('slots').canSort().styleClass('col-xs-4').done()
         ],
         rows: null
       };
@@ -73,23 +73,24 @@ angular.module('dashboard')
       }
 
       function updateExecutorsTable() {
-        $scope.executorsTable.rows = _.map($scope.worker.executors, function(executor) {
-          if ($scope.apps.hasOwnProperty(executor.appId)) {
-            var app = $scope.apps[executor.appId];
-            var executorPageUrl = locator.executor(app.appId, app.type, executor.executorId);
-            var executorPath = 'app' + executor.appId + '.' +
-              (executor.executorId === -1 ?
-                'appmaster' : 'executor' + executor.executorId);
-            return {
-              status: {condition: 'good', shape: 'stripe'}, // always be good
-              id: {href: app.pageUrl, text: app.appName},
-              executors: {href: executorPageUrl, text: executorPath},
-              slots: executor.slots
-            };
-          } else {
-            console.warn({message: 'Unknown executor', executor: executor});
-          }
-        });
+        $scope.executorsTable.rows = $stb.$update($scope.executorsTable.rows,
+          _.map($scope.worker.executors, function(executor) {
+            if ($scope.apps.hasOwnProperty(executor.appId)) {
+              var app = $scope.apps[executor.appId];
+              var executorPageUrl = locator.executor(app.appId, app.type, executor.executorId);
+              var executorPath = 'app' + executor.appId + '.' +
+                (executor.executorId === -1 ?
+                  'appmaster' : 'executor' + executor.executorId);
+              return {
+                status: {condition: 'good', shape: 'stripe'}, // always be good
+                id: {href: app.pageUrl, text: app.appName},
+                executors: {href: executorPageUrl, text: executorPath},
+                slots: executor.slots
+              };
+            } else {
+              console.warn({message: 'Unknown executor', executor: executor});
+            }
+          }));
       }
 
       $scope.worker = worker0.$data();

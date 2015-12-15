@@ -17,8 +17,8 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('AppOverviewCtrl', ['$scope', '$propertyTableBuilder',
-    function($scope, $ptb) {
+  .controller('AppOverviewCtrl', ['$scope', 'helper', '$propertyTableBuilder',
+    function($scope, helper, $ptb) {
       'use strict';
 
       $scope.appSummary = [
@@ -35,7 +35,11 @@ angular.module('dashboard')
           app.actorPath,
           app.startTime,
           app.user,
-          {href: app.configLink, target: '_blank', text: 'Config', class: 'btn-xs'}
+          [
+            {href: app.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
+            helper.withClickToCopy({text: 'Home Dir.', class: 'btn-xs'}, app.homeDirectory),
+            helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, app.logFile)
+          ]
         ]);
       });
     }])

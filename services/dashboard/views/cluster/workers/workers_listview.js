@@ -37,11 +37,11 @@ angular.module('dashboard')
             .help('Format: PID@hostname')
             .styleClass('col-md-2 hidden-xs').done(),
           // group 2/3 (5-col)
-          $stb.number('Executors').key('executors').canSort().styleClass('col-md-1').done(),
+          $stb.number('Executors').key('executors').canSort().styleClass('col-md-1 hidden-xs').done(),
           $stb.progressbar('Slots Usage').key('slots').sortBy('slots.usage')
             .help('Slot is a minimal compute unit. The usage indicates the computation capacity.')
             .styleClass('col-md-1').done(),
-          $stb.duration('Up Time').key('aliveFor').canSort().styleClass('col-md-3 hidden-xs').done(),
+          $stb.duration('Up Time').key('aliveFor').canSort().styleClass('col-md-3 hidden-sm hidden-xs').done(),
           // group 3/3 (3-col)
           $stb.button('Quick Links').key(['detail', 'conf']).styleClass('col-md-3').done()
         ],
@@ -49,19 +49,20 @@ angular.module('dashboard')
       };
 
       function updateTable(workers) {
-        $scope.workersTable.rows = _.map(workers, function(worker) {
-          return {
-            id: {href: worker.pageUrl, text: worker.workerId},
-            state: {tooltip: worker.state, condition: worker.isRunning ? 'good' : 'concern', shape: 'stripe'},
-            akkaAddr: worker.akkaAddr,
-            jvm: worker.jvmName,
-            aliveFor: worker.aliveFor,
-            slots: {current: worker.slots.used, max: worker.slots.total, usage: worker.slots.usage},
-            executors: worker.executors.length || 0,
-            detail: {href: worker.pageUrl, text: 'Details', class: 'btn-xs btn-primary'},
-            conf: {href: worker.configLink, target: '_blank', text: 'Config', class: 'btn-xs'}
-          };
-        });
+        $scope.workersTable.rows = $stb.$update($scope.workersTable.rows,
+          _.map(workers, function(worker) {
+            return {
+              id: {href: worker.pageUrl, text: worker.workerId},
+              state: {tooltip: worker.state, condition: worker.isRunning ? 'good' : 'concern', shape: 'stripe'},
+              akkaAddr: worker.akkaAddr,
+              jvm: worker.jvmName,
+              aliveFor: worker.aliveFor,
+              slots: {current: worker.slots.used, max: worker.slots.total, usage: worker.slots.usage},
+              executors: worker.executors.length || 0,
+              detail: {href: worker.pageUrl, text: 'Details', class: 'btn-xs btn-primary'},
+              conf: {href: worker.configLink, target: '_blank', text: 'Config', class: 'btn-xs'}
+            };
+          }));
       }
 
       updateTable(workers0.$data());
