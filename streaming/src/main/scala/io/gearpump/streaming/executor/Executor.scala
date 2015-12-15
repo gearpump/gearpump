@@ -72,7 +72,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   // start health check Ticks
   self ! HealthCheck
 
-  LOG.info(s"Executor ${executorId} has been started, start to register itself...")
+  LOG.info(s"Executor $executorId has been started, start to register itself...")
   LOG.info(s"Executor actor path: ${ActorUtil.getFullPath(context.system, self.path)}")
 
   appMaster ! RegisterExecutor(self, executorId, resource, worker)
@@ -87,7 +87,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
   if (metricsEnabled) {
     // register jvm metrics
-    Metrics(context.system).register(new JvmMetricsSet(s"app${appId}.executor${executorId}"))
+    Metrics(context.system).register(new JvmMetricsSet(s"app$appId.executor$executorId"))
 
     val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
     appMaster.tell(ReportMetrics, metricsReportService)
@@ -97,9 +97,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   def receive : Receive = applicationReady(dagVersion = NOT_INITIALIZED)
 
   private def getTaskId(actorRef: ActorRef): Option[TaskId] = {
-    tasks.find{ kv =>
-      kv._2 == actorRef
-    }.map(_._1)
+    tasks.find(_._2 == actorRef).map(_._1)
   }
 
   override val supervisorStrategy =
@@ -137,7 +135,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       case launch@LaunchTasks(taskIds, version, processorDescription, subscribers: List[Subscriber]) => {
         assertVersion(dagVersion, version, clue = launch)
 
-        LOG.info(s"Launching Task $taskIds for app: ${appId}")
+        LOG.info(s"Launching Task $taskIds for app: $appId")
         val taskArgument = TaskArgument(version, processorDescription, subscribers)
         taskIds.foreach(taskArgumentStore.add(_, taskArgument))
         val newAdded = launcher.launch(taskIds, taskArgument, context, serializerPool)
@@ -151,7 +149,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       case change@ChangeTasks(taskIds, version, life, subscribers) =>
         assertVersion(dagVersion, version, clue = change)
 
-        LOG.info(s"Change Tasks $taskIds for app: ${appId}, verion: $life, $dagVersion, $subscribers")
+        LOG.info(s"Change Tasks $taskIds for app: $appId, verion: $life, $dagVersion, $subscribers")
 
         val newChangedTasks = taskIds.map { taskId =>
           for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
@@ -189,7 +187,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
             "while Executor have not get all tasks registered, that task will not be functional...")
           //reject TaskLocations...
           val missedTasks = (launched.toSet -- registered.toSet).toList
-          val errorMsg = ("We have not received TaskRegistered for following tasks: " + missedTasks.mkString(", "))
+          val errorMsg = "We have not received TaskRegistered for following tasks: " + missedTasks.mkString(", ")
           LOG.error(errorMsg)
           sender ! TaskLocationsRejected(dagVersion, executorId, errorMsg, null)
           // stay with current status...
@@ -205,9 +203,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
       case rejected: TaskRejected =>
         // means this task shoud not exists...
-        tasks.get(rejected.taskId).foreach {
-          case task: ActorRef => task ! PoisonPill
-        }
+        tasks.get(rejected.taskId).foreach(_ ! PoisonPill)
         tasks -= rejected.taskId
         LOG.error(s"Task ${rejected.taskId} is rejected by AppMaster, shutting down it...")
 
@@ -276,7 +272,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
             val newRemain = remain - 1
             if (newRemain == 0) {
               val newRestarted = newNeedRestart.map{ taskId_ =>
-                taskId_ -> launchTask(taskId_, taskArgumentStore.get(dagVersion, taskId_).get)
+                val taskActor = launchTask(taskId_, taskArgumentStore.get(dagVersion, taskId_).get)
+                context.watch(taskActor)
+                taskId_ -> taskActor
               }.toMap
 
               tasks = newRestarted
@@ -290,14 +288,13 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   }
 
   val terminationWatch: Receive = {
-    case Terminated(actor) => {
+    case Terminated(actor) =>
       if (actor.compareTo(appMaster) == 0) {
         LOG.info(s"AppMaster ${appMaster.path.toString} is terminated, shutting down current executor $appId, $executorId")
         context.stop(self)
       } else {
         self ! TaskStopped(actor)
       }
-    }
   }
 
   def onRestartTasks: Receive = {

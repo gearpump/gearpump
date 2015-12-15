@@ -78,63 +78,12 @@ class ExampleSpec extends TestSpecBase {
     val solJarNamePrefix = "sol-"
     val solName = "sol"
     behave like streamingApplication(solJarNamePrefix, solName)
-
-    "can replace sum processor with wordcount's sum processor (new processor will have metrics)" in {
-      // setup
-      val jar = cluster.queryBuiltInExampleJars(solJarNamePrefix).head
-      val appId = restClient.submitApp(jar)
-      expectAppIsRunning(appId, solName)
-      val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
-      val formerSumProcessor = formerProcessors.get(1).get
-      val uploadedJar = restClient.uploadJar(wordCountJar)
-      val expectedProcessorId = formerProcessors.size
-      val expectedProcessorDescription = "replaced processor description"
-      val newTaskClass = "io.gearpump.streaming.examples.wordcount.Sum"
-      val replaceMe = new ProcessorDescription(formerSumProcessor.id, newTaskClass,
-        formerSumProcessor.parallelism, expectedProcessorDescription,
-        jar = uploadedJar)
-
-      // exercise
-      val success = restClient.replaceStreamingAppProcessor(appId, replaceMe)
-      success shouldBe true
-      var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
-      Util.retryUntil({
-        laterProcessors = restClient.queryStreamingAppDetail(appId).processors
-        laterProcessors.size == formerProcessors.size + 1
-      })
-
-      // verify
-      val laterSumProcessor = laterProcessors.get(expectedProcessorId).get
-      laterSumProcessor.parallelism shouldEqual formerSumProcessor.parallelism
-      laterSumProcessor.description shouldEqual expectedProcessorDescription
-      laterSumProcessor.taskClass shouldEqual newTaskClass
-      Util.retryUntil({
-        val actual = restClient.queryStreamingAppMetrics(appId, current = false,
-          path = "processor" + expectedProcessorId)
-        val throughput = actual.metrics.filter(_.value.name.endsWith("receiveThroughput"))
-        throughput.size should be > 0
-        val hasThroughput = throughput.forall(_.value.asInstanceOf[Meter].count > 0L)
-        hasThroughput
-      })
-    }
   }
 
-  "dynamic dag" should {
+  "complexdag" should {
     val dynamicDagJarNamePrefix = "complexdag-"
     val dynamicDagName = "dag"
     behave like streamingApplication(dynamicDagJarNamePrefix, dynamicDagName)
-
-    "can retrieve a list of built-in partitioner classes" in {
-      val partitioners = restClient.queryBuiltInPartitioners()
-      partitioners.length should be > 0
-      partitioners.foreach(clazz =>
-        clazz should startWith("io.gearpump.partitioner.")
-      )
-    }
-
-    "can compose a wordcount application from scratch" in {
-      // todo: blocked by #1450
-    }
   }
 
   def streamingApplication(jarNamePrefix: String, appName: String): Unit = {

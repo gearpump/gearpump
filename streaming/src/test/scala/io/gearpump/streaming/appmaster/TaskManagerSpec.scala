@@ -87,7 +87,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     import env._
 
     val resourceRequest = Array(ResourceRequest(resource, workerId))
-    when(scheduler.executorFailed(executorId)).thenReturn(ResourceRequestDetail(mockJar, resourceRequest))
+    when(scheduler.executorFailed(executorId)).thenReturn(Some(ResourceRequestDetail(mockJar, resourceRequest)))
 
     taskManager ! ExecutorStopped(executorId)
 

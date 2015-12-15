@@ -37,11 +37,10 @@ import io.gearpump.util.Graph
  */
 class JarScheduler(appId : Int, appName: String, config: Config) {
   private var taskSchedulers = Map.empty[AppJar, TaskScheduler]
-  private var executorAndSchedulers = Map.empty[Int, (AppJar, TaskScheduler)]
 
   def setDag(dag: DAG): Unit = {
     val processors = dag.processors.values.groupBy(_.jar)
-    processors.foreach{ jarAndProcessors =>
+    taskSchedulers = processors.map { jarAndProcessors =>
       val (jar, processors) = jarAndProcessors
       //Construct the sub DAG
       val graph = Graph.empty[ProcessorDescription, PartitionerDescription]
@@ -49,7 +48,7 @@ class JarScheduler(appId : Int, appName: String, config: Config) {
       val subDag = DAG(graph)
       val taskScheduler = taskSchedulers.getOrElse(jar, new TaskSchedulerImpl(appId, appName, config))
       taskScheduler.setDAG(subDag)
-      taskSchedulers += jar -> taskScheduler
+      jar -> taskScheduler
     }
   }
 
@@ -62,14 +61,14 @@ class JarScheduler(appId : Int, appName: String, config: Config) {
 
   def scheduleTask(appJar: AppJar, workerId: Int, executorId: Int, resource: Resource): List[TaskId] = {
     taskSchedulers.get(appJar).map { scheduler =>
-      executorAndSchedulers += executorId -> (appJar, scheduler)
       scheduler.schedule(workerId, executorId, resource)
     }.getOrElse(List.empty)
   }
 
-  def executorFailed(executorId: Int): ResourceRequestDetail = {
-    val (jar, scheduler) = executorAndSchedulers(executorId)
-    ResourceRequestDetail(jar, scheduler.executorFailed(executorId))
+  def executorFailed(executorId: Int): Option[ResourceRequestDetail] = {
+    taskSchedulers.find(_._2.scheduledTasks(executorId).nonEmpty).map{ jarAndScheduler =>
+      ResourceRequestDetail(jarAndScheduler._1, jarAndScheduler._2.executorFailed(executorId))
+    }
   }
 }
 
