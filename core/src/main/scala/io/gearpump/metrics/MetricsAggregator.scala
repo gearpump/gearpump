@@ -18,11 +18,18 @@
 
 package io.gearpump.metrics
 
+import java.util
+
 import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
 
 /**
  * Will aggregate a full set of metrics into a smaller set
+ *
+ * Sub Class must implement a constructor with signature like this:
+ *  MetricsAggregator(config: Config)
+ *
+ *
  */
 trait MetricsAggregator {
-  def aggregate(input: List[HistoryMetricsItem]): List[HistoryMetricsItem]
+  def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem]
 }

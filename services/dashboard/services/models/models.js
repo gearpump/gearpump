@@ -371,12 +371,12 @@ angular.module('dashboard')
         },
         /** Note that executor related metrics will be excluded. */
         appMetrics: function(appId) {
-          var params = '?readLatest=true';
+          var params = '?readOption=readLatest';
           return get('appmaster/' + appId + '/metrics/app' + appId + '.processor*' + params,
             decoder.appMetricsOld);
         },
         appHistoricalMetrics: function(appId, period, points) {
-          return get('appmaster/' + appId + '/metrics/app' + appId + '.processor*',
+          return get('appmaster/' + appId + '/metrics/app' + appId + '.processor*' + '?readOption=readRecent',
             decoder.historicalMetricsDesampled, {
               period: period, points: points
             });
@@ -399,11 +399,11 @@ angular.module('dashboard')
             decoder.appStallingTasks);
         },
         _metrics: function(pathPrefix, path) {
-          return get(pathPrefix + path + '?readLatest=true',
+          return get(pathPrefix + path + '?readOption=readLatest',
             decoder.metrics, {filterPath: path});
         },
         _historicalMetrics: function(pathPrefix, path, period, points) {
-          return get(pathPrefix + path,
+          return get(pathPrefix + path + "?readOption=readRecent",
             decoder.historicalMetricsDesampled, {
               period: period, points: points, filterPath: path
             });

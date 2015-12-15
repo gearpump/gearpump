@@ -23,23 +23,33 @@ import java.util
 import akka.actor.Actor
 import com.typesafe.config.Config
 import io.gearpump.TimeStamp
-import io.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
+import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
 import io.gearpump.metrics.Metrics._
 import io.gearpump.metrics.MetricsAggregator
 import io.gearpump.util.Constants._
-import io.gearpump.util.HistoryMetricsService.{SkipAllAggregator, DummyMetricsAggregator, MetricsStore, HistoryMetricsConfig}
+import io.gearpump.util.HistoryMetricsService.{HistoryMetricsStore, SkipAllAggregator, DummyMetricsAggregator, MetricsStore, HistoryMetricsConfig}
 import org.slf4j.Logger
 
 import scala.collection.mutable.ListBuffer
-import scala.util.Try
 
 /**
+ *
  * Metrics service to serve history metrics data
+ *
+ * For simplicity, HistoryMetricsService will maintain 72 hours coarse-grained data
+ * for last 72 hours, and fine-grained data for past 5 min.
+ *
+ * For the coarse-grained data of past 72 hours, one or two sample point will be stored
+ * for each hour.
+ *
+ * For fine-grained data in last 5 min, there will be 1 sample point per 15 seconds.
+ *
  */
 class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass, name = name)
-  private var metricsStore = Map.empty[String, MetricsStore]
+  private var metricsStore = Map.empty[String, HistoryMetricsStore]
+  private val systemConfig = context.system.settings.config
 
   def receive: Receive = metricHandler orElse commandHandler
   def metricHandler: Receive = {
@@ -50,7 +60,7 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
       if (metricsStore.contains(name)) {
         metricsStore(name).add(metrics)
       } else {
-        val store = MetricsStore(name, metrics, config)
+        val store = HistoryMetricsStore(name, metrics, config)
         metricsStore += name -> store
         store.add(metrics)
       }
@@ -65,67 +75,74 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
     } + ".*$"
   }
 
-  private def fetchMetricsHistory(pathPattern: String, readLastest: Boolean = false): List[HistoryMetricsItem] = {
+  private def fetchMetricsHistory(pathPattern: String, readOption: ReadOption.ReadOption): List[HistoryMetricsItem] = {
 
     val result = new ListBuffer[HistoryMetricsItem]
-    val regex = toRegularExpression(pathPattern)
 
-    metricsStore.keys.foreach { name =>
-      if (name.matches(regex)) {
-        if (readLastest) {
-          result.append(metricsStore(name).readLatest: _*)
-        } else {
-          result.append(metricsStore(name).read: _*)
+    val regex = toRegularExpression(pathPattern).r.pattern
+
+    val iter = metricsStore.iterator
+    while(iter.hasNext) {
+      val (name, store) = iter.next()
+
+      val matcher = regex.matcher(name)
+      if (matcher.matches()) {
+        readOption match {
+          case ReadOption.ReadLatest =>
+            result.append(store.readLatest: _*)
+          case ReadOption.ReadRecent =>
+            result.append(store.readRecent: _*)
+          case ReadOption.ReadHistory =>
+            result.append(store.readHistory: _*)
+          case _ =>
+          //skip all other options.
         }
       }
     }
     result.toList
   }
 
-  private var aggregators: Map[String, MetricsAggregator] = Map("" -> new DummyMetricsAggregator)
+  val dummyAggregator = new DummyMetricsAggregator
+  private var aggregators: Map[String, MetricsAggregator] = Map.empty[String, MetricsAggregator]
+
+  import scala.collection.JavaConverters._
+  val validAggregators = {
+    systemConfig.getConfig(Constants.GEARPUMP_METRICS_AGGREGATORS).root.unwrapped.keySet().asScala.toSet
+  }
 
   def commandHandler: Receive = {
     //path accept syntax ? *, ? will match one char, * will match at least one char
-    case QueryHistoryMetrics(inputPath, readLatest, aggregatorClazz) =>
+    case QueryHistoryMetrics(inputPath, readOption, aggregatorClazz, options) =>
 
        val aggregator = {
-         if (!aggregators.contains(aggregatorClazz)) {
-           val aggregatorTry = Try(Class.forName(aggregatorClazz).newInstance().asInstanceOf[MetricsAggregator])
-           if (aggregatorTry.isSuccess) {
-             aggregators += aggregatorClazz -> aggregatorTry.get
-           } else {
-             LOG.error("Cannot apply aggregator " + aggregatorClazz, aggregatorTry.failed.get)
-             aggregators += aggregatorClazz -> new SkipAllAggregator
-           }
+         if (aggregatorClazz == null || aggregatorClazz.isEmpty) {
+           dummyAggregator
+         } else if (aggregators.contains(aggregatorClazz)) {
+           aggregators(aggregatorClazz)
+         } else if (validAggregators.contains(aggregatorClazz)) {
+           val clazz = Class.forName(aggregatorClazz)
+           val constructor = clazz.getConstructor(classOf[Config])
+           val aggregator = constructor.newInstance(systemConfig).asInstanceOf[MetricsAggregator]
+           aggregators += aggregatorClazz -> aggregator
+           aggregator
+         } else {
+           LOG.error(s"Aggregator $aggregatorClazz is not in the white list ${validAggregators}, we will drop all messages. " +
+             s"Please see config at ${GEARPUMP_METRICS_AGGREGATORS}")
+           val skipAll = new SkipAllAggregator
+           aggregators += aggregatorClazz -> new SkipAllAggregator
+           skipAll
          }
-         aggregators(aggregatorClazz)
        }
 
-      sender ! HistoryMetrics(inputPath, aggregator.aggregate(fetchMetricsHistory(inputPath, readLatest)))
+      import collection.JavaConversions._
+      val metrics =  fetchMetricsHistory(inputPath, readOption).iterator
+      sender ! HistoryMetrics(inputPath, aggregator.aggregate(options, metrics))
    }
 }
 
 object HistoryMetricsService {
 
-  /**
-   * For simplicity, HistoryMetricsService will maintain 72 hours coarse-grained data
-   * for last 72 hours, and fine-grained data for past 5 min.
-   *
-   * For the coarse-grained data of past 72 hours, one or two sample point will be stored
-   * for each hour.
-   *
-   * For Counter: we will store one data point per hour.
-   * For Meter, we will store two data points per hour, with one point which have
-   * max mean value, the other point with min mean value.
-   * For Histogram: we will store two data points per hour, with one point which have
-   * max mean value, the other point with min mean value.
-   *
-   * It is designed like this so that we are able to maintain abnormal metrics pattern,
-   * Like a sudden rise in latency, so a sudden drop in throughput.
-   *
-   * For fine-grained data in last 5 min, there will be 1 sample point per 15 seconds.
-   *
-   */
+
   trait MetricsStore {
     def add(inputMetrics: MetricType): Unit
 
@@ -138,86 +155,46 @@ object HistoryMetricsService {
     def readLatest: List[HistoryMetricsItem]
   }
 
-  object MetricsStore {
-    def apply(name: String, metric: MetricType, config: HistoryMetricsConfig): MetricsStore = {
+  trait HistoryMetricsStore {
+    def add(inputMetrics: MetricType): Unit
+
+    /**
+     * read latest inserted records
+     * @return
+     */
+    def readLatest: List[HistoryMetricsItem]
+
+    def readRecent: List[HistoryMetricsItem]
+
+    def readHistory: List[HistoryMetricsItem]
+  }
+
+  class DummyHistoryMetricsStore extends HistoryMetricsStore{
+
+    val empty = List.empty[HistoryMetricsItem]
+
+    override def add(inputMetrics: MetricType): Unit = Unit
+
+    override def readRecent: List[HistoryMetricsItem] = empty
+
+    /**
+     * read latest inserted records
+     * @return
+     */
+    override def readLatest: List[HistoryMetricsItem] = empty
+
+    override def readHistory: List[HistoryMetricsItem] = empty
+  }
+
+  object HistoryMetricsStore {
+    def apply(name: String, metric: MetricType, config: HistoryMetricsConfig): HistoryMetricsStore = {
       metric match {
         case histogram: Histogram => new HistogramMetricsStore(config)
         case meter: Meter => new MeterMetricsStore(config)
         case counter: Counter => new CounterMetricsStore(config)
         case gauge: Gauge => new GaugeMetricsStore(config)
+        case _ => new DummyHistoryMetricsStore // other metrics are not supported
       }
-    }
-  }
-
-  /**
-   * min, and max data point for current time window (startTimeMs, startTimeMs + interval)
-   *
-   * @param startTimeMs
-   * @param min
-   * @param max
-   */
-  case class MinMaxMetrics(startTimeMs: Long, min: HistoryMetricsItem, max: HistoryMetricsItem)
-
-  /**
-   * Metrics store to store history data points
-   * For each time point, we will store two data points, with one min, and one max.
-   *
-   * @param retainCount how many data points to retain, old data will be removed
-   * @param retainIntervalMs time interval between two data points.
-   * @param compare (left, right) => true, return true when left > right
-   *   We should compare to decide which data point to keep in current time interval.
-   *   The data point which is max or min in value will be kept.
-   *
-   */
-  class MinMaxMetricsStore(
-      retainCount: Int,
-      retainIntervalMs: Long,
-      compare: (HistoryMetricsItem, HistoryMetricsItem) => Boolean)
-    extends MetricsStore{
-
-    val queue = new util.ArrayDeque[MinMaxMetrics]()
-    private var latest = List.empty[HistoryMetricsItem]
-
-    override def add(inputMetrics: MetricType): Unit = add(inputMetrics, System.currentTimeMillis())
-
-    def add(inputMetrics: MetricType, now: TimeStamp): Unit = {
-      val metrics = HistoryMetricsItem(now, inputMetrics)
-      latest = List(metrics)
-
-      val head = queue.peek()
-      if (head == null || now - head.startTimeMs > retainIntervalMs) {
-        //insert new data point to head
-        queue.addFirst(MinMaxMetrics(now / retainIntervalMs * retainIntervalMs, metrics, metrics))
-        // remove old data if necessary
-        if (queue.size() > retainCount) {
-          queue.removeLast()
-        }
-      } else {
-        updateHead(metrics)
-      }
-    }
-
-    private def updateHead(metrics: HistoryMetricsItem) = {
-      val head = queue.poll()
-      if (compare(metrics, head.max)) {
-        queue.addFirst(MinMaxMetrics(head.startTimeMs, head.min, metrics))
-      } else if (compare(metrics, head.min)) {
-        queue.addFirst(MinMaxMetrics(head.startTimeMs, metrics, head.max))
-      }
-    }
-
-    def read: List[HistoryMetricsItem] = {
-      val result = new ListBuffer[HistoryMetricsItem]
-      import scala.collection.JavaConversions.asScalaIterator
-      queue.iterator.foreach {pair =>
-          result.prepend(pair.max)
-        result.prepend(pair.min)
-      }
-      result.toList
-    }
-
-    override def readLatest: List[HistoryMetricsItem] = {
-      latest
     }
   }
 
@@ -233,25 +210,27 @@ object HistoryMetricsService {
     private val queue =  new util.ArrayDeque[HistoryMetricsItem]()
     private var latest = List.empty[HistoryMetricsItem]
 
+    // end of the time window we are tracking
+    private var endTime = 0L
+
     override def add(inputMetrics: MetricType): Unit = {
       add(inputMetrics, System.currentTimeMillis())
     }
 
     def add(inputMetrics: MetricType, now: TimeStamp): Unit = {
-      val head = queue.peek()
+
       val metrics = HistoryMetricsItem(now, inputMetrics)
       latest = List(metrics)
 
-      if (head == null || now - head.time > retainIntervalMs) {
-
+      if (now >= endTime) {
         queue.addFirst(metrics)
+        endTime = (now / retainIntervalMs + 1) * retainIntervalMs
 
         // remove old data
         if (queue.size() > retainCount) {
           queue.removeLast()
         }
       }
-
     }
 
     def read: List[HistoryMetricsItem] = {
@@ -290,14 +269,11 @@ object HistoryMetricsService {
     }
   }
 
-  class HistogramMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
+  class HistogramMetricsStore(config: HistoryMetricsConfig) extends HistoryMetricsStore {
 
-    private val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
-      left.value.asInstanceOf[Histogram].mean > right.value.asInstanceOf[Histogram].mean
-
-    private val history = new MinMaxMetricsStore(
+    private val history = new SingleValueMetricsStore(
       config.retainHistoryDataHours * 3600 * 1000 / config.retainHistoryDataIntervalMs,
-      config.retainHistoryDataIntervalMs, compartor)
+      config.retainHistoryDataIntervalMs)
 
     private val recent = new SingleValueMetricsStore(
       config.retainRecentDataSeconds * 1000 / config.retainRecentDataIntervalMs,
@@ -308,8 +284,12 @@ object HistoryMetricsService {
       history.add(inputMetrics)
     }
 
-    override def read: List[HistoryMetricsItem] = {
-      history.read ++ recent.read
+    override def readRecent: List[HistoryMetricsItem] = {
+      recent.read
+    }
+
+    override def readHistory: List[HistoryMetricsItem] = {
+      history.read
     }
 
     override def readLatest: List[HistoryMetricsItem] = {
@@ -317,14 +297,11 @@ object HistoryMetricsService {
     }
   }
 
-  class MeterMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
+  class MeterMetricsStore(config: HistoryMetricsConfig) extends HistoryMetricsStore {
 
-    private val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
-      left.value.asInstanceOf[Meter].meanRate > right.value.asInstanceOf[Meter].meanRate
-
-    private val history = new MinMaxMetricsStore(
+    private val history = new SingleValueMetricsStore(
       config.retainHistoryDataHours * 3600 * 1000 / config.retainHistoryDataIntervalMs,
-      config.retainHistoryDataIntervalMs, compartor)
+      config.retainHistoryDataIntervalMs)
 
     private val recent = new SingleValueMetricsStore(
       config.retainRecentDataSeconds * 1000 / config.retainRecentDataIntervalMs,
@@ -335,8 +312,12 @@ object HistoryMetricsService {
       history.add(inputMetrics)
     }
 
-    override def read: List[HistoryMetricsItem] = {
-      history.read ++ recent.read
+    override def readRecent: List[HistoryMetricsItem] = {
+      recent.read
+    }
+
+    override def readHistory: List[HistoryMetricsItem] = {
+      history.read
     }
 
     override def readLatest: List[HistoryMetricsItem] = {
@@ -344,7 +325,7 @@ object HistoryMetricsService {
     }
   }
 
-  class CounterMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
+  class CounterMetricsStore(config: HistoryMetricsConfig) extends HistoryMetricsStore {
 
     private val history = new SingleValueMetricsStore(
       config.retainHistoryDataHours * 3600 * 1000 / config.retainHistoryDataIntervalMs,
@@ -359,8 +340,12 @@ object HistoryMetricsService {
       recent.add(inputMetrics)
     }
 
-    override def read: List[HistoryMetricsItem] = {
-      history.read ++ recent.read
+    override def readRecent: List[HistoryMetricsItem] = {
+      recent.read
+    }
+
+    override def readHistory: List[HistoryMetricsItem] = {
+      history.read
     }
 
     override def readLatest: List[HistoryMetricsItem] = {
@@ -368,14 +353,14 @@ object HistoryMetricsService {
     }
   }
 
-  class GaugeMetricsStore(config: HistoryMetricsConfig) extends MetricsStore {
+  class GaugeMetricsStore(config: HistoryMetricsConfig) extends HistoryMetricsStore {
 
     private val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
       left.value.asInstanceOf[Gauge].value > right.value.asInstanceOf[Gauge].value
 
-    private val history = new MinMaxMetricsStore(
+    private val history = new SingleValueMetricsStore(
       config.retainHistoryDataHours * 3600 * 1000 / config.retainHistoryDataIntervalMs,
-      config.retainHistoryDataIntervalMs, compartor)
+      config.retainHistoryDataIntervalMs)
 
     private val recent = new SingleValueMetricsStore(
       config.retainRecentDataSeconds * 1000 / config.retainRecentDataIntervalMs,
@@ -386,8 +371,12 @@ object HistoryMetricsService {
       history.add(inputMetrics)
     }
 
-    override def read: List[HistoryMetricsItem] = {
-      history.read ++ recent.read
+    override def readRecent: List[HistoryMetricsItem] = {
+      recent.read
+    }
+
+    override def readHistory: List[HistoryMetricsItem] = {
+      history.read
     }
 
     override def readLatest: List[HistoryMetricsItem] = {
@@ -396,11 +385,14 @@ object HistoryMetricsService {
   }
 
   class DummyMetricsAggregator extends MetricsAggregator {
-    def aggregate(input: List[HistoryMetricsItem]): List[HistoryMetricsItem] = input
+    def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem] = {
+      import scala.collection.JavaConverters._
+      inputs.toList
+    }
   }
 
   class SkipAllAggregator extends MetricsAggregator {
     private val empty = List.empty[HistoryMetricsItem]
-    def aggregate(input: List[HistoryMetricsItem]): List[HistoryMetricsItem] = empty
+    def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem] = empty
   }
 }

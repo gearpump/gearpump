@@ -53,10 +53,8 @@ class AkkaReporter(
       val value = pair.getValue
       val s = value.getSnapshot
       to ! HistogramData(
-        key, value.getCount, s.getMin, s.getMax, s.getMean,
-        s.getStdDev, s.getMedian, s.get75thPercentile,
-        s.get95thPercentile, s.get98thPercentile,
-        s.get99thPercentile, s.get999thPercentile)
+        key, s.getMean, s.getStdDev, s.getMedian,
+        s.get95thPercentile, s.get99thPercentile, s.get999thPercentile)
     }
 
     meters.entrySet().asScala.foreach{pair =>
@@ -66,8 +64,6 @@ class AkkaReporter(
         value.getCount,
         value.getMeanRate,
         value.getOneMinuteRate,
-        value.getFiveMinuteRate,
-        value.getFifteenMinuteRate,
         getRateUnit)
     }
 

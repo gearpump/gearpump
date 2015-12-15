@@ -28,7 +28,7 @@ import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import com.typesafe.config.Config
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
-import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig}
+import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryMasterConfig}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig, SubmitApplicationResultValue}
 import io.gearpump.cluster.client.ClientContext
@@ -105,9 +105,8 @@ trait MasterService {
             }
           } ~
           path("metrics" / RestPath) { path =>
-            parameters(ParamMagnet("readLatest" ? "false")) { readLatestInput: String =>
-              val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
-              val query = QueryHistoryMetrics(path.head.toString, readLatest)
+            parameters(ParamMagnet(ReadOption.Key ? ReadOption.ReadLatest)) { readOption: String =>
+              val query = QueryHistoryMetrics(path.head.toString, readOption)
               onComplete(askActor[HistoryMetrics](master, query)) {
                 case Success(value) =>
                   complete(write(value))

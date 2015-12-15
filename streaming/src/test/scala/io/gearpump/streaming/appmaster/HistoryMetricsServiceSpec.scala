@@ -71,72 +71,52 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     assert(result.last.value.asInstanceOf[Counter].value == 5L)
   }
 
-  val meterTemplate = Meter("meter", 0, 0, 0, 0, 0, "s")
-
-  "MinMaxMetricsStore" should "retain min and max metrics data and expire old value" in {
-
-    val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
-      left.value.asInstanceOf[Meter].meanRate > right.value.asInstanceOf[Meter].meanRate
-
-    val store = new MinMaxMetricsStore(count, intervalMs, compartor)
-
-    val min = 1
-    val max = 10
-    var now = 0L
-
-    // only two data points will be kept in @intervalMs, one is the min, the other is the max
-    (min to max).foreach(num => store.add(meterTemplate.copy(name = "A", meanRate = num), now))
-
-    //sleep @intervalMs + 1 so that we are allowed to push new data
-    now += intervalMs + 1
-
-    // only two data points will be kept in @intervalMs, one is the min, the other is the max
-    (min to max).foreach(num => store.add(meterTemplate.copy(name = "B", meanRate = num), now))
-
-    //sleep @intervalMs + 1 so that we are allowed to push new data
-    now += intervalMs + 1
-
-    // only two data points will be kept in @intervalMs, one is the min, the other is the max
-    // also will expire the oldest data, because we only keep @count records
-    (min to max).foreach(num => store.add(meterTemplate.copy(name = "C", meanRate = num), now))
-
-    val result = store.read
-    assert(result.size == count * 2)
-
-    //the oldest value A is expired
-    assert(result.head.value.asInstanceOf[Meter].name == "B")
-    //the first value is "B", min, the second first value is "B", "max"
-    assert(result.head.value.asInstanceOf[Meter].meanRate == min)
-
-    //the newest value C is expired
-    assert(result.last.value.asInstanceOf[Meter].name == "C")
-    //the last value is "C", max, the second last value is "C", "min"
-    assert(result.last.value.asInstanceOf[Meter].meanRate == max)
-
-  }
+  val meterTemplate = Meter("meter", 0, 0, 0, "s")
 
   "HistogramMetricsStore" should "retain corse-grain history and fine-grain recent data" in {
     val store = new HistogramMetricsStore(config)
-    store.add(Histogram(null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    val a = Histogram(null, 100, 0, 0, 0, 0, 0)
+    val b = Histogram(null, 200, 0, 0, 0, 0, 0)
+    val c = Histogram(null, 50, 0, 0, 0, 0, 0)
 
-    //there should be 3 records, min-history, max-history, and recent
-    assert(store.read.size == 3)
+    store.add(a)
+    store.add(b)
+    store.add(c)
+
+    assert(store.readLatest.map(_.value) == List(c))
+    assert(store.readRecent.map(_.value) == List(a))
+    assert(store.readHistory.map(_.value) == List(a))
   }
 
   "MeterMetricsStore" should "retain corse-grain history and fine-grain recent data" in {
     val store = new MeterMetricsStore(config)
-    store.add(Meter(null, 0, 0, 0, 0, 0, null))
 
-    //there should be 3 records, min-history, max-history, and recent
-    assert(store.read.size == 3)
+    val a = Meter(null, 1, 100, 0, null)
+    val b = Meter(null, 1, 200, 0, null)
+    val c = Meter(null, 1, 50, 0, null)
+
+    store.add(a)
+    store.add(b)
+    store.add(c)
+
+    assert(store.readLatest.map(_.value) == List(c))
+    assert(store.readRecent.map(_.value) == List(a))
+    assert(store.readHistory.map(_.value) == List(a))
   }
 
   "CounterMetricsStore" should "retain corse-grain history and fine-grain recent data" in {
     val store = new CounterMetricsStore(config)
-    store.add(Counter(null, 0))
+    val a = Counter(null, 50)
+    val b = Counter(null, 100)
+    val c = Counter(null, 150)
 
-    //there should be 2 records, history, and recent
-    assert(store.read.size == 2)
+    store.add(a)
+    store.add(b)
+    store.add(c)
+
+    assert(store.readLatest.map(_.value) == List(c))
+    assert(store.readRecent.map(_.value) == List(a))
+    assert(store.readHistory.map(_.value) == List(a))
   }
 
   "HistoryMetricsService" should "retain lastest metrics data and allow user to query metrics by path" in {
@@ -144,8 +124,8 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     val appId = 0
     val service = system.actorOf(Props(new HistoryMetricsService("app0", config)))
     service ! Counter("metric.counter", 0)
-    service ! Meter("metric.meter", 0, 0, 0, 0, 0, null)
-    service ! Histogram("metric.histogram", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    service ! Meter("metric.meter", 0, 0, 0, null)
+    service ! Histogram("metric.histogram", 0, 0, 0, 0, 0, 0)
 
     val client = TestProbe()
 

@@ -146,15 +146,16 @@ trait AppMasterService  {
         }
       } ~
       path("metrics" / RestPath ) { path =>
-        parameter("aggregator" ? "") {aggregator =>
-          parameter("readLatest" ? "false") { readLatestInput =>
-            val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
-            val query = QueryHistoryMetrics(path.head.toString, readLatest, aggregator)
-            onComplete(askAppMaster[HistoryMetrics](master, appId, query)) {
-              case Success(value) =>
-                complete(write(value))
-              case Failure(ex) =>
-                failWith(ex)
+        parameterMap {optionMap =>
+          parameter("aggregator" ? "") { aggregator =>
+            parameter(ReadOption.Key ? ReadOption.ReadLatest) { readOption =>
+              val query = QueryHistoryMetrics(path.head.toString, readOption, aggregator, optionMap)
+              onComplete(askAppMaster[HistoryMetrics](master, appId, query)) {
+                case Success(value) =>
+                  complete(write(value))
+                case Failure(ex) =>
+                  failWith(ex)
+              }
             }
           }
         }

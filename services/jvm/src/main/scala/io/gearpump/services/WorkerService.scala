@@ -22,7 +22,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
-import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
+import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryWorkerConfig}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, WorkerConfig}
 import io.gearpump.util.ActorUtil._
 import io.gearpump.util.LogUtil
@@ -61,9 +61,8 @@ trait WorkerService {
         }
       } ~
       path("metrics" / RestPath ) { path =>
-        parameter("readLatest" ? "false") { readLatestInput =>
-          val readLatest = Try(readLatestInput.toBoolean).getOrElse(false)
-          val query = QueryHistoryMetrics(path.head.toString, readLatest)
+        parameter(ReadOption.Key ? ReadOption.ReadLatest) { readOption =>
+          val query = QueryHistoryMetrics(path.head.toString, readOption)
           onComplete(askWorker[HistoryMetrics](master, workerId, query)) {
             case Success(value) =>
               complete(write(value))

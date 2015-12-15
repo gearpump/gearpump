@@ -60,11 +60,7 @@ angular.module('dashboard')
           $stb.number('Message Count').key('count').canSort().unit('msg').styleClass('col-sm-2').done(),
           $stb.number('Mean Rate').key('mean').canSort().unit('msg/s').styleClass('col-sm-1').done(),
           $stb.number('MA 1m').key('ma1').canSort().unit('msg/s')
-            .help('1-Minute Moving Average').styleClass('col-sm-1').done(),
-          $stb.number('MA 5m').key('ma5').canSort().unit('msg/s')
-            .help('5-Minute Moving Average').styleClass('col-sm-1 hidden-xs').done(),
-          $stb.number('MA 15m').key('ma15').canSort().unit('msg/s')
-            .help('15-Minute Moving Average').styleClass('col-sm-1 hidden-xs').done()
+            .help('1-Minute Moving Average').styleClass('col-sm-1').done()
         ],
         rows: null
       };
@@ -73,7 +69,6 @@ angular.module('dashboard')
         cols: [
           $stb.text('Path').key('taskPath').canSort().sortDefault().styleClass('col-sm-2').done(),
           $stb.text('Task Class').key('taskClass').canSort().styleClass('col-lg-3 hidden-md hidden-sm hidden-xs').done(),
-          $stb.number('Sampling Points').key('count').canSort().styleClass('col-sm-2').done(),
           $stb.number('Mean Rate').key('mean').canSort().unit('ms').styleClass('col-sm-1').done(),
           $stb.number('Std. Dev.').key('stddev').canSort().unit('ms').styleClass('col-sm-1').done(),
           $stb.number('Median').key('median').canSort().unit('ms').styleClass('col-sm-1').done(),
@@ -99,9 +94,7 @@ angular.module('dashboard')
               taskClass: metric.taskClass,
               count: metric.values.count,
               mean: metric.values.meanRate,
-              ma1: metric.values.movingAverage1m,
-              ma5: metric.values.movingAverage5m,
-              ma15: metric.values.movingAverage15m
+              ma1: metric.values.movingAverage1m
             };
           }));
       }
@@ -112,7 +105,6 @@ angular.module('dashboard')
             return {
               taskPath: buildMetricsTaskPath(metric),
               taskClass: metric.taskClass,
-              count: metric.values.count,
               mean: metric.values.mean,
               stddev: metric.values.stddev,
               median: metric.values.median,

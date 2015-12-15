@@ -62,7 +62,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
         case GetWorkerData(workerId) =>
           sender ! WorkerData(WorkerSummary.empty.copy(state = "active", workerId = workerId))
           KeepRunning
-        case QueryHistoryMetrics(path, _, _) =>
+        case QueryHistoryMetrics(path, _, _, _) =>
           sender ! HistoryMetrics(path, List.empty[HistoryMetricsItem])
           KeepRunning
       }
@@ -85,7 +85,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
         case ResolveWorkerId(0) =>
           sender ! ResolveWorkerIdResult(Success(mockWorker.ref))
           KeepRunning
-        case QueryHistoryMetrics(path, _, _) =>
+        case QueryHistoryMetrics(path, _, _, _) =>
           sender ! HistoryMetrics(path, List.empty[HistoryMetricsItem])
           KeepRunning
         case QueryMasterConfig =>

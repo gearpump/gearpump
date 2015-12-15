@@ -51,7 +51,20 @@ object ClientToMaster {
 
   case object QueryMasterConfig
 
-  case class QueryHistoryMetrics(path: String, readLatest: Boolean = false, aggregatorClazz: String = "")
+  object ReadOption {
+    type ReadOption = String
+
+    val Key: String = "readOption"
+
+    val ReadLatest: ReadOption = "readLatest"
+
+    val ReadRecent = "readRecent"
+
+    val ReadHistory = "readHistory"
+  }
+
+
+  case class QueryHistoryMetrics(path: String, readOption: ReadOption.ReadOption = ReadOption.ReadLatest, aggregatorClazz: String = "", options: Map[String, String] = Map.empty[String, String])
 
   case class GetStallingTasks(appId: Int)
 
