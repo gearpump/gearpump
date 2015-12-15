@@ -33,6 +33,7 @@ import org.slf4j.Logger
  */
 
 class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends Actor {
+  private val NOT_INITIALIZED = -1
 
   def this(appId: Int, userConfig: UserConfig) = {
     this(appId, userConfig, None)
@@ -105,7 +106,9 @@ class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends A
     case NewDAGDeployed(dagVersion) =>
       // means the new DAG version has been successfully deployed.
       // remove obsolete versions.
-      dags = dags.filter(_.version >= dagVersion)
+      if (dagVersion != NOT_INITIALIZED) {
+        dags = dags.filter(_.version == dagVersion)
+      }
   }
 
   private def replaceDAG(dag: DAG, oldProcessorId: ProcessorId, newProcessor: ProcessorDescription, newVersion: Int): DAG = {

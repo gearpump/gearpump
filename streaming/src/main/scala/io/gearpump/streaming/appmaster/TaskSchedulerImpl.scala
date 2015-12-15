@@ -62,6 +62,14 @@ trait TaskScheduler {
    * @return resource requests of the failed executor
    */
   def executorFailed(executorId: Int) : Array[ResourceRequest]
+
+  /**
+    * Query the task list that already scheduled on the executor
+    *
+    * @param executorId executor to query
+    * @return a list of tasks
+    */
+  def scheduledTasks(executorId: Int) : List[TaskId]
 }
 
 object TaskScheduler {
@@ -155,5 +163,11 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
     failedTasks.foreach(_.allocation = null)
 
     Array(ResourceRequest(Resource(failedTasks.length), relaxation = ONEWORKER))
+  }
+
+  override def scheduledTasks(executorId: Int): List[TaskId] = {
+    tasks.filter{ status =>
+      status.allocation != null && status.allocation.executorId == executorId
+    }.map(_.taskId)
   }
 }
