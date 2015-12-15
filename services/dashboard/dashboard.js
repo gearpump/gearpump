@@ -43,7 +43,7 @@ angular.module('dashboard', [
     'use strict';
 
     cfpLoadingBarProvider.includeSpinner = false;
-    cfpLoadingBarProvider.latencyThreshold = 200;
+    cfpLoadingBarProvider.latencyThreshold = 1000;
   }])
 
   // configure angular-strap

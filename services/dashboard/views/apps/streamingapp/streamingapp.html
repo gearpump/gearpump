@@ -1,6 +1,6 @@
 <div class="col-md-12">
   <div class="row">
-    <div class="col-md-6 col-sm-3 col-xs-6">
+    <div class="col-md-6 col-sm-4">
       <h4>
         <!-- todo: backend api should enforce user application has a readable name! -->
         <span ng-bind="app.appName"></span>
@@ -8,7 +8,7 @@
       </h4>
       <h5 ng-bind="app.description"></h5>
     </div>
-    <div class="col-md-2 col-sm-3 col-xs-6">
+    <div class="col-sm-2 col-xs-4">
       <metrics
         ng-if="app.clock"
         caption="Application Clock"
@@ -20,13 +20,13 @@
         caption="Application Clock"
         value="not started"></metrics>
     </div>
-    <div class="col-md-2 col-sm-3 hidden-xs">
+    <div class="col-sm-2 col-xs-4">
       <metrics
         caption="Up Time"
         help="Running for {{app.uptime|duration}}" remark-type="info"
         value="{{uptimeCompact.value}}" unit="{{uptimeCompact.unit}}"></metrics>
     </div>
-    <div class="col-md-2 col-sm-3 hidden-xs">
+    <div class="col-sm-2 col-xs-4">
       <metrics value="{{dag.getNumOfProcessors()}}" unit="processor" unit-plural="processors"></metrics>
       <metrics value="{{size(app.executors)}}" unit="executor" unit-plural="executors"></metrics>
     </div>

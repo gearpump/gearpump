@@ -14,7 +14,25 @@ angular.module('dashboard')
       replace: true,
       scope: {},
       controller: ['$scope', 'restapi', function($scope, restapi) {
-        $scope.version = 'beta';
+        $scope.menu = [
+          {text: 'Cluster', href: '#/cluster', icon: 'glyphicon glyphicon-th-large'},
+          {text: 'Applications', href: '#/apps', icon: 'glyphicon glyphicon-tasks'}
+        ];
+
+        $scope.links = [
+          {text: 'Docs', href: '//gearpump.io', icon: 'fa fa-book'},
+          {text: 'GitHub', href: '//github.com/gearpump/gearpump', icon: 'fa fa-github'}
+        ];
+
+        $scope.dropdownMenuOptions = ([].concat($scope.menu).concat($scope.links))
+          .map(function(item) {
+            return {
+              text: '<i class="' + item.icon + '"></i> ' + item.text,
+              href: item.href
+            };
+          });
+
+        $scope.version = '';
         restapi.repeatHealthCheck($scope, function(version) {
           $scope.version = version;
         });

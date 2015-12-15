@@ -20,28 +20,29 @@ angular.module('dashboard')
           $scope.table = {
             cols: [
               $stb.indicator().key('status').canSort().styleClass('td-no-padding').done(),
-              $stb.link('Name').key('id').canSort().sortDefault().styleClass('col-md-4').done(),
-              $stb.link('Worker ID').key('worker').canSort().styleClass('col-md-4').done(),
-              $stb.number('Task Count').key('tasks').canSort().styleClass('col-md-4')
+              $stb.link('Name').key('id').canSort().sortDefault().styleClass('col-xs-4').done(),
+              $stb.link('Worker ID').key('worker').canSort().styleClass('col-xs-4').done(),
+              $stb.number('Task Count').key('tasks').canSort().styleClass('col-xs-4')
                 .help('AppMaster is a coordinator. It does not run any computing tasks.').done()
             ],
             rows: null
           };
 
           function updateTable(executors) {
-            $scope.table.rows = _.map(executors, function(executor) {
-              return {
-                status: {
-                  tooltip: executor.status,
-                  condition: executor.isRunning ? 'good' : '',
-                  shape: 'stripe'
-                },
-                id: {href: executor.pageUrl, text: executor.executorId === -1 ?
-                  'AppMaster' : 'Executor ' + executor.executorId},
-                worker: {href: executor.workerPageUrl, text: executor.workerId},
-                tasks: executor.taskCount || 0
-              };
-            });
+            $scope.table.rows = $stb.$update($scope.table.rows,
+              _.map(executors, function(executor) {
+                return {
+                  status: {
+                    tooltip: executor.status,
+                    condition: executor.isRunning ? 'good' : '',
+                    shape: 'stripe'
+                  },
+                  id: {href: executor.pageUrl, text: executor.executorId === -1 ?
+                    'AppMaster' : 'Executor ' + executor.executorId},
+                  worker: {href: executor.workerPageUrl, text: executor.workerId},
+                  tasks: executor.taskCount || 0
+                };
+              }));
           }
 
           $scope.$watch('executors', function(executors) {
