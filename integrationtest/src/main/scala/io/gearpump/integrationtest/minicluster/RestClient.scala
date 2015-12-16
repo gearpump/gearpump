@@ -197,10 +197,7 @@ class RestClient(host: String, port: Int) {
 
   def restartApp(appId: Int): Boolean = try {
     val resp = callApi(s"appmaster/$appId/restart", CRUD_POST)
-    upickle.default.read[Status](resp)
-    // return true here for the api always returns false
-    // please go to issue #1600 for detail
-    true
+    upickle.default.read[Status](resp).success
   } catch {
     case ex: Throwable => false
   }
