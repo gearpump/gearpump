@@ -134,4 +134,8 @@ object Constants {
   //Security related
   val GEARPUMP_KEYTAB_FILE = "gearpump.keytab.file"
   val GEARPUMP_KERBEROS_PRINCIPAL = "gearpump.kerberos.principal"
+
+
+  val GEARPUMP_METRICS_MAX_LIMIT = "gearpump.metrics.akka.max-limit-on-query"
+  val GEARPUMP_METRICS_AGGREGATORS = "gearpump.metrics.akka.metrics-aggregator-class"
 }
