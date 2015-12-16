@@ -11,9 +11,9 @@ script:
   if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]];
     then sbt -jvm-opts project/travis/jvmopts clean coverage +test | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_BRANCH == "master" ]];
-    then sbt clean +publish | grep -v -E "$skipLogs";
+    then sbt -jvm-opts project/travis/jvmopts clean +publish | grep -v -E "$skipLogs"; sbt -jvm-opts project/travis/jvmopts coverage +test | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_TAG != "" ]];
-    then sbt clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
+    then sbt -jvm-opts project/travis/jvmopts clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
   fi  
 jdk:
 - oraclejdk7
