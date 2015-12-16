@@ -108,20 +108,21 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
       }
 
     case RestartApplication(appId) =>
+      val client = sender()
       (kvService ? GetKV(appId.toString, APP_STATE)).asInstanceOf[Future[GetKVResult]].map {
         case GetKVSuccess(_, result) =>
           val appState = result.asInstanceOf[ApplicationState]
           if (appState != null) {
             LOG.info(s"Shutting down the application (restart), $appId")
             self ! ShutdownApplication(appId)
-            self forward SubmitApplication(appState.app, appState.jar, appState.username)
+            self.tell(SubmitApplication(appState.app, appState.jar, appState.username), client)
           } else {
-            sender ! SubmitApplicationResult(Failure(
+            client ! SubmitApplicationResult(Failure(
               new Exception(s"Failed to restart, because the application $appId does not exist.")
             ))
           }
         case GetKVFailed(ex) =>
-          sender ! SubmitApplicationResult(Failure(
+          client ! SubmitApplicationResult(Failure(
             new Exception(s"Unable to obtain the Master State. Application $appId will not be restarted.")
           ))
       }
