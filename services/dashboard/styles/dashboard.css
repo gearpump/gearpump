@@ -118,3 +118,19 @@ h4, table > caption {
 .dropbox-dragover {
   border-color: #aaa;
 }
+
+/* Bootstrap 4: Button group or label outline (3 rules) */
+.btn-group > button.btn-default-outline {
+  border-color: #026fcc;
+  color: #026bc5;
+}
+
+.btn-group > button.btn-primary-outline {
+  background-color: #026fcc;
+  color: #fff !important;
+}
+
+.label-primary-outline {
+  border: 1px solid #aaa;
+  padding: 3px 6px;
+}
