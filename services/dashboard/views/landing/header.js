@@ -15,8 +15,8 @@ angular.module('dashboard')
       scope: {},
       controller: ['$scope', 'restapi', function($scope, restapi) {
         $scope.menu = [
-          {text: 'Cluster', href: '#/cluster', icon: 'glyphicon glyphicon-th-large'},
-          {text: 'Applications', href: '#/apps', icon: 'glyphicon glyphicon-tasks'}
+          {text: 'Cluster', pathPatt: '/cluster', href: '#/cluster', icon: 'glyphicon glyphicon-th-large'},
+          {text: 'Applications', pathPatt: '/apps', href: '#/apps', icon: 'glyphicon glyphicon-tasks'}
         ];
 
         $scope.links = [
@@ -32,7 +32,7 @@ angular.module('dashboard')
             };
           });
 
-        $scope.version = '';
+        $scope.version = 'beta';
         restapi.repeatHealthCheck($scope, function(version) {
           $scope.version = version;
         });

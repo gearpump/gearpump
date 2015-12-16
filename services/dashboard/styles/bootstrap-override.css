@@ -24,6 +24,15 @@ html, body {
   margin-left: 30px;
 }
 
+/* Emphasize active navbar element for dark background (2 rules) */
+.navbar-inverse {
+  background-color: #373a3c;
+}
+
+.navbar-inverse .navbar-nav > li > a:hover {
+  background-color: #444;
+}
+
 /* A extra small breadcrumb (2 rules) */
 .breadcrumb-sm {
   margin-bottom: 8px;
@@ -99,7 +108,7 @@ html, body {
 /* Tune bootstrap-tooltip look and feel (2 rules) */
 .tooltip-inner {
   max-width: none;
-  padding: 5px 10px 5px;
+  padding: 5px 10px;
 }
 
 *[bs-tooltip] {
@@ -129,7 +138,7 @@ html, body {
 
 /* The default padding was too large for xs size */
 .btn.btn-xs.dropdown-toggle {
-  padding: 1px 4px 3px 4px;
+  padding: 1px 4px 3px;
   line-height: 16px;
 }
 
@@ -150,7 +159,7 @@ html, body {
 
 /* Reduce panel height for a smaller panel */
 .panel-sm .panel-heading, .panel-sm .panel-footer {
-  padding: 4px 8px 4px 8px;
+  padding: 4px 8px;
   font-size: 0.95em;
 }
 
@@ -175,7 +184,7 @@ html, body {
 
 /* Make alert padding narrower (2 rules) */
 .alert {
-  padding: 7px 10px 7px 10px;
+  padding: 7px 10px;
 }
 
 .alert-dismissable,
