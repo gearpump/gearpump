@@ -29,7 +29,7 @@ import io.gearpump.cluster.MasterToAppMaster._
 import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, MasterConfig, ResolveWorkerIdResult}
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToMaster._
-import io.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVFailed, GetKVSuccess, PutKV}
+import io.gearpump.cluster.master.InMemoryKVService._
 import io.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated, _}
 import io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import io.gearpump.jarstore.local.LocalJarStore
@@ -39,6 +39,7 @@ import io.gearpump.transport.HostPort
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util._
+import org.apache.commons.lang.exception.ExceptionUtils
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
@@ -119,6 +120,7 @@ private[cluster] class Master extends Actor with Stash {
     jarStoreService orElse
     terminationWatch orElse
     disassociated orElse
+    kvServiceMsgHandler orElse
     ActorUtil.defaultMsgHandler(self)
 
   def workerMsgHandler : Receive = {
@@ -142,6 +144,13 @@ private[cluster] class Master extends Actor with Stash {
   def jarStoreService : Receive = {
     case GetJarStoreServer =>
       jarStore.foreach(_ forward GetJarStoreServer)
+  }
+
+  def kvServiceMsgHandler: Receive = {
+    case PutKVSuccess =>
+      //Skip
+    case PutKVFailed(key, value, exception) =>
+      LOG.error(s"Put value $value with key $key to InMemoryKVService failed.\n" + ExceptionUtils.getStackTrace(exception))
   }
 
   def metricsService : Receive = {

@@ -55,7 +55,7 @@ class InMemoryKVService extends Actor with Stash with ClusterReplication {
           client ! GetKVFailed(new Exception(x.getClass.getName))
       }
 
-    case PutKV(group: String, key : String, value : Any) =>
+    case PutKV(group: String, key: String, value: Any) =>
       val client = sender
 
       val update = Update(KVService + group, LWWMap(),
@@ -69,7 +69,7 @@ class InMemoryKVService extends Actor with Stash with ClusterReplication {
         case UpdateSuccess(key, _) =>
           client ! PutKVSuccess
         case fail: UpdateFailure =>
-          client ! PutKVFailed(new Exception(fail.getClass.getName))
+          client ! PutKVFailed(key, value, new Exception(fail.getClass.getName))
       }
     case DeleteKVGroup(group: String) =>
       val client = sender
@@ -97,5 +97,5 @@ object InMemoryKVService {
 
   case object PutKVSuccess extends PutKVResult
 
-  case class PutKVFailed(ex: Throwable) extends PutKVResult
+  case class PutKVFailed(key: String, value: Any, ex: Throwable) extends PutKVResult
 }
