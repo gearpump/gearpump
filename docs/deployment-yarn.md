@@ -10,16 +10,14 @@ title: Deployment with YARN
 2. Put the YARN configurations under classpath.
   Before calling "yarnclient launch", make sure you have put all yarn configuration files under classpath.
   Typically, you can just copy all files under $HADOOP_HOME/etc/hadoop from one of the YARN Cluster machine to conf/yarnconf of gearpump.
-  $HADOOP_HOME points to the Hadoop installation directory.
+  $HADOOP_HOME points to the Hadoop installation directory. 
 3. Launch the gearpump cluster on YARN
   ```bash
     yarnclient launch -package /user/gearpump/gearpump-version.zip
   ```
   If you don't specify package path, it will read default package-path from gear.conf(gearpump.yarn.client.package-path).
-4. Before step 3, you can also configure how Gearpump over YARN works. Please change "gearpump.yarn" section of gear.conf
-5. Now the Gearpump cluster is running.
-6. You can change gear.conf configuration section "gearpump.yarn" to decide how many workers and masters to launch.
-7. After launching, you can browser the Gearpump UI via YARN resource manager dashboard.
+4. Before step 3, You can change gear.conf configuration section "gearpump.yarn" to config the cluster.
+5. After launching, you can browser the Gearpump UI via YARN resource manager dashboard.
 
 ### How to submit a application to Gearpump cluster.
 
