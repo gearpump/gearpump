@@ -17,21 +17,13 @@ angular.module('dashboard')
           resolve: {
             master0: ['models', function(models) {
               return models.$get.master();
-            }],
-            metrics0: ['models', function(models) {
-              return models.$get.masterMetrics();
-            }],
-            historicalMetrics0: ['models', 'conf', function(models, conf) {
-              return models.$get.masterHistoricalMetrics(
-                conf.metricsChartSamplingRate, conf.metricsChartDataCount);
             }]
           }
         });
     }])
 
-  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder',
-    'helper', 'master0', 'metrics0', 'historicalMetrics0',
-    function($scope, $ptb, helper, master0, metrics0, historicalMetrics0) {
+  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder', 'helper', 'models', 'master0',
+    function($scope, $ptb, helper, models, master0) {
       'use strict';
 
       $scope.masterInfoTable = [
@@ -64,14 +56,7 @@ angular.module('dashboard')
         updateSummaryTable(master);
       });
 
-      // JvmMetricsChartsCtrl will watch `$scope.metrics` and `$scope.historicalMetrics`.
-      $scope.metrics = metrics0.$data();
-      metrics0.$subscribe($scope, function(metrics) {
-        $scope.metrics = metrics;
-      });
-      $scope.historicalMetrics = historicalMetrics0.$data();
-      historicalMetrics0.$subscribe($scope, function(metrics) {
-        $scope.historicalMetrics = metrics;
-      });
+      // Delegate JvmMetrics directive to manage metrics
+      $scope.queryMetricsFnRef = models.$get.masterMetrics;
     }])
 ;

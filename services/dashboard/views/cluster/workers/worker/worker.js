@@ -22,13 +22,6 @@ angular.module('dashboard')
             worker0: ['$stateParams', 'models', function($stateParams, models) {
               return models.$get.worker($stateParams.workerId);
             }],
-            metrics0: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.workerMetrics($stateParams.workerId);
-            }],
-            historicalMetrics0: ['$stateParams', 'models', 'conf', function($stateParams, models, conf) {
-              return models.$get.workerHistoricalMetrics($stateParams.workerId,
-                conf.metricsChartSamplingRate, conf.metricsChartDataCount);
-            }],
             apps0: ['models', function(models) {
               return models.$get.apps();
             }]
@@ -37,8 +30,8 @@ angular.module('dashboard')
     }])
 
   .controller('WorkerCtrl', ['$scope', '$propertyTableBuilder', '$sortableTableBuilder',
-    'helper', 'worker0', 'metrics0', 'historicalMetrics0', 'apps0', 'locator',
-    function($scope, $ptb, $stb, helper, worker0, metrics0, historicalMetrics0, apps0, locator) {
+    'helper', 'models', 'locator', 'worker0', 'apps0',
+    function($scope, $ptb, $stb, helper, models, locator, worker0, apps0) {
       'use strict';
 
       $scope.overviewTable = [
@@ -125,14 +118,7 @@ angular.module('dashboard')
         updateExecutorsTable();
       });
 
-      // JvmMetricsChartsCtrl will watch `$scope.metrics` and `$scope.historicalMetrics`.
-      $scope.metrics = metrics0.$data();
-      metrics0.$subscribe($scope, function(metrics) {
-        $scope.metrics = metrics;
-      });
-      $scope.historicalMetrics = historicalMetrics0.$data();
-      historicalMetrics0.$subscribe($scope, function(metrics) {
-        $scope.historicalMetrics = metrics;
-      });
+      // Delegate JvmMetrics directive to manage metrics
+      $scope.queryMetricsFnRef = models.$get.masterMetrics;
     }])
 ;

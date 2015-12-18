@@ -11,8 +11,8 @@ angular.module('dashboard')
 
       var lineChartOptionBase = {
         height: '108px',
-        visibleDataPointsNum: conf.metricsChartDataCount,
-        data: _.times(conf.metricsChartDataCount, function() {
+        visibleDataPointsNum: conf.metricsDataPointsP5M,
+        data: _.times(conf.metricsDataPointsP5M, function() {
           return {x: '', y: '-'};
         })
       };
@@ -37,16 +37,13 @@ angular.module('dashboard')
       $scope.averageProcessingTimeChartOptions = angular.copy(durationChartOptions);
       $scope.averageMessageReceiveLatencyChartOptions = angular.copy(durationChartOptions);
 
-      $scope.$watchCollection('dag.metrics.meter', function() {
+      $scope.$watchCollection('dag.metricsTime', function() {
         updateCurrentMeterMetrics($scope.dag);
-      });
-
-      $scope.$watchCollection('dag.metrics.histogram', function() {
         updateCurrentHistogramMetrics($scope.dag);
       });
 
-      $scope.$watchCollection('historicalMetrics', function(metrics) {
-        if (metrics) {
+      $scope.$watchCollection('metrics', function(metrics) {
+        if (angular.isObject(metrics)) {
           updateHistoricalMetricsCharts(metrics);
         }
       });

@@ -71,7 +71,7 @@ angular.module('dashboard', [
     restapiRoot: location.origin + location.pathname,
     restapiQueryInterval: 2 * 1000, // 2 seconds
     restapiQueryTimeout: 30 * 1000, // 30 seconds
-    metricsChartDataCount: 4 * 5, // 5 minutes data
-    metricsChartSamplingRate: 15 * 1000 // 15 seconds
+    metricsDataPointsP5M: 5 * 4, // 1 point per 15 seconds
+    metricsDataPointsP48H: 48 // 1 point per hour
   })
 ;

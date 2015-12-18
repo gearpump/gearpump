@@ -79,9 +79,7 @@ angular.module('dashboard')
         result.values = {
           count: Number(value.count),
           meanRate: Number(value.meanRate),
-          movingAverage1m: Number(value.m1),
-          movingAverage5m: Number(value.m5),
-          movingAverage15m: Number(value.m15)
+          movingAverage1m: Number(value.m1)
         };
 
         if (addMeta) {
@@ -95,15 +93,10 @@ angular.module('dashboard')
         var result = decoder._common(data);
         var value = data.value;
         result.values = {
-          count: Number(value.count),
-          minimum: Number(value.min),
-          maximum: Number(value.max),
           mean: Number(value.mean),
           stddev: Number(value.stddev),
           median: Number(value.median),
-          p75: Number(value.p75),
           p95: Number(value.p95),
-          p98: Number(value.p98),
           p99: Number(value.p99),
           p999: Number(value.p999)
         };

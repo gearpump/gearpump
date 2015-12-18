@@ -17,8 +17,8 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder', 'helper', 'conf', 'models',
-    function($scope, $ptb, helper, conf, models) {
+  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder', 'helper',
+    function($scope, $ptb, helper) {
       'use strict';
 
       $scope.appSummary = [
@@ -46,20 +46,5 @@ angular.module('dashboard')
       $scope.$watch('app', function(app) {
         updateSummaryTable(app);
       });
-
-      $scope.$on('$destroy', function() {
-        $scope.destroyed = true;
-      });
-      models.$subscribe($scope,
-        function() {
-          return models.$get.appHistoricalMetrics($scope.app.appId,
-            conf.metricsChartSamplingRate, conf.metricsChartDataCount);
-        },
-        function(historicalMetrics0) {
-          $scope.historicalMetrics = historicalMetrics0.$data();
-          historicalMetrics0.$subscribe($scope, function(metrics) {
-            $scope.historicalMetrics = metrics;
-          });
-        });
     }])
 ;
