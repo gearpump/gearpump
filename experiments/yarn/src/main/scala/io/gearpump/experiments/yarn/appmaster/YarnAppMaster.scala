@@ -37,8 +37,8 @@ import org.apache.commons.httpclient.methods.GetMethod
 import org.slf4j.Logger
 
 class YarnAppMaster(akkaConf: Config, rmClient: RMClient, nmClient: NMClient,
-    packagePath: String, hdfsConfDir: String,
-    uiFactory: UIFactory)
+                    packagePath: String, hdfsConfDir: String,
+                    uiFactory: UIFactory)
   extends Actor {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -51,7 +51,8 @@ class YarnAppMaster(akkaConf: Config, rmClient: RMClient, nmClient: NMClient,
 
   private val trackingURL = "http://" + host + ":" + port
 
-  private val masterCount = akkaConf.getString(MASTER_CONTAINERS).toInt
+  //TODO: for now, only one master is supported.
+  private val masterCount = 1
   private val masterMemory = akkaConf.getString(MASTER_MEMORY).toInt
   private val masterVCores = akkaConf.getString(MASTER_VCORES).toInt
 
@@ -86,9 +87,17 @@ class YarnAppMaster(akkaConf: Config, rmClient: RMClient, nmClient: NMClient,
   private def startingMasters(remain: Int, masters: List[MasterInfo]): Receive = box {
     case ContainersAllocated(containers) =>
       LOG.info(s"ContainersAllocated: containers allocated for master(remain=$remain), count: " + containers.size)
-      val newMasters = containers.map{container =>
+      val count = Math.min(containers.length, remain)
+      val newMasters = (0 until count).toList.map{index =>
+        val container = containers(index)
         MasterInfo(container.getId, container.getNodeId, launchMaster(container))
       }
+
+      // stop un-used containers
+      containers.drop(count).map{container =>
+        nmClient.stopContainer(container.getId, container.getNodeId)
+      }
+
       context.become(startingMasters(remain, newMasters ++ masters))
     case ContainerStarted(containerId) =>
       LOG.info(s"ContainerStarted: container ${containerId} started for master(remain=$remain) ")
@@ -108,9 +117,17 @@ class YarnAppMaster(akkaConf: Config, rmClient: RMClient, nmClient: NMClient,
     box {
       case ContainersAllocated(containers) =>
         LOG.info(s"ContainersAllocated: containers allocated for workers(remain=$remain), count: " + containers.size)
-        val newWorkers = containers.map{container =>
+
+        val count = Math.min(containers.length, remain)
+        val newWorkers = (0 until count).toList.map{index =>
+          val container = containers(index)
           launchWorker(container, masters)
           WorkerInfo(container.getId, container.getNodeId)
+        }
+
+        // stop un-used containers
+        containers.drop(count).map{container =>
+          nmClient.stopContainer(container.getId, container.getNodeId)
         }
         context.become(startingWorkers(remain, masters, workers ++ newWorkers))
       case ContainerStarted(containerId) =>

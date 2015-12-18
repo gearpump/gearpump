@@ -30,6 +30,14 @@ object Records {
     def getId: Int = impl.getId
 
     override def toString: String = impl.toString
+
+    override def equals(other: Any): Boolean = {
+      if (other.isInstanceOf[ApplicationId]) {
+        impl.equals(other.asInstanceOf[ApplicationId].impl)
+      } else {
+        false
+      }
+    }
   }
 
   object ApplicationId{
@@ -77,10 +85,26 @@ object Records {
     def getNodeId: NodeId = impl.getNodeId
 
     override def toString: String = impl.toString
+
+    override def equals(other: Any): Boolean = {
+      if (other.isInstanceOf[Container]) {
+        impl.equals(other.asInstanceOf[Container].impl)
+      } else {
+        false
+      }
+    }
   }
 
   class ContainerId(private[glue] val impl: YarnContainerId) {
     override def toString: String = impl.toString
+
+    override def equals(other: Any): Boolean = {
+      if (other.isInstanceOf[ContainerId]) {
+        impl.equals(other.asInstanceOf[ContainerId].impl)
+      } else {
+        false
+      }
+    }
   }
 
   object ContainerId {
@@ -91,6 +115,14 @@ object Records {
     def getHost: String = impl.getHost
 
     override def toString: String = impl.toString
+
+    override def equals(other: Any): Boolean = {
+      if (other.isInstanceOf[NodeId]) {
+        impl.equals(other.asInstanceOf[NodeId].impl)
+      } else {
+        false
+      }
+    }
   }
 
   class ContainerStatus(private[glue] val impl: YarnContainerStatus) {
