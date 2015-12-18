@@ -45,7 +45,6 @@ class CommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
       |    master {
       |      ## Memory of master daemon
       |      command = "$JAVA_HOME/bin/java  -Xmx512m"
-      |      containers = "2"
       |      memory = "512"
       |      vcores = "1"
       |    }

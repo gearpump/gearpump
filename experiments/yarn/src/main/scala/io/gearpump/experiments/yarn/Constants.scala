@@ -29,7 +29,6 @@ object Constants {
   val CONFIG_PATH = "gearpump.yarn.client.config-path"
 
   val MASTER_COMMAND = "gearpump.yarn.master.command"
-  val MASTER_CONTAINERS = "gearpump.yarn.master.containers"
   val MASTER_MEMORY = "gearpump.yarn.master.memory"
   val MASTER_VCORES = "gearpump.yarn.master.vcores"
 

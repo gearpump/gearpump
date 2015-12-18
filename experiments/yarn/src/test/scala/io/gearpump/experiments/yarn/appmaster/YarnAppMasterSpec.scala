@@ -56,7 +56,6 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
       |    master {
       |      ## Memory of master daemon
       |      command = "$JAVA_HOME/bin/java  -Xmx512m"
-      |      containers = "2"
       |      memory = "512"
       |      vcores = "1"
       |    }
@@ -76,7 +75,7 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
       |}
     """.stripMargin).withFallback(TestUtil.DEFAULT_CONFIG)
 
-  val masterCount = config.getString(Constants.MASTER_CONTAINERS).toInt
+  val masterCount = 1
   val workerCount = config.getString(Constants.WORKER_CONTAINERS).toInt
 
   implicit var system: ActorSystem = null
