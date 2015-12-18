@@ -52,6 +52,7 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     system.shutdown()
+    system.awaitTermination()
   }
 
   it should "call launcher to launch task" in {

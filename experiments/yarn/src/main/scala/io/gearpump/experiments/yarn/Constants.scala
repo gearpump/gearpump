@@ -19,43 +19,28 @@
 package io.gearpump.experiments.yarn
 
 object Constants {
-  val YARNAPPMASTER_NAME = "gearpump.yarn.applicationmaster.name"
-  val YARNAPPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
-  val YARNAPPMASTER_MEMORY = "gearpump.yarn.applicationmaster.memory"
-  val YARNAPPMASTER_VCORES = "gearpump.yarn.applicationmaster.vcores"
-  val YARNAPPMASTER_QUEUE = "gearpump.yarn.applicationmaster.queue"
-  val YARNAPPMASTER_MAIN = "gearpump.yarn.applicationmaster.main"
-  val YARNAPPMASTER_PORT = "gearpump.yarn.applicationmaster.port"
+  val APPMASTER_NAME = "gearpump.yarn.applicationmaster.name"
+  val APPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
+  val APPMASTER_MEMORY = "gearpump.yarn.applicationmaster.memory"
+  val APPMASTER_VCORES = "gearpump.yarn.applicationmaster.vcores"
+  val APPMASTER_QUEUE = "gearpump.yarn.applicationmaster.queue"
 
-  val EXCLUDE_JARS = "gearpump.yarn.client.excludejars"
-  val HDFS_ROOT = "gearpump.yarn.client.hdfsRoot"
-  val JARS = "gearpump.yarn.client.jars"
-  val GEARPUMPMASTER_COMMAND = "gearpump.master.command"
-  val GEARPUMPMASTER_MAIN = "gearpump.master.main"
-  val GEARPUMPMASTER_IP = "gearpump.master.ip"
-  val GEARPUMPMASTER_PORT = "gearpump.master.port"
-  val GEARPUMPMASTER_CONTAINERS = "gearpump.master.containers"
-  val GEARPUMPMASTER_MEMORY = "gearpump.master.memory"
-  val GEARPUMPMASTER_VCORES = "gearpump.master.vcores"
-  val GEARPUMPMASTER_LOG = "gearpump.master.logname"
+  val PACKAGE_PATH = "gearpump.yarn.client.package-path"
+  val CONFIG_PATH = "gearpump.yarn.client.config-path"
 
-  val WORKER_COMMAND = "gearpump.worker.command"
-  val WORKER_MAIN = "gearpump.worker.main"
-  val WORKER_CONTAINERS = "gearpump.worker.containers"
-  val WORKER_MEMORY = "gearpump.worker.memory"
-  val WORKER_VCORES = "gearpump.worker.vcores"
-  val WORKER_LOG = "gearpump.worker.logname"
+  val MASTER_COMMAND = "gearpump.yarn.master.command"
+  val MASTER_CONTAINERS = "gearpump.yarn.master.containers"
+  val MASTER_MEMORY = "gearpump.yarn.master.memory"
+  val MASTER_VCORES = "gearpump.yarn.master.vcores"
 
-  val SERVICES_COMMAND = "gearpump.services.command"
-  val SERVICES_ENABLED = "gearpump.services.enabled"
-  val SERVICES_MAIN = "gearpump.services.main"
-  val SERVICES_PORT = "gearpump.services.port"
-  val SERVICES_CONTAINERS = "gearpump.services.containers"
-  val SERVICES_MEMORY = "gearpump.services.memory"
-  val SERVICES_VCORES = "gearpump.services.vcores"
-  val SERVICES_LOG = "gearpump.services.logname"
+  val WORKER_COMMAND = "gearpump.yarn.worker.command"
+  val WORKER_CONTAINERS = "gearpump.yarn.worker.containers"
+  val WORKER_MEMORY = "gearpump.yarn.worker.memory"
+  val WORKER_VCORES = "gearpump.yarn.worker.vcores"
 
-  val YARN_CONFIG = "gearpump_on_yarn.conf"
-  val MEMORY_DEFAULT = 2048 //2 gigabyte
+  val SERVICES_ENABLED = "gearpump.yarn.services.enabled"
 
+  val LOCAL_DIRS = org.apache.hadoop.yarn.api.ApplicationConstants.Environment.LOCAL_DIRS.$$()
+  val CONTAINER_ID = org.apache.hadoop.yarn.api.ApplicationConstants.Environment.CONTAINER_ID.$$()
+  val LOG_DIR_EXPANSION_VAR = org.apache.hadoop.yarn.api.ApplicationConstants.LOG_DIR_EXPANSION_VAR
 }

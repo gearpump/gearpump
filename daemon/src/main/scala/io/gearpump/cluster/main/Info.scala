@@ -28,7 +28,10 @@ object Info extends AkkaApp with ArgumentsParser {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  override val options: Array[(String, CLIOption[Any])] = Array.empty
+  override val options: Array[(String, CLIOption[Any])] = Array(
+      "config" -> CLIOption("custom configuration file", required = false, defaultValue = None))
+
+
   override val description = "Query the Application list"
 
   def main(akkaConf: Config, args: Array[String]): Unit = {

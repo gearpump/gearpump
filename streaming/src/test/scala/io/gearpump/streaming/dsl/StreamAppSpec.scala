@@ -36,6 +36,7 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with
 
   override def afterAll: Unit = {
     system.shutdown()
+    system.awaitTermination()
   }
 
 

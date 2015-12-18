@@ -28,7 +28,7 @@
 - #339, add Hadoop-compatible CheckpointStore
 - #1278, Optimize the build script for scalajs.
 - #1285, fix travis deploy build script
-- #1241, shade akka-kryo-serializarion
+- #1241, shade akka-kryo-serialization
 - #1278, split services into 2 projects for scala.js
 - #1290, purify state dependencies
 - #1289, construct HTable at cluster side

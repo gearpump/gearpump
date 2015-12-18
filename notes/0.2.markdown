@@ -13,12 +13,12 @@ Highlights:
 Change list:
 -------------------
  - #274 AppMaster cannot connect to worker if there are multiple interface on one machine 
- - #272 Too many dead log mesages in the log
+ - #272 Too many dead log messages in the log
  - #266 Kafka grouper conf is incorrect 
  - #259 fix stream replay api and impl
  - #245 jacoco conflict with codecov
  - #244 Add more unit test for better test coverage
- - #242 Add application sumbittor username so that we can seperate the logs for different user
+ - #242 Add application submitter username so that we can separate the logs for different user
  - #239 REST AppMasterService test failed
  - #237 Add more information in log line
  - #233 Add TIMEOUT for interactive messages between two parties

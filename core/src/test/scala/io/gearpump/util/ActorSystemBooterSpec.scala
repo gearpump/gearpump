@@ -79,6 +79,8 @@ class ActorSystemBooterSpec extends FlatSpec with Matchers with MockitoSugar {
     def shutdown = {
       host.shutdown()
       bootedSystem.shutdown()
+      host.awaitTermination()
+      bootedSystem.awaitTermination()
     }
   }
 

@@ -22,7 +22,7 @@ Change list
  - #741 refine example
  - #817 split examples jar into multiple jars
  - #824, allow to use default partitioner when defining a DAG
- - #829, add some handly operator like groupByKey, sum, for KV Stream
+ - #829, add some handy operator like groupByKey, sum, for KV Stream
  - #831: uses pagination control to speedup table rendering
  - #816: use multi-select control to select tasks
  - #840: task charts data were incorrect
@@ -53,5 +53,5 @@ Change list
  - #719 add Kafka Source and HBase Sink for dsl
  - #905: Upgrade sbt-pack from 0.6.8 to 0.6.9
  - #602: dashboard will freeze when server is unreachable
- - #907: calculate application clock update frequence for a 30 second time frame
+ - #907: calculate application clock update frequency for a 30 second time frame
  - #919: vis.js's version was not updated

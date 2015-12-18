@@ -56,5 +56,6 @@ class NettySpec extends FlatSpec with Matchers with MockitoSugar {
     
     context.close
     system.shutdown()
+    system.awaitTermination()
   }
 }

@@ -174,8 +174,7 @@ object ClusterConfig {
 
     val custom = user.withFallback(cluster)
 
-    // check whether config is valid
-    val cleaned = sanity(custom)
+    val cleaned = filterOutJvmReservedKeys(custom)
 
     val all = ConfigFactory.load(cleaned)
 
@@ -207,10 +206,6 @@ object ClusterConfig {
     }
   }
 
-  private def sanity(config: Config): Config = {
-    filterOutJvmReservedKeys(config)
-  }
-
   def saveConfig(conf : Config, file : File) : Unit = {
     val serialized = conf.root().render()
     FileUtils.write(file, serialized)
@@ -218,10 +213,16 @@ object ClusterConfig {
 
   class ConfigValidationException(msg: String) extends Exception(msg: String)
 
-  def filterOutJvmReservedKeys(input: Config): Config = {
+  private def filterOutJvmReservedKeys(input: Config): Config = {
     val filterJvmReservedKeys = JVM_RESERVED_PROPERTIES.foldLeft(input) { (config, key) =>
       config.withoutPath(key)
     }
     filterJvmReservedKeys
+  }
+
+  // filter
+  def filterOutDefaultConfig(input: Config): Config = {
+    val updated = filterOutJvmReservedKeys(input)
+    Util.filterOutOrigin(updated, "reference.conf")
   }
 }

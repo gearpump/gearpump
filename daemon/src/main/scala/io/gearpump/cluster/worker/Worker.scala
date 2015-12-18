@@ -24,6 +24,7 @@ import java.net.URL
 import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor._
+import akka.http.scaladsl.server.util.TupleOps.Join.Fold
 import akka.pattern.pipe
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
@@ -99,23 +100,36 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       }
   }
 
+  private var metricsInitialized = false
+  private def initializeMetrics: Unit = {
+    // register jvm metrics
+    Metrics(context.system).register(new JvmMetricsSet(s"worker${id}"))
+
+    historyMetricsService = if (metricsEnabled) {
+      val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
+      val historyMetricsService = {
+        context.actorOf(Props(new HistoryMetricsService("worker" + id, getHistoryMetricsConfig)))
+      }
+
+      val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
+      historyMetricsService.tell(ReportMetrics, metricsReportService)
+      Some(historyMetricsService)
+    } else {
+      None
+    }
+  }
+
   def waitForMasterConfirm(killSelf : Cancellable) : Receive = {
+
+    // If master get disconnected, the WorkerRegistered may be triggered multiple times.
     case WorkerRegistered(id, masterInfo) =>
       this.id = id
-      // register jvm metrics
-      Metrics(context.system).register(new JvmMetricsSet(s"worker${id}"))
 
-      historyMetricsService = if (metricsEnabled) {
-        val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
-        val historyMetricsService = {
-          context.actorOf(Props(new HistoryMetricsService("worker" + id, getHistoryMetricsConfig)))
-        }
-
-        val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
-        historyMetricsService.tell(ReportMetrics, metricsReportService)
-        Some(historyMetricsService)
-      } else {
-        None
+      // Add the flag check, so that we don't re-initialize when WorkerRegistered
+      // is triggered multiple times.
+      if (!metricsInitialized) {
+        initializeMetrics
+        metricsInitialized = true
       }
 
       this.masterInfo = masterInfo
@@ -271,11 +285,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
 }
 
 private[cluster] object Worker {
-  def getClassPathWhiteList(config: Config): Array[String] = {
-    val home = config.getString(GEARPUMP_HOME)
-    val gearHome = new File(home).getAbsolutePath
-    EXECUTOR_CLASSPATH_WHILTELIST.map(gearHome + File.separator + _)
-  }
 
   case class ExecutorResult(result : Try[Int])
 
@@ -332,7 +341,7 @@ private[cluster] object Worker {
           file.getFile
         }
 
-        val classPath = filterDaemonLib(Util.getCurrentClassPath) ++
+        val classPath = filterOutDaemonLib(Util.getCurrentClassPath) ++
           ctx.classPath.map(path => expandEnviroment(path)) ++
           jarPath.map(Array(_)).getOrElse(Array.empty[String])
 
@@ -437,6 +446,9 @@ private[cluster] object Worker {
       executorHandler.destroy
     }
 
+    //The folders are under ${GEARPUMP_HOME}
+    val daemonPathPattern = List("lib" + File.separator + "daemon", "lib" + File.separator + "yarn")
+
     override def receive: Receive = {
       case ShutdownExecutor(appId, executorId, reason : String) =>
         executorHandler.destroy
@@ -456,15 +468,12 @@ private[cluster] object Worker {
       format.format(timestamp)
     }
 
-    private def filterDaemonLib(classPath: Array[String]): Array[String] = {
-      val classPathWhiteList = getClassPathWhiteList(config)
-      classPath.filter(_ != null).filter{ path =>
-        //The path may represent a file or folder
-        val file = new File(path)
-        val parent = Option(file.getParentFile).map(_.getAbsolutePath)
-        classPathWhiteList.contains(file.getAbsolutePath) ||
-          classPathWhiteList.contains(parent.getOrElse(null))
-      }
+    private def filterOutDaemonLib(classPath: Array[String]): Array[String] = {
+      classPath.filterNot(matchDaemonPattern(_))
+    }
+
+    private def matchDaemonPattern(path: String): Boolean = {
+      daemonPathPattern.exists(path.contains(_))
     }
   }
 

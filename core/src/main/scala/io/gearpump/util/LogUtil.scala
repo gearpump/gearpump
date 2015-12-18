@@ -98,7 +98,7 @@ object LogUtil {
 
   def verboseLogToConsole: Unit = {
     val props = loadConfiguration
-    props.setProperty("log4j.rootLogger", "INFO,console")
+    props.setProperty("log4j.rootLogger", "DEBUG,console")
     PropertyConfigurator.configure(props)
   }
 

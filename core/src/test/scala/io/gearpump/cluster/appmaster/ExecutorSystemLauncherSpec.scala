@@ -46,6 +46,7 @@ class ExecutorSystemLauncherSpec  extends FlatSpec with Matchers with BeforeAndA
 
   override def afterAll() = {
     system.shutdown()
+    system.awaitTermination()
   }
 
   it should "report success when worker launch the system successfully" in {

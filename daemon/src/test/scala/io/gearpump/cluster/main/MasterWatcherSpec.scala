@@ -46,5 +46,6 @@ class MasterWatcherSpec extends FlatSpec with Matchers with BeforeAndAfterEach w
     actorWatcher watch masterWatcher
     actorWatcher.expectTerminated(masterWatcher, 5 seconds)
     system.shutdown()
+    system.awaitTermination()
   }
 }

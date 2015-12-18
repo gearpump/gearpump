@@ -10,7 +10,7 @@ As introduced in the [What is At Least Once Message Delievery](message-delivery.
 
 Here's an example to deploy a local Kafka cluster. 
 
-1. download the latest Kafka from the offical website and extract to a local directory (`$KAFKA_HOME`)
+1. download the latest Kafka from the official website and extract to a local directory (`$KAFKA_HOME`)
 
 2. Boot up the single-node Zookeeper instance packaged with Kafka. 
 
@@ -38,7 +38,7 @@ Exactly Once Message Delivery requires both an offset store and a checkpoint sto
 
 Here's an example to deploy a local HDFS cluster.
 
-1. download Hadoop 2.6 from the offical website and extracts it to a local directory `HADOOP_HOME`
+1. download Hadoop 2.6 from the official website and extracts it to a local directory `HADOOP_HOME`
 
 2. add following configuration to `$HADOOP_HOME/etc/core-site.xml`
 

@@ -46,6 +46,7 @@ class MasterConnectionKeeperSpec  extends FlatSpec with Matchers with BeforeAndA
 
    override def afterAll: Unit = {
     system.shutdown()
+     system.awaitTermination()
   }
 
   private def startMasterConnectionKeeper: ConnectionKeeperTestEnv = {

@@ -188,6 +188,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     }
 
     system.shutdown()
+    system.awaitTermination()
 
   }
 }

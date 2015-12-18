@@ -31,7 +31,7 @@ Please note that Gearpump shaded the original Kryo dependency. The package name 
 
 ##### System Level Serializer
 
-If the serializer is widely used, you can define a global serializer which is avaiable to all applications(or worker or master) in the system.
+If the serializer is widely used, you can define a global serializer which is available to all applications(or worker or master) in the system.
 
 ###### Step1: you first need to develop a java library which contains the custom serializer class. here is an example:
 

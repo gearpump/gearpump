@@ -41,7 +41,10 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
   var system: ActorSystem = null
 
   override def afterAll {
-    if (null != system) system.shutdown()
+    if (null != system) {
+      system.shutdown()
+      system.awaitTermination()
+    }
   }
 
   override def beforeAll {

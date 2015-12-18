@@ -38,6 +38,7 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
 
   override def afterAll() = {
     system.shutdown()
+    system.awaitTermination()
   }
 
   "MasterWithExecutorSystemProvider" should "forward request StartExecutorSystem to ExecutorSystemProvider" in {

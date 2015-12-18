@@ -24,10 +24,11 @@ import org.slf4j.Logger
 
 import scala.util.Try
 
-object MainRunner extends AkkaApp  {
+object MainRunner extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  def help: Unit = Unit
+  override val options: Array[(String, CLIOption[Any])] = Array(
+    "config" -> CLIOption("custom configuration file", required = false, defaultValue = None))
 
   def main(akkaConf: Config, args: Array[String]): Unit = {
     val mainClazz = args(0)

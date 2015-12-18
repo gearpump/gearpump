@@ -77,6 +77,7 @@ class LocalCluster(inputConfig: Config) {
   def stop: Unit = {
     _system.stop(_master)
     _system.shutdown()
+    _system.awaitTermination()
   }
 }
 

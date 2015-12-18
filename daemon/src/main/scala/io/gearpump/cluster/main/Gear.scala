@@ -17,7 +17,7 @@
  */
 package io.gearpump.cluster.main
 
-import io.gearpump.util.LogUtil
+import io.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
 object Gear  {
@@ -29,7 +29,7 @@ object Gear  {
 
   def usage: Unit = {
     val keys = commands.keys.toList.sorted
-    Console.println("Usage: " + "<" + keys.mkString("|") + ">")
+    Console.err.println("Usage: " + "<" + keys.mkString("|") + ">")
   }
 
   def executeCommand(command : String, commandArgs : Array[String]) = {
@@ -40,14 +40,37 @@ object Gear  {
     }
   }
 
-  def main(args: Array[String]) = {
-    args.length match {
-      case 0 =>
-        usage
-      case a if(a >= 1) =>
-        val command = args(0)
-        val commandArgs = args.drop(1)
-        executeCommand(command, commandArgs)
+  def main(inputArgs: Array[String]) = {
+    val (configFile, args) = extractConfig(inputArgs)
+    if (configFile != null) {
+      // set custom config file...
+      System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, configFile)
     }
+
+    if (args.length == 0) {
+      usage
+    } else {
+      val command = args(0)
+      val commandArgs = args.drop(1)
+      executeCommand(command, commandArgs)
+    }
+  }
+
+  private def extractConfig(inputArgs: Array[String]): (String, Array[String]) = {
+    var index = 0
+
+    var result = List.empty[String]
+    var configFile:String = null
+    while (index < inputArgs.length) {
+      val item = inputArgs(index)
+      if (item == "-conf") {
+        index += 1
+        configFile = inputArgs(index)
+      } else {
+        result = result :+ item
+      }
+      index += 1
+    }
+    (configFile, result.toArray)
   }
 }

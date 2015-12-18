@@ -132,7 +132,7 @@ object DistributedShellClient extends App with ArgumentsParser  {
 }
 ```
 
-In the DistributedShellClient, it will resolve the appid to the real appmaster(the applicaton id will be printed when launching DistributedShell).
+In the DistributedShellClient, it will resolve the appid to the real appmaster(the application id will be printed when launching DistributedShell).
 
 Once we got the AppMaster, then we can send ShellCommand to it and wait for the result.
 

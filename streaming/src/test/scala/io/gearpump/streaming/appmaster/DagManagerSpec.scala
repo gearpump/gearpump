@@ -83,6 +83,7 @@ class DagManagerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   override def afterAll {
     system.shutdown()
+    system.awaitTermination()
   }
 
   override def beforeAll {
