@@ -12,10 +12,8 @@
     yarnclient launch -package /user/gearpump/gearpump-version.zip
   ```
   If you don't specify package path, it will read default package-path from gear.conf(gearpump.yarn.client.package-path).
-4. Before step 3, you can also configure how Gearpump over YARN works. Please change "gearpump.yarn" section of gear.conf
-5. Now the Gearpump cluster is running.
-6. You can change gear.conf configuration section "gearpump.yarn" to decide how many workers and masters to launch.
-7. After launching, you can browser the Gearpump UI via YARN resource manager dashboard.
+4. Before step 3, You can change gear.conf configuration section "gearpump.yarn" to config the cluster.
+5. After launching, you can browser the Gearpump UI via YARN resource manager dashboard.
 
 ### How to submit a application to Gearpump cluster.
 
