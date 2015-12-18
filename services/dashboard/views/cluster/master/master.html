@@ -8,6 +8,6 @@
 </div>
 
 <div class="col-md-6">
-  <div ng-include src="'views/jvm/metrics_charts.html'"
-       ng-controller="JvmMetricsChartsCtrl"></div>
+  <jvm-metrics
+    query-metrics-fn-ref="queryMetricsFnRef"></jvm-metrics>
 </div>

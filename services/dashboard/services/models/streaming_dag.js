@@ -11,11 +11,8 @@ angular.module('dashboard')
 
     /** The constructor */
     function StreamingDag(clock, processors, levels, edges) {
-      // Metrics are stored in this hierarchy:
-      //   group: meter|histogram|gauge
-      //     name: sendThroughput|receiveThroughput|etc.
-      //       field: count|movingAverage1M|etc.
-      this.metrics = {meter: {}, histogram: {}, gauge: {}};
+      this.metrics = {};
+      this.metricsTime = 0;
       this.stallingTasks = {};
       this.setData(clock, processors, levels, edges);
     }
@@ -34,43 +31,36 @@ angular.module('dashboard')
         this.stallingTasks = tasks;
       },
 
-      /** Update (or add) an array of metrics */
-      updateMetricsArray: function(array) {
-        _.forEach(array, function(metric) {
-          if (metric.isMeter) {
-            this._updateProcessorMetrics('meter', metric);
-          } else if (metric.isHistogram) {
-            this._updateProcessorMetrics('histogram', metric);
-          } else {
-            console.warn({message: 'Unhandled metric', metric: metric});
-          }
-        }, this);
+      /** Update (or add) a set of metrics */
+      updateMetrics: function(metrics) {
+        var that = this;
+        var time = 0;
+        _.forEach(metrics, function(metricsGroup, clazz) {
+          _.forEach(metricsGroup, function(processorMetrics, processorId) {
+            if (that.processors.hasOwnProperty(processorId)) {
+              var metric = _.last(processorMetrics);
+              that.metrics[processorId] = that.metrics[processorId] || {};
+              that.metrics[processorId][clazz] = metric.values;
+              time = Math.max(time, metric.time);
+            }
+          });
+        });
+
+        if (time) {
+          this.metricsTime = time;
+        }
       },
 
-      _updateProcessorMetrics: function(metricsGroupName, metric) {
-        if (!(metric.meta.processorId in this.processors)) {
-          console.warn({message: 'The metric is reported by an unknown processor', metric: metric});
-          return;
+      _getMetricFieldOrElse: function(processorId, clazz, field, fallback) {
+        try {
+          return this.metrics[processorId][clazz][field];
+        } catch (ex) {
+          return fallback;
         }
-
-        var path = metric.meta.processorId + '_' + metric.meta.taskId;
-        var value = {
-          processorId: metric.meta.processorId,
-          taskId: metric.meta.taskId,
-          taskClass: this.processors[metric.meta.processorId].taskClass,
-          values: metric.values
-        };
-
-        var metricGroupCurrent = this.metrics[metricsGroupName];
-        var shorthandAccessor = _getOrCreate(metricGroupCurrent, metric.meta.clazz, {});
-        // example path:         [root] [group]    [clazz]   [path]
-        //                 "this.metrics.meter.sendThroughput.0_0"
-        shorthandAccessor[path] = value;
-        metricGroupCurrent.time = metric.time;
       },
 
       hasMetrics: function() {
-        return this.metrics.meter.time || this.metrics.histogram.time;
+        return this.metricsTime > 0;
       },
 
       /** Return the number of tasks (executed by executors). */
@@ -144,8 +134,8 @@ angular.module('dashboard')
       /** Weight of a processor equals the sum of its send throughput and receive throughput. */
       _calculateProcessorWeight: function(processorId) {
         return Math.max(
-          d3.sum(this._getProcessorMetrics(processorId, this.metrics.meter['sendThroughput'], 'movingAverage1m')),
-          d3.sum(this._getProcessorMetrics(processorId, this.metrics.meter['receiveThroughput'], 'movingAverage1m'))
+          this._getMetricFieldOrElse(processorId, 'sendThroughput', 'movingAverage1m', 0),
+          this._getMetricFieldOrElse(processorId, 'receiveThroughput', 'movingAverage1m', 0)
         );
       },
 
@@ -156,8 +146,8 @@ angular.module('dashboard')
         var targetId = parseInt(digits[1]);
         var sourceOutputs = this.calculateProcessorConnections(sourceId).outputs;
         var targetInputs = this.calculateProcessorConnections(targetId).inputs;
-        var sourceSendThroughput = d3.sum(this._getProcessorMetrics(sourceId, this.metrics.meter['sendThroughput'], 'movingAverage1m'));
-        var targetReceiveThroughput = d3.sum(this._getProcessorMetrics(targetId, this.metrics.meter['receiveThroughput'], 'movingAverage1m'));
+        var sourceSendThroughput = this._getMetricFieldOrElse(sourceId, 'sendThroughput', 'movingAverage1m', 0);
+        var targetReceiveThroughput = this._getMetricFieldOrElse(targetId, 'receiveThroughput', 'movingAverage1m', 0);
         return Math.min(
           sourceOutputs === 0 ? 0 : Math.round(sourceSendThroughput / sourceOutputs),
           targetInputs === 0 ? 0 : Math.round(targetReceiveThroughput / targetInputs)
@@ -178,72 +168,30 @@ angular.module('dashboard')
         return result;
       },
 
-      /** Return particular metrics value of processor's tasks as an array. */
-      _getProcessorMetrics: function(processorId, metricsGroup, metricField) {
-        var array = [];
-        if (metricsGroup) {
-          var parallelism = this.processors[processorId].parallelism;
-          for (var taskId = 0; taskId < parallelism; taskId++) {
-            var name = processorId + '_' + taskId;
-            if (metricsGroup.hasOwnProperty(name)) {
-              var metric = metricsGroup[name];
-              array.push(metric.values[metricField]);
-            }
-          }
-        }
-        return array;
-      },
-
-      /** Return particular metrics value of particular processor (or all processors) as an array. */
-      _getProcessorOrAllMetricsAsArray: function(metricsGroup, metricField, processorId) {
-        var array = [];
-        var processorIds = processorId !== undefined ?
-          [processorId] : this._getAliveProcessorIds();
-        _.forEach(processorIds, function(processorId) {
-          var processorResult = this._getProcessorMetrics(processorId, metricsGroup, metricField);
-          array = array.concat(processorResult);
-        }, this);
-        return array;
-      },
-
       /** Return total received messages from nodes without any outputs. */
-      getReceivedMessages: function(processorId) {
-        return this._getProcessingMessageThroughput(/*send*/false, processorId);
+      getReceivedMessages: function() {
+        return this._getProcessingMessageThroughput(/*send*/false);
       },
 
       /** Return total sent messages from nodes without any inputs. */
-      getSentMessages: function(processorId) {
-        return this._getProcessingMessageThroughput(/*send*/true, processorId);
+      getSentMessages: function() {
+        return this._getProcessingMessageThroughput(/*send*/true);
       },
 
-      _getProcessingMessageThroughput: function(send, processorId) {
-        var metricsGroup = this.metrics.meter[send ? 'sendThroughput' : 'receiveThroughput'];
-        if (processorId !== undefined) {
-          return this._getProcessorTaskThroughput(metricsGroup, processorId);
-        } else {
-          var processorIds = this._getProcessorIdsByType(send ? 'source' : 'sink');
-          return this._getProcessorThroughputAggregated(metricsGroup, processorIds);
-        }
+      _getProcessingMessageThroughput: function(send) {
+        var clazz = send ? 'sendThroughput' : 'receiveThroughput';
+        var processorIds = this._getProcessorIdsByType(send ? 'source' : 'sink');
+        return this._getProcessorThroughputAggregated(clazz, processorIds);
       },
 
       /** Return the aggregated throughput data of particular processors. */
-      _getProcessorThroughputAggregated: function(throughputMetricsGroup, processorIds) {
+      _getProcessorThroughputAggregated: function(clazz, processorIds) {
         var total = [], rate = [];
         _.forEach(processorIds, function(processorId) {
-          var processorResult = this._getProcessorTaskThroughput(
-            throughputMetricsGroup, processorId);
-          total.push(d3.sum(processorResult.total));
-          rate.push(d3.sum(processorResult.rate));
+          total.push(this._getMetricFieldOrElse(processorId, clazz, 'count', 0));
+          rate.push(this._getMetricFieldOrElse(processorId, clazz, 'movingAverage1m', 0));
         }, this);
         return {total: d3.sum(total), rate: d3.sum(rate)};
-      },
-
-      /** Return the throughput data of particular processor tasks as associative array. */
-      _getProcessorTaskThroughput: function(throughputMetricsGroup, processorId) {
-        return {
-          total: this._getProcessorMetrics(processorId, throughputMetricsGroup, 'count'),
-          rate: this._getProcessorMetrics(processorId, throughputMetricsGroup, 'movingAverage1m')
-        };
       },
 
       /** Return processor ids as an array by type (source|sink). */
@@ -256,78 +204,61 @@ angular.module('dashboard')
       },
 
       /** Return the average message processing time. */
-      getMessageProcessingTime: function(processorId) {
-        return this._getMetricFieldArrayOrAverage(
-          this.metrics.histogram['processTime'], 'mean', processorId);
+      getMessageProcessingTime: function() {
+        return this._getMetricFieldAverage('processTime', 'mean', 0);
       },
 
       /** Return the average message receive latency. */
-      getMessageReceiveLatency: function(processorId) {
-        return this._getMetricFieldArrayOrAverage(
-          this.metrics.histogram['receiveLatency'], 'mean', processorId);
+      getMessageReceiveLatency: function() {
+        return this._getMetricFieldAverage('receiveLatency', 'mean', 0);
       },
 
       /** Return the average value of particular metrics field of particular processor (or all processors). */
-      _getMetricFieldArrayOrAverage: function(metricsGroup, metricField, processorId) {
-        var array = this._getProcessorOrAllMetricsAsArray(metricsGroup, metricField, processorId);
-        return processorId !== undefined ?
-          array : (d3.mean(array) || 0);
+      _getMetricFieldAverage: function(clazz, field, fallback) {
+        var array = _.map(this._getAliveProcessorIds(), function(processorId) {
+          return this._getMetricFieldOrElse(processorId, clazz, field, fallback);
+        }, this);
+        return d3.mean(array);
       },
 
       /** Return the historical message receive throughput as an array. */
       toHistoricalMessageReceiveThroughputData: function(metrics) {
         var processorIds = this._getProcessorIdsByType('sink');
-        var metricsGroup = metrics['receiveThroughput'];
-        var metricField = 'movingAverage1m';
-        return this._getProcessorHistoricalMetrics(processorIds, metricsGroup, metricField, d3.sum);
+        return this._getProcessorHistoricalMetrics(processorIds,
+          metrics['receiveThroughput'], 'movingAverage1m', d3.sum);
       },
 
       /** Return the historical message send throughput as an array. */
       toHistoricalMessageSendThroughputData: function(metrics) {
         var processorIds = this._getProcessorIdsByType('source');
-        var metricsGroup = metrics['sendThroughput'];
-        var metricField = 'movingAverage1m';
-        return this._getProcessorHistoricalMetrics(processorIds, metricsGroup, metricField, d3.sum);
+        return this._getProcessorHistoricalMetrics(processorIds,
+          metrics['sendThroughput'], 'movingAverage1m', d3.sum);
       },
 
       /** Return the historical average message processing time as an array. */
       toHistoricalMessageAverageProcessingTimeData: function(metrics) {
         var processorIds = _keysAsNum(this.processors);
-        var metricsGroup = metrics['processTime'];
-        var metricField = 'mean';
-        return this._getProcessorHistoricalMetrics(processorIds, metricsGroup, metricField, d3.mean);
+        return this._getProcessorHistoricalMetrics(processorIds,
+          metrics['processTime'], 'mean', d3.mean);
       },
 
       /** Return the historical average message receive latency as an array. */
       toHistoricalAverageMessageReceiveLatencyData: function(metrics) {
         var processorIds = _keysAsNum(this.processors);
-        var metricsGroup = metrics['receiveLatency'];
-        var metricField = 'mean';
-        return this._getProcessorHistoricalMetrics(processorIds, metricsGroup, metricField, d3.mean);
+        return this._getProcessorHistoricalMetrics(processorIds,
+          metrics['receiveLatency'], 'mean', d3.mean);
       },
 
       /** Return particular historical metrics value of processor's tasks as an associative array. */
-      _getProcessorHistoricalMetrics: function(processorIds, metricsGroup, metricField, fn) {
+      _getProcessorHistoricalMetrics: function(processorIds, metrics, field, fn) {
         var result = {};
-        if (metricsGroup) {
-          // Calculate names once before enter the time consuming iterations
-          var paths = [];
-          _.forEach(processorIds, function(processorId) {
-            var parallelism = this.processors[processorId].parallelism;
-            for (var taskId = 0; taskId < parallelism; taskId++) {
-              var path = 'processor' + processorId + '.task' + taskId;
-              paths.push(path);
-            }
-          }, this);
-
+        try {
           // Iterate historical metrics by time
-          _.forEach(metricsGroup, function(metrics, path) {
-            path = path.split('.').slice(1).join('.'); // strip the prefix 'app0.'
-            if (paths.indexOf(path) !== -1) {
-              _.forEach(metrics, function(metric) {
+          _.forEach(metrics, function(processorMetrics, processorId) {
+            if (processorId in processorIds) {
+              _.forEach(processorMetrics, function(metric) {
                 result[metric.time] = result[metric.time] || [];
-                result[metric.time].push((metric.hasOwnProperty('values') ?
-                  metric.values : metric.value)[metricField]);
+                result[metric.time].push(metric.values[field]);
               });
             }
           });
@@ -335,6 +266,7 @@ angular.module('dashboard')
           _.forEach(result, function(array, time) {
             result[time] = _.isFunction(fn) ? fn(array) : array;
           });
+        } catch (ex) {
         }
         return result;
       },
@@ -344,13 +276,6 @@ angular.module('dashboard')
         return d3.max(d3.values(this.processorHierarchyLevels));
       }
     };
-
-    function _getOrCreate(obj, prop, init) {
-      if (!obj.hasOwnProperty(prop)) {
-        obj[prop] = init;
-      }
-      return obj[prop];
-    }
 
     function _keysAsNum(object) {
       return _.map(Object.keys(object), function(key) {

@@ -22,8 +22,8 @@ angular.module('dashboard')
 
         var lineChartOptionBase = {
           height: '108px',
-          visibleDataPointsNum: conf.metricsChartDataCount,
-          data: _.times(conf.metricsChartDataCount, function() {
+          visibleDataPointsNum: conf.metricsDataPointsP5M,
+          data: _.times(conf.metricsDataPointsP5M, function() {
             return {x: '', y: '-'};
           }),
           seriesNames: $scope.tasks.selected
@@ -54,43 +54,45 @@ angular.module('dashboard')
           options: durationChartOptions
         };
 
-        function updateMetricsCharts(metricsProvider) {
-          var processorId = $scope.processor.id;
-          var timeLabel = moment().format('HH:mm:ss');
-          var receivedMessages = metricsProvider.getReceivedMessages(processorId);
-          var sentMessages = metricsProvider.getSentMessages(processorId);
-          var messageProcessingTime = metricsProvider.getMessageProcessingTime(processorId);
-          var messageReceiveLatency = metricsProvider.getMessageReceiveLatency(processorId);
-
-          function filterUnselectedTasks(array) {
-            return _.map($scope.selectedTaskIds, function(id) {
-              return array[id];
-            });
+        $scope.$watchCollection('metrics', function(metrics) {
+          if (angular.isObject(metrics)) {
+            updateMetricsCharts(metrics);
           }
+        });
 
+        function updateMetricsCharts(metrics) {
+          var timeLabel = moment().format('HH:mm:ss');
           $scope.receiveMessageRateChart.data = [{
             x: timeLabel,
-            y: filterUnselectedTasks(receivedMessages.rate)
+            y: extractMessageThroughput(metrics.receiveThroughput)
           }];
           $scope.sendMessageRateChart.data = [{
             x: timeLabel,
-            y: filterUnselectedTasks(sentMessages.rate)
+            y: extractMessageThroughput(metrics.sendThroughput)
           }];
           $scope.processingTimeChart.data = [{
             x: timeLabel,
-            y: filterUnselectedTasks(messageProcessingTime)
+            y: extractTimeAverage(metrics.processTime)
           }];
           $scope.receiveLatencyChart.data = [{
             x: timeLabel,
-            y: filterUnselectedTasks(messageReceiveLatency)
+            y: extractTimeAverage(metrics.receiveLatency)
           }];
         }
 
-        $scope.$watchCollection('dag', function(dag) {
-          if (dag) {
-            updateMetricsCharts(dag);
-          }
-        });
+        function extractMessageThroughput(metrics) {
+          return extractSelectedMetricField(metrics, 'meanRate');
+        }
+
+        function extractTimeAverage(metrics) {
+          return extractSelectedMetricField(metrics, 'mean');
+        }
+
+        function extractSelectedMetricField(metrics, field) {
+          return _.map($scope.selectedTaskIds, function(taskId) {
+            return metrics[taskId].values[field];
+          });
+        }
       });
     }])
 ;

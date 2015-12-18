@@ -30,9 +30,9 @@
       </bar-chart>
     </div>
     <div class="col-md-12">
-      <h5>Pick one task to see metrics details</h5>
+      <h5>Task Metrics Inspector</h5>
       <ui-select theme="select2" multiple ng-model="tasks.selected">
-        <ui-select-match placeholder="Select tasks...">{{$item}}</ui-select-match>
+        <ui-select-match placeholder="Click here to pick tasks for inspection...">{{$item}}</ui-select-match>
         <ui-select-choices repeat="task in tasks.available|filter:$select.search">
           <span ng-bind="task"></span>
         </ui-select-choices>
@@ -40,7 +40,6 @@
 
       <div ng-if="tasks.selected.length>0">
         <br/>
-
         <div ng-include src="'views/apps/streamingapp/processor_task_charts.html?'+tasks.selected.length"
              ng-controller="StreamingAppProcessorTaskChartsCtrl"></div>
       </div>

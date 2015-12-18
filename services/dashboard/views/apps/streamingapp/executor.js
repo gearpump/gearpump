@@ -58,30 +58,7 @@ angular.module('dashboard')
         updateOverviewTable(executor);
       });
 
-      // JvmMetricsChartsCtrl will watch `$scope.metrics` and `$scope.historicalMetrics`.
-      $scope.$on('$destroy', function() {
-        $scope.destroyed = true;
-      });
-      models.$subscribe($scope,
-        function() {
-          return models.$get.appExecutorMetrics($scope.app.appId, executor0.id);
-        },
-        function(metrics0) {
-          $scope.metrics = metrics0.$data();
-          metrics0.$subscribe($scope, function(metrics) {
-            $scope.metrics = metrics;
-          });
-        });
-      models.$subscribe($scope,
-        function() {
-          return models.$get.appExecutorHistoricalMetrics($scope.app.appId, executor0.id,
-            conf.metricsChartSamplingRate, conf.metricsChartDataCount);
-        },
-        function(historicalMetrics0) {
-          $scope.historicalMetrics = historicalMetrics0.$data();
-          historicalMetrics0.$subscribe($scope, function(metrics) {
-            $scope.historicalMetrics = metrics;
-          });
-        });
+      // Delegate JvmMetrics directive to manage metrics
+      $scope.queryMetricsFnRef = models.$get.masterMetrics;
     }])
 ;

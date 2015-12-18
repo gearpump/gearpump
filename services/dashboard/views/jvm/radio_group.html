@@ -1,0 +1,12 @@
+<div class="row">
+  <div class="col-md-12 text-center">
+    <div class="btn-group btn-group-xs">
+      <button ng-repeat="(value, text) in options track by $index"
+              type="button" class="btn btn-default btn-default-outline"
+              ng-style="{width: buttonWidth}"
+              ng-class="{'btn-primary btn-primary-outline': value == ngModel}"
+              ng-bind="text"
+              ng-click="toggle(value)"></button>
+    </div>
+  </div>
+</div>

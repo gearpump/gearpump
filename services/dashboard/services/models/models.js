@@ -39,12 +39,13 @@ angular.module('dashboard')
        *   `$data` - return pure model data without these two methods.
        */
       function get(path, decodeFn, args) {
+        args = args || {};
         return restapi.get(path).then(function(response) {
           var oldModel;
           var model = decodeFn(response.data, args);
 
           model.$subscribe = function(scope, onData, onError) {
-            restapi.subscribe(path, scope, function(data) {
+            restapi.subscribe(args.pathOverride || path, scope, function(data) {
               try {
                 var newModel = decodeFn(data, args);
                 if (!_.isEqual(newModel, oldModel)) {
@@ -56,7 +57,7 @@ angular.module('dashboard')
                   return onError(data);
                 }
               }
-            }, (args || {}).period);
+            }, args.period);
           };
 
           model.$data = function() {
@@ -221,11 +222,6 @@ angular.module('dashboard')
             configLink: restapi.appExecutorConfigLink(obj.appId, obj.id)
           });
         },
-        appMetricsOld: function(wrapper) {
-          return _.map(wrapper.metrics, function(obj) {
-            return Metrics.$auto(obj, /*addMeta=*/true);
-          });
-        },
         /** Return a map. the key is processor id, the value is an array of its stalling tasks */
         appStallingTasks: function(wrapper) {
           var result = _.groupBy(wrapper.tasks, 'processorId');
@@ -235,69 +231,42 @@ angular.module('dashboard')
           return result;
         },
         metrics: function(wrapper, args) {
-          var metrics = decoder._metrics(wrapper);
-          // Unbox one element array as object
-          _.forEach(metrics, function(metricsGroup) {
-            _.forEach(metricsGroup, function(timeSortedArray, path) {
-              metricsGroup[path] = _.last(timeSortedArray);
-            });
-          });
-
-          // Reduce 2d array to 1d, if we want to filter particular search path.
+          var metrics = decoder._metricsGroups(wrapper);
+          // Reduce nested array by one level, if we want to filter particular search path.
           if (args.filterPath) {
             decoder._removeUnrelatedMetricsFrom2dArray(metrics, args.filterPath);
           }
           return metrics;
         },
-        /** Decode metrics and desample them by a given period and a given number of points. */
-        historicalMetricsDesampled: function(wrapper, args) {
-          if (!args.hasOwnProperty('timeStart')) {
-            args.timeStart = Number.MIN_VALUE;
-          }
-
-          var metrics = decoder._metrics(wrapper);
-
-          // Calculate the range of metrics selection
-          var timeMax = args.timeStart;
-          _.forEach(metrics, function(metricsGroup) {
-            _.forEach(metricsGroup, function(timeSortedArray) {
-              timeMax = Math.max(timeMax, _.last(timeSortedArray).time);
+        appMetrics: function(wrapper, args) {
+          var metrics = decoder.metrics(wrapper, args);
+          return _.mapValues(metrics, function(values) {
+            return _.transform(values, function(result, metrics, path) {
+              var id = Number(_.last(path.split('.')).replace(/[^0-9]/g, ''));
+              result[id] = metrics;
             });
           });
-          var timeStop = Math.ceil(timeMax / args.period) * args.period;
-          if (timeStop > timeMax) {
-            timeStop -= args.period;
-          }
-          var timeStart = Math.max(args.timeStart, timeStop - args.period * args.points);
-
-          _.forEach(metrics, function(metricsGroup) {
-            _.forEach(metricsGroup, function(timeSortedArray, path) {
-              // Reduce selection range and then desample metrics
-              metricsGroup[path] = Metrics.$desample(
-                _.filter(timeSortedArray, function(metric) {
-                  return metric.time >= timeStart && metric.time <= timeStop;
-                }), args.period);
+        },
+        currentAppProcessorMetrics: function(wrapper, args) {
+          var metrics = decoder.metrics(wrapper, args);
+          return _.mapValues(metrics, function(values) {
+            return _.transform(values, function(result, metrics, path) {
+              var taskId = Number(_.last(path.split('.')).replace(/[^0-9]/g, ''));
+              result[taskId] = _.last(metrics);
             });
           });
-
-          // The function will be called periodically. To return new metrics only, we need to remember
-          // previous fetch start time. As a trick, we store the value into `args`, which can be
-          // accessed by the next function call.
-          args.timeStart = timeStop;
-
-          // Reduce 2d array to 1d, if we want to filter particular search path.
-          if (args.filterPath) {
-            decoder._removeUnrelatedMetricsFrom2dArray(metrics, args.filterPath);
-          }
-          return metrics;
+        },
+        currentAppTaskMetrics: function(wrapper, args) {
+          var metrics = decoder.metrics(wrapper, args);
+          return _.mapValues(metrics[args.keyToExtract] || {}, _.last);
         },
         /**
          * Note that it returns a 2d associative array.
          * The 1st level key is the metric class (e.g. memory.total.used)
-         * The snd level key is the object path (e.g. master or app0.processor0)
+         * The 2nd level key is the object path (e.g. master or app0.processor0)
          * The value is an array of metrics, which are sorted by time.
          */
-        _metrics: function(wrapper) {
+        _metricsGroups: function(wrapper) {
           var result = {};
           _.forEach(wrapper.metrics, function(obj) {
             var metric = Metrics.$auto(obj);
@@ -335,12 +304,8 @@ angular.module('dashboard')
           return get('master',
             decoder.master);
         },
-        masterMetrics: function() {
-          return getter._metrics('master/metrics/', 'master');
-        },
-        masterHistoricalMetrics: function(period, points) {
-          return getter._historicalMetrics('master/metrics/', 'master',
-            period, points);
+        masterMetrics: function(all) {
+          return getter._metrics('master/metrics/', 'master', all);
         },
         partitioners: function() {
           return get('master/partitioners',
@@ -354,12 +319,8 @@ angular.module('dashboard')
           return get('worker/' + workerId,
             decoder.worker);
         },
-        workerMetrics: function(workerId) {
-          return getter._metrics('worker/' + workerId + '/metrics/', 'worker' + workerId);
-        },
-        workerHistoricalMetrics: function(workerId, period, points) {
-          return getter._historicalMetrics('worker/' + workerId + '/metrics/', 'worker' + workerId,
-            period, points);
+        workerMetrics: function(workerId, all) {
+          return getter._metrics('worker/' + workerId + '/metrics/', 'worker' + workerId, all);
         },
         apps: function() {
           return get('master/applist',
@@ -370,43 +331,52 @@ angular.module('dashboard')
             decoder.app);
         },
         /** Note that executor related metrics will be excluded. */
-        appMetrics: function(appId) {
-          var params = '?readOption=readLatest';
-          return get('appmaster/' + appId + '/metrics/app' + appId + '.processor*' + params,
-            decoder.appMetricsOld);
-        },
-        appHistoricalMetrics: function(appId, period, points) {
-          return get('appmaster/' + appId + '/metrics/app' + appId + '.processor*' + '?readOption=readRecent',
-            decoder.historicalMetricsDesampled, {
-              period: period, points: points
+        appMetrics: function(appId, all) {
+          var filterPath = '';
+          return getter._metrics(
+            'appmaster/' + appId + '/metrics/app' + appId, filterPath, all, {
+              aggregator: 'io.gearpump.streaming.metrics.ProcessorAggregator',
+              decoder: decoder.appMetrics
             });
+        },
+        currentAppProcessorMetrics: function(appId, processorId) {
+          var params = '?readOption=readLatest';
+          return get('appmaster/' + appId + '/metrics/app' + appId + '.processor' + processorId + params,
+            decoder.currentAppProcessorMetrics);
+        },
+        currentAppTaskMetrics: function(appId, taskClass) {
+          var className = _.last(taskClass.split('.')); // meanwhile backend does not support package name
+          var classFilter = '*' + className;
+          return get('appmaster/' + appId + '/metrics/app' + appId + classFilter + '?readOption=readLatest',
+            decoder.currentAppTaskMetrics, {keyToExtract: className});
         },
         appExecutor: function(appId, executorId) {
           return get('appmaster/' + appId + '/executor/' + executorId,
             decoder.appExecutor);
         },
-        appExecutorMetrics: function(appId, executorId) {
+        appExecutorMetrics: function(appId, executorId, all) {
           return getter._metrics(
-            'appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId);
-        },
-        appExecutorHistoricalMetrics: function(appId, executorId, period, count) {
-          return getter._historicalMetrics(
-            'appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId,
-            period, count);
+            'appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId, all);
         },
         appStallingTasks: function(appId) {
           return get('appmaster/' + appId + '/stallingtasks',
             decoder.appStallingTasks);
         },
-        _metrics: function(pathPrefix, path) {
-          return get(pathPrefix + path + '?readOption=readLatest',
-            decoder.metrics, {filterPath: path});
-        },
-        _historicalMetrics: function(pathPrefix, path, period, points) {
-          return get(pathPrefix + path + "?readOption=readRecent",
-            decoder.historicalMetricsDesampled, {
-              period: period, points: points, filterPath: path
-            });
+        _metrics: function(pathPrefix, path, all, args) {
+          args = args || {};
+          args.filterPath = args.filterPath || path;
+          var aggregatorArg = angular.isString(args.aggregator) ?
+            ('&aggregator=' + args.aggregator) : '';
+          var d = args.decoder || decoder.metrics;
+          if (all) {
+            return get(pathPrefix + path + '?readOption=readHistory' + aggregatorArg,
+              d, args);
+          } else {
+            return get(pathPrefix + path + '?readOption=readRecent' + aggregatorArg,
+              d, angular.extend({
+                pathOverride: pathPrefix + path + '?readOption=readLatest' + aggregatorArg
+              }, args));
+          }
         }
       };
 
@@ -414,16 +384,21 @@ angular.module('dashboard')
         $get: getter,
         /** Attempts to get model and then subscribe changes as long as the scope is valid. */
         $subscribe: function(scope, getModelFn, onData) {
+          var shouldCancel = false;
+          scope.$on('$destroy', function() {
+            shouldCancel = true;
+          });
           function trySubscribe() {
-            if (scope.destroyed) {
+            if (shouldCancel) {
               return;
             }
             getModelFn().then(function(data) {
               onData(data);
-            }, /*onerror=*/function(response) {
+            }, /*onerror=*/function() {
               setTimeout(trySubscribe, conf.restapiQueryInterval);
             });
           }
+
           trySubscribe();
         },
         // TODO: scalajs should return a app.details object with dag, if it is a streaming application.
