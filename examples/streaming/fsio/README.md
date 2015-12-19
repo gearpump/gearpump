@@ -18,14 +18,9 @@ In order to run the example:
   ```bash
   ./target/pack/bin/gear app -jar ./examples/target/$SCALA_VERSION_MAJOR/gearpump-examples-assembly-$VERSION.jar io.gearpump.streaming.examples.sol.SOL -input $INPUT_FILE_PATH -output $OUTPUT_DIRECTORY
   ```
-  4. Stop the applcation:<br>
+  4. Stop the application:<br>
   ```bash
   ./target/pack/bin/gear kill -appid $APPID
   ```
-  
+
   Note that the output parameter should be a directory.
-
-
-
-
-
