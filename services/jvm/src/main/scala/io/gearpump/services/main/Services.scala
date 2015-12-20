@@ -38,7 +38,7 @@ object Services extends AkkaApp with ArgumentsParser {
   override val description = "UI Server"
 
   override def akkaConfig: Config = {
-    ClusterConfig.load.ui
+    ClusterConfig.ui()
   }
 
   override def help: Unit = {
@@ -50,7 +50,7 @@ object Services extends AkkaApp with ArgumentsParser {
     val argConfig = parse(args)
     var akkaConf =
       if (argConfig.exists("config")) {
-        ClusterConfig.load(argConfig.getString("config")).ui
+        ClusterConfig.ui(argConfig.getString("config"))
       } else {
         inputAkkaConf
       }

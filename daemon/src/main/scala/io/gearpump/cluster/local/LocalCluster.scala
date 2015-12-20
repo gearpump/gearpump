@@ -83,6 +83,6 @@ class LocalCluster(inputConfig: Config) {
 
 object LocalCluster{
   def apply(): LocalCluster = {
-    new LocalCluster(ClusterConfig.master)
+    new LocalCluster(ClusterConfig.master())
   }
 }

@@ -43,7 +43,7 @@ class Subscription(
     maxPendingMessageCount: Int = MAX_PENDING_MESSAGE_COUNT,
     ackOnceEveryMessageCount: Int = ONE_ACKREQUEST_EVERY_MESSAGE_COUNT) {
 
-  assert(maxPendingMessageCount > ackOnceEveryMessageCount)
+  assert(maxPendingMessageCount >= ackOnceEveryMessageCount)
   assert(maxPendingMessageCount  < Short.MaxValue / 2)
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)

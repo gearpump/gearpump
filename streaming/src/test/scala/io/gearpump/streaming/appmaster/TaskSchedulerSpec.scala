@@ -41,7 +41,7 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
 
   val dag = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
 
-  val config = ClusterConfig.load.default
+  val config = ClusterConfig.default()
 
   "TaskScheduler" should {
     "schedule tasks on different workers properly according user's configuration" in {

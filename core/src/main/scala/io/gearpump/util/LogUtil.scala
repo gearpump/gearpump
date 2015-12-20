@@ -81,10 +81,10 @@ object LogUtil {
 
     processType match {
       case ProcessType.APPLICATION =>
-        props.setProperty("log4j.rootLogger", "${gearpump.application.logger}")
+        props.setProperty("log4j.rootAppender", "${gearpump.application.logger}")
         props.setProperty("gearpump.application.log.rootdir", applicationLogDir(config).getAbsolutePath)
       case _ =>
-        props.setProperty("log4j.rootLogger", "${gearpump.root.logger}")
+        props.setProperty("log4j.rootAppender", "${gearpump.root.logger}")
         props.setProperty("gearpump.log.dir", daemonLogDir(config).getAbsolutePath)
     }
 

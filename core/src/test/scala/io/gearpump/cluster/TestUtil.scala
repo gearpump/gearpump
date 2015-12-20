@@ -20,9 +20,8 @@ package io.gearpump.cluster
 import akka.actor._
 
 object TestUtil {
-  val rawConfig = ClusterConfig.load("test.conf")
-  val DEFAULT_CONFIG = rawConfig.default
-  val MASTER_CONFIG = rawConfig.master
+  val DEFAULT_CONFIG = ClusterConfig.default("test.conf")
+  val MASTER_CONFIG = ClusterConfig.master("test.conf")
 
   class DummyAppMaster(context: AppMasterContext, app: AppDescription) extends ApplicationMaster {
     context.masterProxy ! (context, app)
@@ -32,4 +31,3 @@ object TestUtil {
 
   val dummyApp : AppDescription = AppDescription("dummy", classOf[DummyAppMaster].getName, UserConfig.empty)
 }
-

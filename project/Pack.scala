@@ -11,6 +11,11 @@ object Pack extends sbt.Build {
     "${PROG_HOME}/lib/yarn/*"
   )
 
+  val applicationClassPath = daemonClassPath ++ Seq(
+    // current working directory
+    "."
+  )
+
   val serviceClassPath = Seq(
     "${PROG_HOME}/conf",
     "${PROG_HOME}/lib/daemon/*",
@@ -71,7 +76,7 @@ object Pack extends sbt.Build {
           // On windows, it may report shell error "command line too long"
           packExpandedClasspath := false,
           packExtraClasspath := Map(
-            "gear" -> daemonClassPath,
+            "gear" -> applicationClassPath,
             "local" -> daemonClassPath,
             "master" -> daemonClassPath,
             "worker" -> daemonClassPath,

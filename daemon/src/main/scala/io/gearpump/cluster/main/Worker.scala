@@ -32,7 +32,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 object Worker extends AkkaApp with ArgumentsParser {
-  override def akkaConfig = ClusterConfig.load.worker
+  override def akkaConfig = ClusterConfig.worker()
 
   override val description = "Start a worker daemon"
 

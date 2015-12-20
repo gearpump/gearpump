@@ -270,7 +270,7 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
   )
 
   override def akkaConfig: Config = {
-    ClusterConfig.load.ui
+    ClusterConfig.ui()
   }
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {
