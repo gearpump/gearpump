@@ -38,16 +38,20 @@ object ClusterConfigSource {
    */
   def apply(filePath: String): ClusterConfigSource = {
 
-    var config = ConfigFactory.parseFileAnySyntax(new File(filePath),
-      ConfigParseOptions.defaults.setAllowMissing(true))
-
-    if (null == config || config.isEmpty) {
-      config = ConfigFactory.parseResourcesAnySyntax(filePath,
+    if (null == filePath) {
+      new ClusterConfigSourceImpl(ConfigFactory.empty())
+    } else {
+      var config = ConfigFactory.parseFileAnySyntax(new File(filePath),
         ConfigParseOptions.defaults.setAllowMissing(true))
-    }
-    config
 
-    new ClusterConfigSourceImpl(config)
+      if (null == config || config.isEmpty) {
+        config = ConfigFactory.parseResourcesAnySyntax(filePath,
+          ConfigParseOptions.defaults.setAllowMissing(true))
+      }
+      config
+
+      new ClusterConfigSourceImpl(config)
+    }
   }
 
   implicit def FilePathToClusterConfigSource(filePath: String): ClusterConfigSource = {

@@ -98,6 +98,8 @@ class LaunchCluster(
   }
 
   def saveConfig(appId: ApplicationId, output: String): Future[File] = {
+    LOG.info(s"Trying to download active configuration to output path: " + output)
+    LOG.info(s"Resolving YarnAppMaster ActorRef for application " + appId)
     val appMaster = appMasterResolver.resolve(appId)
     val future = askActor[ActiveConfig](appMaster, GetActiveConfig(host)).map(_.config)
     import scala.concurrent.duration._
@@ -156,7 +158,7 @@ object LaunchCluster extends AkkaApp with ArgumentsParser {
   val OUTPUT = "output"
 
   override protected def akkaConfig: Config = {
-    ClusterConfig.load.default
+    ClusterConfig.default()
   }
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -176,10 +178,10 @@ object LaunchCluster extends AkkaApp with ArgumentsParser {
     val yarnConfig = new YarnConfig()
     val fs = new FileSystem(yarnConfig)
     val yarnClient = new YarnClient(yarnConfig)
-    val actorSystem = ActorSystem("launchCluster")
+    val akkaConf = updateConf(inputAkkaConf, parsed)
+    val actorSystem = ActorSystem("launchCluster", akkaConf)
     val appMasterResolver = new AppMasterResolver(yarnClient, actorSystem)
 
-    val akkaConf = updateConf(inputAkkaConf, parsed)
     val client = new LaunchCluster(akkaConf, yarnConfig, yarnClient, fs, actorSystem, appMasterResolver)
 
     val name = parsed.getString(NAME)

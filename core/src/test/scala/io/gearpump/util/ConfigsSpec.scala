@@ -58,6 +58,16 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
     file.delete()
   }
 
+  "ClusterConfigSource" should "return empty for non-exist files" in {
+    val source = ClusterConfigSource("non-exist")
+    var config = source.getConfig
+    assert(config.isEmpty)
+
+    val nullCheck = ClusterConfigSource(null)
+    config = nullCheck.getConfig
+    assert(config.isEmpty)
+  }
+
   "User Config" should "work" in {
 
     implicit val system = ActorSystem("forSerialization")

@@ -23,8 +23,10 @@ import java.io.IOException
 import akka.actor.{ActorRef, ActorSystem}
 import io.gearpump.experiments.yarn.glue.Records.ApplicationId
 import io.gearpump.experiments.yarn.glue.YarnClient
+import io.gearpump.util.LogUtil
 import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.methods.GetMethod
+import org.slf4j.Logger
 
 import scala.util.Try
 
@@ -32,9 +34,12 @@ import scala.util.Try
  * Resolve AppMaster ActorRef
  */
 class AppMasterResolver(yarnClient: YarnClient, system: ActorSystem) {
+  val LOG = LogUtil.getLogger(getClass)
+  val RETRY_INTERVAL_MS = 3000 // ms
 
   def resolve(appId: ApplicationId, timeoutSeconds: Int = 30): ActorRef = {
-    retry(connect(appId), timeoutSeconds)
+    val appMaster = retry(connect(appId), 1 + timeoutSeconds * 1000 / RETRY_INTERVAL_MS)
+    appMaster
   }
 
   private def connect(appId: ApplicationId): ActorRef = {
@@ -42,9 +47,11 @@ class AppMasterResolver(yarnClient: YarnClient, system: ActorSystem) {
     val client = new HttpClient()
     val appMasterPath = s"${report.getOriginalTrackingUrl}/supervisor-actor-path"
     val get = new GetMethod(appMasterPath)
-    var status = client.executeMethod(get)
+    val status = client.executeMethod(get)
     if (status == 200) {
-      system.actorFor(get.getResponseBodyAsString)
+      val response = get.getResponseBodyAsString
+      LOG.info("Successfully resolved AppMaster address: " + response)
+      system.actorFor(response)
     } else {
       throw new IOException("Fail to resolve AppMaster address, please make sure " +
         s"${report.getOriginalTrackingUrl} is accessible...")
@@ -54,12 +61,12 @@ class AppMasterResolver(yarnClient: YarnClient, system: ActorSystem) {
   private def retry(fun: => ActorRef, times: Int): ActorRef = {
     var index = 0
     var result: ActorRef = null
-    while (index < 30 && result == null) {
+    while (index < times && result == null) {
+      Thread.sleep(RETRY_INTERVAL_MS)
       index += 1
       val tryConnect = Try(fun)
       if (tryConnect.isFailure) {
-        Console.err.println(s"Failed to connect(tried $index)... "  + tryConnect.failed.get.getMessage)
-        Thread.sleep(1000)
+        Console.err.println(s"Failed to connect YarnAppMaster(tried $index)... "  + tryConnect.failed.get.getMessage)
       } else {
         result = tryConnect.get
       }

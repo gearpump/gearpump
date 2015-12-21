@@ -14,7 +14,7 @@ trait AkkaApp {
   def help: Unit
 
   protected def akkaConfig: Config = {
-    ClusterConfig.load.default
+    ClusterConfig.default()
   }
 
   def main(args: Array[String]): Unit = {

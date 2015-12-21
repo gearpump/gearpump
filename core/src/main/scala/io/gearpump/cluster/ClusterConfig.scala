@@ -89,6 +89,7 @@ class ClusterConfig private(systemProperties : Config, custom : Config,
 
 object ClusterConfig {
 
+  val APPLICATION = "application.conf"
   val LOG = LogUtil.getLogger(getClass)
 
   /**
@@ -111,17 +112,19 @@ object ClusterConfig {
    */
 
   /**
-   * try to load system property gearpump.config.file, or use application.conf
+   * try to load system property gearpump.config.file, or use configFile
+   *
+   *
    */
-  def load : ClusterConfig = {
+  private def load(configFile: String) : ClusterConfig = {
     val file = Option(System.getProperty(GEARPUMP_CUSTOM_CONFIG_FILE))
     file match {
       case Some(path) =>
         LOG.info("loading config file " + path + "..........")
-        load(path)
+        load(ClusterConfigSource(path))
       case None =>
         LOG.info("loading config file application.conf...")
-        load("application.conf")
+        load(ClusterConfigSource(configFile))
     }
   }
 
@@ -131,7 +134,7 @@ object ClusterConfig {
    * @return
    */
   def defaultConfig: Config = {
-    load.default
+    default(APPLICATION)
   }
 
   /**
@@ -139,34 +142,34 @@ object ClusterConfig {
    * Usually used when user want to start an client application.
    * @return
    */
-  def default: Config = {
-    load.default
+  def default(configFile: String = APPLICATION): Config = {
+    load(configFile).default
   }
 
   /**
    * configuration for master node
    * @return
    */
-  def master: Config = {
-    load.master
+  def master(configFile: String = null): Config = {
+    load(configFile).master
   }
 
   /*
    * configuration for worker node
    */
-  def worker: Config = {
-    load.worker
+  def worker(configFile: String = null): Config = {
+    load(configFile).worker
   }
 
   /**
    * configuration for UI server
    * @return
    */
-  def ui: Config = {
-    load.ui
+  def ui(configFile: String = null): Config = {
+    load(configFile).ui
   }
 
-  def load(source: ClusterConfigSource) : ClusterConfig = {
+  private[gearpump] def load(source: ClusterConfigSource) : ClusterConfig = {
     val user = source.getConfig
 
     val cluster = ConfigFactory.parseResourcesAnySyntax("gear.conf",

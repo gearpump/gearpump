@@ -156,11 +156,11 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
 
 object ClientContext {
 
-  def apply(): ClientContext = new ClientContext(ClusterConfig.load.default, null, null)
+  def apply(): ClientContext = new ClientContext(ClusterConfig.default(), null, null)
 
-  def apply(system: ActorSystem) = new ClientContext(ClusterConfig.load.default, system, null)
+  def apply(system: ActorSystem) = new ClientContext(ClusterConfig.default(), system, null)
 
-  def apply(system: ActorSystem, master: ActorRef) = new ClientContext(ClusterConfig.load.default, system, master)
+  def apply(system: ActorSystem, master: ActorRef) = new ClientContext(ClusterConfig.default(), system, master)
 
   def apply(config: Config): ClientContext = new ClientContext(config, null, null)
 

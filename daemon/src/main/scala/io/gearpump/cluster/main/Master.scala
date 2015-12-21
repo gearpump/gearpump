@@ -41,7 +41,7 @@ object Master extends AkkaApp with ArgumentsParser {
 
   private var LOG: Logger = LogUtil.getLogger(getClass)
 
-  override def akkaConfig: Config = ClusterConfig.load.master
+  override def akkaConfig: Config = ClusterConfig.master()
 
   override val options: Array[(String, CLIOption[Any])] =
     Array("ip"->CLIOption[String]("<master ip address>",required = true),
