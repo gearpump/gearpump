@@ -19,11 +19,14 @@ package io.gearpump.integrationtest.minicluster
 
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.integrationtest.Docker
+import org.apache.log4j.Logger
 
 /**
  * A command-line client to operate a Gearpump cluster
  */
 class CommandLineClient(host: String) {
+
+  private val LOG = Logger.getLogger(getClass)
 
   def listApps(): Array[String] = {
     execAndCaptureOutput("gear info").split("\n").filter(
@@ -41,7 +44,9 @@ class CommandLineClient(host: String) {
       _.startsWith(s"application: $appId")
     ).head
   } catch {
-    case ex: Throwable => ""
+    case ex: Throwable =>
+      LOG.warn(s"swallowed an exception: $ex")
+      ""
   }
 
   def submitAppAndCaptureOutput(jar: String, args: String = ""): String = {
@@ -53,10 +58,12 @@ class CommandLineClient(host: String) {
   }
 
   private def submitAppUse(launcher: String, jar: String, args: String = ""): Int = try {
-    execAndCaptureOutput(s"$launcher -jar $jar $args")
-      .split(" ").last.toInt
+    execAndCaptureOutput(s"$launcher -jar $jar $args").split("\n")
+      .filter(_.contains("The application id is ")).head.split(" ").last.toInt
   } catch {
-    case ex: Throwable => -1
+    case ex: Throwable =>
+      LOG.warn(s"swallowed an exception: $ex")
+      -1
   }
 
   def killApp(appId: Int): Boolean = {

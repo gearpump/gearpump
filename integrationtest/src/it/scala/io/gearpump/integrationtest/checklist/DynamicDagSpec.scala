@@ -23,6 +23,7 @@ import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.ProcessorSummary
 
 class DynamicDagSpec extends TestSpecBase {
+
   lazy val solJar = cluster.queryBuiltInExampleJars("sol-").head
   val splitTaskClass = "io.gearpump.streaming.examples.wordcount.Split"
   val sumTaskClass = "io.gearpump.streaming.examples.wordcount.Sum"
@@ -54,7 +55,7 @@ class DynamicDagSpec extends TestSpecBase {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
         laterProcessors.size == formerProcessors.size + 1
       })
-      processorhasThroughput(appId, laterProcessors.keySet.max, "receiveThroughput")
+      processorHasThroughput(appId, laterProcessors.keySet.max, "receiveThroughput")
     }
 
     "can replace up stream with wordcount's split processor (new processor will have metrics)" in {
@@ -70,7 +71,7 @@ class DynamicDagSpec extends TestSpecBase {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
         laterProcessors.size == formerProcessors.size + 1
       })
-      processorhasThroughput(appId, laterProcessors.keySet.max, "sendThroughput")
+      processorHasThroughput(appId, laterProcessors.keySet.max, "sendThroughput")
     }
 
     "fall back to last dag version when replacing a processor failid" in {
@@ -86,7 +87,7 @@ class DynamicDagSpec extends TestSpecBase {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
         laterProcessors.size == formerProcessors.size + 1
       })
-      processorhasThroughput(appId, laterProcessors.keySet.max, "receiveThroughput")
+      processorHasThroughput(appId, laterProcessors.keySet.max, "receiveThroughput")
 
       val fakeTaskClass = "io.gearpump.streaming.examples.wordcount.Fake"
       replaceProcessor(appId, laterProcessors.keySet.max, fakeTaskClass)
@@ -95,6 +96,7 @@ class DynamicDagSpec extends TestSpecBase {
       val processorsAfterFailure = restClient.queryStreamingAppDetail(appId).processors
       processorsAfterFailure.size shouldEqual laterProcessors.size
     }
+
   }
 
   private def replaceProcessor(
@@ -102,10 +104,10 @@ class DynamicDagSpec extends TestSpecBase {
       formerProcessorId: Int,
       newTaskClass: String,
       newProcessorDescription: String = "",
-      newparallelism: Int = 1): Unit = {
+      newParallelism: Int = 1): Unit = {
     val uploadedJar = restClient.uploadJar(wordCountJar)
     val replaceMe = new ProcessorDescription(formerProcessorId, newTaskClass,
-      newparallelism, newProcessorDescription,
+      newParallelism, newProcessorDescription,
       jar = uploadedJar)
 
     // exercise
@@ -113,7 +115,7 @@ class DynamicDagSpec extends TestSpecBase {
     success shouldBe true
   }
 
-  private def processorhasThroughput(appId: Int, processorId: Int, metrics: String): Unit = {
+  private def processorHasThroughput(appId: Int, processorId: Int, metrics: String): Unit = {
     Util.retryUntil({
       val actual = restClient.queryStreamingAppMetrics(appId, current = false,
         path = "processor" + processorId)
@@ -122,4 +124,5 @@ class DynamicDagSpec extends TestSpecBase {
       throughput.forall(_.value.asInstanceOf[Meter].count > 0L)
     })
   }
+  
 }
