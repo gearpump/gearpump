@@ -31,6 +31,7 @@ class StandaloneModeSuite extends Suites(
   new ConnectorKafkaSpec,
   new RestServiceSpec,
   new ExampleSpec,
+  new DynamicDagSpec,
   new StabilitySpec,
   new StormCompatibilitySpec
 

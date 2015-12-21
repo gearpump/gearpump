@@ -33,6 +33,7 @@ import io.gearpump.streaming.appmaster.DagManager.{DAGOperationResult, ReplacePr
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.ExecutorSummary
 import io.gearpump.util.{Constants, Graph}
+import org.apache.log4j.Logger
 import upickle.Js
 import upickle.default._
 
@@ -40,6 +41,8 @@ import upickle.default._
  * A REST client to operate a Gearpump cluster
  */
 class RestClient(host: String, port: Int) {
+
+  private val LOG = Logger.getLogger(getClass)
 
   implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
     case Js.Obj(verties, edges) =>
@@ -84,7 +87,9 @@ class RestClient(host: String, port: Int) {
     assert(result.success)
     result.appId
   } catch {
-    case ex: Throwable => -1
+    case ex: Throwable =>
+      LOG.warn(s"swallowed an exception: $ex")
+      -1
   }
 
   def queryApp(appId: Int): AppMasterData = {
@@ -172,7 +177,9 @@ class RestClient(host: String, port: Int) {
     upickle.default.read[DAGOperationResult](resp)
     true
   } catch {
-    case ex: Throwable => false
+    case ex: Throwable =>
+      LOG.warn(s"swallowed an exception: $ex")
+      false
   }
 
   def killAppMaster(appId: Int): Boolean = {
@@ -185,21 +192,27 @@ class RestClient(host: String, port: Int) {
     val hostname = jvmInfo(1)
     Docker.killProcess(hostname, pid)
   } catch {
-    case ex: Throwable => false
+    case ex: Throwable =>
+      LOG.warn(s"swallowed an exception: $ex")
+      false
   }
 
   def killApp(appId: Int): Boolean = try {
     val resp = callApi(s"appmaster/$appId", CRUD_DELETE)
     resp.contains("\"status\":\"success\"")
   } catch {
-    case ex: Throwable => false
+    case ex: Throwable =>
+      LOG.warn(s"swallowed an exception: $ex")
+      false
   }
 
   def restartApp(appId: Int): Boolean = try {
     val resp = callApi(s"appmaster/$appId/restart", CRUD_POST)
     upickle.default.read[Status](resp).success
   } catch {
-    case ex: Throwable => false
+    case ex: Throwable =>
+      LOG.warn(s"swallowed an exception: $ex")
+      false
   }
 
   private val CRUD_POST = "-X POST"
