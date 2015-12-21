@@ -12,14 +12,14 @@ Step1: Pre-release
   version in ThisBuild := "RELEASE_VERSION"
   ```
   
-3. Follow https://github.com/intel-hadoop/gearpump/blob/master/doc/CommitGuideline.md to submit a PR
+3. Follow https://github.com/gearpump/gearpump/blob/master/doc/CommitGuideline.md to submit a PR
 
 Step2: Release
 ==================
 1. Create a tag by ```git tag RELEASE_VERSION```
-2. ```git remote add upstream https://github.com/intel-hadoop/gearpump.git```
+2. ```git remote add upstream https://github.com/gearpump/gearpump.git```
 3. ```git push upstream RELEASE_VERSION```
-4. Change the release notes under https://github.com/intel-hadoop/gearpump/releases
+4. Change the release notes under https://github.com/gearpump/gearpump/releases
 
 Step3: Post-Release
 ==================
@@ -29,7 +29,7 @@ Step3: Post-Release
    version in ThisBuild := "NEXT_SNPASHOT_VERSION"
    ```
    where NEXT_SNPASHOT_VERSION must end with "-SNAPSHOT". For example, 0.2.3-SNPASHOT is a good snapshot version, 0.2.3 is NOT
-2. Make PR by following https://github.com/intel-hadoop/gearpump/blob/master/doc/CommitGuideline.md 
+2. Make PR by following https://github.com/gearpump/gearpump/blob/master/doc/CommitGuideline.md 
 
 
 Done!!!
