@@ -36,7 +36,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
 
   import io.gearpump.transport.netty.Server._
 
-  val allChannels: ChannelGroup = new DefaultChannelGroup("storm-server")
+  val allChannels: ChannelGroup = new DefaultChannelGroup("gearpump-server")
 
   val system = context.system.asInstanceOf[ExtendedActorSystem]
 
