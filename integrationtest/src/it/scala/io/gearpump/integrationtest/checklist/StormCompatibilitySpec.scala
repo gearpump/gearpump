@@ -56,9 +56,8 @@ class StormCompatibilitySpec extends TestSpecBase {
   }
 
   "Storm over Gearpump" should {
-   "support basic topologies" in {
+    "support basic topologies" in {
       // exercise
-
       val appId = stormClient.submitStormApp(stormJar,
         mainClass = "storm.starter.ExclamationTopology", args = "exclamation")
 
@@ -67,7 +66,7 @@ class StormCompatibilitySpec extends TestSpecBase {
       Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
     }
 
-   "support to run a python version of wordcount (multilang support)" in {
+    "support to run a python version of wordcount (multilang support)" in {
       // exercise
       val appId = stormClient.submitStormApp(stormJar,
         mainClass = "storm.starter.WordCountTopology", args = "wordcount")
@@ -141,7 +140,7 @@ class StormCompatibilitySpec extends TestSpecBase {
             kafkaReader.read()
             detector.allReceived
           }
-       }
+        }
     }
   }
 
