@@ -10,11 +10,11 @@ Commit Guideline
 
 Pull Request merge process for Gearpump
 ========================
-1. Fork in github to create a /gearpump repo, as branches can't be created in intel-hadoop/gearpump. After fork, you will have a new repo at http://github.com/<git-user_id>/gearpump.
-2. Add intel-hadoop/gearpump as an external repo 'upstream' by following the [guide](https://help.github.com/articles/configuring-a-remote-for-a-fork/).
+1. Fork in github to create a /gearpump repo. After fork, you will have a new repo at http://github.com/<git-user_id>/gearpump.
+2. Add gearpump/gearpump as an external repo 'upstream' by following the [guide](https://help.github.com/articles/configuring-a-remote-for-a-fork/).
 
   ```bash
-  git remote add upstream https://github.com/intel-hadoop/gearpump.git
+  git remote add upstream https://github.com/gearpump/gearpump.git
   ```
 
 3. In local master branch, periodically sync the forked master with the main master with 
