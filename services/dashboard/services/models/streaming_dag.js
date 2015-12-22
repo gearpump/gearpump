@@ -223,41 +223,40 @@ angular.module('dashboard')
       },
 
       /** Return the historical message receive throughput as an array. */
-      toHistoricalMessageReceiveThroughputData: function(metrics) {
+      toHistoricalMessageReceiveThroughputData: function(metrics, timeResolution) {
         var processorIds = this._getProcessorIdsByType('sink');
-        return this._getProcessorHistoricalMetrics(processorIds,
+        return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['receiveThroughput'], 'movingAverage1m', d3.sum);
       },
 
       /** Return the historical message send throughput as an array. */
-      toHistoricalMessageSendThroughputData: function(metrics) {
+      toHistoricalMessageSendThroughputData: function(metrics, timeResolution) {
         var processorIds = this._getProcessorIdsByType('source');
-        return this._getProcessorHistoricalMetrics(processorIds,
+        return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['sendThroughput'], 'movingAverage1m', d3.sum);
       },
 
       /** Return the historical average message processing time as an array. */
-      toHistoricalMessageAverageProcessingTimeData: function(metrics) {
+      toHistoricalMessageAverageProcessingTimeData: function(metrics, timeResolution) {
         var processorIds = _keysAsNum(this.processors);
-        return this._getProcessorHistoricalMetrics(processorIds,
+        return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['processTime'], 'mean', d3.mean);
       },
 
       /** Return the historical average message receive latency as an array. */
-      toHistoricalAverageMessageReceiveLatencyData: function(metrics) {
+      toHistoricalAverageMessageReceiveLatencyData: function(metrics, timeResolution) {
         var processorIds = _keysAsNum(this.processors);
-        return this._getProcessorHistoricalMetrics(processorIds,
+        return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['receiveLatency'], 'mean', d3.mean);
       },
 
       /** Return particular historical metrics value of processor's tasks as an associative array. */
-      _getProcessorHistoricalMetrics: function(processorIds, metrics, field, fn) {
-        var resolution = 15000;
+      _getProcessorHistoricalMetrics: function(processorIds, timeResolution, metrics, field, fn) {
         var result = {};
         _.forEach(metrics, function(processorMetrics, processorId) {
           if (_.includes(processorIds, Number(processorId))) {
             _.forEach(processorMetrics, function(metric) {
-              var retainIntervalEndTime = Math.floor(metric.time / resolution) * resolution;
+              var retainIntervalEndTime = Math.floor(metric.time / timeResolution) * timeResolution;
               result[retainIntervalEndTime] = result[retainIntervalEndTime] || [];
               result[retainIntervalEndTime].push(metric.values[field]);
             });
