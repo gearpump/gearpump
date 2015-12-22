@@ -25,6 +25,7 @@ import io.gearpump.cluster.{UserConfig, MasterToAppMaster}
 import io.gearpump.cluster.MasterToAppMaster.AppMasterStatus
 import AppMaster.ExecutorBrief
 import io.gearpump.util.Graph
+import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 
 case class StreamAppMasterSummary(
     appId: Int,
@@ -42,7 +43,8 @@ case class StreamAppMasterSummary(
     user: String = null,
     appType: String = "streaming",
     homeDirectory: String = "",
-    logFile: String = "")
+    logFile: String = "",
+    historyMetricsConfig: HistoryMetricsConfig = null)
   extends AppMasterSummary
 
 case class TaskCount(count: Int)

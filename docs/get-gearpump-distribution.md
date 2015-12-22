@@ -30,7 +30,7 @@ If you choose to build the package from source code yourself, you can follow the
 ```bash
   ## Please use scala 2.11
   ## The target package path: target/gearpump-$VERSION.tar.gz
-  sbt clean assembly packArchiveZip ## Or use: sbt clean assembly pack-archive
+  sbt clean assembly packArchiveZip
 ```
 
   After the build, there will be a package file gearpump-${version}.tar.gz generated under target/ folder.
