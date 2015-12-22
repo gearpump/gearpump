@@ -80,7 +80,7 @@ object Pack extends sbt.Build {
             "storm" -> stormClassPath
           ),
 
-          packArchivePrefix := name.value + "-" + scalaVersion.value
+          packArchivePrefix := projectName + "-" + scalaBinaryVersion.value
 
         )
   ).dependsOn(core, streaming, services, yarn, storm)

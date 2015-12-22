@@ -49,6 +49,7 @@ object Build extends sbt.Build {
   val chillVersion = "0.6.0"
 
   val distDirectory = "output"
+  val projectName = "gearpump"
 
   override def projects: Seq[Project] = (super.projects.toList ++ BuildExample.projects.toList
       ++ Pack.projects.toList).toSeq
