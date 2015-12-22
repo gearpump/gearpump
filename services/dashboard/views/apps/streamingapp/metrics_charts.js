@@ -11,7 +11,7 @@ angular.module('dashboard')
     return {
       restrict: 'E',
       templateUrl: 'views/apps/streamingapp/metrics_charts.html',
-      controller: ['$scope', '$filter', '$timeout', 'models', function($scope, $filter, $timeout, models) {
+      controller: ['$scope', '$filter', '$interval', 'models', function($scope, $filter, $interval, models) {
         'use strict';
 
         var metricsProvider = $scope.dag;
@@ -55,10 +55,11 @@ angular.module('dashboard')
         function redrawMetricsCharts() {
 
           function _batch(chartNameBase, fnName, data) {
-            var chartData = metricsToChartData(metricsProvider[fnName](data));
             // set null will rebuild historical chart
             $scope[chartNameBase + 'HistChartOptions'] = null;
 
+            var chartData = metricsToChartData(metricsProvider[fnName](data,
+              $scope.metricsConfig.retainRecentDataIntervalMs));
             if ($scope.showCurrentMetrics) {
               $scope[chartNameBase + 'Data'] = chartData;
             } else {
@@ -71,7 +72,7 @@ angular.module('dashboard')
           }
 
           if (!$scope.showCurrentMetrics) {
-            $timeout.cancel(updateRecentMetricsPromise);
+            $interval.cancel(updateRecentMetricsPromise);
           }
 
           var queryMetricsPromise = $scope.showCurrentMetrics ?
@@ -85,7 +86,7 @@ angular.module('dashboard')
             _batch('averageMessageReceiveLatency', 'toHistoricalAverageMessageReceiveLatencyData', data);
 
             if ($scope.showCurrentMetrics) {
-              updateRecentMetricsPromise = $timeout(fillChartsWithCurrentMetrics,
+              updateRecentMetricsPromise = $interval(fillChartsWithCurrentMetrics,
                 sc.retainRecentDataIntervalMs);
             }
           });
@@ -93,16 +94,18 @@ angular.module('dashboard')
 
         function fillChartsWithCurrentMetrics() {
 
-          function _data(metric) {
+          function _data(metric, metricTime) {
             var metrics = {};
-            metrics[metricsProvider.metricsTime] = [metric];
+            metrics[metricTime] = [metric];
             return metricsToChartData(metrics);
           }
 
-          $scope.sendThroughputData = _data($scope.currentMessageSendRate);
-          $scope.receiveThroughputData = _data($scope.currentMessageReceiveRate);
-          $scope.averageProcessingTimeData = _data($scope.averageProcessingTime);
-          $scope.averageMessageReceiveLatencyData = _data($scope.averageMessageReceiveLatency);
+          var timeResolution = $scope.metricsConfig.retainRecentDataIntervalMs;
+          var metricTime = Math.floor(metricsProvider.metricsTime / timeResolution) * timeResolution;
+          $scope.sendThroughputData = _data($scope.currentMessageSendRate, metricTime);
+          $scope.receiveThroughputData = _data($scope.currentMessageReceiveRate, metricTime);
+          $scope.averageProcessingTimeData = _data($scope.averageProcessingTime, metricTime);
+          $scope.averageMessageReceiveLatencyData = _data($scope.averageMessageReceiveLatency, metricTime);
         }
 
         function metricsToChartData(metrics) {
