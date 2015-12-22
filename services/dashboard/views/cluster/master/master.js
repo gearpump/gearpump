@@ -51,12 +51,17 @@ angular.module('dashboard')
         ]);
       }
 
+      $scope.metricsConfig = master0.historyMetricsConfig;
       updateSummaryTable(master0);
       master0.$subscribe($scope, function(master) {
         updateSummaryTable(master);
       });
 
       // Delegate JvmMetrics directive to manage metrics
-      $scope.queryMetricsFnRef = models.$get.masterMetrics;
+      $scope.queryMetricsFnRef = function(all) {
+        return all ?
+          models.$get.masterHistMetrics() :
+          models.$get.masterMetrics($scope.metricsConfig.retainRecentDataIntervalMs);
+      };
     }])
 ;

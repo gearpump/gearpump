@@ -7,20 +7,26 @@
 
 <div class="row">
   <div class="col-md-12">
-    <div class="dashing-chart-container">
-      <h5>Memory Usage</h5>
-      <radio-group options="options" style="margin-bottom: 10px"
-                   ng-model="period"></radio-group>
-      <div ng-if="period === 'current'">
-        <line-chart
-          options-bind="::memoryRecentUsageChart.options"
-          datasource-bind="memoryRecentUsageChart.data"></line-chart>
-      </div>
-      <div>
-        <line-chart
-          ng-if="memoryHistUsageChartOptions != null"
-          options-bind="memoryHistUsageChartOptions"></line-chart>
-      </div>
+    <metrics-period-switcher
+      past-hours="samplingConfig.retainHistoryDataHours"
+      view-current="showCurrentMetrics">
+    </metrics-period-switcher>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <h5>Memory Usage</h5>
+
+    <div ng-if="showCurrentMetrics">
+      <line-chart
+        options-bind="::memoryRecentUsageChart.options"
+        datasource-bind="memoryRecentUsageChart.data"></line-chart>
+    </div>
+    <div>
+      <line-chart
+        ng-if="memoryHistUsageChartOptions != null"
+        options-bind="memoryHistUsageChartOptions"></line-chart>
     </div>
   </div>
 </div>

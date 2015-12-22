@@ -18,16 +18,16 @@
   <!-- todo: maybe share the controller with metrics_charts.js -->
   <div class="panel">
     <metrics
-      caption="Message Send Throughput"
-      help="Messages sent to external data sink"
+      caption="Source Processors Send Throughput"
+      help="Messages are sent from external data source"
       value="{{currentMessageSendRate|number:0}}"
       unit="msg/s"
       sub-text="Total messages sent: {{totalSentMessages|number:0}}"></metrics>
   </div>
   <div class="panel">
     <metrics
-      caption="Message Receive Throughput"
-      help="Messages received from external data source"
+      caption="Sink Processors Receive Throughput"
+      help="Messages are received by external data sink"
       value="{{currentMessageReceiveRate|number:0}}"
       unit="msg/s"
       sub-text="Total messages received: {{totalReceivedMessages|number:0}}"></metrics>

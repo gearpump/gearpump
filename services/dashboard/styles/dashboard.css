@@ -39,9 +39,9 @@ body {
 }
 
 /* Dashing default chart widgets does not have padding */
-.dashing-chart-container {
-  padding-bottom: 20px;
-  padding-top: 10px;
+.metrics-wrapper {
+  margin-top: 18px;
+  margin-bottom: 6px;
 }
 
 /* For dashing widget "indicator" shape="stripe", need to remove parent element padding (2 rules) */

@@ -17,8 +17,8 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('StreamingAppMetricsCtrl', ['$scope', '$interval', '$state', '$sortableTableBuilder', 'models', 'conf',
-    function($scope, $interval, $state, $stb, models, conf) {
+  .controller('StreamingAppMetricsCtrl', ['$scope', '$interval', '$sortableTableBuilder', 'models', 'conf',
+    function($scope, $interval, $stb, models, conf) {
       'use strict';
 
       var metricClassLookup = {
@@ -28,7 +28,7 @@ angular.module('dashboard')
         'Average Message Receive Latency': 'dag.metrics.histogram.receiveLatency'
       };
 
-      $scope.names = {available: Object.keys(metricClassLookup)};
+      $scope.names = {available: _.keys(metricClassLookup)};
       $scope.names.selected = $scope.names.available[0];
       $scope.types = function(name) {
         var clazz = metricClassLookup[name];
@@ -54,14 +54,14 @@ angular.module('dashboard')
         }, conf.restapiQueryInterval);
         queryTaskMetrics(watchClass);
 
-        stopWatchingFn = $scope.$watchCollection('metrics', function(metrics) {
+        stopWatchingFn = $scope.$watchCollection('taskMetrics', function(metrics) {
           if (angular.isObject(metrics)) {
             $scope.metricsGroup = watchClass.split('.')[2];
-            var table = {
-              meter: $scope.meterMetricsTable,
-              histogram: $scope.histogramMetricsTable
-            }[$scope.metricsGroup];
-            updateMetricsTable(table, metrics);
+            if ($scope.metricsGroup === 'meter') {
+              updateMetricsTable($scope.meterMetricsTable, metrics);
+            } else if ($scope.metricsGroup === 'histogram') {
+              updateMetricsTable($scope.histogramMetricsTable, metrics);
+            }
           }
         });
       });
@@ -69,7 +69,7 @@ angular.module('dashboard')
       function queryTaskMetrics(watchClass) {
         models.$get.currentAppTaskMetrics($scope.app.appId, watchClass)
           .then(function(metrics) {
-            $scope.metrics = metrics.$data();
+            $scope.taskMetrics = metrics.$data();
           });
       }
 
@@ -77,7 +77,8 @@ angular.module('dashboard')
         cols: [
           $stb.link('Path').key('taskPath').canSort().sortDefault().styleClass('col-sm-2').done(),
           $stb.text('Task Class').key('taskClass').canSort().styleClass('col-md-4 hidden-sm hidden-xs').done(),
-          $stb.number('Message Count').key('count').canSort().unit('msg').styleClass('col-md-4 col-sm-3').done(),
+          // right
+          $stb.number('Total Messages').key('count').canSort().unit('msg').styleClass('col-md-4 col-sm-3').done(),
           $stb.number('Mean Rate').key('meanRate').canSort().unit('msg/s').styleClass('col-md-1 col-sm-3').done(),
           $stb.number('MA 1m').key('movingAverage1m').canSort().unit('msg/s')
             .help('1-Minute Moving Average').styleClass('col-md-1 col-sm-3').done()

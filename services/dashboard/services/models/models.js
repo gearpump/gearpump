@@ -6,8 +6,8 @@
 angular.module('dashboard')
 
 /** TODO: to be absorbed as scalajs */
-  .factory('models', ['conf', 'restapi', 'locator', 'StreamingDag', 'Metrics',
-    function(conf, restapi, locator, StreamingDag, Metrics) {
+  .factory('models', ['$timeout', 'conf', 'restapi', 'locator', 'StreamingDag', 'Metrics',
+    function($timeout, conf, restapi, locator, StreamingDag, Metrics) {
       'use strict';
 
       var util = {
@@ -161,7 +161,7 @@ angular.module('dashboard')
             type: obj.hasOwnProperty('dag') ? 'streaming' : ''
           });
 
-          if (!moment(Number(obj.clock)).isValid()) {
+          if (obj.hasOwnProperty('clock') && !moment(Number(obj.clock)).isValid()) {
             console.warn({message: 'invalid application clock', clock: obj.clock});
             delete obj.clock;
           }
@@ -304,8 +304,14 @@ angular.module('dashboard')
           return get('master',
             decoder.master);
         },
-        masterMetrics: function(all) {
-          return getter._metrics('master/metrics/', 'master', all);
+        masterMetrics: function(updateInterval) {
+          return getter._masterMetrics({period: updateInterval});
+        },
+        masterHistMetrics: function() {
+          return getter._masterMetrics({all: true});
+        },
+        _masterMetrics: function(args) {
+          return getter._metrics('master/metrics/', 'master', args);
         },
         partitioners: function() {
           return get('master/partitioners',
@@ -319,8 +325,14 @@ angular.module('dashboard')
           return get('worker/' + workerId,
             decoder.worker);
         },
-        workerMetrics: function(workerId, all) {
-          return getter._metrics('worker/' + workerId + '/metrics/', 'worker' + workerId, all);
+        workerMetrics: function(workerId, updateInterval) {
+          return getter._workerMetrics(workerId, {period: updateInterval});
+        },
+        workerHistMetrics: function(workerId) {
+          return getter._workerMetrics(workerId, {all: true});
+        },
+        _workerMetrics: function(workerId, args) {
+          return getter._metrics('worker/' + workerId + '/metrics/', 'worker' + workerId, args);
         },
         apps: function() {
           return get('master/applist',
@@ -331,13 +343,19 @@ angular.module('dashboard')
             decoder.app);
         },
         /** Note that executor related metrics will be excluded. */
-        appMetrics: function(appId, all) {
-          var filterPath = '';
-          return getter._metrics(
-            'appmaster/' + appId + '/metrics/app' + appId, filterPath, all, {
-              aggregator: 'io.gearpump.streaming.metrics.ProcessorAggregator',
-              decoder: decoder.appMetrics
-            });
+        appMetrics: function(appId, updateInterval) {
+          return getter._appMetrics(appId, {period: updateInterval});
+        },
+        appHistMetrics: function(appId) {
+          return getter._appMetrics(appId, {all: true});
+        },
+        appLatestMetrics: function(appId) {
+          return getter._appMetrics(appId, {all: 'latest'});
+        },
+        _appMetrics: function(appId, args) {
+          args.aggregator = 'io.gearpump.streaming.metrics.ProcessorAggregator';
+          args.decoder = decoder.appMetrics;
+          return getter._metrics('appmaster/' + appId + '/metrics/app' + appId, '', args);
         },
         currentAppProcessorMetrics: function(appId, processorId) {
           var params = '?readOption=readLatest';
@@ -354,39 +372,44 @@ angular.module('dashboard')
           return get('appmaster/' + appId + '/executor/' + executorId,
             decoder.appExecutor);
         },
-        appExecutorMetrics: function(appId, executorId, all) {
+        appExecutorMetrics: function(appId, executorId, updateInterval) {
+          return getter._appExecutorMetrics(appId, executorId, {period: updateInterval});
+        },
+        appExecutorHistMetrics: function(appId, executorId) {
+          return getter._appExecutorMetrics(appId, executorId, {all: true});
+        },
+        _appExecutorMetrics: function(appId, executorId, args) {
           return getter._metrics(
-            'appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId, all);
+            'appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId, args);
         },
         appStallingTasks: function(appId) {
           return get('appmaster/' + appId + '/stallingtasks',
             decoder.appStallingTasks);
         },
-        _metrics: function(pathPrefix, path, all, args) {
+        _metrics: function(pathPrefix, path, args) {
           args = args || {};
-          args.filterPath = args.filterPath || path;
           var aggregatorArg = angular.isString(args.aggregator) ?
             ('&aggregator=' + args.aggregator) : '';
-          var d = args.decoder || decoder.metrics;
-          if (all) {
-            return get(pathPrefix + path + '?readOption=readHistory' + aggregatorArg,
-              d, args);
-          } else {
-            return get(pathPrefix + path + '?readOption=readRecent' + aggregatorArg,
-              d, angular.extend({
-                pathOverride: pathPrefix + path + '?readOption=readLatest' + aggregatorArg
-              }, args));
-          }
+          args.pathOverride = pathPrefix + path + '?readOption=readLatest' + aggregatorArg;
+          args.filterPath = path;
+
+          var readOption = args.all === true ? 'readHistory' :
+            (args.all === 'latest' ? 'readLatest' : 'readRecent');
+          return get(pathPrefix + path + '?readOption=' + readOption + aggregatorArg,
+            args.decoder || decoder.metrics, args
+          );
         }
       };
 
       return {
         $get: getter,
         /** Attempts to get model and then subscribe changes as long as the scope is valid. */
-        $subscribe: function(scope, getModelFn, onData) {
+        $subscribe: function(scope, getModelFn, onData, period) {
           var shouldCancel = false;
+          var promise;
           scope.$on('$destroy', function() {
             shouldCancel = true;
+            $timeout.cancel(promise);
           });
           function trySubscribe() {
             if (shouldCancel) {
@@ -395,7 +418,7 @@ angular.module('dashboard')
             getModelFn().then(function(data) {
               onData(data);
             }, /*onerror=*/function() {
-              setTimeout(trySubscribe, conf.restapiQueryInterval);
+              promise = $timeout(trySubscribe, period || conf.restapiQueryInterval);
             });
           }
 
