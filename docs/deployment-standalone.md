@@ -18,7 +18,7 @@ To install Gearpump, you at least need to change the configuration in conf/gear.
 
 Config	| Default value	| Description
 ------------ | ---------------|------------
-base.akka.remote.netty.tcp.hostname	| 127.0.0.1	 | Host or IP address of current machine. The ip/host need to be reachable from other machines in the cluster.
+gearpump.hostname	| 127.0.0.1	 | Host or IP address of current machine. The ip/host need to be reachable from other machines in the cluster.
 Gearpump.cluster.masters |	["127.0.0.1:3000"] |	List of all master nodes, with each item represents host and port of one master.
 gearpump.worker.slots	 | 100 | how many slots this worker has
 

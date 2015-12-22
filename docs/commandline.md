@@ -44,8 +44,9 @@ storm -verbose -config storm.yaml -jar storm-starter-${STORM_VERSION}.jar storm.
 To start a Gearpump Cluster on YARN, you can:
 
 ```bash
-yarnclient -version gearpump-0.6.2 -config conf/yarn.conf
+yarnclient launch -package /usr/lib/gearpump/gearpump-2.11-{{ site.GEARPUMP_VERSION }}.zip
 ```
+/usr/lib/gearpump/gearpump-2.11-{{ site.GEARPUMP_VERSION }}.zip should be available on HDFS.
 
 Please check [YARN Deployment Guide](deployment-yarn.html) for more information.
 

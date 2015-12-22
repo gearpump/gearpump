@@ -199,7 +199,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
           uptime = System.currentTimeMillis() - startTime,
           user = username,
           homeDirectory = userDir,
-          logFile = logFile.getAbsolutePath
+          logFile = logFile.getAbsolutePath,
+          historyMetricsConfig = getHistoryMetricsConfig
         )
       }
 
