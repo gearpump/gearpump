@@ -12,11 +12,16 @@ angular.module('dashboard')
       restrict: 'E',
       templateUrl: 'views/jvm/jvm_metrics.html',
       scope: {
+        samplingConfig: '=',
         queryMetricsFnRef: '&'
       },
-      controller: ['$scope', '$filter', '$propertyTableBuilder', '$echarts', 'conf',
-        function($scope, $filter, $ptb, $echarts, conf) {
+      controller: ['$scope', '$filter', '$propertyTableBuilder', '$echarts',
+        function($scope, $filter, $ptb, $echarts) {
           'use strict';
+
+          var sc = $scope.samplingConfig;
+          var currentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
+          var histChartPoints = sc.retainHistoryDataHours * 3600 * 1000 / sc.retainHistoryDataIntervalMs;
 
           // property table part
           var converter = {
@@ -37,7 +42,8 @@ angular.module('dashboard')
 
           $scope.jvmMetricsTable = _.map(metricsClassProps, function(prop) {
             var text = prop[0];
-            return $ptb.number(text).done();
+            var convertFn = prop[1];
+            return $ptb.number(text).value(convertFn(0)).done();
           });
 
           function updateMetricsTable(metrics) {
@@ -54,19 +60,18 @@ angular.module('dashboard')
           }
 
           // metrics charts part
-          $scope.options = {'current': 'Current', 'hist': 'Past 48 Hours'};
-          $scope.period = 'current';
+          $scope.showCurrentMetrics = true;
 
-          function rebuildChartsOnPeriodChanged(period) {
+          function rebuildChartsOnPeriodChanged() {
             // set null is a trick to rebuild historical charts
             $scope.memoryHistUsageChartOptions = null;
 
-            var all = 'hist' === String(period);
+            var all = !$scope.showCurrentMetrics;
             queryMetricsFn(all).then(function(metrics) {
               if (all) {
                 var options = angular.copy($scope.memoryRecentUsageChart.options);
                 options.data = makeMemoryUsageChartData(metrics);
-                options.visibleDataPointsNum = Math.max(options.data.length, conf.metricsDataPointsP48H);
+                options.visibleDataPointsNum = Math.max(options.data.length, histChartPoints);
                 $scope.memoryHistUsageChartOptions = options;
               } else {
                 updateRecentMetricsCharts(metrics);
@@ -77,7 +82,12 @@ angular.module('dashboard')
           var queryMetricsFn = $scope.queryMetricsFnRef();
           queryMetricsFn(/*all=*/false).then(function(metrics0) {
             $scope.metrics = metrics0.$data();
-            $scope.$watch('period', rebuildChartsOnPeriodChanged);
+            $scope.$watch('showCurrentMetrics', function(newVal, oldVal) {
+              if (angular.equals(newVal, oldVal)) {
+                return; // ignore initial notification
+              }
+              rebuildChartsOnPeriodChanged();
+            });
             metrics0.$subscribe($scope, function(metrics) {
               $scope.metrics = metrics;
             });
@@ -105,8 +115,8 @@ angular.module('dashboard')
 
           var lineChartOptionBase = {
             height: '168px',
-            visibleDataPointsNum: conf.metricsDataPointsP5M,
-            data: _.times(conf.metricsDataPointsP5M, function() {
+            visibleDataPointsNum: currentChartPoints,
+            data: _.times(currentChartPoints, function() {
               return {x: '', y: '-'};
             })
           };

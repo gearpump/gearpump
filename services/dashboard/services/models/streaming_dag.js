@@ -34,20 +34,20 @@ angular.module('dashboard')
       /** Update (or add) a set of metrics */
       updateMetrics: function(metrics) {
         var that = this;
-        var time = 0;
+        var timeMax = 0;
         _.forEach(metrics, function(metricsGroup, clazz) {
           _.forEach(metricsGroup, function(processorMetrics, processorId) {
             if (that.processors.hasOwnProperty(processorId)) {
               var metric = _.last(processorMetrics);
               that.metrics[processorId] = that.metrics[processorId] || {};
               that.metrics[processorId][clazz] = metric.values;
-              time = Math.max(time, metric.time);
+              timeMax = Math.max(timeMax, metric.time);
             }
           });
         });
 
-        if (time) {
-          this.metricsTime = time;
+        if (timeMax > 0) {
+          this.metricsTime = timeMax;
         }
       },
 
@@ -99,7 +99,8 @@ angular.module('dashboard')
       _getProcessorEdges: function(processors) {
         var result = {};
         _.forEach(this.edges, function(edge, edgeId) {
-          if (edge.source in processors && edge.target in processors) {
+          if (processors.hasOwnProperty(edge.source) &&
+            processors.hasOwnProperty(edge.target)) {
             result[edgeId] = edge;
           }
         });
@@ -113,7 +114,7 @@ angular.module('dashboard')
         _.forEach(processors, function(_, key) {
           var processorId = parseInt(key); // JavaScript object key type is always string
           weights[processorId] = this._calculateProcessorWeight(processorId);
-          processors[key].isStalled = key in this.stallingTasks;
+          processors[key].isStalled = this.stallingTasks.hasOwnProperty(processorId);
         }, this);
 
         var bandwidths = {};
@@ -251,24 +252,22 @@ angular.module('dashboard')
 
       /** Return particular historical metrics value of processor's tasks as an associative array. */
       _getProcessorHistoricalMetrics: function(processorIds, metrics, field, fn) {
+        var resolution = 15000;
         var result = {};
-        try {
-          // Iterate historical metrics by time
-          _.forEach(metrics, function(processorMetrics, processorId) {
-            if (processorId in processorIds) {
-              _.forEach(processorMetrics, function(metric) {
-                result[metric.time] = result[metric.time] || [];
-                result[metric.time].push(metric.values[field]);
-              });
-            }
-          });
+        _.forEach(metrics, function(processorMetrics, processorId) {
+          if (_.includes(processorIds, Number(processorId))) {
+            _.forEach(processorMetrics, function(metric) {
+              var retainIntervalEndTime = Math.floor(metric.time / resolution) * resolution;
+              result[retainIntervalEndTime] = result[retainIntervalEndTime] || [];
+              result[retainIntervalEndTime].push(metric.values[field]);
+            });
+          }
+        });
 
-          _.forEach(result, function(array, time) {
-            result[time] = _.isFunction(fn) ? fn(array) : array;
-          });
-        } catch (ex) {
-        }
-        return result;
+        _.forEach(result, function(array, time) {
+          result[time] = _.isFunction(fn) ? fn(array) : array;
+        });
+        return _keysSortedObject(result);
       },
 
       /** Return the depth of the hierarchy layout */
@@ -278,9 +277,15 @@ angular.module('dashboard')
     };
 
     function _keysAsNum(object) {
-      return _.map(Object.keys(object), function(key) {
-        return Number(key); // JavaScript object key type is always string
+      return _.map(_.keys(object), Number); // JavaScript object key type is always string
+    }
+
+    function _keysSortedObject(object) {
+      var result = {};
+      _.forEach(_.keys(object).sort(), function(key) {
+        result[key] = object[key];
       });
+      return result;
     }
 
     return StreamingDag;

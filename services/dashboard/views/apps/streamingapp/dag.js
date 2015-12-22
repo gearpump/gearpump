@@ -67,7 +67,7 @@ angular.module('dashboard')
       var draw = {
         removeDeadElements: function(visDataSet, aliveElementIds) {
           var ids = visDataSet.getIds().filter(function(id) {
-            return !(id in aliveElementIds);
+            return !aliveElementIds.hasOwnProperty(id);
           });
           if (ids.length) {
             // Batch removal is faster

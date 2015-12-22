@@ -21,9 +21,8 @@ angular.module('dashboard')
             cols: [
               $stb.indicator().key('status').canSort().styleClass('td-no-padding').done(),
               $stb.link('Name').key('id').canSort().sortDefault().styleClass('col-xs-4').done(),
-              $stb.link('Worker ID').key('worker').canSort().styleClass('col-xs-4').done(),
-              $stb.number('Task Count').key('tasks').canSort().styleClass('col-xs-4')
-                .help('AppMaster is a coordinator. It does not run any computing tasks.').done()
+              $stb.link('Worker').key('worker').canSort().styleClass('col-xs-4').done(),
+              $stb.number('Tasks').key('tasks').canSort().styleClass('col-xs-4').done()
             ],
             rows: null
           };
@@ -39,7 +38,7 @@ angular.module('dashboard')
                   },
                   id: {href: executor.pageUrl, text: executor.executorId === -1 ?
                     'AppMaster' : 'Executor ' + executor.executorId},
-                  worker: {href: executor.workerPageUrl, text: executor.workerId},
+                  worker: {href: executor.workerPageUrl, text: 'Worker ' + executor.workerId},
                   tasks: executor.taskCount || 0
                 };
               }));

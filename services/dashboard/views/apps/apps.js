@@ -67,9 +67,10 @@ angular.module('dashboard')
       function updateTable(apps) {
         $scope.appsTable.rows = $stb.$update($scope.appsTable.rows,
           _.map(apps, function(app) {
+            var pageUrl = app.isRunning ? app.pageUrl : '';
             return {
-              id: {href: app.pageUrl, text: app.appId},
-              name: {href: app.pageUrl, text: app.appName},
+              id: {href: pageUrl, text: app.appId},
+              name: {href: pageUrl, text: app.appName},
               state: {tooltip: app.status, condition: app.isRunning ? 'good' : '', shape: 'stripe'},
               akkaAddr: app.akkaAddr,
               user: app.user,

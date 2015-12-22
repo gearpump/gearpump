@@ -49,7 +49,7 @@ angular.module('dashboard')
         cols: [
           $stb.indicator().key('status').canSort().styleClass('td-no-padding').done(),
           $stb.link('Application').key('id').canSort().sortDefault().styleClass('col-xs-4').done(),
-          $stb.link('Executor ID').key('executors').canSort().styleClass('col-xs-4').done(),
+          $stb.link('Executor').key('executors').canSort().styleClass('col-xs-4').done(),
           $stb.number('Slots').key('slots').canSort().styleClass('col-xs-4').done()
         ],
         rows: null
@@ -86,6 +86,7 @@ angular.module('dashboard')
           }));
       }
 
+      $scope.metricsConfig = worker0.historyMetricsConfig;
       $scope.worker = worker0.$data();
       $scope.apps = apps0.$data();
       $scope.appsCount = Object.keys($scope.apps).length;
@@ -119,6 +120,10 @@ angular.module('dashboard')
       });
 
       // Delegate JvmMetrics directive to manage metrics
-      $scope.queryMetricsFnRef = models.$get.masterMetrics;
+      $scope.queryMetricsFnRef = function(all) {
+        return all ?
+          models.$get.workerHistMetrics(worker0.workerId) :
+          models.$get.workerMetrics(worker0.workerId, $scope.metricsConfig.retainRecentDataIntervalMs);
+      };
     }])
 ;

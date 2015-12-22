@@ -6,8 +6,8 @@
 angular.module('dashboard')
 
   // todo: refactoring required
-  .controller('StreamingAppProcessorTaskChartsCtrl', ['$scope', '$filter', '$interval', 'conf',
-    function($scope, $filter, $interval, conf) {
+  .controller('StreamingAppProcessorTaskChartsCtrl', ['$scope', '$filter',
+    function($scope, $filter) {
       'use strict';
 
       // rebuild the charts when `tasks` is changed.
@@ -20,10 +20,12 @@ angular.module('dashboard')
           return parseInt(taskName.substr(1));
         });
 
+        var sc = $scope.metricsConfig;
+        var currentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
         var lineChartOptionBase = {
           height: '108px',
-          visibleDataPointsNum: conf.metricsDataPointsP5M,
-          data: _.times(conf.metricsDataPointsP5M, function() {
+          visibleDataPointsNum: currentChartPoints,
+          data: _.times(currentChartPoints, function() {
             return {x: '', y: '-'};
           }),
           seriesNames: $scope.tasks.selected

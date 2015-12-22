@@ -22,9 +22,9 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('StreamingAppExecutorCtrl', ['$scope', '$stateParams', '$propertyTableBuilder',
-    'helper', 'restapi', 'conf', 'models', 'executor0',
-    function($scope, $stateParams, $ptb, helper, restapi, conf, models, executor0) {
+  .controller('StreamingAppExecutorCtrl', ['$scope', '$propertyTableBuilder',
+    'helper', 'restapi', 'models', 'executor0',
+    function($scope, $ptb, helper, restapi, models, executor0) {
       'use strict';
 
       $scope.executorName = executor0.id === -1 ?
@@ -51,6 +51,7 @@ angular.module('dashboard')
         ]);
       }
 
+      $scope.metricsConfig = $scope.app.historyMetricsConfig;
       $scope.executor = executor0.$data();
       updateOverviewTable($scope.executor);
       executor0.$subscribe($scope, function(executor) {
@@ -59,6 +60,11 @@ angular.module('dashboard')
       });
 
       // Delegate JvmMetrics directive to manage metrics
-      $scope.queryMetricsFnRef = models.$get.masterMetrics;
+      $scope.queryMetricsFnRef = function(all) {
+        return all ?
+          models.$get.appExecutorHistMetrics($scope.app.appId, executor0.id) :
+          models.$get.appExecutorMetrics($scope.app.appId, executor0.id,
+            $scope.metricsConfig.retainRecentDataIntervalMs);
+      };
     }])
 ;
