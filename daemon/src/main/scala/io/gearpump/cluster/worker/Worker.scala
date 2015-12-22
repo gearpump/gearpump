@@ -101,12 +101,14 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   }
 
   private var metricsInitialized = false
+
+  val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
+
   private def initializeMetrics: Unit = {
     // register jvm metrics
     Metrics(context.system).register(new JvmMetricsSet(s"worker${id}"))
 
     historyMetricsService = if (metricsEnabled) {
-      val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
       val historyMetricsService = {
         context.actorOf(Props(new HistoryMetricsService("worker" + id, getHistoryMetricsConfig)))
       }
@@ -192,7 +194,9 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         totalSlots,
         resource.slots,
         userDir,
-        jvmName = ManagementFactory.getRuntimeMXBean().getName()))
+        jvmName = ManagementFactory.getRuntimeMXBean().getName(),
+        historyMetricsConfig = getHistoryMetricsConfig)
+      )
     case ChangeExecutorResource(appId, executorId, usedResource) =>
       for (executor <- executorActorRef(appId, executorId);
            allocatedResource <- allocatedResources.get(executor)) {

@@ -17,6 +17,8 @@
  */
 package io.gearpump.cluster.master
 
+import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
+
 object MasterStatus {
   type Type = String
   val Synced = "synced"
@@ -32,6 +34,7 @@ case class MasterSummary(
   masterStatus: MasterStatus.Type,
   homeDirectory: String,
   activities: List[MasterActivity],
-  jvmName: String)
+  jvmName: String,
+  historyMetricsConfig: HistoryMetricsConfig = null)
 
 case class MasterActivity(time: Long, event: String)

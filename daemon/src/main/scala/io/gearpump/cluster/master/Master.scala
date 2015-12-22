@@ -82,8 +82,9 @@ private[cluster] class Master extends Actor with Stash {
   private val hostPort = HostPort(ActorUtil.getSystemAddress(context.system).hostPort)
 
   val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
+
+  val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
   val historyMetricsService = if (metricsEnabled) {
-    val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
     val historyMetricsService = {
       context.actorOf(Props(new HistoryMetricsService("master", getHistoryMetricsConfig)))
     }
@@ -190,7 +191,9 @@ private[cluster] class Master extends Actor with Stash {
           MasterStatus.Synced,
           userDir,
           List.empty[MasterActivity],
-          jvmName = ManagementFactory.getRuntimeMXBean().getName())
+          jvmName = ManagementFactory.getRuntimeMXBean().getName(),
+          historyMetricsConfig = getHistoryMetricsConfig
+        )
 
       sender ! MasterData(masterDescription)
 
