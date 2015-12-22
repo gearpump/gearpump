@@ -28,6 +28,9 @@ import io.gearpump.util.Constants
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
 import org.slf4j.Logger
 
+/**
+ * DFSJarStoreService store the uploaded jar on HDFS
+ */
 class DFSJarStoreService extends JarStoreService {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private var rootPath: Path = null

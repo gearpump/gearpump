@@ -43,6 +43,11 @@ import org.slf4j.Logger
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+/**
+ * Executor is child of AppMaster.
+ * It usually represents a JVM process. It is a container for all tasks.
+ */
+
 // TODO: What if Executor stuck in state DynamicDag and cannot get out???
 // For example, due to some message loss when there is network glitch.
 // Executor will hang there for ever???

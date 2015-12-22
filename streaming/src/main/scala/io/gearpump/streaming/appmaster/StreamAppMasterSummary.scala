@@ -50,11 +50,11 @@ case class StreamAppMasterSummary(
 case class TaskCount(count: Int)
 
 case class ProcessorSummary(
-    id: ProcessorId,
-    taskClass: String,
-    parallelism : Int,
-    description: String,
-    taskConf: UserConfig,
-    life: LifeTime,
-    executors: List[ExecutorId],
-    taskCount: Map[ExecutorId, TaskCount])
+  id: ProcessorId,
+  taskClass: String,
+  parallelism : Int,
+  description: String,
+  taskConf: UserConfig,
+  life: LifeTime,
+  executors: List[ExecutorId],
+  taskCount: Map[ExecutorId, TaskCount])

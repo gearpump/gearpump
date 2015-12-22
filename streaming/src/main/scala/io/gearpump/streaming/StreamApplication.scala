@@ -29,14 +29,32 @@ import io.gearpump.util.{Graph, ReferenceEqual}
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
+/**
+ * Processor is the blueprint for tasks.
+ *
+ */
 trait Processor[+T <: Task] extends ReferenceEqual {
 
+  /**
+   * How many tasks you want to use for this processor.
+   */
   def parallelism: Int
 
+  /**
+   * The custom [[UserConfig]], it is used to initialize a task in runtime.
+   */
   def taskConf: UserConfig
 
+  /**
+   * Some description text for this processor.
+   */
   def description: String
 
+  /**
+   * The task class, should be a subtype of Task.
+   *
+   * Each runtime instance of this class is a task.
+   */
   def taskClass: Class[_ <: Task]
 }
 
@@ -70,6 +88,13 @@ object Processor {
   }
 }
 
+/**
+ * Each processor has a LifeTime.
+ *
+ * When input message's timestamp is beyond current processor's lifetime,
+ * then it will not be processed by this processor.
+ *
+ */
 case class LifeTime(birth: TimeStamp, death: TimeStamp) {
   def contains(timestamp: TimeStamp): Boolean = {
     timestamp >= birth && timestamp < death
@@ -84,6 +109,9 @@ object LifeTime {
   val Immortal = LifeTime(0L, Long.MaxValue)
 }
 
+/**
+ * Represent a streaming application
+ */
 class StreamApplication(override val name : String,  val inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, PartitionerDescription])
   extends Application {
   require(!dag.hasDuplicatedEdge(), "Graph should not have duplicated edges")

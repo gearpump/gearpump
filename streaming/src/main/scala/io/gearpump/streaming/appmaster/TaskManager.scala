@@ -41,6 +41,27 @@ import org.slf4j.Logger
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+/**
+ *
+ * TaskManager track all tasks's status.
+ *
+ * It is state machine with three states:
+ * 1. applicationReady
+ * 2. recovery
+ * 3. dynamicDag
+ *
+ * When in state applicationReady:
+ * 1. When there is message-loss or JVM crash, transit to state recovery.
+ * 2. When user modify the DAG, transit to dynamicDag.
+ *
+ * When in state recovery:
+ * 1. When all tasks has been recovered, transit to applicationReady.
+ *
+ * When in state dynamicDag:
+ * 1. When dyanmic dag transition is complete, transit to applicationReady.
+ * 2. When there is message loss or JVM crash, transit to state recovery.
+ *
+ */
 private[appmaster] class TaskManager(
     appId: Int,
     dagManager: ActorRef,
@@ -88,6 +109,9 @@ private[appmaster] class TaskManager(
       }
   }
 
+  /**
+   * state applicationReady
+   */
   def applicationReady(state: DagReadyState): Receive = {
     executorManager ! state.taskRegistry.usedResource
     dagManager ! NewDAGDeployed(state.dag.version)
@@ -156,6 +180,9 @@ private[appmaster] class TaskManager(
     onClientQuery(state.taskRegistry) orElse onError orElse onNewDag orElse unHandled("applicationReady")
   }
 
+  /**
+   * state dynamicDag
+   */
   def dynamicDag(state: StartDagState, recoverState: StartDagState): Receive = {
     LOG.info(s"DynamicDag transit to dag version: ${state.dag.version}...")
 
@@ -274,6 +301,9 @@ private[appmaster] class TaskManager(
     executorManager ! BroadCast(TaskLocationsReady(taskLocations, state.dag.version))
   }
 
+  /**
+   *  state recovery
+   */
   def recovery(state: StartDagState): Receive = {
     val recoverDagVersion = state.dag.version
     executorManager ! BroadCast(RestartTasks(recoverDagVersion))
@@ -303,6 +333,9 @@ private[appmaster] class TaskManager(
 
 private [appmaster] object TaskManager {
 
+  /**
+   * When application is ready, then transit to DagReadyState
+   */
   class DagReadyState(
     val dag: DAG,
     val taskRegistry: TaskRegistry)
@@ -315,6 +348,9 @@ private [appmaster] object TaskManager {
     }
   }
 
+  /**
+   * When application is booting up or doing recovery, it use StartDagState
+   */
   class StartDagState(
     val dag: DAG,
     val taskRegistry: TaskRegistry,
@@ -327,9 +363,20 @@ private [appmaster] object TaskManager {
 
   case class FailedToRecover(errorMsg: String)
 
+  /**
+   * Start new Tasks on Executor <executorId>
+   */
   case class StartTasksOnExecutor(executorId: Int, tasks: List[TaskId])
+
+  /**
+   * Change existing tasks on executor <executorId>
+   */
   case class ChangeTasksOnExecutor(executorId: Int, tasks: List[TaskId])
 
+
+  /**
+   * Track the registration of all new started executors.
+   */
   class ExecutorRegistry {
     private var registeredExecutors = Set.empty[ExecutorId]
 
@@ -342,6 +389,9 @@ private [appmaster] object TaskManager {
     }
   }
 
+  /**
+   * Track the registration of all changed tasks.
+   */
   class TaskChangeRegistry(targetTasks: List[TaskId]) {
     private var registeredTasks = Set.empty[TaskId]
     def taskChanged(taskId: TaskId): Unit = {
@@ -356,13 +406,17 @@ private [appmaster] object TaskManager {
     def empty: TaskChangeRegistry = new TaskChangeRegistry(List.empty[TaskId])
   }
 
-  case object CheckApplicationReady
-
+  /**
+   * DAGDiff is used to track impacted processors when doing dynamic dag.
+   */
   case class DAGDiff(
     addedProcessors: List[ProcessorId],
     modifiedProcessors: List[ProcessorId],
     impactedUpstream: List[ProcessorId])
 
+  /**
+   * Migrate from old DAG to new DAG, return DAGDiff
+   */
   def migrate(leftDAG: DAG, rightDAG: DAG): DAGDiff = {
     val left = leftDAG.processors.keySet
     val right = rightDAG.processors.keySet
@@ -386,9 +440,15 @@ private [appmaster] object TaskManager {
     DAGDiff(added.toList, modified.toList, impactedUpstream.toList)
   }
 
+  /**
+   * Each new task will be assigned with a unique session Id.
+   */
   class SessionIdFactory {
     private var nextSessionId = 1
 
+    /**
+     * return a new session Id for new task
+     */
     final def newSessionId: Int = {
       val sessionId = nextSessionId
       nextSessionId += 1

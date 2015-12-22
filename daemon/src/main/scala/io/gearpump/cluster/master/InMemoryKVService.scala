@@ -25,6 +25,9 @@ import akka.pattern.ask
 
 import scala.concurrent.Future
 
+/**
+ * A replicated simple in-memory KV service.
+ */
 class InMemoryKVService extends Actor with Stash with ClusterReplication {
   import InMemoryKVService._
 

@@ -33,10 +33,9 @@ import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfi
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.cluster.worker.WorkerSummary
-import io.gearpump.services.MasterService.BuiltinPartitioners
+import io.gearpump.services.MasterService.{SubmitApplicationRequest, BuiltinPartitioners}
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.streaming.ProcessorDescription
-import io.gearpump.streaming.appmaster.SubmitApplicationRequest
 import io.gearpump.util.{Constants, Graph}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
@@ -185,7 +184,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with MasterServ
       1 -> ProcessorDescription(1, "B", parallelism = 1)
     )
     val dag = Graph(0 ~ "partitioner" ~> 1)
-    val jsonValue = write(SubmitApplicationRequest("complexdag", processors, dag))
+    val jsonValue = write(SubmitApplicationRequest("complexdag", processors, dag, null))
     Post(s"/api/$REST_VERSION/master/submitdag", HttpEntity(ContentTypes.`application/json`, jsonValue)) ~> masterRoute ~> check {
       val responseBody = responseAs[String]
       val submitApplicationResultValue = read[SubmitApplicationResultValue](responseBody)

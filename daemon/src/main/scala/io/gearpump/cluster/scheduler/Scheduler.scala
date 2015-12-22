@@ -30,6 +30,9 @@ import org.slf4j.Logger
 
 import scala.collection.mutable
 
+/**
+ * Scheduler schedule resource for different applications.
+ */
 abstract class Scheduler extends Actor{
   val LOG: Logger = LogUtil.getLogger(getClass)
   protected var resources = new mutable.HashMap[Int, (ActorRef, Resource)]

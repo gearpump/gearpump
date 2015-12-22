@@ -234,6 +234,7 @@ object ClockService {
   val START_CLOCK = "startClock"
 
   case object HealthCheck
+
   class ProcessorClock(val processorId: ProcessorId, val parallism: Int) {
 
     var min: TimeStamp = 0L
@@ -257,6 +258,9 @@ object ClockService {
 
   case class Report(stallingTasks: List[TaskId])
 
+  /**
+   * Check whether the clock is advancing normally
+   */
   class HealthChecker(stallingThresholdSeconds: Int) {
     private val LOG: Logger = LogUtil.getLogger(getClass)
 
@@ -307,6 +311,7 @@ object ClockService {
   }
 
   object ProcessorClocks {
+
     def minClock(clock: Array[ProcessorClock]): TimeStamp = {
       var i = 0
       var min = if (clock.length == 0) 0L else clock(0).min

@@ -46,6 +46,16 @@ import org.slf4j.Logger
 
 import scala.concurrent.Future
 
+/**
+ * AppMaster is the head of a streaming application.
+ *
+ * It contains:
+ * 1. ExecutorManager to manage all executors.
+ * 2. TaskManager to manage all tasks,
+ * 3. ClockService to track the global clock for this streaming application.
+ * 4. Scheduler to decide which a task should be scheduled to.
+ *
+ */
 class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends ApplicationMaster {
   import app.userConfig
   import appContext.{appId, masterProxy, username}

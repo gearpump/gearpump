@@ -29,12 +29,21 @@ import scala.collection.JavaConverters._
 
 case class FilePath(path: String)
 
+/**
+ * JarStoreService is used to manage the upload/download of binary files,
+ * like user submitted application jar.
+ */
 trait JarStoreService {
   /**
-    * The scheme of the JarStoreService.
+   * The scheme of the JarStoreService.
+   * Like "hdfs" for HDFS file system, and "file" for a local
+   * file system.
    */
   val scheme : String
 
+  /**
+   * Init the Jar Store.
+   */
   def init(config: Config, system: ActorSystem)
 
   /**
@@ -52,18 +61,23 @@ trait JarStoreService {
 }
 
 object JarStoreService {
-  lazy val jarstoreServices: List[JarStoreService] = {
-    ServiceLoader.load(classOf[JarStoreService]).asScala.toList
-  }
 
-  def get(rootPath: String): JarStoreService = {
-    val scheme = new URI(Util.resolvePath(rootPath)).getScheme
-    jarstoreServices.find(_.scheme == scheme).get
-  }
-
+  /**
+   * Get a active JarStoreService by specifying a scheme.
+   * Please see config [[Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH]] for more
+   * information.
+   */
   def get(config: Config): JarStoreService = {
     val jarStoreRootPath = config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH)
     get(jarStoreRootPath)
   }
-}
 
+  private lazy val jarstoreServices: List[JarStoreService] = {
+    ServiceLoader.load(classOf[JarStoreService]).asScala.toList
+  }
+
+  private def get(rootPath: String): JarStoreService = {
+    val scheme = new URI(Util.resolvePath(rootPath)).getScheme
+    jarstoreServices.find(_.scheme == scheme).get
+  }
+}

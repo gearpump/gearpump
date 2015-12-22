@@ -22,6 +22,9 @@ import io.gearpump.streaming.task.TaskId
 import io.gearpump.partitioner.PartitionerDescription
 import io.gearpump.util.Graph
 
+/**
+ * DAG is wrapper for [[Graph]] for streaming applications.
+ */
 case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, PartitionerDescription]) extends Serializable {
 
   def isEmpty: Boolean = {

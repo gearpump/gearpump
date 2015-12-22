@@ -30,6 +30,11 @@ import akka.stream.io.{SynchronousFileSink, SynchronousFileSource}
 import scala.concurrent.{ExecutionContext, Future}
 
 
+/**
+ * FileDirective is a set of Akka-http directive to upload/download
+ * huge binary files.
+ *
+ */
 object FileDirective {
 
   //form field name
@@ -37,7 +42,55 @@ object FileDirective {
 
   val CHUNK_SIZE = 262144
 
+
+  /**
+   * File information after a file is uploaded to server.
+   *
+   * @param originFileName original file name when user upload it in browser.
+   * @param file file name after the file is saved to server.
+   * @param length the length of the file
+   */
   case class FileInfo(originFileName: String, file: File, length: Long)
+
+  /**
+   * directive to uploadFile, it store the uploaded files
+   * to temporary directory, and return a Map from form field name
+   * to FileInfo.
+   */
+  def uploadFile: Directive1[Map[Name, FileInfo]] = {
+    uploadFileTo(null)
+  }
+
+  /**
+   * Store the uploaded files to specific rootDirectory.
+   *
+   * @param rootDirectory directory to store the files.
+   * @return
+   */
+  def uploadFileTo(rootDirectory: File): Directive1[Map[Name, FileInfo]] = {
+    Directive[Tuple1[Map[Name, FileInfo]]] { inner =>
+      extractMaterializer {implicit mat =>
+        extractExecutionContext {implicit ec =>
+          uploadFileImpl(rootDirectory)(mat, ec) { filesFuture =>
+            ctx => {
+              filesFuture.map(map => inner(Tuple1(map))).flatMap(route => route(ctx))
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * download server file
+   */
+  def downloadFile(file: File): Route = {
+    val responseEntity = HttpEntity(
+      MediaTypes.`application/octet-stream`,
+      file.length,
+      SynchronousFileSource(file, CHUNK_SIZE))
+    complete(responseEntity)
+  }
 
   private def uploadFileImpl(rootDirectory: File)(implicit mat: Materializer, ec: ExecutionContext): Directive1[Future[Map[Name, FileInfo]]] = {
     Directive[Tuple1[Future[Map[Name, FileInfo]]]] { inner =>
@@ -59,31 +112,5 @@ object FileDirective {
         inner(Tuple1(fileNameMap))
       }
     }
-  }
-
-  def uploadFile: Directive1[Map[Name, FileInfo]] = {
-    uploadFileTo(null)
-  }
-
-  def uploadFileTo(rootDirectory: File): Directive1[Map[Name, FileInfo]] = {
-    Directive[Tuple1[Map[Name, FileInfo]]] { inner =>
-      extractMaterializer {implicit mat =>
-        extractExecutionContext {implicit ec =>
-          uploadFileImpl(rootDirectory)(mat, ec) { filesFuture =>
-            ctx => {
-              filesFuture.map(map => inner(Tuple1(map))).flatMap(route => route(ctx))
-            }
-          }
-        }
-      }
-    }
-  }
-
-  def downloadFile(file: File): Route = {
-    val responseEntity = HttpEntity(
-      MediaTypes.`application/octet-stream`,
-      file.length,
-      SynchronousFileSource(file, CHUNK_SIZE))
-    complete(responseEntity)
   }
 }

@@ -30,8 +30,10 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 /**
- * Start a actor system, and will send the system adress to report back actor
- * Example usage: main reportBackActorPath
+ * ActorSystemBooter start a new JVM process to boot an actor system.
+ * All executors are started by ActorSystemBooter
+ *
+ * It send the system address to "report back actor"
  */
 
 class ActorSystemBooter(config : Config) {

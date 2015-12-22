@@ -37,12 +37,6 @@ import io.gearpump.util.LogUtil
  *
  * Please use AppMasterRuntimeEnvironment.props() to construct this actor.
  *
- * @param appContextInput
- * @param app
- * @param masters
- * @param masterFactory
- * @param appMasterFactory
- * @param masterConnectionKeeperFactory
  */
 private[appmaster]
 class AppMasterRuntimeEnvironment (

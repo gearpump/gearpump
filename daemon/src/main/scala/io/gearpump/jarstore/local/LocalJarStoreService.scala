@@ -33,6 +33,9 @@ import org.slf4j.Logger
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Await, Future}
 
+/**
+ * LocalJarStoreService store the uploaded jar on local disk.
+ */
 class LocalJarStoreService extends JarStoreService{
   private def LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Constants.FUTURE_TIMEOUT

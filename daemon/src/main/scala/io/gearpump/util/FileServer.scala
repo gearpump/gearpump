@@ -41,6 +41,10 @@ import spray.json.JsonFormat
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+ * A simple file server implemented with akka-http to store/fetch large
+ * binary files.
+ */
 class FileServer(system: ActorSystem, host: String, port: Int = 0, rootDirectory: File) {
   import system.dispatcher
   implicit val actorSystem = system
@@ -96,6 +100,9 @@ object FileServer {
 
   case class Port(port : Int)
 
+  /**
+   * Client of [[FileServer]]
+   */
   class Client(system: ActorSystem, host: String, port: Int) {
 
     def this(system: ActorSystem, url: String) = {
