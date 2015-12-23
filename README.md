@@ -1,15 +1,15 @@
 
-## GearPump [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
+## Gearpump [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
 
 Web site: http://gearpump.io
 
 [![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](http://www.gearpump.io/download.html)
 
-GearPump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
+Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
 ![](https://raw.githubusercontent.com/clockfly/gearpump/master/doc/logo/logo.png)
 
-The	name	GearPump	is	a	reference to	the	engineering term “gear	pump,”	which	is	a	super simple
+The	name	Gearpump	is	a	reference to	the	engineering term “gear	pump,”	which	is	a	super simple
 pump	that	consists of	only	two	gears,	but	is	very	powerful at	streaming water.
 
 ![](http://www.gearpump.io/img/dashboard.gif)
@@ -38,7 +38,7 @@ Check guide [Get Started](http://www.gearpump.io/releases/latest/submit-your-1st
 
 ## How to Build
 
-1). Clone the GearPump repository
+1). Clone the Gearpump repository
 
 ```bash
   git clone https://github.com/gearpump/gearpump.git
@@ -100,7 +100,7 @@ sbt it:test
 
 Check guide [Concepts](http://www.gearpump.io/releases/latest/basic-concepts.html)
 
-## How to write a GearPump Application
+## How to write a Gearpump Application
 
 Check guide [Streaming Application Developer Guide](http://www.gearpump.io/releases/latest/dev-write-1st-app.html)
 

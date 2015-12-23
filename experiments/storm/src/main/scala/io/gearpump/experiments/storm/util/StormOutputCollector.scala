@@ -127,7 +127,7 @@ object StormOutputCollector {
         grouper.prepare(topologyContext, globalStreamId, targetTasks)
         grouper
       case Grouping._Fields.LOCAL_OR_SHUFFLE =>
-        // GearPump has built-in support for sending messages to local actor
+        // Gearpump has built-in support for sending messages to local actor
         new ShuffleGrouper(targetTaskNum)
       case Grouping._Fields.DIRECT =>
         throw new Exception("direct grouping should not be called here")

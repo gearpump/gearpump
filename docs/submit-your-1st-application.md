@@ -6,7 +6,7 @@ description: Submit Your 1st Gearpump Application
 ---
 
 Before you can submit and run your first Gearpump application, you will need a running Gearpump service.
-There are multiple ways to run GearPump [Local mode](deployment-local.html), [Standalone mode](deployment-standalone.html), [YARN mode](deployment-yarn.html) or [Docker mode](deployment-docker.html).
+There are multiple ways to run Gearpump [Local mode](deployment-local.html), [Standalone mode](deployment-standalone.html), [YARN mode](deployment-yarn.html) or [Docker mode](deployment-docker.html).
 
 The easiest way is to run Gearpump in [Local mode](deployment-local.html).
 Any Linux, MacOSX or Windows desktop can be used with zero configuration.

@@ -4,7 +4,7 @@
 
 ## Getting started
 
-Build GearPump and run:
+Build Gearpump and run:
 
 ```bash
 cd ~/gearpump

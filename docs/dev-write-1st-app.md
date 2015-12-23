@@ -5,7 +5,7 @@ title: Write Your 1st Gearpump App
 description: Write Your 1st Gearpump App
 ---
 
-We'll use [wordcount](https://github.com/gearpump/gearpump/blob/master/examples/streaming/wordcount/src/main/scala/io/gearpump/streaming/examples/wordcount/) as an example to illustrate how to write GearPump applications.
+We'll use [wordcount](https://github.com/gearpump/gearpump/blob/master/examples/streaming/wordcount/src/main/scala/io/gearpump/streaming/examples/wordcount/) as an example to illustrate how to write Gearpump applications.
 
 ### Maven/Sbt Settings
 
@@ -63,7 +63,7 @@ object Split {
 
 
 
-Like Split, every processor extends a `TaskActor`.  The `onStart` method is called once before any message comes in; `onNext` method is called to process every incoming message. Note that GearPump employs the message-driven model and that's why Split sends itself a message at the end of `onStart` and `onNext` to trigger next message processing.
+Like Split, every processor extends a `TaskActor`.  The `onStart` method is called once before any message comes in; `onNext` method is called to process every incoming message. Note that Gearpump employs the message-driven model and that's why Split sends itself a message at the end of `onStart` and `onNext` to trigger next message processing.
 
 #### Sum Processor
 
@@ -114,7 +114,7 @@ Besides counting the sum, we also define a scheduler to report throughput every 
 
 #### Partitioner
 
-A processor could be parallelized to a list of tasks. A `Partitioner` defines how the data is shuffled among tasks of Split and Sum. GearPump has already provided two partitioners
+A processor could be parallelized to a list of tasks. A `Partitioner` defines how the data is shuffled among tasks of Split and Sum. Gearpump has already provided two partitioners
 
 * `HashPartitioner`: partitions data based on the message's hashcode
 * `ShufflePartitioner`: partitions data in a round-robin way.
