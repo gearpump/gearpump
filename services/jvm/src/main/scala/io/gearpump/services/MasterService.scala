@@ -31,18 +31,17 @@ import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetW
 import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryMasterConfig}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig, SubmitApplicationResultValue}
+import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.AppSubmitter
 import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
-import io.gearpump.streaming.StreamApplication
-import io.gearpump.streaming.appmaster.SubmitApplicationRequest
+import io.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplication}
 import io.gearpump.util.ActorUtil.{askActor, _}
 import io.gearpump.util.FileDirective._
-import io.gearpump.util.{Constants, Util}
+import io.gearpump.util.{Graph, Constants, Util, FileUtils}
 import io.gearpump.util.ActorUtil._
-import io.gearpump.util.{Constants, FileUtils, Util}
-import io.gearpump.services.MasterService.BuiltinPartitioners
+import io.gearpump.services.MasterService.{SubmitApplicationRequest, BuiltinPartitioners}
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
@@ -154,7 +153,8 @@ trait MasterService {
                   PartitionerDescription(new PartitionerByClassName(edge))
                 }
 
-                val appId = context.submit(new StreamApplication(appName, userconfig, graph))
+                val effectiveConfig = if (userconfig == null) UserConfig.empty else userconfig
+                val appId = context.submit(new StreamApplication(appName, effectiveConfig, graph))
 
                 import upickle.default.write
                 val submitApplicationResultValue = SubmitApplicationResultValue(appId)
@@ -230,4 +230,10 @@ object MasterService {
       jar.delete()
     }
   }
+
+  case class SubmitApplicationRequest (
+    appName: String,
+    processors: Map[ProcessorId, ProcessorDescription],
+    dag: Graph[Int, String],
+    userconfig: UserConfig)
 }

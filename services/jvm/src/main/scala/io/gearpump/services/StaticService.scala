@@ -26,6 +26,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import io.gearpump.util.Util
 
+
 trait StaticService  {
 
   implicit def system: ActorSystem

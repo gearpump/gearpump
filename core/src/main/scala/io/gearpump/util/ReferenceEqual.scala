@@ -18,11 +18,12 @@
 
 package io.gearpump.util
 
+
+/**
+ * Check equal using reference-equal.
+ */
 trait ReferenceEqual extends AnyRef {
 
-  /**
-   * Equal based on reference Id
-   */
   override def equals(other : Any) : Boolean = {
     this.eq(other.asInstanceOf[AnyRef])
   }

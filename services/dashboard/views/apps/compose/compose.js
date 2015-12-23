@@ -177,7 +177,8 @@ angular.module('dashboard')
             edgeList: edges.map(function(edge) {
               return [edge.from, edge.partitionerClass, edge.to]
             })
-          }
+          },
+          userconfig: null
         };
 
         $scope.submitting = true;

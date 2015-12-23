@@ -39,7 +39,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 /**
- * AppManager is dedicated part of Master to manager applicaitons
+ * AppManager is dedicated part of Master to manager all applicaitons.
  */
 private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLauncherFactory) extends Actor with Stash with TimeOutScheduler{
   private val LOG: Logger = LogUtil.getLogger(getClass)

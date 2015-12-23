@@ -45,6 +45,11 @@ import org.slf4j.Logger
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
+/**
+ * Master manage resources of the whole cluster.
+ * It is like the resource manager of YARN.
+ *
+ */
 private[cluster] class Master extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private val systemConfig : Config = context.system.settings.config

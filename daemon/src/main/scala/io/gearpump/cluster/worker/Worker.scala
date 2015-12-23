@@ -53,7 +53,10 @@ import scala.util.{Failure, Success, Try}
 import akka.actor.SupervisorStrategy.{Resume, Stop}
 
 /**
- * masterProxy is used to resolve the master
+ * Worker is used to track the resource on single machine, it is like
+ * the node manager of YARN.
+ *
+ * @param masterProxy masterProxy is used to resolve the master
  */
 private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOutScheduler{
   import Worker._

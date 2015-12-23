@@ -31,9 +31,6 @@ import io.gearpump.util.Graph
  * With JarScheduler, we allows a DAG to be partitioned into several
  * parts, with each part use its own jar file.
  *
- * @param appId
- * @param appName
- * @param config
  */
 class JarScheduler(appId : Int, appName: String, config: Config) {
   private var taskSchedulers = Map.empty[AppJar, TaskScheduler]

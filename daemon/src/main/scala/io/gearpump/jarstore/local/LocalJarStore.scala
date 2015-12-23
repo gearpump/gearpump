@@ -29,6 +29,9 @@ import org.slf4j.Logger
 
 import scala.concurrent.Future
 
+/**
+ * LocalJarStore store the uploaded jar on local disk.
+ */
 class LocalJarStore(rootDirPath : String) extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 

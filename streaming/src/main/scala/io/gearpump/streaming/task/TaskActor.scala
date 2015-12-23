@@ -33,6 +33,11 @@ import io.gearpump.util.{LogUtil, TimeOutScheduler}
 import io.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
+/**
+ *
+ * All tasks of Gearpump runs inside a Actor.
+ * TaskActor is the Actor container for a task.
+ */
 class TaskActor(
     val taskId: TaskId,
     val taskContextData : TaskContextData,

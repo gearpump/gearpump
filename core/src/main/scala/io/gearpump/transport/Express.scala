@@ -32,6 +32,12 @@ trait ActorLookupById {
   def lookupLocalActor(id: Long): Option[ActorRef]
 }
 
+/**
+ * Custom networking layer.
+ *
+ * It will translate long sender/receiver address to shorter ones to reduce
+ * the network overhead.
+ */
 class Express(val system: ExtendedActorSystem) extends Extension with ActorLookupById {
 
   import io.gearpump.transport.Express._

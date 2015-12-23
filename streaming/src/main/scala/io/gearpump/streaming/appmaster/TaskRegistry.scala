@@ -27,6 +27,10 @@ import io.gearpump.transport.HostPort
 import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
+/**
+ * TaskRegistry is used to track the registration of all tasks
+ * when one application is booting up.
+ */
 class TaskRegistry(expectedTasks: List[TaskId],
     var registeredTasks: Map[TaskId, TaskLocation] = Map.empty[TaskId, TaskLocation]) {
 
@@ -36,6 +40,11 @@ class TaskRegistry(expectedTasks: List[TaskId],
 
   private val processors = expectedTasks.map(_.processorId).toSet
 
+  /**
+   * When a task is booted, it need to call registerTask to register itself.
+   * If this task is valid, then accept it, otherwise reject it.
+   *
+   */
   def registerTask(taskId: TaskId, location: TaskLocation): RegisterTaskStatus = {
     val processorId = taskId.processorId
 

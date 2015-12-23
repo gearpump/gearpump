@@ -24,6 +24,12 @@ import io.gearpump.streaming.task.TaskId
 import scala.util.Try
 import scala.collection.JavaConverters._
 
+/**
+ * TaskLocator is used to decide which machine one task should run on.
+ *
+ * User can specify config [[Constants.GEARPUMP_STREAMING_LOCALITIES]] to decide
+ * to control which machine the task is running on.
+ */
 class TaskLocator(appName: String, config: Config) {
   private val taskLocalities: Map[TaskId, Locality] = loadTaskLocalities(config)
 
@@ -31,7 +37,7 @@ class TaskLocator(appName: String, config: Config) {
     taskLocalities.getOrElse(taskId, NonLocality)
   }
 
-  def loadTaskLocalities(config: Config) : Map[TaskId, Locality] = {
+  private def loadTaskLocalities(config: Config) : Map[TaskId, Locality] = {
     import Constants.GEARPUMP_STREAMING_LOCALITIES
     Try(config.getConfig(s"$GEARPUMP_STREAMING_LOCALITIES.$appName")).map {appConfig =>
       val json = appConfig.root().render(ConfigRenderOptions.concise)

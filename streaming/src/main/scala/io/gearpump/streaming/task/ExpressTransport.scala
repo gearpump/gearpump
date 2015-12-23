@@ -26,6 +26,13 @@ import io.gearpump.Message
 
 import scala.collection.mutable
 
+/**
+ * ExpressTransport wire the networking function from default akka
+ * networking to customized implementation [[Express]].
+ *
+ * See [[Express]] for more information.
+ *
+ */
 trait ExpressTransport {
   this: TaskActor =>
 

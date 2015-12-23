@@ -19,6 +19,10 @@ package io.gearpump.streaming.storage
 
 import scala.concurrent._
 
+/**
+ * Generic storage to store KV Data.
+ *
+ */
 trait AppDataStore {
   def put(key: String, value: Any): Future[Any]
 

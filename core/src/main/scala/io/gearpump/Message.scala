@@ -18,6 +18,12 @@
 
 package io.gearpump
 
+/**
+ * Each message contains a immutable timestamp.
+ *
+ * For example, if you take a picture, the time you take the picture is the
+ * message's timestmap.
+ */
 case class Message(msg: AnyRef, timestamp: TimeStamp = Message.noTimeStamp)
 
 object Message {

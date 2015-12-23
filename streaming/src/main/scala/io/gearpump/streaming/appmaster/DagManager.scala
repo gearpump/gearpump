@@ -29,8 +29,7 @@ import org.slf4j.Logger
 
 /**
  * Will handle dag modification and other stuff related with DAG
- * @param userConfig
- */
+  */
 
 class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends Actor {
   private val NOT_INITIALIZED = -1

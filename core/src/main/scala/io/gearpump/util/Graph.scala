@@ -21,7 +21,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 
 /**
- * Application DAG
+ * Generic mutable Graph libraries.
  *
  */
 class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serializable{
@@ -46,6 +46,10 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
 
   init()
 
+  /**
+   * Add a vertex
+   * Current Graph is changed.
+   */
   def addVertex(vertex : N): Unit = {
     val result = _vertices.add(vertex)
     if (result) {
@@ -53,6 +57,10 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     }
   }
 
+  /**
+   * Add a edge
+   * Current Graph is changed.
+   */
   def addEdge(edge: (N, E, N)): Unit = {
     val result = _edges.add(edge)
     if (result) {
@@ -60,27 +68,47 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     }
   }
 
+  /**
+   * return all vertices.
+   * The result is stable
+   */
   def vertices: List[N] = {
     // sort the vertex so that we can keep the order for mapVertex
     _vertices.toList.sortBy(_indexs(_))
   }
 
+  /**
+   * out degree
+   */
   def outDegreeOf(node : N): Int = {
     edges.count(_._1 == node)
   }
 
+  /**
+   * in degree
+   */
   def inDegreeOf(node: N): Int = {
     edges.count(_._3 == node)
   }
 
+  /**
+   * out going edges.
+   */
   def outgoingEdgesOf(node : N): List[(N, E, N)]  = {
     edges.filter(_._1 == node)
   }
 
+  /**
+   * incoming edges.
+   */
   def incomingEdgesOf(node: N): List[(N, E, N)] = {
     edges.filter(_._3 == node)
   }
 
+  /**
+   * Remove vertex
+   * Current Graph is changed.
+   */
   def removeVertex(node: N): Unit = {
     _vertices.remove(node)
     _indexs -= node
@@ -88,11 +116,19 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     toBeRemoved.foreach(removeEdge(_))
   }
 
+  /**
+   * Remove edge
+   * Current Graph is changed.
+   */
   private def removeEdge(edge: (N, E, N)): Unit = {
     _indexs -= edge
     _edges.remove(edge)
   }
 
+  /**
+   * add edge
+   * Current Graph is changed.
+   */
   def addEdge(node1 : N, edge: E, node2: N): Unit = {
     addVertex(node1)
     addVertex(node2)
@@ -101,9 +137,7 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
 
   /**
    * Map a graph to a new graph, with vertex converted to a new type
-   * @param fun
-   * @tparam NewNode
-   * @return
+   * Current Graph is not changed.
    */
   def mapVertex[NewNode](fun: N => NewNode): Graph[NewNode, E] = {
     val vertexes = vertices.map(node => (node, fun(node)))
@@ -118,9 +152,7 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
 
   /**
    * Map a graph to a new graph, with edge converted to new type
-   * @param fun
-   * @tparam NewEdge
-   * @return
+   * Current graph is not changed.
    */
   def mapEdge[NewEdge](fun: (N, E, N) => NewEdge): Graph[N, NewEdge] = {
     val newEdges =  edges.map {edge =>
@@ -129,24 +161,40 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     new Graph(vertices, newEdges)
   }
 
+  /**
+   * edges connected to node
+   */
   def edgesOf(node : N): List[(N, E, N)] = {
     (incomingEdgesOf(node) ++ outgoingEdgesOf(node)).toSet[(N, E, N)].toList.sortBy(_indexs(_))
   }
 
+  /**
+   * all edges
+   */
   def edges: List[(N, E, N)] = {
     _edges.toList.sortBy(_indexs(_))
   }
 
+  /**
+   * Add another graph
+   * Current graph is changed.
+   */
   def addGraph(other : Graph[N, E]) : Graph[N, E] = {
     (vertices ++ other.vertices).foreach(addVertex(_))
     (edges ++ other.edges).foreach(edge =>addEdge(edge._1, edge._2, edge._3))
     this
   }
 
+  /**
+   * clone the graph
+   */
   def copy: Graph[N, E] = {
     new Graph(vertices, edges)
   }
 
+  /**
+   * check empty
+   */
   def isEmpty: Boolean = {
     val vertexCount = vertices.size
     val edgeCount = edges.length
@@ -157,6 +205,11 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     }
   }
 
+  /**
+   * sub-graph which contains current node and all neighbour
+   * nodes and edges.
+   *
+   */
   def subGraph(node: N): Graph[N, E] = {
     val newGraph = Graph.empty[N, E]
     for (edge <- edgesOf(node)) {
@@ -165,6 +218,9 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     newGraph
   }
 
+  /**
+   * replace vertex, the current Graph is mutated.
+   */
   def replaceVertex(node: N, newNode: N): Graph[N, E] = {
     for (edge <- incomingEdgesOf(node)) {
       addEdge(edge._1, edge._2, newNode)
@@ -197,6 +253,9 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     output.iterator
   }
 
+  /**
+   * check whether there is a loop
+   */
   def hasCycle(): Boolean = {
     @annotation.tailrec def detectCycle(graph: Graph[N, E]): Boolean = {
       if(graph.edges.isEmpty) {
@@ -212,6 +271,9 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     detectCycle(copy)
   }
 
+  /**
+   * Check whether there are two edges connecting two nodes.
+   */
   def hasDuplicatedEdge(): Boolean = {
     edges.groupBy(edge => (edge._1, edge._3)).values.exists(_.size > 1)
   }

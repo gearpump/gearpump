@@ -31,6 +31,9 @@ import org.slf4j.Logger
 
 import scala.concurrent.duration.Duration
 
+/**
+ * ClusterReplication use [[DataReplication]] to store replicated state.
+ */
 trait ClusterReplication extends Actor with Stash {
 
   val LOG: Logger = LogUtil.getLogger(getClass)

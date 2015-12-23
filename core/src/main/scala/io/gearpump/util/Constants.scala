@@ -86,6 +86,7 @@ object Constants {
   val GEARPUMP_APP_JAR = "gearpump.app.jar"
   val GEARPUMP_APP_NAME_PREFIX = "gearpump.app.name.prefix"
 
+  // where the jar is stored at. It can be a HDFS, or a local disk.
   val GEARPUMP_APP_JAR_STORE_ROOT_PATH = "gearpump.jarstore.rootpath"
 
   // Use java property -Dgearpump.config.file=xxx.conf to set customized configuration

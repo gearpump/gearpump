@@ -5,6 +5,9 @@ import io.gearpump.cluster.ClusterConfig
 import scala.util.Try
 
 
+/**
+ * A Main class helper to load Akka configuration automatically
+ */
 trait AkkaApp {
 
   type Config = com.typesafe.config.Config

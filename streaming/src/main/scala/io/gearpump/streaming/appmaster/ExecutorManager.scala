@@ -38,14 +38,13 @@ import scala.concurrent.duration._
 import scala.util.Try
 
 /**
- * This will launch Executor when asked. It hide the details like requesting ExecutorSystem
- * From user.
+ * ExecutorManager manage all executors.
+ *
+ * ExecutorManager will launch Executor when asked. It hide the details like starting
+ * a new ExecutorSystem from user.
  *
  * Please use ExecutorManager.props() to construct this actor
  *
- * @param userConfig
- * @param appContext
- * @param executorFactory
  */
 private[appmaster] class ExecutorManager(
     userConfig: UserConfig,
@@ -110,10 +109,12 @@ private[appmaster] class ExecutorManager(
       executors += executorId -> executorInfo.copy(executor = executor)
       taskManager ! ExecutorStarted(executorId, resource, worker.workerId, executorInfo.boundedJar)
 
+    // broadcast message to all executors
     case BroadCast(msg) =>
       LOG.info(s"Broadcast ${msg.getClass.getSimpleName} to all executors")
       context.children.foreach(_ forward  msg)
 
+    // unicast message to single executor
     case UniCast(executorId, msg) =>
       LOG.info(s"Unicast ${msg.getClass.getSimpleName} to executor $executorId")
       val executor = executors.get(executorId)
