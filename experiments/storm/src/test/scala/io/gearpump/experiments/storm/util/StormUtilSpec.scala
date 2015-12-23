@@ -29,7 +29,7 @@ import io.gearpump.experiments.storm.util.StormConstants._
 import io.gearpump.experiments.storm.util.StormUtil._
 import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.task.TaskId
-import org.json.simple.JSONValue
+import org.apache.storm.shade.org.json.simple.JSONValue
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
@@ -139,7 +139,7 @@ class StormUtilSpec extends PropSpec with PropertyChecks with Matchers with Mock
     mod(-1, -2) shouldBe -1
   }
 
-  property("get where ack enabled") {
+  property("get whether ack enabled") {
     val conf: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
     ackEnabled(conf) shouldBe false
     conf.put(Config.TOPOLOGY_ACKER_EXECUTORS, new Integer(0))

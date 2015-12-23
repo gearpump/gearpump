@@ -5,11 +5,15 @@ import sbtassembly.Plugin.AssemblyKeys._
 
 object BuildExample extends sbt.Build {
 
+  val jsonSimpleVersion = "1.1"
+  val storm09Version = "0.9.6"
+
   lazy val examples = Project(
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ noPublish
-  ) aggregate (wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka, examples_storm, distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
+  ) aggregate (wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka, examples_storm09, examples_storm010,
+      distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
 
   lazy val wordcountJava = Project(
     id = "gearpump-examples-wordcountjava",
@@ -135,36 +139,30 @@ object BuildExample extends sbt.Build {
         )
   ) dependsOn(streaming % "test->test; provided", external_kafka)
 
-  lazy val examples_storm = Project(
-    id = "gearpump-examples-storm",
-    base = file("examples/streaming/storm"),
+  // examples for Storm 0.9.x
+  lazy val examples_storm09 = Project(
+    id = "gearpump-examples-storm09",
+    base = file("examples/streaming/storm09"),
         settings = commonSettings ++ noPublish ++ myAssemblySettings ++
         Seq(
           libraryDependencies ++= Seq(
-            "org.apache.storm" % "storm-core" % stormVersion % "provided"
-                exclude("clj-stacktrace", "clj-stacktrace")
-                exclude("ch.qos.logback", "logback-classic")
-                exclude("ch.qos.logback", "logback-core")
-                exclude("clj-time", "clj-time")
-                exclude("clout", "clout")
-                exclude("compojure", "compojure")
-                exclude("hiccup", "hiccup")
-                exclude("javax.servlet", "servlet-api")
-                exclude("jline", "jline")
-                exclude("joda-time", "joda-time")
-                exclude("org.clojure", "core.incubator")
-                exclude("org.clojure", "math.numeric-tower")
-                exclude("org.clojure", "tools.logging")
-                exclude("org.clojure", "tools.cli")
-                exclude("org.clojure", "tools.macro")
-                exclude("org.mortbay.jetty", "jetty-util")
-                exclude("org.mortbay.jetty", "jetty")
-                exclude("org.ow2.asm", "asm")
-                exclude("org.slf4j", "log4j-over-slf4j")
-                exclude("ring", "ring-core")
-                exclude("ring", "ring-devel")
-                exclude("ring", "ring-jetty-adapter")
-                exclude("ring", "ring-servlet"),
+            "org.apache.storm" % "storm-kafka" % storm09Version,
+            "org.apache.storm" % "storm-starter" % storm09Version,
+            "com.googlecode.json-simple" % "json-simple" % jsonSimpleVersion,
+            "org.apache.kafka" %% "kafka" % kafkaVersion
+          ),
+          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+              CrossVersion.binaryScalaVersion(scalaVersion.value)
+        )
+  ) dependsOn(storm % "provided")
+
+  // examples for Storm 0.10.x
+  lazy val examples_storm010 = Project(
+    id = "gearpump-examples-storm010",
+    base = file("examples/streaming/storm010"),
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+        Seq(
+          libraryDependencies ++= Seq(
             "org.apache.storm" % "storm-kafka" % stormVersion,
             "org.apache.storm" % "storm-starter" % stormVersion,
             "org.apache.kafka" %% "kafka" % kafkaVersion
@@ -172,7 +170,7 @@ object BuildExample extends sbt.Build {
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
-  )
+  ) dependsOn(storm % "provided")
 
   lazy val stockcrawler = Project(
     id = "gearpump-examples-stockcrawler",

@@ -26,6 +26,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import backtype.storm.Config
 import backtype.storm.generated.{Bolt, ComponentCommon, SpoutSpec, StormTopology}
+import backtype.storm.metric.api.IMetric
 import backtype.storm.spout.{ISpout, SpoutOutputCollector}
 import backtype.storm.task.{GeneralTopologyContext, IBolt, OutputCollector, TopologyContext}
 import backtype.storm.tuple.{Fields, Tuple, TupleImpl}
@@ -276,7 +277,7 @@ object GearpumpStormComponent {
 
     new TopologyContext(topology, stormConf, taskToComponent, componentToSortedTasks,
       componentToStreamFields, null, codeDir, pidDir, stormTaskId, null, null, null, null, new JHashMap[String, AnyRef],
-      new JHashMap[AnyRef, AnyRef], new Atom(false))
+      new JHashMap[Integer, JMap[Integer, JMap[String, IMetric]]], new Atom(false))
   }
 
   private def getComponentToStreamFields(topology: StormTopology): JMap[String, JMap[String, Fields]] = {

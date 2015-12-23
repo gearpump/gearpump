@@ -20,32 +20,32 @@ package io.gearpump.experiments.storm
 
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
+import java.util.{HashMap => JHashMap, Map => JMap}
 
 import akka.actor.ActorRef
+import backtype.storm.Config
 import backtype.storm.generated._
+import backtype.storm.security.auth.{ThriftConnectionType, ThriftServer}
+import backtype.storm.utils.Utils
 import io.gearpump.experiments.storm.Commands.{GetClusterInfo, _}
+import io.gearpump.experiments.storm.util.StormUtil
 import io.gearpump.util.ActorUtil.askActor
-import org.apache.thrift7.protocol.TBinaryProtocol
-import org.apache.thrift7.server.{THsHaServer, TServer}
-import org.apache.thrift7.transport.TNonblockingServerSocket
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object GearpumpThriftServer {
-  val THRIFT_PORT = 6627
-  val THRIFT_THREADS = 64
-  val THRIFT_MAX_BUFFER_SIZE = 1048576
+  val THRIFT_PORT = StormUtil.getThriftPort
   implicit val timeOut = akka.util.Timeout(3, TimeUnit.SECONDS)
 
-  private def createServer(handler: ActorRef): TServer = {
-    val serverTransport = new TNonblockingServerSocket(THRIFT_PORT)
-    val args = new THsHaServer.Args(serverTransport)
-    args.workerThreads(THRIFT_THREADS)
-      .protocolFactory(new TBinaryProtocol.Factory(false, true, THRIFT_MAX_BUFFER_SIZE))
-      .processor(new Nimbus.Processor[GearpumpNimbus](new GearpumpNimbus(handler)))
-    new THsHaServer(args)
+  private def createServer(handler: ActorRef): ThriftServer = {
+    val processor = new Nimbus.Processor[GearpumpNimbus](new GearpumpNimbus(handler))
+    val connectionType = ThriftConnectionType.NIMBUS
+    val config = Utils.readDefaultConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
+    config.put(Config.NIMBUS_THRIFT_PORT, s"$THRIFT_PORT")
+    new ThriftServer(config, processor, connectionType)
   }
 
   def apply(handler: ActorRef): GearpumpThriftServer = {
@@ -104,6 +104,10 @@ object GearpumpThriftServer {
       throw new UnsupportedOperationException
     }
 
+    override def getTopologyInfoWithOpts(s: String, getInfoOptions: GetInfoOptions): TopologyInfo = {
+      throw new UnsupportedOperationException
+    }
+
     override def killTopology(name: String): Unit = killTopologyWithOpts(name, new KillOptions())
 
     override def downloadChunk(id: String): ByteBuffer = {
@@ -120,10 +124,14 @@ object GearpumpThriftServer {
 
     override def finishFileUpload(location: String): Unit = {
     }
+
+    override def uploadNewCredentials(s: String, credentials: Credentials): Unit = {
+      throw new UnsupportedOperationException
+    }
   }
 }
 
-class GearpumpThriftServer(server: TServer) extends Thread {
+class GearpumpThriftServer(server: ThriftServer) extends Thread {
 
   override def run(): Unit = {
     server.serve()
