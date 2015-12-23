@@ -18,7 +18,7 @@ If you choose to use pre-build package, then you don't need to build from source
 
 If you choose to build the package from source code yourself, you can follow these steps:
 
-1). Clone the GearPump repository
+1). Clone the Gearpump repository
 
 ```bash
   git clone https://github.com/gearpump/gearpump.git

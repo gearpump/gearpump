@@ -1,6 +1,6 @@
-#GearPump HBase
+#Gearpump HBase
 
-GearPump integration for [Apache HBase](https://hbase.apache.org)
+Gearpump integration for [Apache HBase](https://hbase.apache.org)
 
 ## Usage
 

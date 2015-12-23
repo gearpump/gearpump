@@ -1,4 +1,4 @@
-# GearPump Launcher Docker Image
+# Gearpump Launcher Docker Image
 
 The image helps developer to setup/test a local [Gearpump](https://github.com/gearpump/gearpump.git) cluster quickly. The image is based on a minimal JRE8 environment with Python support. 
 

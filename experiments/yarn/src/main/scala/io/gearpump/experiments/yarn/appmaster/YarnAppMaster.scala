@@ -275,7 +275,7 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {
     implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-    implicit val system = ActorSystem("GearPumpAM", akkaConf)
+    implicit val system = ActorSystem("GearpumpAM", akkaConf)
 
     val yarnConf = new YarnConfig()
 

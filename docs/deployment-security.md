@@ -8,7 +8,7 @@ description: Gearpump Security Guide
 Until now Gearpump support being launched in a secured Yarn cluster and writing to secured HBase, here secured means Kerberos enabled. 
 Further security related feature is in progress.
 
-## How to launch GearPump in a secured Yarn cluster
+## How to launch Gearpump in a secured Yarn cluster
 Suppose user ```gear``` will launch gearpump on YARN, then the corresponding principal `gear` should be created in KDC server.
 
 1. Create Kerberos principal for user ```gear```, on the KDC machine run
