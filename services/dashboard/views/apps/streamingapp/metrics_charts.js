@@ -11,16 +11,25 @@ angular.module('dashboard')
     return {
       restrict: 'E',
       templateUrl: 'views/apps/streamingapp/metrics_charts.html',
+      scope: true, // inherit parent scope
       controller: ['$scope', '$filter', '$interval', 'models', function($scope, $filter, $interval, models) {
         'use strict';
 
         var metricsProvider = $scope.dag;
+        var processorId;
+        if ($scope.processor) {
+          processorId = $scope.processor.id;
+          $scope.sendThroughputMetricsCaption = 'Message Send Throughput';
+          $scope.sendThroughputMetricsDescription = '';
+          $scope.receiveThroughputMetricsCaption = 'Message Receive Throughput';
+          $scope.receiveThroughputMetricsDescription = '';
+        }
         var sc = $scope.metricsConfig;
         var currentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
         var histChartPoints = sc.retainHistoryDataHours * 3600 * 1000 / sc.retainHistoryDataIntervalMs;
         var updateRecentMetricsPromise;
         $scope.$on('$destroy', function() {
-          $timeout.cancel(updateRecentMetricsPromise);
+          $interval.cancel(updateRecentMetricsPromise);
         });
 
         // part 1
@@ -59,7 +68,7 @@ angular.module('dashboard')
             $scope[chartNameBase + 'HistChartOptions'] = null;
 
             var chartData = metricsToChartData(metricsProvider[fnName](data,
-              $scope.metricsConfig.retainRecentDataIntervalMs));
+              $scope.metricsConfig.retainRecentDataIntervalMs, processorId));
             if ($scope.showCurrentMetrics) {
               $scope[chartNameBase + 'Data'] = chartData;
             } else {
@@ -119,8 +128,8 @@ angular.module('dashboard')
 
         // part 2
         function updateCurrentMeterMetrics() {
-          var receivedMessages = metricsProvider.getReceivedMessages();
-          var sentMessages = metricsProvider.getSentMessages();
+          var receivedMessages = metricsProvider.getReceivedMessages(processorId);
+          var sentMessages = metricsProvider.getSentMessages(processorId);
 
           $scope.currentMessageSendRate = sentMessages.rate;
           $scope.currentMessageReceiveRate = receivedMessages.rate;
@@ -129,8 +138,8 @@ angular.module('dashboard')
         }
 
         function updateCurrentHistogramMetrics() {
-          $scope.averageProcessingTime = metricsProvider.getMessageProcessingTime();
-          $scope.averageMessageReceiveLatency = metricsProvider.getMessageReceiveLatency();
+          $scope.averageProcessingTime = metricsProvider.getMessageProcessingTime(processorId);
+          $scope.averageMessageReceiveLatency = metricsProvider.getMessageReceiveLatency(processorId);
         }
 
         $scope.showCurrentMetrics = true;

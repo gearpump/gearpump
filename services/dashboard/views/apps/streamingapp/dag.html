@@ -18,30 +18,31 @@
   <!-- todo: maybe share the controller with metrics_charts.js -->
   <div class="panel">
     <metrics
-      caption="Source Processors Send Throughput"
-      help="Messages are sent from external data source"
+      caption="{{sendThroughputMetricsCaption}}"
+      help="{{sendThroughputMetricsDescription}}"
       value="{{currentMessageSendRate|number:0}}"
       unit="msg/s"
       sub-text="Total messages sent: {{totalSentMessages|number:0}}"></metrics>
   </div>
   <div class="panel">
     <metrics
-      caption="Sink Processors Receive Throughput"
-      help="Messages are received by external data sink"
+      caption="{{receiveThroughputMetricsCaption}}"
+      help="{{receiveThroughputMetricsDescription}}"
       value="{{currentMessageReceiveRate|number:0}}"
       unit="msg/s"
       sub-text="Total messages received: {{totalReceivedMessages|number:0}}"></metrics>
   </div>
   <div class="panel">
     <metrics
-      caption="Average Message Processing Time"
-      help="Time from message is received to message is sent"
+      caption="{{averageMesssageProcessingTimeMetricsCaption}}"
+      help="{{averageMesssageProcessingTimeMetricsDescription}}"
       value="{{averageProcessingTime|number:3}}"
       unit="ms"></metrics>
   </div>
   <div class="panel">
     <metrics
-      caption="Average Message Receive Latency"
+      caption="{{averageMessageReceiveLatencyMetricsCaption}}"
+      help="{{averageMessageReceiveLatencyMetricsDescription}}"
       value="{{averageTaskReceiveLatency|number:3}}"
       unit="ms"></metrics>
   </div>

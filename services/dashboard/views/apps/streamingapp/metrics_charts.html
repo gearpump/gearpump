@@ -11,8 +11,8 @@
   <div class="col-sm-6">
     <div class="metrics-wrapper">
       <metrics
-        caption="Source Processors Send Throughput"
-        help="Messages are sent from external data source"
+        caption="{{sendThroughputMetricsCaption}}"
+        help="{{sendThroughputMetricsDescription}}"
         value="{{currentMessageSendRate|number:0}}" unit="msg/s"
         sub-text="Total Sent: {{totalSentMessages|number}}">
       </metrics>
@@ -34,10 +34,11 @@
   <div class="col-sm-6">
     <div class="metrics-wrapper">
       <metrics
-        caption="Sink Processors Receive Throughput"
-        help="Messages are received by external data sink"
+        caption="{{receiveThroughputMetricsCaption}}"
+        help="{{receiveThroughputMetricsDescription}}"
         value="{{currentMessageReceiveRate|number:0}}" unit="msg/s"
-        sub-text="Total Received: {{totalReceivedMessages|number}}"></metrics>
+        sub-text="Total Received: {{totalReceivedMessages|number}}">
+      </metrics>
     </div>
     <div ng-if="showCurrentMetrics">
       <sparkline-chart
@@ -56,7 +57,8 @@
   <div class="col-sm-6">
     <div class="metrics-wrapper">
       <metrics
-        caption="Average Message Processing Time"
+        caption="{{averageMesssageProcessingTimeMetricsCaption}}"
+        help="{{averageMesssageProcessingTimeMetricsDescription}}"
         value="{{averageProcessingTime|number:3}}" unit="ms">
       </metrics>
     </div>
@@ -77,7 +79,8 @@
   <div class="col-sm-6">
     <div class="metrics-wrapper">
       <metrics
-        caption="Average Message Receive Latency"
+        caption="{{averageMessageReceiveLatencyMetricsCaption}}"
+        help="{{averageMessageReceiveLatencyMetricsDescription}}"
         value="{{averageMessageReceiveLatency|number:3}}" unit="ms">
       </metrics>
     </div>
