@@ -17,8 +17,8 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('StreamingAppMetricsCtrl', ['$scope', '$interval', '$sortableTableBuilder', 'models', 'conf',
-    function($scope, $interval, $stb, models, conf) {
+  .controller('StreamingAppMetricsCtrl', ['$scope', '$sortableTableBuilder', 'models', 'conf',
+    function($scope, $stb, models, conf) {
       'use strict';
 
       var metricClassLookup = {
@@ -36,46 +36,34 @@ angular.module('dashboard')
       };
 
       var stopWatchingFn = null;
-      var timeoutPromise = null;
-
-      $scope.$on('destroy', function() {
-        $interval.cancel(timeoutPromise);
-      });
 
       $scope.$watch('names.selected', function(val) {
-        $interval.cancel(timeoutPromise);
         if (angular.isFunction(stopWatchingFn)) {
           stopWatchingFn();
         }
 
-        var watchClass = metricClassLookup[val];
-        timeoutPromise = $interval(function() {
-          queryTaskMetrics(watchClass);
-        }, conf.restapiQueryInterval);
-        queryTaskMetrics(watchClass);
+        var watchClassPieces = metricClassLookup[val].split('.');
+        var metricClassName = watchClassPieces[3];
+        $scope.metricsGroup = watchClassPieces[2];
 
-        stopWatchingFn = $scope.$watchCollection('taskMetrics', function(metrics) {
-          if (angular.isObject(metrics)) {
-            $scope.metricsGroup = watchClass.split('.')[2];
-            if ($scope.metricsGroup === 'meter') {
-              updateMetricsTable($scope.meterMetricsTable, metrics);
-            } else if ($scope.metricsGroup === 'histogram') {
-              updateMetricsTable($scope.histogramMetricsTable, metrics);
-            }
+        stopWatchingFn = $scope.$watch('dag.metricsTime', function() {
+          var metrics = _.mapValues($scope.dag.metrics, function(metricsGroups) {
+            return metricsGroups[metricClassName];
+          });
+
+          if (_.keys(metrics).length) {
+            var tableObj = $scope.metricsGroup === 'meter' ?
+              $scope.meterMetricsTable : $scope.histogramMetricsTable;
+            updateMetricsTable(tableObj, metrics);
           }
         });
       });
 
-      function queryTaskMetrics(watchClass) {
-        models.$get.currentAppTaskMetrics($scope.app.appId, watchClass)
-          .then(function(metrics) {
-            $scope.taskMetrics = metrics.$data();
-          });
-      }
-
       $scope.meterMetricsTable = {
         cols: [
-          $stb.link('Path').key('taskPath').canSort().sortDefault().styleClass('col-sm-2').done(),
+          $stb.indicator().key('active').canSort().styleClass('td-no-padding').done(),
+          $stb.link('Processor').key(['processorId', 'taskPath']).canSort('processorId').sortDefault().styleClass('col-sm-1 text-nowrap').done(),
+          $stb.number('Tasks').key('taskNum').canSort().styleClass('col-sm-1').done(),
           $stb.text('Task Class').key('taskClass').canSort().styleClass('col-md-4 hidden-sm hidden-xs').done(),
           // right
           $stb.number('Total Messages').key('count').canSort().unit('msg').styleClass('col-md-4 col-sm-3').done(),
@@ -88,7 +76,9 @@ angular.module('dashboard')
 
       $scope.histogramMetricsTable = {
         cols: [
-          $stb.text('Path').key('taskPath').canSort().sortDefault().styleClass('col-sm-2').done(),
+          $stb.indicator().key('active').canSort().styleClass('td-no-padding').done(),
+          $stb.link('Processor').key(['processorId', 'taskPath']).canSort('processorId').sortDefault().styleClass('col-sm-1 text-nowrap').done(),
+          $stb.number('Tasks').key('taskNum').canSort().styleClass('col-sm-1').done(),
           $stb.text('Task Class').key('taskClass').canSort().styleClass('col-lg-4 hidden-md hidden-sm hidden-xs').done(),
           $stb.number2('Std. Dev.').key('stddev').canSort().unit('ms').styleClass('col-sm-1').done(),
           $stb.number2('Mean').key('mean').canSort().unit('ms').styleClass('col-sm-1').done(),
@@ -105,27 +95,26 @@ angular.module('dashboard')
 
       function updateMetricsTable(table, metrics) {
         table.rows = $stb.$update(table.rows,
-          _.map(metrics, function(metric, path) {
-            var info = extractTaskInfo(path);
+          _.map(metrics, function(metric, processorId) {
+            var processor = $scope.dag.processors[processorId];
+            var processorUrl = processor.active ?
+              '#/apps/streamingapp/' + $scope.app.appId + '/processor/' + processorId : '';
             return angular.merge({
-              taskPath: {
-                text: info.path,
-                href: '#/apps/streamingapp/' + $scope.app.appId + '/processor/' + info.processorId
+              active: {
+                tooltip: processor.active ? '' : 'Not in use',
+                condition: processor.active ? 'good' : '',
+                shape: 'stripe'
               },
-              taskClass: info.clazz
-            }, metric.values);
+              processorId: processorId,
+              taskPath: {
+                text: 'Processor ' + processorId,
+                href: processorUrl
+              },
+              taskNum: processor.parallelism,
+              taskClass: processor.taskClass
+            }, metric);
           })
         );
-      }
-
-      function extractTaskInfo(path) {
-        var pieces = path.split('.').slice(1);
-        var processorId = parseInt(pieces[0].replace(/[^0-9]/g, ''));
-        return {
-          path: pieces.join('.'),
-          processorId: processorId,
-          clazz: $scope.dag.processors[processorId].taskClass
-        };
       }
     }])
 ;

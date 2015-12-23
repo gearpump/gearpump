@@ -30,18 +30,18 @@ angular.module('dashboard')
       $scope.processorInfoTable = [
         $ptb.text('Task Class').done(),
         $ptb.number('Parallelism').done(),
-        $ptb.text('Processing Type').done(),
+        $ptb.text('Data Flow Type').done(),
         $ptb.datetime('Birth Time').done(),
         $ptb.datetime('Death Time').done()
       ];
 
       function describeProcessorType(inputs, outputs) {
         if (inputs === 0) {
-          return outputs > 0 ? 'Source Processor (%s out)'.replace('%s', outputs) : 'Orphan';
+          return outputs > 0 ? 'Data Source (%s outputs)'.replace('%s', outputs) : 'Orphan';
         } else if (outputs === 0) {
-          return inputs > 0 ? 'Sink Processor (%s in)'.replace('%s', inputs) : 'Orphan';
+          return inputs > 0 ? 'Data Sink (%s inputs)'.replace('%s', inputs) : 'Orphan';
         }
-        return 'Transit Processor (%s in %s out)'.replace('%s', inputs).replace('%s', outputs);
+        return 'General (%s inputs %s outputs)'.replace('%s', inputs).replace('%s', outputs);
       }
 
       function updateProcessorInfoTable(processor) {

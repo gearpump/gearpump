@@ -96,5 +96,14 @@ angular.module('dashboard')
       $scope.size = function(obj) {
         return Object.keys(obj).length;
       };
+
+      $scope.sendThroughputMetricsCaption = 'Source Processors Send Throughput';
+      $scope.sendThroughputMetricsDescription = 'Messages are sent from external data source';
+      $scope.receiveThroughputMetricsCaption = 'Sink Processors Receive Throughput';
+      $scope.receiveThroughputMetricsDescription = 'Messages are received by external data sink';
+      $scope.averageMesssageProcessingTimeMetricsCaption = 'Average Message Processing Time';
+      $scope.averageMesssageProcessingTimeMetricsDescription = 'Time from message is received to message is sent';
+      $scope.averageMessageReceiveLatencyMetricsCaption = 'Average Message Receive Latency';
+      $scope.averageMessageReceiveLatencyMetricsDescription = '';
     }])
 ;

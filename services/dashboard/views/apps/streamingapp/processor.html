@@ -1,26 +1,39 @@
-<!-- left half -->
-<div class="col-md-6">
+<div class="col-md-12">
+  <div class="row">
+    <!-- left half -->
+    <div class="col-md-6">
+      <div class="row">
+        <div class="col-md-12">
+          <property-table
+            caption="Processor {{processor.id}}"
+            props-bind="processorInfoTable"
+            prop-name-class="col-xs-4 bold"
+            prop-value-class="col-xs-8 actor-path">
+          </property-table>
+        </div>
+
+        <div class="col-md-12">
+          <executor-table
+            executors-bind="processor.executors">
+          </executor-table>
+        </div>
+      </div>
+    </div>
+    <!-- end of left half -->
+
+    <!-- right half -->
+    <div class="col-md-6">
+      <metrics-charts></metrics-charts>
+    </div>
+    <!-- end of right half -->
+  </div>
+<!--
   <div class="row">
     <div class="col-md-12">
-      <property-table
-        caption="Processor {{processor.id}}"
-        props-bind="processorInfoTable"
-        prop-name-class="col-xs-4 bold"
-        prop-value-class="col-xs-8 actor-path">
-      </property-table>
-    </div>
-
-    <div class="col-md-12">
-      <executor-table
-        executors-bind="processor.executors">
-      </executor-table>
+      TBD: metric table
     </div>
   </div>
-</div>
-<!-- end of left half -->
-
-<!-- right half -->
-<div class="col-md-6">
+-->
   <div class="row">
     <div class="col-md-12">
       <h5>Task Receive Throughput</h5>
@@ -29,7 +42,8 @@
         datasource-bind="receiveSkewChart.data">
       </bar-chart>
     </div>
-    <div class="col-md-12">
+    <div class="col-md-12"
+         style="min-height: 200px">
       <h5>Task Metrics Inspector</h5>
       <ui-select theme="select2" multiple ng-model="tasks.selected">
         <ui-select-match placeholder="Click here to pick tasks for inspection...">{{$item}}</ui-select-match>
@@ -40,10 +54,10 @@
 
       <div ng-if="tasks.selected.length>0">
         <br/>
+
         <div ng-include src="'views/apps/streamingapp/processor_task_charts.html?'+tasks.selected.length"
              ng-controller="StreamingAppProcessorTaskChartsCtrl"></div>
       </div>
     </div>
   </div>
 </div>
-<!-- end of right half -->

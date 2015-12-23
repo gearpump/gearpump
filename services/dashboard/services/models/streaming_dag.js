@@ -66,34 +66,28 @@ angular.module('dashboard')
       /** Return the number of tasks (executed by executors). */
       getNumOfTasks: function() {
         return d3.sum(
-          _.map(this._getAliveProcessors(), function(processor) {
+          _.map(this._getActiveProcessors(), function(processor) {
             return processor.parallelism;
           }));
       },
 
-      /** Return the number of (alive) processors. */
+      /** Return the number of current active processors. */
       getNumOfProcessors: function() {
-        return Object.keys(this._getAliveProcessors()).length;
+        return Object.keys(this._getActiveProcessors()).length;
       },
 
-      _getAliveProcessors: function() {
+      _getActiveProcessors: function() {
         var result = {};
         _.forEach(this.processors, function(processor, key) {
-          if (processor.hasOwnProperty('life')) {
-            var life = processor.life;
-            if (life.hasOwnProperty('death') && this.clock > life.death) {
-              return; // dead processors, drop
-            }
-            // (life.hasOwnProperty('birth') && this.clock < life.birth)
-            // future processors, keep
+          if (processor.active) {
+            result[key] = processor;
           }
-          result[key] = processor;
-        }, this);
+        });
         return result;
       },
 
-      _getAliveProcessorIds: function() {
-        return _keysAsNum(this._getAliveProcessors());
+      _getActiveProcessorIds: function() {
+        return _keysAsNum(this._getActiveProcessors());
       },
 
       _getProcessorEdges: function(processors) {
@@ -110,7 +104,7 @@ angular.module('dashboard')
       /** Return the current dag information for drawing a DAG graph. */
       getCurrentDag: function() {
         var weights = {};
-        var processors = this._getAliveProcessors();
+        var processors = this._getActiveProcessors();
         _.forEach(processors, function(_, key) {
           var processorId = parseInt(key); // JavaScript object key type is always string
           weights[processorId] = this._calculateProcessorWeight(processorId);
@@ -158,8 +152,8 @@ angular.module('dashboard')
       /** Return the number of inputs and outputs of a processor */
       calculateProcessorConnections: function(processorId) {
         var result = {inputs: 0, outputs: 0};
-        var aliveProcessors = this._getAliveProcessors();
-        _.forEach(this._getProcessorEdges(aliveProcessors), function(edge) {
+        var activeProcessors = this._getActiveProcessors();
+        _.forEach(this._getProcessorEdges(activeProcessors), function(edge) {
           if (edge.source === processorId) {
             result.outputs++;
           } else if (edge.target === processorId) {
@@ -169,24 +163,20 @@ angular.module('dashboard')
         return result;
       },
 
-      /** Return total received messages from nodes without any outputs. */
-      getReceivedMessages: function() {
-        return this._getProcessingMessageThroughput(/*send*/false);
+      /** Return total received messages from particular processor (or all active processors) without any outputs. */
+      getReceivedMessages: function(processorId) {
+        return this._getMessageThroughputTotalAndRate(/*send*/false, processorId);
       },
 
-      /** Return total sent messages from nodes without any inputs. */
-      getSentMessages: function() {
-        return this._getProcessingMessageThroughput(/*send*/true);
+      /** Return total sent messages from particular processor (or all active processors) without any inputs. */
+      getSentMessages: function(processorId) {
+        return this._getMessageThroughputTotalAndRate(/*send*/true, processorId);
       },
 
-      _getProcessingMessageThroughput: function(send) {
+      _getMessageThroughputTotalAndRate: function(send, processorId) {
         var clazz = send ? 'sendThroughput' : 'receiveThroughput';
-        var processorIds = this._getProcessorIdsByType(send ? 'source' : 'sink');
-        return this._getProcessorThroughputAggregated(clazz, processorIds);
-      },
-
-      /** Return the aggregated throughput data of particular processors. */
-      _getProcessorThroughputAggregated: function(clazz, processorIds) {
+        var processorIds = angular.isNumber(processorId) ?
+          [processorId] : this._getProcessorIdsByType(send ? 'source' : 'sink');
         var total = [], rate = [];
         _.forEach(processorIds, function(processorId) {
           total.push(this._getMetricFieldOrElse(processorId, clazz, 'count', 0));
@@ -196,56 +186,74 @@ angular.module('dashboard')
       },
 
       /** Return processor ids as an array by type (source|sink). */
-      _getProcessorIdsByType: function(type) {
-        return _.filter(this._getAliveProcessorIds(), function(processorId) {
+      _getProcessorIdsByType: function(type, includeInactiveProcessors) {
+        var processorIds = includeInactiveProcessors ?
+          _keysAsNum(this.processors) : this._getActiveProcessorIds();
+        return _.filter(processorIds, function(processorId) {
           var conn = this.calculateProcessorConnections(processorId);
           return (type === 'source' && conn.inputs === 0 && conn.outputs > 0) ||
             (type === 'sink' && conn.inputs > 0 && conn.outputs === 0);
         }, this);
       },
 
-      /** Return the average message processing time. */
-      getMessageProcessingTime: function() {
-        return this._getMetricFieldAverage('processTime', 'mean', 0);
+      /** Return the average message processing time of particular processor (or all active processors). */
+      getMessageProcessingTime: function(processorId) {
+        var fallback = 0;
+        return angular.isNumber(processorId) ?
+          this._getMetricFieldOrElse(processorId, 'processTime', 'mean', fallback) :
+          this._getProcessorsMetricFieldAverage('processTime', 'mean', fallback);
       },
 
-      /** Return the average message receive latency. */
-      getMessageReceiveLatency: function() {
-        return this._getMetricFieldAverage('receiveLatency', 'mean', 0);
+      /** Return the average message receive latency of particular processor (or all active processors). */
+      getMessageReceiveLatency: function(processorId) {
+        var fallback = 0;
+        return angular.isNumber(processorId) ?
+          this._getMetricFieldOrElse(processorId, 'receiveLatency', 'mean', fallback) :
+          this._getProcessorsMetricFieldAverage('receiveLatency', 'mean', fallback);
       },
 
       /** Return the average value of particular metrics field of particular processor (or all processors). */
-      _getMetricFieldAverage: function(clazz, field, fallback) {
-        var array = _.map(this._getAliveProcessorIds(), function(processorId) {
+      _getProcessorsMetricFieldAverage: function(clazz, field, fallback) {
+        var array = _.map(this._getActiveProcessorIds(), function(processorId) {
           return this._getMetricFieldOrElse(processorId, clazz, field, fallback);
         }, this);
         return d3.mean(array);
       },
 
-      /** Return the historical message receive throughput as an array. */
-      toHistoricalMessageReceiveThroughputData: function(metrics, timeResolution) {
-        var processorIds = this._getProcessorIdsByType('sink');
+      /**
+       * Return the historical message receive throughput as an array. If processorId is not specified, it
+       * will only return receive throughput data of data sink processors.
+       */
+      toHistoricalMessageReceiveThroughputData: function(metrics, timeResolution, processorId) {
+        var processorIds = angular.isNumber(processorId) ?
+          [processorId] : this._getProcessorIdsByType('sink', /*includeInactiveProcessors=*/true);
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['receiveThroughput'], 'movingAverage1m', d3.sum);
       },
 
-      /** Return the historical message send throughput as an array. */
-      toHistoricalMessageSendThroughputData: function(metrics, timeResolution) {
-        var processorIds = this._getProcessorIdsByType('source');
+      /**
+       * Return the historical message send throughput as an array. If processorId is not specified, it
+       * will only return send throughput data of data source processors.
+       */
+      toHistoricalMessageSendThroughputData: function(metrics, timeResolution, processorId) {
+        var processorIds = angular.isNumber(processorId) ?
+          [processorId] : this._getProcessorIdsByType('source', /*includeInactiveProcessors=*/true);
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['sendThroughput'], 'movingAverage1m', d3.sum);
       },
 
       /** Return the historical average message processing time as an array. */
-      toHistoricalMessageAverageProcessingTimeData: function(metrics, timeResolution) {
-        var processorIds = _keysAsNum(this.processors);
+      toHistoricalMessageAverageProcessingTimeData: function(metrics, timeResolution, processorId) {
+        var processorIds = angular.isNumber(processorId) ?
+          [processorId] : _keysAsNum(this.processors);
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['processTime'], 'mean', d3.mean);
       },
 
       /** Return the historical average message receive latency as an array. */
-      toHistoricalAverageMessageReceiveLatencyData: function(metrics, timeResolution) {
-        var processorIds = _keysAsNum(this.processors);
+      toHistoricalAverageMessageReceiveLatencyData: function(metrics, timeResolution, processorId) {
+        var processorIds = angular.isNumber(processorId) ?
+          [processorId] : _keysAsNum(this.processors);
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['receiveLatency'], 'mean', d3.mean);
       },

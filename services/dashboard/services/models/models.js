@@ -164,10 +164,23 @@ angular.module('dashboard')
           if (obj.hasOwnProperty('clock') && !moment(Number(obj.clock)).isValid()) {
             console.warn({message: 'invalid application clock', clock: obj.clock});
             delete obj.clock;
+          } else {
+            obj.clock = Number(obj.clock);
           }
 
           // upickle conversion 1: streaming app related decoding
           obj.processors = util.flatten(obj.processors);
+          _.forEach(obj.processors, function(processor) {
+            // add an active property
+            var active = true;
+            if (angular.isNumber(obj.clock) && processor.hasOwnProperty('life')) {
+              var life = processor.life;
+              if (life.hasOwnProperty('death') && obj.clock > Number(life.death)) {
+                active = false; // caution: death will be set to 0 after processor getting replaced!
+              }
+            }
+            processor.active = active;
+          });
           obj.processorLevels = util.flatten(obj.processorLevels);
           if (obj.dag && obj.dag.edgeList) {
             obj.dag.edgeList = util.flatten(obj.dag.edgeList, function(item) {
