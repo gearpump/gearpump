@@ -20,6 +20,7 @@ package io.gearpump.integrationtest.storm
 
 
 import backtype.storm.utils.DRPCClient
+import io.gearpump.cluster.main.AppSubmitter
 import io.gearpump.integrationtest.Docker
 import io.gearpump.integrationtest.minicluster.BaseContainer
 import org.apache.log4j.Logger
@@ -44,9 +45,10 @@ class StormClient(masterAddrs: Seq[(String, Int)]) {
 
   def submitStormApp(jar: String, mainClass: String, args: String = ""): Int = {
     try {
-      Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_CMD -config $CONFIG_FILE " +
-        s"-jar $jar $mainClass $args").split("\n")
-        .filter(_.contains("The application id is ")).head.split(" ").last.toInt
+      val output = Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_CMD -config $CONFIG_FILE " +
+        s"-jar $jar $mainClass $args")
+      val appId = AppSubmitter.parseAppIdFromConsoleOutput(output)
+      appId
     } catch {
       case ex: Throwable =>
         LOG.warn(s"swallowed an exception: $ex")

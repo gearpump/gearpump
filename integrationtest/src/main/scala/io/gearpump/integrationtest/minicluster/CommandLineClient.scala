@@ -18,6 +18,7 @@
 package io.gearpump.integrationtest.minicluster
 
 import io.gearpump.cluster.MasterToAppMaster
+import io.gearpump.cluster.main.AppSubmitter
 import io.gearpump.integrationtest.Docker
 import org.apache.log4j.Logger
 
@@ -53,13 +54,10 @@ class CommandLineClient(host: String) {
     execAndCaptureOutput(s"gear app -verbose true -jar $jar $args")
   }
 
-  def submitApp(jar: String, args: String = ""): Int = {
-    submitAppUse("gear app", jar, args)
-  }
-
-  private def submitAppUse(launcher: String, jar: String, args: String = ""): Int = try {
-    execAndCaptureOutput(s"$launcher -jar $jar $args").split("\n")
-      .filter(_.contains("The application id is ")).head.split(" ").last.toInt
+  def submitApp(jar: String, args: String = ""): Int = try {
+    val output = execAndCaptureOutput(s"gear app -jar $jar $args")
+    val appId = AppSubmitter.parseAppIdFromConsoleOutput(output)
+    appId
   } catch {
     case ex: Throwable =>
       LOG.warn(s"swallowed an exception: $ex")
