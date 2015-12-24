@@ -69,9 +69,9 @@ This is the default configuration for gear.conf.
 | gearpump.log.application.dir | "logs" | The log directory for applications(relative to current working directory) |
 | gearpump.serializers | a map | custom serializer for streaming application |
 | gearpump.worker.slots | 1000 | How many slots each worker contains |
-| gearpump.appmaster.vmargs | "-server  -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -Djava.rmi.server.hostname=localhost" | JVM arguments for AppMaster |
+| gearpump.appmaster.vmargs | "-server  -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -Djava.rmi.server.hostname=localhost" | JVM arguments for AppMaster |
 | gearpump.appmaster.extraClasspath | "" | JVM default class path for AppMaster |
-| gearpump.executor.vmargs | "-server -Xss1M -XX:MaxPermSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3  -Djava.rmi.server.hostname=localhost" | JVM arguments for executor |
+| gearpump.executor.vmargs | "-server -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3  -Djava.rmi.server.hostname=localhost" | JVM arguments for executor |
 | gearpump.executor.extraClasspath | "" | JVM default class path for executor |
 | gearpump.jarstore.rootpath | "jarstore/" |   Define where the submitted jar file will be stored at. This path follows the hadoop path schema, For HDFS, use hdfs://host:port/path/; if you want to store on master nodes, then use local directory. jarstore.rootpath = "jarstore/" will points to relative directory where master is started. jarstore.rootpath = "/jarstore/" will points to absolute directory on master server |
 | gearpump.scheduling.scheduler-class |"io.gearpump.cluster.scheduler.PriorityScheduler" | Class to schedule the applications. |
