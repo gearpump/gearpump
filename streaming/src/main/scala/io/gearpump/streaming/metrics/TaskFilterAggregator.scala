@@ -21,7 +21,7 @@ class TaskFilterAggregator (maxLimit: Int) extends MetricsAggregator {
     this(config.getInt(Constants.GEARPUMP_METRICS_MAX_LIMIT))
   }
   override def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem] = {
-    if (options.get(ReadOption.Key) != ReadOption.ReadLatest) {
+    if (options.get(ReadOption.Key) != Some(ReadOption.ReadLatest)) {
       // return empty set
       List.empty[HistoryMetricsItem]
     } else {
