@@ -18,17 +18,14 @@
 
 package io.gearpump.transport.netty;
 
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageEncoder;
 
-public class MessageEncoder extends OneToOneEncoder {
+import java.util.List;
+
+public class MessageEncoder extends MessageToMessageEncoder<MessageBatch> {
   @Override
-  protected Object encode(ChannelHandlerContext ctx, Channel channel, Object obj) throws Exception {
-    if (obj instanceof MessageBatch) {
-      return ((MessageBatch)obj).buffer();
-    }
-
-    throw new RuntimeException("Unsupported encoding of object of class " + obj.getClass().getName());
+  protected void encode(ChannelHandlerContext channelHandlerContext, MessageBatch messageBatch, List out) throws Exception {
+    out.add(messageBatch.buffer(channelHandlerContext.alloc()));
   }
 }

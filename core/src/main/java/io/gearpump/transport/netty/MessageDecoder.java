@@ -18,18 +18,16 @@
 
 package io.gearpump.transport.netty;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.frame.FrameDecoder;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
 
-import java.io.DataInput;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MessageDecoder extends FrameDecoder {
+public class MessageDecoder extends ByteToMessageDecoder {
   private ITransportMessageSerializer serializer;
-  private WrappedChannelBuffer dataInput = new WrappedChannelBuffer();
+  private WrappedByteBuf dataInput = new WrappedByteBuf();
 
   public MessageDecoder(ITransportMessageSerializer serializer){
     this.serializer = serializer;
@@ -43,9 +41,10 @@ public class MessageDecoder extends FrameDecoder {
    *  len ... int(4)
    *  payload ... byte[]     *
    */
-  protected List<TaskMessage> decode(ChannelHandlerContext ctx, Channel channel,
-                                     ChannelBuffer buf) {
-    this.dataInput.setChannelBuffer(buf);
+
+  @Override
+  protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) throws Exception {
+    this.dataInput.setByteBuf(byteBuf);
 
     final int SESION_LENGTH = 4; //int
     final int SOURCE_TASK_LENGTH = 8; //long
@@ -54,10 +53,10 @@ public class MessageDecoder extends FrameDecoder {
     final int HEADER_LENGTH = SESION_LENGTH + SOURCE_TASK_LENGTH + TARGET_TASK_LENGTH + MESSAGE_LENGTH;
 
     // Make sure that we have received at least a short message
-    long available = buf.readableBytes();
+    long available = byteBuf.readableBytes();
     if (available < HEADER_LENGTH) {
       //need more data
-      return null;
+      return;
     }
 
     List<TaskMessage> taskMessageList = new ArrayList<TaskMessage>();
@@ -69,13 +68,13 @@ public class MessageDecoder extends FrameDecoder {
       // because the whole frame might not be in the buffer yet.
       // We will reset the buffer position to the marked position if
       // there's not enough bytes in the buffer.
-      buf.markReaderIndex();
+      byteBuf.markReaderIndex();
 
-      int sessionId = buf.readInt();
-      long targetTask = buf.readLong();
-      long sourceTask = buf.readLong();
+      int sessionId = byteBuf.readInt();
+      long targetTask = byteBuf.readLong();
+      long sourceTask = byteBuf.readLong();
       // Read the length field.
-      int length = buf.readInt();
+      int length = byteBuf.readInt();
 
       available -= HEADER_LENGTH;
 
@@ -87,7 +86,7 @@ public class MessageDecoder extends FrameDecoder {
       // Make sure if there's enough bytes in the buffer.
       if (available < length) {
         // The whole bytes were not received yet - return null.
-        buf.resetReaderIndex();
+        byteBuf.resetReaderIndex();
         break;
       }
       available -= length;
@@ -100,6 +99,8 @@ public class MessageDecoder extends FrameDecoder {
       taskMessageList.add(new TaskMessage(sessionId, targetTask, sourceTask, message));
     }
 
-    return taskMessageList.size() == 0 ? null : taskMessageList;
+    if(taskMessageList.size() > 0) {
+      list.add(taskMessageList);
+    }
   }
 }

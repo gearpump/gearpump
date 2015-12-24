@@ -27,19 +27,19 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Actor
 import io.gearpump.transport.HostPort
 import io.gearpump.util.LogUtil
-import org.jboss.netty.bootstrap.ClientBootstrap
-import org.jboss.netty.channel._
+import io.netty.bootstrap.Bootstrap
+import io.netty.channel._
 import org.slf4j.Logger
 
 import scala.concurrent.duration.FiniteDuration
 import scala.language.implicitConversions
 
-class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) extends Actor {
+class Client(conf: NettyConfig, eventLoopGroup: EventLoopGroup, hostPort : HostPort) extends Actor {
   import io.gearpump.transport.netty.Client._
 
   val name = s"netty-client-$hostPort"
 
-  private final var bootstrap: ClientBootstrap = null
+  private final var bootstrap: Bootstrap = null
   private final val random: Random = new Random
   private val serializer = conf.newTransportSerializer
   private var channel : Channel = null
@@ -47,8 +47,8 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
   var batch = new util.ArrayList[TaskMessage]
 
   private val init = {
-    bootstrap = NettyUtil.createClientBootStrap(factory,
-      new ClientPipelineFactory(name, conf), conf.buffer_size)
+    bootstrap = NettyUtil.createClientBootStrap(eventLoopGroup,
+      new ClientChannelInitializer(name, conf), conf.buffer_size)
     self ! Connect(0)
   }
 
@@ -149,12 +149,12 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
   }
 
   private def flushRequest(channel: Channel, requests: MessageBatch) {
-    val future: ChannelFuture = channel.write(requests)
+    val future: ChannelFuture = channel.writeAndFlush(requests)
     future.fail { (channel, ex) =>
       if (channel.isOpen) {
         channel.close
       }
-      LOG.error(s"failed to send requests to ${channel.getRemoteAddress} ${ex.getClass.getSimpleName}")
+      LOG.error(s"failed to send requests to ${channel.remoteAddress()} ${ex.getClass.getSimpleName}")
       if (!ex.isInstanceOf[ClosedChannelException]) {
           LOG.error(ex.getMessage, ex)
       }
@@ -188,10 +188,9 @@ object Client {
 
   case class Flush(channel : Channel)
 
-  class ClientErrorHandler(name: String) extends SimpleChannelUpstreamHandler {
-
-    override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) {
-      event.getCause match {
+  class ClientErrorHandler(name: String) extends ChannelInboundHandlerAdapter {
+    override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
+      cause match {
         case ex: ConnectException => Unit
         case ex: ClosedChannelException =>
           LOG.warn("exception found when trying to close netty connection", ex.getMessage)
@@ -200,13 +199,12 @@ object Client {
     }
   }
 
-  class ClientPipelineFactory(name: String, conf: NettyConfig) extends ChannelPipelineFactory {
-    def getPipeline: ChannelPipeline = {
-      val pipeline: ChannelPipeline = Channels.pipeline
+  class ClientChannelInitializer(name: String, conf: NettyConfig) extends ChannelInitializer[Channel] {
+    def initChannel(channel: Channel): Unit = {
+      val pipeline: ChannelPipeline = channel.pipeline
       pipeline.addLast("decoder", new MessageDecoder(conf.newTransportSerializer))
       pipeline.addLast("encoder", new MessageEncoder)
       pipeline.addLast("handler", new ClientErrorHandler(name))
-      pipeline
     }
   }
 
@@ -218,7 +216,7 @@ object Client {
       channelFuture.addListener(new ChannelFutureListener {
         def operationComplete(future: ChannelFuture) {
           if (future.isSuccess) {
-            handler(future.getChannel)
+            handler(future.channel())
           }
         }
       })
@@ -229,7 +227,7 @@ object Client {
       channelFuture.addListener(new ChannelFutureListener {
         def operationComplete(future: ChannelFuture) {
           if (!future.isSuccess) {
-            handler(future.getChannel, future.getCause)
+            handler(future.channel(), future.cause())
           }
         }
       })

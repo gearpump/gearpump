@@ -19,9 +19,10 @@
 package io.gearpump.transport.netty;
 
 import io.gearpump.google.common.io.Closeables;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBufferOutputStream;
-import org.jboss.netty.buffer.ChannelBuffers;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,9 +110,9 @@ public class MessageBatch {
   /**
    * create a buffer containing the encoding of this batch
    */
-  ChannelBuffer buffer() throws IOException {
-    ChannelBufferOutputStream bout =
-        new ChannelBufferOutputStream(ChannelBuffers.directBuffer(encoded_length));
+  ByteBuf buffer(ByteBufAllocator allocator) throws IOException {
+    ByteBufOutputStream bout =
+        new ByteBufOutputStream(allocator.directBuffer(encoded_length));
 
     try {
       for (TaskMessage msg : messages) {
@@ -136,7 +137,7 @@ public class MessageBatch {
    * len ... int(4)
    * payload ... byte[]     *
    */
-  private void writeTaskMessage(ChannelBufferOutputStream bout,
+  private void writeTaskMessage(ByteBufOutputStream bout,
                                 TaskMessage message) throws IOException {
     long target_id = message.targetTask();
     long source_id = message.sourceTask();

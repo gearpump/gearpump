@@ -19,8 +19,6 @@ package io.gearpump.streaming.task
 
 import java.io.{DataInput, DataOutput}
 
-import org.jboss.netty.buffer.ChannelBuffer
-
 trait TaskMessageSerializer[T] {
   def write(dataOutput: DataOutput, obj: T)
 

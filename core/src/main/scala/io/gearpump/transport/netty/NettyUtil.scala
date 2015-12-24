@@ -19,40 +19,51 @@
 package io.gearpump.transport.netty
 
 import java.net.InetSocketAddress
-import java.util.concurrent.{Executors, ThreadFactory}
+import java.util.concurrent.ThreadFactory
 
-import org.jboss.netty.bootstrap.{ClientBootstrap, ServerBootstrap}
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
-import org.jboss.netty.channel.{Channel, ChannelFactory, ChannelPipelineFactory}
+import io.gearpump.util.Util
+import io.netty.bootstrap.{ServerBootstrap, Bootstrap}
+import io.netty.buffer.PooledByteBufAllocator
+import io.netty.channel.nio.NioEventLoopGroup
+import io.netty.channel.socket.nio.{NioServerSocketChannel, NioSocketChannel}
+import io.netty.channel._
 
 object NettyUtil {
 
-  def newNettyServer(name: String, pipelineFactory: ChannelPipelineFactory, buffer_size: Int, inputPort: Int = 0): (Int, Channel) = {
-    val bossFactory: ThreadFactory = new NettyRenameThreadFactory(name + "-boss")
-    val workerFactory: ThreadFactory = new NettyRenameThreadFactory(name + "-worker")
-    val factory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(bossFactory), Executors.newCachedThreadPool(workerFactory), 1)
+  def createNioEventLoopGroup(threadNum: Int, threadFactoryName: String): NioEventLoopGroup = {
+    val factory = new NettyRenameThreadFactory(threadFactoryName)
+    new NioEventLoopGroup(threadNum, factory)
+  }
 
-    val bootstrap = createServerBootStrap(factory, pipelineFactory, buffer_size)
-    val channel: Channel = bootstrap.bind(new InetSocketAddress(inputPort))
-    val port = channel.getLocalAddress().asInstanceOf[InetSocketAddress].getPort();
+  def newNettyServer(
+      bossEventLoopGroup: EventLoopGroup,
+      workerEventLoopGroup: EventLoopGroup,
+      channelInitializer: ChannelInitializer[Channel],
+      buffer_size: Int,
+      inputPort: Int): (Int, Channel) = {
+
+    val port = if(inputPort == 0) Util.findFreePort.get else inputPort
+    val bootstrap = new ServerBootstrap()
+      .group(bossEventLoopGroup, workerEventLoopGroup)
+      .channel(classOf[NioServerSocketChannel])
+      .childOption(ChannelOption.TCP_NODELAY.asInstanceOf[ChannelOption[Boolean]], true)
+      .childOption(ChannelOption.SO_RCVBUF.asInstanceOf[ChannelOption[Int]], buffer_size)
+      .childOption(ChannelOption.SO_KEEPALIVE.asInstanceOf[ChannelOption[Boolean]], true)
+      .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+      .childHandler(channelInitializer)
+
+    val channel = bootstrap.bind(new InetSocketAddress(port)).sync().channel()
     (port, channel)
   }
 
-  def createServerBootStrap(factory: ChannelFactory, pipelineFactory: ChannelPipelineFactory, buffer_size: Int) = {
-    val bootstrap = new ServerBootstrap(factory)
-    bootstrap.setOption("child.tcpNoDelay", true)
-    bootstrap.setOption("child.receiveBufferSize", buffer_size)
-    bootstrap.setOption("child.keepAlive", true)
-    bootstrap.setPipelineFactory(pipelineFactory)
-    bootstrap
-  }
-
-  def createClientBootStrap(factory: ChannelFactory, pipelineFactory: ChannelPipelineFactory, buffer_size: Int) = {
-    val bootstrap = new ClientBootstrap(factory)
-    bootstrap.setOption("tcpNoDelay", true)
-    bootstrap.setOption("sendBufferSize", buffer_size)
-    bootstrap.setOption("keepAlive", true)
-    bootstrap.setPipelineFactory(pipelineFactory)
+  def createClientBootStrap(eventLoopGroup: EventLoopGroup, channelInitializer: ChannelInitializer[Channel], buffer_size: Int) = {
+    val bootstrap = new Bootstrap().group(eventLoopGroup)
+      .channel(classOf[NioSocketChannel])
+      .option(ChannelOption.TCP_NODELAY.asInstanceOf[ChannelOption[Boolean]], true)
+      .option(ChannelOption.SO_SNDBUF.asInstanceOf[ChannelOption[Int]], buffer_size)
+      .option(ChannelOption.SO_KEEPALIVE.asInstanceOf[ChannelOption[Boolean]], true)
+      .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+      .handler(channelInitializer)
     bootstrap
   }
 }
