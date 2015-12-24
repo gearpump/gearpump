@@ -97,7 +97,9 @@ object FileDirective {
       entity(as[Multipart.FormData]) { (formdata: Multipart.FormData) =>
         val fileNameMap = formdata.parts.mapAsync(1) { p =>
           if (p.filename.isDefined) {
-            val targetPath = File.createTempFile(s"userfile_${p.name}_${p.filename.getOrElse("")}", "", rootDirectory)
+
+            //reserve the suffix
+            val targetPath = File.createTempFile(s"userfile_${p.name}_", s"${p.filename.getOrElse("")}", rootDirectory)
             val written = p.entity.dataBytes.runWith(SynchronousFileSink(targetPath))
             written.map(written =>
               if (written > 0) {
