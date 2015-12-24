@@ -113,16 +113,23 @@ class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends Met
         val end = now
         val start = end - (historyMetricConfig.retainRecentDataSeconds) * 1000
         val interval = historyMetricConfig.retainRecentDataIntervalMs
-        (start, end, interval)
+        (floor(start, interval), floor(end, interval), interval)
       case ReadOption.ReadHistory =>
         val end = now
         val start = end - (historyMetricConfig.retainHistoryDataHours) * 3600 * 1000
         val interval = historyMetricConfig.retainHistoryDataIntervalMs
-        (start, end, interval)
+        (floor(start, interval), floor(end, interval), interval)
       case _ =>
-        // For all other cases, treat it as ReadOption.ReadLatest
-        (0L, Long.MaxValue - 1, Long.MaxValue)
+        // all data points are aggregated together.
+        (0L, Long.MaxValue, Long.MaxValue)
     }
+  }
+
+  // The original metrics data is divided by interval points:
+  // time series (0, interval, 2*interval, 3*interval....)
+  // floor(..) make sure the Aggregator use the same set of interval points.
+  private def floor(value: Long, interval: Long): Long = {
+    (value / interval) * interval
   }
 
   // returns "app0.processor0:sendThroughput" as the group Id.
@@ -236,10 +243,10 @@ object ProcessorAggregator {
       count += 1
       mean += input.mean
       stddev += input.stddev
-      median += input.mean
-      p95 += input.stddev
-      p99 += input.mean
-      p999 += input.stddev
+      median += input.median
+      p95 += input.p95
+      p99 += input.p99
+      p999 += input.p999
 
       if (item.time < startTime) {
         startTime = item.time
