@@ -40,7 +40,7 @@ object DataSourceProcessor {
             parallelism: Int,
             description: String = "",
             taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem): Processor[DataSourceTask] = {
-    Processor[DataSourceTask](parallelism, description = description,
+    Processor.sourceProcessor[DataSourceTask](parallelism, description = description,
       taskConf.withValue[DataSource](DataSourceTask.DATA_SOURCE, dataSource))
   }
 }

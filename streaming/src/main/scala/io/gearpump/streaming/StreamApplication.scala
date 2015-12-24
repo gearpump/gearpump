@@ -56,12 +56,18 @@ trait Processor[+T <: Task] extends ReferenceEqual {
    * Each runtime instance of this class is a task.
    */
   def taskClass: Class[_ <: Task]
+
+  /**
+    * The output ports of this processor
+    * @return the output ports of this processor
+    */
+  def outputPorts: Array[String]
 }
 
 object Processor {
   def ProcessorToProcessorDescription(id: ProcessorId, processor: Processor[_ <: Task]): ProcessorDescription = {
     import processor._
-    ProcessorDescription(id, taskClass.getName, parallelism, description, taskConf)
+    ProcessorDescription(id, taskClass.getName, parallelism, outputPorts, description, taskConf)
   }
 
   def apply[T<: Task](parallelism : Int, description: String = "", taskConf: UserConfig = UserConfig.empty)(implicit classtag: ClassTag[T]): DefaultProcessor[T] = {
@@ -72,8 +78,23 @@ object Processor {
     new DefaultProcessor[T](parallelism, description, taskConf, taskClazz)
   }
 
-  case class DefaultProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T]) extends Processor[T] {
+  def sinkProcessor[T<: Task](parallelism : Int, description: String = "", taskConf: UserConfig = UserConfig.empty)(implicit classtag: ClassTag[T]): SinkProcessor[T] = {
+    new SinkProcessor[T](parallelism, description, taskConf, classtag.runtimeClass.asInstanceOf[Class[T]])
+  }
 
+  def sinkProcessor[T<: Task](taskClazz: Class[T], parallelism : Int, description: String, taskConf: UserConfig): SinkProcessor[T] = {
+    new SinkProcessor[T](parallelism, description, taskConf, taskClazz)
+  }
+
+  def sourceProcessor[T<: Task](parallelism : Int, description: String = "", taskConf: UserConfig = UserConfig.empty)(implicit classtag: ClassTag[T]): SourceProcessor[T] = {
+    new SourceProcessor[T](parallelism, description, taskConf, classtag.runtimeClass.asInstanceOf[Class[T]])
+  }
+
+  def sourceProcessor[T<: Task](taskClazz: Class[T], parallelism : Int, description: String, taskConf: UserConfig): SourceProcessor[T] = {
+    new SourceProcessor[T](parallelism, description, taskConf, taskClazz)
+  }
+
+  abstract class ProcessorBase[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T]) extends Processor[T] {
     def withParallelism(parallel: Int): DefaultProcessor[T] = {
       new DefaultProcessor[T](parallel, description, taskConf, taskClass)
     }
@@ -86,6 +107,24 @@ object Processor {
       new DefaultProcessor[T](parallelism, description, conf, taskClass)
     }
   }
+
+  case class DefaultProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T])
+    extends ProcessorBase[T](parallelism, description, taskConf, taskClass) {
+    override def outputPorts: Array[String] = DEFAULT_OUTPUT_PORTS
+  }
+
+  case class SourceProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T])
+    extends ProcessorBase[T](parallelism, description, taskConf, taskClass) {
+    override def outputPorts: Array[String] = DEFAULT_OUTPUT_PORTS
+  }
+
+  case class SinkProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T])
+    extends ProcessorBase[T](parallelism, description, taskConf, taskClass) {
+    override def outputPorts: Array[String] = Array.empty[String]
+  }
+
+  val DEFAULT_OUTPUT_PORT_NAME = "output"
+  val DEFAULT_OUTPUT_PORTS = Array(DEFAULT_OUTPUT_PORT_NAME)
 }
 
 /**
@@ -126,6 +165,7 @@ case class ProcessorDescription(
     id: ProcessorId,
     taskClass: String,
     parallelism : Int,
+    outputPorts : Array[String],
     description: String = "",
     taskConf: UserConfig = null,
     life: LifeTime = LifeTime.Immortal,

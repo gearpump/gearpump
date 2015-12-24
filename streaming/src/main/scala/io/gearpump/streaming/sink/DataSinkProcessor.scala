@@ -40,7 +40,7 @@ object DataSinkProcessor {
             parallelism: Int,
             description: String = "",
             taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem): Processor[DataSinkTask] = {
-    Processor[DataSinkTask](parallelism, description = description,
+    Processor.sinkProcessor[DataSinkTask](parallelism, description = description,
       taskConf.withValue[DataSink](DataSinkTask.DATA_SINK, dataSink))
   }
 }

@@ -20,6 +20,7 @@ package io.gearpump.streaming.javaapi;
 
 import akka.actor.ActorSystem;
 import io.gearpump.cluster.UserConfig;
+import io.gearpump.streaming.Processor$;
 import io.gearpump.streaming.sink.DataSink;
 import io.gearpump.streaming.sink.DataSinkProcessor;
 import io.gearpump.streaming.sink.DataSinkTask;
@@ -32,6 +33,7 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
   private int _parallelism = 1;
   private String _description = "";
   private UserConfig _userConf = UserConfig.empty();
+  private String[] _outputPorts = new String[0];
 
   public Processor(Class<T> taskClass) {
     this._taskClass = taskClass;
@@ -75,6 +77,7 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
     this._parallelism = processor.parallelism();
     this._description = processor.description();
     this._userConf = processor.taskConf();
+    this._outputPorts = processor.outputPorts();
   }
 
   /**
@@ -89,6 +92,7 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
     this._parallelism = parallelism;
     this._description = description;
     this._userConf = taskConf;
+    this._outputPorts = Processor$.MODULE$.DEFAULT_OUTPUT_PORTS();
   }
 
   public Processor<T> withParallelism(int parallel) {
@@ -122,6 +126,8 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
   public Class<? extends io.gearpump.streaming.task.Task> taskClass() {
     return _taskClass;
   }
+
+  @Override  public String[] outputPorts() { return _outputPorts; }
 
   /**
    * reference equal
