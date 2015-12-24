@@ -58,8 +58,8 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
     val aggregator = new HistogramAggregator("processor")
 
     val a = Histogram("processor.task1", 1, 2, 3, 4, 5, 6)
-    val b = Histogram("processor.task2", 5, 4, 3, 2, 1, 0)
-    val expect = Histogram("processor.task2", 3, 3, 3, 3, 3, 3)
+    val b = Histogram("processor.task2", 5, 6, 7, 8, 9, 10)
+    val expect = Histogram("processor.task2", 3, 4, 5, 6, 7, 8)
 
     val olderTime = 100
     val newerTime = 200
