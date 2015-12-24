@@ -21,7 +21,7 @@ package io.gearpump.serializer
  * User defined message serializer
  */
 trait Serializer {
-  def serialize(message: AnyRef) : Array[Byte]
+  def serialize(message: Any) : Array[Byte]
 
-  def deserialize(msg : Array[Byte]): AnyRef
+  def deserialize(msg : Array[Byte]): Any
 }

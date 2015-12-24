@@ -37,7 +37,7 @@ class FastKryoSerializer(system: ExtendedActorSystem) extends Serializer{
   kryo.setInstantiatorStrategy(strategy)
   private val kryoClazz = new GearpumpSerialization(config).customize(kryo)
 
-  override def serialize(message: AnyRef) : Array[Byte] = {
+  override def serialize(message: Any) : Array[Byte] = {
     try {
       kryoSerializer.toBinary(message)
     } catch {
@@ -72,7 +72,7 @@ class FastKryoSerializer(system: ExtendedActorSystem) extends Serializer{
     }
   }
 
-  override def deserialize(msg : Array[Byte]): AnyRef = {
+  override def deserialize(msg : Array[Byte]): Any = {
     kryoSerializer.fromBinary(msg)
   }
 }
