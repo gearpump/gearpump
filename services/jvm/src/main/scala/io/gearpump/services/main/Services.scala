@@ -45,6 +45,8 @@ object Services extends AkkaApp with ArgumentsParser {
     Console.println("UI Server")
   }
 
+  private var killFunction: Option[() =>Unit] = None
+
   override def main(inputAkkaConf: Config, args: Array[String]): Unit = {
 
     val argConfig = parse(args)
@@ -79,6 +81,19 @@ object Services extends AkkaApp with ArgumentsParser {
 
     RestServices(master)
 
+    killFunction = Some{() =>
+      LOG.info("Shutting down UI Server")
+      system.shutdown()
+    }
+
     system.awaitTermination()
+  }
+
+  // TODO: fix this
+  // Hack around for YARN module, so that we can kill the UI server when application is shutting down.
+  def kill(): Unit = {
+    if (killFunction.isDefined) {
+      killFunction.get.apply()
+    }
   }
 }
