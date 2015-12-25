@@ -14,21 +14,21 @@ The commands can be found at: "bin" folder of Gearpump binary.
 You can use the command `gear` under the bin directory to submit, query and terminate an application:
 
 ```bash
-gear app [-namePrefix <application name prefix>] -jar xx.jar MainClass <arg1> <arg2> ...
+gear app [-namePrefix <application name prefix>] [-conf <custom gearpump config file>] -jar xx.jar MainClass <arg1> <arg2> ...
 ```
 
 ### List all running applications
 To list all running applications:
 
 ```bash
-gear info
+gear info  [-conf <custom gearpump config file>]
 ```
 
 ### Kill a running application
 To kill an application:
 
 ```bash
-gear kill -appid <application id>
+gear kill -appid <application id>  [-conf <custom gearpump config file>]
 ```
 
 ### Submit a storm application to Gearpump Cluster
@@ -80,5 +80,5 @@ Please check [Deployment for Standalone mode](deployment-standalone.html) for mo
 To start UI server, you can:
 
 ```bash
-services
+services  [-master <host:port>]
 ```
