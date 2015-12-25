@@ -22,6 +22,8 @@ import org.slf4j.Logger
 
 object Gear  {
 
+  val OPTION_CONFIG = "conf"
+
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   val commands = Map("app" -> AppSubmitter, "kill" -> Kill,
@@ -63,7 +65,7 @@ object Gear  {
     var configFile:String = null
     while (index < inputArgs.length) {
       val item = inputArgs(index)
-      if (item == "-conf") {
+      if (item == s"-$OPTION_CONFIG") {
         index += 1
         configFile = inputArgs(index)
       } else {

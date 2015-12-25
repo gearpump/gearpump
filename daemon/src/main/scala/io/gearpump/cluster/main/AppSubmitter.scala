@@ -38,7 +38,9 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
     "namePrefix" -> CLIOption[String]("<application name prefix>", required = false, defaultValue = Some("")),
     "jar" -> CLIOption("<application>.jar", required = true),
     "verbose" -> CLIOption("<print verbose log on console>", required = false, defaultValue = Some(false)),
-    "config" -> CLIOption("custom configuration file", required = false, defaultValue = None))
+    // For document purpose only, OPTION_CONFIG option is not used here.
+    // OPTION_CONFIG is parsed by parent shell command "Gear" transparently.
+    Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false, defaultValue = None))
 
   def main(akkaConf: Config, args: Array[String]): Unit = {
 

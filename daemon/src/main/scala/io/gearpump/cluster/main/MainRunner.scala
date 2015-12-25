@@ -28,7 +28,9 @@ object MainRunner extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "config" -> CLIOption("custom configuration file", required = false, defaultValue = None))
+    // For document purpose only, OPTION_CONFIG option is not used here.
+    // OPTION_CONFIG is parsed by parent shell command "Gear" transparently.
+    Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false, defaultValue = None))
 
   def main(akkaConf: Config, args: Array[String]): Unit = {
     val mainClazz = args(0)
