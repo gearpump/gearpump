@@ -91,10 +91,12 @@ class DynamicDagSpec extends TestSpecBase {
 
       val fakeTaskClass = "io.gearpump.streaming.examples.wordcount.Fake"
       replaceProcessor(appId, laterProcessors.keySet.max, fakeTaskClass)
+      Util.retryUntil({
+        val processorsAfterFailure = restClient.queryStreamingAppDetail(appId).processors
+        processorsAfterFailure.size == laterProcessors.size
+      })
       val currentClock = restClient.queryStreamingAppDetail(appId).clock
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > currentClock)
-      val processorsAfterFailure = restClient.queryStreamingAppDetail(appId).processors
-      processorsAfterFailure.size shouldEqual laterProcessors.size
     }
 
   }
