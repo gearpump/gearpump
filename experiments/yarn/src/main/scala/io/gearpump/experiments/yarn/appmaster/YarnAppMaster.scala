@@ -166,10 +166,12 @@ class YarnAppMaster(akkaConf: Config, rmClient: RMClient, nmClient: NMClient,
       LOG.error("ShutdownApplication")
       nmClient.stop()
       rmClient.shutdownApplication()
+      context.stop(self)
     case ResourceManagerException(ex) =>
       LOG.error("ResourceManagerException: " + ex.getMessage, ex)
       nmClient.stop()
       rmClient.failApplication(ex)
+      context.stop(self)
     case Kill =>
       LOG.info("Kill: User asked to shutdown the application")
       sender ! CommandResult(success = true)

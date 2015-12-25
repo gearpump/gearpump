@@ -92,7 +92,7 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     system.awaitTermination()
   }
 
-  it should "start master, worker and UI on YARN" in {
+  private def startAppMaster: (TestActorRef[_ <: Actor], TestProbe, NMClient, RMClient) = {
     val rmClient = mock(classOf[RMClient])
     val nmClient = mock(classOf[NMClient])
     val ui = mock(classOf[UIFactory])
@@ -182,16 +182,27 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     client.expectMsgType[CommandResult]
     verify(nmClient).stopContainer(any[ContainerId], any[NodeId])
 
+    (appMaster, client: TestProbe, nmClient, rmClient)
+  }
+
+  it should "start master, worker and UI on YARN" in {
+    val (appMaster, client, nmClient, rmClient) = startAppMaster
+
     // kill the app
     appMaster.tell(Kill, client.ref)
     client.expectMsgType[CommandResult]
     verify(nmClient, times(1)).stop()
     verify(rmClient, times(1)).shutdownApplication()
 
+  }
+
+  it should "handle resource manager errors" in {
+    val (appMaster, client, nmClient, rmClient) = startAppMaster
+
     // on error
     val ex = new Exception
     appMaster.tell(ResourceManagerException(ex), client.ref)
-    verify(nmClient, times(2)).stop()
+    verify(nmClient, times(1)).stop()
     verify(rmClient, times(1)).failApplication(ex)
   }
 }

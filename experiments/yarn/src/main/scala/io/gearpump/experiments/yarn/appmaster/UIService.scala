@@ -44,6 +44,10 @@ class UIService(masters: List[HostPort], host: String, port: Int) extends Actor 
       configFile.delete()
       configFile = null
     }
+
+    // TODO: fix this
+    // Hack around to Kill the UI server
+    Services.kill()
   }
 
   override def preStart(): Unit = {
