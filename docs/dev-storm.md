@@ -58,6 +58,11 @@ At runtime, spouts and bolts are running inside `StormProducer` tasks and `Storm
 
 Storm ackers are dropped since Gearpump has a different mechanism of message tracking and flow control. 
 
+### Task execution
+
+Each Storm task is executed by a dedicated thread while all Gearpump tasks of an executor share a thread pool. Generally, we can achieve better performance with a shared thread pool. It's possible, however, some tasks block and take up all the threads. In that case, we can 
+fall back to the Storm way by setting `gearpump.task-dispatcher` to `"gaerpump.single-thread-dispatcher"` in `gear.conf`.
+
 ### Message tracking 
 
 Storm tracks the lineage of each message with ackers to guarantee at-least-once message delivery. Failed messages are re-sent from spout.
