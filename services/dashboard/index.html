@@ -29,7 +29,7 @@
 
 <body>
 <!-- app -->
-<div ng-app="dashboard">
+<div ng-app="dashboard" ng-strict-di>
   <!-- header and footer are defined in views/landing -->
   <header></header>
   <breadcrumbs></breadcrumbs>
@@ -90,12 +90,15 @@
 <script src="views/apps/streamingapp/streamingapp.js"></script>
 <script src="views/apps/streamingapp/overview.js"></script>
 <script src="views/apps/streamingapp/metrics_charts.js"></script>
+<script src="views/apps/streamingapp/metrics_table.js"></script>
+<script src="views/apps/streamingapp/metric_class_selector.js"></script>
 <script src="views/apps/streamingapp/dag.js"></script>
 <script src="views/apps/streamingapp/popups/dag_edit.js"></script>
 <script src="views/apps/streamingapp/processor.js"></script>
 <script src="views/apps/streamingapp/processor_task_charts.js"></script>
+<script src="views/apps/streamingapp/processor_task_table.js"></script>
+<script src="views/apps/streamingapp/processor_task_pager.js"></script>
 <script src="views/apps/streamingapp/executor.js"></script>
-<script src="views/apps/streamingapp/metrics.js"></script>
 <script src="views/helper.js"></script>
 
 </body>

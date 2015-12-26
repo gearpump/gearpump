@@ -1,0 +1,12 @@
+<ui-select
+  theme="select2" class="form-control"
+  style="width: 100%; margin-bottom: 20px; cursor: pointer"
+  ng-model="names.selected" search-enabled="false">
+  <ui-select-match>{{$select.selected}}</ui-select-match>
+  <ui-select-choices repeat="name in names.available">
+    <div
+      style="padding-left: 8px"
+      ng-class="{bold: $select.selected === name}"
+      ng-bind="name|highlight:$select.search"></div>
+  </ui-select-choices>
+</ui-select>

@@ -8,13 +8,13 @@
                    tooltip="{{worker.state}}"></indicator>
       </h4>
     </div>
-    <div class="col-sm-2 col-xs-4">
+    <div class="col-md-2 col-sm-3 col-xs-4">
       <metrics
-        caption="Up Time"
+        caption="Uptime"
         help="Running for {{worker.aliveFor|duration}}" remark-type="info"
         value="{{uptimeCompact.value}}" unit="{{uptimeCompact.unit}}"></metrics>
     </div>
-    <div class="col-sm-2 col-xs-4">
+    <div class="col-md-2 col-sm-3 col-xs-4">
       <metrics
         caption="Slots Usage"
         help="Slot is a minimal compute unit. The usage indicates the computation capacity."

@@ -66,6 +66,10 @@ angular.module('dashboard')
       return result;
     }
 
+    function toPrecision2(any) {
+      return Number(any.toFixed(2));
+    }
+
     var decoder = {
       _common: function(data) {
         return {
@@ -78,8 +82,8 @@ angular.module('dashboard')
         var value = data.value;
         result.values = {
           count: Number(value.count),
-          meanRate: Number(value.meanRate),
-          movingAverage1m: Number(value.m1)
+          meanRate: toPrecision2(value.meanRate),
+          movingAverage1m: toPrecision2(value.m1)
         };
 
         if (addMeta) {
@@ -93,12 +97,12 @@ angular.module('dashboard')
         var result = decoder._common(data);
         var value = data.value;
         result.values = {
-          mean: Number(value.mean),
-          stddev: Number(value.stddev),
-          median: Number(value.median),
-          p95: Number(value.p95),
-          p99: Number(value.p99),
-          p999: Number(value.p999)
+          mean: toPrecision2(value.mean),
+          stddev: toPrecision2(value.stddev),
+          median: toPrecision2(value.median),
+          p95: toPrecision2(value.p95),
+          p99: toPrecision2(value.p99),
+          p999: toPrecision2(value.p999)
         };
 
         if (addMeta) {

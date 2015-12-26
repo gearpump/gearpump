@@ -31,7 +31,7 @@ angular.module('dashboard')
         $ptb.text('Leader').done(),
         $ptb.text('Master Members').done(),
         $ptb.tag('Status').done(),
-        $ptb.duration('Up Time').done(),
+        $ptb.duration('Uptime').done(),
         $ptb.button('Quick Links').values([
           {href: master0.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
           helper.withClickToCopy({text: 'Home Dir.', class: 'btn-xs'}, master0.homeDirectory),

@@ -48,9 +48,9 @@ angular.module('dashboard')
       $scope.executorsTable = {
         cols: [
           $stb.indicator().key('status').canSort().styleClass('td-no-padding').done(),
-          $stb.link('Application').key('id').canSort().sortDefault().styleClass('col-xs-4').done(),
+          $stb.link('Application').key('id').canSort().styleClass('col-xs-4').done(),
           $stb.link('Executor').key('executors').canSort().styleClass('col-xs-4').done(),
-          $stb.number('Slots').key('slots').canSort().styleClass('col-xs-4').done()
+          $stb.number('Slots').key('slots').canSort().sortDefaultDescent().styleClass('col-xs-4').done()
         ],
         rows: null
       };

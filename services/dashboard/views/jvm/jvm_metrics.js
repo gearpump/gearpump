@@ -20,7 +20,7 @@ angular.module('dashboard')
           'use strict';
 
           var sc = $scope.samplingConfig;
-          var currentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
+          var recentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
           var histChartPoints = sc.retainHistoryDataHours * 3600 * 1000 / sc.retainHistoryDataIntervalMs;
 
           // property table part
@@ -115,8 +115,8 @@ angular.module('dashboard')
 
           var lineChartOptionBase = {
             height: '168px',
-            visibleDataPointsNum: currentChartPoints,
-            data: _.times(currentChartPoints, function() {
+            visibleDataPointsNum: recentChartPoints,
+            data: _.times(recentChartPoints, function() {
               return {x: '', y: '-'};
             })
           };

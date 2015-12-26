@@ -3,7 +3,7 @@
  * See accompanying LICENSE file.
  */
 
-/* .navbar-static-top will occupy50px (regarding current font size) */
+/* .navbar-fixed-top will occupy50px (regarding current font size) */
 body {
   padding-top: 50px; /*equals navbar height*/
 }
@@ -166,6 +166,12 @@ html, body {
 /* Specify the size of modal dialog */
 .modal-md {
   width: 520px;
+}
+
+/* Smaller pager */
+.pager-sm > li > a {
+  padding: 3px 8px;
+  border-radius: 8px;
 }
 
 /* Make the feedback icon of a form input control clickable (2 rules) */

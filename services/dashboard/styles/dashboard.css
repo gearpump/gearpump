@@ -44,6 +44,10 @@ body {
   margin-bottom: 6px;
 }
 
+.metric-chart-placeholder {
+  min-height: 108px;
+}
+
 /* For dashing widget "indicator" shape="stripe", need to remove parent element padding (2 rules) */
 th.td-no-padding {
   padding-left: 0 !important;

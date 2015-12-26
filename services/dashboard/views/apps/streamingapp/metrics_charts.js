@@ -12,7 +12,7 @@ angular.module('dashboard')
       restrict: 'E',
       templateUrl: 'views/apps/streamingapp/metrics_charts.html',
       scope: true, // inherit parent scope
-      controller: ['$scope', '$filter', '$interval', 'models', function($scope, $filter, $interval, models) {
+      controller: ['$scope', '$interval', 'helper', 'models', function($scope, $interval, helper, models) {
         'use strict';
 
         var metricsProvider = $scope.dag;
@@ -25,8 +25,10 @@ angular.module('dashboard')
           $scope.receiveThroughputMetricsDescription = '';
         }
         var sc = $scope.metricsConfig;
-        var currentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
+        var recentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
         var histChartPoints = sc.retainHistoryDataHours * 3600 * 1000 / sc.retainHistoryDataIntervalMs;
+        recentChartPoints--; // ProcessorFilter will actually reduce one point
+        histChartPoints--;
         var updateRecentMetricsPromise;
         $scope.$on('$destroy', function() {
           $interval.cancel(updateRecentMetricsPromise);
@@ -35,15 +37,15 @@ angular.module('dashboard')
         // part 1
         var lineChartOptionBase = {
           height: '108px',
-          visibleDataPointsNum: currentChartPoints,
-          data: _.times(currentChartPoints, function() {
+          visibleDataPointsNum: recentChartPoints,
+          data: _.times(recentChartPoints, function() {
             return {x: '', y: '-'};
           })
         };
 
         var throughputChartOptions = angular.merge({
           valueFormatter: function(value) {
-            return $filter('number')(value, 0) + ' msg/s';
+            return helper.metricValue(value) + ' msg/s';
           },
           seriesNames: ['Throughput']
         }, lineChartOptionBase);
@@ -53,7 +55,7 @@ angular.module('dashboard')
 
         var durationChartOptions = angular.merge({
           valueFormatter: function(value) {
-            return $filter('number')(value, 3) + ' ms';
+            return helper.metricValue(value) + ' ms';
           },
           seriesNames: ['Duration']
         }, lineChartOptionBase);

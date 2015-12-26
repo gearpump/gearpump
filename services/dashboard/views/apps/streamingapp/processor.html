@@ -27,25 +27,46 @@
     </div>
     <!-- end of right half -->
   </div>
-<!--
+
   <div class="row">
-    <div class="col-md-12">
-      TBD: metric table
+    <div class="col-md-6">
+      <h4 ng-style="{'margin-bottom': shouldPaginateTasks ? '7px' : ''}">Tasks
+        <div ng-if="shouldPaginateTasks"
+             style="display: inline-block; font-size: 12px; font-weight: 400;">
+          <processor-task-pager
+            range="$parent.taskRange" count="processor.parallelism" query-limit="queryLimit">
+          </processor-task-pager>
+        </div>
+      </h4>
+      <div class="row">
+        <div class="col-sm-12">
+          <metric-class-selector
+            metric-class="metricClass"
+            metric-type="metricType"
+            metric-name="metricName">
+          </metric-class-selector>
+        </div>
+        <div class="col-md-12">
+          <div ng-if="processor.parallelism > 1">
+            <h5>Distribution of {{metricName}}</h5>
+            <div style="height: 110px">
+              <bar-chart
+                ng-if="tasksBarChart != null"
+                options-bind="::tasksBarChart.options"
+                datasource-bind="tasksBarChart.data">
+              </bar-chart>
+            </div>
+          </div>
+          <div ng-include src="'views/apps/streamingapp/processor_task_table.html'"
+               ng-controller="StreamingAppProcessorTaskTableCtrl"></div>
+        </div>
+      </div>
     </div>
-  </div>
--->
-  <div class="row">
-    <div class="col-md-12">
-      <h5>Task Receive Throughput</h5>
-      <bar-chart
-        options-bind="::receiveSkewChart.options"
-        datasource-bind="receiveSkewChart.data">
-      </bar-chart>
-    </div>
-    <div class="col-md-12"
+
+    <div class="col-md-6"
          style="min-height: 200px">
-      <h5>Task Metrics Inspector</h5>
-      <ui-select theme="select2" multiple ng-model="tasks.selected">
+      <h4>Task Metrics Inspector</h4>
+      <ui-select theme="select2" multiple limit="1" ng-model="tasks.selected">
         <ui-select-match placeholder="Click here to pick tasks for inspection...">{{$item}}</ui-select-match>
         <ui-select-choices repeat="task in tasks.available|filter:$select.search">
           <span ng-bind="task"></span>
@@ -54,7 +75,6 @@
 
       <div ng-if="tasks.selected.length>0">
         <br/>
-
         <div ng-include src="'views/apps/streamingapp/processor_task_charts.html?'+tasks.selected.length"
              ng-controller="StreamingAppProcessorTaskChartsCtrl"></div>
       </div>
