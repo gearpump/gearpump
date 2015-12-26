@@ -46,7 +46,7 @@ object StormRunner extends AkkaApp with ArgumentsParser {
 
   override def main(inputAkkaConf: Config, args: Array[String]): Unit = {
 
-    val akkaConf = addStormClassPath(inputAkkaConf)
+    val akkaConf = updateConfig(inputAkkaConf)
     val config = parse(args)
 
     val verbose = config.getBoolean("verbose")
@@ -88,14 +88,22 @@ object StormRunner extends AkkaApp with ArgumentsParser {
   }
 
   import Constants._
-  private def addStormClassPath(config: Config): Config = {
+  private def updateConfig(config: Config): Config = {
     val storm = s"<${GEARPUMP_HOME}>/lib/storm/*"
     val appClassPath = s"$storm${File.pathSeparator}" + config.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
     val executorClassPath = s"$storm${File.pathSeparator}" + config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
 
-    config.withValue(GEARPUMP_APPMASTER_EXTRA_CLASSPATH, ConfigValueFactory.fromAnyRef(appClassPath))
+    val updated = config.withValue(GEARPUMP_APPMASTER_EXTRA_CLASSPATH, ConfigValueFactory.fromAnyRef(appClassPath))
       .withValue(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH, ConfigValueFactory.fromAnyRef(executorClassPath))
+
+    if (config.hasPath(StormConstants.STORM_SERIALIZATION_FRAMEWORK)) {
+      val serializerConfig = ConfigValueFactory.fromAnyRef(config.getString(StormConstants.STORM_SERIALIZATION_FRAMEWORK))
+      updated.withValue(GEARPUMP_SERIALIZER_POOL, serializerConfig)
+    } else {
+      updated
+    }
   }
+
 
   class Handler(clientContext: ClientContext, jar: String, fileConfig: String) extends Actor {
     private var applications = Map.empty[String, Int]
