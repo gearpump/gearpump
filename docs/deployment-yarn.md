@@ -110,7 +110,7 @@ Gearpump yarn tool allows to dynamically add/remove machines. Here is the steps:
   yarnclient kill -appid <yarn application id>
   ```
 
-**NOTE:** If the application is not launched successfully, then this command won't work. Please use "yarn application -kill <appId>" instead.
+  **NOTE:** If the application is not launched successfully, then this command won't work. Please use "yarn application -kill <appId>" instead.
 
  2. To check the Gearpump version
 
