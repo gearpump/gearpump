@@ -13,9 +13,11 @@ title: Deployment with YARN
   Typically, you can just copy all files under ```$HADOOP_HOME/etc/hadoop``` from one of the YARN Cluster machine to ```conf/yarnconf``` of gearpump.
   ```$HADOOP_HOME``` points to the Hadoop installation directory. 
 4. Launch the gearpump cluster on YARN
+
   ```bash
     yarnclient launch -package /usr/lib/gearpump/gearpump-${version}.zip
   ```
+
   If you don't specify package path, it will read default package-path from gear.conf(gearpump.yarn.client.package-path).
 5. Before step 4, You can change gear.conf configuration section ```gearpump.yarn``` to config the cluster.
 6. After launching, you can browser the Gearpump UI via YARN resource manager dashboard.
@@ -28,32 +30,39 @@ a active configuration file first.
 There are two ways to get an active configuration file:
 
 1. Option 1: specify "-output" option when you launch the cluster.
+
   ```bash
     yarnclient launch -package /usr/lib/gearpump/gearpump-${version}.zip -output /tmp/mycluster.conf
    ```
+
    It will return in console like this:
+
    ```bash
    ================================================
    ==Application Id: application_1449802454214_0034
    ```
 
 2. Option 2: Query the active configuration file
+
   ```bash
     yarnclient getconfig -appid <yarn application id> -output /tmp/mycluster.conf
   ```
   yarn application id can be found from the output of step1 or from YARN dashboard.
 3. After you downloaded the configuration file, you can launch application with that config file.
+
   ```bash
     gear app -jar examples/wordcount-${version}.jar -conf /tmp/mycluster.conf
   ```
   
 4. To run Storm application over Gearpump on YARN, please store the configuration file with `-output application.conf` 
    and then launch Storm application with
+
   ```bash
     storm -jar examples/storm-${version}.jar storm.starter.ExclamationTopology exclamation
   ```
   
 5. Now the application is running. To check this:
+
   ```bash
    gear info -conf /tmp/mycluster.conf
   ```
@@ -61,10 +70,13 @@ There are two ways to get an active configuration file:
 ### How to add/remove machines dynamically.
 
 Gearpump yarn tool allows to dynamically add/remove machines. Here is the steps:
+
  1. First, query to get active resources.
+
  ```bash
    yarnclient query -appid <yarn application id>
  ```
+
  The console output will shows how many workers and masters there are. For example, I have output like this:
  ```bash
  masters:
