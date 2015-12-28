@@ -33,7 +33,7 @@ If you choose to build the package from source code yourself, you can follow the
   sbt clean assembly packArchiveZip
 ```
 
-  After the build, there will be a package file gearpump-${version}.tar.gz generated under target/ folder.
+  After the build, there will be a package file gearpump-${version}.tar.gz generated under output/target/ folder.
 
   **NOTE:**
   Please set JAVA_HOME environment before the build.
@@ -56,14 +56,14 @@ For windows:
 
 ```bash
 Set HTTP_PROXY=http://host:port
-set HTTPS_PROXT= http://host:port
+set HTTPS_PROXY= http://host:port
 ```
 
 For Linux:
 
 ```bash
 export HTTP_PROXY=http://host:port
-export HTTPS_PROXT= http://host:port
+export HTTPS_PROXY= http://host:port
 ```
 
 ### Gearpump package structure
