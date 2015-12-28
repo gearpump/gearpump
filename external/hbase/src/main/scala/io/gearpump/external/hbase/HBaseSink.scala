@@ -45,9 +45,9 @@ class HBaseSink(userconfig: UserConfig, tableName: String) extends DataSink{
     table.put(put)
   }
 
-  def put(msg: AnyRef): Unit = {
+  def put(msg: Any): Unit = {
     msg match {
-      case seq: Seq[AnyRef] =>
+      case seq: Seq[Any] =>
         seq.foreach(put)
       case tuple: (String, String, String, String) =>
         insert(tuple._1, tuple._2, tuple._3, tuple._4)

@@ -58,7 +58,7 @@ class StormSerializer(kryo: Kryo) extends Serializer {
   private val output = new Output(4096, -1)
   private val input = new Input
 
-  override def serialize(message: AnyRef): Array[Byte] = {
+  override def serialize(message: Any): Array[Byte] = {
     val tuple = message.asInstanceOf[GearpumpTuple]
     output.clear()
     output.writeInt(tuple.sourceTaskId)
@@ -69,7 +69,7 @@ class StormSerializer(kryo: Kryo) extends Serializer {
     output.toBytes
   }
 
-  override def deserialize(msg: Array[Byte]): AnyRef = {
+  override def deserialize(msg: Array[Byte]): Any = {
     input.setBuffer(msg)
     val sourceTaskId: JInteger = input.readInt
     val sourceStreamId: String = input.readString
