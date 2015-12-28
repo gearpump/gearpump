@@ -47,15 +47,13 @@
           </metric-class-selector>
         </div>
         <div class="col-md-12">
-          <div ng-if="processor.parallelism > 1">
-            <h5>Distribution of {{metricName}}</h5>
-            <div style="height: 110px">
-              <bar-chart
-                ng-if="tasksBarChart != null"
-                options-bind="::tasksBarChart.options"
-                datasource-bind="tasksBarChart.data">
-              </bar-chart>
-            </div>
+          <h5>Distribution of {{metricName}}</h5>
+          <div style="height: 110px">
+            <bar-chart
+              ng-if="tasksBarChart != null"
+              options-bind="::tasksBarChart.options"
+              datasource-bind="tasksBarChart.data">
+            </bar-chart>
           </div>
           <div ng-include src="'views/apps/streamingapp/processor_task_table.html'"
                ng-controller="StreamingAppProcessorTaskTableCtrl"></div>
