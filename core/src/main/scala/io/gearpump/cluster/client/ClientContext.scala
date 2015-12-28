@@ -37,6 +37,10 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.concurrent.Future
 
+
+/**
+ * ClientContext is a user facing util to submit/manage an application.
+ */
 //TODO: add interface to query master here
 class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
 
@@ -66,7 +70,7 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   }
 
   /**
-   * Submit an applicaiton with default jar setting. Use java property
+   * Submit an application with default jar setting. Use java property
    * "gearpump.app.jar" if defined. Otherwise, will assume the jar is on
    * the target runtime classpath, and will not send it.
    */

@@ -31,6 +31,7 @@ import scala.concurrent.{ExecutionContext, Await, Future}
 import scala.util.{Failure, Success}
 
 /**
+ * Client to Master node.
  * Stateless, thread safe
  */
 class MasterClient(master : ActorRef) {

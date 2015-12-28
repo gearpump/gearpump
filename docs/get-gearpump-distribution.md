@@ -29,11 +29,11 @@ If you choose to build the package from source code yourself, you can follow the
 
 ```bash
   ## Please use scala 2.11
-  ## The target package path: target/gearpump-$VERSION.tar.gz
+  ## The target package path: target/gearpump-$VERSION.zip
   sbt clean assembly packArchiveZip
 ```
 
-  After the build, there will be a package file gearpump-${version}.tar.gz generated under output/target/ folder.
+  After the build, there will be a package file gearpump-${version}.zip generated under output/target/ folder.
 
   **NOTE:**
   Please set JAVA_HOME environment before the build.
@@ -68,11 +68,11 @@ export HTTPS_PROXY= http://host:port
 
 ### Gearpump package structure
 
-You need to flatten the .tar.gz file to use it, on Linux, you can
+You need to flatten the .zip file to use it, on Linux, you can
 
 ```bash
 ## please replace ${version} below with actual version used
-tar  -zxvf gearpump-${version}.tar.gz
+unzip gearpump-${version}.zip
 ```
 
 After decompression, the directory structure looks like picture 1.

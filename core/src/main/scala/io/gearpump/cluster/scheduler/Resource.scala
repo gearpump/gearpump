@@ -40,6 +40,8 @@ object Priority extends Enumeration{
 
 object Relaxation extends Enumeration{
   type Relaxation = Value
+
+  // Option ONEWORKER allow user to schedule a task on specific worker.
   val ANY, ONEWORKER, SPECIFICWORKER = Value
 }
 

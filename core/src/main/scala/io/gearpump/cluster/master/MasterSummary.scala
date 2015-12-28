@@ -25,6 +25,9 @@ object MasterStatus {
   val UnSynced = "unsynced"
 }
 
+/**
+ * Master information for REST API call
+ */
 case class MasterSummary(
   leader: (String, Int),
   cluster: List[(String, Int)],
