@@ -26,7 +26,7 @@ Open another shell,
 
 ```bash
 ### To run WordCount example
-bin/gear app -jar examples/gearpump-examples-assembly-{{site.GEARPUMP_VERSION}}.jar io.gearpump.streaming.examples.wordcount.WordCount
+bin/gear app -jar examples/gearpump-examples-assembly-{{site.SCALA_BINARY_VERSION}}-{{site.GEARPUMP_VERSION}}.jar io.gearpump.streaming.examples.wordcount.WordCount
 ```
 
 ###  Step 2: Congratulations, you've submitted your first application.

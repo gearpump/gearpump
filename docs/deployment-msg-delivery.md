@@ -57,7 +57,7 @@ Here's an example to deploy a local HDFS cluster.
    $HADOOP_HOME/sbin/start-dfs.sh
    ```
    
-4. When creating a HadoopCheckpointStore, set the hadoop configuration as in the `core-site.xml`
+4. When creating a `HadoopCheckpointStore`, set the hadoop configuration as in the `core-site.xml`
 
    ```scala
    val hadoopConfig = new Configuration

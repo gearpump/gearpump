@@ -29,11 +29,11 @@ If you choose to build the package from source code yourself, you can follow the
 
 ```bash
   ## Please use scala 2.11
-  ## The target package path: target/gearpump-$VERSION.zip
+  ## The target package path: output/target/gearpump-{{ site.SCALA_BINARY_VERSION }}-{{ site.GEARPUMP_VERSION }}.zip
   sbt clean assembly packArchiveZip
 ```
 
-  After the build, there will be a package file gearpump-${version}.zip generated under output/target/ folder.
+  After the build, there will be a package file gearpump-{{ site.SCALA_BINARY_VERSION }}-{{ site.GEARPUMP_VERSION }}.zip generated under output/target/ folder.
 
   **NOTE:**
   Please set JAVA_HOME environment before the build.
@@ -55,7 +55,7 @@ The build requires network connection. If you are behind an enterprise proxy, ma
 For windows:
 
 ```bash
-Set HTTP_PROXY=http://host:port
+set HTTP_PROXY=http://host:port
 set HTTPS_PROXY= http://host:port
 ```
 
@@ -68,11 +68,10 @@ export HTTPS_PROXY= http://host:port
 
 ### Gearpump package structure
 
-You need to flatten the .zip file to use it, on Linux, you can
+You need to flatten the `.zip` file to use it. On Linux, you can
 
 ```bash
-## please replace ${version} below with actual version used
-unzip gearpump-${version}.zip
+unzip gearpump-{{site.SCALA_BINARY_VERSION}}-{{site.GEARPUMP_VERSION}}.zip
 ```
 
 After decompression, the directory structure looks like picture 1.

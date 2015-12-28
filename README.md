@@ -49,7 +49,7 @@ Check guide [Get Started](http://www.gearpump.io/releases/latest/submit-your-1st
 
 ```bash
   ## Please use scala 2.11 or 2.10
-  ## The target package path: target/gearpump-$VERSION.zip
+  ## The target package path: output/target/gearpump-${version}.zip
   sbt clean +assembly +packArchiveZip
 ```
 
@@ -66,7 +66,7 @@ The build requires network connection. If you are behind an enterprise proxy, ma
 For windows:
 
 ```bash
-Set HTTP_PROXY=http://host:port
+set HTTP_PROXY=http://host:port
 set HTTPS_PROXY= http://host:port
 ```
 
