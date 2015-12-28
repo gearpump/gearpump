@@ -6,18 +6,18 @@ title: Deployment with YARN
 
 ### How to launch a Gearpump cluster on YARN
 
-1. Upload the gearpump-${version}.zip to remote HDFS Folder, suggest to put it under /usr/lib/gearpump/gearpump-${version}.zip
+1. Upload the gearpump-{{ site.GEARPUMP_VERSION }}.zip to remote HDFS Folder, suggest to put it under /usr/lib/gearpump/gearpump-{{ site.GEARPUMP_VERSION }}.zip
 2. Make sure the home directory on Hdfs is already created and all read-write rights are granted for user, for example, user ```gear```'s home directory is ```/user/gear```
 3. Put the YARN configurations under classpath.
   Before calling "yarnclient launch", make sure you have put all yarn configuration files under classpath.
-  Typically, you can just copy all files under $HADOOP_HOME/etc/hadoop from one of the YARN Cluster machine to conf/yarnconf of gearpump.
-  $HADOOP_HOME points to the Hadoop installation directory. 
+  Typically, you can just copy all files under ```$HADOOP_HOME/etc/hadoop``` from one of the YARN Cluster machine to ```conf/yarnconf``` of gearpump.
+  ```$HADOOP_HOME``` points to the Hadoop installation directory. 
 4. Launch the gearpump cluster on YARN
   ```bash
     yarnclient launch -package /usr/lib/gearpump/gearpump-${version}.zip
   ```
   If you don't specify package path, it will read default package-path from gear.conf(gearpump.yarn.client.package-path).
-5. Before step 4, You can change gear.conf configuration section "gearpump.yarn" to config the cluster.
+5. Before step 4, You can change gear.conf configuration section ```gearpump.yarn``` to config the cluster.
 6. After launching, you can browser the Gearpump UI via YARN resource manager dashboard.
 
 ### How to submit a application to Gearpump cluster.
