@@ -21,7 +21,6 @@ import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 
-import io.gearpump.util.{Util, Constants}
 import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
@@ -95,4 +94,10 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
       throw new Exception("No main class specified")
     }
   }
+
+  def parseAppIdFromConsoleOutput(output: String): Int = {
+    output.split("\n").filter(_.contains("The application id is")).head
+      .split(" ").last.toInt
+  }
+
 }
