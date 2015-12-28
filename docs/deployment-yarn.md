@@ -47,6 +47,7 @@ There are two ways to get an active configuration file:
   ```bash
     yarnclient getconfig -appid <yarn application id> -output /tmp/mycluster.conf
   ```
+
   yarn application id can be found from the output of step1 or from YARN dashboard.
 3. After you downloaded the configuration file, you can launch application with that config file.
 
@@ -78,6 +79,7 @@ Gearpump yarn tool allows to dynamically add/remove machines. Here is the steps:
  ```
 
  The console output will shows how many workers and masters there are. For example, I have output like this:
+
  ```bash
  masters:
  container_1449802454214_0034_01_000002(IDHV22-01:35712)
@@ -87,25 +89,31 @@ Gearpump yarn tool allows to dynamically add/remove machines. Here is the steps:
  ```
 
  2. To add a new worker machine, you can do:
+
  ```bash
    yarnclient addworker -appid <yarn application id> -count 2
  ```
+
  This will add two new workers machines. Run the command in first step to check whether the change is effective.
  3. To remove old machines, use:
+
  ```bash
    yarnclient removeworker -appid <yarn application id> -container <worker container id>
  ```
+
  The worker container id can be found from the output of step 1. For example "container_1449802454214_0034_01_000006" is a good container id.
 
 ### Other usage:
  1. To kill a cluster,
+
   ```bash
   yarnclient kill -appid <yarn application id>
   ```
+
 **NOTE:** If the application is not launched successfully, then this command won't work. Please use "yarn application -kill <appId>" instead.
 
-
  2. To check the Gearpump version
+
   ```bash
   yarnclient version -appid <yarn application id>
   ```
