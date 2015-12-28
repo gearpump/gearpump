@@ -56,7 +56,7 @@ This is the default configuration for gear.conf.
 | :------------- | :------------- | :--------------- |
 | gearpump.hostname | "127.0.0.1" | hostname of current machine. If you are using local mode, then set this to 127.0.0.1, if you are using cluster mode, make sure this hostname can be accessed by other machines. |
 | gearpump.cluster.masters | ["127.0.0.1:3000"] | Config to set the master nodes of the cluster. If there are multiple master in the list, then the master nodes runs in HA mode.  ### For example, you may start three master, on node1: bin/master -ip node1 -port 3000, on node2: bin/master -ip node2 -port 3000, on node3: bin/master -ip node3 -port 3000, then you need to set the cluster.masters = ["node1:3000","node2:3000","node3:3000"] |
-| gearpump.task-dispatcher | "fork-join-executor" | default dispatcher for task actor |
+| gearpump.task-dispatcher | "gearpump.shared-thread-pool-dispatcher" | default dispatcher for task actor |
 | gearpump.metrics.enabled | true | flag to enable the metrics system |
 | gearpump.metrics.sample-rate | 1 | We will take one metric out of ${sample.rate}. Note it may have impact that the statistics on UI portal is not accurate. Change it to 1 if you want accurate metrics in UI |
 | gearpump.metrics.report-interval-ms | 15000 | we will report once every 15 seconds |
@@ -82,5 +82,8 @@ This is the default configuration for gear.conf.
 | gearpump.netty.base-sleep-ms | 100 | |
 | gearpump.netty.max-sleep-ms | 1000 | |
 | gearpump.netty.message-batch-size | 262144 | netty max batch size |
-| gearpump.netty.fulsh-check-interval | 10 | max flush interval for the netty layer, in milliseconds |
+| gearpump.netty.flush-check-interval | 10 | max flush interval for the netty layer, in milliseconds |
+| gearpump.netty.dispatcher | "gearpump.shared-thread-pool-dispatcher" | default dispatcher for netty client and server |
+| gearpump.shared-thread-pool-dispatcher | default Dispatcher with "fork-join-executor" | default shared thread pool dispatcher |
+| gearpump.single-thread-dispatcher | PinnedDispatcher | default single thread dispatcher |
 | serialization-framework | "io.gearpump.serializer.FastKryoSerializationFramework" | Gearpump has built-in serialization framework using Kryo. User are allowed to use a different serialization framework, like Protobuf. See io.gearpump.serializer.FastKryoSerializationFramework to find how a custom serialization framework can be defined |

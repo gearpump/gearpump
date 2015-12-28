@@ -21,7 +21,6 @@ package io.gearpump.util
 import java.util.concurrent.TimeUnit
 
 import io.gearpump.partitioner._
-import java.io.File
 
 object Constants {
   val MASTER_WATCHER = "masterwatcher"
@@ -77,6 +76,7 @@ object Constants {
   val NETTY_MESSAGE_BATCH_SIZE = "gearpump.netty.message-batch-size"
   val NETTY_FLUSH_CHECK_INTERVAL = "gearpump.netty.flush-check-interval"
   val NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname"
+  val NETTY_DISPATCHER = "gearpump.netty.dispatcher"
 
   val GEARPUMP_USERNAME = "gearpump.username"
   val GEARPUMP_APPLICATION_ID = "gearpump.applicationId"

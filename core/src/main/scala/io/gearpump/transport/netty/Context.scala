@@ -23,8 +23,6 @@ import java.util.concurrent._
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.Config
-import io.gearpump.transport.ActorLookupById
-import io.gearpump.util.Constants
 import io.gearpump.transport.netty.Server.ServerPipelineFactory
 import io.gearpump.transport.{ActorLookupById, HostPort}
 import io.gearpump.util.{Constants, LogUtil}
@@ -50,6 +48,7 @@ import io.gearpump.transport.netty.Context._
   }
 
   private val closeHandler = new ConcurrentLinkedQueue[Closeable]()
+  private val nettyDispatcher = system.settings.config.getString(Constants.NETTY_DISPATCHER)
   val maxWorkers: Int = 1
 
   private lazy val clientChannelFactory: NioClientSocketChannelFactory = {
@@ -67,7 +66,7 @@ import io.gearpump.transport.netty.Context._
 
   def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true, inputPort: Int = 0): Int = {
     //TODO: whether we should expose it as application config?
-    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor, deserializeFlag).withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), name)
+    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor, deserializeFlag).withDispatcher(nettyDispatcher), name)
     val (port, channel) = NettyUtil.newNettyServer(name,
       new ServerPipelineFactory(server, conf), 5242880, inputPort)
     val factory = channel.getFactory
@@ -82,7 +81,6 @@ import io.gearpump.transport.netty.Context._
   }
 
   def connect(hostPort : HostPort) : ActorRef = {
-    val nettyDispatcher = Constants.GEARPUMP_TASK_DISPATCHER
     val client = system.actorOf(Props(classOf[Client], conf, clientChannelFactory, hostPort).withDispatcher(nettyDispatcher))
     closeHandler.add { () =>
 
