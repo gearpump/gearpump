@@ -26,6 +26,7 @@ To submit the jar to the Gearpump cluster, we first need to know the Master addr
 a active configuration file first.
 
 There are two ways to get an active configuration file:
+
 1. Option 1: specify "-output" option when you launch the cluster.
   ```bash
     yarnclient launch -package /usr/lib/gearpump/gearpump-${version}.zip -output /tmp/mycluster.conf
