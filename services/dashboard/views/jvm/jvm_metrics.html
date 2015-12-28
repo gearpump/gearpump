@@ -21,12 +21,12 @@
     <div ng-if="showCurrentMetrics">
       <line-chart
         options-bind="::memoryRecentUsageChart.options"
-        datasource-bind="memoryRecentUsageChart.data"></line-chart>
+        datasource-bind="::memoryRecentUsageChart.data"></line-chart>
     </div>
     <div>
       <line-chart
         ng-if="memoryHistUsageChartOptions != null"
-        options-bind="memoryHistUsageChartOptions"></line-chart>
+        options-bind="::memoryHistUsageChartOptions"></line-chart>
     </div>
   </div>
 </div>

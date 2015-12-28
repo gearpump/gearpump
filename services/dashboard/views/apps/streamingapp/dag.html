@@ -20,30 +20,30 @@
     <metrics
       caption="{{sendThroughputMetricsCaption}}"
       help="{{sendThroughputMetricsDescription}}"
-      value="{{currentMessageSendRate|number:0}}"
+      value="{{currentMessageSendRate|metric}}"
       unit="msg/s"
-      sub-text="Total messages sent: {{totalSentMessages|number:0}}"></metrics>
+      sub-text="Total: {{totalSentMessages|metric}}"></metrics>
   </div>
   <div class="panel">
     <metrics
       caption="{{receiveThroughputMetricsCaption}}"
       help="{{receiveThroughputMetricsDescription}}"
-      value="{{currentMessageReceiveRate|number:0}}"
+      value="{{currentMessageReceiveRate|metric}}"
       unit="msg/s"
-      sub-text="Total messages received: {{totalReceivedMessages|number:0}}"></metrics>
+      sub-text="Total: {{totalReceivedMessages|metric}}"></metrics>
   </div>
   <div class="panel">
     <metrics
       caption="{{averageMesssageProcessingTimeMetricsCaption}}"
       help="{{averageMesssageProcessingTimeMetricsDescription}}"
-      value="{{averageProcessingTime|number:3}}"
+      value="{{averageProcessingTime|metric}}"
       unit="ms"></metrics>
   </div>
   <div class="panel">
     <metrics
       caption="{{averageMessageReceiveLatencyMetricsCaption}}"
       help="{{averageMessageReceiveLatencyMetricsDescription}}"
-      value="{{averageTaskReceiveLatency|number:3}}"
+      value="{{averageTaskReceiveLatency|metric}}"
       unit="ms"></metrics>
   </div>
 </div>

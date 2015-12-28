@@ -29,6 +29,9 @@ angular.module('dashboard')
             obj[prop] = init;
           }
           return obj[prop];
+        },
+        parseIntFromQueryPathTail: function(path) {
+          return Number(_.last(path.split('.')).replace(/[^0-9]/g, ''));
         }
       };
 
@@ -173,13 +176,16 @@ angular.module('dashboard')
           _.forEach(obj.processors, function(processor) {
             // add an active property
             var active = true;
+            var replaced = false;
             if (angular.isNumber(obj.clock) && processor.hasOwnProperty('life')) {
               var life = processor.life;
               if (life.hasOwnProperty('death') && obj.clock > Number(life.death)) {
-                active = false; // caution: death will be set to 0 after processor getting replaced!
+                active = false;
+                replaced = Number(life.death) === 0; // caution: death will be set to 0 after processor getting replaced!
               }
             }
             processor.active = active;
+            processor.replaced = replaced;
           });
           obj.processorLevels = util.flatten(obj.processorLevels);
           if (obj.dag && obj.dag.edgeList) {
@@ -255,23 +261,19 @@ angular.module('dashboard')
           var metrics = decoder.metrics(wrapper, args);
           return _.mapValues(metrics, function(values) {
             return _.transform(values, function(result, metrics, path) {
-              var id = Number(_.last(path.split('.')).replace(/[^0-9]/g, ''));
+              var id = util.parseIntFromQueryPathTail(path);
               result[id] = metrics;
             });
           });
         },
-        currentAppProcessorMetrics: function(wrapper, args) {
+        appTaskLatestMetricValues: function(wrapper, args) {
           var metrics = decoder.metrics(wrapper, args);
           return _.mapValues(metrics, function(values) {
             return _.transform(values, function(result, metrics, path) {
-              var taskId = Number(_.last(path.split('.')).replace(/[^0-9]/g, ''));
-              result[taskId] = _.last(metrics);
+              var id = util.parseIntFromQueryPathTail(path);
+              result[id] = _.last(metrics).values;
             });
           });
-        },
-        currentAppTaskMetrics: function(wrapper, args) {
-          var metrics = decoder.metrics(wrapper, args);
-          return _.mapValues(metrics[args.keyToExtract] || {}, _.last);
         },
         /**
          * Note that it returns a 2d associative array.
@@ -370,16 +372,18 @@ angular.module('dashboard')
           args.decoder = decoder.appMetrics;
           return getter._metrics('appmaster/' + appId + '/metrics/app' + appId, '', args);
         },
-        currentAppProcessorMetrics: function(appId, processorId) {
-          var params = '?readOption=readLatest';
-          return get('appmaster/' + appId + '/metrics/app' + appId + '.processor' + processorId + params,
-            decoder.currentAppProcessorMetrics);
-        },
-        currentAppTaskMetrics: function(appId, taskClass) {
-          var className = _.last(taskClass.split('.')); // meanwhile backend does not support package name
-          var classFilter = '*' + className;
-          return get('appmaster/' + appId + '/metrics/app' + appId + classFilter + '?readOption=readLatest',
-            decoder.currentAppTaskMetrics, {keyToExtract: className});
+        appTaskLatestMetricValues: function(appId, processorId, metricClass, range) {
+          var taskRangeArgs = range && range.hasOwnProperty('start') ?
+            '&startTask=' + range.start + '&endTask=' + (range.stop + 1) : '';
+          var args = {
+            all: 'latest',
+            aggregator: 'io.gearpump.streaming.metrics.TaskFilterAggregator' +
+              '&startProcessor=' + processorId + '&endProcessor=' + (processorId + 1) + taskRangeArgs,
+            decoder: decoder.appTaskLatestMetricValues
+          };
+          metricClass = metricClass ? ':' + metricClass : '';
+          return getter._metrics('appmaster/' + appId + '/metrics/app' + appId +
+            '.processor' + processorId + '.*' + metricClass, '', args);
         },
         appExecutor: function(appId, executorId) {
           return get('appmaster/' + appId + '/executor/' + executorId,
@@ -429,7 +433,7 @@ angular.module('dashboard')
               return;
             }
             getModelFn().then(function(data) {
-              onData(data);
+              return onData(data);
             }, /*onerror=*/function() {
               promise = $timeout(trySubscribe, period || conf.restapiQueryInterval);
             });

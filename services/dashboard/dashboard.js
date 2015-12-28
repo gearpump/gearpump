@@ -65,11 +65,17 @@ angular.module('dashboard', [
     }, $httpProvider.defaults.headers.get);
   }])
 
+  // disable logging for production
+  .config(['$compileProvider', function ($compileProvider) {
+    $compileProvider.debugInfoEnabled(false);
+  }])
+
   // constants
   .constant('conf', {
     restapiProtocol: 'v1.0',
     restapiRoot: location.origin + location.pathname,
     restapiQueryInterval: 2 * 1000, // 2 seconds
-    restapiQueryTimeout: 30 * 1000 // 30 seconds
+    restapiQueryTimeout: 30 * 1000, // 30 seconds
+    restapiTaskLevelMetricsQueryLimit: 100
   })
 ;

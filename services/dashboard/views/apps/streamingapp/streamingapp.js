@@ -102,7 +102,7 @@ angular.module('dashboard')
       $scope.receiveThroughputMetricsCaption = 'Sink Processors Receive Throughput';
       $scope.receiveThroughputMetricsDescription = 'Messages are received by external data sink';
       $scope.averageMesssageProcessingTimeMetricsCaption = 'Average Message Processing Time';
-      $scope.averageMesssageProcessingTimeMetricsDescription = 'Time from message is received to message is sent';
+      $scope.averageMesssageProcessingTimeMetricsDescription = 'Processing time is the duration from a message is received to the message is sent';
       $scope.averageMessageReceiveLatencyMetricsCaption = 'Average Message Receive Latency';
       $scope.averageMessageReceiveLatencyMetricsDescription = '';
     }])

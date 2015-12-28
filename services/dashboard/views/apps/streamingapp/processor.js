@@ -13,17 +13,13 @@ angular.module('dashboard')
         .state('streamingapp.processor', {
           url: '/processor/:processorId',
           templateUrl: 'views/apps/streamingapp/processor.html',
-          controller: 'StreamingAppProcessorCtrl',
-          resolve: {
-            metrics0: ['$stateParams', 'models', function($stateParams, models) {
-              return models.$get.currentAppProcessorMetrics($stateParams.appId, $stateParams.processorId);
-            }]
-          }
+          controller: 'StreamingAppProcessorCtrl'
         });
     }])
 
-  .controller('StreamingAppProcessorCtrl', ['$scope', '$stateParams', '$propertyTableBuilder', 'metrics0',
-    function($scope, $stateParams, $ptb, metrics0) {
+  .controller('StreamingAppProcessorCtrl', ['$scope', '$interval', '$stateParams', '$propertyTableBuilder',
+    'models', 'conf', 'helper',
+    function($scope, $interval, $stateParams, $ptb, models, conf, helper) {
       'use strict';
 
       $scope.processor = $scope.dag.processors[$stateParams.processorId];
@@ -58,54 +54,101 @@ angular.module('dashboard')
 
         $scope.tasks = {
           selected: [],
-          available: function() {
-            return _.times(processor.parallelism, function(i) {
-              return 'T' + i;
-            });
-          }()
+          available: []
         };
-
-        // if only processor has only one task, select it by default. Corresponding charts will be shown automatically.
-        if ($scope.tasks.available.length === 1) {
-          $scope.tasks.selected = $scope.tasks.available;
-        }
       }
 
       updateProcessorInfoTable($scope.processor);
 
-      $scope.metrics = metrics0.$data();
-      metrics0.$subscribe($scope, function(metrics) {
-        $scope.metrics = metrics;
+      // query task metrics
+      var promise;
+      $scope.$on('$destroy', function() {
+        $interval.cancel(promise);
+      });
+      $scope.$watch('metricClass', function() {
+        queryMetrics();
       });
 
-      $scope.$watch('metrics', function(metrics) {
-        if (angular.isObject(metrics)) {
-          $scope.receiveSkewChart.data = updatedSkewData(metrics.receiveThroughput);
+      $scope.queryLimit = conf.restapiTaskLevelMetricsQueryLimit;
+      $scope.shouldPaginateTasks = $scope.processor.parallelism > $scope.queryLimit;
+      var requesting = false;
+
+      function queryMetrics() {
+        if (!requesting && $scope.metricClass) {
+          requesting = true;
+          models.$get.appTaskLatestMetricValues(
+            $scope.app.appId, $scope.processor.id, $scope.metricClass, $scope.taskRange).then(function(metrics) {
+              if (metrics.hasOwnProperty($scope.metricClass)) {
+                $scope.taskMetrics = metrics[$scope.metricClass];
+              }
+              requesting = false;
+            });
         }
-      });
-
-      var skewData = _.map($scope.tasks.available, function(taskName) {
-        return {x: taskName};
-      });
-
-      function updatedSkewData(data) {
-        angular.forEach(data, function(metric, taskId) {
-          skewData[taskId].y = metric.values.meanRate;
-        });
-        return skewData;
       }
 
-      $scope.receiveSkewChart = {
-        options: {
-          height: '110px',
-          seriesNames: [''],
-          barMinWidth: 10,
-          barMinSpacing: 2,
-          valueFormatter: function(value) {
-            return Number(value).toFixed(0) + ' msg/s';
-          },
-          data: updatedSkewData(metrics0.receiveThroughput)
+      promise = $interval(queryMetrics, conf.restapiQueryInterval);
+      queryMetrics();
+
+      $scope.taskRange = $scope.shouldPaginateTasks ?
+        {} : {start: 0, stop: $scope.processor.parallelism - 1};
+      $scope.$watch('taskRange', function(range) {
+        if (!range.hasOwnProperty('start')) {
+          return;
         }
-      };
+        $scope.tasks = {
+          selected: [],
+          available: function() {
+            var count = range.stop - range.start + 1;
+            return _.times(count, function(i) {
+              return 'T' + (i + range.start);
+            });
+          }()
+        };
+      });
+
+      // For the bar chart control (todo: dashing bar-chart should provide a way to rebuild chart data)
+      $scope.tasksBarChart = null;
+      $scope.$watch('taskMetrics', function(metrics) {
+        var scopeIsReady = $scope.tasks.hasOwnProperty('available') && $scope.tasks.available.length;
+        if (scopeIsReady && metrics) {
+          updateBarChartData(metrics);
+        }
+      });
+
+      function updateBarChartData(metrics) {
+        if (!$scope.tasksBarChart) {
+          $scope.tasksBarChart = {
+            options: {
+              height: '110px',
+              seriesNames: [''],
+              barMinWidth: 2,
+              barMinSpacing: 2,
+              valueFormatter: function(value) {
+                var unit = $scope.metricType === 'meter' ? 'msg/s' : 'ms';
+                return helper.metricValue(value) + ' ' + unit;
+              },
+              data: _.map($scope.tasks.available, function(taskName) {
+                return {x: taskName};
+              })
+            }
+          };
+        }
+
+        var data = $scope.tasksBarChart.options.data;
+        if (data[0].x !== $scope.tasks.available[0]) {
+          $scope.tasksBarChart = null;
+          _.defer(updateBarChartData, data);
+          return;
+        }
+
+        var i = 0;
+        var metricField = $scope.metricType === 'meter' ? 'movingAverage1m' : 'mean';
+        _.forEach(metrics, function(metric, taskId) {
+          data[i].y = metric[metricField]
+          ;
+          i++;
+        });
+        $scope.tasksBarChart.data = angular.copy(data);
+      }
     }])
 ;

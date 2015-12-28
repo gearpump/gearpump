@@ -1,0 +1,18 @@
+<div>
+  <ng-switch on="metricType">
+    <!-- meter -->
+    <sortable-table
+      ng-switch-when="meter"
+      columns-bind="meterMetricsTable.cols"
+      records-bind="meterMetricsTable.rows"
+      pagination="10">
+    </sortable-table>
+    <!-- histogram -->
+    <sortable-table
+      ng-switch-when="histogram"
+      columns-bind="histogramMetricsTable.cols"
+      records-bind="histogramMetricsTable.rows"
+      pagination="10">
+    </sortable-table>
+  </ng-switch>
+</div>

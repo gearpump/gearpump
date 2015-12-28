@@ -1,0 +1,36 @@
+<div class="col-md-12">
+  <!-- control toolbar -->
+  <div class="row">
+    <div class="col-md-6">
+      <metric-class-selector
+        metric-class="metricClass"
+        metric-type="metricType">
+      </metric-class-selector>
+    </div>
+    <div class="col-md-3 col-md-offset-3 hidden-sm hidden-xs pull-right">
+      <searchbox ng-model="search" placeholder="Search Anything"></searchbox>
+    </div>
+  </div>
+  <!-- end of control toolbar -->
+</div>
+
+<div class="col-md-12">
+  <ng-switch on="metricType">
+    <!-- meter -->
+    <sortable-table
+      ng-switch-when="meter"
+      search-bind="search"
+      columns-bind="meterMetricsTable.cols"
+      records-bind="meterMetricsTable.rows"
+      pagination="10">
+    </sortable-table>
+    <!-- histogram -->
+    <sortable-table
+      ng-switch-when="histogram"
+      search-bind="search"
+      columns-bind="histogramMetricsTable.cols"
+      records-bind="histogramMetricsTable.rows"
+      pagination="10">
+    </sortable-table>
+  </ng-switch>
+</div>
