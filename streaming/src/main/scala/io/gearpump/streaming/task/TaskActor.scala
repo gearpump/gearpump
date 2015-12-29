@@ -113,14 +113,12 @@ class TaskActor(
    * @param msg
    */
   def output(arrayIndex: Int, msg: Message) : Unit = {
-    LOG.debug("[output]: " + msg.msg)
     var count = 0
     count +=  this.subscriptions(arrayIndex)._2.sendMessage(msg)
     sendThroughput.mark(count)
   }
 
   def output(msg : Message) : Unit = {
-    LOG.debug("[output]: " + msg.msg)
     var count = 0
     this.subscriptions.foreach{ subscription =>
       count += subscription._2.sendMessage(msg)
@@ -133,7 +131,6 @@ class TaskActor(
   }
 
   final override def preStart() : Unit = {
-
     val register = RegisterTask(taskId, executorId, local)
     LOG.info(s"$register")
     executor ! register
@@ -162,10 +159,8 @@ class TaskActor(
         msg match {
           case SendAck(ack, targetTask) =>
             transport(ack, targetTask)
-            LOG.debug(s"Sending ack back, target taskId: $targetTask, my task: $taskId, received message: ${ack.actualReceivedNum}")
           case m : Message =>
             count += 1
-            LOG.debug("[input]: " + m.msg)
             onNext(m)
           case other =>
             // un-managed message
