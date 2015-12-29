@@ -22,7 +22,7 @@ import akka.actor._
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.ExecutorJVMConfig
 import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.util.{ActorSystemBooter, ActorUtil, LogUtil}
+import io.gearpump.util.{Constants, ActorSystemBooter, ActorUtil, LogUtil}
 import io.gearpump.cluster.WorkerToAppMaster._
 import io.gearpump.cluster.appmaster.ExecutorSystemLauncher._
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, Session}
@@ -46,7 +46,11 @@ class ExecutorSystemLauncher (appId: Int, session: Session) extends Actor {
 
   val scheduler = context.system.scheduler
   implicit val executionContext = context.dispatcher
-  val timeout = scheduler.scheduleOnce(15 seconds, self, LaunchExecutorSystemTimeout(session))
+
+  val timeoutSetting = context.system.settings.config.getInt(Constants.GEARPUMP_START_EXECUTOR_SYSTEM_TIMEOUT_MS)
+
+  val timeout = scheduler.scheduleOnce(timeoutSetting milliseconds,
+    self, LaunchExecutorSystemTimeout(session))
 
   def receive : Receive = waitForLaunchCommand
 
