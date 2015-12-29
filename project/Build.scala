@@ -186,7 +186,7 @@ object Build extends sbt.Build {
   val myAssemblySettings = assemblySettings ++ Seq(
     test in assembly := {},
     assemblyOption in assembly ~= { _.copy(includeScala = false) },
-    jarName in assembly := { s"${name.value.split("-").last}-${scalaVersion.value}-${version.value}-assembly.jar" }
+    jarName in assembly := { s"${name.value.split("-").last}-${scalaBinaryVersion.value}-${version.value}-assembly.jar" }
   )
 
   val projectsWithDoc = inProjects(core, streaming, external_kafka, external_monoid, external_serializer, external_hbase, external_hadoopfs, daemon, streaming)
