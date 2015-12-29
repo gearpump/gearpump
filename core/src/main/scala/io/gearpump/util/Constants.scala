@@ -67,6 +67,8 @@ object Constants {
   // please use your local timeout setting instead.
   val FUTURE_TIMEOUT = akka.util.Timeout(15, TimeUnit.SECONDS)
 
+  val GEARPUMP_START_EXECUTOR_SYSTEM_TIMEOUT_MS = "gearpump.start-executor-system-timeout-ms"
+
   val APPMASTER_DEFAULT_EXECUTOR_ID = -1
 
   val NETTY_BUFFER_SIZE = "gearpump.netty.buffer-size"
