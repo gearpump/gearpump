@@ -2,13 +2,12 @@
 layout: global
 title: Deployment with YARN
 ---
-## Gearpump over YARN
 
-### How to launch a Gearpump cluster on YARN
+## How to launch a Gearpump cluster on YARN
 
-1. Upload the gearpump-{{ site.GEARPUMP_VERSION }}.zip to remote HDFS Folder, suggest to put it under /usr/lib/gearpump/gearpump-{{ site.GEARPUMP_VERSION }}.zip
+1. Upload the `gearpump-{{ site.SCALA_BINARY_VERSION }}-{{ site.GEARPUMP_VERSION }}.zip` to remote HDFS Folder, suggest to put it under `/usr/lib/gearpump/gearpump-{{site.SCALA_BINARY_VERSION}}-{{ site.GEARPUMP_VERSION }}.zip`
 
-2. Make sure the home directory on Hdfs is already created and all read-write rights are granted for user, for example, user ```gear```'s home directory is ```/user/gear```
+2. Make sure the home directory on HDFS is already created and all read-write rights are granted for user. For example, user ```gear```'s home directory is ```/user/gear```
 
 3. Put the YARN configurations under classpath.
   Before calling "yarnclient launch", make sure you have put all yarn configuration files under classpath.
@@ -18,16 +17,16 @@ title: Deployment with YARN
 4. Launch the gearpump cluster on YARN
 
    ```
-    yarnclient launch -package /usr/lib/gearpump/gearpump-${version}.zip
+    yarnclient launch -package /usr/lib/gearpump/gearpump-{{site.SCALA_BINARY_VERSION}}-{{site.GEARPUMP_VERSION}}.zip
    ```
 
-   If you don't specify package path, it will read default package-path from gear.conf(gearpump.yarn.client.package-path).
+   If you don't specify package path, it will read default package-path (`gearpump.yarn.client.package-path`) from `gear.conf`.
 
 5. Before step 4, You can change gear.conf configuration section ```gearpump.yarn``` to config the cluster.
 
 6. After launching, you can browser the Gearpump UI via YARN resource manager dashboard.
 
-### How to submit a application to Gearpump cluster.
+## How to submit a application to Gearpump cluster.
 
 To submit the jar to the Gearpump cluster, we first need to know the Master address, so we need to get
 a active configuration file first.
@@ -37,7 +36,7 @@ There are two ways to get an active configuration file:
 1. Option 1: specify "-output" option when you launch the cluster.
 
    ```
-    yarnclient launch -package /usr/lib/gearpump/gearpump-${version}.zip -output /tmp/mycluster.conf
+    yarnclient launch -package /usr/lib/gearpump/gearpump-{{site.SCALA_BINARY_VERSION}}-{{site.GEARPUMP_VERSION}}.zip -output /tmp/mycluster.conf
    ```
 
    It will return in console like this:
@@ -53,18 +52,19 @@ There are two ways to get an active configuration file:
     yarnclient getconfig -appid <yarn application id> -output /tmp/mycluster.conf
    ```
 
-  yarn application id can be found from the output of step1 or from YARN dashboard.
+    yarn application id can be found from the output of step1 or from YARN dashboard.
+
 3. After you downloaded the configuration file, you can launch application with that config file.
 
    ```
-    gear app -jar examples/wordcount-${version}.jar -conf /tmp/mycluster.conf
+    gear app -jar examples/wordcount-{{site.SCALA_BINARY_VERSION}}-{{site.GEARPUMP_VERSION}}.jar -conf /tmp/mycluster.conf
    ```
   
 4. To run Storm application over Gearpump on YARN, please store the configuration file with `-output application.conf` 
    and then launch Storm application with
 
    ```
-    storm -jar examples/storm-${version}.jar storm.starter.ExclamationTopology exclamation
+    storm -jar examples/storm-{{site.SCALA_BINARY_VERSION}}-{{site.GEARPUMP_VERSION}}.jar storm.starter.ExclamationTopology exclamation
    ```
   
 5. Now the application is running. To check this:
@@ -73,7 +73,7 @@ There are two ways to get an active configuration file:
    gear info -conf /tmp/mycluster.conf
    ```
 
-### How to add/remove machines dynamically.
+## How to add/remove machines dynamically.
 
 Gearpump yarn tool allows to dynamically add/remove machines. Here is the steps:
 
@@ -109,7 +109,7 @@ Gearpump yarn tool allows to dynamically add/remove machines. Here is the steps:
 
     The worker container id can be found from the output of step 1. For example "container_1449802454214_0034_01_000006" is a good container id.
 
-### Other usage:
+## Other usage:
  1. To kill a cluster,
 
     ```
