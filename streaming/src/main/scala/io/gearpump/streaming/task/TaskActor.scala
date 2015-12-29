@@ -26,7 +26,7 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import io.gearpump.metrics.Metrics
 import io.gearpump.serializer.SerializationFramework
-import io.gearpump.streaming.AppMasterToExecutor.{TaskRejected, _}
+import io.gearpump.streaming.AppMasterToExecutor._
 import io.gearpump.streaming.ExecutorToAppMaster._
 import io.gearpump.streaming.{Constants, ProcessorId}
 import io.gearpump.util.{LogUtil, TimeOutScheduler}
@@ -151,7 +151,7 @@ class TaskActor(
     var done = false
 
     var count = 0
-    val start = System.currentTimeMillis()
+    val start = System.nanoTime()
 
     while (allowSendingMoreMessages() && !done) {
       val msg = queue.poll()
@@ -173,7 +173,8 @@ class TaskActor(
 
     receiveThroughput.mark(count)
     if (count > 0) {
-      processTime.update((System.currentTimeMillis() - start) / count)
+      // average and convert nanoseconds to milliseconds
+      processTime.update((System.nanoTime() - start) / count / 1000)
     }
   }
 
