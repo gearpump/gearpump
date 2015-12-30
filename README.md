@@ -1,7 +1,7 @@
 
-## Gearpump 
+## Gearpump  [![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://www.gearpump.io/download.html) [![GitHub license](https://img.shields.io/github/license/gearpump/gearpump.svg)](https://github.com/gearpump/gearpump/blob/master/LICENSE)
 
-[![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://www.gearpump.io/download.html)[![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master)[![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)[![GitHub license](https://img.shields.io/github/license/gearpump/gearpump.svg)](https://github.com/gearpump/gearpump/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
 
 Web site: http://gearpump.io
 
