@@ -20,7 +20,7 @@
     <div ng-if="showCurrentMetrics">
       <sparkline-chart
         options-bind="::sendThroughputChartOptions"
-        datasource-bind="::sendThroughputData">
+        datasource-bind="sendThroughputData">
       </sparkline-chart>
     </div>
     <div ng-hide="showCurrentMetrics"
@@ -44,7 +44,7 @@
     <div ng-if="showCurrentMetrics">
       <sparkline-chart
         options-bind="::receiveThroughputChartOptions"
-        datasource-bind="::receiveThroughputData">
+        datasource-bind="receiveThroughputData">
       </sparkline-chart>
     </div>
     <div ng-hide="showCurrentMetrics"
@@ -67,7 +67,7 @@
     <div ng-if="showCurrentMetrics">
       <sparkline-chart
         options-bind="::averageProcessingTimeChartOptions"
-        datasource-bind="::averageProcessingTimeData">
+        datasource-bind="averageProcessingTimeData">
       </sparkline-chart>
     </div>
     <div ng-hide="showCurrentMetrics"
@@ -90,7 +90,7 @@
     <div ng-if="showCurrentMetrics">
       <sparkline-chart
         options-bind="::averageMessageReceiveLatencyChartOptions"
-        datasource-bind="::averageMessageReceiveLatencyData">
+        datasource-bind="averageMessageReceiveLatencyData">
       </sparkline-chart>
     </div>
     <div ng-hide="showCurrentMetrics"
