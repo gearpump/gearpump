@@ -3,6 +3,12 @@ When you want to create a release tag, here is the process:
 I use RELEASE_VERSION to represent the version to be released. 
 The version must follow a format. For example, 0.2.3 is a valid release version, 0.2.3-SNAPSHOT is not a valid release version.
 
+Step0: Function verification Checklist
+===================
+1. metrics Ui is updated correctly.
+2. submit a jar by UI can work correctly, custom config is effective, clock is advancing. 
+3. Dynamic DAG functions normally. 
+
 Step1: Pre-release
 ===================
 1. Modify CHANGELOG.md
