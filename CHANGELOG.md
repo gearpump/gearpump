@@ -1,3 +1,13 @@
+Gearpump 0.7.2
+===================
+Change logs:
+-------------------
+- #1814: metrics data will not update
+- #1812 add gearpump.verbose-gc in gear.conf
+- #1754, use scala binary version in example jar name
+- #1804, polish documents
+- #1803 fix performance regression
+
 Gearpump 0.7.1
 ===================
 Highlights:
