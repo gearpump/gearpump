@@ -12,13 +12,14 @@ Step0: Function verification Checklist
 Step1: Pre-release
 ===================
 1. Modify CHANGELOG.md
-2. Bump the gearpump version in version.sbt 
- 
-  ```scala
-  version in ThisBuild := "RELEASE_VERSION"
-  ```
+2. Update version in docs/_config.yml
+3. Bump the gearpump version in version.sbt 
+
+   ```scala
+   version in ThisBuild := "RELEASE_VERSION"
+   ```
   
-3. Follow https://github.com/gearpump/gearpump/blob/master/doc/CommitGuideline.md to submit a PR
+4. Follow https://github.com/gearpump/gearpump/blob/master/doc/CommitGuideline.md to submit a PR
 
 Step2: Release
 ==================
