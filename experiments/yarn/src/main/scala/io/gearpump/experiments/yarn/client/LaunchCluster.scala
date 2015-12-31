@@ -112,7 +112,8 @@ class LaunchCluster(
 
   private def uploadConfigToHDFS(appId: ApplicationId): String = {
     // will use personal home directory so that it will not conflict with other users
-    val confDir = s"${fs.getHomeDirectory}/.gearpump_app${appId.getId}/conf/"
+    // conf path pattern: /user/<userid>/.gearpump_application_<timestamp>_<id>/conf
+    val confDir = s"${fs.getHomeDirectory}/.gearpump_${appId}/conf/"
     LOG.info(s"Uploading configuration files to remote HDFS(under $confDir)...")
 
     // copy config from local to remote.

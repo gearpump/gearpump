@@ -22,6 +22,8 @@ You can start a local mode cluster in single line
 bin/local
 ```
 
+**NOTE:** You may need to execute `chmod +x bin/*` in shell to make the script file `local` executable.
+
 **NOTE:** You can change the default port by changing config `gearpump.cluster.masters` in `conf/gear.conf`.
 
 **NOTE: Change the working directory**. Log files by default will be generated under current working directory. So, please "cd" to required working directly before running the shell commands.

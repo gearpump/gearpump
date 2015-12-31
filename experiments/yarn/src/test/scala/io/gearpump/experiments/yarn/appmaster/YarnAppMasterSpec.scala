@@ -99,7 +99,7 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     when(ui.props(any[List[HostPort]], anyString, anyInt)).thenReturn(Props(new UI))
 
 
-    val appMaster = TestActorRef(Props(new YarnAppMaster(config, rmClient, nmClient, packagePath, configPath, ui)))
+    val appMaster = TestActorRef(Props(new YarnAppMaster(rmClient, nmClient, packagePath, configPath, ui)))
 
     verify(rmClient).start(appMaster)
     verify(nmClient).start(appMaster)

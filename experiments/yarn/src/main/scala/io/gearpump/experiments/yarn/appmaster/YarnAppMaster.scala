@@ -36,16 +36,16 @@ import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.methods.GetMethod
 import org.slf4j.Logger
 
-class YarnAppMaster(akkaConf: Config, rmClient: RMClient, nmClient: NMClient,
+class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
                     packagePath: String, hdfsConfDir: String,
                     uiFactory: UIFactory)
   extends Actor {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
-
+  private val akkaConf = context.system.settings.config
   private val servicesEnabled = akkaConf.getString(SERVICES_ENABLED).toBoolean
   private var uiStarted = false
-  private val host = InetAddress.getLocalHost.getHostName
+  private val host = akkaConf.getString(Constants.GEARPUMP_HOSTNAME)
 
   val port = Util.findFreePort.get
 
@@ -289,8 +289,8 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
 
     val rmClient = new RMClient(yarnConf)
     val nmClient = new NMClient(yarnConf, akkaConf)
-    val appMaster = system.actorOf(Props(new YarnAppMaster(
-      akkaConf, rmClient, nmClient, packagePath, confDir, UIService)))
+    val appMaster = system.actorOf(Props(new YarnAppMaster(rmClient,
+      nmClient, packagePath, confDir, UIService)))
 
     val daemon = system.actorOf(Props(new Daemon(appMaster)))
     system.awaitTermination()

@@ -126,7 +126,8 @@ object Build extends sbt.Build {
   val noPublish = Seq(
     publish := {},
     publishLocal := {},
-    publishArtifact := false
+    publishArtifact := false,
+    publishArtifact in Test := false
   )
 
   val daemonDependencies = Seq(

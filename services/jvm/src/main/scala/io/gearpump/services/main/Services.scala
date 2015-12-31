@@ -21,7 +21,7 @@ package io.gearpump.services.main
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
-import io.gearpump.cluster.main.{CLIOption, ArgumentsParser}
+import io.gearpump.cluster.main.{Gear, CLIOption, ArgumentsParser}
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.services.RestServices
 import io.gearpump.util.LogUtil.ProcessType
@@ -32,7 +32,7 @@ object Services extends AkkaApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption("<host:port>", required = false),
-    "config" -> CLIOption("<provide a custom configuration file>", required = false),
+    Gear.OPTION_CONFIG -> CLIOption("<provide a custom configuration file>", required = false),
     "supervisor" -> CLIOption("<Supervisor Actor Path>", required = false, Some("")))
 
   override val description = "UI Server"
