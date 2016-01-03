@@ -34,6 +34,8 @@ bin/master -ip xx -port xx
 
 The ip and port will be checked against settings under `conf/gear.conf`, so you need to make sure they are consistent.
 
+**NOTE:** You may need to execute `chmod +x bin/*` in shell to make the script file `master` executable.
+
 **NOTE**: for high availability, please check [Master HA Guide](deployment-ha.html)
 
 ##### To start worker:

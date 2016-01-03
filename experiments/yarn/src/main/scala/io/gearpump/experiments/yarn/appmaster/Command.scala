@@ -104,7 +104,8 @@ case class AppMasterCommand(config: Config, version: String, args: Array[String]
       s"-D${Constants.GEARPUMP_HOME}=${LOCAL_DIRS}/${CONTAINER_ID}/pack/$version",
       s"-D${Constants.GEARPUMP_FULL_SCALA_VERSION}=$version",
       s"-D${Constants.GEARPUMP_LOG_DAEMON_DIR}=${LOG_DIR_EXPANSION_VAR}",
-      s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${LOG_DIR_EXPANSION_VAR}")
+      s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${LOG_DIR_EXPANSION_VAR}",
+      s"-D${Constants.GEARPUMP_HOSTNAME}=${NODEMANAGER_HOST}")
 
     val arguments = Array(s"") ++ args
 

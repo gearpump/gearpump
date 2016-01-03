@@ -22,9 +22,16 @@ title: Deployment with YARN
 
    If you don't specify package path, it will read default package-path (`gearpump.yarn.client.package-path`) from `gear.conf`.
 
-5. Before step 4, You can change gear.conf configuration section ```gearpump.yarn``` to config the cluster.
+   **NOTE:** You may need to execute `chmod +x bin/*` in shell to make the script file `yarnclient` executable.
+   
+5. After launching, you can browser the Gearpump UI via YARN resource manager dashboard.
 
-6. After launching, you can browser the Gearpump UI via YARN resource manager dashboard.
+## How to configure the resource limitation of Gearpump cluster
+
+Before launching a Gearpump cluster, please change configuration section ```gearpump.yarn``` in gear.conf to configure the resource limitation, like:
+
+1. The number of worker containers. 
+2. The YARN container memory size for worker and master.
 
 ## How to submit a application to Gearpump cluster.
 
@@ -73,6 +80,11 @@ There are two ways to get an active configuration file:
    gear info -conf /tmp/mycluster.conf
    ```
 
+6. To Start a UI server, please do:
+   ```
+   services -conf /tmp/mycluster.conf
+   ```
+   
 ## How to add/remove machines dynamically.
 
 Gearpump yarn tool allows to dynamically add/remove machines. Here is the steps:
