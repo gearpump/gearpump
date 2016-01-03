@@ -21,13 +21,18 @@ package io.gearpump.services
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `no-cache`}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Route, _}
 import akka.stream.ActorMaterializer
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.Route
+
+import scala.concurrent.Future
 
 class RestServices(actorSystem: ActorSystem, val master: ActorRef) extends
     StaticService with
@@ -39,7 +44,7 @@ class RestServices(actorSystem: ActorSystem, val master: ActorRef) extends
 
   implicit def system: ActorSystem = actorSystem
 
-  private def myExceptionHandler: ExceptionHandler = ExceptionHandler{
+  private def myExceptionHandler: ExceptionHandler = ExceptionHandler {
     case ex: Throwable => {
       extractUri { uri =>
         LOG.error(s"Request to $uri could not be handled normally", ex)
@@ -48,13 +53,37 @@ class RestServices(actorSystem: ActorSystem, val master: ActorRef) extends
     }
   }
 
+  private val rootService = {
+    path("version") {
+      get {
+        complete(version)
+      }
+    } ~
+    path("supervisor-actor-path") {
+      get {
+        complete(system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH))
+      }
+    } ~
+    path("terminate") {
+      post {
+        system.shutdown()
+        complete(StatusCodes.NotFound)
+      }
+    }
+  }
+
+  private val noCache = respondWithHeader(`Cache-Control`(`no-cache`,  `max-age`(0L)))
+
   def routes = handleExceptions(myExceptionHandler) {
-    masterRoute ~
-    workerRoute ~
-    appMasterRoute ~
+    noCache {
+      rootService ~
+        masterRoute ~
+        workerRoute ~
+        appMasterRoute
+    } ~
     // make sure staticRoute is the final one, as it will try to lookup resource in local path
     // if there is no match in previous routes
-    staticRoute
+    staticResource
   }
 
   private val jarStoreService = JarStoreService.get(system.settings.config)

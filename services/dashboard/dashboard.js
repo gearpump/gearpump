@@ -55,16 +55,6 @@ angular.module('dashboard', [
     });
   }])
 
-  // disable caching for ajax calls to make MSIE happy
-  .config(['$httpProvider', function($httpProvider) {
-    'use strict';
-
-    $httpProvider.defaults.headers.get = angular.merge({
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    }, $httpProvider.defaults.headers.get);
-  }])
-
   // disable logging for production
   .config(['$compileProvider', function ($compileProvider) {
     $compileProvider.debugInfoEnabled(false);
@@ -74,8 +64,8 @@ angular.module('dashboard', [
   .constant('conf', {
     restapiProtocol: 'v1.0',
     restapiRoot: location.origin + location.pathname,
-    restapiQueryInterval: 2 * 1000, // 2 seconds
-    restapiQueryTimeout: 30 * 1000, // 30 seconds
+    restapiQueryInterval: 3 * 1000, // in milliseconds
+    restapiQueryTimeout: 30 * 1000, // in milliseconds
     restapiTaskLevelMetricsQueryLimit: 100
   })
 ;
