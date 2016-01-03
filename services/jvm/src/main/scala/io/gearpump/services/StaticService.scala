@@ -35,7 +35,7 @@ trait StaticService  {
 
   // Optionally compresses the response with Gzip or Deflate, if the client accepts
   // compressed responses.
-  val staticRoute = encodeResponse {
+  val staticResource = encodeResponse {
     pathEndOrSingleSlash {
       getFromResource("index.html")
     } ~
@@ -46,20 +46,6 @@ trait StaticService  {
       get {
         getFromResourceDirectory("META-INF/resources/webjars")
       }
-    } ~
-    path("version") {
-      get {
-        complete(version)
-      }
-    } ~
-    path("supervisor-actor-path") {
-      get {
-        complete(system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH))
-      }
-    } ~
-    path("terminate") {
-      system.shutdown()
-      complete(StatusCodes.NotFound)
     } ~
     path(Rest) { path =>
       getFromResource("%s" format path)
