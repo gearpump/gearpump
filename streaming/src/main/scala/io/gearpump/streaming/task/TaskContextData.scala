@@ -28,4 +28,4 @@ case class TaskContextData(
     appMaster : ActorRef,
     parallelism: Int,
     life: LifeTime,
-    subscribers: List[Subscriber])
+    subscribers: Array[(String, List[Subscriber])]) // array of (output_port, subscribers)

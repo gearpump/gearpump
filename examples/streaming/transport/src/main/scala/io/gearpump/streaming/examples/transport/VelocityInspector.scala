@@ -28,7 +28,7 @@ import io.gearpump.streaming.examples.transport.generator.MockCity
 import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
-import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.partitioner.EdgeDescription
 import AppMaster.{TaskActorRef, LookupTaskActorRef}
 import io.gearpump.util.Graph
 
@@ -48,7 +48,7 @@ class VelocityInspector(taskContext: TaskContext, conf: UserConfig) extends Task
   private var queryServerActor: ActorRef = null
 
   override def onStart(startTime: StartTime): Unit = {
-    val dag = DAG(conf.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
+    val dag = DAG(conf.getValue[Graph[ProcessorDescription, EdgeDescription]](StreamApplication.DAG).get)
     val queryServer = dag.processors.find { kv =>
       val (_, processor) = kv
       processor.taskClass == classOf[QueryServer].getName

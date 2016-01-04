@@ -35,7 +35,7 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.AppSubmitter
 import io.gearpump.cluster.worker.WorkerSummary
-import io.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
+import io.gearpump.partitioner.{PartitionerByClassName, EdgeDescription}
 import io.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplication}
 import io.gearpump.util.ActorUtil.{askActor, _}
 import io.gearpump.util.FileDirective._
@@ -150,7 +150,7 @@ trait MasterService {
                 val graph = dag.mapVertex { processorId =>
                   processors(processorId)
                 }.mapEdge { (node1, edge, node2) =>
-                  PartitionerDescription(new PartitionerByClassName(edge))
+                  EdgeDescription(new PartitionerByClassName(edge))
                 }
 
                 val effectiveConfig = if (userconfig == null) UserConfig.empty else userconfig

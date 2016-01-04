@@ -29,18 +29,18 @@ import io.gearpump.transport.HostPort
 import scala.language.existentials
 
 object AppMasterToExecutor {
-  case class LaunchTasks(taskId: List[TaskId], dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber])
+  case class LaunchTasks(taskId: List[TaskId], dagVersion: Int, processorDescription: ProcessorDescription, subscribers: Array[(String, List[Subscriber])])
 
   case object TasksLaunched
 
   /**
    * dagVersion, life, and subscribers will be changed on target task list.
    */
-  case class ChangeTasks(taskId: List[TaskId], dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
+  case class ChangeTasks(taskId: List[TaskId], dagVersion: Int, life: LifeTime, subscribers: Array[(String, List[Subscriber])])
 
   case class TasksChanged(taskIds: List[TaskId])
 
-  case class ChangeTask(taskId: TaskId, dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
+  case class ChangeTask(taskId: TaskId, dagVersion: Int, life: LifeTime, subscribers: Array[(String, List[Subscriber])])
 
   case class TaskChanged(taskId: TaskId, dagVersion: Int)
 

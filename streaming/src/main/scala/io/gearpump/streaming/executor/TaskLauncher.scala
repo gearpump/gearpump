@@ -47,6 +47,7 @@ class TaskLauncher(
 
     val taskConf = userConf.withConfig(processorDescription.taskConf)
 
+
     val taskContext = TaskContextData(executorId,
       appId, appName, appMaster,
       processorDescription.parallelism,
@@ -56,7 +57,7 @@ class TaskLauncher(
 
     var tasks = Map.empty[TaskId, ActorRef]
     taskIds.foreach { taskId =>
-      val task = new TaskWrapper(taskId, taskClass, taskContext, taskConf)
+      val task = new TaskWrapper(taskId, taskClass, taskContext, taskConf, processorDescription.outputPorts)
       val taskActor = context.actorOf(Props(taskActorClass, taskId, taskContext, userConf, task, serializer).
         withDispatcher(dispatcher), ActorPathUtil.taskActorName(taskId))
       tasks += taskId -> taskActor
@@ -67,7 +68,8 @@ class TaskLauncher(
 
 object TaskLauncher {
 
-  case class TaskArgument(dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber])
+  case class TaskArgument(dagVersion: Int, processorDescription: ProcessorDescription,
+                          subscribers: Array[(String, List[Subscriber])])
 
   def apply(executorContext: ExecutorContext, userConf: UserConfig): TaskLauncher = {
     import executorContext.{appId, appMaster, appName, executorId}

@@ -19,6 +19,7 @@
 package io.gearpump.partitioner
 
 import io.gearpump.Message
+import io.gearpump.util.Constants
 import scala.reflect.ClassTag
 import org.apache.commons.lang.SerializationUtils
 
@@ -73,13 +74,13 @@ class PartitionerByClassName(partitionerClass: String) extends PartitionerFactor
 /**
  * @param partitionerFactory
  */
-case class PartitionerDescription(partitionerFactory: PartitionerFactory)
+case class EdgeDescription(sourcePort: String, partitionerFactory: PartitionerFactory)
 
 
 object Partitioner {
   val UNKNOWN_PARTITION_ID = -1
 
-  def apply[T <: Partitioner](implicit clazz: ClassTag[T]): PartitionerDescription = {
-    PartitionerDescription(new PartitionerByClassName(clazz.runtimeClass.getName))
+  def apply[T <: Partitioner](implicit clazz: ClassTag[T]): EdgeDescription = {
+    EdgeDescription(Constants.DEFAULT_OUTPUT_PORT_NAME, new PartitionerByClassName(clazz.runtimeClass.getName))
   }
 }

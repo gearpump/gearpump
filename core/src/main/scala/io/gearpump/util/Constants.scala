@@ -133,6 +133,9 @@ object Constants {
     classOf[ShuffleGroupingPartitioner],
     classOf[ShufflePartitioner])
 
+  val DEFAULT_OUTPUT_PORT_NAME = "output"
+  val DEFAULT_OUTPUT_PORTS = Array(DEFAULT_OUTPUT_PORT_NAME)
+
   //Security related
   val GEARPUMP_KEYTAB_FILE = "gearpump.keytab.file"
   val GEARPUMP_KERBEROS_PRINCIPAL = "gearpump.kerberos.principal"

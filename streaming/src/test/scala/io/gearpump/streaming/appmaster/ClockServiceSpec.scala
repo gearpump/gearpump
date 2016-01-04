@@ -21,7 +21,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import io.gearpump.streaming.task.{GetStartClock, UpstreamMinClock, GetLatestMinClock}
 import io.gearpump.cluster.{UserConfig, TestUtil}
-import io.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
+import io.gearpump.partitioner.{HashPartitioner, Partitioner, EdgeDescription}
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess, HealthChecker, ProcessorClock}
 import io.gearpump.streaming.appmaster.ClockServiceSpec.Store
 import io.gearpump.streaming.storage.AppDataStore
@@ -186,10 +186,10 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val sink = ProcessorDescription(id = 1, taskClass = null, parallelism = 1)
       val sinkClock = new ProcessorClock(1, 1)
       sinkClock.init(0L)
-      val graph = Graph.empty[ProcessorDescription, PartitionerDescription]
+      val graph = Graph.empty[ProcessorDescription, EdgeDescription]
       graph.addVertex(source)
       graph.addVertex(sink)
-      graph.addEdge(source, PartitionerDescription(null), sink)
+      graph.addEdge(source, EdgeDescription(null), sink)
       val dag = DAG(graph)
       val clocks = Map (
         0 -> sourceClock,

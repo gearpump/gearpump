@@ -22,7 +22,7 @@ import akka.actor.{ActorRef, Actor}
 import io.gearpump.streaming._
 import io.gearpump.streaming.task.Subscriber
 import io.gearpump.cluster.UserConfig
-import io.gearpump.partitioner.{PartitionerDescription}
+import io.gearpump.partitioner.{EdgeDescription}
 import DagManager.{NewDAGDeployed, WatchChange, DAGOperationSuccess, DAGOperationFailed, ReplaceProcessor, TaskLaunchData, LatestDAG, GetTaskLaunchData, GetLatestDAG}
 import io.gearpump.util.{LogUtil, Graph}
 import org.slf4j.Logger
@@ -42,7 +42,7 @@ class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends A
 
   var dags = List(
     dag.getOrElse(DAG(userConfig.getValue[Graph[ProcessorDescription,
-      PartitionerDescription]](StreamApplication.DAG).get))
+      EdgeDescription]](StreamApplication.DAG).get))
   )
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
@@ -132,7 +132,7 @@ object DagManager {
 
 
   case class GetTaskLaunchData(dagVersion: Int, processorId: Int, context: AnyRef = null)
-  case class TaskLaunchData(processorDescription : ProcessorDescription, subscribers: List[Subscriber], context: AnyRef = null)
+  case class TaskLaunchData(processorDescription : ProcessorDescription, subscribers: Array[(String, List[Subscriber])], context: AnyRef = null)
 
   sealed trait DAGOperation
 

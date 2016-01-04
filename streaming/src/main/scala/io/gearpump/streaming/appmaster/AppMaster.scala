@@ -28,7 +28,7 @@ import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, L
 import io.gearpump.cluster._
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
-import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.partitioner.EdgeDescription
 import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask}
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.AppMaster._
@@ -306,7 +306,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   }
 
   private def getUpdatedDAG(): DAG = {
-    val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
+    val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, EdgeDescription]](StreamApplication.DAG).get)
     val updated = dag.processors.map{ idAndProcessor =>
       val (id, oldProcessor) = idAndProcessor
       val newProcessor = if(oldProcessor.jar == null) {

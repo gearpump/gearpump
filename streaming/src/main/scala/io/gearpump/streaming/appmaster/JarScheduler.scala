@@ -22,7 +22,7 @@ import io.gearpump.streaming.task.TaskId
 import io.gearpump.streaming.{ProcessorDescription, DAG}
 import io.gearpump.cluster.AppJar
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
-import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.partitioner.EdgeDescription
 import JarScheduler.ResourceRequestDetail
 import io.gearpump.util.Graph
 
@@ -40,7 +40,7 @@ class JarScheduler(appId : Int, appName: String, config: Config) {
     taskSchedulers = processors.map { jarAndProcessors =>
       val (jar, processors) = jarAndProcessors
       //Construct the sub DAG
-      val graph = Graph.empty[ProcessorDescription, PartitionerDescription]
+      val graph = Graph.empty[ProcessorDescription, EdgeDescription]
       processors.foreach(graph.addVertex)
       val subDag = DAG(graph)
       val taskScheduler = taskSchedulers.getOrElse(jar, new TaskSchedulerImpl(appId, appName, config))

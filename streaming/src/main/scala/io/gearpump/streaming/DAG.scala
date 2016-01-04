@@ -19,13 +19,13 @@
 package io.gearpump.streaming
 
 import io.gearpump.streaming.task.TaskId
-import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.partitioner.EdgeDescription
 import io.gearpump.util.Graph
 
 /**
  * DAG is wrapper for [[Graph]] for streaming applications.
  */
-case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, PartitionerDescription]) extends Serializable {
+case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, EdgeDescription]) extends Serializable {
 
   def isEmpty: Boolean = {
     processors.isEmpty
@@ -46,7 +46,7 @@ case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription]
 }
 
 object DAG {
-  def apply (graph : Graph[ProcessorDescription, PartitionerDescription], version: Int = 0) : DAG = {
+  def apply (graph : Graph[ProcessorDescription, EdgeDescription], version: Int = 0) : DAG = {
     val processors = graph.vertices.map{processorDescription =>
       (processorDescription.id, processorDescription)
     }.toMap
@@ -56,5 +56,5 @@ object DAG {
     new DAG(version, processors, dag)
   }
 
-  def empty() = apply(Graph.empty[ProcessorDescription, PartitionerDescription])
+  def empty() = apply(Graph.empty[ProcessorDescription, EdgeDescription])
 }

@@ -44,7 +44,7 @@ class TaskActor(
     userConf : UserConfig,
     val task: TaskWrapper,
     inputSerializerPool: SerializationFramework)
-  extends Actor with ExpressTransport  with TimeOutScheduler{
+  extends Actor with TimeOutScheduler{
   var upstreamMinClock: TimeStamp = 0L
 
   def serializerPool: SerializationFramework = inputSerializerPool
@@ -57,10 +57,9 @@ class TaskActor(
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
   //metrics
-  private val metricName = s"app${appId}.processor${taskId.processorId}.task${taskId.index}"
+  val metricName = s"app${appId}.processor${taskId.processorId}.task${taskId.index}"
   private val receiveLatency = Metrics(context.system).histogram(s"$metricName:receiveLatency", sampleRate = 1)
   private val processTime = Metrics(context.system).histogram(s"$metricName:processTime")
-  private val sendThroughput = Metrics(context.system).meter(s"$metricName:sendThroughput")
   private val receiveThroughput = Metrics(context.system).meter(s"$metricName:receiveThroughput")
 
   private val maxPendingMessageCount = config.getInt(GEARPUMP_STREAMING_MAX_PENDING_MESSAGE_COUNT)
@@ -83,12 +82,14 @@ class TaskActor(
 
   private val queue = new util.LinkedList[AnyRef]()
 
-  private var subscriptions = List.empty[(Int, Subscription)]
-
   // securityChecker will be responsible of dropping messages from
   // unknown sources
   private val securityChecker  = new SecurityChecker(taskId, self)
   private[task] var sessionId = NONE_SESSION
+
+  //output ports
+  val outputPorts : Array[OutputPort] = taskContextData.subscribers.map { portInfo =>
+                                            new OutputPort(this, portInfo._1, portInfo._2)}
 
   //report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -107,25 +108,6 @@ class TaskActor(
 
   def onStop() : Unit = task.onStop()
 
-  /**
-   * output to a downstream by specifying a arrayIndex
-   * @param arrayIndex, this is not same as ProcessorId
-   * @param msg
-   */
-  def output(arrayIndex: Int, msg: Message) : Unit = {
-    var count = 0
-    count +=  this.subscriptions(arrayIndex)._2.sendMessage(msg)
-    sendThroughput.mark(count)
-  }
-
-  def output(msg : Message) : Unit = {
-    var count = 0
-    this.subscriptions.foreach{ subscription =>
-      count += subscription._2.sendMessage(msg)
-    }
-    sendThroughput.mark(count)
-  }
-
   final override def postStop() : Unit = {
     onStop()
   }
@@ -137,14 +119,31 @@ class TaskActor(
     context.become(waitForTaskRegistered)
   }
 
+  /**
+    * output via default port (the first port) to downstream by specifying a arrayIndex
+    * @param arrayIndex, subscription index (not ProcessorId)
+    * @param msg
+    */
+  def output(arrayIndex: Int, msg: Message) : Unit = {
+    outputPorts(0).output(arrayIndex, msg)
+  }
+
+  /**
+    * output via default port (the first port) to downstream
+    * @param msg
+    */
+  def output(msg : Message) : Unit = {
+    outputPorts(0).output(msg)
+  }
+
   def minClockAtCurrentTask: TimeStamp = {
-    this.subscriptions.foldLeft(Long.MaxValue){ (clock, subscription) =>
-      Math.min(clock, subscription._2.minClock)
+    outputPorts.foldLeft(Long.MaxValue) {(clock, outputPort) =>
+      Math.min(clock, outputPort.minClock)
     }
   }
 
   private def allowSendingMoreMessages(): Boolean = {
-    subscriptions.forall(_._2.allowSendingMoreMessages())
+    outputPorts.forall(_.allowSendingMoreMessages())
   }
 
   private def doHandleMessage(): Unit = {
@@ -179,13 +178,7 @@ class TaskActor(
 
   private def onStartClock: Unit = {
     LOG.info(s"received start, clock: $upstreamMinClock, sessionId: $sessionId")
-    subscriptions = subscribers.map { subscriber =>
-      (subscriber.processorId ,
-        new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
-          maxPendingMessageCount, ackOnceEveryMessageCount))
-    }.sortBy(_._1)
-
-    subscriptions.foreach(_._2.start)
+    outputPorts.foreach(_.initialize(sessionId, maxPendingMessageCount, ackOnceEveryMessageCount))
 
     import scala.collection.JavaConverters._
     stashQueue.asScala.foreach{item =>
@@ -233,7 +226,7 @@ class TaskActor(
         doHandleMessage()
       }
     case ack: Ack =>
-      subscriptions.find(_._1 == ack.taskId.processorId).foreach(_._2.receiveAck(ack))
+      outputPorts.foreach(_.receiveAck(ack))
       doHandleMessage()
     case inputMessage: SerializedMessage =>
       val message = Message(serializerPool.get().deserialize(inputMessage.bytes), inputMessage.timeStamp)

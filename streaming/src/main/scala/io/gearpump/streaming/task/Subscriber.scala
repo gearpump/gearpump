@@ -18,7 +18,7 @@
 
 package io.gearpump.streaming.task
 
-import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.partitioner.EdgeDescription
 import io.gearpump.streaming.{LifeTime, DAG}
 
 /**
@@ -31,7 +31,7 @@ import io.gearpump.streaming.{LifeTime, DAG}
  * @param partitionerDescription subscriber partitioner
  */
 
-case class Subscriber(processorId: Int, partitionerDescription: PartitionerDescription, parallelism: Int, lifeTime: LifeTime)
+case class Subscriber(processorId: Int, partitionerDescription: EdgeDescription, parallelism: Int, lifeTime: LifeTime)
 
 object Subscriber {
 
@@ -44,14 +44,15 @@ object Subscriber {
    * @param dag     the DAG
    * @return   the subscribers of this processor
    */
-  def of(processorId: Int, dag: DAG): List[Subscriber] = {
+  def of(processorId: Int, dag: DAG): Array[(String, List[Subscriber])] = {
     val edges = dag.graph.outgoingEdgesOf(processorId)
 
-    edges.foldLeft(List.empty[Subscriber]) { (list, nodeEdgeNode) =>
-      val (_, partitioner, downstreamProcessorId) = nodeEdgeNode
-      val downstreamProcessor = dag.processors(downstreamProcessorId)
-      list :+ Subscriber(downstreamProcessorId, partitioner, downstreamProcessor.parallelism, downstreamProcessor.life)
-    }
+    edges.groupBy(_._2.sourcePort).mapValues(_.map { nodeEdgeNode =>
+        val (_, partitioner, downstreamProcessorId) = nodeEdgeNode
+        val downstreamProcessor = dag.processors(downstreamProcessorId)
+        Subscriber(downstreamProcessorId, partitioner, downstreamProcessor.parallelism, downstreamProcessor.life)
+      }
+    ).toArray
   }
 }
 

@@ -33,7 +33,8 @@ import scala.concurrent.duration.FiniteDuration
  * @param context context class
  * @param userConf user config
  */
-class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: TaskContextData, userConf: UserConfig) extends TaskContext with TaskInterface {
+class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: TaskContextData,
+                  userConf: UserConfig, outputPorts: Array[String]) extends TaskContext with TaskInterface {
 
   private val LOG = LogUtil.getLogger(taskClass, task = taskId)
 

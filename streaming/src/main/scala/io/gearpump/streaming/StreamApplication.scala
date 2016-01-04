@@ -23,7 +23,7 @@ import io.gearpump.streaming.appmaster.AppMaster
 import io.gearpump.streaming.task.Task
 import io.gearpump.TimeStamp
 import io.gearpump.cluster._
-import io.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription, PartitionerObject}
+import io.gearpump.partitioner.{HashPartitioner, Partitioner, EdgeDescription, PartitionerObject}
 import io.gearpump.util.{Graph, ReferenceEqual}
 
 import scala.language.implicitConversions
@@ -110,21 +110,18 @@ object Processor {
 
   case class DefaultProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T])
     extends ProcessorBase[T](parallelism, description, taskConf, taskClass) {
-    override def outputPorts: Array[String] = DEFAULT_OUTPUT_PORTS
+    override def outputPorts: Array[String] = io.gearpump.util.Constants.DEFAULT_OUTPUT_PORTS
   }
 
   case class SourceProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T])
     extends ProcessorBase[T](parallelism, description, taskConf, taskClass) {
-    override def outputPorts: Array[String] = DEFAULT_OUTPUT_PORTS
+    override def outputPorts: Array[String] = io.gearpump.util.Constants.DEFAULT_OUTPUT_PORTS
   }
 
   case class SinkProcessor[T<: Task](parallelism : Int, description: String, taskConf: UserConfig, taskClass: Class[T])
     extends ProcessorBase[T](parallelism, description, taskConf, taskClass) {
     override def outputPorts: Array[String] = Array.empty[String]
   }
-
-  val DEFAULT_OUTPUT_PORT_NAME = "output"
-  val DEFAULT_OUTPUT_PORTS = Array(DEFAULT_OUTPUT_PORT_NAME)
 }
 
 /**
@@ -151,7 +148,7 @@ object LifeTime {
 /**
  * Represent a streaming application
  */
-class StreamApplication(override val name : String,  val inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, PartitionerDescription])
+class StreamApplication(override val name : String,  val inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, EdgeDescription])
   extends Application {
   require(!dag.hasDuplicatedEdge(), "Graph should not have duplicated edges")
 
@@ -165,7 +162,7 @@ case class ProcessorDescription(
     id: ProcessorId,
     taskClass: String,
     parallelism : Int,
-    outputPorts : Array[String],
+    outputPorts : Array[String], //outputPorts(0) will be the default port
     description: String = "",
     taskConf: UserConfig = null,
     life: LifeTime = LifeTime.Immortal,
@@ -183,7 +180,7 @@ object StreamApplication {
       val updatedProcessor = ProcessorToProcessorDescription(indices(processor), processor)
       updatedProcessor
     }.mapEdge { (node1, edge, node2) =>
-      PartitionerDescription(new PartitionerObject(Option(edge).getOrElse(StreamApplication.hashPartitioner)))
+      EdgeDescription(io.gearpump.util.Constants.DEFAULT_OUTPUT_PORT_NAME, new PartitionerObject(Option(edge).getOrElse(StreamApplication.hashPartitioner)))
     }
     new StreamApplication(name, userConfig, graph)
   }

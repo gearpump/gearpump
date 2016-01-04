@@ -34,7 +34,7 @@ import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEd
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.{AppJar, TestUtil, UserConfig}
 import io.gearpump.jarstore.FilePath
-import io.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
+import io.gearpump.partitioner.{HashPartitioner, Partitioner, EdgeDescription}
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
@@ -125,7 +125,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   }
 
   "DAGDiff" should "track all the DAG migration impact" in {
-    val defaultEdge = PartitionerDescription(null)
+    val defaultEdge = EdgeDescription(null)
     val a = ProcessorDescription(id = 1, taskClass = null, parallelism = 1)
     val b = ProcessorDescription(id = 2, taskClass = null, parallelism = 1)
     val c = ProcessorDescription(id = 3, taskClass = null, parallelism = 1)

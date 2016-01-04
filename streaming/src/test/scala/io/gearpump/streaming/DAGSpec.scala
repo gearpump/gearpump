@@ -18,7 +18,7 @@
 
 package io.gearpump.streaming
 
-import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.partitioner.EdgeDescription
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph.Node
@@ -33,7 +33,7 @@ class DAGSpec extends PropSpec with PropertyChecks with Matchers {
   property("DAG should be built correctly for a single task") {
     forAll(parallelismGen) { (parallelism: Int) =>
       val task = ProcessorDescription(id = 0, taskClass = "task", parallelism = parallelism)
-      val graph = Graph[ProcessorDescription, PartitionerDescription](task)
+      val graph = Graph[ProcessorDescription, EdgeDescription](task)
       val dag = DAG(graph)
       dag.processors.size shouldBe 1
       assert(dag.taskCount == parallelism)

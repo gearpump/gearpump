@@ -29,7 +29,7 @@ import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import QueryServer.{GetAllRecords, WebServer}
-import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.partitioner.EdgeDescription
 import AppMaster.{TaskActorRef, LookupTaskActorRef}
 import io.gearpump.util.Graph
 import spray.can.Http
@@ -50,7 +50,7 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
   private var overSpeedRecords = List.empty[OverSpeedReport]
 
   override def onStart(startTime: StartTime): Unit = {
-    val dag = DAG(conf.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
+    val dag = DAG(conf.getValue[Graph[ProcessorDescription, EdgeDescription]](StreamApplication.DAG).get)
     inspector = dag.processors.find { kv =>
       val (_, processor) = kv
       processor.taskClass == classOf[VelocityInspector].getName
