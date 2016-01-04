@@ -115,7 +115,7 @@ angular.module('dashboard')
             var width = d3.round(suggestEdgeWidthFn(bandwidth), 1);
             if (!visEdge || visEdge.width !== width) {
               diff.push({
-                id: edgeId, from: edge.source, to: edge.target,
+                id: edgeId, from: edge.from, to: edge.to,
                 width: width,
                 hoverWidth: 0 /*delta*/,
                 selectionWidth: 0 /*delta*/,
@@ -164,7 +164,7 @@ angular.module('dashboard')
         $scope.totalSentMessages = sentMessages.total;
         $scope.totalReceivedMessages = receivedMessages.total;
         $scope.averageProcessingTime = metricsProvider.getMessageProcessingTime();
-        $scope.averageTaskReceiveLatency = metricsProvider.getMessageReceiveLatency();
+        $scope.messageReceiveLatency = metricsProvider.getEffectiveMessageReceiveLatency();
       }
 
       $scope.$watchCollection('dag', function(dag) {

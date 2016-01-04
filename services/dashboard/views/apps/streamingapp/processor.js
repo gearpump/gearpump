@@ -121,8 +121,8 @@ angular.module('dashboard')
             options: {
               height: '110px',
               seriesNames: [''],
-              barMinWidth: 2,
-              barMinSpacing: 2,
+              barMinWidth: 4,
+              barMinSpacing: 1,
               valueFormatter: function(value) {
                 var unit = $scope.metricType === 'meter' ? 'msg/s' : 'ms';
                 return helper.metricValue(value) + ' ' + unit;
@@ -143,7 +143,7 @@ angular.module('dashboard')
 
         var i = 0;
         var metricField = $scope.metricType === 'meter' ? 'movingAverage1m' : 'mean';
-        _.forEach(metrics, function(metric, taskId) {
+        _.forEach(metrics, function(metric) {
           data[i].y = metric[metricField]
           ;
           i++;

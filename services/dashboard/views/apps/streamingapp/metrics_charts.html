@@ -82,22 +82,22 @@
   <div class="col-sm-6">
     <div class="metrics-wrapper">
       <metrics
-        caption="{{averageMessageReceiveLatencyMetricsCaption}}"
-        help="{{averageMessageReceiveLatencyMetricsDescription}}"
-        value="{{averageMessageReceiveLatency|metric}}" unit="ms">
+        caption="{{messageReceiveLatencyMetricsCaption}}"
+        help="{{messageReceiveLatencyMetricsDescription}}"
+        value="{{messageReceiveLatency|metric}}" unit="ms">
       </metrics>
     </div>
     <div ng-if="showCurrentMetrics">
       <sparkline-chart
-        options-bind="::averageMessageReceiveLatencyChartOptions"
-        datasource-bind="averageMessageReceiveLatencyData">
+        options-bind="::messageReceiveLatencyChartOptions"
+        datasource-bind="messageReceiveLatencyData">
       </sparkline-chart>
     </div>
     <div ng-hide="showCurrentMetrics"
          class="metric-chart-placeholder">
       <sparkline-chart
-        ng-if="averageMessageReceiveLatencyHistChartOptions != null"
-        options-bind="averageMessageReceiveLatencyHistChartOptions">
+        ng-if="messageReceiveLatencyHistChartOptions != null"
+        options-bind="messageReceiveLatencyHistChartOptions">
       </sparkline-chart>
     </div>
   </div>

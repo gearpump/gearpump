@@ -61,7 +61,7 @@ angular.module('dashboard')
           $stb.link('Processor').key(['processorId', 'taskPath']).canSort('processorId').sortDefault().styleClass('col-sm-1 text-nowrap').done(),
           $stb.number('Tasks').key('taskNum').canSort().styleClass('col-sm-1').done(),
           $stb.text('Task Class').key('taskClass').canSort().styleClass('col-lg-4 hidden-md hidden-sm hidden-xs').done(),
-          $stb.number('Std. Dev.').key('stddev').canSort().unit('ms').styleClass('col-sm-5').done(),
+          $stb.number2('Std. Dev.').key('stddev').canSort().unit('ms').styleClass('col-sm-5').done(),
           $stb.number2('Mean').key('mean').canSort().unit('ms').styleClass('col-sm-1').done(),
           $stb.number2('Median').key('median').canSort().unit('ms').styleClass('col-sm-1').done(),
           $stb.number2('p95%').key('p95').canSort().unit('ms')

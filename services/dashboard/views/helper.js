@@ -27,9 +27,9 @@ angular.module('dashboard')
           unit: pieces.length > 1 ? pieces[1] : ''
         };
       },
-      /* Show metric as integer or with 2 digits after period, if metric value is less than 1. */
+      /* Show metric as integer or with 2 digits after period, if metric value is less than 100. */
       metricValue: function(value) {
-        var precision = Math.abs(value) < 1 ? 2 : 0;
+        var precision = Math.abs(value) < 100 ? 2 : 0;
         return $filter('number')(value, precision);
       }
     };
