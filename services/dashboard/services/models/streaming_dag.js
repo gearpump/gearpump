@@ -10,21 +10,57 @@ angular.module('dashboard')
     'use strict';
 
     /** The constructor */
-    function StreamingDag(clock, processors, levels, edges) {
+    function StreamingDag(clock, processors, edges) {
       this.metrics = {};
       this.metricsTime = 0;
       this.stallingTasks = {};
-      this.setData(clock, processors, levels, edges);
+      this.setData(clock, processors, edges);
     }
 
     StreamingDag.prototype = {
 
       /** Set the current dag data */
-      setData: function(clock, processors, levels, edges) {
+      setData: function(clock, processors, edges) {
         this.clock = clock;
-        this.processors = processors;
-        this.processorHierarchyLevels = levels;
-        this.edges = edges;
+        if (!_.isEqual(this.processors, processors) || !_.isEqual(this.edges, edges)) {
+          // only do calculation when topology has been changed
+          this.processors = processors;
+          this.edges = edges;
+          this.sortedNonSourceProcessorIds = this._getTopologicalSortedNonSourceProcessIds();
+          this.predecessors = this._calculatePredecessors();
+        }
+      },
+
+      /** Return processor ids sorted in topological order without source processors (hierarchy=0) */
+      _getTopologicalSortedNonSourceProcessIds: function() {
+        return _(this.processors).filter(function(processor) {
+          return processor.hierarchy > 0;
+        })
+          .sortBy('hierarchy')
+          .pluck('id')
+          .value();
+      },
+
+      _calculatePredecessors: function() {
+        var result = {};
+        _.forEach(this._getProcessorIds(), function(processorId) {
+          result[processorId] = this._getPredecessorsIds(processorId);
+        }, this);
+        return result;
+      },
+
+      _getPredecessorsIds: function(processorId) {
+        var result = [];
+        _.forEach(this.edges, function(processorEdges, id) {
+          if (id != processorId) {
+            _.forEach(processorEdges, function(edge) {
+              if (edge.to === processorId) {
+                result.push(edge.from);
+              }
+            });
+          }
+        });
+        return result;
       },
 
       setStallingTasks: function(tasks) {
@@ -59,21 +95,14 @@ angular.module('dashboard')
         }
       },
 
-      hasMetrics: function() {
-        return this.metricsTime > 0;
-      },
-
       /** Return the number of tasks (executed by executors). */
       getNumOfTasks: function() {
-        return d3.sum(
-          _.map(this._getActiveProcessors(), function(processor) {
-            return processor.parallelism;
-          }));
+        return _.sum(this._getActiveProcessors(), 'parallelism');
       },
 
       /** Return the number of current active processors. */
       getNumOfProcessors: function() {
-        return Object.keys(this._getActiveProcessors()).length;
+        return _.keys(this._getActiveProcessors()).length;
       },
 
       _getActiveProcessors: function() {
@@ -90,12 +119,19 @@ angular.module('dashboard')
         return _keysAsNum(this._getActiveProcessors());
       },
 
-      _getProcessorEdges: function(processors) {
+      _getProcessorIds: function() {
+        return _keysAsNum(this.processors);
+      },
+
+      _getRelatedEdges: function(processors) {
         var result = {};
-        _.forEach(this.edges, function(edge, edgeId) {
-          if (processors.hasOwnProperty(edge.source) &&
-            processors.hasOwnProperty(edge.target)) {
-            result[edgeId] = edge;
+        _.forEach(this.edges, function(processorEdges, processorId) {
+          if (processors.hasOwnProperty(processorId)) {
+            _.forEach(processorEdges, function (edge) {
+              if (processors.hasOwnProperty(edge.to)) {
+                result[edge.from + '_' + edge.to] = edge;
+              }
+            });
           }
         });
         return result;
@@ -105,14 +141,17 @@ angular.module('dashboard')
       getCurrentDag: function() {
         var weights = {};
         var processors = this._getActiveProcessors();
-        _.forEach(processors, function(_, key) {
-          var processorId = parseInt(key); // JavaScript object key type is always string
+        _.forEach(processors, function(processor, key) {
+          var processorId = Number(key);
           weights[processorId] = this._calculateProcessorWeight(processorId);
-          processors[key].isStalled = this.stallingTasks.hasOwnProperty(processorId);
+          var stalledTasks = this.stallingTasks.hasOwnProperty(processorId);
+          if (stalledTasks.length || processor.hasOwnProperty('stalledTasks')) {
+            processor.stalledTasks = stalledTasks;
+          }
         }, this);
 
         var bandwidths = {};
-        var edges = this._getProcessorEdges(processors);
+        var edges = this._getRelatedEdges(processors);
         _.forEach(edges, function(_, edgeId) {
           bandwidths[edgeId] = this._calculateEdgeBandwidth(edgeId);
         }, this);
@@ -120,7 +159,6 @@ angular.module('dashboard')
         return {
           processors: processors,
           edges: edges,
-          hierarchyLevels: angular.copy(this.processorHierarchyLevels),
           weights: weights,
           bandwidths: bandwidths
         };
@@ -139,27 +177,28 @@ angular.module('dashboard')
         var digits = edgeId.split('_');
         var sourceId = parseInt(digits[0]);
         var targetId = parseInt(digits[1]);
-        var sourceOutputs = this.calculateProcessorConnections(sourceId).outputs;
-        var targetInputs = this.calculateProcessorConnections(targetId).inputs;
+        var sourceOutdegree = this.calculateProcessorDegrees(sourceId).outdegree;
+        var targetIndegree = this.calculateProcessorDegrees(targetId).indegree;
         var sourceSendThroughput = this._getMetricFieldOrElse(sourceId, 'sendThroughput', 'movingAverage1m', 0);
         var targetReceiveThroughput = this._getMetricFieldOrElse(targetId, 'receiveThroughput', 'movingAverage1m', 0);
         return Math.min(
-          sourceOutputs === 0 ? 0 : Math.round(sourceSendThroughput / sourceOutputs),
-          targetInputs === 0 ? 0 : Math.round(targetReceiveThroughput / targetInputs)
+          sourceOutdegree === 0 ? 0 : Math.round(sourceSendThroughput / sourceOutdegree),
+          targetIndegree === 0 ? 0 : Math.round(targetReceiveThroughput / targetIndegree)
         );
       },
 
-      /** Return the number of inputs and outputs of a processor */
-      calculateProcessorConnections: function(processorId) {
-        var result = {inputs: 0, outputs: 0};
-        var activeProcessors = this._getActiveProcessors();
-        _.forEach(this._getProcessorEdges(activeProcessors), function(edge) {
-          if (edge.source === processorId) {
-            result.outputs++;
-          } else if (edge.target === processorId) {
-            result.inputs++;
+      /** Return the indegree and outdegree of a processor */
+      calculateProcessorDegrees: function(processorId, includeDead) {
+        var result = {indegree: 0, outdegree: 0};
+        var processors = includeDead ?
+          this.processors : this._getActiveProcessors();
+        _.forEach(this._getRelatedEdges(processors), function(edge) {
+          if (edge.from === processorId) {
+            result.outdegree++;
+          } else if (edge.to === processorId) {
+            result.indegree++;
           }
-        }, /* scope */ this);
+        });
         return result;
       },
 
@@ -186,13 +225,13 @@ angular.module('dashboard')
       },
 
       /** Return processor ids as an array by type (source|sink). */
-      _getProcessorIdsByType: function(type, includeInactiveProcessors) {
-        var processorIds = includeInactiveProcessors ?
-          _keysAsNum(this.processors) : this._getActiveProcessorIds();
+      _getProcessorIdsByType: function(type, includeDead) {
+        var processorIds = includeDead ?
+          this._getProcessorIds() : this._getActiveProcessorIds();
         return _.filter(processorIds, function(processorId) {
-          var conn = this.calculateProcessorConnections(processorId);
-          return (type === 'source' && conn.inputs === 0 && conn.outputs > 0) ||
-            (type === 'sink' && conn.inputs > 0 && conn.outputs === 0);
+          var degrees = this.calculateProcessorDegrees(processorId, includeDead);
+          return (type === 'source' && degrees.indegree === 0 && degrees.outdegree > 0) ||
+            (type === 'sink' && degrees.indegree > 0 && degrees.outdegree === 0);
         }, this);
       },
 
@@ -201,23 +240,45 @@ angular.module('dashboard')
         var fallback = 0;
         return angular.isNumber(processorId) ?
           this._getMetricFieldOrElse(processorId, 'processTime', 'mean', fallback) :
-          this._getProcessorsMetricFieldAverage('processTime', 'mean', fallback);
+          this._getProcessorsMetricFieldAverage(
+            this._getActiveProcessorIds(), 'processTime', 'mean', fallback);
       },
 
-      /** Return the average message receive latency of particular processor (or all active processors). */
+      /** Return the average message receive latency of particular processor or the latency on critical path. */
       getMessageReceiveLatency: function(processorId) {
         var fallback = 0;
         return angular.isNumber(processorId) ?
           this._getMetricFieldOrElse(processorId, 'receiveLatency', 'mean', fallback) :
-          this._getProcessorsMetricFieldAverage('receiveLatency', 'mean', fallback);
+          this.getCriticalPathLatency();
       },
 
       /** Return the average value of particular metrics field of particular processor (or all processors). */
-      _getProcessorsMetricFieldAverage: function(clazz, field, fallback) {
-        var array = _.map(this._getActiveProcessorIds(), function(processorId) {
+      _getProcessorsMetricFieldAverage: function(processorIds, clazz, field, fallback) {
+        var array = _.map(processorIds, function(processorId) {
           return this._getMetricFieldOrElse(processorId, clazz, field, fallback);
         }, this);
         return d3.mean(array);
+      },
+
+      /** Return the message latency on critical path. */
+      getCriticalPathLatency: function() {
+        var that = this;
+        var latencyLookup = {};
+        _.forEach(this.sortedNonSourceProcessorIds, function(processorId) {
+          latencyLookup[processorId] =
+            that.getMessageReceiveLatency(processorId) +
+            that.getMessageProcessingTime(processorId);
+        });
+        _.forEach(this.sortedNonSourceProcessorIds, function(processorId) {
+          var predecessorsIds = that.predecessors[processorId];
+          if (predecessorsIds.length) {
+            var predecessorsLatencies = _.map(predecessorsIds, function(id) {
+              return latencyLookup[id] || 0;
+            });
+            latencyLookup[processorId] += _.max(predecessorsLatencies);
+          }
+        });
+        return _.max(_.values(latencyLookup));
       },
 
       /**
@@ -226,7 +287,7 @@ angular.module('dashboard')
        */
       toHistoricalMessageReceiveThroughputData: function(metrics, timeResolution, processorId) {
         var processorIds = angular.isNumber(processorId) ?
-          [processorId] : this._getProcessorIdsByType('sink', /*includeInactiveProcessors=*/true);
+          [processorId] : this._getProcessorIdsByType('sink', /*includeDead=*/true);
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['receiveThroughput'], 'movingAverage1m', d3.sum);
       },
@@ -237,7 +298,7 @@ angular.module('dashboard')
        */
       toHistoricalMessageSendThroughputData: function(metrics, timeResolution, processorId) {
         var processorIds = angular.isNumber(processorId) ?
-          [processorId] : this._getProcessorIdsByType('source', /*includeInactiveProcessors=*/true);
+          [processorId] : this._getProcessorIdsByType('source', /*includeDead=*/true);
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['sendThroughput'], 'movingAverage1m', d3.sum);
       },
@@ -245,24 +306,64 @@ angular.module('dashboard')
       /** Return the historical average message processing time as an array. */
       toHistoricalMessageAverageProcessingTimeData: function(metrics, timeResolution, processorId) {
         var processorIds = angular.isNumber(processorId) ?
-          [processorId] : _keysAsNum(this.processors);
+          [processorId] : this._getProcessorIds();
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['processTime'], 'mean', d3.mean);
       },
 
-      /** Return the historical average message receive latency as an array. */
-      toHistoricalAverageMessageReceiveLatencyData: function(metrics, timeResolution, processorId) {
-        var processorIds = angular.isNumber(processorId) ?
-          [processorId] : _keysAsNum(this.processors);
-        return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
-          metrics['receiveLatency'], 'mean', d3.mean);
+      /**
+       * Return the historical average message receive latency of particular processor or the latency on
+       * critical path as an array.
+       */
+      toHistoricalMessageReceiveLatencyData: function(metrics, timeResolution, processorId) {
+        if (angular.isNumber(processorId)) {
+          return this._getProcessorHistoricalMetrics([processorId], timeResolution,
+            metrics['receiveLatency'], 'mean', d3.mean);
+        }
+        return this.toHistoricalCriticalPathLatencyData(metrics, timeResolution);
+      },
+
+      /**
+       * Return the historical message receive latency on critical path as an array.
+       */
+      toHistoricalCriticalPathLatencyData: function(metrics, timeResolution) {
+        var that = this;
+        var aggregateFn = undefined;
+        var unsort = true;
+        var processingTimeLookup = this._getProcessorHistoricalMetrics(this.sortedNonSourceProcessorIds,
+          timeResolution, metrics['processTime'], 'mean', aggregateFn, unsort);
+        var receiveLatencyLookup = this._getProcessorHistoricalMetrics(this.sortedNonSourceProcessorIds,
+          timeResolution, metrics['receiveLatency'], 'mean', aggregateFn, unsort);
+
+        var metricTimeArray = _.union(_.keys(processingTimeLookup), _.keys(receiveLatencyLookup));
+        var result = {};
+        _.forEach(metricTimeArray.sort(), function(time) {
+          var latencyLookup = {};
+          _.forEach(that.sortedNonSourceProcessorIds, function(processorId) {
+            latencyLookup[processorId] =
+              ((processingTimeLookup[time] || {})[processorId] || 0) +
+              ((receiveLatencyLookup[time] || {})[processorId] || 0);
+          });
+          _.forEach(that.sortedNonSourceProcessorIds, function(processorId) {
+            var predecessorsIds = that.predecessors[processorId];
+            if (predecessorsIds.length) {
+              var predecessorsLatencies = _.map(predecessorsIds, function(id) {
+                return latencyLookup[id] || 0;
+              });
+              latencyLookup[processorId] += _.max(predecessorsLatencies);
+            }
+          });
+          result[time] = _.max(_.values(latencyLookup));
+        });
+        return result;
       },
 
       /** Return particular historical metrics value of processor's tasks as an associative array. */
-      _getProcessorHistoricalMetrics: function(processorIds, timeResolution, metrics, field, fn) {
+      _getProcessorHistoricalMetrics: function(processorIds, timeResolution, metrics, field, fn, unsort) {
         var result = {};
-        _.forEach(metrics, function(processorMetrics, processorId) {
-          if (_.includes(processorIds, Number(processorId))) {
+        _.forEach(metrics, function(processorMetrics, key) {
+          var processorId = Number(key);
+          if (_.includes(processorIds, processorId)) {
             _.forEach(processorMetrics, function(metric) {
               var retainIntervalEndTime = Math.floor(metric.time / timeResolution) * timeResolution;
               result[retainIntervalEndTime] = result[retainIntervalEndTime] || [];
@@ -274,12 +375,12 @@ angular.module('dashboard')
         _.forEach(result, function(array, time) {
           result[time] = _.isFunction(fn) ? fn(array) : array;
         });
-        return _keysSortedObject(result);
+        return unsort ? result : _keysSortedObject(result);
       },
 
       /** Return the depth of the hierarchy layout */
       hierarchyDepth: function() {
-        return d3.max(d3.values(this.processorHierarchyLevels));
+        return _.max(_(this._getActiveProcessors()).pluck('hierarchy').value());
       }
     };
 

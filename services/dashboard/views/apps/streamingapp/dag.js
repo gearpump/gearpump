@@ -83,14 +83,13 @@ angular.module('dashboard')
           _.forEach(data.processors, function(processor, processorId) {
             var label = $vis.processorNameAsLabel(processor);
             var weight = data.weights[processorId];
-            var hierarchyLevel = data.hierarchyLevels[processorId];
             var visNode = visNodes.get(processorId);
             var size = d3.round(suggestRadiusFn(weight), 1);
-            var color = $vis.nodeColor(processor.isStalled);
+            var color = $vis.nodeColor(Array.isArray(processor.stalledTask) && processor.stalledTask.length);
             if (!visNode || visNode.label !== label || visNode.size !== size ||
               (visNode.color && visNode.color !== color)) {
               diff.push({
-                id: processorId, level: hierarchyLevel, // once created, the hierarchy level will not change
+                id: processorId, level: processor.hierarchy, // once created, the hierarchy will not change
                 label: label,
                 size: size,
                 color: color
@@ -115,7 +114,7 @@ angular.module('dashboard')
             var width = d3.round(suggestEdgeWidthFn(bandwidth), 1);
             if (!visEdge || visEdge.width !== width) {
               diff.push({
-                id: edgeId, from: edge.source, to: edge.target,
+                id: edgeId, from: edge.from, to: edge.to,
                 width: width,
                 hoverWidth: 0 /*delta*/,
                 selectionWidth: 0 /*delta*/,
@@ -163,8 +162,7 @@ angular.module('dashboard')
         $scope.currentMessageReceiveRate = receivedMessages.rate;
         $scope.totalSentMessages = sentMessages.total;
         $scope.totalReceivedMessages = receivedMessages.total;
-        $scope.averageProcessingTime = metricsProvider.getMessageProcessingTime();
-        $scope.averageTaskReceiveLatency = metricsProvider.getMessageReceiveLatency();
+        $scope.messageReceiveLatency = metricsProvider.getCriticalPathLatency();
       }
 
       $scope.$watchCollection('dag', function(dag) {

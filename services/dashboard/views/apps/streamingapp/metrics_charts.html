@@ -8,7 +8,7 @@
 </div>
 
 <div class="row" style="margin-bottom: 22px">
-  <div class="col-sm-6">
+  <div class="{{chartGridClass}}">
     <div class="metrics-wrapper">
       <metrics
         caption="{{sendThroughputMetricsCaption}}"
@@ -18,21 +18,21 @@
       </metrics>
     </div>
     <div ng-if="showCurrentMetrics">
-      <sparkline-chart
+      <line-chart
         options-bind="::sendThroughputChartOptions"
         datasource-bind="sendThroughputData">
-      </sparkline-chart>
+      </line-chart>
     </div>
     <div ng-hide="showCurrentMetrics"
          class="metric-chart-placeholder">
-      <sparkline-chart
+      <line-chart
         ng-if="sendThroughputHistChartOptions != null"
         options-bind="::sendThroughputHistChartOptions">
-      </sparkline-chart>
+      </line-chart>
     </div>
   </div>
 
-  <div class="col-sm-6">
+  <div class="{{chartGridClass}}">
     <div class="metrics-wrapper">
       <metrics
         caption="{{receiveThroughputMetricsCaption}}"
@@ -42,21 +42,44 @@
       </metrics>
     </div>
     <div ng-if="showCurrentMetrics">
-      <sparkline-chart
+      <line-chart
         options-bind="::receiveThroughputChartOptions"
         datasource-bind="receiveThroughputData">
-      </sparkline-chart>
+      </line-chart>
     </div>
     <div ng-hide="showCurrentMetrics"
          class="metric-chart-placeholder">
-      <sparkline-chart
+      <line-chart
         ng-if="receiveThroughputHistChartOptions != null"
         options-bind="receiveThroughputHistChartOptions">
-      </sparkline-chart>
+      </line-chart>
     </div>
   </div>
 
-  <div class="col-sm-6">
+  <div class="{{chartGridClass}}">
+    <div class="metrics-wrapper">
+      <metrics
+        caption="{{messageReceiveLatencyMetricsCaption}}"
+        help="{{messageReceiveLatencyMetricsDescription}}"
+        value="{{messageReceiveLatency|metric}}" unit="ms">
+      </metrics>
+    </div>
+    <div ng-if="showCurrentMetrics">
+      <line-chart
+        options-bind="::messageReceiveLatencyChartOptions"
+        datasource-bind="messageReceiveLatencyData">
+      </line-chart>
+    </div>
+    <div ng-hide="showCurrentMetrics"
+         class="metric-chart-placeholder">
+      <line-chart
+        ng-if="messageReceiveLatencyHistChartOptions != null"
+        options-bind="messageReceiveLatencyHistChartOptions">
+      </line-chart>
+    </div>
+  </div>
+
+  <div ng-if="processor" class="{{chartGridClass}}">
     <div class="metrics-wrapper">
       <metrics
         caption="{{averageMesssageProcessingTimeMetricsCaption}}"
@@ -65,40 +88,17 @@
       </metrics>
     </div>
     <div ng-if="showCurrentMetrics">
-      <sparkline-chart
+      <line-chart
         options-bind="::averageProcessingTimeChartOptions"
         datasource-bind="averageProcessingTimeData">
-      </sparkline-chart>
+      </line-chart>
     </div>
     <div ng-hide="showCurrentMetrics"
          class="metric-chart-placeholder">
-      <sparkline-chart
+      <line-chart
         ng-if="averageProcessingTimeHistChartOptions != null"
         options-bind="averageProcessingTimeHistChartOptions">
-      </sparkline-chart>
-    </div>
-  </div>
-
-  <div class="col-sm-6">
-    <div class="metrics-wrapper">
-      <metrics
-        caption="{{averageMessageReceiveLatencyMetricsCaption}}"
-        help="{{averageMessageReceiveLatencyMetricsDescription}}"
-        value="{{averageMessageReceiveLatency|metric}}" unit="ms">
-      </metrics>
-    </div>
-    <div ng-if="showCurrentMetrics">
-      <sparkline-chart
-        options-bind="::averageMessageReceiveLatencyChartOptions"
-        datasource-bind="averageMessageReceiveLatencyData">
-      </sparkline-chart>
-    </div>
-    <div ng-hide="showCurrentMetrics"
-         class="metric-chart-placeholder">
-      <sparkline-chart
-        ng-if="averageMessageReceiveLatencyHistChartOptions != null"
-        options-bind="averageMessageReceiveLatencyHistChartOptions">
-      </sparkline-chart>
+      </line-chart>
     </div>
   </div>
 

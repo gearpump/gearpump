@@ -34,8 +34,7 @@ angular.module('dashboard')
       $scope.app = app0;
       $scope.metricsConfig = app0.historyMetricsConfig;
       $scope.uptimeCompact = helper.readableDuration(app0.uptime);
-      $scope.dag = models.createDag(app0.clock, app0.processors,
-        app0.processorLevels, app0.dag.edgeList);
+      $scope.dag = models.createDag(app0.clock, app0.processors, app0.dag.edgeList);
 
       app0.$subscribe($scope, function(app) {
         updateAppDetails(app);
@@ -54,8 +53,7 @@ angular.module('dashboard')
       function updateAppDetails(app) {
         $scope.app = app;
         $scope.uptimeCompact = helper.readableDuration(app.uptime);
-        $scope.dag.setData(app.clock, app.processors,
-          app.processorLevels, app.dag.edgeList);
+        $scope.dag.setData(app.clock, app.processors, app.dag.edgeList);
       }
 
       models.$get.appStallingTasks(app0.appId)
@@ -101,9 +99,9 @@ angular.module('dashboard')
       $scope.sendThroughputMetricsDescription = 'Messages are sent from external data source';
       $scope.receiveThroughputMetricsCaption = 'Sink Processors Receive Throughput';
       $scope.receiveThroughputMetricsDescription = 'Messages are received by external data sink';
+      $scope.messageReceiveLatencyMetricsCaption = 'Critical Path Latency';
+      $scope.messageReceiveLatencyMetricsDescription = 'The latency includes message processing time and message receive latency on the whole critical path';
       $scope.averageMesssageProcessingTimeMetricsCaption = 'Average Message Processing Time';
-      $scope.averageMesssageProcessingTimeMetricsDescription = 'Processing time is the duration from a message is received to the message is sent';
-      $scope.averageMessageReceiveLatencyMetricsCaption = 'Average Message Receive Latency';
-      $scope.averageMessageReceiveLatencyMetricsDescription = '';
+      $scope.averageMesssageProcessingTimeMetricsDescription = 'The processing time is the duration from a message is received by a processor and to the message is sent to the next stop';
     }])
 ;
