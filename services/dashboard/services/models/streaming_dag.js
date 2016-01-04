@@ -186,14 +186,19 @@ angular.module('dashboard')
       },
 
       /** Return processor ids as an array by type (source|sink). */
-      _getProcessorIdsByType: function(type, includeInactiveProcessors) {
-        var processorIds = includeInactiveProcessors ?
-          _keysAsNum(this.processors) : this._getActiveProcessorIds();
-        return _.filter(processorIds, function(processorId) {
+      _getProcessorIdsByType: function(type) {
+        return _.filter(this._getActiveProcessorIds(), function(processorId) {
           var conn = this.calculateProcessorConnections(processorId);
           return (type === 'source' && conn.inputs === 0 && conn.outputs > 0) ||
             (type === 'sink' && conn.inputs > 0 && conn.outputs === 0);
         }, this);
+      },
+
+      _getNonSourceProcessorIds: function() {
+        var sourceProcessorsIds = this._getProcessorIdsByType('source');
+        return _.filter(this._getActiveProcessorIds(), function(processorId) {
+          return !_.contains(sourceProcessorsIds, processorId);
+        });
       },
 
       /** Return the average message processing time of particular processor (or all active processors). */
@@ -201,7 +206,8 @@ angular.module('dashboard')
         var fallback = 0;
         return angular.isNumber(processorId) ?
           this._getMetricFieldOrElse(processorId, 'processTime', 'mean', fallback) :
-          this._getProcessorsMetricFieldAverage('processTime', 'mean', fallback);
+          this._getProcessorsMetricFieldAverage(
+            this._getActiveProcessorIds(), 'processTime', 'mean', fallback);
       },
 
       /** Return the average message receive latency of particular processor (or all active processors). */
@@ -209,12 +215,13 @@ angular.module('dashboard')
         var fallback = 0;
         return angular.isNumber(processorId) ?
           this._getMetricFieldOrElse(processorId, 'receiveLatency', 'mean', fallback) :
-          this._getProcessorsMetricFieldAverage('receiveLatency', 'mean', fallback);
+          this._getProcessorsMetricFieldAverage(
+            this._getNonSourceProcessorIds(), 'receiveLatency', 'mean', fallback);
       },
 
       /** Return the average value of particular metrics field of particular processor (or all processors). */
-      _getProcessorsMetricFieldAverage: function(clazz, field, fallback) {
-        var array = _.map(this._getActiveProcessorIds(), function(processorId) {
+      _getProcessorsMetricFieldAverage: function(processorIds, clazz, field, fallback) {
+        var array = _.map(processorIds, function(processorId) {
           return this._getMetricFieldOrElse(processorId, clazz, field, fallback);
         }, this);
         return d3.mean(array);
@@ -226,7 +233,7 @@ angular.module('dashboard')
        */
       toHistoricalMessageReceiveThroughputData: function(metrics, timeResolution, processorId) {
         var processorIds = angular.isNumber(processorId) ?
-          [processorId] : this._getProcessorIdsByType('sink', /*includeInactiveProcessors=*/true);
+          [processorId] : this._getProcessorIdsByType('sink');
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['receiveThroughput'], 'movingAverage1m', d3.sum);
       },
@@ -237,7 +244,7 @@ angular.module('dashboard')
        */
       toHistoricalMessageSendThroughputData: function(metrics, timeResolution, processorId) {
         var processorIds = angular.isNumber(processorId) ?
-          [processorId] : this._getProcessorIdsByType('source', /*includeInactiveProcessors=*/true);
+          [processorId] : this._getProcessorIdsByType('source');
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['sendThroughput'], 'movingAverage1m', d3.sum);
       },
@@ -245,7 +252,7 @@ angular.module('dashboard')
       /** Return the historical average message processing time as an array. */
       toHistoricalMessageAverageProcessingTimeData: function(metrics, timeResolution, processorId) {
         var processorIds = angular.isNumber(processorId) ?
-          [processorId] : _keysAsNum(this.processors);
+          [processorId] : this._getActiveProcessorIds();
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['processTime'], 'mean', d3.mean);
       },
@@ -253,7 +260,7 @@ angular.module('dashboard')
       /** Return the historical average message receive latency as an array. */
       toHistoricalAverageMessageReceiveLatencyData: function(metrics, timeResolution, processorId) {
         var processorIds = angular.isNumber(processorId) ?
-          [processorId] : _keysAsNum(this.processors);
+          [processorId] : this._getNonSourceProcessorIds();
         return this._getProcessorHistoricalMetrics(processorIds, timeResolution,
           metrics['receiveLatency'], 'mean', d3.mean);
       },
