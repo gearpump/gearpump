@@ -286,8 +286,8 @@ object Build extends sbt.Build {
       "org.webjars.bower" % "ng-file-upload" % "5.0.9",
       "org.webjars.bower" % "vis" % "4.7.0",
       "org.webjars.bower" % "clipboard.js" % "0.1.1",
-      "org.webjars.npm" % "dashing-deps" % "0.0.8",
-      "org.webjars.npm" % "dashing" % "0.3.8"
+      "org.webjars.npm" % "dashing-deps" % "0.1.2",
+      "org.webjars.npm" % "dashing" % "0.4.0"
   ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
 
   lazy val serviceJSSettings = Seq(

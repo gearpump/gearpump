@@ -1,7 +1,7 @@
 <div class="col-md-12">
   <!-- control toolbar -->
   <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-6 col-sm-6">
       <span class="table-caption-ext pull-left">Applications</span>
       <!-- dropdown button -->
       <div class="btn-group">
@@ -14,9 +14,10 @@
         </button>
       </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-3 col-sm-6 text-right">
+       <!--FILTER-->
     </div>
-    <div class="col-md-3 hidden-sm hidden-xs pull-right">
+    <div class="col-md-3 hidden-sm hidden-xs">
       <searchbox ng-model="search" placeholder="Search Anything"></searchbox>
     </div>
   </div>
@@ -29,5 +30,10 @@
     records-bind="appsTable.rows"
     search-bind="search"
     pagination="10">
+    <div class="table-no-data">
+      <h2 class="glyphicon glyphicon-bullhorn"></h2>
+      <h4>No application is running</h4>
+      <p>Please submit an user application first.</p>
+    </div>
   </sortable-table>
 </div>

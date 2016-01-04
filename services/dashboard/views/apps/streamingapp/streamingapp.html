@@ -27,7 +27,7 @@
         value="not started"></metrics>
     </div>
     <div class="col-sm-2 col-xs-4">
-      <metrics value="{{dag.getNumOfProcessors()}}" unit="processor" unit-plural="processors"></metrics>
+      <metrics value="{{dag.getProcessorCount()}}" unit="processor" unit-plural="processors"></metrics>
       <metrics value="{{size(app.executors)}}" unit="executor" unit-plural="executors"></metrics>
     </div>
   </div>

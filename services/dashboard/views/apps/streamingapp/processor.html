@@ -40,14 +40,14 @@
       </h4>
       <div class="row">
         <div class="col-sm-12">
-          <metric-class-selector
-            metric-class="metricClass"
+          <metric-selector
+            metric-name="metricName"
             metric-type="metricType"
-            metric-name="metricName">
-          </metric-class-selector>
+            metric-description="metricDescription">
+          </metric-selector>
         </div>
         <div class="col-md-12">
-          <h5>Distribution of {{metricName}}</h5>
+          <h5>Distribution of {{metricDescription}}</h5>
           <div style="height: 110px">
             <bar-chart
               ng-if="tasksBarChart != null"

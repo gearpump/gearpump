@@ -4,9 +4,7 @@
   ng-model="names.selected" search-enabled="false">
   <ui-select-match>{{$select.selected}}</ui-select-match>
   <ui-select-choices repeat="name in names.available">
-    <div
-      style="padding-left: 8px"
-      ng-class="{bold: $select.selected === name}"
-      ng-bind="name|highlight:$select.search"></div>
+    <div ng-class="{bold: $select.selected === name}"
+         ng-bind="name|highlight:$select.search"></div>
   </ui-select-choices>
 </ui-select>

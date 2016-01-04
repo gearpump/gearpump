@@ -41,6 +41,10 @@
     columns-bind="executorsTable.cols"
     records-bind="executorsTable.rows"
     pagination="4">
+    <div class="table-no-data-sm">
+      <h5><span class="glyphicon glyphicon-bullhorn"></span>
+        No application is running on this worker</h5>
+    </div>
   </sortable-table>
 </div>
 

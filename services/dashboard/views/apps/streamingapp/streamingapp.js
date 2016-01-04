@@ -34,8 +34,7 @@ angular.module('dashboard')
       $scope.app = app0;
       $scope.metricsConfig = app0.historyMetricsConfig;
       $scope.uptimeCompact = helper.readableDuration(app0.uptime);
-      $scope.dag = models.createDag(app0.clock, app0.processors,
-        app0.processorLevels, app0.dag.edgeList);
+      $scope.dag = models.createDag(app0.clock, app0.processors, app0.dag.edgeList);
 
       app0.$subscribe($scope, function(app) {
         updateAppDetails(app);
@@ -54,8 +53,7 @@ angular.module('dashboard')
       function updateAppDetails(app) {
         $scope.app = app;
         $scope.uptimeCompact = helper.readableDuration(app.uptime);
-        $scope.dag.setData(app.clock, app.processors,
-          app.processorLevels, app.dag.edgeList);
+        $scope.dag.setData(app.clock, app.processors, app.dag.edgeList);
       }
 
       models.$get.appStallingTasks(app0.appId)
@@ -88,7 +86,7 @@ angular.module('dashboard')
         });
       $scope.$watch('metrics', function(metrics) {
         if (angular.isObject(metrics)) {
-          $scope.dag.updateMetrics(metrics);
+          $scope.dag.updateLatestMetrics(metrics);
         }
       });
 
@@ -98,12 +96,12 @@ angular.module('dashboard')
       };
 
       $scope.sendThroughputMetricsCaption = 'Source Processors Send Throughput';
-      $scope.sendThroughputMetricsDescription = 'Messages are sent from external data source';
+      $scope.sendThroughputMetricsDescription = 'Messages are sent from source processors';
       $scope.receiveThroughputMetricsCaption = 'Sink Processors Receive Throughput';
-      $scope.receiveThroughputMetricsDescription = 'Messages are received by external data sink';
+      $scope.receiveThroughputMetricsDescription = 'Messages are received by sink processors';
+      $scope.messageLatencyMetricsCaption = 'End-to-End Latency';
+      $scope.messageLatencyMetricsDescription = 'The largest latency from a source processor to a sink processor. The value is the sum of message receive latency plus message processing time of all processors on the path (except the source processor).';
       $scope.averageMesssageProcessingTimeMetricsCaption = 'Average Message Processing Time';
-      $scope.averageMesssageProcessingTimeMetricsDescription = 'Processing time is the duration from a message is received to the message is sent';
-      $scope.averageMessageReceiveLatencyMetricsCaption = 'Average Message Receive Latency';
-      $scope.averageMessageReceiveLatencyMetricsDescription = '';
+      $scope.averageMesssageProcessingTimeMetricsDescription = 'The processing time is the duration from a message is received by a processor and to the message is sent to the next stop';
     }])
 ;

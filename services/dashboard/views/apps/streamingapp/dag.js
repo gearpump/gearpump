@@ -42,23 +42,24 @@ angular.module('dashboard')
         events: {
           doubleClick: function(data) {
             if (data.nodes.length === 1) {
-              var nodeId = parseInt(data.nodes[0]);
-              $state.go('streamingapp.processor', {processorId: nodeId});
+              var processorId = Number(data.nodes[0]);
+              $state.go('streamingapp.processor', {processorId: processorId});
             }
           },
           oncontext: function(data) {
             if (data.hasOwnProperty('node')) {
-              $scope.activeProcessor = $scope.dag.processors[data.node];
-              showNodeOperationsContextMenu(data.node, data.pointer.DOM);
+              var processorId = Number(data.node);
+              $scope.activeProcessor = $scope.dag.getProcessor(processorId);
+              showProcessorOperationsContextMenu(processorId, data.pointer.DOM);
             }
           }
         }
       };
 
-      function showNodeOperationsContextMenu(nodeId, position) {
+      function showProcessorOperationsContextMenu(processorId, position) {
         var elem = document.getElementById('dag-node-menu');
         $scope.view = function() {
-          $state.go('streamingapp.processor', {processorId: nodeId});
+          $state.go('streamingapp.processor', {processorId: processorId});
         };
         $contextmenu.popup(elem, position);
       }
@@ -76,21 +77,21 @@ angular.module('dashboard')
         },
 
         updateVisGraphNodes: function(visNodes, data) {
-          data.weights[-1] = 0; // weight range from 0 to max weight
-          var suggestRadiusFn = draw._rangeMapper(data.weights, $vis.nodeRadiusRange());
+          data.processorWeights[-1] = 0; // weight range from 0 to max weight
+          var suggestRadiusFn = draw._rangeMapper(data.processorWeights, $vis.nodeRadiusRange());
           var diff = [];
 
-          _.forEach(data.processors, function(processor, processorId) {
+          _.forEach(data.processors, function(processor) {
             var label = $vis.processorNameAsLabel(processor);
-            var weight = data.weights[processorId];
-            var hierarchyLevel = data.hierarchyLevels[processorId];
-            var visNode = visNodes.get(processorId);
+            var weight = data.processorWeights[processor.id];
+            var visNode = visNodes.get(processor.id);
             var size = d3.round(suggestRadiusFn(weight), 1);
-            var color = $vis.nodeColor(processor.isStalled);
+            var concern = data.processorStallingTasks.hasOwnProperty(processor.id);
+            var color = $vis.nodeColor(concern);
             if (!visNode || visNode.label !== label || visNode.size !== size ||
               (visNode.color && visNode.color !== color)) {
               diff.push({
-                id: processorId, level: hierarchyLevel, // once created, the hierarchy level will not change
+                id: processor.id, level: processor.hierarchy, // once created, the hierarchy will not change
                 label: label,
                 size: size,
                 color: color
@@ -103,19 +104,19 @@ angular.module('dashboard')
         },
 
         updateVisGraphEdges: function(visEdges, data) {
-          data.bandwidths[-1] = 0; // minimal bandwidth
-          var suggestEdgeWidthFn = draw._rangeMapper(data.bandwidths, $vis.edgeWidthRange());
-          var suggestEdgeArrowSizeFn = draw._rangeMapper(data.bandwidths, $vis.edgeArrowSizeRange());
-          var suggestEdgeOpacityFn = draw._rangeMapper(data.bandwidths, $vis.edgeOpacityRange());
+          data.edgeBandwidths[-1] = 0; // minimal bandwidth
+          var suggestEdgeWidthFn = draw._rangeMapper(data.edgeBandwidths, $vis.edgeWidthRange());
+          var suggestEdgeArrowSizeFn = draw._rangeMapper(data.edgeBandwidths, $vis.edgeArrowSizeRange());
+          var suggestEdgeOpacityFn = draw._rangeMapper(data.edgeBandwidths, $vis.edgeOpacityRange());
           var diff = [];
 
           _.forEach(data.edges, function(edge, edgeId) {
-            var bandwidth = data.bandwidths[edgeId];
+            var bandwidth = data.edgeBandwidths[edgeId];
             var visEdge = visEdges.get(edgeId);
             var width = d3.round(suggestEdgeWidthFn(bandwidth), 1);
             if (!visEdge || visEdge.width !== width) {
               diff.push({
-                id: edgeId, from: edge.source, to: edge.target,
+                id: edgeId, from: edge.from, to: edge.to,
                 width: width,
                 hoverWidth: 0 /*delta*/,
                 selectionWidth: 0 /*delta*/,
@@ -157,20 +158,18 @@ angular.module('dashboard')
       }
 
       function updateMetricsValues(metricsProvider) {
-        var receivedMessages = metricsProvider.getReceivedMessages();
-        var sentMessages = metricsProvider.getSentMessages();
+        var receivedMessages = metricsProvider.getSinkProcessorReceivedMessageTotalAndRate();
+        var sentMessages = metricsProvider.getSourceProcessorSentMessageTotalAndRate();
         $scope.currentMessageSendRate = sentMessages.rate;
         $scope.currentMessageReceiveRate = receivedMessages.rate;
         $scope.totalSentMessages = sentMessages.total;
         $scope.totalReceivedMessages = receivedMessages.total;
-        $scope.averageProcessingTime = metricsProvider.getMessageProcessingTime();
-        $scope.averageTaskReceiveLatency = metricsProvider.getMessageReceiveLatency();
+        $scope.criticalPathLatency = metricsProvider.getCriticalPathLatency();
       }
 
-      $scope.$watchCollection('dag', function(dag) {
-        var dagData = dag.getCurrentDag();
-        redrawGraph(dagData);
-        updateMetricsValues(dag);
+      $scope.$watchCollection('dag.metricsUpdateTime', function() {
+        redrawGraph($scope.dag.getWeightedDagView());
+        updateMetricsValues($scope.dag);
       });
     }])
 ;
