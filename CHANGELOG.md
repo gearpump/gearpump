@@ -1,3 +1,11 @@
+Gearpump 0.7.3
+===================
+Change logs:
+-------------------
+- #1816: Akka GC problem. After fixing, performance gain 30%
+- #1820, http cache is not effective
+- #1817 Problems launching Gearpump in YARN environment
+
 Gearpump 0.7.2
 ===================
 Change logs:
