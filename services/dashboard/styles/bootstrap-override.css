@@ -54,20 +54,6 @@ html, body {
   padding-right: 7px;
 }
 
-/* Remove 1px border from stripped table (2 rules) */
-.table-striped tbody > tr:first-child td {
-  border-top: 0 none transparent;
-}
-
-.table-striped thead > tr > th {
-  border-bottom: 0 none transparent;
-}
-
-/* Table header column should not be wrapped */
-.table thead > tr > th {
-  white-space: nowrap;
-}
-
 /* Increase the distance of table footer and table body */
 .table tfoot > tr > td {
   padding: 14px 0 0;

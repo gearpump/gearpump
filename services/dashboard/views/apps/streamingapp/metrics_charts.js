@@ -76,7 +76,8 @@ angular.module('dashboard')
             } else {
               $scope[chartNameBase + 'HistChartOptions'] =
                 angular.extend({}, $scope[chartNameBase+ 'ChartOptions'], {
-                  visibleDataPointsNum: Math.max(chartData.length, histChartPoints),
+                  visibleDataPointsNum: chartData.length ?
+                    Math.max(chartData.length, histChartPoints) : 0, // 0 means to show "no data" animation
                   data: chartData
                 });
             }
@@ -89,6 +90,7 @@ angular.module('dashboard')
           var queryMetricsPromise = $scope.showCurrentMetrics ?
             models.$get.appMetrics($scope.app.appId, $scope.metricsConfig.retainRecentDataIntervalMs) :
             models.$get.appHistMetrics($scope.app.appId);
+
           queryMetricsPromise.then(function(metrics) {
             var data = metrics.$data();
             _batch('sendThroughput', 'toHistoricalMessageSendThroughputData', data);

@@ -31,16 +31,14 @@ angular.module('dashboard')
         cols: [
           // group 1/3 (4-col)
           $stb.indicator().key('state').canSort('state.condition+"_"+aliveFor').styleClass('td-no-padding').done(),
-          $stb.link('ID').key('id').canSort().styleClass('col-md-1').done(),
-          $stb.text('Address').key('akkaAddr').canSort().sortDefault().styleClass('col-md-1').done(),
-          $stb.text('JVM Info').key('jvm').canSort()
+          $stb.link('ID').key('id').canSort().sortDefaultDescent().styleClass('col-md-1').done(),
+          $stb.text('Address').key('akkaAddr').canSort().styleClass('col-md-1').done(),
+          $stb.text('JVM Info').key('jvm')
             .help('Format: PID@hostname')
             .styleClass('col-md-2 hidden-xs').done(),
           // group 2/3 (5-col)
           $stb.number('Executors').key('executors').canSort().styleClass('col-md-1 hidden-xs').done(),
-          $stb.progressbar('Slots Usage').key('slots').sortBy('slots.usage')
-            .help('Slot is a minimal compute unit. The usage indicates the computation capacity.')
-            .styleClass('col-md-1').done(),
+          $stb.progressbar('Slots Usage').key('slots').sortBy('slots.usage').styleClass('col-md-1').done(),
           $stb.duration('Uptime').key('aliveFor').canSort().styleClass('col-md-3 hidden-sm hidden-xs').done(),
           // group 3/3 (3-col)
           $stb.button('Quick Links').key(['detail', 'conf']).styleClass('col-md-3').done()
