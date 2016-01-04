@@ -67,8 +67,12 @@ object Pack extends sbt.Build {
             "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id)
           ),
           packExclude := Seq(thisProjectRef.value.project),
+          //This is a work-around for https://github.com/gearpump/gearpump/issues/1816
+          //Will be removed in the future when Akka release a new version which includes the fix.
+          packExcludeJars := Seq(s"akka-actor_${scalaBinaryVersion.value}-$akkaVersion.jar"),
           packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
           packResourceDir += (baseDirectory.value / ".." / "yarnconf" -> "conf/yarnconf"),
+          packResourceDir += (baseDirectory.value / ".." / "unmanagedlibs" / scalaBinaryVersion.value -> "lib"),
           packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
           packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / CrossVersion.binaryScalaVersion(scalaVersion.value) -> "examples"),
 
