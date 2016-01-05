@@ -17,6 +17,7 @@
  */
 package io.gearpump.external.hbase.dsl
 
+import org.apache.hadoop.conf.Configuration
 import io.gearpump.cluster.UserConfig
 import io.gearpump.external.hbase.HBaseSink
 import io.gearpump.streaming.dsl.Stream
@@ -25,6 +26,10 @@ import Stream.Sink
 class HBaseDSLSink[T](stream: Stream[T]) {
   def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String): Stream[T] = {
     stream.sink(HBaseSink[T](userConfig, table), parallism, userConfig, description)
+  }
+
+  def writeToHbase(userConfig: UserConfig, configuration: Configuration, table: String, parallism: Int, description: String): Stream[T] = {
+    stream.sink(HBaseSink[T](userConfig, table, configuration), parallism, userConfig, description)
   }
 }
 
