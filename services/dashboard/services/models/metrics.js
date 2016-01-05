@@ -67,7 +67,7 @@ angular.module('dashboard')
     }
 
     function toPrecision2(any) {
-      return Number(any.toFixed(2));
+      return _.floor(any, 2);
     }
 
     var decoder = {
@@ -115,7 +115,7 @@ angular.module('dashboard')
       gauge: function(data, addMeta) {
         var result = decoder._common(data);
         var value = data.value;
-        result.value = Number(value.value);
+        result.value = toPrecision2(value.value);
 
         if (addMeta) {
           result.isGauge = true;
@@ -144,22 +144,6 @@ angular.module('dashboard')
         return tuple.length === 2 ?
         {path: tuple[0], clazz: tuple[1]} :
         {path: '', clazz: name};
-      },
-      /** Return an array of metrics. Every period will have one averaged metric. */
-      $desample: function(array, period) {
-        // Group metrics by time window
-        var groups = {};
-        _.forEach(array, function(metric) {
-          var timeWindow = Math.ceil(metric.time / period) * period;
-          groups[timeWindow] = groups[timeWindow] || [];
-          groups[timeWindow].push(metric);
-        });
-
-        return _.map(groups, function(array, timeWindow) {
-          var averaged = _createAveragedMetricsFromArray(array);
-          averaged.time = Number(timeWindow);
-          return averaged;
-        });
       }
     };
 

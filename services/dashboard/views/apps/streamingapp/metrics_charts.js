@@ -23,6 +23,8 @@ angular.module('dashboard')
           $scope.sendThroughputMetricsDescription = '';
           $scope.receiveThroughputMetricsCaption = 'Message Receive Throughput';
           $scope.receiveThroughputMetricsDescription = '';
+          $scope.messageReceiveLatencyMetricsCaption = 'Average Message Receive Latency';
+          $scope.messageReceiveLatencyMetricsDescription = '';
         }
         var sc = $scope.metricsConfig;
         var recentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
@@ -61,7 +63,7 @@ angular.module('dashboard')
         }, lineChartOptionBase);
 
         $scope.averageProcessingTimeChartOptions = angular.copy(durationChartOptions);
-        $scope.averageMessageReceiveLatencyChartOptions = angular.copy(durationChartOptions);
+        $scope.messageReceiveLatencyChartOptions = angular.copy(durationChartOptions);
 
         function redrawMetricsCharts() {
 
@@ -76,7 +78,8 @@ angular.module('dashboard')
             } else {
               $scope[chartNameBase + 'HistChartOptions'] =
                 angular.extend({}, $scope[chartNameBase+ 'ChartOptions'], {
-                  visibleDataPointsNum: Math.max(chartData.length, histChartPoints),
+                  visibleDataPointsNum: chartData.length ?
+                    Math.max(chartData.length, histChartPoints) : 0, // 0 means to show "no data" animation
                   data: chartData
                 });
             }
@@ -89,12 +92,13 @@ angular.module('dashboard')
           var queryMetricsPromise = $scope.showCurrentMetrics ?
             models.$get.appMetrics($scope.app.appId, $scope.metricsConfig.retainRecentDataIntervalMs) :
             models.$get.appHistMetrics($scope.app.appId);
+
           queryMetricsPromise.then(function(metrics) {
             var data = metrics.$data();
             _batch('sendThroughput', 'toHistoricalMessageSendThroughputData', data);
             _batch('receiveThroughput', 'toHistoricalMessageReceiveThroughputData', data);
             _batch('averageProcessingTime', 'toHistoricalMessageAverageProcessingTimeData', data);
-            _batch('averageMessageReceiveLatency', 'toHistoricalAverageMessageReceiveLatencyData', data);
+            _batch('messageReceiveLatency', 'toHistoricalMessageReceiveLatencyData', data);
 
             if ($scope.showCurrentMetrics) {
               updateRecentMetricsPromise = $interval(fillChartsWithCurrentMetrics,
@@ -116,7 +120,7 @@ angular.module('dashboard')
           $scope.sendThroughputData = _data($scope.currentMessageSendRate, metricTime);
           $scope.receiveThroughputData = _data($scope.currentMessageReceiveRate, metricTime);
           $scope.averageProcessingTimeData = _data($scope.averageProcessingTime, metricTime);
-          $scope.averageMessageReceiveLatencyData = _data($scope.averageMessageReceiveLatency, metricTime);
+          $scope.messageReceiveLatencyData = _data($scope.messageReceiveLatency, metricTime);
         }
 
         function metricsToChartData(metrics) {
@@ -141,7 +145,7 @@ angular.module('dashboard')
 
         function updateCurrentHistogramMetrics() {
           $scope.averageProcessingTime = metricsProvider.getMessageProcessingTime(processorId);
-          $scope.averageMessageReceiveLatency = metricsProvider.getMessageReceiveLatency(processorId);
+          $scope.messageReceiveLatency = metricsProvider.getMessageReceiveLatency(processorId);
         }
 
         $scope.showCurrentMetrics = true;

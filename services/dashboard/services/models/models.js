@@ -17,9 +17,6 @@ angular.module('dashboard')
         flatten: function(array, fn) {
           var result = {};
           _.forEach(array, function(item) {
-            if (fn) {
-              item = fn(item);
-            }
             result[item[0]] = item[1];
           });
           return result;
@@ -188,11 +185,17 @@ angular.module('dashboard')
             processor.replaced = replaced;
           });
           obj.processorLevels = util.flatten(obj.processorLevels);
-          if (obj.dag && obj.dag.edgeList) {
-            obj.dag.edgeList = util.flatten(obj.dag.edgeList, function(item) {
-              return [item[0] + '_' + item[2],
-                {source: parseInt(item[0]), target: parseInt(item[2]), type: item[1]}];
+          if (obj.dag && Array.isArray(obj.dag.edgeList)) {
+            var edgeGroups = {};
+            _.forEach(obj.dag.edgeList, function(tuple) {
+              var fromProcessorId = parseInt(tuple[0]);
+              var toProcessorId = parseInt(tuple[2]);
+              var partitionerClass = tuple[1];
+              edgeGroups[fromProcessorId] = edgeGroups[fromProcessorId] || [];
+              var edge = {from: fromProcessorId, to: toProcessorId, partitioner: partitionerClass};
+              edgeGroups[fromProcessorId].push(edge);
             });
+            obj.dag.edgeList = edgeGroups;
           }
 
           // upickle conversion 2a: convert array to dictionary
