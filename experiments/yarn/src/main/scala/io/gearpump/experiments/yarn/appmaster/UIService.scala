@@ -77,7 +77,7 @@ class UIService(masters: List[HostPort], host: String, port: Int) extends Actor 
 
   def launch(supervisor: String, masterHost: String, masterPort: Int, configFile: String): Unit = {
     Services.main(Array("-supervisor", supervisor, "-master", s"$masterHost:$masterPort"
-     , "-config", configFile))
+     , "-conf", configFile))
   }
 
   override def receive: Receive = {

@@ -101,6 +101,7 @@ class LaunchCluster(
     LOG.info(s"Trying to download active configuration to output path: " + output)
     LOG.info(s"Resolving YarnAppMaster ActorRef for application " + appId)
     val appMaster = appMasterResolver.resolve(appId)
+    LOG.info(s"appMaster=${appMaster.path} host=$host")
     val future = askActor[ActiveConfig](appMaster, GetActiveConfig(host)).map(_.config)
     import scala.concurrent.duration._
     future.map{ config =>

@@ -51,8 +51,8 @@ object Services extends AkkaApp with ArgumentsParser {
 
     val argConfig = parse(args)
     var akkaConf =
-      if (argConfig.exists("config")) {
-        ClusterConfig.ui(argConfig.getString("config"))
+      if (argConfig.exists(Gear.OPTION_CONFIG)) {
+        ClusterConfig.ui(argConfig.getString(Gear.OPTION_CONFIG))
       } else {
         inputAkkaConf
       }
