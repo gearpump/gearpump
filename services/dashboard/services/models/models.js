@@ -14,12 +14,9 @@ angular.module('dashboard')
         usage: function(current, total) {
           return total > 0 ? 100 * current / total : 0;
         },
-        flatten: function(array, fn) {
+        flatten: function(array) {
           var result = {};
           _.forEach(array, function(item) {
-            if (fn) {
-              item = fn(item);
-            }
             result[item[0]] = item[1];
           });
           return result;
@@ -187,12 +184,22 @@ angular.module('dashboard')
             processor.active = active;
             processor.replaced = replaced;
           });
-          obj.processorLevels = util.flatten(obj.processorLevels);
-          if (obj.dag && obj.dag.edgeList) {
-            obj.dag.edgeList = util.flatten(obj.dag.edgeList, function(item) {
-              return [item[0] + '_' + item[2],
-                {source: parseInt(item[0]), target: parseInt(item[2]), type: item[1]}];
+          _.forEach(util.flatten(obj.processorLevels), function(hierarchy, processorId) {
+            obj.processors[processorId].hierarchy = hierarchy;
+          });
+          delete obj.processorLevels;
+
+          if (obj.dag && Array.isArray(obj.dag.edgeList)) {
+            var edgeGroups = {};
+            _.forEach(obj.dag.edgeList, function(tuple) {
+              var fromProcessorId = parseInt(tuple[0]);
+              var toProcessorId = parseInt(tuple[2]);
+              var partitionerClass = tuple[1];
+              edgeGroups[fromProcessorId] = edgeGroups[fromProcessorId] || [];
+              var edge = {from: fromProcessorId, to: toProcessorId, partitioner: partitionerClass};
+              edgeGroups[fromProcessorId].push(edge);
             });
+            obj.dag.edgeList = edgeGroups;
           }
 
           // upickle conversion 2a: convert array to dictionary
@@ -442,8 +449,8 @@ angular.module('dashboard')
           trySubscribe();
         },
         // TODO: scalajs should return a app.details object with dag, if it is a streaming application.
-        createDag: function(clock, processors, levels, edges) {
-          var dag = new StreamingDag(clock, processors, levels, edges);
+        createDag: function(clock, processors, edges) {
+          var dag = new StreamingDag(clock, processors, edges);
           dag.replaceProcessor = restapi.replaceDagProcessor;
           return dag;
         },

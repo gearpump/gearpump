@@ -41,11 +41,11 @@ angular.module('dashboard')
       }
 
       function updateProcessorInfoTable(processor) {
-        var connections = $scope.dag.calculateProcessorConnections(processor.id);
+        var degrees = $scope.dag.calculateProcessorDegrees(processor.id);
         $ptb.$update($scope.processorInfoTable, [
           processor.taskClass,
           processor.parallelism,
-          describeProcessorType(connections.inputs, connections.outputs),
+          describeProcessorType(degrees.indegree, degrees.outdegree),
           processor.life.birth <= 0 ?
             'Start with the application' : processor.life.birth,
           processor.life.death === '9223372036854775807' /* Long.max */ ?
@@ -121,11 +121,11 @@ angular.module('dashboard')
             options: {
               height: '110px',
               seriesNames: [''],
-              barMinWidth: 2,
-              barMinSpacing: 2,
+              barMinWidth: 4,
+              barMinSpacing: 1,
               valueFormatter: function(value) {
                 var unit = $scope.metricType === 'meter' ? 'msg/s' : 'ms';
-                return helper.metricValue(value) + ' ' + unit;
+                return helper.readableMetricValue(value) + ' ' + unit;
               },
               data: _.map($scope.tasks.available, function(taskName) {
                 return {x: taskName};
@@ -143,9 +143,8 @@ angular.module('dashboard')
 
         var i = 0;
         var metricField = $scope.metricType === 'meter' ? 'movingAverage1m' : 'mean';
-        _.forEach(metrics, function(metric, taskId) {
-          data[i].y = metric[metricField]
-          ;
+        _.forEach(metrics, function(metric) {
+          data[i].y = helper.metricRounded(metric[metricField]);
           i++;
         });
         $scope.tasksBarChart.data = angular.copy(data);

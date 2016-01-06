@@ -15,8 +15,8 @@ angular.module('dashboard')
         samplingConfig: '=',
         queryMetricsFnRef: '&'
       },
-      controller: ['$scope', '$filter', '$propertyTableBuilder', '$echarts',
-        function($scope, $filter, $ptb, $echarts) {
+      controller: ['$scope', '$filter', '$propertyTableBuilder', '$echarts', 'helper',
+        function($scope, $filter, $ptb, $echarts, helper) {
           'use strict';
 
           var sc = $scope.samplingConfig;
@@ -107,7 +107,7 @@ angular.module('dashboard')
           function makeMemoryUsageChartData(metrics) {
             return _.map(metrics['memory.total.used'], function(metric) {
               return {
-                x: moment(metric.time).format('HH:mm:ss'),
+                x: helper.timeToChartTimeLabel(metric.time, /*short=*/$scope.showCurrentMetrics),
                 y: [metric.value]
               };
             });
