@@ -36,6 +36,7 @@ Name | Description
 
 
 ## Use of Connectors
+
 ### Use of `KafkaSource`
 To use `kafkaSource` in your application, you first need to add the `gearpump-external-Kafka` library dependency in your application:
 
