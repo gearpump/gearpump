@@ -34,7 +34,7 @@ import io.gearpump.jarstore.FilePath
 import io.gearpump.partitioner.{Partitioner, HashPartitioner}
 import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.streaming.task._
-import io.gearpump.util.Graph
+import io.gearpump.util.{Util, Graph}
 import io.gearpump.util.Graph._
 import org.scalatest._
 
@@ -83,7 +83,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     appDescription = Application.ApplicationToAppDescription(streamApp)
     import scala.concurrent.duration._
     mockMasterProxy = getActorSystem.actorOf(
-      Props(new MasterProxy(List(mockMaster.ref.path), 30 seconds)), AppMasterSpec.MOCK_MASTER_PROXY)
+      Props(new MasterProxy(List(mockMaster.ref.path), 30 seconds)), AppMasterSpec.masterProxyName)
     TestActorRef[AppMaster](
       AppMasterRuntimeEnvironment.props(List(mockMasterProxy.path), appDescription, appMasterContext))(getActorSystem)
 
@@ -124,7 +124,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       watcher.expectTerminated(mockMasterProxy)
 
       import scala.concurrent.duration._
-      mockMasterProxy = getActorSystem.actorOf(Props(new MasterProxy(List(mockMaster.ref.path), 30 seconds)), AppMasterSpec.MOCK_MASTER_PROXY)
+      mockMasterProxy = getActorSystem.actorOf(Props(new MasterProxy(List(mockMaster.ref.path), 30 seconds)), AppMasterSpec.masterProxyName)
       mockMaster.expectMsgClass(15 seconds, classOf[RegisterAppMaster])
     }
 
@@ -203,7 +203,7 @@ object AppMasterSpec {
   val MASTER = "master"
   case object TaskStarted
 
-  val MOCK_MASTER_PROXY = "mockMasterProxy"
+  def masterProxyName = "mockMasterProxy"
 }
 
 class TaskA(taskContext : TaskContext, userConf : UserConfig) extends Task(taskContext, userConf) {
