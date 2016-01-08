@@ -45,10 +45,10 @@ class InMemoryKVService extends Actor with Stash with ClusterReplication {
       val client = sender
       (replicator ? new Get(KVService + group, ReadFrom(readQuorum), TIMEOUT, None)).asInstanceOf[Future[GetResponse]].map {
         case GetSuccess(_, appData: LWWMap, _) =>
-          LOG.info(s"Successfully retrived key: $key")
+          LOG.info(s"Successfully retrived group: $group")
           client ! GetKVSuccess(key, appData.get(key).orNull)
         case x: NotFound =>
-          LOG.info(s"We cannot find key $key")
+          LOG.info(s"We cannot find group $group")
           client ! GetKVSuccess(key, null)
         case x : GetFailure =>
           LOG.error(s"Failed to get application $key data, the request key is $key")

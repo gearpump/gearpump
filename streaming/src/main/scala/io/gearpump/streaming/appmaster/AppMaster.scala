@@ -73,7 +73,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
 
-  private val dagManager = context.actorOf(Props(new DagManager(appContext.appId, userConfig,
+  private val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
+  private val dagManager = context.actorOf(Props(new DagManager(appContext.appId, userConfig, store,
     Some(getUpdatedDAG()))))
 
   private var taskManager: Option[ActorRef] = None
@@ -120,7 +121,6 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       ActorPathUtil.executorManagerActorName)
 
   for (dag <- getDAG) {
-    val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
     clockService = Some(context.actorOf(Props(new ClockService(dag, store))))
     val jarScheduler = new JarScheduler(appId, app.name, systemConfig)
 
