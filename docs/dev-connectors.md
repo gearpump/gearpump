@@ -110,7 +110,7 @@ Then, you can use `HBaseSink` in your application:
 
 ```scala
    //create the HBase data sink
-   val sink = HBaseSink(tableName, configuration)
+   val sink = HBaseSink(UserConfig.empty, tableName, new HBaseConfiguration)
 
    //create Gearpump Processor
    val sinkProcessor = DataSinkProcessor(source, parallelism)
@@ -118,7 +118,7 @@ Then, you can use `HBaseSink` in your application:
 
 ```scala
   //assume stream is a normal `Stream` in DSL
-  stream.writeToHbase(tableName, parallelism, "write to HBase")
+  stream.writeToHbase(UserConfig.empty, tableName, parallelism, "write to HBase")
 ```
 
 You can tune the connection to HBase via the HBase configuration passed in. If not passed, Gearpump will try to check local classpath to find a valid HBase configuration (`hbase-site.xml`).
@@ -168,17 +168,21 @@ You need to implement a class derived from `io.gearpump.streaming.sink.DataSink`
 To make DSL easy of use this customized stream, it is better that if you can implement your own DSL helper.
 You can refer `HBaseDSLSink` as an example in Gearpump source.
 
-Below is some code snippet from `KafkaDSLUtil`:
+Below is some code snippet from `HBaseDSLSink`:
 
 ```scala
-class HBaseDSLSink[T: ClassTag](stream: Stream[T]) {
-  def writeToHbase(table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink(table), parallism, description)
+class HBaseDSLSink[T](stream: Stream[T]) {
+  def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String): Stream[T] = {
+    stream.sink(HBaseSink[T](userConfig, table), parallism, userConfig, description)
   }
+  
+  def writeToHbase(userConfig: UserConfig, configuration: Configuration, table: String, parallism: Int, description: String): Stream[T] = {
+    stream.sink(HBaseSink[T](userConfig, table, configuration), parallism, userConfig, description)
+  }  
 }
 
 object HBaseDSLSink {
-  implicit def streamToHBaseDSLSink[T: ClassTag](stream: Stream[T]): HBaseDSLSink[T] = {
+  implicit def streamToHBaseDSLSink[T](stream: Stream[T]): HBaseDSLSink[T] = {
     new HBaseDSLSink[T](stream)
   }
 }
