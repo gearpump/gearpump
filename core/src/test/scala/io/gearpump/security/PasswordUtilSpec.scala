@@ -16,19 +16,24 @@
  * limitations under the License.
  */
 
-package akka.stream.gearpump
+package io.gearpump.security
 
-import akka.stream.Attributes
-import org.scalatest.{FlatSpec, Matchers, WordSpec}
+import org.scalatest.{Matchers, FlatSpec}
 
-class AttributesSpec extends FlatSpec with Matchers {
-  it should "merge the attributes together" in {
-    val a = Attributes.name("aa")
-    val b = Attributes.name("bb")
+class PasswordUtilSpec extends FlatSpec with Matchers {
 
-    val c = a and b
+  it should "verify the credential correctly" in {
+    val password = "password"
 
-    assert("aa-bb" == c.nameOrDefault())
+    val digest1 = PasswordUtil.hash(password)
+    val digest2 = PasswordUtil.hash(password)
+
+    // we will use different salt each time, thus
+    // creating different hash.
+    assert(digest1 != digest2)
+
+    // both are valid hash.
+    assert(PasswordUtil.verify(password, digest1))
+    assert(PasswordUtil.verify(password, digest2))
   }
-
 }

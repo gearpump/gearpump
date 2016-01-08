@@ -19,6 +19,7 @@
 package io.gearpump.services
 
 import akka.actor.ActorRef
+import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.server.RouteResult
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
@@ -39,8 +40,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
 
-class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService
-  with Matchers with BeforeAndAfterAll with JarStoreProvider{
+class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
+  with Matchers with BeforeAndAfterAll {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
@@ -50,7 +51,11 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
 
   lazy val jarStoreService = JarStoreService.get(system.settings.config)
 
-  override def getJarStoreService: JarStoreService = jarStoreService
+  def jarStore: JarStoreService = jarStoreService
+
+  def master = mockMaster.ref
+
+  def appMasterRoute = new AppMasterService(master, jarStore, system).route
 
   mockAppMaster.setAutoPilot {
     new AutoPilot {
@@ -92,13 +97,16 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
     }
   }
 
-  def master = mockMaster.ref
-
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
     Get(s"/api/$REST_VERSION/appmaster/0?detail=false") ~> appMasterRoute ~> check{
       val responseBody = responseAs[String]
       read[AppMasterData](responseBody)
+
+      // check the header, should contains no-cache header.
+      // Cache-Control:no-cache, max-age=0
+      val noCache = header[`Cache-Control`].get.value()
+      assert(noCache == "no-cache, max-age=0")
     }
 
     Get(s"/api/$REST_VERSION/appmaster/0?detail=true") ~> appMasterRoute ~> check{

@@ -9,7 +9,7 @@ angular.module('dashboard.streamingservice', [])
   .factory('StreamingService', ['$http', '$timeout', 'conf', function ($http, $timeout, conf) {
     return {
       subscribe: function (request, scope, onMessage) {
-        $http.get(conf.restapiRoot + '/websocket/url')
+        $http.get(conf.restapiRoot + 'websocket/url')
           .success(function (data) {
             var ws = new WebSocket(data.url);
             ws.onmessage = onMessage;

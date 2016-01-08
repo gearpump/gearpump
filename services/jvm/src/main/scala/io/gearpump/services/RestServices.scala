@@ -19,32 +19,34 @@
 package io.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `no-cache`}
 import akka.http.scaladsl.model.headers._
+
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Route, _}
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.server.{ _}
+import akka.stream.{ActorMaterializer}
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.http.scaladsl.server.Route
 
-class RestServices(actorSystem: ActorSystem, val master: ActorRef) extends
-    StaticService with
-    MasterService with
-    WorkerService with
-    AppMasterService with
-    JarStoreProvider {
+class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem) extends RouteService {
+
+  private val config = system.settings.config
+
+  private val jarStoreService = JarStoreService.get(config)
+  jarStoreService.init(config, system)
+
   private val LOG = LogUtil.getLogger(getClass)
 
-  implicit def system: ActorSystem = actorSystem
+  private val securityEnabled = config.getBoolean(Constants.GEARPUMP_UI_SECURITY_ENABLED)
 
-  private def myExceptionHandler: ExceptionHandler = ExceptionHandler {
+  private val myExceptionHandler: ExceptionHandler = ExceptionHandler {
     case ex: Throwable => {
       extractUri { uri =>
         LOG.error(s"Request to $uri could not be handled normally", ex)
@@ -53,66 +55,34 @@ class RestServices(actorSystem: ActorSystem, val master: ActorRef) extends
     }
   }
 
-  private val rootService = {
-    path("version") {
-      get {
-        complete(version)
+  // make sure staticRoute is the final one, as it will try to lookup resource in local path
+  // if there is no match in previous routes
+  private val static = new StaticService(system).route
+
+  override def route: Route = {
+    if (securityEnabled) {
+      val security = new SecurityService(services, system)
+      handleExceptions(myExceptionHandler) {
+        security.route ~ static
       }
-    } ~
-    path("supervisor-actor-path") {
-      get {
-        complete(system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH))
-      }
-    } ~
-    path("terminate") {
-      post {
-        system.shutdown()
-        complete(StatusCodes.NotFound)
+    } else {
+      handleExceptions(myExceptionHandler) {
+        services.route ~ static
       }
     }
   }
 
-  private val noCache = respondWithHeader(`Cache-Control`(`no-cache`,  `max-age`(0L)))
+  private def services: RouteService = {
 
-  def routes = handleExceptions(myExceptionHandler) {
-    noCache {
-      rootService ~
-        masterRoute ~
-        workerRoute ~
-        appMasterRoute
-    } ~
-    // make sure staticRoute is the final one, as it will try to lookup resource in local path
-    // if there is no match in previous routes
-    staticResource
-  }
+    val admin = new AdminService(system)
+    val masterService = new MasterService(master, jarStoreService, system)
+    val worker = new WorkerService(master, system)
+    val app = new AppMasterService(master, jarStoreService, system)
 
-  private val jarStoreService = JarStoreService.get(system.settings.config)
-  jarStoreService.init(system.settings.config, system)
-
-  override def getJarStoreService: JarStoreService = jarStoreService
-}
-
-trait JarStoreProvider {
-  def getJarStoreService: JarStoreService
-}
-
-object RestServices {
-  private val LOG = LogUtil.getLogger(getClass)
-
-  def apply(master:ActorRef)(implicit system:ActorSystem):Unit = {
-    implicit val executionContext = system.dispatcher
-    val services = new RestServices(system, master)
-    val config = system.settings.config
-    val port = config.getInt(Constants.GEARPUMP_SERVICE_HTTP)
-    val host = config.getString(Constants.GEARPUMP_SERVICE_HOST)
-
-    implicit val materializer = ActorMaterializer()
-
-    val bindFuture = Http().bindAndHandle(Route.handlerFlow(services.routes), host, port)
-    Await.result(bindFuture, 15 seconds)
-
-    val displayHost = if(host == "0.0.0.0") "127.0.0.1" else host
-    LOG.info(s"Please browse to http://$displayHost:$port to see the web UI")
-    println(s"Please browse to http://$displayHost:$port to see the web UI")
+    new RouteService {
+      override def route: Route = {
+        admin.route ~ masterService.route ~ worker.route ~ app.route
+      }
+    }
   }
 }

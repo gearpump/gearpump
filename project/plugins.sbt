@@ -1,7 +1,5 @@
 resolvers += Resolver.url("fvunicorn", url("http://dl.bintray.com/fvunicorn/sbt-plugins"))(Resolver.ivyStylePatterns)
 
-resolvers += Resolver.url("sbt-plugin", url("http://dl.bintray.com/sbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns)
-
 resolvers += Classpaths.sbtPluginReleases
 
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.4")

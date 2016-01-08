@@ -6,6 +6,7 @@
 angular.module('dashboard', [
   'ngAnimate',
   'ngSanitize',
+  'ngCookies',
   'mgcrea.ngStrap',
   'ui.router',
   'ui.select',
@@ -14,7 +15,6 @@ angular.module('dashboard', [
   'dashing',
   'io.gearpump.models'
 ])
-
   // configure routes
   .config(['$stateProvider', '$urlRouterProvider',
     function($stateProvider, $urlRouterProvider) {
@@ -64,7 +64,8 @@ angular.module('dashboard', [
     restapiRoot: location.origin + location.pathname,
     restapiQueryInterval: 3 * 1000, // in milliseconds
     restapiQueryTimeout: 30 * 1000, // in milliseconds
-    restapiTaskLevelMetricsQueryLimit: 100
+    restapiTaskLevelMetricsQueryLimit: 100,
+    loginUrl: location.origin + location.pathname + 'login/login.html'
   })
 
   /* add a retry delay for angular-ui-router, when resolving a data is failed */

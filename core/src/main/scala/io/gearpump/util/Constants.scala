@@ -140,4 +140,7 @@ object Constants {
 
   val GEARPUMP_METRICS_MAX_LIMIT = "gearpump.metrics.akka.max-limit-on-query"
   val GEARPUMP_METRICS_AGGREGATORS = "gearpump.metrics.akka.metrics-aggregator-class"
+
+  val GEARPUMP_UI_SECURITY_ENABLED = "gearpump.security.ui-authentication-enabled"
+  val GEARPUMP_UI_AUTHENTICATOR_CLASS = "gearpump.security.ui-authenticator"
 }

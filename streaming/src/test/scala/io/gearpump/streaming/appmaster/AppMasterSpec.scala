@@ -34,7 +34,7 @@ import io.gearpump.jarstore.FilePath
 import io.gearpump.partitioner.{Partitioner, HashPartitioner}
 import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.streaming.task._
-import io.gearpump.util.Graph
+import io.gearpump.util.{Util, Graph}
 import io.gearpump.util.Graph._
 import org.scalatest._
 
