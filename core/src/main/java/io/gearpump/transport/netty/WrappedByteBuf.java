@@ -17,88 +17,88 @@
  */
 package io.gearpump.transport.netty;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 import java.io.DataInput;
 import java.io.IOException;
 
-public class WrappedChannelBuffer implements DataInput{
-  private ChannelBuffer channelBuffer;
+public class WrappedByteBuf implements DataInput{
+  private ByteBuf byteBuf;
 
-  public WrappedChannelBuffer(){}
+  public WrappedByteBuf(){}
 
-  public WrappedChannelBuffer(ChannelBuffer channelBuffer){
-    this.channelBuffer = channelBuffer;
+  public WrappedByteBuf(ByteBuf byteBuf){
+    this.byteBuf = byteBuf;
   }
 
-  public void setChannelBuffer(ChannelBuffer channelBuffer){
-    this.channelBuffer = channelBuffer;
+  public void setByteBuf(ByteBuf byteBuf){
+    this.byteBuf = byteBuf;
   }
 
   @Override
   public void readFully(byte[] b) throws IOException {
-    channelBuffer.readBytes(b);
+    byteBuf.readBytes(b);
   }
 
   @Override
   public void readFully(byte[] b, int off, int len) throws IOException {
-    channelBuffer.readBytes(b, off, len);
+    byteBuf.readBytes(b, off, len);
   }
 
   @Override
   public int skipBytes(int n) throws IOException {
-    channelBuffer.skipBytes(n);
+    byteBuf.skipBytes(n);
     return n;
   }
 
   @Override
   public boolean readBoolean() throws IOException {
-    return channelBuffer.readByte() != 0;
+    return byteBuf.readByte() != 0;
   }
 
   @Override
   public byte readByte() throws IOException {
-    return channelBuffer.readByte();
+    return byteBuf.readByte();
   }
 
   @Override
   public int readUnsignedByte() throws IOException {
-    return channelBuffer.readUnsignedByte();
+    return byteBuf.readUnsignedByte();
   }
 
   @Override
   public short readShort() throws IOException {
-    return channelBuffer.readShort();
+    return byteBuf.readShort();
   }
 
   @Override
   public int readUnsignedShort() throws IOException {
-    return channelBuffer.readUnsignedShort();
+    return byteBuf.readUnsignedShort();
   }
 
   @Override
   public char readChar() throws IOException {
-    return channelBuffer.readChar();
+    return byteBuf.readChar();
   }
 
   @Override
   public int readInt() throws IOException {
-    return channelBuffer.readInt();
+    return byteBuf.readInt();
   }
 
   @Override
   public long readLong() throws IOException {
-    return channelBuffer.readLong();
+    return byteBuf.readLong();
   }
 
   @Override
   public float readFloat() throws IOException {
-    return channelBuffer.readFloat();
+    return byteBuf.readFloat();
   }
 
   @Override
   public double readDouble() throws IOException {
-    return channelBuffer.readDouble();
+    return byteBuf.readDouble();
   }
 
   @Override

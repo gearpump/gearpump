@@ -18,18 +18,10 @@
 
 package io.gearpump.transport.netty;
 
-import org.jboss.netty.util.ThreadNameDeterminer;
-import org.jboss.netty.util.ThreadRenamingRunnable;
-
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class NettyRenameThreadFactory implements ThreadFactory {
-
-  static {
-    //Rename Netty threads
-    ThreadRenamingRunnable.setThreadNameDeterminer(ThreadNameDeterminer.CURRENT);
-  }
 
   final ThreadGroup group;
   final AtomicInteger index = new AtomicInteger(1);

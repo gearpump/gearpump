@@ -18,17 +18,17 @@
 package io.gearpump.streaming
 
 import io.gearpump.streaming.task._
-import io.gearpump.transport.netty.WrappedChannelBuffer
-import org.jboss.netty.buffer.{ChannelBufferOutputStream, ChannelBuffers}
+import io.gearpump.transport.netty.WrappedByteBuf
+import io.netty.buffer.{Unpooled, ByteBufOutputStream}
 import org.scalatest.{Matchers, WordSpec}
 
 class MessageSerializerSpec extends WordSpec with Matchers {
 
   def testSerializer[T](obj: T, taskMessageSerializer: TaskMessageSerializer[T]): T = {
     val length = taskMessageSerializer.getLength(obj)
-    val bout = new ChannelBufferOutputStream(ChannelBuffers.buffer(length))
+    val bout = new ByteBufOutputStream(Unpooled.buffer(length))
     taskMessageSerializer.write(bout, obj)
-    val input = new WrappedChannelBuffer(ChannelBuffers.wrappedBuffer(bout.buffer().array()))
+    val input = new WrappedByteBuf(Unpooled.wrappedBuffer(bout.buffer().array()))
     taskMessageSerializer.read(input)
   }
 

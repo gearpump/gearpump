@@ -21,7 +21,6 @@ import java.io.{DataInput, DataOutput}
 
 import io.gearpump.transport.MockTransportSerializer.NettyMessage
 import io.gearpump.transport.netty.ITransportMessageSerializer
-import org.jboss.netty.buffer.ChannelBuffer
 
 class MockTransportSerializer extends ITransportMessageSerializer{
   override def getLength(obj: scala.Any): Int = 4

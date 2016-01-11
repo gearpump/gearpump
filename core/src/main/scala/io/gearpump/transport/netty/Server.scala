@@ -23,8 +23,9 @@ import java.util
 import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import io.gearpump.transport.ActorLookupById
 import io.gearpump.util.LogUtil
-import org.jboss.netty.channel._
-import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
+import io.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
+import io.netty.channel._
+import io.netty.util.concurrent.GlobalEventExecutor
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
@@ -36,7 +37,7 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
 
   import io.gearpump.transport.netty.Server._
 
-  val allChannels: ChannelGroup = new DefaultChannelGroup("gearpump-server")
+  val allChannels: ChannelGroup = new DefaultChannelGroup("gearpump-server", GlobalEventExecutor.INSTANCE)
 
   val system = context.system.asInstanceOf[ExtendedActorSystem]
 
@@ -81,33 +82,31 @@ object Server {
   // As we must use actorFor() which is deprecated,
   // according to the advice https://issues.scala-lang.org/browse/SI-7934,
   // use a helper object to bypass this deprecation warning.
-  class ServerPipelineFactory(server: ActorRef, conf: NettyConfig) extends ChannelPipelineFactory {
-    def getPipeline: ChannelPipeline = {
-      val pipeline: ChannelPipeline = Channels.pipeline
+  class ServerChannelInitiallizer(server: ActorRef, conf: NettyConfig) extends ChannelInitializer[Channel] {
+    def initChannel(channel: Channel): Unit = {
+      val pipeline: ChannelPipeline = channel.pipeline
       pipeline.addLast("decoder", new MessageDecoder(conf.newTransportSerializer))
       pipeline.addLast("encoder", new MessageEncoder)
       pipeline.addLast("handler", new ServerHandler(server))
-      pipeline
     }
   }
 
-  class ServerHandler(server: ActorRef) extends SimpleChannelUpstreamHandler {
+  class ServerHandler(server: ActorRef) extends SimpleChannelInboundHandler[util.List[TaskMessage]] {
     private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = server.path.name)
 
-    override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
-      server ! AddChannel(e.getChannel)
+    override def channelActive(ctx: ChannelHandlerContext): Unit = {
+      server ! AddChannel(ctx.channel())
     }
 
-    override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
-      val msgs: util.List[TaskMessage] = e.getMessage.asInstanceOf[util.List[TaskMessage]]
+    override def channelRead0(ctx: ChannelHandlerContext, msgs: util.List[TaskMessage]) {
       if (msgs != null) {
         server ! MsgBatch(msgs)
       }
     }
 
-    override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
-      LOG.error("server errors in handling the request", e.getCause)
-      server ! CloseChannel(e.getChannel)
+    override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
+      LOG.error("server errors in handling the request", cause)
+      server ! CloseChannel(ctx.channel())
     }
   }
 

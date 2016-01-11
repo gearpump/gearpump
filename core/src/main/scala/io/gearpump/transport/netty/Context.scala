@@ -23,10 +23,10 @@ import java.util.concurrent._
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.Config
-import io.gearpump.transport.netty.Server.ServerPipelineFactory
+import io.gearpump.transport.netty.Server.ServerChannelInitiallizer
 import io.gearpump.transport.{ActorLookupById, HostPort}
 import io.gearpump.util.{Constants, LogUtil}
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
+import io.netty.channel.nio.NioEventLoopGroup
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
@@ -35,7 +35,7 @@ import scala.language.implicitConversions
 object Context {
   private final val LOG: Logger = LogUtil.getLogger(getClass)
 
-  implicit def toCloseable(fun : () => Any)  = new Closeable {
+  implicit def toCloseable(fun : () => Any): Closeable = new Closeable {
     override def close = fun()
   }
 }
@@ -51,39 +51,28 @@ import io.gearpump.transport.netty.Context._
   private val nettyDispatcher = system.settings.config.getString(Constants.NETTY_DISPATCHER)
   val maxWorkers: Int = 1
 
-  private lazy val clientChannelFactory: NioClientSocketChannelFactory = {
-    val bossFactory: ThreadFactory = new NettyRenameThreadFactory("client" + "-boss")
-    val workerFactory: ThreadFactory = new NettyRenameThreadFactory("client" + "-worker")
-    val channelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(bossFactory), Executors.newCachedThreadPool(workerFactory), maxWorkers)
-    closeHandler.add { ()=>
-
-      LOG.info("Closing all client resources....")
-      channelFactory.releaseExternalResources
-    }
-    channelFactory
-  }
-
+  private val workerEventLoopGroup = NettyUtil.createNioEventLoopGroup(maxWorkers, "client-worker")
 
   def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true, inputPort: Int = 0): Int = {
     //TODO: whether we should expose it as application config?
     val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor, deserializeFlag).withDispatcher(nettyDispatcher), name)
-    val (port, channel) = NettyUtil.newNettyServer(name,
-      new ServerPipelineFactory(server, conf), 5242880, inputPort)
-    val factory = channel.getFactory
-    closeHandler.add{ () =>
-        system.stop(server)
-        channel.close()
-
-        LOG.info("Closing all server resources....")
-        factory.releaseExternalResources
-      }
+    val bossEventLoopGroup = NettyUtil.createNioEventLoopGroup(0, name + "-boss")
+    val workerEventLoopGroup = NettyUtil.createNioEventLoopGroup(1, name + "-worker")
+    val channelInitializer = new ServerChannelInitiallizer(server, conf)
+    val (port, channel) = NettyUtil.newNettyServer(bossEventLoopGroup, workerEventLoopGroup, channelInitializer, 5242880, inputPort)
+    closeHandler.add { () =>
+      system.stop(server)
+      channel.close()
+      bossEventLoopGroup.shutdownGracefully()
+      workerEventLoopGroup.shutdownGracefully()
+      LOG.info("Closing all server resources....")
+    }
     port
   }
 
   def connect(hostPort : HostPort) : ActorRef = {
-    val client = system.actorOf(Props(classOf[Client], conf, clientChannelFactory, hostPort).withDispatcher(nettyDispatcher))
+    val client = system.actorOf(Props(classOf[Client], conf, workerEventLoopGroup, hostPort).withDispatcher(nettyDispatcher))
     closeHandler.add { () =>
-
       LOG.info("closing Client actor....")
       system.stop(client)
     }
@@ -94,12 +83,11 @@ import io.gearpump.transport.netty.Context._
    * terminate this context
    */
   def close {
-
     LOG.info(s"Context.term, cleanup resources...., we have ${closeHandler.size()} items to close...")
-
     // clean up resource in reverse order so that client actor can be cleaned
     // before clientChannelFactory
     closeHandler.iterator().toArray.reverse.foreach(_.close())
+    workerEventLoopGroup.shutdownGracefully()
   }
 }
 
