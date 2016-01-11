@@ -99,6 +99,27 @@ class DynamicDagSpec extends TestSpecBase {
       Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > currentClock)
     }
 
+    "fall back to last dag version when AppMaster HA triggered" in {
+      val appId = restClient.submitApp(solJar)
+      expectAppIsRunning(appId, solName)
+      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+
+      val formerAppMaster = restClient.queryApp(appId).appMasterPath
+      val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
+      replaceProcessor(appId, 1, sumTaskClass)
+      var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
+      Util.retryUntil({
+        laterProcessors = restClient.queryStreamingAppDetail(appId).processors
+        laterProcessors.size == formerProcessors.size + 1
+      })
+      processorHasThroughput(appId, laterProcessors.keySet.max, "receiveThroughput")
+
+      restClient.killAppMaster(appId) shouldBe true
+      Util.retryUntil(restClient.queryApp(appId).appMasterPath != formerAppMaster)
+      val processors = restClient.queryStreamingAppDetail(appId).processors
+      processors.size shouldEqual laterProcessors.size
+    }
+
   }
 
   private def replaceProcessor(

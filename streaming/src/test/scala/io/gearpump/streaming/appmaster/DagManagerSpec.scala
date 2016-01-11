@@ -27,10 +27,9 @@ import io.gearpump.streaming.task.{Subscriber, TaskActor}
 import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, StreamApplication}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-
-class DagManagerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   val hash = Partitioner[HashPartitioner]
   val task1 = ProcessorDescription(id = 1, taskClass = classOf[TaskActor].getName, parallelism = 1)
@@ -41,44 +40,57 @@ class DagManagerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   val appId = 0
   val userConfig = UserConfig.empty.withValue(StreamApplication.DAG, graph)
 
-  it should "" in {
+  "DagManager" should {
+    import io.gearpump.streaming.appmaster.ClockServiceSpec.Store
+    "maintain the dags properly" in {
+      val store = new Store
 
-    val dagManager = system.actorOf(Props(new DagManager(appId,
-      userConfig, Some(dag))))
-    val client = TestProbe()
-    client.send(dagManager, GetLatestDAG)
-    client.expectMsg(LatestDAG(dag))
+      val dagManager = system.actorOf(Props(new DagManager(appId, userConfig, store, Some(dag))))
+      val client = TestProbe()
+      client.send(dagManager, GetLatestDAG)
+      client.expectMsg(LatestDAG(dag))
 
-    client.send(dagManager, GetTaskLaunchData(dag.version, task1.id, null))
-    val task1LaunchData = TaskLaunchData(task1, Subscriber.of(task1.id, dag))
-    client.expectMsg(task1LaunchData)
+      client.send(dagManager, GetTaskLaunchData(dag.version, task1.id, null))
+      val task1LaunchData = TaskLaunchData(task1, Subscriber.of(task1.id, dag))
+      client.expectMsg(task1LaunchData)
 
-    val task2LaunchData = TaskLaunchData(task2, Subscriber.of(task2.id, dag))
-    client.send(dagManager, GetTaskLaunchData(dag.version, task2.id, null))
-    client.expectMsg(task2LaunchData)
+      val task2LaunchData = TaskLaunchData(task2, Subscriber.of(task2.id, dag))
+      client.send(dagManager, GetTaskLaunchData(dag.version, task2.id, null))
+      client.expectMsg(task2LaunchData)
 
-    val watcher = TestProbe()
-    client.send(dagManager, WatchChange(watcher.ref))
-    val task3 = task2.copy(id = 3, life = LifeTime(100, Long.MaxValue))
+      val watcher = TestProbe()
+      client.send(dagManager, WatchChange(watcher.ref))
+      val task3 = task2.copy(id = 3, life = LifeTime(100, Long.MaxValue))
 
-    client.send(dagManager, ReplaceProcessor(task2.id, task3))
-    client.expectMsg(DAGOperationSuccess)
+      client.send(dagManager, ReplaceProcessor(task2.id, task3))
+      client.expectMsg(DAGOperationSuccess)
 
+      client.send(dagManager, GetLatestDAG)
+      val newDag = client.expectMsgPF() {
+        case LatestDAG(dag) => dag
+      }
+      assert(newDag.processors.contains(task3.id))
+      watcher.expectMsgType[LatestDAG]
 
-    client.send(dagManager, GetLatestDAG)
-    val newDag = client.expectMsgPF() {
-      case LatestDAG(dag) => dag
+      val task4 = task3.copy(id = 4)
+      client.send(dagManager, ReplaceProcessor(task3.id, task4))
+      client.expectMsgType[DAGOperationFailed]
+
+      client.send(dagManager, NewDAGDeployed(newDag.version))
+      client.send(dagManager, ReplaceProcessor(task3.id, task4))
+      client.expectMsg(DAGOperationSuccess)
     }
-    assert(newDag.processors.contains(task3.id))
-    watcher.expectMsgType[LatestDAG]
 
-    val task4 = task3.copy(id = 4)
-    client.send(dagManager, ReplaceProcessor(task3.id, task4))
-    client.expectMsgType[DAGOperationFailed]
-
-    client.send(dagManager, NewDAGDeployed(newDag.version))
-    client.send(dagManager, ReplaceProcessor(task3.id, task4))
-    client.expectMsg(DAGOperationSuccess)
+    "retrieve last stored dag properly" in {
+      val store = new Store
+      val newGraph = Graph(task1 ~ hash ~> task2 ~> task2)
+      val newDag = DAG(newGraph)
+      store.put(StreamApplication.DAG, newDag)
+      val dagManager = system.actorOf(Props(new DagManager(appId, userConfig, store, Some(dag))))
+      val client = TestProbe()
+      client.send(dagManager, GetLatestDAG)
+      client.expectMsg(LatestDAG(newDag))
+    }
   }
 
   override def afterAll {

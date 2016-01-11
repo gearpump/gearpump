@@ -18,42 +18,64 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{ActorRef, Actor, Stash}
 import io.gearpump.streaming._
 import io.gearpump.streaming.task.Subscriber
+import io.gearpump.streaming.storage.AppDataStore
 import io.gearpump.cluster.UserConfig
-import io.gearpump.partitioner.{PartitionerDescription}
-import DagManager.{NewDAGDeployed, WatchChange, DAGOperationSuccess, DAGOperationFailed, ReplaceProcessor, TaskLaunchData, LatestDAG, GetTaskLaunchData, GetLatestDAG}
+import io.gearpump.partitioner.PartitionerDescription
+import DagManager._
 import io.gearpump.util.{LogUtil, Graph}
 import org.slf4j.Logger
+
+import scala.concurrent.Future
 
 /**
  * Will handle dag modification and other stuff related with DAG
   */
 
-class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends Actor {
+class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: Option[DAG])
+    extends Actor with Stash {
+  import context.dispatcher
+  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   private val NOT_INITIALIZED = -1
 
-  def this(appId: Int, userConfig: UserConfig) = {
-    this(appId, userConfig, None)
-  }
-
+  private var dags = List.empty[DAG]
+  private var maxProcessorId = -1
   implicit val system = context.system
 
-  var dags = List(
-    dag.getOrElse(DAG(userConfig.getValue[Graph[ProcessorDescription,
-      PartitionerDescription]](StreamApplication.DAG).get))
-  )
+  private var watchers = List.empty[ActorRef]
 
-  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
+  override def receive: Receive = null
 
-  private var maxProcessorId = {
-    val keys = dags.head.processors.keys
-    if (keys.size == 0) {
-      0
-    }else {
-      keys.max
+  override def preStart() : Unit = {
+    LOG.info("Initializing Dag Service, get stored Dag ....")
+    store.get(StreamApplication.DAG).asInstanceOf[Future[DAG]].map { storedDag =>
+      if (storedDag != null) {
+        dags :+= storedDag
+      } else {
+        dags :+= dag.getOrElse(DAG(userConfig.getValue[Graph[ProcessorDescription,
+            PartitionerDescription]](StreamApplication.DAG).get))
+      }
+      maxProcessorId = {
+        val keys = dags.head.processors.keys
+        if (keys.size == 0) {
+          0
+        } else {
+          keys.max
+        }
+      }
+      self ! DagInitiated
     }
+    context.become(waitForDagInitiate)
+  }
+
+  def waitForDagInitiate: Receive = {
+    case DagInitiated =>
+      unstashAll()
+      context.become(dagService)
+    case _ =>
+      stash()
   }
 
   private def nextProcessorId: ProcessorId = {
@@ -61,15 +83,13 @@ class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends A
     maxProcessorId
   }
 
-  private var watchers = List.empty[ActorRef]
-
   private def taskLaunchData(dag: DAG, processorId: Int, context: AnyRef): TaskLaunchData = {
     val processorDescription = dag.processors(processorId)
     val subscribers = Subscriber.of(processorId, dag)
     TaskLaunchData(processorDescription, subscribers, context)
   }
 
-  def receive: Receive = {
+  def dagService: Receive = {
     case GetLatestDAG =>
       sender ! LatestDAG(dags.last)
     case GetTaskLaunchData(version, processorId, context) =>
@@ -107,11 +127,11 @@ class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends A
       // remove obsolete versions.
       if (dagVersion != NOT_INITIALIZED) {
         dags = dags.filter(_.version == dagVersion)
+        store.put(StreamApplication.DAG, dags.last)
       }
   }
 
   private def replaceDAG(dag: DAG, oldProcessorId: ProcessorId, newProcessor: ProcessorDescription, newVersion: Int): DAG = {
-
     val oldProcessorLife = LifeTime(dag.processors(oldProcessorId).life.birth, newProcessor.life.birth)
 
     val newProcessorMap = dag.processors ++
@@ -125,11 +145,12 @@ class DagManager(appId: Int, userConfig: UserConfig, dag: Option[DAG]) extends A
 }
 
 object DagManager {
+  case object DagInitiated
+
   case class WatchChange(watcher: ActorRef)
 
   case object GetLatestDAG
   case class LatestDAG(dag: DAG)
-
 
   case class GetTaskLaunchData(dagVersion: Int, processorId: Int, context: AnyRef = null)
   case class TaskLaunchData(processorDescription : ProcessorDescription, subscribers: List[Subscriber], context: AnyRef = null)
