@@ -23,7 +23,7 @@ angular.module('dashboard')
 
         var range = {start: $scope.selectedTaskIds[0], stop: $scope.selectedTaskIds[0]};
         models.$get.appTaskLatestMetricValues(
-          $scope.app.appId, $scope.processor.id, /*metricClass=*/'', range).then(function(metrics0) {
+          $scope.app.appId, $scope.processor.id, /*metricName=*/'', range).then(function(metrics0) {
             $scope.selectedMetrics = metrics0.$data();
             metrics0.$subscribe($scope, function(metrics) {
               $scope.selectedMetrics = metrics;
@@ -43,13 +43,13 @@ angular.module('dashboard')
 
         var throughputChartOptions = angular.merge({
           valueFormatter: function(value) {
-            return helper.metricValue(value) + ' msg/s';
+            return helper.readableMetricValue(value) + ' msg/s';
           }
         }, lineChartOptionBase);
 
         var durationChartOptions = angular.merge({
           valueFormatter: function(value) {
-            return helper.metricValue(value) + ' ms';
+            return helper.readableMetricValue(value) + ' ms';
           }
         }, lineChartOptionBase);
 
@@ -102,7 +102,7 @@ angular.module('dashboard')
 
         function extractSelectedMetricField(metrics, field) {
           return _.map($scope.selectedTaskIds, function(taskId) {
-            return metrics[taskId][field];
+            return helper.metricRounded(metrics[taskId][field]);
           });
         }
       });

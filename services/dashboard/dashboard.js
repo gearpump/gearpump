@@ -11,7 +11,8 @@ angular.module('dashboard', [
   'ui.select',
   'cfp.loadingBarInterceptor',
   'ngFileUpload',
-  'dashing'
+  'dashing',
+  'io.gearpump.models'
 ])
 
   // configure routes

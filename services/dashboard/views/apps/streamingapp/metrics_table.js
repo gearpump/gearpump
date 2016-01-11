@@ -21,19 +21,17 @@ angular.module('dashboard')
     function($scope, $stb) {
       'use strict';
 
-      $scope.$watch('dag.metricsTime', function() {
+      $scope.$watch('dag.metricsUpdateTime', function() {
         reloadMetricsAndUpdateMetricsTable();
       });
 
-      $scope.$watch('metricClass', function() {
+      $scope.$watch('metricName', function() {
         reloadMetricsAndUpdateMetricsTable();
       });
 
       function reloadMetricsAndUpdateMetricsTable() {
-        if ($scope.metricClass) {
-          var metrics = _.mapValues($scope.dag.metrics, function(metricsGroups) {
-            return metricsGroups[$scope.metricClass];
-          });
+        if ($scope.metricName) {
+          var metrics = $scope.dag.getMetricsByMetricName($scope.metricName);
           var tableObj = $scope.metricType === 'meter' ?
             $scope.meterMetricsTable : $scope.histogramMetricsTable;
           updateMetricsTable(tableObj, metrics);
@@ -61,7 +59,7 @@ angular.module('dashboard')
           $stb.link('Processor').key(['processorId', 'taskPath']).canSort('processorId').sortDefault().styleClass('col-sm-1 text-nowrap').done(),
           $stb.number('Tasks').key('taskNum').canSort().styleClass('col-sm-1').done(),
           $stb.text('Task Class').key('taskClass').canSort().styleClass('col-lg-4 hidden-md hidden-sm hidden-xs').done(),
-          $stb.number('Std. Dev.').key('stddev').canSort().unit('ms').styleClass('col-sm-5').done(),
+          $stb.number2('Std. Dev.').key('stddev').canSort().unit('ms').styleClass('col-sm-5').done(),
           $stb.number2('Mean').key('mean').canSort().unit('ms').styleClass('col-sm-1').done(),
           $stb.number2('Median').key('median').canSort().unit('ms').styleClass('col-sm-1').done(),
           $stb.number2('p95%').key('p95').canSort().unit('ms')
@@ -77,9 +75,9 @@ angular.module('dashboard')
       function updateMetricsTable(table, metrics) {
         table.rows = $stb.$update(table.rows,
           _.map(metrics, function(metric, processorId) {
-            var processor = $scope.dag.processors[processorId];
+            var processor = $scope.dag.getProcessor(processorId);
             var processorUrl = processor.active ?
-            '#/apps/streamingapp/' + $scope.app.appId + '/processor/' + processorId : '';
+              '#/apps/streamingapp/' + $scope.app.appId + '/processor/' + processorId : '';
             return angular.merge({
               active: {
                 tooltip: processor.active ? 'Active' : (processor.replaced ? 'Replaced by another processor' : 'Dead'),

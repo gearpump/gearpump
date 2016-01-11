@@ -15,8 +15,8 @@ angular.module('dashboard')
         samplingConfig: '=',
         queryMetricsFnRef: '&'
       },
-      controller: ['$scope', '$filter', '$propertyTableBuilder', '$echarts',
-        function($scope, $filter, $ptb, $echarts) {
+      controller: ['$scope', '$filter', '$propertyTableBuilder', '$echarts', 'helper',
+        function($scope, $filter, $ptb, $echarts, helper) {
           'use strict';
 
           var sc = $scope.samplingConfig;
@@ -49,10 +49,10 @@ angular.module('dashboard')
           function updateMetricsTable(metrics) {
             var updates = {};
             var i = 0;
-            angular.forEach(metricsClassProps, function(prop, clazz) {
-              if (metrics.hasOwnProperty(clazz)) {
+            angular.forEach(metricsClassProps, function(prop, name) {
+              if (metrics.hasOwnProperty(name)) {
                 var convertFn = prop[1];
-                updates[i] = convertFn(metrics[clazz].value);
+                updates[i] = convertFn(metrics[name].value);
               }
               i++;
             });
@@ -107,7 +107,7 @@ angular.module('dashboard')
           function makeMemoryUsageChartData(metrics) {
             return _.map(metrics['memory.total.used'], function(metric) {
               return {
-                x: moment(metric.time).format('HH:mm:ss'),
+                x: helper.timeToChartTimeLabel(metric.time, /*short=*/$scope.showCurrentMetrics),
                 y: [metric.value]
               };
             });

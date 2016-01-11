@@ -3,26 +3,16 @@
  * See accompanying LICENSE file.
  */
 
-angular.module('dashboard')
+angular.module('io.gearpump.models', [])
 
 /** TODO: to be absorbed as scalajs */
-  .factory('models', ['$timeout', 'conf', 'restapi', 'locator', 'StreamingDag', 'Metrics',
-    function($timeout, conf, restapi, locator, StreamingDag, Metrics) {
+  .factory('models', ['$timeout', 'conf', 'restapi', 'locator', 'StreamingAppDag', 'Metrics',
+    function($timeout, conf, restapi, locator, StreamingAppDag, Metrics) {
       'use strict';
 
       var util = {
         usage: function(current, total) {
           return total > 0 ? 100 * current / total : 0;
-        },
-        flatten: function(array, fn) {
-          var result = {};
-          _.forEach(array, function(item) {
-            if (fn) {
-              item = fn(item);
-            }
-            result[item[0]] = item[1];
-          });
-          return result;
         },
         getOrCreate: function(obj, prop, init) {
           if (!obj.hasOwnProperty(prop)) {
@@ -98,7 +88,7 @@ angular.module('dashboard')
           var obj = wrapper.masterDescription;
           angular.merge(obj, {
             // upickle conversion
-            cluster: obj.cluster.map(function(tuple) {
+            cluster: _.map(obj.cluster, function(tuple) {
               return tuple.join(':');
             }),
             jvm: decoder._jvm(obj.jvmName),
@@ -172,7 +162,7 @@ angular.module('dashboard')
           }
 
           // upickle conversion 1: streaming app related decoding
-          obj.processors = util.flatten(obj.processors);
+          obj.processors = _.zipObject(obj.processors);
           _.forEach(obj.processors, function(processor) {
             // add an active property
             var active = true;
@@ -187,12 +177,24 @@ angular.module('dashboard')
             processor.active = active;
             processor.replaced = replaced;
           });
-          obj.processorLevels = util.flatten(obj.processorLevels);
-          if (obj.dag && obj.dag.edgeList) {
-            obj.dag.edgeList = util.flatten(obj.dag.edgeList, function(item) {
-              return [item[0] + '_' + item[2],
-                {source: parseInt(item[0]), target: parseInt(item[2]), type: item[1]}];
+          _.forEach(_.zipObject(obj.processorLevels), function(hierarchy, processorId) {
+            obj.processors[processorId].hierarchy = hierarchy;
+          });
+          delete obj.processorLevels;
+
+          if (obj.dag && Array.isArray(obj.dag.edgeList)) {
+            var edges = {};
+            _.forEach(obj.dag.edgeList, function(tuple) {
+              var from = parseInt(tuple[0]);
+              var to = parseInt(tuple[2]);
+              var partitionerClass = tuple[1];
+              edges[from + '_' + to] = {
+                from: from,
+                to: to,
+                partitioner: partitionerClass
+              };
             });
+            obj.dag.edgeList = edges;
           }
 
           // upickle conversion 2a: convert array to dictionary
@@ -209,7 +211,7 @@ angular.module('dashboard')
 
           // upickle conversion 2c: task count is executor specific property for streaming app
           _.forEach(obj.processors, function(processor) {
-            var taskCountLookup = util.flatten(processor.taskCount);
+            var taskCountLookup = _.zipObject(processor.taskCount);
             // Backend returns executor ids, but names as `executor`. We change them to real executors.
             processor.executors = _.map(processor.executors, function(executorId) {
               var executor = obj.executors[executorId];
@@ -286,7 +288,7 @@ angular.module('dashboard')
           _.forEach(wrapper.metrics, function(obj) {
             var metric = Metrics.$auto(obj);
             if (metric) {
-              var metricsGroup = util.getOrCreate(result, metric.meta.clazz, {});
+              var metricsGroup = util.getOrCreate(result, metric.meta.name, {});
               var metricSeries = util.getOrCreate(metricsGroup, metric.meta.path, {});
               delete metric.meta; // As meta is in the keys, we don't need it in every metric.
               metricSeries[metric.time] = metric;
@@ -304,11 +306,11 @@ angular.module('dashboard')
         },
         /** Remove related metrics paths and change the given 2d array to 1d. */
         _removeUnrelatedMetricsFrom2dArray: function(metrics, filterPath) {
-          _.forEach(metrics, function(metricsGroup, clazz) {
+          _.forEach(metrics, function(metricsGroup, name) {
             if (metricsGroup.hasOwnProperty(filterPath)) {
-              metrics[clazz] = metricsGroup[filterPath];
+              metrics[name] = metricsGroup[filterPath];
             } else {
-              delete metrics[clazz];
+              delete metrics[name];
             }
           });
         }
@@ -372,7 +374,7 @@ angular.module('dashboard')
           args.decoder = decoder.appMetrics;
           return getter._metrics('appmaster/' + appId + '/metrics/app' + appId, '', args);
         },
-        appTaskLatestMetricValues: function(appId, processorId, metricClass, range) {
+        appTaskLatestMetricValues: function(appId, processorId, metricName, range) {
           var taskRangeArgs = range && range.hasOwnProperty('start') ?
             '&startTask=' + range.start + '&endTask=' + (range.stop + 1) : '';
           var args = {
@@ -381,9 +383,9 @@ angular.module('dashboard')
               '&startProcessor=' + processorId + '&endProcessor=' + (processorId + 1) + taskRangeArgs,
             decoder: decoder.appTaskLatestMetricValues
           };
-          metricClass = metricClass ? ':' + metricClass : '';
+          metricName = metricName ? ':' + metricName : '';
           return getter._metrics('appmaster/' + appId + '/metrics/app' + appId +
-            '.processor' + processorId + '.*' + metricClass, '', args);
+            '.processor' + processorId + '.*' + metricName, '', args);
         },
         appExecutor: function(appId, executorId) {
           return get('appmaster/' + appId + '/executor/' + executorId,
@@ -442,8 +444,8 @@ angular.module('dashboard')
           trySubscribe();
         },
         // TODO: scalajs should return a app.details object with dag, if it is a streaming application.
-        createDag: function(clock, processors, levels, edges) {
-          var dag = new StreamingDag(clock, processors, levels, edges);
+        createDag: function(clock, processors, edges) {
+          var dag = new StreamingAppDag(clock, processors, edges);
           dag.replaceProcessor = restapi.replaceDagProcessor;
           return dag;
         },

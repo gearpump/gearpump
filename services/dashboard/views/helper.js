@@ -27,10 +27,18 @@ angular.module('dashboard')
           unit: pieces.length > 1 ? pieces[1] : ''
         };
       },
-      /* Show metric as integer or with 2 digits after period, if metric value is less than 1. */
-      metricValue: function(value) {
-        var precision = Math.abs(value) < 1 ? 2 : 0;
+      /* Return a readable metric value. */
+      readableMetricValue: function(value) {
+        var precision = Math.abs(value) < 100 ? 2 : 0;
         return $filter('number')(value, precision);
+      },
+      /* Make metric precision consistent */
+      metricRounded: function(value) {
+        return _.round(value, 2);
+      },
+      /* Create a proper chart time label for echart */
+      timeToChartTimeLabel: function(time, shortForm) {
+        return moment(time).format(shortForm ? 'HH:mm:ss': 'ddd DD, HH:mm');
       }
     };
   }])
@@ -39,7 +47,7 @@ angular.module('dashboard')
     'use strict';
 
     return function(value) {
-      return helper.metricValue(value);
+      return helper.readableMetricValue(value);
     };
   }])
 ;

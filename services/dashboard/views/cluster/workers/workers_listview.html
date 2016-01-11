@@ -1,10 +1,10 @@
 <div class="col-md-12">
   <!-- control toolbar -->
   <div class="row">
-    <div class="col-md-9">
+    <div class="col-md-6">
       <span class="table-caption-ext">Worker Instances</span>
     </div>
-    <div class="col-md-3 hidden-sm hidden-xs pull-right">
+    <div class="col-md-3 col-md-offset-3 hidden-sm hidden-xs">
       <searchbox ng-model="search" placeholder="Search Anything"></searchbox>
     </div>
   </div>
@@ -17,5 +17,10 @@
     records-bind="workersTable.rows"
     search-bind="search"
     pagination="10">
+    <div class="table-no-data">
+      <h2 class="glyphicon glyphicon-bullhorn"></h2>
+      <h4>No worker instance is running</h4>
+      <p>Please contact your administrator to launch worker for applications.</p>
+    </div>
   </sortable-table>
 </div>
