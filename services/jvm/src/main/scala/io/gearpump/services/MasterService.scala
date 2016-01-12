@@ -42,6 +42,7 @@ import io.gearpump.util.FileDirective._
 import io.gearpump.util.{Graph, Constants, Util, FileUtils}
 import io.gearpump.util.ActorUtil._
 import io.gearpump.services.MasterService.{SubmitApplicationRequest, BuiltinPartitioners}
+import io.gearpump.experiments.storm.StormRunner
 
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
@@ -138,6 +139,31 @@ trait MasterService {
               }
             }
           } ~
+          path("submitstormapp") {
+            post {
+              parameters("args" ? "") { args: String =>
+                uploadFile { fileMap =>
+                  val jar = fileMap.get("jar").map(_.file)
+                  val userConf = fileMap.get("conf").map(_.file)
+                  val stormConf = fileMap.get("stormconf").map(_.file)
+
+                  if (jar.isEmpty) {
+                    failWith(new Exception("jar file not supplied"))
+                  } else {
+                    val argsArray = args.split(" +").filter(_.nonEmpty)
+                    onComplete(Future(
+                      MasterService.submitStormJar(jar.get, userConf, argsArray, system.settings.config, stormConf))) {
+                      case Success(appId) =>
+                        complete(write(
+                          MasterService.AppSubmissionResult(success = true, appId = appId)))
+                      case Failure(ex) =>
+                        failWith(ex)
+                    }
+                  }
+                }
+              }
+            }
+          } ~
           path("submitdag") {
             post {
               entity(as[String]) { request =>
@@ -199,7 +225,21 @@ object MasterService {
    */
   def submitJar(jar: File, userConf: Option[File], extraArgs: Array[String],
                 sysConfig: Config): Int = {
+    val configFiles = Array(userConf)
+    submitApplication(jar, configFiles, extraArgs, sysConfig, AppSubmitter.getClass)
+  }
 
+  /**
+   * Upload Storm application (JAR) and use StormRunner to submit it to master
+   */
+  def submitStormJar(jar: File, userConf: Option[File], extraArgs: Array[String],
+                     sysConfig: Config, stormConf: Option[File] = None): Int = {
+    val configFiles = Array(userConf, stormConf)
+    submitApplication(jar, configFiles, extraArgs, sysConfig, StormRunner.getClass)
+  }
+
+  private def submitApplication(jar: File, configFiles: Array[Option[File]], extraArgs: Array[String], sysConfig: Config,
+                                runner: Class[_]): Int = {
     try {
       val masters = sysConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
       val mastersOption = masters.zipWithIndex.map { kv =>
@@ -212,12 +252,16 @@ object MasterService {
         s"-D${Constants.GEARPUMP_HOSTNAME}=$hostname"
       ) ++ mastersOption
 
+      val userConf = configFiles.head
       if (userConf.isDefined) {
         options :+= s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=${userConf.get.getPath}"
       }
 
-      val arguments = Array("-jar", jar.getPath) ++ extraArgs
-      val mainClass = AppSubmitter.getClass.getName.dropRight(1)
+      var arguments = Array("-jar", jar.getPath) ++ extraArgs
+      if (configFiles.length > 1 && configFiles(1).isDefined) {
+        arguments ++= Array("-config", configFiles(1).get.getPath)
+      }
+      val mainClass = runner.getName.dropRight(1)
       val process = Util.startProcess(options, Util.getCurrentClassPath, mainClass, arguments)
       val retval = process.exitValue()
       if (retval != 0) {
@@ -226,7 +270,7 @@ object MasterService {
       process.logger.output
         .split(" ").last.toInt
     } finally {
-      userConf.foreach(_.delete)
+      configFiles.foreach(_.foreach(_.delete))
       jar.delete()
     }
   }
@@ -236,4 +280,5 @@ object MasterService {
     processors: Map[ProcessorId, ProcessorDescription],
     dag: Graph[Int, String],
     userconfig: UserConfig)
+
 }

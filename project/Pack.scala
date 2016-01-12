@@ -20,6 +20,7 @@ object Pack extends sbt.Build {
     "${PROG_HOME}/conf",
     "${PROG_HOME}/lib/daemon/*",
     "${PROG_HOME}/lib/services/*",
+    "${PROG_HOME}/lib/storm/*",
     "${PROG_HOME}/dashboard"
   )
 
@@ -63,7 +64,7 @@ object Pack extends sbt.Build {
             "lib" -> new ProjectsToPack(core.id, streaming.id),
             "lib/daemon" -> new ProjectsToPack(daemon.id).exclude(core.id, streaming.id),
             "lib/yarn" -> new ProjectsToPack(yarn.id).exclude(services.id, daemon.id),
-            "lib/services" -> new ProjectsToPack(services.id).exclude(daemon.id),
+            "lib/services" -> new ProjectsToPack(services.id).exclude(daemon.id, storm.id),
             "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id)
           ),
           packExclude := Seq(thisProjectRef.value.project),
