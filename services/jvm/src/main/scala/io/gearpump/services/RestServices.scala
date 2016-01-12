@@ -21,18 +21,18 @@ package io.gearpump.services
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `no-cache`}
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Route, _}
 import akka.stream.ActorMaterializer
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.Route
 
-import scala.concurrent.Future
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class RestServices(actorSystem: ActorSystem, val master: ActorRef) extends
     StaticService with
@@ -99,7 +99,7 @@ trait JarStoreProvider {
 object RestServices {
   private val LOG = LogUtil.getLogger(getClass)
 
-  def apply(master:ActorRef)(implicit system:ActorSystem) {
+  def apply(master:ActorRef)(implicit system:ActorSystem):Unit = {
     implicit val executionContext = system.dispatcher
     val services = new RestServices(system, master)
     val config = system.settings.config
@@ -108,7 +108,8 @@ object RestServices {
 
     implicit val materializer = ActorMaterializer()
 
-    Http().bindAndHandle(Route.handlerFlow(services.routes), host, port)
+    val bindFuture = Http().bindAndHandle(Route.handlerFlow(services.routes), host, port)
+    Await.result(bindFuture, 15 seconds)
 
     val displayHost = if(host == "0.0.0.0") "127.0.0.1" else host
     LOG.info(s"Please browse to http://$displayHost:$port to see the web UI")
