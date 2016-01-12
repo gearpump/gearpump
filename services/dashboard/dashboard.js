@@ -20,17 +20,29 @@ angular.module('dashboard', [
     function($stateProvider, $urlRouterProvider) {
       'use strict';
 
+      var landingPageUrl = '/cluster/master';
       $urlRouterProvider
         .when('', '/')
         .when('/', '/cluster')
-        .when('/cluster', '/cluster/master')/*
+        .when('/cluster', landingPageUrl)
         .otherwise(function($injector, $location) {
-          // redirects to parent state (recursively)
-          var parentUrl = _.initial($location.path().split('/')).join('/');
-          $location.path(parentUrl);
-        })*/;
+          var currentPath = $location.path();
+          if (currentPath !== landingPageUrl) {
+            // redirects to parent state (recursively)
+            var parentUrl = _.initial(currentPath.split('/')).join('/');
+            if (parentUrl !== landingPageUrl) {
+              $location.path(parentUrl);
+              return;
+            }
+          }
+          $location.path('/404');
+        });
 
       $stateProvider
+        .state('404', {
+          url: '/404',
+          templateUrl: 'views/landing/404.html'
+        })
         .state('cluster', {
           abstract: true, // todo: we have a sidebar for cluster only
           url: '/cluster',
@@ -58,6 +70,8 @@ angular.module('dashboard', [
 
   // disable logging for production
   .config(['$compileProvider', function ($compileProvider) {
+    'use strict';
+
     $compileProvider.debugInfoEnabled(false);
   }])
 
