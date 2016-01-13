@@ -23,12 +23,7 @@ angular.module('dashboard', [
       $urlRouterProvider
         .when('', '/')
         .when('/', '/cluster')
-        .when('/cluster', '/cluster/master')/*
-        .otherwise(function($injector, $location) {
-          // redirects to parent state (recursively)
-          var parentUrl = _.initial($location.path().split('/')).join('/');
-          $location.path(parentUrl);
-        })*/;
+        .when('/cluster', '/cluster/master');
 
       $stateProvider
         .state('cluster', {
@@ -57,7 +52,9 @@ angular.module('dashboard', [
   }])
 
   // disable logging for production
-  .config(['$compileProvider', function ($compileProvider) {
+  .config(['$compileProvider', function($compileProvider) {
+    'use strict';
+
     $compileProvider.debugInfoEnabled(false);
   }])
 
@@ -69,4 +66,41 @@ angular.module('dashboard', [
     restapiQueryTimeout: 30 * 1000, // in milliseconds
     restapiTaskLevelMetricsQueryLimit: 100
   })
+
+  /* add a retry delay for angular-ui-router, when resolving a data is failed */
+  .run(['$rootScope', '$state', 'conf', function($rootScope, $state, conf) {
+    'use strict';
+
+    $rootScope.$on('$stateChangeError', function(event, toState) {
+      event.preventDefault();
+      _.delay($state.go, conf.restapiQueryTimeout, toState);
+    });
+  }])
+
+  /* enable a health check service */
+  .run(['$modal', 'HealthCheckService', 'conf', function($modal, HealthCheckService, conf) {
+    'use strict';
+
+    var showDialogFn = function() {
+      var dialog = $modal({
+        templateUrl: 'views/service_unreachable_notice.html',
+        backdrop: 'static',
+        show: false
+      });
+      dialog.$promise.then(dialog.show);
+    };
+
+    var hideDialogFn = function() {
+      // simply refresh the page, to make sure page status is fresh
+      location.reload();
+    };
+
+    HealthCheckService.config(
+      conf.restapiRoot + 'version',
+      conf.restapiQueryInterval,
+      showDialogFn,
+      hideDialogFn
+    );
+    HealthCheckService.checkForever();
+  }])
 ;
