@@ -1,3 +1,17 @@
+Gearpump 0.7.4
+===================
+Change log:
+-------------------
+- #1247, add authentication for UI
+- #1855: when service is unavailable, do not query models without waiting.
+- #1833 update performance related doc
+- #1831, Services exits on bind failure
+- #1779: show critical path latency for application 
+- #1733 dynamic dag fall back to last dag version in case of Master HA
+- #1804, fix navbar on mobile
+- #1713 regression on HBaseSink
+- #1838 YARN failure trying to contact YarnAppMaster when launched in YARN
+
 Gearpump 0.7.3
 ===================
 Change logs:
