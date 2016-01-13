@@ -6,15 +6,9 @@
 angular.module('dashboard')
 
 /** TODO: refactoring work required */
-  .factory('restapi', ['$http', '$timeout', '$modal', 'Upload', 'conf',
-    function($http, $timeout, $modal, Upload, conf) {
+  .factory('restapi', ['$q', '$http', '$timeout', '$modal', 'Upload', 'conf', 'HealthCheckService',
+    function($q, $http, $timeout, $modal, Upload, conf, HealthCheckService) {
       'use strict';
-
-      var noticeWindow = $modal({
-        templateUrl: 'services/service_unreachable_notice.html',
-        backdrop: 'static',
-        show: false
-      });
 
       function decodeSuccessResponse(data) {
         return angular.merge({
@@ -67,7 +61,18 @@ angular.module('dashboard')
           timeoutPromise = $timeout(fn, interval);
         },
 
+        /**
+         * Query model from service endpoint and return a promise.
+         * Note that if operation is failed, it will return the failure after a default timeout. If
+         * health check indicates the service is unavailable, no request will be sent to server, just
+         * simple return a failure after a default timeout.
+         */
         get: function(path) {
+          if (!HealthCheckService.isServiceAvailable()) {
+            var deferred = $q.defer();
+            _.delay(deferred.reject, conf.restapiQueryTimeout);
+            return deferred.promise;
+          }
           return $http.get(restapiV1Root + path, {timeout: conf.restapiQueryTimeout});
         },
 
@@ -206,37 +211,13 @@ angular.module('dashboard')
           });
         },
 
-        /** Periodically check health. In case of problems show a notice window */
-        repeatHealthCheck: function(scope, onData) {
-          var timeoutPromise;
-          var shouldCancel = false;
-          scope.$on('$destroy', function() {
-            shouldCancel = true;
-            $timeout.cancel(timeoutPromise);
+        /** Return the service version in onData callback */
+        serviceVersion: function(onData) {
+          return $http.get(conf.restapiRoot + 'version').then(function(response) {
+            if (angular.isFunction(onData)) {
+              onData(response.data);
+            }
           });
-          var fn = function() {
-            $http.get(conf.restapiRoot + 'version')
-              .then(function(response) {
-                var serviceWasUnreachable = noticeWindow.$isShown;
-                noticeWindow.$promise.then(noticeWindow.hide);
-                if (serviceWasUnreachable) {
-                  // todo: should find an elegant way to handling resolve failures and service issues
-                  location.reload();
-                  return;
-                }
-                if (onData) {
-                  onData(response.data);
-                }
-              }, function() {
-                noticeWindow.$promise.then(noticeWindow.show);
-              })
-              .finally(function() {
-                if (!shouldCancel) {
-                  timeoutPromise = $timeout(fn, conf.restapiQueryInterval);
-                }
-              });
-          };
-          fn();
         }
       };
       return self;

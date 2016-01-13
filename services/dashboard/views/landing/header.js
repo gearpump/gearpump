@@ -33,7 +33,7 @@ angular.module('dashboard')
           });
 
         $scope.version = 'beta';
-        restapi.repeatHealthCheck($scope, function(version) {
+        restapi.serviceVersion(function(version) {
           $scope.version = version;
         });
       }]
