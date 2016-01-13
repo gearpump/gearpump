@@ -18,57 +18,46 @@
 
 package io.gearpump.services
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ActorSystem, ActorRef}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.stream.{Materializer}
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryWorkerConfig}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, WorkerConfig}
 import io.gearpump.util.ActorUtil._
-import io.gearpump.util.LogUtil
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
-trait WorkerService {
+class WorkerService(val master: ActorRef, override val system: ActorSystem)
+  extends BasicService {
 
   import upickle.default.write
 
-  def master: ActorRef
-
-  implicit def system: ActorSystem
-
-  private val LOG = LogUtil.getLogger(getClass)
-
-  val workerRoute = encodeResponse {
-    implicit def ec: ExecutionContext = system.dispatcher
-
-    pathPrefix("api" / s"$REST_VERSION" / "worker" / IntNumber) { workerId =>
-      pathEnd {
-        onComplete(askWorker[WorkerData](master, workerId, GetWorkerData(workerId))) {
-          case Success(value: WorkerData) =>
-            complete(write(value.workerDescription))
-          case Failure(ex) => failWith(ex)
-        }
-      } ~
-      path("config") {
-        onComplete(askWorker[WorkerConfig](master, workerId, QueryWorkerConfig(workerId))) {
-          case Success(value: WorkerConfig) =>
-            val config = Option(value.config).map(_.root.render()).getOrElse("{}")
-            complete(config)
+  override def doRoute(implicit mat: Materializer) = pathPrefix("worker" / IntNumber) { workerId =>
+    pathEnd {
+      onComplete(askWorker[WorkerData](master, workerId, GetWorkerData(workerId))) {
+        case Success(value: WorkerData) =>
+          complete(write(value.workerDescription))
+        case Failure(ex) => failWith(ex)
+      }
+    } ~
+    path("config") {
+      onComplete(askWorker[WorkerConfig](master, workerId, QueryWorkerConfig(workerId))) {
+        case Success(value: WorkerConfig) =>
+          val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+          complete(config)
+        case Failure(ex) =>
+          failWith(ex)
+      }
+    } ~
+    path("metrics" / RestPath ) { path =>
+      parameter(ReadOption.Key ? ReadOption.ReadLatest) { readOption =>
+        val query = QueryHistoryMetrics(path.head.toString, readOption)
+        onComplete(askWorker[HistoryMetrics](master, workerId, query)) {
+          case Success(value) =>
+            complete(write(value))
           case Failure(ex) =>
             failWith(ex)
-        }
-      } ~
-      path("metrics" / RestPath ) { path =>
-        parameter(ReadOption.Key ? ReadOption.ReadLatest) { readOption =>
-          val query = QueryHistoryMetrics(path.head.toString, readOption)
-          onComplete(askWorker[HistoryMetrics](master, workerId, query)) {
-            case Success(value) =>
-              complete(write(value))
-            case Failure(ex) =>
-              failWith(ex)
-          }
         }
       }
     }

@@ -22,6 +22,21 @@
         <span class="glyphicon glyphicon-tasks"></span>
         Applications</a></li>
     </ul>
+
+    <!-- User Icon and Logout Links -->
+    <ul class="dropdown nav navbar-nav pull-right">
+      <li style="margin-left: 0px; margin-right: 0px">
+      <a class="dropdown-toggle" type="button" data-toggle="dropdown">
+        <span class="glyphicon glyphicon-user"></span>
+        {{username}}
+        <span class="caret"></span></a>
+      <ul class="dropdown-menu">
+        <li><a href="{{loginUrl}}">Sign out</a></li>
+      </ul>
+      </li>
+    </ul>
+
+    <!-- Doc Link and Source Repo Link -->
     <ul class="nav navbar-nav pull-right">
       <li ng-repeat="item in links track by $index">
         <a href="{{item.href}}" target="_blank">

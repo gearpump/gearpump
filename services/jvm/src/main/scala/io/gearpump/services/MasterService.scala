@@ -26,6 +26,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
+import akka.stream.{Materializer, ActorMaterializer}
 import com.typesafe.config.Config
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryMasterConfig}
@@ -35,6 +36,7 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.AppSubmitter
 import io.gearpump.cluster.worker.WorkerSummary
+import io.gearpump.jarstore.JarStoreService
 import io.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
 import io.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplication}
 import io.gearpump.util.ActorUtil.{askActor, _}
@@ -47,139 +49,128 @@ import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-trait MasterService {
-  this: JarStoreProvider =>
+class MasterService(val master: ActorRef,
+    val jarStore: JarStoreService, override val system: ActorSystem)
+  extends BasicService {
 
   import upickle.default.{read, write}
 
-  def master: ActorRef
+  override def doRoute(implicit mat: Materializer) = pathPrefix("master") {
+    pathEnd {
+      get {
+        onComplete(askActor[MasterData](master, GetMasterData)) {
+          case Success(value: MasterData) => complete(write(value))
+          case Failure(ex) => failWith(ex)
+        }
+      }
+    } ~
+    path("applist") {
+      onComplete(askActor[AppMastersData](master, AppMastersDataRequest)) {
+        case Success(value: AppMastersData) =>
+          complete(write(value))
+        case Failure(ex) => failWith(ex)
+      }
+    } ~
+    path("workerlist") {
+      def future = askActor[WorkerList](master, GetAllWorkers).flatMap { workerList =>
+        val workers = workerList.workers
+        val workerDataList = List.empty[WorkerSummary]
 
-  implicit def system: ActorSystem
+        Future.fold(workers.map { workerId =>
+          askWorker[WorkerData](master, workerId, GetWorkerData(workerId))
+        })(workerDataList) { (workerDataList, workerData) =>
+          workerDataList :+ workerData.workerDescription
+        }
+      }
+      onComplete(future) {
+        case Success(result: List[WorkerSummary]) => complete(write(result))
+        case Failure(ex) => failWith(ex)
+      }
+    } ~
+    path("config") {
+      onComplete(askActor[MasterConfig](master, QueryMasterConfig)) {
+        case Success(value: MasterConfig) =>
+          val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+          complete(config)
+        case Failure(ex) =>
+          failWith(ex)
+      }
+    } ~
+    path("metrics" / RestPath) { path =>
+      parameters(ParamMagnet(ReadOption.Key ? ReadOption.ReadLatest)) { readOption: String =>
+        val query = QueryHistoryMetrics(path.head.toString, readOption)
+        onComplete(askActor[HistoryMetrics](master, query)) {
+          case Success(value) =>
+            complete(write(value))
+          case Failure(ex) =>
+            failWith(ex)
+        }
+      }
+    } ~
+    path("submitapp") {
+      post {
+        parameters("args" ? "") { args: String =>
+          uploadFile { fileMap =>
+            val jar = fileMap.get("jar").map(_.file)
+            val userConf = fileMap.get("conf").map(_.file)
 
-  implicit def ec: ExecutionContext = system.dispatcher
-
-  implicit val timeout = Constants.FUTURE_TIMEOUT
-
-  val masterRoute = encodeResponse {
-    pathPrefix("api" / s"$REST_VERSION" / "master") {
-      extractMaterializer { implicit mat: akka.stream.Materializer =>
-        pathEnd {
-          get {
-            onComplete(askActor[MasterData](master, GetMasterData)) {
-              case Success(value: MasterData) => complete(write(value))
-              case Failure(ex) => failWith(ex)
-            }
-          }
-        } ~
-          path("applist") {
-            onComplete(askActor[AppMastersData](master, AppMastersDataRequest)) {
-              case Success(value: AppMastersData) =>
-                complete(write(value))
-              case Failure(ex) => failWith(ex)
-            }
-          } ~
-          path("workerlist") {
-            def future = askActor[WorkerList](master, GetAllWorkers).flatMap { workerList =>
-              val workers = workerList.workers
-              val workerDataList = List.empty[WorkerSummary]
-
-              Future.fold(workers.map { workerId =>
-                askWorker[WorkerData](master, workerId, GetWorkerData(workerId))
-              })(workerDataList) { (workerDataList, workerData) =>
-                workerDataList :+ workerData.workerDescription
-              }
-            }
-            onComplete(future) {
-              case Success(result: List[WorkerSummary]) => complete(write(result))
-              case Failure(ex) => failWith(ex)
-            }
-          } ~
-          path("config") {
-            onComplete(askActor[MasterConfig](master, QueryMasterConfig)) {
-              case Success(value: MasterConfig) =>
-                val config = Option(value.config).map(_.root.render()).getOrElse("{}")
-                complete(config)
-              case Failure(ex) =>
-                failWith(ex)
-            }
-          } ~
-          path("metrics" / RestPath) { path =>
-            parameters(ParamMagnet(ReadOption.Key ? ReadOption.ReadLatest)) { readOption: String =>
-              val query = QueryHistoryMetrics(path.head.toString, readOption)
-              onComplete(askActor[HistoryMetrics](master, query)) {
-                case Success(value) =>
-                  complete(write(value))
+            if (jar.isEmpty) {
+              failWith(new Exception("jar file not supplied"))
+            } else {
+              val argsArray = args.split(" +").filter(_.nonEmpty)
+              onComplete(Future(
+                MasterService.submitJar(jar.get, userConf, argsArray, system.settings.config))) {
+                case Success(appId) =>
+                  complete(write(
+                    MasterService.AppSubmissionResult(success = true, appId = appId)))
                 case Failure(ex) =>
                   failWith(ex)
               }
             }
-          } ~
-          path("submitapp") {
-            post {
-              parameters("args" ? "") { args: String =>
-                uploadFile { fileMap =>
-                  val jar = fileMap.get("jar").map(_.file)
-                  val userConf = fileMap.get("conf").map(_.file)
-
-                  if (jar.isEmpty) {
-                    failWith(new Exception("jar file not supplied"))
-                  } else {
-                    val argsArray = args.split(" +").filter(_.nonEmpty)
-                    onComplete(Future(
-                      MasterService.submitJar(jar.get, userConf, argsArray, system.settings.config))) {
-                      case Success(appId) =>
-                        complete(write(
-                          MasterService.AppSubmissionResult(success = true, appId = appId)))
-                      case Failure(ex) =>
-                        failWith(ex)
-                    }
-                  }
-                }
-              }
-            }
-          } ~
-          path("submitdag") {
-            post {
-              entity(as[String]) { request =>
-                import io.gearpump.services.util.UpickleUtil._
-                val msg = java.net.URLDecoder.decode(request, "UTF-8")
-                val submitApplicationRequest = read[SubmitApplicationRequest](msg)
-                import submitApplicationRequest.{appName, dag, processors, userconfig}
-                val context = ClientContext(system.settings.config, system, master)
-
-                val graph = dag.mapVertex { processorId =>
-                  processors(processorId)
-                }.mapEdge { (node1, edge, node2) =>
-                  PartitionerDescription(new PartitionerByClassName(edge))
-                }
-
-                val effectiveConfig = if (userconfig == null) UserConfig.empty else userconfig
-                val appId = context.submit(new StreamApplication(appName, effectiveConfig, graph))
-
-                import upickle.default.write
-                val submitApplicationResultValue = SubmitApplicationResultValue(appId)
-                val jsonData = write(submitApplicationResultValue)
-                complete(jsonData)
-              }
-            }
-          } ~
-          path("uploadjar") {
-            uploadFile { fileMap =>
-              val jar = fileMap.get("jar").map(_.file)
-              if (jar.isEmpty) {
-                complete(write(
-                  MasterService.Status(success = false, reason = "Jar file not found")))
-              } else {
-                val jarFile = Util.uploadJar(jar.get, getJarStoreService)
-                complete(write(jarFile))
-              }
-            }
-          } ~
-          path("partitioners") {
-            get {
-              complete(write(BuiltinPartitioners(Constants.BUILTIN_PARTITIONERS.map(_.getName))))
-            }
           }
+        }
+      }
+    } ~
+    path("submitdag") {
+      post {
+        entity(as[String]) { request =>
+          import io.gearpump.services.util.UpickleUtil._
+          val msg = java.net.URLDecoder.decode(request, "UTF-8")
+          val submitApplicationRequest = read[SubmitApplicationRequest](msg)
+          import submitApplicationRequest.{appName, dag, processors, userconfig}
+          val context = ClientContext(system.settings.config, system, master)
+
+          val graph = dag.mapVertex { processorId =>
+            processors(processorId)
+          }.mapEdge { (node1, edge, node2) =>
+            PartitionerDescription(new PartitionerByClassName(edge))
+          }
+
+          val effectiveConfig = if (userconfig == null) UserConfig.empty else userconfig
+          val appId = context.submit(new StreamApplication(appName, effectiveConfig, graph))
+
+          import upickle.default.write
+          val submitApplicationResultValue = SubmitApplicationResultValue(appId)
+          val jsonData = write(submitApplicationResultValue)
+          complete(jsonData)
+        }
+      }
+    } ~
+    path("uploadjar") {
+      uploadFile { fileMap =>
+        val jar = fileMap.get("jar").map(_.file)
+        if (jar.isEmpty) {
+          complete(write(
+            MasterService.Status(success = false, reason = "Jar file not found")))
+        } else {
+          val jarFile = Util.uploadJar(jar.get, jarStore)
+          complete(write(jarFile))
+        }
+      }
+    } ~
+    path("partitioners") {
+      get {
+        complete(write(BuiltinPartitioners(Constants.BUILTIN_PARTITIONERS.map(_.getName))))
       }
     }
   }

@@ -25,45 +25,27 @@ import akka.stream.{Materializer}
 import io.gearpump.util.{Constants, Util}
 
 /**
- * static resource files.
+ * AdminService is for cluster-wide managements. it is not related with
+ * specific application.
+ *
+ * For example:
+ * Security management: Add user, remove user.
+ * Configuration management: Change configurations.
+ * Machine management: Add worker machines, remove worker machines, and add masters.
  */
-class StaticService(override val system: ActorSystem)
+
+// TODO: Add YARN resource manager capacities to add/remove machines.
+class AdminService(override val system: ActorSystem)
   extends BasicService {
-
-  private val version = Util.version
-  private val supervisorPath = system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
-
 
   override def prefix = Neutral
 
-  override def cache = true
-
   override def doRoute(implicit mat: Materializer) = {
-    path("version") {
-      get {ctx =>
-        ctx.complete(version)
+    path("terminate") {
+      post {
+        system.shutdown()
+        complete(StatusCodes.NotFound)
       }
-    } ~
-    // For YARN usage, we need to make sure supervisor-path
-    // can be accessed without authentication.
-    path("supervisor-actor-path") {
-      get {
-        complete(supervisorPath)
-      }
-    } ~
-    pathEndOrSingleSlash {
-      getFromResource("index.html")
-    } ~
-    path("favicon.ico") {
-      complete(StatusCodes.NotFound)
-    } ~
-    pathPrefix("webjars") {
-      get {
-        getFromResourceDirectory("META-INF/resources/webjars")
-      }
-    } ~
-    path(Rest) { path =>
-      getFromResource("%s" format path)
     }
   }
 }
