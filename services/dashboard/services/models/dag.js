@@ -46,11 +46,11 @@ angular.module('io.gearpump.models')
 
       /** Return the number of processors on the longest path. */
       hierarchyDepth: function() {
-        return _.max(_.pluck(this.processors, 'hierarchy'));
+        return _.max(_.map(this.processors, 'hierarchy'));
       },
 
       _getProcessorIdsByTopologicalOrdering: function() {
-        return _(this.processors).sortBy('hierarchy').pluck('id').value();
+        return _(this.processors).sortBy('hierarchy').map('id').value();
       },
 
       _getPredecessorIds: function() {
@@ -112,10 +112,10 @@ angular.module('io.gearpump.models')
         }, this);
 
         // find the critical path latency
-        var criticalPathLatency = _.max(_.pluck(candidates, 'latency'));
+        var criticalPathLatency = _.max(_.map(candidates, 'latency'));
 
         // find the critical paths
-        var criticalPaths = _.pluck(_.pick(candidates, function(candidate) {
+        var criticalPaths = _.map(_.pick(candidates, function(candidate) {
           return candidate.latency === criticalPathLatency;
         }), 'path');
 

@@ -4,8 +4,8 @@
  */
 angular.module('dashboard')
 
-  .controller('StreamingAppDagEditCtrl', ['$scope',
-    function($scope) {
+  .controller('StreamingAppDagEditCtrl', ['$scope', 'models',
+    function($scope, models) {
       'use strict';
 
       var options = $scope.modifyOptions || {};
@@ -48,7 +48,7 @@ angular.module('dashboard')
           var transitUnixTime = moment(timeString).valueOf();
           newProcessor.life = {
             birth: transitUnixTime.toString(),
-            death: '9223372036854775807' /* Long.max */
+            death: models.DAG_DEATH_UNSPECIFIED
           };
         }
 

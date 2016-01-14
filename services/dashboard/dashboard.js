@@ -82,12 +82,13 @@ angular.module('dashboard', [
   .run(['$modal', 'HealthCheckService', 'conf', function($modal, HealthCheckService, conf) {
     'use strict';
 
+    var dialog = $modal({
+      templateUrl: 'views/service_unreachable_notice.html',
+      backdrop: 'static',
+      show: false
+    });
+
     var showDialogFn = function() {
-      var dialog = $modal({
-        templateUrl: 'views/service_unreachable_notice.html',
-        backdrop: 'static',
-        show: false
-      });
       dialog.$promise.then(dialog.show);
     };
 

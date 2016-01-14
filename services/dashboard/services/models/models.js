@@ -198,7 +198,7 @@ angular.module('io.gearpump.models', [])
           }
 
           // upickle conversion 2a: convert array to dictionary
-          obj.executors = _.object(_.pluck(obj.executors, 'executorId'), obj.executors);
+          obj.executors = _.object(_.map(obj.executors, 'executorId'), obj.executors);
 
           // upickle conversion 2b: add extra executor properties and methods
           _.forEach(obj.executors, function(executor) {
@@ -247,7 +247,7 @@ angular.module('io.gearpump.models', [])
         appStallingTasks: function(wrapper) {
           var result = _.groupBy(wrapper.tasks, 'processorId');
           _.forEach(result, function(processor, processorId) {
-            result[processorId] = _.pluck(processor, 'index');
+            result[processorId] = _.map(processor, 'index');
           });
           return result;
         },
@@ -467,7 +467,8 @@ angular.module('io.gearpump.models', [])
               return onComplete(response);
             });
           });
-        }
+        },
+        DAG_DEATH_UNSPECIFIED: '9223372036854775807' /* Long.max */
       };
     }])
 ;

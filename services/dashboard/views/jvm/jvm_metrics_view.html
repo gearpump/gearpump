@@ -9,7 +9,7 @@
   <div class="col-md-12">
     <metrics-period-switcher
       past-hours="samplingConfig.retainHistoryDataHours"
-      view-current="showCurrentMetrics">
+      view-current="isShowingCurrentMetrics">
     </metrics-period-switcher>
   </div>
 </div>
@@ -17,16 +17,9 @@
 <div class="row">
   <div class="col-md-12">
     <h5>Memory Usage</h5>
-
-    <div ng-if="showCurrentMetrics">
-      <line-chart
-        options-bind="::memoryRecentUsageChart.options"
-        datasource-bind="memoryRecentUsageChart.data"></line-chart>
-    </div>
-    <div>
-      <line-chart
-        ng-if="memoryHistUsageChartOptions != null"
-        options-bind="::memoryHistUsageChartOptions"></line-chart>
-    </div>
+    <line-chart
+      options-bind="memoryUsageChart.options"
+      datasource-bind="memoryUsageChart.data">
+    </line-chart>
   </div>
 </div>

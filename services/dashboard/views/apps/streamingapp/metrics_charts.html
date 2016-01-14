@@ -2,7 +2,7 @@
   <div class="col-md-12">
     <metrics-period-switcher
       past-hours="metricsConfig.retainHistoryDataHours"
-      view-current="showCurrentMetrics">
+      view-current="isShowingCurrentMetrics">
     </metrics-period-switcher>
   </div>
 </div>
@@ -17,17 +17,10 @@
         sub-text="Total: {{totalSentMessages|metric}}">
       </metrics>
     </div>
-    <div ng-if="showCurrentMetrics">
+    <div>
       <line-chart
-        options-bind="::sendThroughputChartOptions"
-        datasource-bind="sendThroughputData">
-      </line-chart>
-    </div>
-    <div ng-hide="showCurrentMetrics"
-         class="metric-chart-placeholder">
-      <line-chart
-        ng-if="sendThroughputHistChartOptions != null"
-        options-bind="::sendThroughputHistChartOptions">
+        options-bind="sendThroughputChart.options"
+        datasource-bind="sendThroughputChart.data">
       </line-chart>
     </div>
   </div>
@@ -41,17 +34,10 @@
         sub-text="Total: {{totalReceivedMessages|metric}}">
       </metrics>
     </div>
-    <div ng-if="showCurrentMetrics">
+    <div>
       <line-chart
-        options-bind="::receiveThroughputChartOptions"
-        datasource-bind="receiveThroughputData">
-      </line-chart>
-    </div>
-    <div ng-hide="showCurrentMetrics"
-         class="metric-chart-placeholder">
-      <line-chart
-        ng-if="receiveThroughputHistChartOptions != null"
-        options-bind="receiveThroughputHistChartOptions">
+        options-bind="receiveThroughputChart.options"
+        datasource-bind="receiveThroughputChart.data">
       </line-chart>
     </div>
   </div>
@@ -64,17 +50,10 @@
         value="{{messageReceiveLatency|metric}}" unit="ms">
       </metrics>
     </div>
-    <div ng-if="showCurrentMetrics">
+    <div>
       <line-chart
-        options-bind="::messageReceiveLatencyChartOptions"
-        datasource-bind="messageReceiveLatencyData">
-      </line-chart>
-    </div>
-    <div ng-hide="showCurrentMetrics"
-         class="metric-chart-placeholder">
-      <line-chart
-        ng-if="messageReceiveLatencyHistChartOptions != null"
-        options-bind="messageReceiveLatencyHistChartOptions">
+        options-bind="messageReceiveLatencyChart.options"
+        datasource-bind="messageReceiveLatencyChart.data">
       </line-chart>
     </div>
   </div>
@@ -87,17 +66,10 @@
         value="{{averageProcessingTime|metric}}" unit="ms">
       </metrics>
     </div>
-    <div ng-if="showCurrentMetrics">
+    <div>
       <line-chart
-        options-bind="::averageProcessingTimeChartOptions"
-        datasource-bind="averageProcessingTimeData">
-      </line-chart>
-    </div>
-    <div ng-hide="showCurrentMetrics"
-         class="metric-chart-placeholder">
-      <line-chart
-        ng-if="averageProcessingTimeHistChartOptions != null"
-        options-bind="averageProcessingTimeHistChartOptions">
+        options-bind="averageProcessingTimeChart.options"
+        datasource-bind="averageProcessingTimeChart.data">
       </line-chart>
     </div>
   </div>

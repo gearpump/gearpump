@@ -48,7 +48,7 @@ angular.module('dashboard')
           describeProcessorType(degree.indegree, degree.outdegree),
           processor.life.birth <= 0 ?
             'Start with the application' : processor.life.birth,
-          processor.life.death === '9223372036854775807' /* Long.max */ ?
+          processor.life.death === models.DAG_DEATH_UNSPECIFIED ?
             'Not specified' : processor.life.death
         ]);
 
@@ -89,12 +89,19 @@ angular.module('dashboard')
       promise = $interval(queryMetrics, conf.restapiQueryInterval);
       queryMetrics();
 
-      $scope.taskRange = $scope.shouldPaginateTasks ?
-        {} : {start: 0, stop: $scope.processor.parallelism - 1};
+      $scope.taskRange = {
+        start: 0,
+        stop: $scope.shouldPaginateTasks ?
+          $scope.queryLimit - 1 : $scope.processor.parallelism - 1
+      };
+
       $scope.$watch('taskRange', function(range) {
-        if (!range.hasOwnProperty('start')) {
-          return;
+        if (range.hasOwnProperty('start')) {
+          updateTaskSelection(range);
         }
+      }, /*deep=*/true);
+
+      function updateTaskSelection(range) {
         $scope.tasks = {
           selected: [],
           available: function() {
@@ -104,50 +111,53 @@ angular.module('dashboard')
             });
           }()
         };
-      });
+      }
 
-      // For the bar chart control (todo: dashing bar-chart should provide a way to rebuild chart data)
-      $scope.tasksBarChart = null;
-      $scope.$watch('taskMetrics', function(metrics) {
-        var scopeIsReady = $scope.tasks.hasOwnProperty('available') && $scope.tasks.available.length;
-        if (scopeIsReady && metrics) {
-          updateBarChartData(metrics);
+      // For the bar chart control
+      $scope.tasksBarChart = {
+        options: {
+          height: '110px',
+          seriesNames: [''],
+          barMinWidth: 4,
+          barMinSpacing: 1,
+          valueFormatter: function(value) {
+            var unit = $scope.metricType === 'meter' ? 'msg/s' : 'ms';
+            return helper.readableMetricValue(value) + ' ' + unit;
+          },
+          data: _.map($scope.tasks.available.length, function(taskName) {
+            return {x: taskName, y: 0};
+          })
+        }
+      };
+
+      $scope.$watch('taskMetrics', function(metricsSelection) {
+        if (angular.isObject(metricsSelection)) {
+          updateBarChartData(metricsSelection);
         }
       });
 
-      function updateBarChartData(metrics) {
-        if (!$scope.tasksBarChart) {
-          $scope.tasksBarChart = {
-            options: {
-              height: '110px',
-              seriesNames: [''],
-              barMinWidth: 4,
-              barMinSpacing: 1,
-              valueFormatter: function(value) {
-                var unit = $scope.metricType === 'meter' ? 'msg/s' : 'ms';
-                return helper.readableMetricValue(value) + ' ' + unit;
-              },
-              data: _.map($scope.tasks.available, function(taskName) {
-                return {x: taskName};
-              })
-            }
-          };
-        }
-
-        var data = $scope.tasksBarChart.options.data;
-        if (data[0].x !== $scope.tasks.available[0]) {
-          $scope.tasksBarChart = null;
-          _.defer(updateBarChartData, data);
+      function updateBarChartData(metricsSelection) {
+        if ($scope.tasks.available.length === 0 ||
+          _.keys(metricsSelection).length !== $scope.tasks.available.length) {
           return;
         }
 
+        var data = _.map($scope.tasks.available, function(taskName) {
+          return {x: taskName};
+        });
         var i = 0;
         var metricField = $scope.metricType === 'meter' ? 'movingAverage1m' : 'mean';
-        _.forEach(metrics, function(metric) {
+        _.forEach(metricsSelection, function(metric) {
           data[i].y = helper.metricRounded(metric[metricField]);
           i++;
         });
-        $scope.tasksBarChart.data = angular.copy(data);
+
+        var xLabelChanged = !_.isEqual(_.map($scope.tasksBarChart.options.data, 'x'), _.map(data, 'x'));
+        if (xLabelChanged) {
+          $scope.tasksBarChart.options.data = data;
+        } else {
+          $scope.tasksBarChart.data = data;
+        }
       }
     }])
 ;
