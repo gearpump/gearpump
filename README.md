@@ -138,7 +138,8 @@ weihua.jiang@intel.com
 
 ## License
 
-Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+Gearpump itself is licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+For library it used, please see [/LICENSE](https://github.com/gearpump/gearpump/blob/master/LICENSE)
 
 ## Acknowledgement
 
