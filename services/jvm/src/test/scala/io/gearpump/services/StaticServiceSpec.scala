@@ -20,13 +20,16 @@ package io.gearpump.services
 
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
+import io.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 
 import scala.util.Try
 import scala.concurrent.duration._
 
 class StaticServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers with BeforeAndAfterAll {
+
+  override def testConfig: Config = TestUtil.UI_CONFIG
 
   def route = new StaticService(system).route
 

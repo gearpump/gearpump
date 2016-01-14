@@ -33,17 +33,13 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
         gear = "gearpump"
       }
 
-      master {
+      gearpump-master {
         conf = "master"
       }
-
-      worker {
+      gearpump-worker {
         conf = "worker"
       }
-
-      base {
-       conf = "base"
-      }
+      conf = "base"
   """
 
     val file = File.createTempFile("test", ".conf")

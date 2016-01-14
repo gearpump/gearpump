@@ -28,11 +28,12 @@ import akka.stream.io.SynchronousFileSource
 import akka.stream.scaladsl.Source
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ResolveWorkerId, SubmitApplication}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient._
+import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.services.MasterService.{SubmitApplicationRequest, BuiltinPartitioners}
 import io.gearpump.jarstore.JarStoreService
@@ -47,6 +48,8 @@ import scala.util.{Success, Try}
 class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
   Matchers with BeforeAndAfterAll {
   import upickle.default.{read, write}
+
+  override def testConfig: Config = TestUtil.UI_CONFIG
 
   def actorRefFactory = system
   val workerId = 0

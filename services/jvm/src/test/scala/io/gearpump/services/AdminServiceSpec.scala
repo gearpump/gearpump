@@ -21,7 +21,7 @@ package io.gearpump.services
 import akka.actor.ActorSystem
 import io.gearpump.cluster.TestUtil
 import akka.http.scaladsl.testkit.{ScalatestRouteTest, RouteTestTimeout}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 
 import scala.concurrent.duration._
@@ -30,16 +30,9 @@ import scala.util.Try
 
 class AdminServiceSpec  extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
 
-  implicit var actorSystem: ActorSystem = null
+  override def testConfig: Config = TestUtil.DEFAULT_CONFIG
 
-  override def beforeAll() = {
-    actorSystem = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
-  }
-
-  override def afterAll() = {
-    actorSystem.shutdown()
-    actorSystem.awaitTermination()
-  }
+  implicit def actorSystem: ActorSystem = system
 
   it should "shutdown the ActorSystem when receiving terminate" in {
     val route = new AdminService(actorSystem).route

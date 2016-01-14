@@ -19,6 +19,7 @@
 package io.gearpump.services
 
 import akka.http.scaladsl.testkit.{RouteTestTimeout}
+import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 import akka.actor.{ActorSystem}
@@ -34,16 +35,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 
 class SecurityServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers with BeforeAndAfterAll {
 
-  implicit var actorSystem: ActorSystem = null
+  override def testConfig: Config = TestUtil.UI_CONFIG
 
-  override def beforeAll() = {
-    actorSystem = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
-  }
-
-  override def afterAll() = {
-    actorSystem.shutdown()
-    actorSystem.awaitTermination()
-  }
+  implicit def actorSystem: ActorSystem = system
 
   it should "return 401 if not authenticated" in {
     val security = new SecurityService(SecurityServiceSpec.resource, actorSystem)

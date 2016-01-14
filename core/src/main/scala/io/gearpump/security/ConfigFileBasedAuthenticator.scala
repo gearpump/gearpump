@@ -25,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object ConfigFileBasedAuthenticator {
 
-  private val ROOT = "gearpump.security.config-file-based-authenticator"
+  private val ROOT = "gearpump.ui-security.config-file-based-authenticator"
   private val ADMINS = ROOT + "." + "admins"
   private val USERS = ROOT + "." + "users"
   private val GUESTS = ROOT + "." + "guests"
@@ -70,7 +70,7 @@ object ConfigFileBasedAuthenticator {
  * users have limited permission to submit an application and etc..
  * guests can not submit/kill applications, but can view the application status.
  *
- * see conf/gear.conf section gearpump.security.config-file-based-authenticator to find information
+ * see conf/gear.conf section gearpump.ui-security.config-file-based-authenticator to find information
  * about how to configure this authenticator.
  *
  * [Security consideration]

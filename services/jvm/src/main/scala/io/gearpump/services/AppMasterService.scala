@@ -26,6 +26,7 @@ import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.stream.{Materializer, ActorMaterializer}
 import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
+import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.jarstore.JarStoreService
@@ -36,7 +37,7 @@ import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.util.ActorUtil.{askActor, askAppMaster}
 import io.gearpump.util.FileDirective._
-import io.gearpump.util.{Util}
+import io.gearpump.util.{Constants, Util}
 import upickle.default.{read, write}
 
 import scala.util.{Failure, Success, Try}
@@ -47,6 +48,9 @@ import scala.util.{Failure, Success, Try}
 class AppMasterService(val master: ActorRef,
     val jarStore: JarStoreService, override val system: ActorSystem)
   extends BasicService {
+
+  private val systemConfig = system.settings.config
+  private val concise = systemConfig.getBoolean(Constants.GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE)
 
   override def doRoute(implicit mat: Materializer) = pathPrefix("appmaster" / IntNumber) { appId =>
     path("dynamicdag") {
@@ -108,7 +112,7 @@ class AppMasterService(val master: ActorRef,
       path("config") {
         onComplete(askActor[AppMasterConfig](master, QueryAppMasterConfig(appId))) {
           case Success(value: AppMasterConfig) =>
-            val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+            val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
             complete(config)
           case Failure(ex) =>
             failWith(ex)
@@ -119,7 +123,7 @@ class AppMasterService(val master: ActorRef,
           val executorId = Integer.parseInt(executorIdString)
           onComplete(askAppMaster[ExecutorConfig](master, appId, QueryExecutorConfig(executorId))) {
             case Success(value) =>
-              val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+              val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
               complete(config)
             case Failure(ex) =>
               failWith(ex)

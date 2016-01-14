@@ -23,12 +23,13 @@ import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.server.RouteResult
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.gearpump.cluster.AppMasterToMaster.GeneralAppMasterSummary
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
+import io.gearpump.cluster.TestUtil
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.util.LogUtil
@@ -42,6 +43,8 @@ import scala.util.{Success, Try}
 
 class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
   with Matchers with BeforeAndAfterAll {
+
+  override def testConfig: Config = TestUtil.UI_CONFIG
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system

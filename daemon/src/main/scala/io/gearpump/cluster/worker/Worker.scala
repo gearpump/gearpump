@@ -62,6 +62,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   import Worker._
 
   private val systemConfig : Config = context.system.settings.config
+
   private val configStr = systemConfig.root().render
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
@@ -228,7 +229,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   def clientMessageHandler: Receive = {
     case QueryWorkerConfig(workerId) =>
       if (this.id == workerId) {
-        sender ! WorkerConfig(systemConfig)
+        sender ! WorkerConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
       } else {
         sender ! WorkerConfig(ConfigFactory.empty)
       }

@@ -40,7 +40,11 @@ class MiniCluster {
 
   lazy val commandLineClient = new CommandLineClient(getMasterHosts.head)
 
-  lazy val restClient = new RestClient(getMasterHosts.head, REST_SERVICE_PORT)
+  lazy val restClient = {
+    val client = new RestClient(getMasterHosts.head, REST_SERVICE_PORT)
+    client.login
+    client
+  }
 
   private var workers: ListBuffer[String] = ListBuffer.empty
 

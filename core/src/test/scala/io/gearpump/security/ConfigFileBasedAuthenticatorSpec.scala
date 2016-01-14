@@ -28,7 +28,7 @@ import scala.concurrent.duration._
 
 class ConfigFileBasedAuthenticatorSpec  extends FlatSpec with Matchers {
   it should "authenticate correctly" in {
-    val config = TestUtil.DEFAULT_CONFIG
+    val config = TestUtil.UI_CONFIG
     implicit val system = ActorSystem("ConfigFileBasedAuthenticatorSpec", config)
     implicit val ec = system.dispatcher
     val timeout = 30 seconds

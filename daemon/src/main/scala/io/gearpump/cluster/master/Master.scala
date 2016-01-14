@@ -25,6 +25,7 @@ import akka.remote.DisassociatedEvent
 import com.typesafe.config.Config
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.ClientToMaster._
+import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToAppMaster._
 import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, MasterConfig, ResolveWorkerIdResult}
 import io.gearpump.cluster.MasterToWorker._
@@ -252,7 +253,7 @@ private[cluster] class Master extends Actor with Stash {
       LOG.debug("Master received QueryAppMasterConfig")
       appManager forward query
     case QueryMasterConfig =>
-      sender ! MasterConfig(systemConfig)
+      sender ! MasterConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
   }
 
   def disassociated : Receive = {

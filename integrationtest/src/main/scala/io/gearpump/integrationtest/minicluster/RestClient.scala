@@ -44,6 +44,8 @@ class RestClient(host: String, port: Int) {
 
   private val LOG = Logger.getLogger(getClass)
 
+  private val cookieFile: String = "cookie.txt"
+
   implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
     case Js.Obj(verties, edges) =>
       val vertexList = upickle.default.readJs[List[Int]](verties._2)
@@ -215,15 +217,20 @@ class RestClient(host: String, port: Int) {
       false
   }
 
+
   private val CRUD_POST = "-X POST"
   private val CRUD_DELETE = "-X DELETE"
 
-  private def callApi(endpoint: String, options: String = ""): String = {
-    callFromRoot(s"api/v1.0/$endpoint", options)
+  private def callApi(endpoint: String, option: String = ""): String = {
+    callFromRoot(s"api/v1.0/$endpoint", Array(option, s"--cookie $cookieFile"))
   }
 
-  private def callFromRoot(endpoint: String, options: String = ""): String = {
-    Docker.execAndCaptureOutput(host, s"curl -s $options http://$host:$port/$endpoint")
+  private def callFromRoot(endpoint: String, options: Array[String] = Array.empty[String]): String = {
+    Docker.execAndCaptureOutput(host, s"curl -s ${options.mkString(" ")} http://$host:$port/$endpoint")
   }
 
+  def login: Unit = {
+    callFromRoot(s"login", Array(CRUD_POST, s"--cookie-jar $cookieFile",
+      "--data username=admin", "--data password=admin"))
+  }
 }

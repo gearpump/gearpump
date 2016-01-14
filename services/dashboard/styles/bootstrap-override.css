@@ -29,6 +29,10 @@ html, body {
   background-color: #373a3c;
 }
 
+.dropdown-menu>li>a, .header-menu {
+  font-size: 1.35rem;
+}
+
 .navbar-inverse .navbar-nav > li > a:hover {
   background-color: #444;
 }
