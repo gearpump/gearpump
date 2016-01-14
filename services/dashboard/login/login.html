@@ -70,21 +70,9 @@
 <h1 class="icon"><span class="glyphicon glyphicon-th" aria-hidden="true"/></h1>
 <h1 class="text-center welcome-message">Sign in to Gearpump</h1>
 
-<!--
-  The links is used in javascript login.js.
-  As YARN UI proxy changed the site root path, all relative URL must be
-  rewritten to reflect the new root path.
-
-  However, YARN UI proxy can NOT detect URL in javascript files, it can only rewrite links in html.
-  For example, in html pages:
-  <a href="/login" /> will be rewritten to: <a href="/<yarn_path_prefix>/login" />
-
-  We use the trick to store the javascript variable in html to get YARN UI proxy
-  update the variable for javascript.
- -->
-<a href="/login" id = "loginUrl"></a>
-<a href="/logout" id = "logoutUrl"></a>
-<a href="/" id = "index"></a>
+<a href="../login" id = "loginUrl"></a>
+<a href="../logout" id = "logoutUrl"></a>
+<a href="../" id = "index"></a>
 
 <div class="container">
   <div class="row">
