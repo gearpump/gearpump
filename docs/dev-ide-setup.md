@@ -10,6 +10,7 @@ title: IDE Preparation for Gearpump Development
 
 **NOTE:** Intellij Scala plugin is already bundled with sbt. If you have Scala plugin installed, please don't install additional sbt plugin. Check your settings at "Settings -> Plugins"
 **NOTE:** If you are behind a proxy, to speed up the build, please set the proxy for sbt in "Settings -> Build Tools > SBT". in input field "VM parameters", add 
+
 ```
 -Dhttp.proxyHost=<proxy host>
 -Dhttp.proxyPort=<port like 911>
