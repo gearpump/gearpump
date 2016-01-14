@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
 /** Provides widgets/directive related helper functions */
-  .factory('helper', ['$filter', function($filter) {
+  .factory('helper', ['$filter', '$echarts', function($filter, $echarts) {
     'use strict';
 
     return {
@@ -29,8 +29,11 @@ angular.module('dashboard')
       },
       /* Return a readable metric value. */
       readableMetricValue: function(value) {
-        var precision = Math.abs(value) < 100 ? 2 : 0;
-        return $filter('number')(value, precision);
+        if (angular.isNumber(value)) {
+          var precision = Math.abs(value) < 100 ? 2 : 0;
+          return $filter('number')(value, precision);
+        }
+        return value;
       },
       /* Make metric precision consistent */
       metricRounded: function(value) {
@@ -39,6 +42,10 @@ angular.module('dashboard')
       /* Create a proper chart time label for echart */
       timeToChartTimeLabel: function(time, shortForm) {
         return moment(time).format(shortForm ? 'HH:mm:ss': 'ddd DD, HH:mm');
+      },
+      /* Return a y-axis label formatter that will not show 0 on y-axis */
+      yAxisLabelFormatterWithoutValue0: function(unit) {
+        return $echarts.axisLabelFormatter(unit, {0: ''});
       }
     };
   }])

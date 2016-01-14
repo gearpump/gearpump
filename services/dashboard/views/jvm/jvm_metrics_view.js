@@ -5,18 +5,18 @@
 
 angular.module('dashboard')
 
-  .directive('jvmMetrics', function() {
+  .directive('jvmMetricsView', function() {
     'use strict';
 
     return {
       restrict: 'E',
-      templateUrl: 'views/jvm/jvm_metrics.html',
+      templateUrl: 'views/jvm/jvm_metrics_view.html',
       scope: {
         samplingConfig: '=',
         queryMetricsFnRef: '&'
       },
-      controller: ['$scope', '$filter', '$propertyTableBuilder', '$echarts', 'helper',
-        function($scope, $filter, $ptb, $echarts, helper) {
+      controller: ['$scope', '$filter', '$propertyTableBuilder', 'helper',
+        function($scope, $filter, $ptb, helper) {
           'use strict';
 
           var sc = $scope.samplingConfig;
@@ -60,29 +60,28 @@ angular.module('dashboard')
           }
 
           // metrics charts part
-          $scope.showCurrentMetrics = true;
+          $scope.isShowingCurrentMetrics = true;
 
           function rebuildChartsOnPeriodChanged() {
-            // set null is a trick to rebuild historical charts
-            $scope.memoryHistUsageChartOptions = null;
-
-            var all = !$scope.showCurrentMetrics;
+            var all = !$scope.isShowingCurrentMetrics;
             queryMetricsFn(all).then(function(metrics) {
-              if (all) {
-                var options = angular.copy($scope.memoryRecentUsageChart.options);
-                options.data = makeMemoryUsageChartData(metrics);
-                options.visibleDataPointsNum = Math.max(options.data.length, histChartPoints);
-                $scope.memoryHistUsageChartOptions = options;
-              } else {
-                updateRecentMetricsCharts(metrics);
+              var dataPoints = makeMemoryUsageChartData(metrics);
+              var visibleDataPointsNum = all ?
+                Math.max(dataPoints.length, histChartPoints) : recentChartPoints;
+              if (all && dataPoints.length < 2) {
+                // Hide chart data, if there is only one data point there, which looks very ugly.
+                visibleDataPointsNum = 0;
+                dataPoints = [];
               }
+              // Rebuild the chart
+              $scope.memoryUsageChart = createMemoryUsageChart(visibleDataPointsNum, dataPoints);
             });
           }
 
           var queryMetricsFn = $scope.queryMetricsFnRef();
           queryMetricsFn(/*all=*/false).then(function(metrics0) {
             $scope.metrics = metrics0.$data();
-            $scope.$watch('showCurrentMetrics', function(newVal, oldVal) {
+            $scope.$watch('isShowingCurrentMetrics', function(newVal, oldVal) {
               if (angular.equals(newVal, oldVal)) {
                 return; // ignore initial notification
               }
@@ -96,40 +95,46 @@ angular.module('dashboard')
           $scope.$watch('metrics', function(metrics) {
             if (angular.isObject(metrics)) {
               updateMetricsTable(_.mapValues(metrics, _.last));
-              updateRecentMetricsCharts(metrics);
+              if ($scope.isShowingCurrentMetrics) {
+                updateRecentMetricsCharts(metrics);
+              }
             }
           });
 
           function updateRecentMetricsCharts(metrics) {
-            $scope.memoryRecentUsageChart.data = makeMemoryUsageChartData(metrics);
+            $scope.memoryUsageChart.data = makeMemoryUsageChartData(metrics);
           }
 
           function makeMemoryUsageChartData(metrics) {
             return _.map(metrics['memory.total.used'], function(metric) {
               return {
-                x: helper.timeToChartTimeLabel(metric.time, /*short=*/$scope.showCurrentMetrics),
+                x: helper.timeToChartTimeLabel(metric.time, /*shortForm=*/$scope.isShowingCurrentMetrics),
                 y: [metric.value]
               };
             });
           }
 
-          var lineChartOptionBase = {
-            height: '168px',
-            visibleDataPointsNum: recentChartPoints,
-            data: _.times(recentChartPoints, function() {
-              return {x: '', y: '-'};
-            })
-          };
-
-          $scope.memoryRecentUsageChart = {
-            options: angular.merge({
-              seriesNames: ['Memory Used'],
-              yAxisLabelFormatter: $echarts.axisLabelFormatter('B'), // MB, GB, TB, etc.
+          function createLineChartOptions(seriesNames, visibleDataPointsNum, dataPoints) {
+            return {
+              height: '168px',
+              seriesNames: seriesNames,
+              visibleDataPointsNum: visibleDataPointsNum,
+              data: dataPoints,
+              yAxisLabelFormatter: helper.yAxisLabelFormatterWithoutValue0('B'), // MB, GB, TB, etc.
               valueFormatter: function(value) {
                 return $filter('number')(Math.floor(value / (1024 * 1024)), 0) + ' MB';
               }
-            }, lineChartOptionBase)
-          };
+            };
+          }
+
+          function createMemoryUsageChart(visibleDataPointsNum, dataPoints) {
+            return {
+              options: createLineChartOptions(['Memory Used'], visibleDataPointsNum, dataPoints),
+              data: null
+            };
+          }
+
+          $scope.memoryUsageChart = createMemoryUsageChart(recentChartPoints);
         }]
     }
   })

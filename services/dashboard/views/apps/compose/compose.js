@@ -127,7 +127,7 @@ angular.module('dashboard')
           .filter(function(edge) {
             return processorId == edge.from || processorId == edge.to;
           })
-          .pluck('id')
+          .map('id')
           .value();
         $scope.visGraph.data.edges.remove(edgeIds);
       }
@@ -173,7 +173,7 @@ angular.module('dashboard')
             }];
           }),
           dag: {
-            vertexList: _.pluck(processors, 'id'),
+            vertexList: _.map(processors, 'id'),
             edgeList: edges.map(function(edge) {
               return [edge.from, edge.partitionerClass, edge.to]
             })
