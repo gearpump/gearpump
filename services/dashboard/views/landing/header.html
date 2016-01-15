@@ -1,6 +1,6 @@
 <nav class="navbar navbar-inverse navbar-fixed-top">
   <div class="navbar-header">
-    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main_nav">
       <span class="sr-only">Toggle navigation</span>
       <span class="icon-bar"></span>
       <span class="icon-bar"></span>
@@ -11,57 +11,50 @@
             ng-bind="version"></span>
     </a>
   </div>
-  <div class="collapse navbar-collapse" id="myNavbar">
-    <ul class="nav navbar-nav">
-    <!-- insert a empty header to bypass the styles.. -->  
-      <li></li>       
-      <li >
-        <a class="dropdown-toggle" type="button" data-toggle="dropdown" >
-          <span class="glyphicon glyphicon-th-large"></span>
+  <div class="collapse navbar-collapse" id="main_nav">
+    <ul class="nav navbar-nav" bs-navbar>
+      <li role="placeholder"></li>
+      <li data-match-route="/cluster">
+        <a class="dropdown-toggle" data-toggle="dropdown">
+          <span class="fa fa-sitemap"></span>
           Cluster
           <span class="caret"></span></a>
         <ul class="dropdown-menu">
-          <li><a href="#/cluster/master" class="header-menu" data-toggle="collapse"  data-target=".in"><span class="glyphicon glyphicon-unchecked"></span>   Master</a></li>
-          
-          <li><a href="#/cluster/workers"  class="header-menu" data-toggle="collapse"  data-target=".in"><span class="glyphicon glyphicon-th-large"></span>  Workers</a></li>
+          <li ng-repeat="item in clusterMenuItems track by $index">
+            <a href="#/cluster/{{item.pathPatt}}" class="header-menu"
+               data-toggle="collapse" data-target=".in">
+              <span class="{{item.icon}}"></span> {{item.text}}</a>
+          </li>
         </ul>
       </li>
-      
-      <li data-match-route="/apps"><a href="#/apps" data-toggle="collapse"  data-target=".in">
-        <span class="glyphicon glyphicon-tasks"></span>
-        Applications</a></li>
-    </ul>
 
-    
-    <ul class="dropdown nav navbar-nav navbar-right">
-    <!-- insert a empty header to bypass the styles.. -->  
-     <li></li>
-     <li>
-      <a class="dropdown-toggle" type="button" data-toggle="dropdown" >
-        <span class="glyphicon glyphicon-user"></span>
-        {{username}}
-        <span class="caret"></span></a>
-      <ul class="dropdown-menu">
-        <!-- User Icon and Logout Links -->         
-        <li><a href="{{loginUrl}}" class="header-menu" data-toggle="collapse"  data-target=".in"><span class="glyphicon glyphicon-off"></span>   Sign out</a></li>
-        
-      <li class="divider"></li>
-      
-       <!-- Doc Link and Source Repo Link -->
-      <li ng-repeat="item in links track by $index">
-        <a href="{{item.href}}" target="_blank" data-toggle="collapse"  data-target=".in">
-          <span class="{{item.icon}}"></span>
-          {{item.text}}
-        </a>
-      </li> 
-      
-      </ul>
+      <li data-match-route="/apps">
+        <a href="#/apps" data-toggle="collapse" data-target=".in">
+          <span class="fa fa-code"></span>
+          Applications</a>
       </li>
-
-      
     </ul>
 
-    
-    
+
+    <ul class="dropdown nav navbar-nav navbar-right">
+      <li role="placeholder"></li>
+      <li>
+        <a class="dropdown-toggle" type="button" data-toggle="dropdown">
+          <span class="glyphicon glyphicon-user"></span>
+          {{username}}
+          <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li ng-repeat="item in userMenuItems track by $index"
+              ng-class="{'divider': item.isDivider}">
+            <a ng-if="!item.isDivider"
+               href="{{item.href}}" class="header-menu"
+               data-toggle="collapse" data-target=".in">
+              <span class="{{item.icon}}"></span>
+              {{item.text}}
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
   </div>
 </nav>
