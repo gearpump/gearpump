@@ -17,8 +17,8 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('AppOverviewCtrl', ['$scope', 'helper', '$propertyTableBuilder',
-    function($scope, helper, $ptb) {
+  .controller('AppOverviewCtrl', ['$scope', 'helper', '$propertyTableBuilder', 'models',
+    function($scope, helper, $ptb, models) {
       'use strict';
 
       $scope.appSummary = [
@@ -42,5 +42,14 @@ angular.module('dashboard')
           ]
         ]);
       });
+
+      $scope.alerts = [];
+      models.$get.appAlerts($scope.app.appId)
+        .then(function(alerts0) {
+          $scope.alerts = alerts0.$data();
+          alerts0.$subscribe($scope, function(alerts) {
+            $scope.alerts = alerts;
+          });
+        });
     }])
 ;

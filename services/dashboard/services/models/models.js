@@ -251,6 +251,17 @@ angular.module('io.gearpump.models', [])
           });
           return result;
         },
+        /** Return an array of application alerts */
+        appAlerts: function(obj) {
+          if (obj.time > 0) {
+            return [{
+              severity: 'error',
+              time: Number(obj.time),
+              message: obj.error
+            }];
+          }
+          return [];
+        },
         metrics: function(wrapper, args) {
           var metrics = decoder._metricsGroups(wrapper);
           // Reduce nested array by one level, if we want to filter particular search path.
@@ -404,6 +415,10 @@ angular.module('io.gearpump.models', [])
         appStallingTasks: function(appId) {
           return get('appmaster/' + appId + '/stallingtasks',
             decoder.appStallingTasks);
+        },
+        appAlerts: function(appId) {
+          return get('appmaster/' + appId + '/errors',
+            decoder.appAlerts);
         },
         _metrics: function(pathPrefix, path, args) {
           args = args || {};
