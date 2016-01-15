@@ -17,8 +17,8 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder', 'helper',
-    function($scope, $ptb, helper) {
+  .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder', 'helper', 'models',
+    function($scope, $ptb, helper, models) {
       'use strict';
 
       $scope.appSummary = [
@@ -46,5 +46,14 @@ angular.module('dashboard')
       $scope.$watch('app', function(app) {
         updateSummaryTable(app);
       });
+
+      $scope.alerts = [];
+      models.$get.appAlerts($scope.app.appId)
+        .then(function(alerts0) {
+          $scope.alerts = alerts0.$data();
+          alerts0.$subscribe($scope, function(alerts) {
+            $scope.alerts = alerts;
+          });
+        });
     }])
 ;
