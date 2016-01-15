@@ -13,9 +13,13 @@ html, body {
   height: 100%;
 }
 
-/* Make navbar font more readable */
+/* Make navbar font more readable (2 rules) */
 .navbar-nav > li {
   font-weight: 500;
+}
+
+.navbar-nav > li,
+.dropdown-menu > li > a.header-menu {
   font-size: 1.35rem;
 }
 
@@ -27,10 +31,6 @@ html, body {
 /* Emphasize active navbar element for dark background (2 rules) */
 .navbar-inverse {
   background-color: #373a3c;
-}
-
-.dropdown-menu>li>a, .header-menu {
-  font-size: 1.35rem;
 }
 
 .navbar-inverse .navbar-nav > li > a:hover {
@@ -186,4 +186,9 @@ html, body {
 .alert-dismissable,
 .alert-dismissible {
   padding-right: 30px;
+}
+
+/* Fix cursor for dropdown menu button */
+a.dropdown-toggle {
+  cursor: pointer;
 }
