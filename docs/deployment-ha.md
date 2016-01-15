@@ -69,4 +69,4 @@ On node1, node2, node3, Start Master
 
 Now you have a highly available HA cluster. You can kill any node, the master HA will take effect.
 
-**NOTE**: It can take up to 15 seconds for master node to fail-over. You can change the fail-over timeout time by adding config in `gear.conf` `master.akka.cluster.auto-down-unreachable-after=10s` or set it to a smaller value
+**NOTE**: It can take up to 15 seconds for master node to fail-over. You can change the fail-over timeout time by adding config in `gear.conf` `gearpump-master.akka.cluster.auto-down-unreachable-after=10s` or set it to a smaller value

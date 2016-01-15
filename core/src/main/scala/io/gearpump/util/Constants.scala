@@ -26,11 +26,13 @@ object Constants {
   val MASTER_WATCHER = "masterwatcher"
   val SINGLETON_MANAGER = "singleton"
 
+  val MASTER_CONFIG = "gearpump-master"
+  val WORKER_CONFIG = "gearpump-worker"
+  val UI_CONFIG = "gearpump-ui"
+  val WINDOWS_CONFIG = "gearpump-windows"
+
   val MASTER = "master"
   val WORKER = "worker"
-  val WINDOWS = "windows"
-  val UI = "ui"
-  val BASE = "base"
 
   val GEARPUMP_WORKER_SLOTS = "gearpump.worker.slots"
   val GEARPUMP_SCHEDULING_SCHEDULER = "gearpump.scheduling.scheduler-class"
@@ -124,6 +126,7 @@ object Constants {
   val GEARPUMP_SERVICE_HTTP = "gearpump.services.http"
   val GEARPUMP_SERVICE_HOST = "gearpump.services.host"
   val GEARPUMP_SERVICE_SUPERVISOR_PATH = "gearpump.services.supervisor-actor-path"
+  val GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE = "gearpump.services.config-render-option-concise"
 
   //The partitioners provided by Gearpump
   val BUILTIN_PARTITIONERS = Array(
@@ -141,6 +144,7 @@ object Constants {
   val GEARPUMP_METRICS_MAX_LIMIT = "gearpump.metrics.akka.max-limit-on-query"
   val GEARPUMP_METRICS_AGGREGATORS = "gearpump.metrics.akka.metrics-aggregator-class"
 
-  val GEARPUMP_UI_SECURITY_ENABLED = "gearpump.security.ui-authentication-enabled"
-  val GEARPUMP_UI_AUTHENTICATOR_CLASS = "gearpump.security.ui-authenticator"
+  val GEARPUMP_UI_SECURITY = "gearpump.ui-security"
+  val GEARPUMP_UI_SECURITY_ENABLED = "gearpump.ui-security.authentication-enabled"
+  val GEARPUMP_UI_AUTHENTICATOR_CLASS = "gearpump.ui-security.authenticator"
 }

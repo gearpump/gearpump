@@ -23,8 +23,10 @@ import akka.http.scaladsl.server.Directives._
 import akka.stream.{Materializer}
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryWorkerConfig}
+import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, WorkerConfig}
 import io.gearpump.util.ActorUtil._
+import io.gearpump.util.Constants
 
 import scala.util.{Failure, Success}
 
@@ -32,6 +34,8 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
   extends BasicService {
 
   import upickle.default.write
+  private val systemConfig = system.settings.config
+  private val concise = systemConfig.getBoolean(Constants.GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE)
 
   override def doRoute(implicit mat: Materializer) = pathPrefix("worker" / IntNumber) { workerId =>
     pathEnd {
@@ -44,7 +48,7 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
     path("config") {
       onComplete(askWorker[WorkerConfig](master, workerId, QueryWorkerConfig(workerId))) {
         case Success(value: WorkerConfig) =>
-          val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+          val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
           complete(config)
         case Failure(ex) =>
           failWith(ex)

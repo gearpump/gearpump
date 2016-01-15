@@ -22,10 +22,11 @@ import akka.actor.ActorRef
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig, ResolveWorkerId}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, ResolveWorkerIdResult, WorkerConfig}
+import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.jarstore.JarStoreService
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
@@ -35,6 +36,9 @@ import scala.util.{Success, Try}
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 
 class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers with BeforeAndAfterAll {
+
+  override def testConfig: Config = TestUtil.DEFAULT_CONFIG
+
   def actorRefFactory = system
 
   val mockWorker = TestProbe()

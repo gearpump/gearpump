@@ -23,7 +23,7 @@ import java.lang.management.ManagementFactory
 import akka.actor.SupervisorStrategy.Resume
 import akka.actor._
 import com.typesafe.config.Config
-import io.gearpump.cluster.{ExecutorContext, UserConfig}
+import io.gearpump.cluster.{ClusterConfig, ExecutorContext, UserConfig}
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.serializer.SerializationFramework
@@ -331,7 +331,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         jvmName = ManagementFactory.getRuntimeMXBean().getName())
 
     case query: QueryExecutorConfig =>
-      sender ! ExecutorConfig(systemConfig)
+      sender ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
     case HealthCheck =>
       context.system.scheduler.scheduleOnce(3 second)(HealthCheck)
       if (state != State.ACTIVE && (transitionEnd - transitionStart) > transitWarningThreshold) {

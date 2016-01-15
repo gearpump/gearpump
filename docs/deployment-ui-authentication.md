@@ -5,10 +5,10 @@ title: UI Dashboard Authentication and Authorization
 
 ## How to enable UI authentication?
 
-1. Change config file `gear.conf`, find entry `gearpump.security.ui-authentication-enabled`, and set it to true
+1. Change config file gear.conf, find entry `gearpump-ui.gearpump.ui-security.authentication-enabled`, change the value to true
 
    ```
-   gearpump.security.ui-authentication-enabled = true
+   gearpump-ui.gearpump.ui-security.authentication-enabled = true
    ```
    
    Restart the UI dashboard, and then the UI authentication is enabled. It will prompt for user name and password.
@@ -38,8 +38,8 @@ Suppose we want to add user jerry as an administrator, here are the steps:
    ```
    CgGxGOxlU8ggNdOXejCeLxy+isrCv0TrS37HwA==
    ```
-   
-2. Change config file `conf/gear.conf` at path `gearpump.security.config-file-based-authenticator.admins`, 
+
+2. Change config file conf/gear.conf at path `gearpump-ui.gearpump.ui-security.config-file-based-authenticator.admins`,
    add user `jerry` in this list:
    
    ```
@@ -53,9 +53,9 @@ Suppose we want to add user jerry as an administrator, here are the steps:
 
 3. Restart the UI dashboard by `bin/services` to make the change effective.
 
-4. Group "admins" have unlimited permission, so you may want to restrict the permission. In that case 
-   you can modify `gearpump.security.config-file-based-authenticator.users` or 
-   `gearpump.security.config-file-based-authenticator.guests`.
+4. Group "admins" have very unlimited permission, you may want to restrict the permission. In that case 
+   you can modify `gearpump-ui.gearpump.ui-security.config-file-based-authenticator.users` or
+   `gearpump-ui.gearpump.ui-security.config-file-based-authenticator.guests`.
 
 5. See description at `conf/gear.conf` to find more information.   
    

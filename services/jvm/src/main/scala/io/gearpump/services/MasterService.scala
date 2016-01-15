@@ -27,12 +27,12 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import akka.stream.{Materializer, ActorMaterializer}
-import com.typesafe.config.Config
+import com.typesafe.config.{ConfigRenderOptions, Config}
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryMasterConfig}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig, SubmitApplicationResultValue}
-import io.gearpump.cluster.UserConfig
+import io.gearpump.cluster.{ClusterConfig, UserConfig}
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.AppSubmitter
 import io.gearpump.cluster.worker.WorkerSummary
@@ -54,6 +54,9 @@ class MasterService(val master: ActorRef,
   extends BasicService {
 
   import upickle.default.{read, write}
+
+  private val systemConfig = system.settings.config
+  private val concise = systemConfig.getBoolean(Constants.GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE)
 
   override def doRoute(implicit mat: Materializer) = pathPrefix("master") {
     pathEnd {
@@ -90,7 +93,7 @@ class MasterService(val master: ActorRef,
     path("config") {
       onComplete(askActor[MasterConfig](master, QueryMasterConfig)) {
         case Success(value: MasterConfig) =>
-          val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+          val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
           complete(config)
         case Failure(ex) =>
           failWith(ex)

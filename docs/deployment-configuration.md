@@ -44,7 +44,7 @@ To change the log level, you need to change both `gear.conf`, and `log4j.propert
 
 ### To change the log level for master and worker daemon
 
-Please change `log4j.rootLevel` in `log4j.properties`, and `master.akka.loglevel` in `gear.conf`.
+Please change `log4j.rootLevel` in `log4j.properties`, `gearpump-master.akka.loglevel` and `gearpump-worker.akka.loglevel` in `gear.conf`.
 
 ### To change the log level for application job
 

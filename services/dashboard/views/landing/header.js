@@ -25,7 +25,7 @@ angular.module('dashboard')
         $scope.loginUrl = conf.loginUrl;
 
         $scope.links = [
-          {text: 'Docs', href: '//gearpump.io', icon: 'fa fa-book'},
+          {text: 'Documents', href: '//gearpump.io', icon: 'fa fa-book'},
           {text: 'GitHub', href: '//github.com/gearpump/gearpump', icon: 'fa fa-github'}
         ];
 
