@@ -32,7 +32,7 @@ object Build extends sbt.Build {
   val upickleVersion = "0.3.4"
   val junitVersion = "4.12"
   val kafkaVersion = "0.8.2.1"
-  val stormVersion = "0.9.5"
+  val stormVersion = "0.10.0"
   val slf4jVersion = "1.7.7"
   val gsCollectionsVersion = "6.2.0"
 
@@ -344,7 +344,6 @@ object Build extends sbt.Build {
             exclude("clout", "clout")
             exclude("compojure", "compojure")
             exclude("hiccup", "hiccup")
-            exclude("javax.servlet", "servlet-api")
             exclude("jline", "jline")
             exclude("joda-time", "joda-time")
             exclude("org.clojure", "core.incubator")

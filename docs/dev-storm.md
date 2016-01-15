@@ -6,6 +6,70 @@ title: Storm Compatibility
 Gearpump provides **binary compatibility** for Apache Storm applications. That is to say, users could easily grab an existing Storm jar and run it 
 on Gearpump. This documentation illustrates Gearpump's comapatibility with Storm.  
 
+## What Storm features are supported on Gearpump 
+
+### Storm 0.9.x
+
+| Feature | Support |
+| ------- | ------- |
+| basic topology | yes |
+| DRPC | yes |
+| multi-lang | yes |
+| storm-kafka | yes |
+| Trident | no |
+
+### Storm 0.10.x
+
+| Feature | Support |
+| ----------- | -------------|
+| basic topology | yes | 
+| DRPC | yes |
+| multi-lang | yes |
+| storm-kafka | yes |
+| storm-hdfs| yes | 
+| storm-hbase | yes |
+| storm-hive | yes |
+| storm-jdbc | yes |
+| storm-redis | yes |
+| flux | yes |
+| storm-eventhubs | not verfied |
+| Trident | no |
+
+### At Least Once support
+
+With Ackers enabled, there are two kinds of At Least Once support in both Storm 0.9.x and Storm 0.10.x.
+
+1. spout will replay messages on message loss as long as spout is alive
+2. If `KafkaSpout` is used, messages could be replayed from Kafka even if the spout crashes. 
+
+Gearpump supports the second for both Storm versions. 
+
+### Security support 
+
+Storm 0.10.x adds security support for following connectors 
+
+* [storm-hdfs](https://github.com/apache/storm/blob/0.10.x-branch/external/storm-hdfs/README.md)
+* [storm-hive](https://github.com/apache/storm/blob/0.10.x-branch/external/storm-hive/README.md)
+* [storm-hbase](https://github.com/apache/storm/blob/0.10.x-branch/external/storm-hbase/README.md)
+
+That means users could access kerberos enabled HDFS, Hive and HBase with these connectors. Generally, Storm provides two approaches (please refer to above links for more information)
+
+1. configure nimbus to automatically get delegation tokens on behalf of the topology submitter user
+2. kerberos keytabs are already distributed on worker hosts; users configure keytab path and principal
+
+Gearpump supports the second approach and users needs to add classpath of HDFS/Hive/HBase to `gearpump.executor.extraClasspath` in `gear.conf` on each node. For example, 
+
+```
+  ###################
+  ### Executor argument configuration
+  ### Executor JVM can contains multiple tasks
+  ###################
+  executor {
+    vmargs = "-server -Xms512M -Xmx1024M -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3  -Djava.rmi.server.hostname=localhost"
+    extraClasspath = "/etc/hadoop/conf"
+  }
+```
+
 ## How to run a Storm application on Gearpump
 
 This section shows how to run an existing Storm jar in a local Gearpump cluster.
@@ -69,7 +133,6 @@ Storm tracks the lineage of each message with ackers to guarantee at-least-once 
 
 Gearpump [tracks messages between a sender and receiver in an efficient way](gearpump-internals.html#how-do-we-detect-message-loss). Message loss causes the whole application to replay from the [minimum timestamp of all pending messages in the system](gearpump-internals.html#application-clock-and-global-clock-service). 
 
-*Note that ack from bolt is a no-op while fail throws an exception.*
 
 ### Flow control
 
@@ -90,7 +153,3 @@ where
 * application config is submit from Storm application along with the topology 
 * component config is set in spout / bolt with `getComponentConfiguration`
 * custom user config is specified with the `-config` option when submitting Storm application from command line
-
-## Limitations
-
-1. Trident support is ongoing.

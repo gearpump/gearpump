@@ -19,10 +19,12 @@
 package io.gearpump.integrationtest.storm
 
 
-import backtype.storm.utils.DRPCClient
+import backtype.storm.utils.{Utils, DRPCClient}
+import io.gearpump.experiments.storm.GearpumpThriftServer
 import io.gearpump.integrationtest.Docker
 import io.gearpump.integrationtest.minicluster.BaseContainer
 import org.apache.log4j.Logger
+
 
 class StormClient(masterAddrs: Seq[(String, Int)]) {
 
@@ -31,7 +33,7 @@ class StormClient(masterAddrs: Seq[(String, Int)]) {
   private val STORM_CMD = "/opt/start storm"
   private val STORM_DRPC = "storm-drpc"
   private val CONFIG_FILE = "storm.yaml"
-  private val NIMBUS_THRIFT_PORT = 6627
+  private val NIMBUS_THRIFT_PORT = GearpumpThriftServer.THRIFT_PORT
   private val DRPC_PORT = 3772
   private val DRPC_INVOCATIONS_PORT = 3773
 
@@ -55,7 +57,8 @@ class StormClient(masterAddrs: Seq[(String, Int)]) {
   }
 
   def getDRPCClient(drpcServerIp: String): DRPCClient = {
-    new DRPCClient(drpcServerIp, DRPC_PORT)
+    val config = Utils.readDefaultConfig()
+    new DRPCClient(config, drpcServerIp, DRPC_PORT)
   }
 
   def shutDown(): Unit = {

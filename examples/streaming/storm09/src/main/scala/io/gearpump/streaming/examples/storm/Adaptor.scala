@@ -15,34 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.gearpump.streaming.examples.storm
 
-package io.gearpump.experiments.storm
+import backtype.storm.topology.{OutputFieldsDeclarer, BasicOutputCollector}
+import backtype.storm.topology.base.BaseBasicBolt
+import backtype.storm.tuple.{Fields, Values, Tuple}
+import storm.kafka.bolt.mapper.FieldNameBasedTupleToKafkaMapper
 
-import backtype.storm.security.auth.ThriftServer
-import org.mockito.Mockito._
-import org.scalatest.WordSpec
-import org.scalatest.mock.MockitoSugar
+class Adaptor extends BaseBasicBolt {
+  private var id = 0L
 
-class GearpumpThriftServerSpec extends WordSpec with MockitoSugar {
-
-  "GearpumpThriftServer" should {
-    "run ThriftServer.serve" in {
-      val tServer = mock[ThriftServer]
-      val thriftServer = new GearpumpThriftServer(tServer)
-
-      thriftServer.run()
-
-      verify(tServer).serve()
-    }
-
-    "stop ThriftServer" in {
-      val tServer = mock[ThriftServer]
-      val thriftServer = new GearpumpThriftServer(tServer)
-
-      thriftServer.close()
-
-      verify(tServer).stop()
-    }
+  override def execute(tuple: Tuple, collector: BasicOutputCollector): Unit = {
+    val bytes = tuple.getBinary(0)
+    collector.emit(new Values(s"$id".getBytes, bytes))
+    id += 1
   }
 
+  override def declareOutputFields(declarer: OutputFieldsDeclarer): Unit = {
+    declarer.declare(new Fields(FieldNameBasedTupleToKafkaMapper.BOLT_KEY,
+      FieldNameBasedTupleToKafkaMapper.BOLT_MESSAGE))
+  }
 }

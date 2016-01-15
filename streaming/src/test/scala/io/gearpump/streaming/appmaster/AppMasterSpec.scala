@@ -19,7 +19,6 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit.{TestActorRef, TestProbe}
-import io.gearpump.streaming.task.{StartTime, TaskContext}
 import io.gearpump.Message
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
@@ -31,10 +30,10 @@ import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRunt
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import io.gearpump.jarstore.FilePath
-import io.gearpump.partitioner.{Partitioner, HashPartitioner}
+import io.gearpump.partitioner.HashPartitioner
+import io.gearpump.streaming.task.{StartTime, TaskContext, _}
 import io.gearpump.streaming.{Processor, StreamApplication}
-import io.gearpump.streaming.task._
-import io.gearpump.util.{Util, Graph}
+import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.scalatest._
 
@@ -94,9 +93,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     mockMaster.reply(AppMasterRegistered(appId))
     mockMaster.expectMsg(15 seconds, GetAppData(appId, "DAG"))
     mockMaster.reply(GetAppDataResult("DAG", null))
-    mockMaster.expectMsg(15 seconds, GetAppData(appId, "startClock"))
+    mockMaster.expectMsgAllOf(15 seconds, GetAppData(appId, "startClock"), RequestResource(appId, ResourceRequest(Resource(4))))
     mockMaster.reply(GetAppDataResult("startClock", 0L))
-    mockMaster.expectMsg(15 seconds, RequestResource(appId, ResourceRequest(Resource(4))))
   }
 
   override def afterEach() = {

@@ -21,38 +21,44 @@ import java.util.{ArrayList => JArrayList, HashMap => JHashMap, Map => JMap}
 
 import backtype.storm.{StormSubmitter, Config}
 import backtype.storm.topology.TopologyBuilder
+import io.gearpump.cluster.main.{CLIOption, ArgumentsParser}
 import storm.kafka.{ZkHosts, SpoutConfig, KafkaSpout}
 import storm.kafka.bolt.KafkaBolt
 
-object StormKafkaTopology extends App {
-  if (args.length < 7) {
-    val usage =
-      """
-        | Usage:
-        |    StormKafkaTopology topologyName spoutNum boltNum
-        |         kafkaSpoutTopic kafkaBoltTopic zookeeperConnect brokerList
-      """.stripMargin
-    println(usage)
-    throw new IllegalArgumentException
-  }
+/**
+  * tests Storm 0.9.x compatibility over Gearpump
+  * this example reads data from Kafka and writes back to it
+  */
+object Storm09KafkaTopology extends App with ArgumentsParser {
 
-  val topologyName = args(0)
-  val spoutNum = args(1).toInt
-  val boltNum = args(2).toInt
-  val spoutTopic = args(3)
-  val boltTopic = args(4)
-  val zookeeperConnect = args(5)
-  val brokerList = args(6)
+  override val options: Array[(String, CLIOption[Any])] = Array(
+    "topologyName" -> CLIOption[Int]("<Storm topology name>", required = true),
+    "sourceTopic" -> CLIOption[String]("<Kafka topic to read data>", required = true),
+    "sinkTopic" -> CLIOption[String]("<Kafka topic to write data>", required = true),
+    "zookeeperConnect" -> CLIOption[String]("<Zookeeper connect string, e.g. localhost:2181/kafka>", required = true),
+    "brokerList" -> CLIOption[String]("<Kafka broker list, e.g. localhost:9092>", required = true),
+    "spoutNum" -> CLIOption[Int]("<how many spout tasks>", required = false, defaultValue = Some(1)),
+    "boltNum" -> CLIOption[Int]("<how many bolt tasks>", required = false, defaultValue = Some(1))
+  )
+
+  val configs = parse(args)
+  val topologyName = configs.getString("topologyName")
+  val sourceTopic = configs.getString("sourceTopic")
+  val sinkTopic = configs.getString("sinkTopic")
+  val zookeeperConnect = configs.getString("zookeeperConnect")
+  val brokerList = configs.getString("brokerList")
+  val spoutNum = configs.getInt("spoutNum")
+  val boltNum = configs.getInt("boltNum")
 
   val topologyBuilder = new TopologyBuilder()
-  val kafkaSpout: KafkaSpout = new KafkaSpout(getSpoutConfig(spoutTopic, zookeeperConnect, topologyName))
+  val kafkaSpout: KafkaSpout = new KafkaSpout(getSpoutConfig(sourceTopic, zookeeperConnect, topologyName))
   val kafkaBolt: KafkaBolt[Array[Byte], Array[Byte]] = new KafkaBolt[Array[Byte], Array[Byte]]()
   val adaptor = new Adaptor
   topologyBuilder.setSpout("kafka_spout", kafkaSpout, spoutNum)
   topologyBuilder.setBolt("adaptor", adaptor).localOrShuffleGrouping("kafka_spout")
   topologyBuilder.setBolt("kafka_bolt", kafkaBolt, boltNum).localOrShuffleGrouping("adaptor")
   val config = new Config()
-  config.putAll(getBoltConfig(boltTopic, brokerList))
+  config.putAll(getBoltConfig(sinkTopic, brokerList))
   config.put(Config.TOPOLOGY_NAME, topologyName)
   val topology = topologyBuilder.createTopology()
   StormSubmitter.submitTopology(topologyName, config, topology)
