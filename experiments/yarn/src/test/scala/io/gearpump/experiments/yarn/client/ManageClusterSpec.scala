@@ -21,15 +21,16 @@ package io.gearpump.experiments.yarn.client
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
+import io.gearpump.cluster.ClientToMaster.{AddWorker, CommandResult, RemoveWorker}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.main.ParseResult
-import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{Kill, ClusterInfo, QueryClusterInfo, Version, QueryVersion, RemoveWorker, CommandResult, AddWorker, ActiveConfig, GetActiveConfig}
+import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, ClusterInfo, GetActiveConfig, Kill, QueryClusterInfo, QueryVersion, Version}
+import io.gearpump.experiments.yarn.client.ManageCluster._
 import io.gearpump.experiments.yarn.glue.Records.ApplicationId
 import io.gearpump.util.FileUtils
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import ManageCluster._
+
 import scala.concurrent.Await
-import scala.reflect.io.File
 
 class ManageClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 

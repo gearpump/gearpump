@@ -20,22 +20,20 @@ package io.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `no-cache`}
-import akka.http.scaladsl.model.headers._
-
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ _}
-import akka.stream.{ActorMaterializer}
+import akka.http.scaladsl.server.{Route, _}
+import akka.stream.ActorMaterializer
+import akka.util.Timeout
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.http.scaladsl.server.Route
 
 class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem) extends RouteService {
+
+  implicit val timeout = Constants.FUTURE_TIMEOUT
 
   private val config = system.settings.config
 
@@ -45,6 +43,8 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
   private val LOG = LogUtil.getLogger(getClass)
 
   private val securityEnabled = config.getBoolean(Constants.GEARPUMP_UI_SECURITY_ENABLED)
+
+  private val supervisorPath = system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
 
   private val myExceptionHandler: ExceptionHandler = ExceptionHandler {
     case ex: Throwable => {
@@ -57,7 +57,12 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
 
   // make sure staticRoute is the final one, as it will try to lookup resource in local path
   // if there is no match in previous routes
-  private val static = new StaticService(system).route
+  private val static = new StaticService(system, supervisorPath).route
+
+  def supervisor: ActorRef = {
+    val actorRef = system.actorSelection(supervisorPath).resolveOne()
+    Await.result(actorRef, new Timeout(Duration.create(5, "seconds")).duration)
+  }
 
   override def route: Route = {
     if (securityEnabled) {
@@ -78,10 +83,12 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
     val masterService = new MasterService(master, jarStoreService, system)
     val worker = new WorkerService(master, system)
     val app = new AppMasterService(master, jarStoreService, system)
+    val sup = new SupervisorService(supervisor, system)
 
     new RouteService {
       override def route: Route = {
-        admin.route ~ masterService.route ~ worker.route ~ app.route
+        LOG.info(s"supervisor=$supervisor")
+        admin.route ~ sup.route ~ masterService.route ~ worker.route ~ app.route
       }
     }
   }

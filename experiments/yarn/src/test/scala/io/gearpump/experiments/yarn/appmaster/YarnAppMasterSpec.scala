@@ -21,9 +21,10 @@ package io.gearpump.experiments.yarn.appmaster
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.{TestActorRef, TestProbe}
 import com.typesafe.config.ConfigFactory
+import io.gearpump.cluster.ClientToMaster.{AddWorker, CommandResult, RemoveWorker}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.experiments.yarn.Constants
-import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, AddWorker, AppMasterRegistered, ClusterInfo, CommandResult, ContainerStarted, ContainersAllocated, GetActiveConfig, Kill, QueryClusterInfo, QueryVersion, RemoveWorker, ResourceManagerException, Version}
+import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, AppMasterRegistered, ClusterInfo, ContainerStarted, ContainersAllocated, GetActiveConfig, Kill, QueryClusterInfo, QueryVersion, ResourceManagerException, Version}
 import io.gearpump.experiments.yarn.appmaster.YarnAppMasterSpec.UI
 import io.gearpump.experiments.yarn.glue.Records.{Container, Resource, _}
 import io.gearpump.experiments.yarn.glue.{NMClient, RMClient}

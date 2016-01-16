@@ -22,10 +22,10 @@ import java.io.{File, IOException}
 import java.net.InetAddress
 
 import akka.actor.{ActorRef, ActorSystem}
-import com.typesafe.config.Config
+import io.gearpump.cluster.ClientToMaster.{AddWorker, CommandResult, RemoveWorker}
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, AddWorker, ClusterInfo, CommandResult, GetActiveConfig, Kill, QueryClusterInfo, QueryVersion, RemoveWorker, Version}
+import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, ClusterInfo, GetActiveConfig, Kill, QueryClusterInfo, QueryVersion, Version}
 import io.gearpump.experiments.yarn.glue.Records.ApplicationId
 import io.gearpump.experiments.yarn.glue.{YarnClient, YarnConfig}
 import io.gearpump.util.ActorUtil.askActor
