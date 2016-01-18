@@ -99,7 +99,7 @@ object ManageCluster extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     COMMAND -> CLIOption[String](s"<${commands.mkString("|")}>", required = true),
     APPID ->CLIOption[String]("<Application id, format: application_timestamp_id>", required = true),
-    COUNT -> CLIOption("<how many instance to add or remove>", required = false, defaultValue = Some(0)),
+    COUNT -> CLIOption("<how many instance to add or remove>", required = false, defaultValue = Some(1)),
     VERBOSE -> CLIOption("<print verbose log on console>", required = false, defaultValue = Some(false)),
     OUTPUT -> CLIOption("<output path for configuration file>", required = false, defaultValue = Some("")),
     CONTAINER -> CLIOption("<container id for master or worker>", required = false, defaultValue = Some(""))
