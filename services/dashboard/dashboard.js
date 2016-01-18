@@ -7,6 +7,7 @@ angular.module('dashboard', [
   'ngAnimate',
   'ngSanitize',
   'ngCookies',
+  'ngTouch',
   'mgcrea.ngStrap',
   'ui.router',
   'ui.select',

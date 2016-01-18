@@ -14,7 +14,7 @@
         help="Running for {{app.uptime|duration}}" remark-type="info"
         value="{{uptimeCompact.value}}" unit="{{uptimeCompact.unit}}"></metrics>
     </div>
-    <div class="col-md-2 col-sm-3 col-xs-4">
+    <div class="col-md-2 col-sm-3 col-xs-8">
       <metrics
         ng-if="app.clock"
         caption="Application Clock"
@@ -26,7 +26,7 @@
         caption="Application Clock"
         value="not started"></metrics>
     </div>
-    <div class="col-sm-2 col-xs-4">
+    <div class="col-md-2 col-sm-3 col-xs-4">
       <metrics value="{{dag.getProcessorCount()}}" unit="processor" unit-plural="processors"></metrics>
       <metrics value="{{size(app.executors)}}" unit="executor" unit-plural="executors"></metrics>
     </div>
