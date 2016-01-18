@@ -153,9 +153,9 @@ html, body {
   font-size: 0.95em;
 }
 
-/* Specify the size of modal dialog */
+/* Specify the style for the modal dialog */
 .modal-md {
-  width: 520px;
+  margin-top: 30px;
 }
 
 /* Smaller pager */
