@@ -23,7 +23,9 @@ function login() {
       }
     )
     .fail( function(xhr, textStatus, errorThrown) {
-       $("#error").text(textStatus + "(" + xhr.status + "): " + xhr.responseText);
+       var elem = $("#error");
+            elem.html(xhr.responseText);
+            elem.text(textStatus + "(" + xhr.status + "): " + elem.text());
     });
 }
 
