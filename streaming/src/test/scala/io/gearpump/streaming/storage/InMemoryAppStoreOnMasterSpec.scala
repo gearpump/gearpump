@@ -49,10 +49,10 @@ class InMemoryAppStoreOnMasterSpec extends WordSpec with Matchers with BeforeAnd
       val future2 = store.get("Int_type").map { value => value.asInstanceOf[Int] should be(1024)}
       val future3 = store.get("Tuple2_type").map { value => value.asInstanceOf[(String, Int)] should be(("element1", 1024))}
       val future4 = store.get("key").map { value => value.asInstanceOf[Object] should be(null)}
-      Await.result(future1, 5 seconds)
-      Await.result(future2, 5 seconds)
-      Await.result(future3, 5 seconds)
-      Await.result(future4, 5 seconds)
+      Await.result(future1, 15 seconds)
+      Await.result(future2, 15 seconds)
+      Await.result(future3, 15 seconds)
+      Await.result(future4, 15 seconds)
       miniCluster.shutDown
     }
   }
