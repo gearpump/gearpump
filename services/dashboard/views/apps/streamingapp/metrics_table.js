@@ -46,7 +46,7 @@ angular.module('dashboard')
           $stb.text('Task Class').key('taskClass').canSort().styleClass('col-md-4 hidden-sm hidden-xs').done(),
           // right
           $stb.number('Total Messages').key('count').canSort().unit('msg').styleClass('col-md-4 col-sm-3').done(),
-          $stb.number('Mean Rate').key('meanRate').canSort().unit('msg/s').styleClass('col-md-1 col-sm-3').done(),
+          $stb.number('Mean Rate').key('meanRate').canSort().unit('msg/s').styleClass('col-md-1 hidden-sm hidden-xs').done(),
           $stb.number('MA 1m').key('movingAverage1m').canSort().unit('msg/s')
             .help('1-Minute Moving Average').styleClass('col-md-1 col-sm-3').done()
         ],
