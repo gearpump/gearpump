@@ -30,7 +30,7 @@ angular.module('dashboard')
         templateUrl: 'views/apps/submit/submit.html',
         controller: 'AppSubmitCtrl',
         backdrop: 'static',
-        keyboard: false /* https://github.com/mgcrea/angular-strap/issues/1779 */,
+        keyboard: true,
         show: false
       });
 

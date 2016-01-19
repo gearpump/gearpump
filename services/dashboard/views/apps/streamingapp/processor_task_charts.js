@@ -34,6 +34,7 @@ angular.module('dashboard')
         var recentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
         var lineChartOptionBase = {
           height: '108px',
+          margin: {right: 15},
           visibleDataPointsNum: recentChartPoints,
           data: _.times(recentChartPoints, function() {
             return {x: '', y: '-'};
