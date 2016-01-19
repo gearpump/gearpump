@@ -147,4 +147,6 @@ object Constants {
   val GEARPUMP_UI_SECURITY = "gearpump.ui-security"
   val GEARPUMP_UI_SECURITY_ENABLED = "gearpump.ui-security.authentication-enabled"
   val GEARPUMP_UI_AUTHENTICATOR_CLASS = "gearpump.ui-security.authenticator"
+
+  val PREFER_IPV4 = "java.net.preferIPv4Stack"
 }

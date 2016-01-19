@@ -40,6 +40,7 @@ import io.gearpump.jarstore.JarStoreService
 import io.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
 import io.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplication}
 import io.gearpump.util.ActorUtil.{askActor, _}
+import io.gearpump.util.Constants._
 import io.gearpump.util.FileDirective._
 import io.gearpump.util.{Graph, Constants, Util, FileUtils}
 import io.gearpump.util.ActorUtil._
@@ -203,7 +204,8 @@ object MasterService {
 
       val hostname = sysConfig.getString(Constants.GEARPUMP_HOSTNAME)
       var options = Array(
-        s"-D${Constants.GEARPUMP_HOSTNAME}=$hostname"
+        s"-D${Constants.GEARPUMP_HOSTNAME}=$hostname",
+        s"-D${PREFER_IPV4}=true"
       ) ++ mastersOption
 
       if (userConf.isDefined) {
