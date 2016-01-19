@@ -18,10 +18,11 @@ angular.module('dashboard')
     }])
 
   .controller('StreamingAppProcessorCtrl', ['$scope', '$interval', '$stateParams', '$propertyTableBuilder',
-    'models', 'conf', 'helper',
-    function($scope, $interval, $stateParams, $ptb, models, conf, helper) {
+    'i18n', 'models', 'conf', 'helper',
+    function($scope, $interval, $stateParams, $ptb, i18n, models, conf, helper) {
       'use strict';
 
+      $scope.whatIsProcessor = i18n.terminology.processor;
       $scope.processor = $scope.dag.getProcessor($stateParams.processorId);
       $scope.processorInfoTable = [
         $ptb.text('Task Class').done(),
@@ -89,6 +90,7 @@ angular.module('dashboard')
       promise = $interval(queryMetrics, conf.restapiQueryInterval);
       queryMetrics();
 
+      $scope.whatIsTask = i18n.terminology.task;
       $scope.taskRange = {
         start: 0,
         stop: $scope.shouldPaginateTasks ?

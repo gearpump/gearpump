@@ -30,10 +30,11 @@ angular.module('dashboard')
     }])
 
   .controller('WorkerCtrl', ['$scope', '$propertyTableBuilder', '$sortableTableBuilder',
-    'helper', 'models', 'locator', 'worker0', 'apps0',
-    function($scope, $ptb, $stb, helper, models, locator, worker0, apps0) {
+    'i18n', 'helper', 'models', 'locator', 'worker0', 'apps0',
+    function($scope, $ptb, $stb, i18n, helper, models, locator, worker0, apps0) {
       'use strict';
 
+      $scope.whatIsWorker = i18n.terminology.worker;
       $scope.overviewTable = [
         $ptb.text('JVM Info').help('Format: PID@hostname').done(),
         $ptb.text('Actor Path').done(),
@@ -45,6 +46,7 @@ angular.module('dashboard')
         ]).done()
       ];
 
+      $scope.whatIsExecutor = i18n.terminology.workerExecutor;
       $scope.executorsTable = {
         cols: [
           $stb.indicator().key('status').canSort().styleClass('td-no-padding').done(),
