@@ -3,19 +3,28 @@
  * See accompanying LICENSE file.
  */
 
-angular.module('dashboard', [
-  'ngAnimate',
-  'ngSanitize',
-  'ngCookies',
-  'ngTouch',
-  'mgcrea.ngStrap',
-  'ui.router',
-  'ui.select',
-  'cfp.loadingBarInterceptor',
-  'ngFileUpload',
-  'dashing',
-  'io.gearpump.models'
-])
+(function() {
+
+  // rootPath of this site, it has a tailing slash /
+  var rootPath = function() {
+    var root = location.origin + location.pathname;
+    return root.substring(0, root.lastIndexOf("/") + 1);
+  }();
+
+  angular.module('dashboard', [
+    'ngAnimate',
+    'ngSanitize',
+    'ngCookies',
+    'ngTouch',
+    'mgcrea.ngStrap',
+    'ui.router',
+    'ui.select',
+    'cfp.loadingBarInterceptor',
+    'ngFileUpload',
+    'dashing',
+    'io.gearpump.models'
+  ])
+
   // configure routes
   .config(['$stateProvider', '$urlRouterProvider',
     function($stateProvider, $urlRouterProvider) {
@@ -62,11 +71,11 @@ angular.module('dashboard', [
   // constants
   .constant('conf', {
     restapiProtocol: 'v1.0',
-    restapiRoot: location.origin + location.pathname,
+    restapiRoot: rootPath,
     restapiQueryInterval: 3 * 1000, // in milliseconds
     restapiQueryTimeout: 30 * 1000, // in milliseconds
     restapiTaskLevelMetricsQueryLimit: 100,
-    loginUrl: location.origin + location.pathname + 'login/login.html'
+    loginUrl: rootPath + 'login'
   })
 
   /* add a retry delay for angular-ui-router, when resolving a data is failed */
@@ -105,5 +114,5 @@ angular.module('dashboard', [
       hideDialogFn
     );
     HealthCheckService.checkForever();
-  }])
-;
+  }]);
+})();

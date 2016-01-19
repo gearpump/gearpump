@@ -141,7 +141,12 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     extractExecutionContext{implicit ec: ExecutionContext =>
     extractMaterializer{implicit mat: Materializer =>
     (extractClientIP | unknownIp) { ip =>
-      path("login") {
+     path("login") {
+        get {
+          pathEndOrSingleSlash {
+            getFromResource("login/login.html")
+          }
+        } ~
         post {
           // Guest account don't have permission to submit new application in UI
           formField(FieldMagnet('username.as[String])) {user: String =>
