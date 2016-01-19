@@ -22,10 +22,11 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder', 'helper', 'models', 'master0',
-    function($scope, $ptb, helper, models, master0) {
+  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder', 'i18n', 'helper', 'models', 'master0',
+    function($scope, $ptb, i18n, helper, models, master0) {
       'use strict';
 
+      $scope.whatIsMaster = i18n.terminology.master;
       $scope.masterInfoTable = [
         $ptb.text('JVM Info').help('Format: PID@hostname').done(),
         $ptb.text('Leader').done(),

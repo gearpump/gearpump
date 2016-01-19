@@ -26,10 +26,11 @@ angular.module('dashboard')
 /**
  * This controller is used to obtain app. All nested views will read status from here.
  */
-  .controller('StreamingAppCtrl', ['$scope', '$state', 'helper', 'models', 'app0',
-    function($scope, $state, helper, models, app0) {
+  .controller('StreamingAppCtrl', ['$scope', '$state', 'i18n', 'helper', 'models', 'app0',
+    function($scope, $state, i18n, helper, models, app0) {
       'use strict';
 
+      $scope.whatIsAppClock = i18n.terminology.appClock;
       $scope.$state = $state; // required by streamingapp.html
       $scope.app = app0;
       $scope.metricsConfig = app0.historyMetricsConfig;
