@@ -6,6 +6,7 @@
         <div class="col-md-12">
           <property-table
             caption="Processor {{processor.id}}"
+            caption-tooltip="For streaming application type, each application contains a topology, which is a DAG (directed acyclic graph) to describe the data flow. Each node in the DAG is a processor."
             props-bind="processorInfoTable"
             prop-name-class="col-xs-4 bold"
             prop-value-class="col-xs-8 actor-path">
@@ -31,6 +32,7 @@
   <div class="row">
     <div class="col-md-6">
       <h4 ng-style="{'margin-bottom': shouldPaginateTasks ? '7px' : ''}">Tasks
+        <remark style="font-size: 15.6px" type="info" placement="right" tooltip="For streaming application type, Task is the minimum unit of parallelism. In runtime, each Processor is paralleled to a list of tasks, with different tasks running in different executor."></remark>
         <div ng-if="shouldPaginateTasks"
              style="display: inline-block; font-size: 12px; font-weight: 400;">
           <processor-task-pager

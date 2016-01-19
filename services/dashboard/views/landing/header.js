@@ -16,7 +16,7 @@ angular.module('dashboard')
       controller: ['$scope', '$cookies', 'restapi', 'conf', function($scope, $cookies, restapi, conf) {
         $scope.clusterMenuItems = [
           {text: 'Master', pathPatt: 'master', icon: 'fa fa-laptop'},
-          {text: 'Worker Instances', pathPatt: 'workers', icon: 'fa fa-server'}
+          {text: 'Workers', pathPatt: 'workers', icon: 'fa fa-server'}
         ];
 
         $scope.username = $cookies.get('username');

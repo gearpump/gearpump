@@ -13,7 +13,7 @@ angular.module('dashboard')
       /* Allows dashing property `<button>` to have a "Copy to clipboard" feature on click. */
       withClickToCopy: function(values, text) {
         return angular.extend(values, {
-          tooltip: 'Location: <b>' + text + '</b><div><small>click to copy</small></div>',
+          tooltip: 'Location: <b>' + text + '</b><div><small>click button to copy</small></div>',
           click: function() {
             clipboard.copy(text);
           }
