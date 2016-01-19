@@ -117,6 +117,7 @@ angular.module('dashboard')
           function createLineChartOptions(seriesNames, visibleDataPointsNum, dataPoints) {
             return {
               height: '168px',
+              margin: {right: 15},
               seriesNames: seriesNames,
               visibleDataPointsNum: visibleDataPointsNum,
               data: dataPoints,

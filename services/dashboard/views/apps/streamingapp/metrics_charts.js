@@ -43,6 +43,7 @@ angular.module('dashboard')
           return {
             options: {
               height: '108px',
+              margin: {right: 30},
               seriesNames: [''],
               yAxisLabelFormatter: helper.yAxisLabelFormatterWithoutValue0(),
               visibleDataPointsNum: visibleDataPointsNum,

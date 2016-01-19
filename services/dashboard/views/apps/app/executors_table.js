@@ -15,8 +15,9 @@ angular.module('dashboard')
       scope: {
         executors: '=executorsBind'
       },
-      controller: ['$scope', '$sortableTableBuilder',
-        function($scope, $stb) {
+      controller: ['$scope', '$sortableTableBuilder', 'i18n',
+        function($scope, $stb, i18n) {
+          $scope.whatIsExecutor = i18n.terminology.appExecutor;
           $scope.table = {
             cols: [
               $stb.indicator().key('status').canSort().styleClass('td-no-padding').done(),

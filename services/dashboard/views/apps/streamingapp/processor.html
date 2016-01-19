@@ -6,6 +6,7 @@
         <div class="col-md-12">
           <property-table
             caption="Processor {{processor.id}}"
+            caption-tooltip="{{whatIsProcessor}}"
             props-bind="processorInfoTable"
             prop-name-class="col-xs-4 bold"
             prop-value-class="col-xs-8 actor-path">
@@ -31,6 +32,7 @@
   <div class="row">
     <div class="col-md-6">
       <h4 ng-style="{'margin-bottom': shouldPaginateTasks ? '7px' : ''}">Tasks
+        <remark style="font-size: 15.6px" type="info" placement="right" tooltip="{{whatIsTask}}"></remark>
         <div ng-if="shouldPaginateTasks"
              style="display: inline-block; font-size: 12px; font-weight: 400;">
           <processor-task-pager
