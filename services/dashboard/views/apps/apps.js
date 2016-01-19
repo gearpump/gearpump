@@ -54,9 +54,9 @@ angular.module('dashboard')
           $stb.link('Name').key('name').canSort('name.text').styleClass('col-md-1').done(),
           $stb.text('Address').key('akkaAddr').canSort().styleClass('col-md-3 hidden-sm hidden-xs').done(),
           // group 2/3 (5-col)
-          $stb.datetime('Submission Time').key('submissionTime').canSort().sortDefaultDescent().styleClass('col-md-1').done(),
-          $stb.datetime('Start Time').key('startTime').canSort().styleClass('col-md-1').done(),
-          $stb.datetime('Stop Time').key('stopTime').canSort().styleClass('col-md-1').done(),
+          $stb.datetime('Submission Time').key('submissionTime').canSort().sortDefaultDescent().styleClass('col-md-1 hidden-sm hidden-xs').done(),
+          $stb.datetime('Start Time').key('startTime').canSort().styleClass('col-md-1 hidden-sm hidden-xs').done(),
+          $stb.datetime('Stop Time').key('stopTime').canSort().styleClass('col-md-1 hidden-sm hidden-xs').done(),
           $stb.text('User').key('user').canSort().styleClass('col-md-2').done(),
           // group 3/3 (3-col)
           $stb.button('Actions').key(['view', 'config', 'kill', 'restart']).styleClass('col-md-3').done()
