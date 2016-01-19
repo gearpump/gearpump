@@ -43,7 +43,8 @@ object Pack extends sbt.Build {
     settings = commonSettings ++ noPublish  ++
         packSettings ++
         Seq(
-          packMain := Map("gear" -> "io.gearpump.cluster.main.Gear",
+          packMain := Map(
+            "gear" -> "io.gearpump.cluster.main.Gear",
             "local" -> "io.gearpump.cluster.main.Local",
             "master" -> "io.gearpump.cluster.main.Master",
             "worker" -> "io.gearpump.cluster.main.Worker",
@@ -52,12 +53,13 @@ object Pack extends sbt.Build {
             "storm" -> "io.gearpump.experiments.storm.StormRunner"
           ),
           packJvmOpts := Map(
-            "local" -> Seq("-server", "-DlogFilename=local", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "master" -> Seq("-server", "-DlogFilename=master", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "worker" -> Seq("-server", "-DlogFilename=worker", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "services" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "yarnclient" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "storm" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost")
+            "gear" -> Seq("-Djava.net.preferIPv4Stack=true", "-Dgearpump.home=${PROG_HOME}"),
+            "local" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-DlogFilename=local", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "master" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-DlogFilename=master", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "worker" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-DlogFilename=worker", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "services" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "yarnclient" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "storm" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost")
           ),
           packLibDir := Map(
             "lib" -> new ProjectsToPack(core.id, streaming.id),

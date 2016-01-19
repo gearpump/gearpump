@@ -32,6 +32,7 @@ import io.gearpump.experiments.storm.Commands.{GetClusterInfo, _}
 import io.gearpump.experiments.storm.topology.GearpumpStormTopology
 import io.gearpump.experiments.storm.util.{GraphBuilder, StormConstants}
 import io.gearpump.streaming.StreamApplication
+import io.gearpump.util.Constants._
 import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 
 import scala.collection.JavaConverters._
@@ -68,7 +69,8 @@ object StormRunner extends AkkaApp with ArgumentsParser {
 
     val stormOptions = Array("-Dstorm.options=" +
       s"${Config.NIMBUS_HOST}=127.0.0.1,${Config.NIMBUS_THRIFT_PORT}=${GearpumpThriftServer.THRIFT_PORT}",
-      "-Dstorm.jar=" + jar
+      "-Dstorm.jar=" + jar,
+      s"-D${PREFER_IPV4}=true"
     )
 
     val classPath = Array(System.getProperty("java.class.path"), jar)

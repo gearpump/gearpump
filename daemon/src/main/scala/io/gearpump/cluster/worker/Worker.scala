@@ -399,8 +399,10 @@ private[cluster] object Worker {
           List.empty[String]
         }
 
+        val ipv4 = List(s"-D${PREFER_IPV4}=true")
+
         val options = ctx.jvmArguments ++ host ++ username ++
-          logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ configArgs
+          logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ ipv4 ++ configArgs
 
         LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
         val process = Util.startProcess(options, classPath, ctx.mainClass, ctx.arguments)
