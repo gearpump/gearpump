@@ -217,7 +217,6 @@ class RestClient(host: String, port: Int) {
       false
   }
 
-
   private val CRUD_POST = "-X POST"
   private val CRUD_DELETE = "-X DELETE"
 
@@ -229,8 +228,9 @@ class RestClient(host: String, port: Int) {
     Docker.execAndCaptureOutput(host, s"curl -s ${options.mkString(" ")} http://$host:$port/$endpoint")
   }
 
-  def login: Unit = {
-    callFromRoot(s"login", Array(CRUD_POST, s"--cookie-jar $cookieFile",
+  def login(): Unit = {
+    callFromRoot("login", Array(CRUD_POST, s"--cookie-jar $cookieFile",
       "--data username=admin", "--data password=admin"))
   }
+
 }

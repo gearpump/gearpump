@@ -42,7 +42,6 @@ class MiniCluster {
 
   lazy val restClient = {
     val client = new RestClient(getMasterHosts.head, REST_SERVICE_PORT)
-    client.login
     client
   }
 
@@ -53,6 +52,7 @@ class MiniCluster {
     MASTER_ADDRS.foreach({ case (host, port) =>
       addMasterNode(host, port)
     })
+    restClient.login()
     expectClusterAvailable()
 
     // Workers' membership can be modified at runtime
