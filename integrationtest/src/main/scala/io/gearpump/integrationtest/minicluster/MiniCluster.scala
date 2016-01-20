@@ -52,7 +52,7 @@ class MiniCluster {
     MASTER_ADDRS.foreach({ case (host, port) =>
       addMasterNode(host, port)
     })
-    restClient.login()
+    expectRestClientAuthenticated()
     expectClusterAvailable()
 
     // Workers' membership can be modified at runtime
@@ -74,7 +74,18 @@ class MiniCluster {
   }
 
   /**
-   * @throws RuntimeException if service is not available for N retries
+   * @throws RuntimeException if rest client is not authenticated after N attempts
+   */
+  private def expectRestClientAuthenticated(): Unit = {
+    Util.retryUntil({
+      restClient.login()
+      LOG.info("rest client has been authenticated")
+      true
+    })
+  }
+
+  /**
+   * @throws RuntimeException if service is not available after N attempts
    */
   private def expectClusterAvailable(): Unit = {
     Util.retryUntil({
