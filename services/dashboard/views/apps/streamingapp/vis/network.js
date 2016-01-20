@@ -11,6 +11,10 @@ angular.module('dashboard')
     function overrideOnContextEvent(network, callback) {
       var rightClickHandler = function(args) {
         function handleOnContext(data) {
+
+          // always disable the default context menu "Save image as, Copy Image..."
+          vis.util.preventDefault(args.event);
+
           if (callback) {
             callback(angular.merge(data, {pointer: args.pointer}));
           }
