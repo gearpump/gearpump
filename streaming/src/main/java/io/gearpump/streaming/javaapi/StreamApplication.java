@@ -23,13 +23,10 @@ import akka.actor.ActorSystem;
 import io.gearpump.cluster.Application;
 import io.gearpump.cluster.ApplicationMaster;
 import io.gearpump.cluster.UserConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public class StreamApplication implements Application {
   private io.gearpump.streaming.StreamApplication app;
-  private Logger LOG = LoggerFactory.getLogger(getClass());
   /**
    * Create a streaming application
    * @param name name of the application
@@ -40,9 +37,6 @@ public class StreamApplication implements Application {
   public StreamApplication(String name, UserConfig conf, Graph graph) {
     //by pass the tricky type check in scala 2.10
     io.gearpump.util.Graph untypedGraph = graph;
-    if (untypedGraph.hasCycle()) {
-      LOG.warn("Detected cycles in application " + name + "!");
-    }
     this.app = io.gearpump.streaming.StreamApplication.apply(
         name, untypedGraph, conf);
   }

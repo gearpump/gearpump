@@ -114,11 +114,6 @@ object LifeTime {
  */
 class StreamApplication(override val name : String,  val inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, PartitionerDescription])
   extends Application {
-  private val LOG = LogUtil.getLogger(getClass)
-
-  if (dag.hasCycle()) {
-    LOG.warn(s"Detected cycles in application $name!")
-  }
 
   require(!dag.hasDuplicatedEdge(), "Graph should not have duplicated edges")
 
@@ -140,9 +135,14 @@ case class ProcessorDescription(
 object StreamApplication {
 
   private val hashPartitioner = new HashPartitioner()
+  private val LOG = LogUtil.getLogger(getClass)
 
   def apply[T <: Processor[Task], P <: Partitioner] (name : String, dag: Graph[T, P], userConfig: UserConfig): StreamApplication = {
     import Processor._
+
+    if (dag.hasCycle()) {
+      LOG.warn(s"Detected cycles in DAG of application $name!")
+    }
 
     val indices = dag.topologicalOrderIterator.toList.zipWithIndex.toMap
     val graph = dag.mapVertex {processor =>
