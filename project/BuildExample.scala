@@ -5,14 +5,11 @@ import sbtassembly.Plugin.AssemblyKeys._
 
 object BuildExample extends sbt.Build {
 
-  val jsonSimpleVersion = "1.1"
-  val storm09Version = "0.9.6"
-
   lazy val examples = Project(
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ noPublish
-  ) aggregate (wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka, examples_storm09, examples_storm010,
+  ) aggregate (wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka,
       distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
 
   lazy val wordcountJava = Project(
@@ -139,39 +136,6 @@ object BuildExample extends sbt.Build {
         )
   ) dependsOn(streaming % "test->test; provided", external_kafka)
 
-  // examples for Storm 0.9.x
-  lazy val examples_storm09 = Project(
-    id = "gearpump-examples-storm09",
-    base = file("examples/streaming/storm09"),
-        settings = commonSettings ++ noPublish ++ myAssemblySettings ++
-        Seq(
-          libraryDependencies ++= Seq(
-            "org.apache.storm" % "storm-kafka" % storm09Version,
-            "org.apache.storm" % "storm-starter" % storm09Version,
-            "com.googlecode.json-simple" % "json-simple" % jsonSimpleVersion,
-            "org.apache.kafka" %% "kafka" % kafkaVersion
-          ),
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
-              CrossVersion.binaryScalaVersion(scalaVersion.value)
-        )
-  ) dependsOn(storm % "provided")
-
-  // examples for Storm 0.10.x
-  lazy val examples_storm010 = Project(
-    id = "gearpump-examples-storm010",
-    base = file("examples/streaming/storm010"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
-        Seq(
-          libraryDependencies ++= Seq(
-            "org.apache.storm" % "storm-kafka" % stormVersion,
-            "org.apache.storm" % "storm-starter" % stormVersion,
-            "org.apache.kafka" %% "kafka" % kafkaVersion
-          ),
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
-              CrossVersion.binaryScalaVersion(scalaVersion.value)
-        )
-  ) dependsOn(storm % "provided")
-
   lazy val stockcrawler = Project(
     id = "gearpump-examples-stockcrawler",
     base = file("examples/streaming/stockcrawler"),
@@ -217,7 +181,7 @@ object BuildExample extends sbt.Build {
   lazy val pagerank = Project(
     id = "gearpump-examples-pagerank",
     base = file("examples/pagerank"),
-    settings = commonSettings ++ noPublish ++ Seq(
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       mainClass in (Compile, packageBin) := Some("io.gearpump.experiments.pagerank.example.PageRankExample"),
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
         CrossVersion.binaryScalaVersion(scalaVersion.value)

@@ -77,6 +77,7 @@ object Pack extends sbt.Build {
           packResourceDir += (baseDirectory.value / ".." / "unmanagedlibs" / scalaBinaryVersion.value -> "lib"),
           packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
           packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / CrossVersion.binaryScalaVersion(scalaVersion.value) -> "examples"),
+          packResourceDir += (baseDirectory.value / ".." / "integrationtest" / "target" / CrossVersion.binaryScalaVersion(scalaVersion.value) -> "integrationtest"),
 
           // The classpath should not be expanded. Otherwise, the classpath maybe too long.
           // On windows, it may report shell error "command line too long"
@@ -91,7 +92,8 @@ object Pack extends sbt.Build {
             "storm" -> stormClassPath
           ),
 
-          packArchivePrefix := projectName + "-" + scalaBinaryVersion.value
+          packArchivePrefix := projectName + "-" + scalaBinaryVersion.value,
+          packArchiveExcludes := Seq("integrationtest")
 
         )
   ).dependsOn(core, streaming, services, yarn, storm)

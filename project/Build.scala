@@ -1,4 +1,5 @@
 import BuildExample.examples
+import BuildIntegrationTest.integration_test
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
@@ -459,27 +460,4 @@ object Build extends sbt.Build {
         )
   ) dependsOn(streaming % "test->test; provided")
 
-  val itTestFilter: String => Boolean = { name => name endsWith "Suite" }
-
-  lazy val integration_test = Project(
-    id = "gearpump-integration-test",
-    base = file("integrationtest"),
-    settings = commonSettings ++ noPublish ++ Seq(
-      testOptions in IntegrationTest += Tests.Filter(itTestFilter),
-      libraryDependencies ++= Seq(
-        "com.lihaoyi" %% "upickle" % upickleVersion,
-        "org.scalatest" %% "scalatest" % scalaTestVersion % "it",
-        "org.pegdown" % "pegdown" % "1.4.2" % "it",
-        "org.parboiled" % "parboiled-core" % "1.1.7" % "it",
-        "org.parboiled" % "parboiled-java" % "1.1.7" % "it",
-        "org.ow2.asm" % "asm-all" % "5.0.3" % "it"
-      )
-    )
-  ).configs(IntegrationTest).settings(Defaults.itSettings : _*)
-   .dependsOn(
-     streaming % "test->test; provided",
-     services % "test->test; provided",
-     external_kafka,
-     storm
-   )
 }
