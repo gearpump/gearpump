@@ -27,12 +27,10 @@ import io.gearpump.util.{Constants, Util}
 /**
  * static resource files.
  */
-class StaticService(override val system: ActorSystem)
+class StaticService(override val system: ActorSystem, supervisorPath: String)
   extends BasicService {
 
   private val version = Util.version
-  private val supervisorPath = system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
-
 
   override def prefix = Neutral
 

@@ -20,8 +20,10 @@ package io.gearpump.services
 
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.TestUtil
+import io.gearpump.util.Constants
 import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 
 import scala.util.Try
@@ -30,8 +32,10 @@ import scala.concurrent.duration._
 class StaticServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers with BeforeAndAfterAll {
 
   override def testConfig: Config = TestUtil.UI_CONFIG
+  private val supervisorPath = system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
 
-  def route = new StaticService(system).route
+
+  def route = new StaticService(system, supervisorPath).route
 
   it should "return version" in {
     implicit val customTimeout = RouteTestTimeout(15 seconds)
