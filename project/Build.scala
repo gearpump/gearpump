@@ -230,6 +230,12 @@ object Build extends sbt.Build {
     id = "gearpump-daemon",
     base = file("daemon"),
     settings = commonSettings ++ noPublish ++ daemonDependencies
+  ) dependsOn(core % "test->test; compile->compile", cgroup % "test->test; compile->compile")
+
+  lazy val cgroup = Project(
+    id = "gearpump-experimental-cgroup",
+    base = file("experiments/cgroup"),
+    settings = commonSettings ++ noPublish ++ daemonDependencies
   ) dependsOn(core % "test->test; compile->compile")
 
   lazy val streaming = Project(

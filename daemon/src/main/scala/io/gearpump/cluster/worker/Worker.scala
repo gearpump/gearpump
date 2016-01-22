@@ -23,34 +23,32 @@ import java.lang.management.ManagementFactory
 import java.net.URL
 import java.util.concurrent.{Executors, TimeUnit}
 
+import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import akka.http.scaladsl.server.util.TupleOps.Join.Fold
-import akka.pattern.pipe
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
+import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
+import io.gearpump.cluster.worker.Worker.ExecutorWatcher
 import io.gearpump.cluster.{ExecutorJVMConfig, ClusterConfig}
-import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, WorkerConfig}
+import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, WorkerConfig}
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToAppMaster._
 import io.gearpump.cluster.WorkerToMaster._
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.jarstore.JarStoreService
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.util.ActorSystemBooter.Daemon
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util.{Constants, TimeOutScheduler, _}
-import io.gearpump.jarstore.JarStoreService
-import io.gearpump.util._
 import org.slf4j.Logger
 
+import scala.concurrent.{Future, Promise, ExecutionContext}
 import scala.concurrent.duration._
-import scala.concurrent.{Promise, ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-import akka.actor.SupervisorStrategy.{Resume, Stop}
+import scala.util.{Try, Success, Failure}
 
 /**
  * Worker is used to track the resource on single machine, it is like
@@ -59,11 +57,7 @@ import akka.actor.SupervisorStrategy.{Resume, Stop}
  * @param masterProxy masterProxy is used to resolve the master
  */
 private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOutScheduler{
-  import Worker._
-
   private val systemConfig : Config = context.system.settings.config
-
-  private val configStr = systemConfig.root().render
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
@@ -73,6 +67,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
   private var executorNameToActor = Map.empty[String, ActorRef]
+  private val executorProcLauncher: ExecutorProcessLauncher = getExecutorProcLauncher()
   private val jarStoreService = JarStoreService.get(systemConfig)
   jarStoreService.init(systemConfig, context.system)
 
@@ -169,7 +164,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       } else {
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
-        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo, ioPool, jarStoreService))
+        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo, ioPool, jarStoreService, executorProcLauncher))
         executorNameToActor += actorName ->executor
 
         resource = resource - launch.resource
@@ -259,6 +254,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     executorNameToActor.find(_._2 == actorRef).map(_._1)
   }
 
+  private def getExecutorProcLauncher(): ExecutorProcessLauncher = {
+    val launcherClazz = Class.forName(systemConfig.getString(Constants.GEARPUMP_EXECUTOR_PROCESS_LAUNCHER))
+    launcherClazz.getConstructor(classOf[Config]).newInstance(systemConfig).asInstanceOf[ExecutorProcessLauncher]
+  }
+
   import context.dispatcher
   override def preStart() : Unit = {
     LOG.info(s"RegisterNewWorker")
@@ -269,7 +269,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   }
 
   private def repeatActionUtil(seconds: Int)(action : => Unit) : Cancellable = {
-
     val cancelSend = context.system.scheduler.schedule(Duration.Zero, Duration(2, TimeUnit.SECONDS))(action)
     val cancelSuicide = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
     return new Cancellable {
@@ -296,7 +295,13 @@ private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
 
-  class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo, ioPool: ExecutionContext, jarStoreService: JarStoreService) extends Actor {
+  class ExecutorWatcher(
+    launch: LaunchExecutor,
+    masterInfo: MasterInfo,
+    ioPool: ExecutionContext,
+    jarStoreService: JarStoreService,
+    procLauncher: ExecutorProcessLauncher) extends Actor {
+    import launch.{appId, executorId, resource}
 
     val config = {
       val systemConfig = context.system.settings.config
@@ -308,7 +313,7 @@ private[cluster] object Worker {
       userConfig.withFallback(systemConfig)
     }
 
-    private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
+    private val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId)
 
     implicit val executorService = ioPool
 
@@ -405,7 +410,7 @@ private[cluster] object Worker {
           logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ ipv4 ++ configArgs
 
         LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
-        val process = Util.startProcess(options, classPath, ctx.mainClass, ctx.arguments)
+        val process = procLauncher.createProcess(appId, executorId, resource, options, classPath, ctx.mainClass, ctx.arguments)
 
         ProcessInfo(process, jarPath, configFile)
       }
@@ -447,6 +452,7 @@ private[cluster] object Worker {
 
     override def preStart: Unit = {
       executorHandler.exitValue.onComplete{value =>
+        procLauncher.cleanProcess(appId, executorId)
         val result = ExecutorResult(value)
         self ! result
       }
@@ -495,12 +501,12 @@ private[cluster] object Worker {
   case class ProcessInfo(process: RichProcess, jarPath: Option[String], configFile: Option[String])
 
   /**
-   * We will start the executor in  the same JVM as worker.
-   * @param launch
-   * @param exit
-   */
+    * We will start the executor in  the same JVM as worker.
+    * @param launch
+    * @param exit
+    */
   class InJvmExecutor(launch: LaunchExecutor, exit: Promise[Int]) extends Daemon(launch.executorJvmConfig.arguments(0), launch.executorJvmConfig.arguments(1)) {
-    private var exitCode = 0
+    private val exitCode = 0
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
