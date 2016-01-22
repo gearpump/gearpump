@@ -42,7 +42,9 @@ class RestServiceSpec extends TestSpecBase {
 
     "retrieve 1 application after the first application submission" in {
       // exercise
-      val appId = restClient.submitApp(wordCountJar)
+      val appId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe true
       expectAppIsRunning(appId, wordCountName)
       restClient.listRunningApps().length shouldEqual 1
     }
@@ -51,33 +53,39 @@ class RestServiceSpec extends TestSpecBase {
   "submit application (wordcount)" should {
     "find a running application after submission" in {
       // exercise
-      val appId = restClient.submitApp(wordCountJar)
+      val appId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe true
       expectAppIsRunning(appId, wordCountName)
     }
 
     "reject a repeated submission request while the application is running" in {
       // setup
-      var appId = restClient.submitApp(wordCountJar)
+      val appId = restClient.getNextAvailableAppId()
+      val formerSubmissionSuccess = restClient.submitApp(wordCountJar)
+      formerSubmissionSuccess shouldBe true
       expectAppIsRunning(appId, wordCountName)
 
       // exercise
-      appId = restClient.submitApp(wordCountJar)
-      appId shouldEqual -1
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe false
     }
 
     "reject an invalid submission (the jar file path is incorrect)" in {
       // exercise
-      val appId = restClient.submitApp(wordCountJar + ".missing")
-      appId shouldEqual -1
+      val success = restClient.submitApp(wordCountJar + ".missing")
+      success shouldBe false
     }
 
     "submit a wordcount application with 4 split and 3 sum processors and expect parallelism of processors match the given number" in {
       // setup
       val splitNum = 4
       val sumNum = 3
+      val appId = restClient.getNextAvailableAppId()
 
       // exercise
-      val appId = restClient.submitApp(wordCountJar, s"-split $splitNum -sum $sumNum")
+      val success = restClient.submitApp(wordCountJar, s"-split $splitNum -sum $sumNum")
+      success shouldBe true
       expectAppIsRunning(appId, wordCountName)
       val processors = restClient.queryStreamingAppDetail(appId).processors
       processors.size shouldEqual 2
@@ -89,7 +97,9 @@ class RestServiceSpec extends TestSpecBase {
 
     "can obtain application metrics and the metrics will keep changing" in {
       // setup
-      val appId = restClient.submitApp(wordCountJar)
+      val appId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe true
       expectAppIsRunning(appId, wordCountName)
 
       // exercise
@@ -111,7 +121,9 @@ class RestServiceSpec extends TestSpecBase {
 
     "can obtain application corresponding executors' metrics and the metrics will keep changing" in {
       // setup
-      val appId = restClient.submitApp(wordCountJar)
+      val appId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe true
       expectAppIsRunning(appId, wordCountName)
 
       // exercise
@@ -135,7 +147,9 @@ class RestServiceSpec extends TestSpecBase {
   "kill application" should {
     "a running application should be killed" in {
       // setup
-      val appId = restClient.submitApp(wordCountJar)
+      val appId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe true
       expectAppIsRunning(appId, wordCountName)
 
       // exercise
@@ -144,7 +158,9 @@ class RestServiceSpec extends TestSpecBase {
 
     "should fail when attempting to kill a stopped application" in {
       // setup
-      val appId = restClient.submitApp(wordCountJar)
+      val appId = restClient.getNextAvailableAppId()
+      val submissionSucess = restClient.submitApp(wordCountJar)
+      submissionSucess shouldBe true
       expectAppIsRunning(appId, wordCountName)
       killAppAndVerify(appId)
 
@@ -271,8 +287,12 @@ class RestServiceSpec extends TestSpecBase {
     }
 
     "retrieve the configuration of executor X and match particular values" in {
+      // setup
+      val appId = restClient.getNextAvailableAppId()
+
       // exercise
-      val appId = restClient.submitApp(wordCountJar)
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe true
       restClient.queryExecutorBrief(appId).foreach { executor =>
         val executorId = executor.executorId
         val actual = restClient.queryExecutorConfig(appId, executorId)
@@ -284,8 +304,12 @@ class RestServiceSpec extends TestSpecBase {
     }
 
     "retrieve the configuration of application X and match particular values" in {
+      // setup
+      val appId = restClient.getNextAvailableAppId()
+
       // exercise
-      val appId = restClient.submitApp(wordCountJar)
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe true
       val actual = restClient.queryAppMasterConfig(appId)
       actual.hasPath("gearpump") shouldBe true
       actual.hasPath("gearpump.appmaster") shouldBe true
@@ -297,7 +321,9 @@ class RestServiceSpec extends TestSpecBase {
       // setup
       val originSplitNum = 4
       val originSumNum = 3
-      val originAppId = restClient.submitApp(wordCountJar, s"-split $originSplitNum -sum $originSumNum")
+      val originAppId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(wordCountJar, s"-split $originSplitNum -sum $originSumNum")
+      success shouldBe true
       expectAppIsRunning(originAppId, wordCountName)
       val originAppDetail = restClient.queryStreamingAppDetail(originAppId)
 
