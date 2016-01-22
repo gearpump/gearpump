@@ -122,6 +122,9 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       watcher.watch(mockMasterProxy)
       getActorSystem.stop(mockMasterProxy)
       watcher.expectTerminated(mockMasterProxy)
+      // Make sure the parent of mockMasterProxy has received the Terminated message.
+      // Issus address: https://github.com/gearpump/gearpump/issues/1919
+      Thread.sleep(2000)
 
       import scala.concurrent.duration._
       mockMasterProxy = getActorSystem.actorOf(Props(new MasterProxy(List(mockMaster.ref.path), 30 seconds)), AppMasterSpec.MOCK_MASTER_PROXY)
