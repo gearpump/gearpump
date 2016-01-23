@@ -1,3 +1,37 @@
+Gearpump 0.7.5
+===================
+Highlights:
+-------------------
+1. #1723, Add an experimental cgroup module for CPU isolation.
+2. #1767, Add docs and implementation to support storm 0.10.
+3. Make UI mobile phone friendly. 
+
+Change log:
+-------------------
+- #1919, fix AppMasterSpec
+- #1723 add an experiment module to do cgroup CPU isolation.
+- #1913, add warning for detected loop in DAG.
+- #1896, move storm examples under integration test
+- #1897, increase akka logger start up timeout for unit test
+- #1843 Add a Rest service to launch a new worker
+- #1904, fixed "DAG canvas context menu cannot be displayed."
+- #1898: in integration test, there need a retry attempting for login
+- #1882: extract the tool tip string to externalized file
+- #1837, Use java.net.preferIPv4Stack to force IPv4
+- #1885, Shorten the table view when disabled in mobile.
+- #1883,URL redirection error when accessing index.html
+- #1874, Format the login failure message to more readable format.
+- #1876, Shell command yarnclient should use 1 as the the default count for "addWorker"
+- #1877, Fix several navigation issues on Mobile phone
+- #1830: removed cluster side menu and tuned main navbar
+- #1681: show application last error in overview page
+- #1866, use geardefault.conf to replace reference.conf to avoid confusion
+- #1767, Add docs and implementation to support storm 0.10
+- #1868: show correct data points when switch historical view and recent view.
+- #1864, Add robots.txt to disable search engine crawling
+- #1860, add licenses for included source and binary libraries.
+- #1804, fix UI authentication document page format
+
 Gearpump 0.7.4
 ===================
 Change log:
