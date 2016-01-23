@@ -85,6 +85,6 @@ script | function
 local | You can start the Gearpump cluster in single JVM(local mode), or in a distributed cluster(cluster mode). To start the cluster in local mode, you can use the local /local.bat helper scripts, it is very useful for developing or troubleshooting.
 master | To start Gearpump in cluster mode, you need to start one or more master nodes, which represent the global resource management center. master/master.bat is launcher script to boot the master node.
 worker | To start Gearpump in cluster mode, you also need to start several workers, with each worker represent a set of local resources. worker/worker.bat is launcher script to start the worker node.
-services | This script is used to start backend REST service and other services for frontend UI dashboard.
+services | This script is used to start backend REST service and other services for frontend UI dashboard (Default user "admin, admin").
 
 Please check [Command Line Syntax](commandline.html) for more information for each script.

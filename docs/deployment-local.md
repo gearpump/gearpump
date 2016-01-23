@@ -37,3 +37,5 @@ Open another shell,
 bin/services
 ```
 You can manage the applications in UI [http://127.0.0.1:8090](http://127.0.0.1:8090) or by [Command Line tool](commandline.html).
+The default username and password is "admin:admin", you can check
+[UI Authentication](deployment-ui-authentication.html) to find how to manage users.

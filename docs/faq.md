@@ -37,5 +37,3 @@ Generally, we recommend use the default `share-thread-pool-dispatcher` which has
 
 By default, our Services process binds to a local **IPv6 port**. It's possible that another process on your system has already taken up the same **IPv4 port**. You may check by `lsof -i -P | grep -i "Listen"` if your system is Unix/Linux. 
 
-##### What is the open source plan for this project?
-The ultimate goal is to make it an Apache project.

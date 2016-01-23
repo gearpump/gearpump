@@ -82,3 +82,6 @@ To start UI server, you can:
 ```bash
 services  [-master <host:port>]
 ```
+
+The default username and password is "admin:admin", you can check
+[UI Authentication](deployment-ui-authentication.html) to find how to manage users.
