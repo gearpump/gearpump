@@ -50,6 +50,8 @@ bin/services
 ```
 
 After UI is started, you can browse to `http://{web_ui_host}:8090` to view the cluster status.
+The default username and password is "admin:admin", you can check
+[UI Authentication](deployment-ui-authentication.html) to find how to manage users.
 
 ![Dashboard](img/dashboard.gif)
 
