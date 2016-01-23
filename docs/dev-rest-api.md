@@ -3,14 +3,41 @@ layout: global
 title: Gearpump RESTful API reference
 ---
 
+## Authentication.
+
+For all REST API calls, We need authentication by default. If you don't want authentication, you can disable them.
+
+### How to disable Authentication
+To disable Authentication, you can set `gearpump-ui.gearpump.ui-security.authentication-enabled = false`
+in gear.conf, please check [UI Authentication](deployment-ui-authentication.html) for details.
+
+### How to authenticate if Authentication is enabled.
+If Authentication is enabled, then you need to login before calling REST API.
+
+```
+curl  -X POST  --data username=admin --data password=admin --cookie-jar outputAuthenticationCookie.txt http://127.0.0.1:8090/login
+```
+
+This will use default user "admin:admin" to login, and store the authentication cookie to file outputAuthenticationCookie.txt.
+
+In All subsequent Rest API calls, you need to add the authentication cookie. For example
+
+```
+curl --cookie outputAuthenticationCookie.txt http://127.0.0.1/api/v1.0/master
+```
+
+for more information, please check [UI Authentication](deployment-ui-authentication.html).
+
+
 ## Query version
+
 
 ### GET version
 
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/version
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/version
 ```
 
 Sample Response:
@@ -27,7 +54,7 @@ Get information of masters
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/master
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master
 ```
 
 Sample Response:
@@ -60,7 +87,7 @@ Query information of all applications
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/master/applist
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master/applist
 ```
 
 Sample Response:
@@ -88,7 +115,7 @@ Query information of all workers
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/master/workerlist
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master/workerlist
 ```
 
 Sample Response:
@@ -145,7 +172,7 @@ Get the configuration of all masters
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/master/config
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master/config
 ```
 
 Sample Response:
@@ -180,7 +207,7 @@ Get the master node metrics.
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/master/metrics/master?readLatest=true
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master/metrics/master?readLatest=true
 ```
 
 Sample Response:
@@ -235,7 +262,7 @@ Query worker information.
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/worker/0
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/worker/0
 ```
 
 Sample Response:
@@ -267,7 +294,7 @@ Query worker config
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/worker/0/config
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/worker/0/config
 ```
 
 Sample Response:
@@ -302,7 +329,7 @@ Get the worker node metrics.
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/worker/0/metrics/worker?readLatest=true
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/worker/0/metrics/worker?readLatest=true
 ```
 
 Sample Response:
@@ -414,7 +441,7 @@ Query information of an specific application of Id appId
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/appmaster/1?detail=true
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1?detail=true
 ```
 
 Sample Response:
@@ -547,7 +574,7 @@ Query list of unhealthy tasks of an specific application of Id appId
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/appmaster/2/stallingtasks
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/2/stallingtasks
 ```
 
 Sample Response:
@@ -570,7 +597,7 @@ Query the configuration of specific application appId
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/appmaster/1/config
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/config
 ```
 
 Sample Response:
@@ -685,7 +712,7 @@ aggregator points to a aggregator class, which will aggregate on the current met
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/appmaster/1/metrics/app1?readLatest=true&aggregator=io.gearpump.streaming.metrics.ProcessorAggregator
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/metrics/app1?readLatest=true&aggregator=io.gearpump.streaming.metrics.ProcessorAggregator
 ```
 
 Sample Response:
@@ -794,7 +821,7 @@ Get task error messages
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/appmaster/1/errors
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/errors
 ```
 
 Sample Response:
@@ -849,7 +876,7 @@ Get executor information.
 Example:
 
 ```bash
-curl http://127.0.0.1:8090/api/v1.0/appmaster/1/executor/1
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/executor/1
 ```
 
 Sample Response:

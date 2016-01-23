@@ -84,6 +84,9 @@ There are two ways to get an active configuration file:
    ```
    services -conf /tmp/mycluster.conf
    ```
+   The default username and password is "admin:admin", you can check
+   [UI Authentication](deployment-ui-authentication.html) to find how to manage users.
+
    
 ## How to add/remove machines dynamically.
 
