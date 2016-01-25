@@ -27,7 +27,7 @@ import org.slf4j.Logger
 class DefaultExecutorProcessLauncher(val config: Config) extends ExecutorProcessLauncher {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  override def createProcess(appId: Int, executorId: Int, resource: Resource, options: Array[String],
+  override def createProcess(appId: Int, executorId: Int, resource: Resource, config: Config, options: Array[String],
     classPath: Array[String], mainClass: String, arguments: Array[String]): RichProcess = {
 
     LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
