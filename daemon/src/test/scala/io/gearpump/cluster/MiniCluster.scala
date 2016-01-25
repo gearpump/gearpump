@@ -63,7 +63,7 @@ class MiniCluster {
     val workerListFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]]
 
     // wait until the worker is registered.
-    val workers = Await.result[WorkerList](workerListFuture, 5 seconds)
+    val workers = Await.result[WorkerList](workerListFuture, 15 seconds)
     workers.workers.size > 0
   }
 

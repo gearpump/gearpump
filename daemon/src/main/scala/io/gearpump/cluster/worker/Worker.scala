@@ -410,7 +410,8 @@ private[cluster] object Worker {
           logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ ipv4 ++ configArgs
 
         LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
-        val process = procLauncher.createProcess(appId, executorId, resource, options, classPath, ctx.mainClass, ctx.arguments)
+        val process = procLauncher.createProcess(appId, executorId, resource, config,
+          options, classPath, ctx.mainClass, ctx.arguments)
 
         ProcessInfo(process, jarPath, configFile)
       }

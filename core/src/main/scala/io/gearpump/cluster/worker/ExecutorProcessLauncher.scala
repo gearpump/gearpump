@@ -39,7 +39,7 @@ trait ExecutorProcessLauncher {
     * @param mainClass The main class of the process
     * @param arguments The rest arguments
     */
-  def createProcess(appId: Int, executorId:Int, resource: Resource, options : Array[String],
+  def createProcess(appId: Int, executorId:Int, resource: Resource, config: Config, options : Array[String],
     classPath : Array[String], mainClass : String, arguments : Array[String]): RichProcess
 
   /**
