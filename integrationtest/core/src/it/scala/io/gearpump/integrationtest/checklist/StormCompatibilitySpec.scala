@@ -30,7 +30,6 @@ class StormCompatibilitySpec extends TestSpecBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    cluster.isAlive shouldBe true
     stormClient.start()
   }
 
