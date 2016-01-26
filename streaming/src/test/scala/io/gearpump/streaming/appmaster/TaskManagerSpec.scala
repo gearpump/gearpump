@@ -51,6 +51,8 @@ import io.gearpump.util.Graph._
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
+import scala.concurrent.Future
+
 class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   implicit var system: ActorSystem = null
@@ -86,9 +88,10 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   it should "recover by requesting new executors when executor stopped unexpectedly" in {
     val env = bootUp
     import env._
+    implicit val dispatcher = system.dispatcher
 
     val resourceRequest = Array(ResourceRequest(resource, workerId))
-    when(scheduler.executorFailed(executorId)).thenReturn(Some(ResourceRequestDetail(mockJar, resourceRequest)))
+    when(scheduler.executorFailed(executorId)).thenReturn(Future{Some(ResourceRequestDetail(mockJar, resourceRequest))})
 
     taskManager ! ExecutorStopped(executorId)
 
@@ -147,6 +150,9 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   }
 
   private def bootUp: Env = {
+
+    implicit val dispatcher = system.dispatcher
+
     val executorManager = TestProbe()
     val clockService = TestProbe()
     val appMaster = TestProbe()
@@ -168,7 +174,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // step2: Get Additional Resource Request
     when(scheduler.getRequestDetails())
-        .thenReturn(Array(ResourceRequestDetail(mockJar, Array(ResourceRequest(resource)))))
+        .thenReturn(Future{Array(ResourceRequestDetail(mockJar, Array(ResourceRequest(resource))))})
 
     // step3: DAG changed. Start transit from ApplicationReady -> DynamicDAG
     dagManager.expectMsg(GetLatestDAG)
@@ -180,7 +186,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     executorManager.expectMsgType[StartExecutors]
 
     when(scheduler.scheduleTask(mockJar, workerId, executorId, resource))
-      .thenReturn(List(TaskId(0, 0), TaskId(1, 0)))
+      .thenReturn(Future(List(TaskId(0, 0), TaskId(1, 0))))
 
     // step5: Executor is started.
     executorManager.reply(ExecutorStarted(executorId, resource, workerId, Some(mockJar)))

@@ -93,8 +93,11 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     mockMaster.reply(AppMasterRegistered(appId))
     mockMaster.expectMsg(15 seconds, GetAppData(appId, "DAG"))
     mockMaster.reply(GetAppDataResult("DAG", null))
-    mockMaster.expectMsgAllOf(15 seconds, GetAppData(appId, "startClock"), RequestResource(appId, ResourceRequest(Resource(4))))
+    mockMaster.expectMsg(15 seconds, GetAppData(appId, "startClock"))
+
     mockMaster.reply(GetAppDataResult("startClock", 0L))
+
+    mockMaster.expectMsg(15 seconds, RequestResource(appId, ResourceRequest(Resource(4))))
   }
 
   override def afterEach() = {

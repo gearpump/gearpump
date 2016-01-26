@@ -130,7 +130,12 @@ private[appmaster] class ExecutorManager(
         val resource = resources.get(executorId)
         val worker = executor.worker.ref
         // notify the worker the actual resource used by this application.
-        resource.foreach(worker ! ChangeExecutorResource(appId, executorId, _))
+        resource match {
+          case Some(resource) =>
+            worker ! ChangeExecutorResource(appId, executorId, resource)
+          case None =>
+            worker ! ChangeExecutorResource(appId, executorId, Resource(0))
+        }
       }
     }
 

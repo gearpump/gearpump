@@ -242,9 +242,19 @@ class TaskActor(
       receiveMessage(inputMessage, sender)
     case upstream@ UpstreamMinClock(upstreamClock) =>
       this.upstreamMinClock = upstreamClock
-      val update = UpdateClock(taskId, minClock)
+      val latestMinClock = minClock
+      val update = UpdateClock(taskId, latestMinClock)
       context.system.scheduler.scheduleOnce(CLOCK_REPORT_INTERVAL) {
         appMaster ! update
+      }
+
+      // check whether current task is dead.
+      if (latestMinClock > life.death) {
+        // There will be no more message received...
+        val unRegister = UnRegisterTask(taskId, executorId)
+        executor ! unRegister
+
+        LOG.info(s"Sending $unRegister, current minclock: $latestMinClock, life: $life")
       }
 
     case ChangeTask(_, dagVersion, life, subscribers) =>
