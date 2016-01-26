@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{Actor, Cancellable, Stash}
 import io.gearpump.google.common.primitives.Longs
 import io.gearpump.streaming.task._
-import io.gearpump.streaming.{ProcessorId, AppMasterToMaster, DAG}
+import io.gearpump.streaming.{LifeTime, ProcessorId, AppMasterToMaster, DAG}
 import io.gearpump.streaming.storage.AppDataStore
 import io.gearpump.TimeStamp
 import io.gearpump.cluster.ClientToMaster.GetStallingTasks
@@ -42,7 +42,7 @@ import scala.language.implicitConversions
 /**
  * The clockService will maintain a global view of message timestamp in the application
  */
-class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
+class ClockService(private var dag : DAG, store: AppDataStore) extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   import context.dispatcher
@@ -76,31 +76,70 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   // We use Array instead of List for Performance consideration
   private var processorClocks = Array.empty[ProcessorClock]
 
-  private var checkpointClocks = Map.empty[TaskId, Vector[TimeStamp]]
+  private var checkpointClocks = {
+    dag.processors.filter { case (_, processor) =>
+      Option(processor.taskConf).exists(_.getBoolean("state.checkpoint.enable").exists(_ == true))
+    }.flatMap { case (id, processor) =>
+      (0 until processor.parallelism).map(TaskId(id, _) -> Vector.empty[TimeStamp])
+    }
+  }
+
   private var minCheckpointClock: Option[TimeStamp] = None
 
-  private def setDAG(dag: DAG, startClock: TimeStamp): Unit = {
-    val newClocks = dag.processors.map { pair =>
+  private def initDag(startClock: TimeStamp): Unit = {
+    recoverDag(this.dag, startClock)
+  }
+
+  private def recoverDag(dag: DAG, startClock: TimeStamp): Unit = {
+    this.clocks = dag.processors.filter(startClock < _._2.life.death).
+      map { pair =>
       val (processorId, processor) = pair
       val parallelism = processor.parallelism
-      val newProcessorClock = new ProcessorClock(processorId, parallelism)
-      (processorId, clocks.getOrElse(processor.id, newProcessorClock))
+      val clock = new ProcessorClock(processorId, processor.life, parallelism)
+      clock.init(startClock)
+      (processorId, clock)
     }
+
+    this.upstreamClocks = clocks.map { pair =>
+      val (processorId, processor) = pair
+
+      val upstreams = dag.graph.incomingEdgesOf(processorId).map(_._1)
+      val upstreamClocks = upstreams.flatMap(clocks.get(_))
+      (processorId, upstreamClocks.toArray)
+    }
+
+    this.processorClocks = clocks.toArray.map(_._2)
+  }
+
+  private def dynamicDAG(dag: DAG, startClock: TimeStamp): Unit = {
+    val newClocks = dag.processors.filter(startClock < _._2.life.death).
+      map { pair =>
+        val (processorId, processor) = pair
+        val parallelism = processor.parallelism
+
+        val clock = if (clocks.contains(processor.id)) {
+          clocks(processorId).copy(life = processor.life)
+        } else {
+          new ProcessorClock(processorId, processor.life, parallelism)
+        }
+        (processorId, clock)
+      }
 
     this.clocks = newClocks
 
-    this.upstreamClocks = dag.graph.vertices.map { vertex =>
-      val upstreamClocks = for (edge <- dag.graph.incomingEdgesOf(vertex)) yield {
-        clocks(edge._1)
-      }
-      (vertex, upstreamClocks.toArray)
-    }.toMap
+    this.upstreamClocks = newClocks.map { pair =>
+      val (processorId, processor) = pair
+
+      val upstreams = dag.graph.incomingEdgesOf(processorId).map(_._1)
+      val upstreamClocks = upstreams.flatMap(newClocks.get(_))
+      (processorId, upstreamClocks.toArray)
+    }
 
     // init the clock of all processors.
-    dag.graph.topologicalOrderIterator.foreach { processorId =>
-      val processorClock = clocks(processorId)
+    newClocks.map { pair =>
+      val (processorId, processorClock) = pair
       val upstreamClock = getUpStreamMinClock(processorId)
-      val birth = dag.processors(processorId).life.birth
+      val birth = processorClock.life.birth
 
       if (dag.graph.inDegreeOf(processorId) == 0) {
         processorClock.init(Longs.max(birth, startClock))
@@ -112,7 +151,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     this.processorClocks = clocks.toArray.map(_._2)
 
     this.checkpointClocks = dag.processors.filter { case (_, processor) =>
-        Option(processor.taskConf).exists(_.getBoolean("state.checkpoint.enable").exists(_ == true))
+      Option(processor.taskConf).exists(_.getBoolean("state.checkpoint.enable").exists(_ == true))
     }.flatMap { case (id, processor) =>
       (0 until processor.parallelism).map(TaskId(id, _) -> Vector.empty[TimeStamp])
     }
@@ -123,7 +162,7 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
 
   def waitForStartClock: Receive = {
     case StoredStartClock(startClock) =>
-      setDAG(dag, startClock)
+      initDag(startClock)
 
       import context.dispatcher
 
@@ -143,15 +182,40 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
   }
 
   private def getUpStreamMinClock(processorId: ProcessorId): TimeStamp = {
-    if (!upstreamClocks.contains(processorId)) {
-      LOG.info(s"We don't have upstream clocks for processor: $processorId")
-    }
-    val clockArray = upstreamClocks(processorId)
-    if (clockArray == null || clockArray.length == 0) {
-      Long.MaxValue
+    val clocks = upstreamClocks.get(processorId)
+    if (clocks.isDefined) {
+      if (clocks.get == null || clocks.get.length == 0) {
+        Long.MaxValue
+      } else {
+        ProcessorClocks.minClock(clocks.get)
+      }
     } else {
-      ProcessorClocks.minClock(clockArray)
+      Long.MaxValue
     }
+  }
+
+  private def mergeArray(array1: Array[ProcessorClock], array2: Array[ProcessorClock]): Array[ProcessorClock] = {
+    (array1.toSet ++ array2.toSet).toArray
+  }
+
+  private def updateUpstreamClocks(removedProcessor: ProcessorId,
+      upstreamMap: Map[ProcessorId, Array[ProcessorClock]]): Map[ProcessorId, Array[ProcessorClock]] = {
+
+    // update all upstream relations
+    val upstreamsForRemovedProcessor = upstreamMap(removedProcessor)
+    val updated = upstreamMap.map{pair =>
+      val (id, upstreams) = pair
+      val updatedUpstream = upstreams.flatMap{item =>
+        if (item.processorId != removedProcessor) {
+          Array(item)
+        } else {
+          mergeArray(upstreamsForRemovedProcessor, upstreams)
+        }
+      }
+      (id, updatedUpstream)
+    }
+
+    updated - removedProcessor
   }
 
   def clockService: Receive = {
@@ -160,7 +224,13 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
 
     case update@ UpdateClock(task, clock) =>
       val upstreamMinClock = getUpStreamMinClock(task.processorId)
-      clocks(task.processorId).updateMinClock(task.index, clock)
+
+      val processorClock = clocks.get(task.processorId)
+      if (processorClock.isDefined) {
+        processorClock.get.updateMinClock(task.index, clock)
+      } else {
+        LOG.error(s"Cannot updateClock for task $task")
+      }
       sender ! UpstreamMinClock(upstreamMinClock)
 
     case GetLatestMinClock =>
@@ -169,6 +239,24 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
     case GetStartClock =>
       sender ! StartClock(getStartClock)
 
+    case deathCheck: CheckProcessorDeath =>
+      val processorId = deathCheck.processorId
+      val processorClock = clocks.get(processorId)
+      if (processorClock.isDefined) {
+        val life = processorClock.get.life
+        if (processorClock.get.min >= life.death) {
+
+          LOG.info(s"Removing $processorId from clock service...")
+          // current processor is dead, remove it.
+          clocks = clocks - processorId
+          processorClocks = processorClocks.filterNot(_.processorId == processorId)
+
+          // downstream will inherit all upstreams of current processorId.
+          upstreamClocks = updateUpstreamClocks(processorId, upstreamClocks)
+        } else {
+          LOG.info(s"Unsuccessfully in removing $processorId from clock service..., min: ${processorClock.get.min}, life: $life")
+        }
+      }
     case HealthCheck =>
       selfCheck()
 
@@ -185,8 +273,15 @@ class ClockService(dag : DAG, store: AppDataStore) extends Actor with Stash {
       sender ! StallingTasks(healthChecker.getReport.stallingTasks)
 
     case ChangeToNewDAG(dag) =>
-      setDAG(dag, getStartClock)
-      LOG.info(s"Change to new DAG(dag = ${dag.version}), send back ChangeToNewDAGSuccess")
+      if (dag.version > this.dag.version) {
+        // transit to a new dag version
+        this.dag = dag
+        dynamicDAG(dag, getStartClock)
+      } else {
+        // restart current dag.
+        recoverDag(dag, getStartClock)
+      }
+     LOG.info(s"Change to new DAG(dag = ${dag.version}), send back ChangeToNewDAGSuccess")
       sender ! ChangeToNewDAGSuccess(clocks.map{ pair =>
         val (id, clock) = pair
         (id, clock.min)
@@ -235,22 +330,26 @@ object ClockService {
 
   case object HealthCheck
 
-  class ProcessorClock(val processorId: ProcessorId, val parallism: Int) {
+  class ProcessorClock(val processorId: ProcessorId, val life: LifeTime, val parallism: Int,
+    private var _min: TimeStamp = 0L, private var _taskClocks: Array[TimeStamp] = null) {
 
-    var min: TimeStamp = 0L
-    var taskClocks: Array[TimeStamp] = null
+
+    def copy(life: LifeTime): ProcessorClock = new ProcessorClock(processorId, life, parallism, _min, _taskClocks)
+
+    def min: TimeStamp = _min
+    def taskClocks: Array[TimeStamp] = _taskClocks
 
     def init(startClock: TimeStamp): Unit = {
       if (taskClocks == null) {
-        this.min = startClock
-        this.taskClocks = new Array(parallism)
+        this._min = startClock
+        this._taskClocks = new Array(parallism)
         util.Arrays.fill(taskClocks, startClock)
       }
     }
 
     def updateMinClock(taskIndex: Int, clock: TimeStamp): Unit = {
       taskClocks(taskIndex) = clock
-      min = Longs.min(taskClocks: _*)
+      _min = Longs.min(taskClocks: _*)
     }
   }
 
@@ -282,7 +381,12 @@ object ClockService {
 
       if (isClockStalling) {
         val processorId = dag.graph.topologicalOrderIterator.toList.find { processorId =>
-          processorClocks(processorId).min == minClock.appClock
+          val clock = processorClocks.get(processorId)
+          if (clock.isDefined) {
+            clock.get.min == minClock.appClock
+          } else {
+            false
+          }
         }
 
         processorId.foreach {processorId =>

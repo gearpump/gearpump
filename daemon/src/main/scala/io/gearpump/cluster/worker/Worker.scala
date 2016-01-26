@@ -206,6 +206,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         if (usedResource == Resource(0)) {
           allocatedResources -= executor
           // stop executor if there is no resource binded to it.
+          LOG.info(s"Shutdown executor $executorId because the resource used is zero")
           executor ! ShutdownExecutor(appId, executorId, "Shutdown executor because the resource used is zero")
         }
       }
