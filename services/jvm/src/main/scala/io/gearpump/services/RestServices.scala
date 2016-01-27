@@ -87,7 +87,6 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
 
     new RouteService {
       override def route: Route = {
-        LOG.info(s"supervisor=$supervisor")
         admin.route ~ sup.route ~ masterService.route ~ worker.route ~ app.route
       }
     }

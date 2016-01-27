@@ -26,7 +26,7 @@ import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNew
 import io.gearpump.streaming.appmaster.ClockServiceSpec.Store
 import io.gearpump.streaming.storage.AppDataStore
 import io.gearpump.streaming.task._
-import io.gearpump.streaming.{DAG, ProcessorDescription}
+import io.gearpump.streaming.{LifeTime, DAG, ProcessorDescription}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -164,7 +164,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
     "maintain the min clock of current processor" in {
       val processorId = 0
       val parallism = 3
-      val clock = new ProcessorClock(processorId, parallism)
+      val clock = new ProcessorClock(processorId, LifeTime.Immortal, parallism)
       clock.init(100L)
       clock.updateMinClock(0, 101)
       assert(clock.min == 100L)
@@ -181,10 +181,10 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
     "report stalling if the clock is not advancing" in {
       val healthChecker = new HealthChecker(stallingThresholdSeconds = 1)
       val source = ProcessorDescription(id = 0, taskClass = null, parallelism = 1)
-      val sourceClock = new ProcessorClock(0, 1)
+      val sourceClock = new ProcessorClock(0, LifeTime.Immortal, 1)
       sourceClock.init(0L)
       val sink = ProcessorDescription(id = 1, taskClass = null, parallelism = 1)
-      val sinkClock = new ProcessorClock(1, 1)
+      val sinkClock = new ProcessorClock(1,LifeTime.Immortal, 1)
       sinkClock.init(0L)
       val graph = Graph.empty[ProcessorDescription, PartitionerDescription]
       graph.addVertex(source)
