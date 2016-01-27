@@ -61,7 +61,9 @@ class ConnectorKafkaSpec extends TestSpecBase {
         "-brokerList", kafkaCluster.getBrokerListConnectString,
         "-sourceTopic", sourceTopic,
         "-sinkTopic", sinkTopic).mkString(" ")
-      val appId = restClient.submitApp(kafkaJar, args)
+      val appId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(kafkaJar, args)
+      success shouldBe true
 
       // verify
       expectAppIsRunning(appId, "KafkaReadWrite")
@@ -87,7 +89,9 @@ class ConnectorKafkaSpec extends TestSpecBase {
         "-sourceTopic", sourceTopic,
         "-sinkTopic", sinkTopic,
         "-source", sourcePartitionNum).mkString(" ")
-      val appId = restClient.submitApp(kafkaJar, args)
+      val appId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(kafkaJar, args)
+      success shouldBe true
 
       // verify #1
       expectAppIsRunning(appId, "KafkaReadWrite")

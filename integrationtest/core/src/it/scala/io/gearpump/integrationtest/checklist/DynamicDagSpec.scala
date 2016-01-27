@@ -44,10 +44,9 @@ class DynamicDagSpec extends TestSpecBase {
 
     "can replace down stream with wordcount's sum processor (new processor will have metrics)" in {
       // setup
-      val appId = restClient.submitApp(solJar)
-      expectAppIsRunning(appId, solName)
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      val appId = expectSolJarSubmittedWithAppId()
 
+      // exercise
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       replaceProcessor(appId, 1, sumTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
@@ -60,10 +59,9 @@ class DynamicDagSpec extends TestSpecBase {
 
     "can replace up stream with wordcount's split processor (new processor will have metrics)" in {
       // setup
-      val appId = restClient.submitApp(solJar)
-      expectAppIsRunning(appId, solName)
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      val appId = expectSolJarSubmittedWithAppId()
 
+      // exercise
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       replaceProcessor(appId, 0, splitTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
@@ -76,10 +74,9 @@ class DynamicDagSpec extends TestSpecBase {
 
     "fall back to last dag version when replacing a processor failid" in {
       // setup
-      val appId = restClient.submitApp(solJar)
-      expectAppIsRunning(appId, solName)
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      val appId = expectSolJarSubmittedWithAppId()
 
+      // exercise
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       replaceProcessor(appId, 1, sumTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
@@ -100,10 +97,10 @@ class DynamicDagSpec extends TestSpecBase {
     }
 
     "fall back to last dag version when AppMaster HA triggered" in {
-      val appId = restClient.submitApp(solJar)
-      expectAppIsRunning(appId, solName)
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      // setup
+      val appId = expectSolJarSubmittedWithAppId()
 
+      // exercise
       val formerAppMaster = restClient.queryApp(appId).appMasterPath
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       replaceProcessor(appId, 1, sumTaskClass)
@@ -120,6 +117,15 @@ class DynamicDagSpec extends TestSpecBase {
       processors.size shouldEqual laterProcessors.size
     }
 
+  }
+
+  private def expectSolJarSubmittedWithAppId(): Int = {
+    val appId = restClient.getNextAvailableAppId()
+    val success = restClient.submitApp(solJar)
+    success shouldBe true
+    expectAppIsRunning(appId, solName)
+    Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+    appId
   }
 
   private def replaceProcessor(

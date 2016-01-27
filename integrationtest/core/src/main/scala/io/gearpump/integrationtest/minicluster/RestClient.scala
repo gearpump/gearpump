@@ -75,7 +75,11 @@ class RestClient(host: String, port: Int) {
     listApps().filter(_.status == MasterToAppMaster.AppMasterActive)
   }
 
-  def submitApp(jar: String, args: String = "", config: String = ""): Int = try {
+  def getNextAvailableAppId(): Int = {
+    listApps().length + 1
+  }
+
+  def submitApp(jar: String, args: String = "", config: String = ""): Boolean = try {
     var endpoint = "master/submitapp"
     if (args.length > 0) {
       endpoint += "?args=" + Util.encodeUriComponent(args)
@@ -87,11 +91,11 @@ class RestClient(host: String, port: Int) {
     val resp = callApi(endpoint, options.map("-F " + _).mkString(" "))
     val result = read[AppSubmissionResult](resp)
     assert(result.success)
-    result.appId
+    true
   } catch {
     case ex: Throwable =>
       LOG.warn(s"swallowed an exception: $ex")
-      -1
+      false
   }
 
   def queryApp(appId: Int): AppMasterData = {

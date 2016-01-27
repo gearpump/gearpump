@@ -4,7 +4,7 @@
       <div class="modal-header">
         <button type="button" class="close" ng-click="$hide()">
           <span>&times;</span></button>
-        <h4>Submit Application</h4>
+        <h4 ng-bind="dialogTitle"></h4>
       </div>
       <div class="modal-body">
         <p style="padding-top: 4px; padding-bottom: 14px;">Application will be launched immediately,
@@ -38,7 +38,7 @@
             <!-- input 2 -->
             <form-control
               type="upload" label="Config File"
-              ng-model="conf" accept-pattern=".conf"></form-control>
+              ng-model="conf" accept-pattern="{{confFileSuffix}}"></form-control>
             <!-- input 3 -->
             <form-control
               type="text" label="Arguments"

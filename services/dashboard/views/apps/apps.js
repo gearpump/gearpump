@@ -34,16 +34,25 @@ angular.module('dashboard')
         show: false
       });
 
-      $scope.openSubmitDialog = function() {
+      $scope.openSubmitGearAppDialog = function() {
+        submitWindow.$scope.isStormApp = false;
+        submitWindow.$promise.then(submitWindow.show);
+      };
+
+      $scope.openSubmitStormAppDialog = function() {
+        submitWindow.$scope.isStormApp = true;
         submitWindow.$promise.then(submitWindow.show);
       };
 
       $scope.composeMenuOptions = [{
+        text: '<i class="glyphicon glyphicon-none"></i> <b>Submit Gearpump Application</b>',
+        click: $scope.openSubmitGearAppDialog
+      }, {
+        text: '<i class="glyphicon glyphicon-none"></i> Submit Storm Application',
+        click: $scope.openSubmitStormAppDialog
+      }, {
         text: '<i class="glyphicon glyphicon-pencil"></i> Compose DAG',
         href: $state.href('compose_app')
-      }, {
-        text: '<i class="glyphicon glyphicon-none"></i> <b>Submit Application</b>',
-        click: $scope.openSubmitDialog
       }];
 
       $scope.appsTable = {

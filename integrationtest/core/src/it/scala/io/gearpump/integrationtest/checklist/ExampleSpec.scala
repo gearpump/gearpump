@@ -18,7 +18,6 @@
 package io.gearpump.integrationtest.checklist
 
 import io.gearpump.integrationtest.{Docker, TestSpecBase, Util}
-import io.gearpump.metrics.Metrics.Meter
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.ProcessorSummary
 
@@ -32,7 +31,9 @@ class ExampleSpec extends TestSpecBase {
       val distShellJar = cluster.queryBuiltInExampleJars("distributedshell-").head
       val mainClass = "io.gearpump.examples.distributedshell.DistributedShell"
       val clientClass = "io.gearpump.examples.distributedshell.DistributedShellClient"
-      val appId = restClient.submitApp(distShellJar, mainClass)
+      val appId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(distShellJar, mainClass)
+      success shouldBe true
       expectAppIsRunning(appId, "DistributedShell")
       val args = Array(
         clientClass,
@@ -57,13 +58,17 @@ class ExampleSpec extends TestSpecBase {
 
     "can submit immediately after killing a former one" in {
       // setup
-      val formerAppId = restClient.submitApp(wordCountJar)
+      val formerAppId = restClient.getNextAvailableAppId()
+      val formerSubmissionSuccess = restClient.submitApp(wordCountJar)
+      formerSubmissionSuccess shouldBe true
       expectAppIsRunning(formerAppId, wordCountName)
       Util.retryUntil(restClient.queryStreamingAppDetail(formerAppId).clock > 0)
       restClient.killApp(formerAppId)
 
       // exercise
-      val appId = restClient.submitApp(wordCountJar)
+      val appId = formerAppId + 1
+      val success = restClient.submitApp(wordCountJar)
+      success shouldBe true
       expectAppIsRunning(appId, wordCountName)
     }
   }
@@ -91,7 +96,9 @@ class ExampleSpec extends TestSpecBase {
 
     "can obtain application clock and the clock will keep changing" in {
       // setup
-      val appId = restClient.submitApp(jar)
+      val appId = restClient.getNextAvailableAppId()
+      val success = restClient.submitApp(jar)
+      success shouldBe true
       expectAppIsRunning(appId, appName)
 
       // exercise
@@ -102,7 +109,9 @@ class ExampleSpec extends TestSpecBase {
 
     "can change the parallelism and description of a processor" in {
       // setup
-      val appId = restClient.submitApp(jar)
+      val appId = restClient.getNextAvailableAppId()
+      val formerSubmissionSuccess = restClient.submitApp(jar)
+      formerSubmissionSuccess shouldBe true
       expectAppIsRunning(appId, appName)
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       val processor0 = formerProcessors.get(0).get

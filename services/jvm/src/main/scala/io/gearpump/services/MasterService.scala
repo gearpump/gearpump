@@ -117,19 +117,33 @@ class MasterService(val master: ActorRef,
           uploadFile { fileMap =>
             val jar = fileMap.get("jar").map(_.file)
             val userConf = fileMap.get("conf").map(_.file)
-
-            if (jar.isEmpty) {
-              failWith(new Exception("jar file not supplied"))
-            } else {
-              val argsArray = args.split(" +").filter(_.nonEmpty)
-              onComplete(Future(
-                MasterService.submitJar(jar.get, userConf, argsArray, system.settings.config))) {
-                case Success(appId) =>
-                  complete(write(
-                    MasterService.AppSubmissionResult(success = true, appId = appId)))
-                case Failure(ex) =>
-                  failWith(ex)
-              }
+            onComplete(Future(
+              MasterService.submitGearApp(jar, args, systemConfig, userConf)
+            )) {
+              case Success(success) =>
+                val response = MasterService.AppSubmissionResult(success)
+                complete(write(response))
+              case Failure(ex) =>
+                failWith(ex)
+            }
+          }
+        }
+      }
+    } ~
+    path("submitstormapp") {
+      post {
+        parameters("args" ? "") { args: String =>
+          uploadFile { fileMap =>
+            val jar = fileMap.get("jar").map(_.file)
+            val stormConf = fileMap.get("conf").map(_.file)
+            onComplete(Future(
+              MasterService.submitStormApp(jar, stormConf, args, systemConfig)
+            )) {
+              case Success(success) =>
+                val response = MasterService.AppSubmissionResult(success)
+                complete(write(response))
+              case Failure(ex) =>
+                failWith(ex)
             }
           }
         }
@@ -184,47 +198,123 @@ object MasterService {
 
   case class BuiltinPartitioners(partitioners: Array[String])
 
-  case class AppSubmissionResult(success: Boolean, appId: Int)
+  case class AppSubmissionResult(success: Boolean)
 
   case class Status(success: Boolean, reason: String = null)
 
   /**
-   * Upload user application (JAR) into temporary directory and use AppSubmitter to submit
-   * it to master. The temporary file will be removed after submission is done/failed.
+   * Submit Native Application.
    */
-  def submitJar(jar: File, userConf: Option[File], extraArgs: Array[String],
-                sysConfig: Config): Int = {
+  def submitGearApp(jar: Option[File], args: String, systemConfig: Config, userConfigFile: Option[File]): Boolean = {
+    submitAndDeleteTempFiles(
+      "io.gearpump.cluster.main.AppSubmitter",
+      argsArray = spaceSeparatedArgumentsToArray(args),
+      fileMap = Map("jar" -> jar).filter(_._2.isDefined).mapValues(_.get),
+      classPath = getUserApplicationClassPath,
+      systemConfig,
+      userConfigFile
+    )
+  }
 
+  /**
+   * Submit Storm application.
+   */
+  def submitStormApp(jar: Option[File], stormConf: Option[File], args: String, systemConfig: Config): Boolean = {
+    submitAndDeleteTempFiles(
+      "io.gearpump.experiments.storm.StormRunner",
+      argsArray = spaceSeparatedArgumentsToArray(args),
+      fileMap = Map("jar" -> jar, "config" -> stormConf).filter(_._2.isDefined).mapValues(_.get),
+      classPath = getStormApplicationClassPath,
+      systemConfig,
+      userConfigFile = None
+    )
+  }
+
+  private def submitAndDeleteTempFiles(mainClass: String, argsArray: Array[String], fileMap: Map[String, File],
+                                       classPath: Array[String], systemConfig: Config,
+                                       userConfigFile: Option[File] = None): Boolean = {
     try {
-      val masters = sysConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
-      val mastersOption = masters.zipWithIndex.map { kv =>
-        val (master, index) = kv
-        s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.$index=${master.host}:${master.port}"
-      }.toArray
-
-      val hostname = sysConfig.getString(Constants.GEARPUMP_HOSTNAME)
-      var options = Array(
-        s"-D${Constants.GEARPUMP_HOSTNAME}=$hostname",
-        s"-D${PREFER_IPV4}=true"
-      ) ++ mastersOption
-
-      if (userConf.isDefined) {
-        options :+= s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=${userConf.get.getPath}"
+      val jar = fileMap.get("jar")
+      if (jar.isEmpty) {
+        throw new IOException("JAR file not supplied")
       }
 
-      val arguments = Array("-jar", jar.getPath) ++ extraArgs
-      val mainClass = AppSubmitter.getClass.getName.dropRight(1)
-      val process = Util.startProcess(options, Util.getCurrentClassPath, mainClass, arguments)
+      val process = Util.startProcess(
+        clusterOptions(systemConfig, userConfigFile),
+        classPath,
+        mainClass,
+        arguments = createFilePathArgArray(fileMap) ++ argsArray
+      )
+
       val retval = process.exitValue()
       if (retval != 0) {
-        throw new IOException(s"Process exit abnormally with code $retval, error summary: ${process.logger.error}")
+        throw new IOException(s"Process exit abnormally with exit code $retval.\n" +
+          s"Error message: ${process.logger.error}")
       }
-      process.logger.output
-        .split(" ").last.toInt
+      true
     } finally {
-      userConf.foreach(_.delete)
-      jar.delete()
+      fileMap.values.foreach(_.delete)
+      if (userConfigFile.isDefined) {
+        userConfigFile.get.delete()
+      }
     }
+  }
+
+  /**
+   * Return Java options for gearpump cluster
+   */
+  private def clusterOptions(systemConfig: Config, userConfigFile: Option[File]): Array[String] = {
+    var options = Array(
+      s"-D${Constants.GEARPUMP_HOME}=${systemConfig.getString(Constants.GEARPUMP_HOME)}",
+      s"-D${Constants.GEARPUMP_HOSTNAME}=${systemConfig.getString(Constants.GEARPUMP_HOSTNAME)}",
+      s"-D${Constants.PREFER_IPV4}=true"
+    )
+
+    val masters = systemConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).flatMap(Util.parseHostList)
+    options ++= masters.zipWithIndex.map { case (master, index) =>
+      s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.$index=${master.host}:${master.port}"
+    }.toArray[String]
+
+    if (userConfigFile.isDefined) {
+      options :+= s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=${userConfigFile.get.getPath}"
+    }
+    options
+  }
+
+  /**
+   * Filter all defined file paths and store their config key and path into an array.
+   */
+  private def createFilePathArgArray(fileMap: Map[String, File]): Array[String] = {
+    var args = Array.empty[String]
+    fileMap.foreach({ case (key, path) =>
+      args ++= Array(s"-$key", path.getPath)
+    })
+    args
+  }
+
+  /**
+   * Return a space separated arguments as an array.
+   */
+  private def spaceSeparatedArgumentsToArray(str: String): Array[String] = {
+    str.split(" +").filter(_.nonEmpty)
+  }
+
+  private val homeDir = System.getProperty(Constants.GEARPUMP_HOME) + "/"
+  private val libHomeDir = homeDir + "lib/"
+
+  private def getUserApplicationClassPath: Array[String] = {
+    Array(
+      homeDir + "conf",
+      libHomeDir + "daemon/*",
+      libHomeDir + "yarn/*",
+      libHomeDir + "*"
+    )
+  }
+
+  private def getStormApplicationClassPath: Array[String] = {
+    getUserApplicationClassPath ++ Array(
+      libHomeDir + "storm/*"
+    )
   }
 
   case class SubmitApplicationRequest (

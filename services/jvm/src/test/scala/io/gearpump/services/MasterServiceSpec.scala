@@ -157,10 +157,9 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
     mockMaster.expectMsg(QueryMasterConfig)
   }
 
-  "submitJar" should "submit an invalid jar and get success = false" in {
+  "submit invalid application" should "return an error" in {
     implicit val routeTestTimeout = RouteTestTimeout(30.second)
     val tempfile = new File("foo")
-
     val request = entity(tempfile)
 
     Post(s"/api/$REST_VERSION/master/submitapp", request) ~> masterRoute ~> check {
