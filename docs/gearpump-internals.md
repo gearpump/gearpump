@@ -113,29 +113,29 @@ There are multiple possible failure scenarios
 ![Failures](img/failures.png)
 Figure: Possible Failure Scenarios and Error Supervision Hierarchy
 
-#### What happen when Master Crash?
+#### What happens when the Master crashes?
 
-When Master crash, other standby masters will be notified, they will resume the master state, and take over control. Worker and AppMaster will also be notified, They will trigger a process to find the new active master, until the resolution complete. If AppMaster or Worker cannot resolve a new Master in a time out, they will make suicide and kill themselves.
+In case of a master crash, other standby masters will be notified, they will resume the master state, and take over control. Worker and AppMaster will also be notified, They will trigger a process to find the new active master, until the resolution complete. If AppMaster or Worker cannot resolve a new Master in a time out, they will make suicide and kill themselves.
 
-#### What happen When worker crash?
+#### What happens when a worker crashes?
 
-When worker crash, the Master will get notified and stop scheduling new computation to this worker. All supervised executors on current worker will be killed, AppMaster can treat it as recovery of executor crash like [What happen when executor crash?](#what-happen-when-executor-crash)
+In case of a worker crash, the Master will get notified and stop scheduling new computation to this worker. All supervised executors on current worker will be killed, AppMaster can treat it as recovery of executor crash like [What happen when executor crash?](#what-happen-when-executor-crash)
 
-#### What happen when AppMaster Crash?
+#### What happens when the AppMaster crashes?
 
-If a AppMaster crashes, Master will schedule a new resource to create a new AppMaster Instance elsewhere, and then the AppMaster will handle the recovery inside the application. For streaming, it will recover the latest min clock and other state from disk, request resources from master to start executors, and restart the tasks with recovered min clock.
+If an AppMaster crashes, Master will schedule a new resource to create a new AppMaster Instance elsewhere, and then the AppMaster will handle the recovery inside the application. For streaming, it will recover the latest min clock and other state from disk, request resources from master to start executors, and restart the tasks with recovered min clock.
 
-#### What happen when executor crash?
+#### What happen when an executor crashes?
 
-If an Executor Crashes, its supervisor AppMaster will get notified, and request a new resource from the active master to start a new executor, to run the tasks which were located on the crashed executor.
+If an executor crashes, its supervisor AppMaster will get notified, and request a new resource from the active master to start a new executor, to run the tasks which were located on the crashed executor.
 
-#### What happen when task crash?
+#### What happen when tasks crash?
 
 If a task throws an exception, its supervisor executor will restart that Task.
 
 When "at least once" message delivery is enabled, it will trigger the message replaying in the case of message loss. First AppMaster will read the latest minimum clock from the global clock service(or clock storage if the clock service crashes), then AppMaster will restart all the task actors to get a fresh task state, then the source end tasks will replay messages from that minimum clock.
 
-### How exactly once work?
+### How does "once" work, exactly?
 
 For some applications, it is extremely important to do "exactly once" message delivery. For example, for a real-time billing system, we will not want to bill the customer twice. The goal of "exactly once" message delivery is to make sure:
   The error doesn't accumulate, today's error will not be accumulated to tomorrow.
