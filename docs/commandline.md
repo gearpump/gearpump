@@ -9,6 +9,10 @@ The commands can be found at: "bin" folder of Gearpump binary.
 
 **NOTE:** on MS Windows platform, please use window shell gear.bat script instead. bash script doesn't work well in cygwin/mingw.
 
+### Creating an uber-jar
+
+If you use Maven you can have a look [here](https://maven.apache.org/plugins/maven-shade-plugin/) whereas SBT users may find [this](https://github.com/sbt/sbt-assembly) useful.
+
 ### Submit an new application
 
 You can use the command `gear` under the bin directory to submit, query and terminate an application:

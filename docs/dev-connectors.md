@@ -110,10 +110,10 @@ Then, you can use `HBaseSink` in your application:
 
 ```scala
    //create the HBase data sink
-   val sink = HBaseSink(UserConfig.empty, tableName, new HBaseConfiguration)
+   val sink = HBaseSink(UserConfig.empty, tableName, HBaseConfiguration.create())
 
    //create Gearpump Processor
-   val sinkProcessor = DataSinkProcessor(source, parallelism)
+   val sinkProcessor = DataSinkProcessor(sink, parallelism)
 ```
 
 ```scala
@@ -128,13 +128,13 @@ You can tune the connection to HBase via the HBase configuration passed in. If n
 To implement your own `DataSource`, you need to implement two things:
 
 1. The data source itself
-2. a helper class to make it easy use in DSL
+2. a helper class to easy the usage in a DSL
 
 ### Implement your own `DataSource`
 You need to implement a class derived from `io.gearpump.streaming.transaction.api.TimeReplayableSource`.
 
 ### Implement DSL helper (Optional)
-To make DSL easy of use this customized stream, it is better that if you can implement your own DSL helper.
+If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.
 You can refer `KafkaDSLUtil` as an example in Gearpump source.
 
 Below is some code snippet from `KafkaDSLUtil`:
@@ -165,7 +165,7 @@ To implement your own `DataSink`, you need to implement two things:
 You need to implement a class derived from `io.gearpump.streaming.sink.DataSink`.
 
 ### Implement DSL helper (Optional)
-To make DSL easy of use this customized stream, it is better that if you can implement your own DSL helper.
+If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.
 You can refer `HBaseDSLSink` as an example in Gearpump source.
 
 Below is some code snippet from `HBaseDSLSink`:

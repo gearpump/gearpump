@@ -6,7 +6,8 @@ import scala.util.Try
 
 
 /**
- * A Main class helper to load Akka configuration automatically
+ * A Main class helper to load Akka configuration automatically. 
+ * Should this provide an actor system as well ? An AS is requested by the external connectors, usually assembled in the main app.
  */
 trait AkkaApp {
 
