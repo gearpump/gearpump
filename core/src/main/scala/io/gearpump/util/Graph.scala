@@ -254,6 +254,94 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
   }
 
   /**
+   * Return all circles in graph.
+   * The reference of this algorithm is:
+   * https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+   */
+  private def findCircles: mutable.MutableList[mutable.MutableList[N]] = {
+    val inStack = mutable.Map.empty[N, Boolean]
+    val stack = mutable.Stack[N]()
+    val indexMap = mutable.Map.empty[N, Int]
+    val lowLink = mutable.Map.empty[N, Int]
+    var index = 0
+
+    val circles = mutable.MutableList.empty[mutable.MutableList[N]]
+
+    def tarjan(node: N): Unit = {
+      indexMap(node) = index
+      lowLink(node) = index
+      index += 1
+      inStack(node) = true
+      stack.push(node)
+
+      outgoingEdgesOf(node).foreach {
+        edge => {
+          if (!indexMap.contains(edge._3)) {
+            tarjan(edge._3)
+            if (lowLink.get(edge._3).get < lowLink.get(node).get)
+              lowLink(node) = lowLink(edge._3)
+          } else {
+            if (inStack.get(edge._3).get && (indexMap.get(edge._3).get < lowLink.get(node).get))
+              lowLink(node) = indexMap(edge._3)
+          }
+        }
+      }
+
+      if (indexMap.get(node).get == lowLink.get(node).get) {
+        val circle = mutable.MutableList.empty[N]
+        var n = node
+        do {
+          n = stack.pop()
+          inStack(n) = false
+          circle += n
+        } while (n != node)
+        circles += circle
+      }
+    }
+
+    vertices.foreach {
+      node => {
+        if (!indexMap.contains(node)) tarjan(node)
+      }
+    }
+
+    circles
+  }
+
+  /**
+   * Return an iterator of vertex in topological order of graph with circles
+   * The node returned by Iterator is stable sorted.
+   * The reference of this algorithm is:
+   * http://www.drdobbs.com/database/topological-sorting/184410262
+   */
+  def topologicalOrderWithCirclesIterator: Iterator[N] = {
+    val circles = findCircles
+    val newGraph = Graph.empty[mutable.MutableList[N], E]
+    circles.foreach {
+      circle => {
+        newGraph.addVertex(circle)
+      }
+    }
+
+    for (circle1 <- circles; circle2 <- circles; if circle1 != circle2) yield {
+      for (node1 <- circle1; node2 <- circle2) yield {
+        var edges = outgoingEdgesOf(node1)
+        for (edge <- edges; if edge._3 == node2) yield {
+          newGraph.addEdge(circle1, edge._2, circle2)
+        }
+
+        edges = outgoingEdgesOf(node2)
+        for (edge <- edges; if edge._3 == node1) yield {
+          newGraph.addEdge(circle2, edge._2, circle1)
+        }
+      }
+    }
+
+    val topo = newGraph.topologicalOrderIterator
+    topo.flatMap(_.sortBy(_indexs(_)).iterator)
+  }
+
+  /**
    * check whether there is a loop
    */
   def hasCycle(): Boolean = {

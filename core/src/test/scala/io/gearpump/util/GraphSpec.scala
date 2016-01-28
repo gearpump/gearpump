@@ -178,6 +178,23 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     assert(graph.hasCycle())
   }
 
+  property("topologicalOrderIterator " +
+    "and topologicalOrderWithCirclesIterator method should return equal order of graph with no circle") {
+    val graph = Graph(1 ~> 2 ~> 3, 4 ~> 2, 2 ~> 5)
+    val topoNoCircles = graph.topologicalOrderIterator
+    val topoWithCircles = graph.topologicalOrderWithCirclesIterator
+
+    assert(topoNoCircles.zip(topoWithCircles).forall(x => x._1 == x._2))
+  }
+
+  property("Topological sort of graph with circles should work properly") {
+    val graph = Graph(0 ~> 1 ~> 3 ~> 4 ~> 6 ~> 5 ~> 7, 4 ~> 1, 1 ~> 2 ~> 4, 7 ~> 6, 8 ~> 2, 6 ~> 9, 4 ~> 10)
+    val topoWithCircles = graph.topologicalOrderWithCirclesIterator
+    val trueTopoWithCircles = Iterator[Int](0, 8, 1, 3, 4, 2, 6 ,5, 7, 10, 9)
+
+    assert(trueTopoWithCircles.zip(topoWithCircles).forall(x => x._1 == x._2))
+  }
+
   property("Duplicated edges detecting should work properly") {
     val graph = Graph.empty[String, String]
     val defaultEdge = "edge"
