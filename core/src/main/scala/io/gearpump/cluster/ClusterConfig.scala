@@ -135,7 +135,7 @@ object ClusterConfig {
 
     val windows = all.getConfig(WINDOWS_CONFIG)
 
-    var basic = all.withoutPath(MASTER).withoutPath(WORKER).
+    var basic = all.withoutPath(MASTER_CONFIG).withoutPath(WORKER_CONFIG).
       withoutPath(UI_CONFIG).withoutPath(WINDOWS_CONFIG)
 
     if (akka.util.Helpers.isWindows) {
