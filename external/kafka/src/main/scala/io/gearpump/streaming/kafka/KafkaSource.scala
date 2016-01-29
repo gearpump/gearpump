@@ -151,7 +151,7 @@ class KafkaSource(
     val topicAndPartitions = grouper.group(parallelism, taskId.index,
       KafkaUtil.getTopicAndPartitions(KafkaUtil.connectZookeeper(consumerConfig)(), topics))
     this.fetchThread = Some(FetchThread(topicAndPartitions, config.getFetchThreshold,
-      config.getFetchSleepMS, consumerConfig))
+      config.getFetchSleepMS, config.getConsumerStartOffset, consumerConfig))
     this.offsetManagers = topicAndPartitions.map { tp =>
       val storageTopic = s"app${appId}_${appName}_${tp.topic}_${tp.partition}"
       val storage = offsetStorageFactory.getOffsetStorage(storageTopic)

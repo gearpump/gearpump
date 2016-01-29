@@ -24,6 +24,7 @@ import com.twitter.bijection.Injection
 import io.gearpump.streaming.kafka.lib.KafkaUtil
 import io.gearpump.streaming.kafka.lib.consumer.KafkaConsumer
 import io.gearpump.streaming.transaction.api.{OffsetStorageFactory, OffsetStorage}
+import kafka.api.OffsetRequest
 import kafka.consumer.ConsumerConfig
 import org.I0Itec.zkclient.ZkClient
 import io.gearpump.TimeStamp
@@ -57,7 +58,7 @@ class KafkaStorageFactory(consumerProps: Properties, producerProps: Properties) 
   override def getOffsetStorage(dir: String): OffsetStorage = {
     val topic = dir
     val consumerConfig = new ConsumerConfig(consumerProps)
-    val getConsumer = () => KafkaConsumer(topic, 0, consumerConfig)
+    val getConsumer = () => KafkaConsumer(topic, 0, OffsetRequest.EarliestTime, consumerConfig)
     new KafkaStorage(topic, KafkaUtil.createKafkaProducer[Array[Byte], Array[Byte]](
       producerProps, new ByteArraySerializer, new ByteArraySerializer),
       getConsumer(), KafkaUtil.connectZookeeper(consumerConfig)())

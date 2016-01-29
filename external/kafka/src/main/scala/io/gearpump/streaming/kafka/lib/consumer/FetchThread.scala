@@ -32,10 +32,11 @@ object FetchThread {
   def apply(topicAndPartitions: Array[TopicAndPartition],
             fetchThreshold: Int,
             fetchSleepMS: Long,
+            startOffsetTime: Long,
             consumerConfig: ConsumerConfig): FetchThread = {
     val consumers: Map[TopicAndPartition, KafkaConsumer] = topicAndPartitions.map {
       tp =>
-        tp -> KafkaConsumer(tp.topic, tp.partition, consumerConfig)
+        tp -> KafkaConsumer(tp.topic, tp.partition, startOffsetTime, consumerConfig)
     }.toMap
     val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
     new FetchThread(consumers, incomingQueue, fetchThreshold, fetchSleepMS)
