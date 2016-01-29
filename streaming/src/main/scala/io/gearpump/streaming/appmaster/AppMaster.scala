@@ -29,7 +29,7 @@ import io.gearpump.cluster._
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.partitioner.PartitionerDescription
-import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask}
+import io.gearpump.streaming.ExecutorToAppMaster.{UnRegisterTask, MessageLoss, RegisterExecutor, RegisterTask}
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.AppMaster._
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
@@ -122,7 +122,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   for (dag <- getDAG) {
     clockService = Some(context.actorOf(Props(new ClockService(dag, store))))
-    val jarScheduler = new JarScheduler(appId, app.name, systemConfig)
+    val jarScheduler = new JarScheduler(appId, app.name, systemConfig, context)
 
     taskManager = Some(context.actorOf(Props(new TaskManager(appContext.appId, dagManager,
       jarScheduler, executorManager, clockService.get, self, app.name))))
@@ -140,6 +140,10 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       taskManager.foreach(_ forward clock)
     case register: RegisterTask =>
       taskManager.foreach(_ forward register)
+    case unRegister: UnRegisterTask =>
+      taskManager.foreach(_ forward unRegister)
+      // check whether this processor dead, if it is, then we should remove it from clockService.
+      clockService.foreach(_ forward CheckProcessorDeath(unRegister.taskId.processorId))
     case replay: ReplayFromTimestampWindowTrailingEdge =>
       taskManager.foreach(_ forward replay)
     case messageLoss: MessageLoss =>

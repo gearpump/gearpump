@@ -19,6 +19,7 @@
 package io.gearpump.streaming.task
 
 import io.gearpump.TimeStamp
+import io.gearpump.streaming.ProcessorId
 
 /*
  * Initial AckRequest
@@ -64,3 +65,5 @@ case class LatencyProbe(timestamp: Long)
 case class SendMessageLoss()
 
 case object GetDAG
+
+case class CheckProcessorDeath(processorId: ProcessorId)

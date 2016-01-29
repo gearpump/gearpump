@@ -31,12 +31,11 @@ import org.slf4j.Logger
  * TaskRegistry is used to track the registration of all tasks
  * when one application is booting up.
  */
-class TaskRegistry(expectedTasks: List[TaskId],
-    var registeredTasks: Map[TaskId, TaskLocation] = Map.empty[TaskId, TaskLocation]) {
+class TaskRegistry(val expectedTasks: List[TaskId],
+    var registeredTasks: Map[TaskId, TaskLocation] = Map.empty[TaskId, TaskLocation],
+    var deadTasks: Set[TaskId] = Set.empty[TaskId]) {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
-
-  private val totalTaskCount = expectedTasks.size
 
   private val processors = expectedTasks.map(_.processorId).toSet
 
@@ -55,6 +54,12 @@ class TaskRegistry(expectedTasks: List[TaskId],
       LOG.error(s" the task is not accepted for registration, taskId: ${taskId}")
       Reject
     }
+  }
+
+  def copy(expectedTasks: List[TaskId] = this.expectedTasks,
+    registeredTasks: Map[TaskId, TaskLocation] = this.registeredTasks,
+    deadTasks: Set[TaskId] = this.deadTasks): TaskRegistry = {
+    new TaskRegistry(expectedTasks, registeredTasks, deadTasks)
   }
 
   def getTaskLocations: TaskLocations = {
@@ -84,7 +89,8 @@ class TaskRegistry(expectedTasks: List[TaskId],
   }
 
   def isAllTasksRegistered: Boolean = {
-    totalTaskCount == registeredTasks.size
+    val aliveTasks = (expectedTasks.toSet -- deadTasks)
+    aliveTasks.forall(task => registeredTasks.contains(task))
   }
 
   def isTaskRegisteredForExecutor(executorId: ExecutorId): Boolean = {

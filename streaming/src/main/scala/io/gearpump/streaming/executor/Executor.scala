@@ -28,7 +28,7 @@ import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.AppMasterToExecutor.{MsgLostException, TasksChanged, TasksLaunched, _}
-import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask}
+import io.gearpump.streaming.ExecutorToAppMaster.{UnRegisterTask, MessageLoss, RegisterExecutor, RegisterTask}
 import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.executor.Executor._
 import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
@@ -264,6 +264,18 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           context.become(dynamicDagPhase1(change.dagVersion, List.empty[TaskId], List.empty[ChangeTask], List.empty[TaskId]))
           self forward change
         }
+
+      case StopTask(taskId) =>
+        // Old soldiers never die, they just fade away ;)
+        val fadeAwayTask = tasks.get(taskId)
+        if (fadeAwayTask.isDefined) {
+          context.stop(fadeAwayTask.get)
+        }
+        tasks -= taskId
+
+      case unRegister @ UnRegisterTask(taskId, _) =>
+        // send UnRegisterTask to AppMaster
+        appMaster ! unRegister
     }
   }
 
@@ -348,13 +360,13 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     pool.asInstanceOf[SerializationFramework]
   }
 
-  private def unHandled: Receive = {
+  private def unHandled(state: String): Receive = {
     case other =>
-      LOG.info(s"Received unknown message $other")
+      LOG.info(s"Received unknown message $other in state: $state")
   }
 
   private def box(receive: Receive): Receive = {
-    executorService orElse receive orElse unHandled
+    executorService orElse receive orElse unHandled(state)
   }
 }
 
