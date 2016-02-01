@@ -59,7 +59,9 @@ object GearpumpNimbus extends AkkaApp with ArgumentsParser {
     val system = ActorSystem("storm", akkaConf)
     val clientContext = new ClientContext(akkaConf, system, null)
     val stormConf = Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
-    val thriftConf: JMap[String, String] = Map(Config.NIMBUS_THRIFT_PORT -> s"$THRIFT_PORT").asJava
+    val thriftConf: JMap[String, String] = Map(
+      Config.NIMBUS_HOST -> akkaConf.getString(Constants.GEARPUMP_HOSTNAME),
+      Config.NIMBUS_THRIFT_PORT -> s"$THRIFT_PORT").asJava
     updateOutputStormConfig(thriftConf, output)
     stormConf.putAll(thriftConf)
     val thriftServer = createServer(clientContext, stormConf)

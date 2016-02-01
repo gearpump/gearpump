@@ -63,7 +63,8 @@ object GearpumpStormClient extends AkkaApp with ArgumentsParser {
 
   private def getThriftOptions(stormConfig: String): String = {
     val config = Utils.findAndReadConfigFile(stormConfig, true)
+    val host = config.get(Config.NIMBUS_HOST)
     val thriftPort = config.get(Config.NIMBUS_THRIFT_PORT)
-    s"${Config.NIMBUS_HOST}=127.0.0.1,${Config.NIMBUS_THRIFT_PORT}=$thriftPort"
+    s"${Config.NIMBUS_HOST}=$host,${Config.NIMBUS_THRIFT_PORT}=$thriftPort"
   }
 }
