@@ -18,36 +18,131 @@
 
 package io.gearpump.experiments.storm
 
-import io.gearpump.experiments.storm.main.{GearpumpNimbus, GearpumpStormClient}
-import io.gearpump.util.LogUtil
-import org.slf4j.Logger
+import java.io.File
+import java.util.{Map => JMap}
 
-object StormRunner {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
+import akka.actor.{Actor, ActorSystem, Props}
+import backtype.storm.Config
+import backtype.storm.generated.{ClusterSummary, StormTopology, SupervisorSummary, TopologySummary}
+import com.typesafe.config.ConfigValueFactory
+import io.gearpump.cluster.UserConfig
+import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import io.gearpump.experiments.storm.Commands.{GetClusterInfo, _}
+import io.gearpump.experiments.storm.topology.GearpumpStormTopology
+import io.gearpump.experiments.storm.util.{GraphBuilder, StormConstants}
+import io.gearpump.streaming.StreamApplication
+import io.gearpump.util.Constants._
+import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 
-  private val commands = Map("nimbus" -> GearpumpNimbus, "app" -> GearpumpStormClient)
+import scala.collection.JavaConverters._
 
-  private def usage: Unit = {
-    println(commands)
-    val keys = commands.keys.toList.sorted
-    Console.err.println("Usage: " + "<" + keys.mkString("|") + ">")
-  }
+object StormRunner extends AkkaApp with ArgumentsParser {
+  override val options: Array[(String, CLIOption[Any])] = Array(
+    "jar" -> CLIOption[String]("<storm jar>", required = true),
+    "config" -> CLIOption[String]("<storm config path>", required = false),
+    "verbose" -> CLIOption("<print verbose log on console>", required = false, defaultValue = Some(false)))
 
-  private def executeCommand(command : String, commandArgs : Array[String]): Unit = {
-    if (!commands.contains(command)) {
-      usage
-    } else {
-      commands(command).main(commandArgs)
+  override val remainArgs = Array("topology_name")
+
+  override def main(inputAkkaConf: Config, args: Array[String]): Unit = {
+
+    val akkaConf = updateConfig(inputAkkaConf)
+    val config = parse(args)
+
+    val verbose = config.getBoolean("verbose")
+    if (verbose) {
+      LogUtil.verboseLogToConsole
+    }
+
+    val jar = config.getString("jar")
+    val stormConfig = config.getString("config")
+    val topology = config.remainArgs(0)
+    val stormArgs = config.remainArgs.drop(1)
+
+    val system = ActorSystem("storm", akkaConf)
+    val clientContext = new ClientContext(akkaConf, system, null)
+
+    val gearpumpNimbus = system.actorOf(Props(new Handler(clientContext, jar, stormConfig)))
+    val thriftServer = GearpumpThriftServer(gearpumpNimbus)
+    thriftServer.start()
+
+    val stormOptions = Array("-Dstorm.options=" +
+      s"${Config.NIMBUS_HOST}=127.0.0.1,${Config.NIMBUS_THRIFT_PORT}=${GearpumpThriftServer.THRIFT_PORT}",
+      "-Dstorm.jar=" + jar,
+      s"-D${PREFER_IPV4}=true"
+    )
+
+    val classPath = Array(System.getProperty("java.class.path"), jar)
+    val process = Util.startProcess(stormOptions, classPath, topology, stormArgs)
+
+    // wait till the process exit
+    val exit = process.exitValue()
+
+    thriftServer.close()
+    clientContext.close()
+    system.shutdown()
+    system.awaitTermination()
+
+    if (exit != 0) {
+      throw new Exception(s"failed to submit jar, exit code $exit, error summary: ${process.logger.error}")
     }
   }
 
-  def main(args: Array[String]) = {
-    if (args.length == 0) {
-      usage
+  import Constants._
+  private def updateConfig(config: Config): Config = {
+    val storm = s"<${GEARPUMP_HOME}>/lib/storm/*"
+    val appClassPath = s"$storm${File.pathSeparator}" + config.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
+    val executorClassPath = s"$storm${File.pathSeparator}" + config.getString(Constants.GEARPUMP_EXECUTOR_EXTRA_CLASSPATH)
+
+    val updated = config.withValue(GEARPUMP_APPMASTER_EXTRA_CLASSPATH, ConfigValueFactory.fromAnyRef(appClassPath))
+      .withValue(GEARPUMP_EXECUTOR_EXTRA_CLASSPATH, ConfigValueFactory.fromAnyRef(executorClassPath))
+
+    if (config.hasPath(StormConstants.STORM_SERIALIZATION_FRAMEWORK)) {
+      val serializerConfig = ConfigValueFactory.fromAnyRef(config.getString(StormConstants.STORM_SERIALIZATION_FRAMEWORK))
+      updated.withValue(GEARPUMP_SERIALIZER_POOL, serializerConfig)
     } else {
-      val command = args(0)
-      val commandArgs = args.drop(1)
-      executeCommand(command, commandArgs)
+      updated
+    }
+  }
+
+
+  class Handler(clientContext: ClientContext, jar: String, fileConfig: String) extends Actor {
+    private var applications = Map.empty[String, Int]
+    private var topologies = Map.empty[String, StormTopology]
+    private val LOG = LogUtil.getLogger(classOf[Handler])
+
+    implicit val system = context.system
+
+    def receive: Receive = {
+      case Kill(name, option) =>
+        topologies -= name
+        clientContext.shutdown(applications.getOrElse(name, throw new RuntimeException(s"topology $name not found")))
+        val appId = applications(name)
+        applications -= name
+        LOG.info(s"Killed topology $name")
+        sender ! AppKilled(name, appId)
+      case Submit(name, uploadedJarLocation, appConfig, topology, option) =>
+        topologies += name -> topology
+
+        val gearpumpStormTopology = GearpumpStormTopology(topology, appConfig, fileConfig)
+        val stormConfig = gearpumpStormTopology.getStormConfig
+        val processorGraph = GraphBuilder.build(gearpumpStormTopology)
+        val config = UserConfig.empty
+            .withValue[StormTopology](StormConstants.STORM_TOPOLOGY, topology)
+            .withValue[JMap[AnyRef, AnyRef]](StormConstants.STORM_CONFIG, stormConfig)
+        val app = StreamApplication(name, processorGraph, config)
+        val appId = clientContext.submit(app, jar)
+        applications += name -> appId
+        LOG.info(s"Storm Application $appId submitted")
+        sender ! AppSubmitted(name, appId)
+      case GetClusterInfo =>
+        val topologySummaryList = topologies.map { case (name, _) =>
+          new TopologySummary(name, name, 0, 0, 0, 0, "")
+        }.toSeq
+        sender ! new ClusterSummary(List[SupervisorSummary]().asJava, 0, topologySummaryList.asJava)
+      case GetTopology(id) =>
+        sender ! topologies(id)
     }
   }
 }
