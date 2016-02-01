@@ -221,7 +221,7 @@ object MasterService {
    */
   def submitStormApp(jar: Option[File], stormConf: Option[File], args: String, systemConfig: Config): Boolean = {
     submitAndDeleteTempFiles(
-      "io.gearpump.experiments.storm.main.GearpumpStormClient",
+      "io.gearpump.experiments.storm.StormRunner",
       argsArray = spaceSeparatedArgumentsToArray(args),
       fileMap = Map("jar" -> jar, "config" -> stormConf).filter(_._2.isDefined).mapValues(_.get),
       classPath = getStormApplicationClassPath,

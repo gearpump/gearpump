@@ -20,7 +20,6 @@ package io.gearpump.experiments.storm.topology
 
 import java.util.{HashMap => JHashMap, Map => JMap}
 
-import backtype.storm.Config
 import io.gearpump.experiments.storm.processor.StormProcessor
 import io.gearpump.experiments.storm.producer.StormProducer
 import io.gearpump.experiments.storm.util.TopologyUtil
@@ -41,27 +40,28 @@ class GearpumpStormTopologySpec extends WordSpec with Matchers with MockitoSugar
       val sysConfig = newJavaConfig(name, sysVal)
       val appVal = "app"
       val appConfig = newJavaConfig(name, appVal)
+      val fileVal = "file"
+      val fileConfig = newJavaConfig(name, fileVal)
 
       implicit val system = MockUtil.system
-      val topology1 = new GearpumpStormTopology("topology1", stormTopology, newEmptyConfig, newEmptyConfig)
-      topology1.getStormConfig(Config.TOPOLOGY_NAME) shouldBe "topology1"
-      topology1.getStormConfig should not contain name
+      val topology1 = new GearpumpStormTopology(stormTopology, newEmptyConfig, newEmptyConfig, newEmptyConfig)
+      topology1.getStormConfig shouldBe empty
 
-      val topology2 = new GearpumpStormTopology("topology2", stormTopology, sysConfig, newEmptyConfig)
-      topology2.getStormConfig(Config.TOPOLOGY_NAME) shouldBe "topology2"
+      val topology2 = new GearpumpStormTopology(stormTopology, sysConfig, newEmptyConfig, newEmptyConfig)
       topology2.getStormConfig.get(name) shouldBe sysVal
 
-      val topology3 = new GearpumpStormTopology("topology3", stormTopology, sysConfig, appConfig)
-      topology3.getStormConfig(Config.TOPOLOGY_NAME) shouldBe "topology3"
+      val topology3 = new GearpumpStormTopology(stormTopology, sysConfig, appConfig, newEmptyConfig)
       topology3.getStormConfig.get(name) shouldBe appVal
 
+      val topology4 = new GearpumpStormTopology(stormTopology, sysConfig, appConfig, fileConfig)
+      topology4.getStormConfig.get(name) shouldBe fileVal
     }
 
     "create Gearpump processors from Storm topology" in {
       val stormTopology = TopologyUtil.getTestTopology
       implicit val system = MockUtil.system
       val gearpumpStormTopology =
-        GearpumpStormTopology("app", stormTopology, null)
+        GearpumpStormTopology(stormTopology, null, "")
       val processors = gearpumpStormTopology.getProcessors
       stormTopology.get_spouts().foreach { case (spoutId, _) =>
         val processor = processors(spoutId)
@@ -80,7 +80,7 @@ class GearpumpStormTopologySpec extends WordSpec with Matchers with MockitoSugar
       implicit val system = MockUtil.system
       val sysConfig = new JHashMap[AnyRef, AnyRef]
       val gearpumpStormTopology =
-        GearpumpStormTopology("app", stormTopology, null)
+        GearpumpStormTopology(stormTopology, null, "")
       val targets0 = gearpumpStormTopology.getTargets("1")
       targets0 should contain key "3"
       targets0 should contain key "4"

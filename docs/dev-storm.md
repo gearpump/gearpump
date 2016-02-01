@@ -77,43 +77,23 @@ This section shows how to run an existing Storm jar in a local Gearpump cluster.
 1. launch a local cluster
   
    ```
-   bin/local
+   ./target/pack/bin/local
    ```
 
-2. start a local Gearpump Nimbus server 
-
-   Users need server's thrift port to submit topologies later. The thrift port is written to a yaml config file set with `-output` option. 
-   Users can provide an existing config file where only `nimbus.thrift.port` is overwritten. If not provided, a new file `app.yaml` is created with the config.
-
+2. submit a topology from storm-starter. 
    ```
-   bin/storm nimbus -output [conf <custom yaml config>]
+   bin/storm -verbose -config storm.yaml -jar storm-starter-${STORM_VERSION}.jar storm.starter.ExclamationTopology exclamation 
    ```
-   
-3. submit Storm applications
   
-   Users can either submit Storm applications through command line or UI. 
+   Users are able to configure their applications through following options
    
-   a. submit Storm applications through command line
-
-
-     ```
-     bin/storm app -verbose -config app.yaml -jar storm-starter-${STORM_VERSION}.jar storm.starter.ExclamationTopology exclamation 
-     ```
+     * `jar` - set the path of a storm application jar
+     * `config` - submit a customized storm configuration file     
   
-     Users are able to configure their applications through following options
+   That's it. Check the dashboard and you should see data flowing through your topology. 
    
-       * `jar` - set the path of a Storm application jar
-       * `config` - submit the custom configuration file generated when launching Nimbus
-  
-   b. submit Storm application through UI
-   
-      1. Click on the "Create" button on the applications page on UI. 
-      2. Click on the "Submit Storm Application" item in the pull down menu.
-      3. In the popup console, upload the Storm application jar and the configuration file generated when launching Nimbus,
-         and fill in `storm.starter.ExclamationTopology exclamation` as arguments.
-      4. Click on the "Submit" button   
+   *Note that submission from UI is not supported yet*. 
 
-   Either way, check the dashboard and you should see data flowing through your topology. 
   
 ## How is it different from running on Storm
 
@@ -165,11 +145,11 @@ Gearpump has flow control between tasks such that [sender cannot flood receiver]
 All Storm configurations are respected with the following priority order 
 
 ```
-defaults.yaml < custom file config < application config < component config
+defaults.yaml < storm.yaml < application config < component config < custom user config
 ```
 
 where
 
 * application config is submit from Storm application along with the topology 
 * component config is set in spout / bolt with `getComponentConfiguration`
-* custom file config is specified with the `-config` option when submitting Storm application from command line or uploaded from UI
+* custom user config is specified with the `-config` option when submitting Storm application from command line
