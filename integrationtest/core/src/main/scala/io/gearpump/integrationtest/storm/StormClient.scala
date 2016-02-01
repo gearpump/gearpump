@@ -20,7 +20,6 @@ package io.gearpump.integrationtest.storm
 
 
 import backtype.storm.utils.{Utils, DRPCClient}
-import io.gearpump.experiments.storm.GearpumpThriftServer
 import io.gearpump.integrationtest.Docker
 import io.gearpump.integrationtest.minicluster.BaseContainer
 import org.apache.log4j.Logger
@@ -30,23 +29,28 @@ class StormClient(masterAddrs: Seq[(String, Int)]) {
 
   private val LOG = Logger.getLogger(getClass)
   private val STORM_HOST = "storm0"
-  private val STORM_CMD = "/opt/start storm"
+  private val STORM_NIMBUS = "/opt/start storm nimbus"
+  private val STORM_APP = "/opt/start storm app"
   private val STORM_DRPC = "storm-drpc"
   private val CONFIG_FILE = "storm.yaml"
-  private val NIMBUS_THRIFT_PORT = GearpumpThriftServer.THRIFT_PORT
   private val DRPC_PORT = 3772
   private val DRPC_INVOCATIONS_PORT = 3773
 
   private val container = new BaseContainer(STORM_HOST, STORM_DRPC, masterAddrs,
-    tunnelPorts = Set(NIMBUS_THRIFT_PORT, DRPC_PORT, DRPC_INVOCATIONS_PORT))
+    tunnelPorts = Set(DRPC_PORT, DRPC_INVOCATIONS_PORT))
 
   def start(): Unit = {
     container.createAndStart()
+    startNimbus
+  }
+
+  private def startNimbus: String = {
+    Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_NIMBUS -output $CONFIG_FILE")
   }
 
   def submitStormApp(jar: String, mainClass: String, args: String = ""): Int = {
     try {
-      Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_CMD -config $CONFIG_FILE " +
+      Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_APP -config $CONFIG_FILE " +
         s"-jar $jar $mainClass $args").split("\n")
         .filter(_.contains("The application id is ")).head.split(" ").last.toInt
     } catch {
