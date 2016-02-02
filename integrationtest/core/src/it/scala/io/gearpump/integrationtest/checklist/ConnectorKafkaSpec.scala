@@ -62,7 +62,7 @@ class ConnectorKafkaSpec extends TestSpecBase {
         "-sourceTopic", sourceTopic,
         "-sinkTopic", sinkTopic).mkString(" ")
       val appId = restClient.getNextAvailableAppId()
-      val success = restClient.submitApp(kafkaJar, args)
+      val success = restClient.submitApp(kafkaJar, cluster.getWorkerHosts.length, args)
       success shouldBe true
 
       // verify
@@ -90,7 +90,7 @@ class ConnectorKafkaSpec extends TestSpecBase {
         "-sinkTopic", sinkTopic,
         "-source", sourcePartitionNum).mkString(" ")
       val appId = restClient.getNextAvailableAppId()
-      val success = restClient.submitApp(kafkaJar, args)
+      val success = restClient.submitApp(kafkaJar, cluster.getWorkerHosts.length, args)
       success shouldBe true
 
       // verify #1

@@ -10,6 +10,7 @@ angular.module('dashboard')
 
       $scope.dialogTitle = 'Submit Gearpump Application';
       $scope.confFileSuffix = '.conf';
+      $scope.executorNum = 1;
       var submitFn = restapi.submitUserApp;
       if ($scope.isStormApp) {
         $scope.dialogTitle = 'Submit Storm Application';
@@ -29,7 +30,7 @@ angular.module('dashboard')
           fileFormNames.push('conf');
         }
         $scope.uploading = true;
-        submitFn(files, fileFormNames, $scope.launchArgs, function(response) {
+        submitFn(files, fileFormNames, $scope.executorNum, $scope.launchArgs, function(response) {
           $scope.shouldNoticeSubmitFailed = !response.success;
           $scope.uploading = false;
           if (response.success) {

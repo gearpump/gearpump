@@ -121,7 +121,7 @@ class DynamicDagSpec extends TestSpecBase {
 
   private def expectSolJarSubmittedWithAppId(): Int = {
     val appId = restClient.getNextAvailableAppId()
-    val success = restClient.submitApp(solJar)
+    val success = restClient.submitApp(solJar, cluster.getWorkerHosts.length)
     success shouldBe true
     expectAppIsRunning(appId, solName)
     Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)

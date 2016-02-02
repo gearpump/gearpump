@@ -26,7 +26,11 @@ case class Resource(slots : Int) {
 
   def >(other : Resource): Boolean = slots > other.slots
 
+  def >=(other : Resource): Boolean = !(this < other)
+
   def <(other : Resource): Boolean = slots < other.slots
+
+  def <=(other : Resource): Boolean = !(this > other)
 
   def equals(other : Resource): Boolean = slots == other.slots
 
@@ -47,7 +51,7 @@ object Relaxation extends Enumeration{
 
 import Relaxation._
 import Priority._
-case class ResourceRequest(resource: Resource,  workerId: Int = 0, priority: Priority = NORMAL, relaxation: Relaxation = ANY)
+case class ResourceRequest(resource: Resource,  workerId: Int = 0, priority: Priority = NORMAL, relaxation: Relaxation = ANY, executorNum: Int = 1)
 
 case class ResourceAllocation(resource : Resource, worker : ActorRef, workerId : Int)
 

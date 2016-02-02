@@ -118,19 +118,19 @@ angular.module('dashboard')
         },
 
         /** Submit an user defined application with user configuration */
-        submitUserApp: function(files, formFormNames, args, onComplete) {
+        submitUserApp: function(files, formFormNames, executorNum, args, onComplete) {
           return self._submitApp(restapiV1Root + 'master/submitapp',
-            files, formFormNames, args, onComplete);
+            files, formFormNames, executorNum, args, onComplete);
         },
 
         /** Submit a Storm application */
-        submitStormApp: function(files, formFormNames, args, onComplete) {
+        submitStormApp: function(files, formFormNames, executorNum, args, onComplete) {
           return self._submitApp(restapiV1Root + 'master/submitstormapp',
-            files, formFormNames, args, onComplete);
+            files, formFormNames, executorNum, args, onComplete);
         },
 
-        _submitApp: function(url, files, formFormNames, args, onComplete) {
-          var params = args ? '?args=' + encodeURIComponent(args) : '';
+        _submitApp: function(url, files, formFormNames, executorNum, args, onComplete) {
+          var params = '?executorNum=' + executorNum + '&args=' + encodeURIComponent(args);
           var upload = Upload.upload({
             url: url + params,
             method: 'POST',
