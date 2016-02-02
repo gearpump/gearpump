@@ -39,14 +39,15 @@ import io.gearpump.streaming.StreamApplication
 import io.gearpump.util.{AkkaApp, Constants, LogUtil}
 import org.apache.storm.shade.org.json.simple.JSONValue
 import org.apache.storm.shade.org.yaml.snakeyaml.Yaml
-import org.apache.storm.shade.org.yaml.snakeyaml.constructor.SafeConstructor
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Future
 
 object GearpumpNimbus extends AkkaApp with ArgumentsParser {
   private val THRIFT_PORT = StormUtil.getThriftPort
   private val OUTPUT = "output"
+  private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpNimbus])
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     OUTPUT -> CLIOption[String]("<output path for configuration file>", required = false, defaultValue = Some("app.yaml"))
@@ -57,15 +58,20 @@ object GearpumpNimbus extends AkkaApp with ArgumentsParser {
     val output = parsed.getString(OUTPUT)
     val akkaConf = updateClientConfig(inputAkkaConf)
     val system = ActorSystem("storm", akkaConf)
+
     val clientContext = new ClientContext(akkaConf, system, null)
     val stormConf = Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
-    val thriftConf: JMap[String, String] = Map(
-      Config.NIMBUS_HOST -> ("" + akkaConf.getString(Constants.GEARPUMP_HOSTNAME)),
-      Config.NIMBUS_THRIFT_PORT -> s"$THRIFT_PORT").asJava
+    val thriftConf: JMap[AnyRef, AnyRef] = Map(
+      Config.NIMBUS_HOST -> akkaConf.getString(Constants.GEARPUMP_HOSTNAME),
+      Config.NIMBUS_THRIFT_PORT -> s"$THRIFT_PORT").asJava.asInstanceOf[JMap[AnyRef, AnyRef]]
     updateStormConfig(thriftConf, output)
     stormConf.putAll(thriftConf)
-    val thriftServer = createServer(clientContext, stormConf)
-    thriftServer.serve()
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Future {
+      val thriftServer = createServer(clientContext, stormConf)
+      thriftServer.serve()
+    }
     system.awaitTermination()
   }
 
@@ -75,12 +81,12 @@ object GearpumpNimbus extends AkkaApp with ArgumentsParser {
     new ThriftServer(stormConf, processor, connectionType)
   }
 
-  private def updateStormConfig(thriftConfig: JMap[String, String], output: String): Unit = {
+  private def updateStormConfig(thriftConfig: JMap[AnyRef, AnyRef], output: String): Unit = {
     val updatedConfig: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
     val outputConfig = Utils.findAndReadConfigFile(output, false).asInstanceOf[JMap[AnyRef, AnyRef]]
     updatedConfig.putAll(outputConfig)
     updatedConfig.putAll(thriftConfig)
-    val yaml = new Yaml(new SafeConstructor)
+    val yaml = new Yaml
     val serialized = yaml.dumpAsMap(updatedConfig)
     val writer = new FileWriter(new File(output))
     try {
@@ -112,7 +118,8 @@ object GearpumpNimbus extends AkkaApp with ArgumentsParser {
 }
 
 class GearpumpNimbus(clientContext: ClientContext, stormConf: JMap[AnyRef, AnyRef]) extends Nimbus.Iface {
-  private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpNimbus])
+  import io.gearpump.experiments.storm.main.GearpumpNimbus._
+
   private var applications = Map.empty[String, Int]
   private var topologies = Map.empty[String, TopologyData]
   private val expireSeconds = StormUtil.getInt(stormConf, Config.NIMBUS_FILE_COPY_EXPIRATION_SECS).get
@@ -128,7 +135,7 @@ class GearpumpNimbus(clientContext: ClientContext, stormConf: JMap[AnyRef, AnyRe
   }
 
   override def submitTopologyWithOpts(name: String, uploadedJarLocation: String, jsonConf: String, topology: StormTopology, options: SubmitOptions): Unit = {
-
+    LOG.info(s"Submitted topology $name")
     implicit val system = clientContext.system
     val gearpumpStormTopology = GearpumpStormTopology(name, topology, jsonConf)
     val stormConfig = gearpumpStormTopology.getStormConfig

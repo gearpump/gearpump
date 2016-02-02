@@ -348,8 +348,6 @@ object ClockService {
     def updateMinClock(taskIndex: Int, clock: TimeStamp): Unit = {
       taskClocks(taskIndex) = clock
       _min = Longs.min(taskClocks: _*)
-
-      Console.print(s"min clock of $processorId is ${_min}")
     }
   }
 

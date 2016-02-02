@@ -385,8 +385,7 @@ object Build extends sbt.Build {
           "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
           "org.apache.hadoop" % "hadoop-mapreduce-client-core" % clouderaVersion,
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
-          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided",
-          "org.specs2" %% "specs2-mock" % "3.6.4" % "test"
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
         )
       )
   ) dependsOn(services % "test->test;compile->compile", core % "provided")
