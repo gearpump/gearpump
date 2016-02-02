@@ -144,7 +144,7 @@ object StreamApplication {
       LOG.warn(s"Detected cycles in DAG of application $name!")
     }
 
-    val indices = dag.topologicalOrderIterator.toList.zipWithIndex.toMap
+    val indices = dag.topologicalOrderWithCirclesIterator.toList.zipWithIndex.toMap
     val graph = dag.mapVertex {processor =>
       val updatedProcessor = ProcessorToProcessorDescription(indices(processor), processor)
       updatedProcessor
