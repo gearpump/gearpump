@@ -18,7 +18,6 @@
 
 package io.gearpump.experiments.storm.topology
 
-import java.io._
 import java.lang.{Iterable => JIterable}
 import java.util.{ArrayList => JArrayList, HashMap => JHashMap, List => JList, Map => JMap}
 
@@ -35,8 +34,6 @@ import io.gearpump.experiments.storm.util.StormUtil._
 import io.gearpump.streaming.Processor
 import io.gearpump.streaming.task.Task
 import io.gearpump.util.LogUtil
-import org.apache.storm.shade.org.yaml.snakeyaml.Yaml
-import org.apache.storm.shade.org.yaml.snakeyaml.constructor.SafeConstructor
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
@@ -45,43 +42,18 @@ object GearpumpStormTopology {
   private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpStormTopology])
 
   def apply(
+      name: String,
       topology: StormTopology,
-      appConfigInJson: String,
-      fileConfig: String)(implicit system: ActorSystem): GearpumpStormTopology = {
+      appConfigInJson: String)(implicit system: ActorSystem): GearpumpStormTopology = {
     new GearpumpStormTopology(
+      name,
       topology,
       Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]],
-      parseJsonStringToMap(appConfigInJson),
-      readStormConfig(fileConfig)
+      parseJsonStringToMap(appConfigInJson)
     )
 
   }
 
-  /**
-   * @param configFile user provided local config file
-   * @return a config Map loaded from config file
-   */
-  private def readStormConfig(configFile: String): JMap[AnyRef, AnyRef] = {
-    var ret: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
-    try {
-      val yaml = new Yaml(new SafeConstructor)
-      val input: InputStream = new FileInputStream(configFile)
-      try {
-        ret = yaml.load(new InputStreamReader(input)).asInstanceOf[JMap[AnyRef, AnyRef]]
-      } catch {
-        case e: IOException =>
-          LOG.warn(s"failed to load config file $configFile")
-      } finally {
-        input.close()
-      }
-    } catch {
-      case e: FileNotFoundException =>
-        LOG.warn(s"failed to find config file $configFile")
-      case t: Throwable =>
-        LOG.error(t.getMessage)
-    }
-    ret
-  }
 }
 
 /**
@@ -91,21 +63,20 @@ object GearpumpStormTopology {
  *   3. provides interface for Gearpump applications to use Storm topology
  *
  * an implicit ActorSystem is required to create Gearpump processors
+ * @param name topology name
  * @param topology Storm topology
- * @param sysConfig configs from "defaults.yaml" and "storm.yaml"
+ * @param sysConfig configs from "defaults.yaml" and custom config file
  * @param appConfig config submitted from user application
- * @param fileConfig custom file config set by user in command line
  */
 private[storm] class GearpumpStormTopology(
+    name: String,
     topology: StormTopology,
     sysConfig: JMap[AnyRef, AnyRef],
-    appConfig: JMap[AnyRef, AnyRef],
-    fileConfig: JMap[AnyRef, AnyRef])(implicit system: ActorSystem) {
-  import io.gearpump.experiments.storm.topology.GearpumpStormTopology._
+    appConfig: JMap[AnyRef, AnyRef])(implicit system: ActorSystem) {
 
   private val spouts = topology.get_spouts()
   private val bolts = topology.get_bolts()
-  private val stormConfig = mergeConfigs(sysConfig, appConfig, fileConfig, getComponentConfigs(spouts, bolts))
+  private val stormConfig = mergeConfigs(sysConfig, appConfig, getComponentConfigs(spouts, bolts))
   private val spoutProcessors = spouts.map { case (id, spout) =>
     id -> spoutToProcessor(id, spout, stormConfig.toMap) }.toMap
   private val boltProcessors = bolts.map { case (id, bolt) =>
@@ -114,7 +85,7 @@ private[storm] class GearpumpStormTopology(
 
   /**
    * @return merged Storm config with priority
-   *    defaults.yaml < storm.yaml < application config < component config < custom file config
+   *    defaults.yaml < custom file config < application config < component config
    */
   def getStormConfig: JMap[AnyRef, AnyRef] = stormConfig
 
@@ -139,13 +110,12 @@ private[storm] class GearpumpStormTopology(
   private def mergeConfigs(
       sysConfig: JMap[AnyRef, AnyRef],
       appConfig: JMap[AnyRef, AnyRef],
-      fileConfig: JMap[AnyRef, AnyRef],
       componentConfigs: Iterable[JMap[AnyRef, AnyRef]]): JMap[AnyRef, AnyRef] = {
     val allConfig = new JHashMap[AnyRef, AnyRef]
     allConfig.putAll(sysConfig)
     allConfig.putAll(appConfig)
     allConfig.putAll(getMergedComponentConfig(componentConfigs, allConfig.toMap))
-    allConfig.putAll(fileConfig)
+    allConfig.put(Config.TOPOLOGY_NAME, name)
     allConfig
   }
 
