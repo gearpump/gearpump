@@ -162,5 +162,5 @@ object Constants {
 
   val PREFER_IPV4 = "java.net.preferIPv4Stack"
 
-
+  val APPLICATION_EXECUTOR_NUMBER = "gearpump.application.executor-num"
 }

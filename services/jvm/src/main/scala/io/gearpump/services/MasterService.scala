@@ -109,12 +109,12 @@ class MasterService(val master: ActorRef,
     } ~
     path("submitapp") {
       post {
-        parameters("args" ? "") { args: String =>
+        parameters('executorNum.as[Int] ? 1, 'args ? "") { (executorNum, args) =>
           uploadFile { fileMap =>
             val jar = fileMap.get("jar").map(_.file)
             val userConf = fileMap.get("conf").map(_.file)
             onComplete(Future(
-              MasterService.submitGearApp(jar, args, systemConfig, userConf)
+              MasterService.submitGearApp(jar, executorNum, args, systemConfig, userConf)
             )) {
               case Success(success) =>
                 val response = MasterService.AppSubmissionResult(success)
@@ -128,7 +128,7 @@ class MasterService(val master: ActorRef,
     } ~
     path("submitstormapp") {
       post {
-        parameters("args" ? "") { args: String =>
+        parameters('executorNum.as[Int] ? 1, 'args ? "") { (executorNum, args) =>
           uploadFile { fileMap =>
             val jar = fileMap.get("jar").map(_.file)
             val stormConf = fileMap.get("conf").map(_.file)
@@ -201,10 +201,10 @@ object MasterService {
   /**
    * Submit Native Application.
    */
-  def submitGearApp(jar: Option[File], args: String, systemConfig: Config, userConfigFile: Option[File]): Boolean = {
+  def submitGearApp(jar: Option[File], executorNum: Int, args: String, systemConfig: Config, userConfigFile: Option[File]): Boolean = {
     submitAndDeleteTempFiles(
       "io.gearpump.cluster.main.AppSubmitter",
-      argsArray = spaceSeparatedArgumentsToArray(args),
+      argsArray = Array("-executors", executorNum.toString) ++ spaceSeparatedArgumentsToArray(args),
       fileMap = Map("jar" -> jar).filter(_._2.isDefined).mapValues(_.get),
       classPath = getUserApplicationClassPath,
       systemConfig,

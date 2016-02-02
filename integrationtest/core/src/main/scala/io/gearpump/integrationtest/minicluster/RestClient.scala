@@ -87,10 +87,10 @@ class RestClient(host: String, port: Int) {
     listApps().length + 1
   }
 
-  def submitApp(jar: String, args: String = "", config: String = ""): Boolean = try {
+  def submitApp(jar: String, executorNum: Int, args: String = "", config: String = ""): Boolean = try {
     var endpoint = "master/submitapp"
     if (args.length > 0) {
-      endpoint += "?args=" + Util.encodeUriComponent(args)
+      endpoint += s"?executorNum=${executorNum}&args=" + Util.encodeUriComponent(args)
     }
     var options = Seq(s"jar=@$jar")
     if (config.length > 0) {

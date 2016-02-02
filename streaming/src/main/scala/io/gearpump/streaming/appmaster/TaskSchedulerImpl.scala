@@ -24,7 +24,7 @@ import io.gearpump.streaming.DAG
 import io.gearpump.streaming.appmaster.TaskLocator.{Locality, WorkerLocality}
 import io.gearpump.streaming.appmaster.TaskScheduler.{Location, TaskStatus}
 import io.gearpump.streaming.task.TaskId
-import io.gearpump.util.LogUtil
+import io.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
 
 /**
@@ -80,7 +80,7 @@ object TaskScheduler {
 }
 
 class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends TaskScheduler {
-  private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
+  private val executorNum = config.getInt(Constants.APPLICATION_EXECUTOR_NUMBER)
 
   private var tasks = List.empty[TaskStatus]
 
@@ -121,7 +121,7 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
     workersResourceRequest.map {workerIdAndResource =>
       val (workerId, resource) = workerIdAndResource
       if (workerId == WORKER_NO_PREFERENCE) {
-        ResourceRequest(resource)
+        ResourceRequest(resource, executorNum = executorNum)
       } else {
         ResourceRequest(resource, workerId, relaxation = SPECIFICWORKER)
       }

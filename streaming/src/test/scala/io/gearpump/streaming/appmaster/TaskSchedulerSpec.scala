@@ -23,7 +23,7 @@ import io.gearpump.streaming.appmaster.TaskLocator.Localities
 import io.gearpump.streaming.task.{StartTime, TaskContext, TaskId}
 import io.gearpump.Message
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
-import io.gearpump.cluster.{ClusterConfig, UserConfig}
+import io.gearpump.cluster.{TestUtil, ClusterConfig, UserConfig}
 import io.gearpump.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.streaming.appmaster.TaskLocator.Localities
 import io.gearpump.streaming.appmaster.TaskSchedulerSpec.{TestTask1, TestTask2}
@@ -41,7 +41,7 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
 
   val dag = DAG(Graph(task1 ~ Partitioner[HashPartitioner] ~> task2))
 
-  val config = ClusterConfig.default()
+  val config = TestUtil.DEFAULT_CONFIG
 
   "TaskScheduler" should {
     "schedule tasks on different workers properly according user's configuration" in {

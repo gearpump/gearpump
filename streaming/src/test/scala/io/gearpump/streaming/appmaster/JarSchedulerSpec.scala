@@ -20,7 +20,7 @@ package io.gearpump.streaming.appmaster
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import io.gearpump.streaming.{ProcessorDescription, DAG}
-import io.gearpump.cluster.AppJar
+import io.gearpump.cluster.{TestUtil, AppJar}
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.jarstore.FilePath
 import io.gearpump.partitioner.{HashPartitioner, Partitioner}
@@ -47,7 +47,7 @@ class JarSchedulerSpec extends WordSpec with Matchers {
     "schedule tasks depends on app jar" in {
       val system = ActorSystem("JarSchedulerSpec")
       implicit val dispatcher = system.dispatcher
-      val manager = new JarScheduler(0, "APP", ConfigFactory.empty(), system)
+      val manager = new JarScheduler(0, "APP", TestUtil.DEFAULT_CONFIG, system)
       manager.setDag(dag, Future{0L})
       val requests = Array(ResourceRequest(Resource(2)))
       val result = Await.result(manager.getRequestDetails(), 15 seconds)
