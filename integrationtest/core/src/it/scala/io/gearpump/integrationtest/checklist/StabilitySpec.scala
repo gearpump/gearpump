@@ -95,7 +95,7 @@ class StabilitySpec extends TestSpecBase {
       restartClusterRequired = true
       val masters = cluster.getMasterHosts
       val config = restClient.queryMasterConfig()
-      val shutDownTimeout = Duration(config.getString("gearpump-master.akka.cluster.auto-down-unreachable-after"))
+      val shutDownTimeout = Duration(config.getString("akka.cluster.auto-down-unreachable-after"))
 
       // exercise
       masters.foreach(cluster.removeMasterNode)
