@@ -3,16 +3,27 @@
  * See accompanying LICENSE file.
  */
 
-angular.module('dashboard', [
-  'ngAnimate',
-  'ngSanitize',
-  'mgcrea.ngStrap',
-  'ui.router',
-  'ui.select',
-  'cfp.loadingBarInterceptor',
-  'ngFileUpload',
-  'dashing'
-])
+(function() {
+
+  // rootPath of this site, it has a tailing slash /
+  var rootPath = function() {
+    var root = location.origin + location.pathname;
+    return root.substring(0, root.lastIndexOf("/") + 1);
+  }();
+
+  angular.module('dashboard', [
+    'ngAnimate',
+    'ngSanitize',
+    'ngCookies',
+    'ngTouch',
+    'mgcrea.ngStrap',
+    'ui.router',
+    'ui.select',
+    'cfp.loadingBarInterceptor',
+    'ngFileUpload',
+    'dashing',
+    'io.gearpump.models'
+  ])
 
   // configure routes
   .config(['$stateProvider', '$urlRouterProvider',
@@ -22,12 +33,7 @@ angular.module('dashboard', [
       $urlRouterProvider
         .when('', '/')
         .when('/', '/cluster')
-        .when('/cluster', '/cluster/master')/*
-        .otherwise(function($injector, $location) {
-          // redirects to parent state (recursively)
-          var parentUrl = _.initial($location.path().split('/')).join('/');
-          $location.path(parentUrl);
-        })*/;
+        .when('/cluster', '/cluster/master');
 
       $stateProvider
         .state('cluster', {
@@ -55,21 +61,58 @@ angular.module('dashboard', [
     });
   }])
 
-  // disable caching for ajax calls to make MSIE happy
-  .config(['$httpProvider', function($httpProvider) {
+  // disable logging for production
+  .config(['$compileProvider', function($compileProvider) {
     'use strict';
 
-    $httpProvider.defaults.headers.get = angular.merge({
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    }, $httpProvider.defaults.headers.get);
+    $compileProvider.debugInfoEnabled(false);
   }])
 
   // constants
   .constant('conf', {
     restapiProtocol: 'v1.0',
-    restapiRoot: location.origin + location.pathname,
-    restapiQueryInterval: 2 * 1000, // 2 seconds
-    restapiQueryTimeout: 30 * 1000 // 30 seconds
+    restapiRoot: rootPath,
+    restapiQueryInterval: 3 * 1000, // in milliseconds
+    restapiQueryTimeout: 30 * 1000, // in milliseconds
+    restapiTaskLevelMetricsQueryLimit: 100,
+    loginUrl: rootPath + 'login'
   })
-;
+
+  /* add a retry delay for angular-ui-router, when resolving a data is failed */
+  .run(['$rootScope', '$state', 'conf', function($rootScope, $state, conf) {
+    'use strict';
+
+    $rootScope.$on('$stateChangeError', function(event, toState) {
+      event.preventDefault();
+      _.delay($state.go, conf.restapiQueryTimeout, toState);
+    });
+  }])
+
+  /* enable a health check service */
+  .run(['$modal', 'HealthCheckService', 'conf', function($modal, HealthCheckService, conf) {
+    'use strict';
+
+    var dialog = $modal({
+      templateUrl: 'views/service_unreachable_notice.html',
+      backdrop: 'static',
+      show: false
+    });
+
+    var showDialogFn = function() {
+      dialog.$promise.then(dialog.show);
+    };
+
+    var hideDialogFn = function() {
+      // simply refresh the page, to make sure page status is fresh
+      location.reload();
+    };
+
+    HealthCheckService.config(
+      conf.restapiRoot + 'version',
+      conf.restapiQueryInterval,
+      showDialogFn,
+      hideDialogFn
+    );
+    HealthCheckService.checkForever();
+  }]);
+})();

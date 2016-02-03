@@ -22,10 +22,10 @@ import akka.actor.Actor.Receive
 import akka.actor._
 import akka.pattern.ask
 import io.gearpump.cluster.AppMasterToMaster.GetAllWorkers
-import io.gearpump.cluster.ClientToMaster.{ResolveWorkerId, ResolveAppId}
+import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ResolveWorkerId}
 import io.gearpump.cluster.MasterToAppMaster.WorkerList
-import io.gearpump.cluster.MasterToClient.{ResolveWorkerIdResult, ResolveAppIdResult}
-import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{StartExecutorSystems, ExecutorSystemJvmConfig}
+import io.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ResolveWorkerIdResult}
+import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, StartExecutorSystems}
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import io.gearpump.transport.HostPort
 import org.slf4j.Logger

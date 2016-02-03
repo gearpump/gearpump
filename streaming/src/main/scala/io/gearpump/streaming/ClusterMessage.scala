@@ -46,6 +46,8 @@ object AppMasterToExecutor {
 
   case class StartTask(taskId: TaskId)
 
+  case class StopTask(taskId: TaskId)
+
   case class TaskLocationsReady(taskLocations: TaskLocations, dagVersion: Int)
 
   case class TaskLocationsReceived(dagVersion: Int, executorId: ExecutorId)
@@ -66,6 +68,7 @@ object ExecutorToAppMaster {
   case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, worker : WorkerInfo)
 
   case class RegisterTask(taskId: TaskId, executorId : Int, task: HostPort)
+  case class UnRegisterTask(taskId: TaskId, executorId : Int)
 
   case class MessageLoss(executorId: Int, taskId: TaskId, cause: String)
 }

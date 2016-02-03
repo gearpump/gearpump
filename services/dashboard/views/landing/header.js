@@ -13,27 +13,22 @@ angular.module('dashboard')
       templateUrl: 'views/landing/header.html',
       replace: true,
       scope: {},
-      controller: ['$scope', 'restapi', function($scope, restapi) {
-        $scope.menu = [
-          {text: 'Cluster', pathPatt: '/cluster', href: '#/cluster', icon: 'glyphicon glyphicon-th-large'},
-          {text: 'Applications', pathPatt: '/apps', href: '#/apps', icon: 'glyphicon glyphicon-tasks'}
+      controller: ['$scope', '$cookies', 'restapi', 'conf', function($scope, $cookies, restapi, conf) {
+        $scope.clusterMenuItems = [
+          {text: 'Master', pathPatt: 'master', icon: 'fa fa-laptop'},
+          {text: 'Workers', pathPatt: 'workers', icon: 'fa fa-server'}
         ];
 
-        $scope.links = [
-          {text: 'Docs', href: '//gearpump.io', icon: 'fa fa-book'},
+        $scope.username = $cookies.get('username');
+        $scope.userMenuItems = [
+          {text: 'Sign Out', href: conf.loginUrl, icon: 'glyphicon glyphicon-off'},
+          {isDivider: true},
+          {text: 'Documents', href: '//gearpump.io', icon: 'fa fa-book'},
           {text: 'GitHub', href: '//github.com/gearpump/gearpump', icon: 'fa fa-github'}
         ];
 
-        $scope.dropdownMenuOptions = ([].concat($scope.menu).concat($scope.links))
-          .map(function(item) {
-            return {
-              text: '<i class="' + item.icon + '"></i> ' + item.text,
-              href: item.href
-            };
-          });
-
         $scope.version = 'beta';
-        restapi.repeatHealthCheck($scope, function(version) {
+        restapi.serviceVersion(function(version) {
           $scope.version = version;
         });
       }]

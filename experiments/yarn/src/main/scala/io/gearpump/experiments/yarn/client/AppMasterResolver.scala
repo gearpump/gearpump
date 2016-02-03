@@ -46,6 +46,7 @@ class AppMasterResolver(yarnClient: YarnClient, system: ActorSystem) {
     val report = yarnClient.getApplicationReport(appId)
     val client = new HttpClient()
     val appMasterPath = s"${report.getOriginalTrackingUrl}/supervisor-actor-path"
+    LOG.info(s"appMasterPath=$appMasterPath")
     val get = new GetMethod(appMasterPath)
     val status = client.executeMethod(get)
     if (status == 200) {

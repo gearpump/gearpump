@@ -1,4 +1,5 @@
 import BuildExample.examples
+import BuildIntegrationTest.integration_test
 import com.typesafe.sbt.SbtPgp.autoImport._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
@@ -32,7 +33,7 @@ object Build extends sbt.Build {
   val upickleVersion = "0.3.4"
   val junitVersion = "4.12"
   val kafkaVersion = "0.8.2.1"
-  val stormVersion = "0.9.5"
+  val stormVersion = "0.10.0"
   val slf4jVersion = "1.7.7"
   val gsCollectionsVersion = "6.2.0"
 
@@ -126,7 +127,8 @@ object Build extends sbt.Build {
   val noPublish = Seq(
     publish := {},
     publishLocal := {},
-    publishArtifact := false
+    publishArtifact := false,
+    publishArtifact in Test := false
   )
 
   val daemonDependencies = Seq(
@@ -186,7 +188,7 @@ object Build extends sbt.Build {
   val myAssemblySettings = assemblySettings ++ Seq(
     test in assembly := {},
     assemblyOption in assembly ~= { _.copy(includeScala = false) },
-    jarName in assembly := { s"${name.value.split("-").last}-${scalaVersion.value}-${version.value}-assembly.jar" }
+    jarName in assembly := { s"${name.value.split("-").last}-${scalaBinaryVersion.value}-${version.value}-assembly.jar" }
   )
 
   val projectsWithDoc = inProjects(core, streaming, external_kafka, external_monoid, external_serializer, external_hbase, external_hadoopfs, daemon, streaming)
@@ -227,6 +229,12 @@ object Build extends sbt.Build {
   lazy val daemon = Project(
     id = "gearpump-daemon",
     base = file("daemon"),
+    settings = commonSettings ++ noPublish ++ daemonDependencies
+  ) dependsOn(core % "test->test; compile->compile", cgroup % "test->test; compile->compile")
+
+  lazy val cgroup = Project(
+    id = "gearpump-experimental-cgroup",
+    base = file("experiments/cgroup"),
     settings = commonSettings ++ noPublish ++ daemonDependencies
   ) dependsOn(core % "test->test; compile->compile")
 
@@ -269,6 +277,7 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-http-testkit-experimental"% "1.0" % "test",
       "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
       "com.lihaoyi" %% "upickle" % upickleVersion,
+      "com.softwaremill" %% "akka-http-session" % "0.1.4",
       "org.webjars" % "angularjs" % "1.4.8",
       "org.webjars" % "angular-ui-router" % "0.2.15",
       "org.webjars" % "bootstrap" % "3.3.6",
@@ -276,6 +285,8 @@ object Build extends sbt.Build {
       "org.webjars" % "momentjs" % "2.10.6",
       "org.webjars" % "lodash" % "3.10.1",
       "org.webjars" % "font-awesome" % "4.5.0",
+      "org.webjars" % "jquery" % "2.2.0",
+      "org.webjars" % "jquery-cookie" % "1.4.1",
       "org.webjars.bower" % "angular-loading-bar" % "0.8.0",
       "org.webjars.bower" % "angular-smart-table" % "2.1.6",
       "org.webjars.bower" % "angular-motion" % "0.4.3",
@@ -285,8 +296,8 @@ object Build extends sbt.Build {
       "org.webjars.bower" % "ng-file-upload" % "5.0.9",
       "org.webjars.bower" % "vis" % "4.7.0",
       "org.webjars.bower" % "clipboard.js" % "0.1.1",
-      "org.webjars.npm" % "dashing-deps" % "0.0.8",
-      "org.webjars.npm" % "dashing" % "0.3.8"
+      "org.webjars.npm" % "dashing-deps" % "0.1.2",
+      "org.webjars.npm" % "dashing" % "0.4.4"
   ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
 
   lazy val serviceJSSettings = Seq(
@@ -340,7 +351,6 @@ object Build extends sbt.Build {
             exclude("clout", "clout")
             exclude("compojure", "compojure")
             exclude("hiccup", "hiccup")
-            exclude("javax.servlet", "servlet-api")
             exclude("jline", "jline")
             exclude("joda-time", "joda-time")
             exclude("org.clojure", "core.incubator")
@@ -456,27 +466,4 @@ object Build extends sbt.Build {
         )
   ) dependsOn(streaming % "test->test; provided")
 
-  val itTestFilter: String => Boolean = { name => name endsWith "Suite" }
-
-  lazy val integration_test = Project(
-    id = "gearpump-integration-test",
-    base = file("integrationtest"),
-    settings = commonSettings ++ noPublish ++ Seq(
-      testOptions in IntegrationTest += Tests.Filter(itTestFilter),
-      libraryDependencies ++= Seq(
-        "com.lihaoyi" %% "upickle" % upickleVersion,
-        "org.scalatest" %% "scalatest" % scalaTestVersion % "it",
-        "org.pegdown" % "pegdown" % "1.4.2" % "it",
-        "org.parboiled" % "parboiled-core" % "1.1.7" % "it",
-        "org.parboiled" % "parboiled-java" % "1.1.7" % "it",
-        "org.ow2.asm" % "asm-all" % "5.0.3" % "it"
-      )
-    )
-  ).configs(IntegrationTest).settings(Defaults.itSettings : _*)
-   .dependsOn(
-     streaming % "test->test; provided",
-     services % "test->test; provided",
-     external_kafka,
-     storm
-   )
 }

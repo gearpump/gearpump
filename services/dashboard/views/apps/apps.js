@@ -30,20 +30,29 @@ angular.module('dashboard')
         templateUrl: 'views/apps/submit/submit.html',
         controller: 'AppSubmitCtrl',
         backdrop: 'static',
-        keyboard: false /* https://github.com/mgcrea/angular-strap/issues/1779 */,
+        keyboard: true,
         show: false
       });
 
-      $scope.openSubmitDialog = function() {
+      $scope.openSubmitGearAppDialog = function() {
+        submitWindow.$scope.isStormApp = false;
+        submitWindow.$promise.then(submitWindow.show);
+      };
+
+      $scope.openSubmitStormAppDialog = function() {
+        submitWindow.$scope.isStormApp = true;
         submitWindow.$promise.then(submitWindow.show);
       };
 
       $scope.composeMenuOptions = [{
+        text: '<i class="glyphicon glyphicon-none"></i> <b>Submit Gearpump Application</b>',
+        click: $scope.openSubmitGearAppDialog
+      }, {
+        text: '<i class="glyphicon glyphicon-none"></i> Submit Storm Application',
+        click: $scope.openSubmitStormAppDialog
+      }, {
         text: '<i class="glyphicon glyphicon-pencil"></i> Compose DAG',
         href: $state.href('compose_app')
-      }, {
-        text: '<i class="glyphicon glyphicon-none"></i> <b>Submit Application</b>',
-        click: $scope.openSubmitDialog
       }];
 
       $scope.appsTable = {
@@ -54,9 +63,9 @@ angular.module('dashboard')
           $stb.link('Name').key('name').canSort('name.text').styleClass('col-md-1').done(),
           $stb.text('Address').key('akkaAddr').canSort().styleClass('col-md-3 hidden-sm hidden-xs').done(),
           // group 2/3 (5-col)
-          $stb.datetime('Submission Time').key('submissionTime').canSort().sortDefaultDescent().styleClass('col-md-1').done(),
-          $stb.datetime('Start Time').key('startTime').canSort().styleClass('col-md-1').done(),
-          $stb.datetime('Stop Time').key('stopTime').canSort().styleClass('col-md-1').done(),
+          $stb.datetime('Submission Time').key('submissionTime').canSort().sortDefaultDescent().styleClass('col-md-1 hidden-sm hidden-xs').done(),
+          $stb.datetime('Start Time').key('startTime').canSort().styleClass('col-md-1 hidden-sm hidden-xs').done(),
+          $stb.datetime('Stop Time').key('stopTime').canSort().styleClass('col-md-1 hidden-sm hidden-xs').done(),
           $stb.text('User').key('user').canSort().styleClass('col-md-2').done(),
           // group 3/3 (3-col)
           $stb.button('Actions').key(['view', 'config', 'kill', 'restart']).styleClass('col-md-3').done()

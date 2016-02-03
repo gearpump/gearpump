@@ -36,7 +36,12 @@ import scala.collection.JavaConversions._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.concurrent.Future
+import scala.util.Try
 
+
+/**
+ * ClientContext is a user facing util to submit/manage an application.
+ */
 //TODO: add interface to query master here
 class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
 
@@ -66,7 +71,7 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   }
 
   /**
-   * Submit an applicaiton with default jar setting. Use java property
+   * Submit an application with default jar setting. Use java property
    * "gearpump.app.jar" if defined. Otherwise, will assume the jar is on
    * the target runtime classpath, and will not send it.
    */
@@ -88,7 +93,7 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   }
 
   private def submit(app : AppDescription, jarPath: String) : Int = {
-    val client = new MasterClient(master)
+    val client = getMasterClient
     val appName = checkAndAddNamePrefix(app.name, System.getProperty(GEARPUMP_APP_NAME_PREFIX))
     val updatedApp = AppDescription(appName, app.appMaster, app.userConfig, app.clusterConfig)
     if (jarPath == null) {
@@ -111,17 +116,17 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   }
 
   def listApps: AppMastersData = {
-    val client = new MasterClient(master)
+    val client = getMasterClient
     client.listApplications
   }
 
   def shutdown(appId : Int) : Unit = {
-    val client = new MasterClient(master)
+    val client = getMasterClient
     client.shutdownApplication(appId)
   }
 
   def resolveAppID(appId: Int) : ActorRef = {
-    val client = new MasterClient(master)
+    val client = getMasterClient
     client.resolveAppId(appId)
   }
 
@@ -151,6 +156,11 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
       throw new Exception(error)
     }
     fullName
+  }
+
+  private def getMasterClient: MasterClient = {
+    val timeout = Try(config.getInt(Constants.GEARPUMP_MASTERCLIENT_TIMEOUT)).getOrElse(90)
+    new MasterClient(master, akka.util.Timeout(timeout, TimeUnit.SECONDS))
   }
 }
 

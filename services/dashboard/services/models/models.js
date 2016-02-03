@@ -3,32 +3,25 @@
  * See accompanying LICENSE file.
  */
 
-angular.module('dashboard')
+angular.module('io.gearpump.models', [])
 
 /** TODO: to be absorbed as scalajs */
-  .factory('models', ['$timeout', 'conf', 'restapi', 'locator', 'StreamingDag', 'Metrics',
-    function($timeout, conf, restapi, locator, StreamingDag, Metrics) {
+  .factory('models', ['$timeout', 'conf', 'restapi', 'locator', 'StreamingAppDag', 'Metrics',
+    function($timeout, conf, restapi, locator, StreamingAppDag, Metrics) {
       'use strict';
 
       var util = {
         usage: function(current, total) {
           return total > 0 ? 100 * current / total : 0;
         },
-        flatten: function(array, fn) {
-          var result = {};
-          _.forEach(array, function(item) {
-            if (fn) {
-              item = fn(item);
-            }
-            result[item[0]] = item[1];
-          });
-          return result;
-        },
         getOrCreate: function(obj, prop, init) {
           if (!obj.hasOwnProperty(prop)) {
             obj[prop] = init;
           }
           return obj[prop];
+        },
+        parseIntFromQueryPathTail: function(path) {
+          return Number(_.last(path.split('.')).replace(/[^0-9]/g, ''));
         }
       };
 
@@ -95,7 +88,7 @@ angular.module('dashboard')
           var obj = wrapper.masterDescription;
           angular.merge(obj, {
             // upickle conversion
-            cluster: obj.cluster.map(function(tuple) {
+            cluster: _.map(obj.cluster, function(tuple) {
               return tuple.join(':');
             }),
             jvm: decoder._jvm(obj.jvmName),
@@ -169,28 +162,43 @@ angular.module('dashboard')
           }
 
           // upickle conversion 1: streaming app related decoding
-          obj.processors = util.flatten(obj.processors);
+          obj.processors = _.zipObject(obj.processors);
           _.forEach(obj.processors, function(processor) {
             // add an active property
             var active = true;
+            var replaced = false;
             if (angular.isNumber(obj.clock) && processor.hasOwnProperty('life')) {
               var life = processor.life;
               if (life.hasOwnProperty('death') && obj.clock > Number(life.death)) {
-                active = false; // caution: death will be set to 0 after processor getting replaced!
+                active = false;
+                replaced = Number(life.death) === 0; // caution: death will be set to 0 after processor getting replaced!
               }
             }
             processor.active = active;
+            processor.replaced = replaced;
           });
-          obj.processorLevels = util.flatten(obj.processorLevels);
-          if (obj.dag && obj.dag.edgeList) {
-            obj.dag.edgeList = util.flatten(obj.dag.edgeList, function(item) {
-              return [item[0] + '_' + item[2],
-                {source: parseInt(item[0]), target: parseInt(item[2]), type: item[1]}];
+          _.forEach(_.zipObject(obj.processorLevels), function(hierarchy, processorId) {
+            obj.processors[processorId].hierarchy = hierarchy;
+          });
+          delete obj.processorLevels;
+
+          if (obj.dag && Array.isArray(obj.dag.edgeList)) {
+            var edges = {};
+            _.forEach(obj.dag.edgeList, function(tuple) {
+              var from = parseInt(tuple[0]);
+              var to = parseInt(tuple[2]);
+              var partitionerClass = tuple[1];
+              edges[from + '_' + to] = {
+                from: from,
+                to: to,
+                partitioner: partitionerClass
+              };
             });
+            obj.dag.edgeList = edges;
           }
 
           // upickle conversion 2a: convert array to dictionary
-          obj.executors = _.object(_.pluck(obj.executors, 'executorId'), obj.executors);
+          obj.executors = _.object(_.map(obj.executors, 'executorId'), obj.executors);
 
           // upickle conversion 2b: add extra executor properties and methods
           _.forEach(obj.executors, function(executor) {
@@ -203,7 +211,7 @@ angular.module('dashboard')
 
           // upickle conversion 2c: task count is executor specific property for streaming app
           _.forEach(obj.processors, function(processor) {
-            var taskCountLookup = util.flatten(processor.taskCount);
+            var taskCountLookup = _.zipObject(processor.taskCount);
             // Backend returns executor ids, but names as `executor`. We change them to real executors.
             processor.executors = _.map(processor.executors, function(executorId) {
               var executor = obj.executors[executorId];
@@ -239,9 +247,20 @@ angular.module('dashboard')
         appStallingTasks: function(wrapper) {
           var result = _.groupBy(wrapper.tasks, 'processorId');
           _.forEach(result, function(processor, processorId) {
-            result[processorId] = _.pluck(processor, 'index');
+            result[processorId] = _.map(processor, 'index');
           });
           return result;
+        },
+        /** Return an array of application alerts */
+        appAlerts: function(obj) {
+          if (obj.time > 0) {
+            return [{
+              severity: 'error',
+              time: Number(obj.time),
+              message: obj.error
+            }];
+          }
+          return [];
         },
         metrics: function(wrapper, args) {
           var metrics = decoder._metricsGroups(wrapper);
@@ -255,23 +274,19 @@ angular.module('dashboard')
           var metrics = decoder.metrics(wrapper, args);
           return _.mapValues(metrics, function(values) {
             return _.transform(values, function(result, metrics, path) {
-              var id = Number(_.last(path.split('.')).replace(/[^0-9]/g, ''));
+              var id = util.parseIntFromQueryPathTail(path);
               result[id] = metrics;
             });
           });
         },
-        currentAppProcessorMetrics: function(wrapper, args) {
+        appTaskLatestMetricValues: function(wrapper, args) {
           var metrics = decoder.metrics(wrapper, args);
           return _.mapValues(metrics, function(values) {
             return _.transform(values, function(result, metrics, path) {
-              var taskId = Number(_.last(path.split('.')).replace(/[^0-9]/g, ''));
-              result[taskId] = _.last(metrics);
+              var id = util.parseIntFromQueryPathTail(path);
+              result[id] = _.last(metrics).values;
             });
           });
-        },
-        currentAppTaskMetrics: function(wrapper, args) {
-          var metrics = decoder.metrics(wrapper, args);
-          return _.mapValues(metrics[args.keyToExtract] || {}, _.last);
         },
         /**
          * Note that it returns a 2d associative array.
@@ -284,7 +299,7 @@ angular.module('dashboard')
           _.forEach(wrapper.metrics, function(obj) {
             var metric = Metrics.$auto(obj);
             if (metric) {
-              var metricsGroup = util.getOrCreate(result, metric.meta.clazz, {});
+              var metricsGroup = util.getOrCreate(result, metric.meta.name, {});
               var metricSeries = util.getOrCreate(metricsGroup, metric.meta.path, {});
               delete metric.meta; // As meta is in the keys, we don't need it in every metric.
               metricSeries[metric.time] = metric;
@@ -302,11 +317,11 @@ angular.module('dashboard')
         },
         /** Remove related metrics paths and change the given 2d array to 1d. */
         _removeUnrelatedMetricsFrom2dArray: function(metrics, filterPath) {
-          _.forEach(metrics, function(metricsGroup, clazz) {
+          _.forEach(metrics, function(metricsGroup, name) {
             if (metricsGroup.hasOwnProperty(filterPath)) {
-              metrics[clazz] = metricsGroup[filterPath];
+              metrics[name] = metricsGroup[filterPath];
             } else {
-              delete metrics[clazz];
+              delete metrics[name];
             }
           });
         }
@@ -370,16 +385,18 @@ angular.module('dashboard')
           args.decoder = decoder.appMetrics;
           return getter._metrics('appmaster/' + appId + '/metrics/app' + appId, '', args);
         },
-        currentAppProcessorMetrics: function(appId, processorId) {
-          var params = '?readOption=readLatest';
-          return get('appmaster/' + appId + '/metrics/app' + appId + '.processor' + processorId + params,
-            decoder.currentAppProcessorMetrics);
-        },
-        currentAppTaskMetrics: function(appId, taskClass) {
-          var className = _.last(taskClass.split('.')); // meanwhile backend does not support package name
-          var classFilter = '*' + className;
-          return get('appmaster/' + appId + '/metrics/app' + appId + classFilter + '?readOption=readLatest',
-            decoder.currentAppTaskMetrics, {keyToExtract: className});
+        appTaskLatestMetricValues: function(appId, processorId, metricName, range) {
+          var taskRangeArgs = range && range.hasOwnProperty('start') ?
+            '&startTask=' + range.start + '&endTask=' + (range.stop + 1) : '';
+          var args = {
+            all: 'latest',
+            aggregator: 'io.gearpump.streaming.metrics.TaskFilterAggregator' +
+              '&startProcessor=' + processorId + '&endProcessor=' + (processorId + 1) + taskRangeArgs,
+            decoder: decoder.appTaskLatestMetricValues
+          };
+          metricName = metricName ? ':' + metricName : '';
+          return getter._metrics('appmaster/' + appId + '/metrics/app' + appId +
+            '.processor' + processorId + '.*' + metricName, '', args);
         },
         appExecutor: function(appId, executorId) {
           return get('appmaster/' + appId + '/executor/' + executorId,
@@ -398,6 +415,10 @@ angular.module('dashboard')
         appStallingTasks: function(appId) {
           return get('appmaster/' + appId + '/stallingtasks',
             decoder.appStallingTasks);
+        },
+        appAlerts: function(appId) {
+          return get('appmaster/' + appId + '/errors',
+            decoder.appAlerts);
         },
         _metrics: function(pathPrefix, path, args) {
           args = args || {};
@@ -429,7 +450,7 @@ angular.module('dashboard')
               return;
             }
             getModelFn().then(function(data) {
-              onData(data);
+              return onData(data);
             }, /*onerror=*/function() {
               promise = $timeout(trySubscribe, period || conf.restapiQueryInterval);
             });
@@ -438,8 +459,8 @@ angular.module('dashboard')
           trySubscribe();
         },
         // TODO: scalajs should return a app.details object with dag, if it is a streaming application.
-        createDag: function(clock, processors, levels, edges) {
-          var dag = new StreamingDag(clock, processors, levels, edges);
+        createDag: function(clock, processors, edges) {
+          var dag = new StreamingAppDag(clock, processors, edges);
           dag.replaceProcessor = restapi.replaceDagProcessor;
           return dag;
         },
@@ -461,7 +482,8 @@ angular.module('dashboard')
               return onComplete(response);
             });
           });
-        }
+        },
+        DAG_DEATH_UNSPECIFIED: '9223372036854775807' /* Long.max */
       };
     }])
 ;

@@ -3,16 +3,23 @@ When you want to create a release tag, here is the process:
 I use RELEASE_VERSION to represent the version to be released. 
 The version must follow a format. For example, 0.2.3 is a valid release version, 0.2.3-SNAPSHOT is not a valid release version.
 
+Step0: Function verification Checklist
+===================
+1. metrics Ui is updated correctly.
+2. submit a jar by UI can work correctly, custom config is effective, clock is advancing. 
+3. Dynamic DAG functions normally. 
+
 Step1: Pre-release
 ===================
 1. Modify CHANGELOG.md
-2. Bump the gearpump version in version.sbt 
- 
-  ```scala
-  version in ThisBuild := "RELEASE_VERSION"
-  ```
+2. Update version in docs/_config.yml
+3. Bump the gearpump version in version.sbt 
+
+   ```scala
+   version in ThisBuild := "RELEASE_VERSION"
+   ```
   
-3. Follow https://github.com/gearpump/gearpump/blob/master/doc/CommitGuideline.md to submit a PR
+4. Follow https://github.com/gearpump/gearpump/blob/master/doc/CommitGuideline.md to submit a PR
 
 Step2: Release
 ==================

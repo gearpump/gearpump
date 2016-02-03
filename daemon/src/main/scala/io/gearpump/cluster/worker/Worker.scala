@@ -23,34 +23,32 @@ import java.lang.management.ManagementFactory
 import java.net.URL
 import java.util.concurrent.{Executors, TimeUnit}
 
+import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import akka.http.scaladsl.server.util.TupleOps.Join.Fold
-import akka.pattern.pipe
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.AppMasterToMaster.{WorkerData, GetWorkerData}
+import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
+import io.gearpump.cluster.worker.Worker.ExecutorWatcher
 import io.gearpump.cluster.{ExecutorJVMConfig, ClusterConfig}
-import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, WorkerConfig}
+import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, WorkerConfig}
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToAppMaster._
 import io.gearpump.cluster.WorkerToMaster._
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.jarstore.JarStoreService
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.util.ActorSystemBooter.Daemon
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util.{Constants, TimeOutScheduler, _}
-import io.gearpump.jarstore.JarStoreService
-import io.gearpump.util._
 import org.slf4j.Logger
 
+import scala.concurrent.{Future, Promise, ExecutionContext}
 import scala.concurrent.duration._
-import scala.concurrent.{Promise, ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
-import akka.actor.SupervisorStrategy.{Resume, Stop}
+import scala.util.{Try, Success, Failure}
 
 /**
  * Worker is used to track the resource on single machine, it is like
@@ -59,10 +57,7 @@ import akka.actor.SupervisorStrategy.{Resume, Stop}
  * @param masterProxy masterProxy is used to resolve the master
  */
 private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOutScheduler{
-  import Worker._
-
   private val systemConfig : Config = context.system.settings.config
-  private val configStr = systemConfig.root().render
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
@@ -72,6 +67,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
   private var executorNameToActor = Map.empty[String, ActorRef]
+  private val executorProcLauncher: ExecutorProcessLauncher = getExecutorProcLauncher()
   private val jarStoreService = JarStoreService.get(systemConfig)
   jarStoreService.init(systemConfig, context.system)
 
@@ -168,7 +164,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
       } else {
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
-        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo, ioPool, jarStoreService))
+        val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo, ioPool, jarStoreService, executorProcLauncher))
         executorNameToActor += actorName ->executor
 
         resource = resource - launch.resource
@@ -210,6 +206,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         if (usedResource == Resource(0)) {
           allocatedResources -= executor
           // stop executor if there is no resource binded to it.
+          LOG.info(s"Shutdown executor $executorId because the resource used is zero")
           executor ! ShutdownExecutor(appId, executorId, "Shutdown executor because the resource used is zero")
         }
       }
@@ -228,7 +225,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   def clientMessageHandler: Receive = {
     case QueryWorkerConfig(workerId) =>
       if (this.id == workerId) {
-        sender ! WorkerConfig(systemConfig)
+        sender ! WorkerConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
       } else {
         sender ! WorkerConfig(ConfigFactory.empty)
       }
@@ -258,6 +255,11 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
     executorNameToActor.find(_._2 == actorRef).map(_._1)
   }
 
+  private def getExecutorProcLauncher(): ExecutorProcessLauncher = {
+    val launcherClazz = Class.forName(systemConfig.getString(Constants.GEARPUMP_EXECUTOR_PROCESS_LAUNCHER))
+    launcherClazz.getConstructor(classOf[Config]).newInstance(systemConfig).asInstanceOf[ExecutorProcessLauncher]
+  }
+
   import context.dispatcher
   override def preStart() : Unit = {
     LOG.info(s"RegisterNewWorker")
@@ -268,7 +270,6 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   }
 
   private def repeatActionUtil(seconds: Int)(action : => Unit) : Cancellable = {
-
     val cancelSend = context.system.scheduler.schedule(Duration.Zero, Duration(2, TimeUnit.SECONDS))(action)
     val cancelSuicide = context.system.scheduler.scheduleOnce(FiniteDuration(seconds, TimeUnit.SECONDS), self, PoisonPill)
     return new Cancellable {
@@ -295,26 +296,47 @@ private[cluster] object Worker {
 
   case class ExecutorResult(result : Try[Int])
 
-  class ExecutorWatcher(launch: LaunchExecutor, masterInfo: MasterInfo, ioPool: ExecutionContext, jarStoreService: JarStoreService) extends Actor {
+  class ExecutorWatcher(
+    launch: LaunchExecutor,
+    masterInfo: MasterInfo,
+    ioPool: ExecutionContext,
+    jarStoreService: JarStoreService,
+    procLauncher: ExecutorProcessLauncher) extends Actor {
+    import launch.{appId, executorId, resource}
 
-    val config = {
-      val systemConfig = context.system.settings.config
+    val executorConfig: Config = {
+      val workerConfig = context.system.settings.config
 
-      // try to resolve user config
-      val userConfig = Option(launch.executorJvmConfig).flatMap{ jvmConfig =>
+      val submissionConfig = Option(launch.executorJvmConfig).flatMap{ jvmConfig =>
         Option(jvmConfig.executorAkkaConfig)
       }.getOrElse(ConfigFactory.empty())
-      userConfig.withFallback(systemConfig)
+
+      resolveExecutorConfig(workerConfig, submissionConfig)
     }
 
-    private val LOG: Logger = LogUtil.getLogger(getClass, app = launch.appId, executor = launch.executorId)
+    // For some config, worker has priority, for others, user Application submission config
+    // have priorities.
+    private def resolveExecutorConfig(workerConfig: Config, submissionConfig: Config): Config = {
+      val config = submissionConfig.withoutPath(Constants.GEARPUMP_HOSTNAME)
+        .withoutPath(Constants.GEARPUMP_CLUSTER_MASTERS)
+        .withoutPath(Constants.GEARPUMP_HOME)
+        .withoutPath(Constants.GEARPUMP_LOG_DAEMON_DIR)
+        .withoutPath(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS)
+        // fall back to workerConfig
+        .withFallback(workerConfig)
+
+      // we should exclude reference.conf, and JVM properties..
+      ClusterConfig.filterOutDefaultConfig(config)
+    }
+
+    private val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId)
 
     implicit val executorService = ioPool
 
     private val executorHandler = {
       val ctx = launch.executorJvmConfig
 
-      if (config.getBoolean(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS)) {
+      if (executorConfig.getBoolean(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS)) {
         new ExecutorHandler {
           val exitPromise = Promise[Int]()
           val app = context.actorOf(Props(new InJvmExecutor(launch, exitPromise)))
@@ -341,9 +363,9 @@ private[cluster] object Worker {
           file.getFile
         }
 
-        val configFile = Option(ctx.executorAkkaConfig).filterNot(_.isEmpty).map { conf =>
+        val configFile = {
           val configFile = File.createTempFile("gearpump", ".conf")
-          ClusterConfig.saveConfig(conf, configFile)
+          ClusterConfig.saveConfig(executorConfig, configFile)
           val file = new URL("file:" + configFile)
           file.getFile
         }
@@ -353,25 +375,18 @@ private[cluster] object Worker {
           jarPath.map(Array(_)).getOrElse(Array.empty[String])
 
 
-        val appLogDir = context.system.settings.config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
+        val appLogDir = executorConfig.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
         val logArgs = List(
           s"-D${Constants.GEARPUMP_APPLICATION_ID}=${launch.appId}",
           s"-D${Constants.GEARPUMP_EXECUTOR_ID}=${launch.executorId}",
           s"-D${Constants.GEARPUMP_MASTER_STARTTIME}=${getFormatedTime(masterInfo.startTime)}",
           s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${appLogDir}")
-        val configArgs = configFile.map(confFilePath =>
-          List(s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=$confFilePath")
-        ).getOrElse(List.empty[String])
-
-        // pass hostname as a JVM parameter, so that child actorsystem can read it
-        // in priority
-        val host = Try(context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)).map(
-          host => List(s"-D${Constants.GEARPUMP_HOSTNAME}=${host}")).getOrElse(List.empty[String])
+        val configArgs =List(s"-D${Constants.GEARPUMP_CUSTOM_CONFIG_FILE}=$configFile")
 
         val username = List(s"-D${Constants.GEARPUMP_USERNAME}=${ctx.username}")
 
         //remote debug executor process
-        val remoteDebugFlag = config.getBoolean(Constants.GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM)
+        val remoteDebugFlag = executorConfig.getBoolean(Constants.GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM)
         val remoteDebugConfig = if (remoteDebugFlag) {
           val availablePort = Util.findFreePort.get
           List(
@@ -383,7 +398,7 @@ private[cluster] object Worker {
           List.empty[String]
         }
 
-        val verboseGCFlag = config.getBoolean(Constants.GEARPUMP_VERBOSE_GC)
+        val verboseGCFlag = executorConfig.getBoolean(Constants.GEARPUMP_VERBOSE_GC)
         val verboseGCConfig = if (verboseGCFlag) {
           List(
             s"-Xloggc:${appLogDir}/gc-app${launch.appId}-executor-${launch.executorId}.log",
@@ -398,11 +413,14 @@ private[cluster] object Worker {
           List.empty[String]
         }
 
-        val options = ctx.jvmArguments ++ host ++ username ++
-          logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ configArgs
+        val ipv4 = List(s"-D${PREFER_IPV4}=true")
+
+        val options = ctx.jvmArguments ++ username ++
+          logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ ipv4 ++ configArgs
 
         LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
-        val process = Util.startProcess(options, classPath, ctx.mainClass, ctx.arguments)
+        val process = procLauncher.createProcess(appId, executorId, resource, executorConfig,
+          options, classPath, ctx.mainClass, ctx.arguments)
 
         ProcessInfo(process, jarPath, configFile)
       }
@@ -418,7 +436,7 @@ private[cluster] object Worker {
             process.foreach { info =>
               info.process.destroy()
               info.jarPath.foreach(new File(_).delete())
-              info.configFile.foreach(new File(_).delete())
+              new File(info.configFile).delete()
             }
           }
         }
@@ -439,11 +457,12 @@ private[cluster] object Worker {
     import Constants._
     private def expandEnviroment(path: String): String = {
       //TODO: extend this to support more environment.
-      path.replace(s"<${GEARPUMP_HOME}>", config.getString(GEARPUMP_HOME))
+      path.replace(s"<${GEARPUMP_HOME}>", executorConfig.getString(GEARPUMP_HOME))
     }
 
     override def preStart: Unit = {
       executorHandler.exitValue.onComplete{value =>
+        procLauncher.cleanProcess(appId, executorId)
         val result = ExecutorResult(value)
         self ! result
       }
@@ -489,15 +508,15 @@ private[cluster] object Worker {
     def exitValue : Future[Int]
   }
 
-  case class ProcessInfo(process: RichProcess, jarPath: Option[String], configFile: Option[String])
+  case class ProcessInfo(process: RichProcess, jarPath: Option[String], configFile: String)
 
   /**
-   * We will start the executor in  the same JVM as worker.
-   * @param launch
-   * @param exit
-   */
+    * We will start the executor in  the same JVM as worker.
+    * @param launch
+    * @param exit
+    */
   class InJvmExecutor(launch: LaunchExecutor, exit: Promise[Int]) extends Daemon(launch.executorJvmConfig.arguments(0), launch.executorJvmConfig.arguments(1)) {
-    private var exitCode = 0
+    private val exitCode = 0
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {

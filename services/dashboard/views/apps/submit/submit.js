@@ -8,6 +8,15 @@ angular.module('dashboard')
     function($scope, restapi) {
       'use strict';
 
+      $scope.dialogTitle = 'Submit Gearpump Application';
+      $scope.confFileSuffix = '.conf';
+      var submitFn = restapi.submitUserApp;
+      if ($scope.isStormApp) {
+        $scope.dialogTitle = 'Submit Storm Application';
+        $scope.confFileSuffix = '.yaml';
+        submitFn = restapi.submitStormApp;
+      }
+
       $scope.canSubmit = function() {
         return $scope.jar && !$scope.uploading;
       };
@@ -20,7 +29,7 @@ angular.module('dashboard')
           fileFormNames.push('conf');
         }
         $scope.uploading = true;
-        restapi.submitUserApp(files, fileFormNames, $scope.launchArgs, function(response) {
+        submitFn(files, fileFormNames, $scope.launchArgs, function(response) {
           $scope.shouldNoticeSubmitFailed = !response.success;
           $scope.uploading = false;
           if (response.success) {

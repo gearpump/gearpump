@@ -19,17 +19,17 @@
 
 package io.gearpump.streaming.executor
 
-import akka.actor.{Props, ActorRef, ActorRefFactory, Actor}
-import io.gearpump.streaming.ProcessorDescription
-import io.gearpump.streaming.task._
-import io.gearpump.streaming.util.ActorPathUtil
+import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
 import io.gearpump.cluster.{ExecutorContext, UserConfig}
 import io.gearpump.serializer.SerializationFramework
-import TaskLauncher.TaskArgument
-import io.gearpump.util.Constants
+import io.gearpump.streaming.ProcessorDescription
+import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
+import io.gearpump.streaming.task._
+import io.gearpump.streaming.util.ActorPathUtil
 
 trait ITaskLauncher {
-  def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory, serializer: SerializationFramework): Map[TaskId, ActorRef]
+  def launch(taskIds: List[TaskId], argument: TaskArgument,
+      context: ActorRefFactory, serializer: SerializationFramework, dispatcher: String): Map[TaskId, ActorRef]
 }
 
 class TaskLauncher(
@@ -41,7 +41,8 @@ class TaskLauncher(
     taskActorClass: Class[_ <: Actor])
   extends ITaskLauncher{
 
-  override def launch(taskIds: List[TaskId], argument: TaskArgument, context: ActorRefFactory, serializer: SerializationFramework): Map[TaskId, ActorRef] = {
+  override def launch(taskIds: List[TaskId], argument: TaskArgument,
+      context: ActorRefFactory, serializer: SerializationFramework, dispatcher: String): Map[TaskId, ActorRef] = {
     import argument.{processorDescription, subscribers}
 
     val taskConf = userConf.withConfig(processorDescription.taskConf)
@@ -57,7 +58,7 @@ class TaskLauncher(
     taskIds.foreach { taskId =>
       val task = new TaskWrapper(taskId, taskClass, taskContext, taskConf)
       val taskActor = context.actorOf(Props(taskActorClass, taskId, taskContext, userConf, task, serializer).
-        withDispatcher(Constants.GEARPUMP_TASK_DISPATCHER), ActorPathUtil.taskActorName(taskId))
+        withDispatcher(dispatcher), ActorPathUtil.taskActorName(taskId))
       tasks += taskId -> taskActor
     }
     tasks
@@ -69,7 +70,7 @@ object TaskLauncher {
   case class TaskArgument(dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber])
 
   def apply(executorContext: ExecutorContext, userConf: UserConfig): TaskLauncher = {
-    import executorContext.{appId, appName, appMaster, executorId}
+    import executorContext.{appId, appMaster, appName, executorId}
     new TaskLauncher(appId, appName, executorId, appMaster, userConf, classOf[TaskActor])
   }
 }

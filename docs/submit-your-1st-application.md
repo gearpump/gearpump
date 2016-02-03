@@ -26,12 +26,15 @@ Open another shell,
 
 ```bash
 ### To run WordCount example
-bin/gear app -jar examples/gearpump-examples-assembly-{{site.GEARPUMP_VERSION}}.jar io.gearpump.streaming.examples.wordcount.WordCount
+bin/gear app -jar examples/gearpump-examples-assembly-{{site.SCALA_BINARY_VERSION}}-{{site.GEARPUMP_VERSION}}.jar io.gearpump.streaming.examples.wordcount.WordCount
 ```
 
 ###  Step 2: Congratulations, you've submitted your first application.
 
 To view the application status and metrics, start the Web UI services, and browse to [http://127.0.0.1:8090](http://127.0.0.1:8090) to check the status.
+The default username and password is "admin:admin", you can check
+[UI Authentication](deployment-ui-authentication.html) to find how to manage users.
+
 ![Dashboard](img/dashboard.gif)
 
 **NOTE:** the UI port setting can be defined in configuration, please check section [Configuration](deployment-configuration.html).

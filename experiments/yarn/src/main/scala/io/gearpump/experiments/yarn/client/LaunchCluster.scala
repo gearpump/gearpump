@@ -101,6 +101,7 @@ class LaunchCluster(
     LOG.info(s"Trying to download active configuration to output path: " + output)
     LOG.info(s"Resolving YarnAppMaster ActorRef for application " + appId)
     val appMaster = appMasterResolver.resolve(appId)
+    LOG.info(s"appMaster=${appMaster.path} host=$host")
     val future = askActor[ActiveConfig](appMaster, GetActiveConfig(host)).map(_.config)
     import scala.concurrent.duration._
     future.map{ config =>
@@ -112,7 +113,8 @@ class LaunchCluster(
 
   private def uploadConfigToHDFS(appId: ApplicationId): String = {
     // will use personal home directory so that it will not conflict with other users
-    val confDir = s"${fs.getHomeDirectory}/.gearpump_app${appId.getId}/conf/"
+    // conf path pattern: /user/<userid>/.gearpump_application_<timestamp>_<id>/conf
+    val confDir = s"${fs.getHomeDirectory}/.gearpump_${appId}/conf/"
     LOG.info(s"Uploading configuration files to remote HDFS(under $confDir)...")
 
     // copy config from local to remote.

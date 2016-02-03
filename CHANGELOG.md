@@ -1,3 +1,147 @@
+Gearpump 0.7.5
+===================
+Highlights:
+-------------------
+1. #1723, Add an experimental cgroup module for CPU isolation.
+2. #1767, Add docs and implementation to support storm 0.10.
+3. Make UI mobile phone friendly. 
+
+Change log:
+-------------------
+- #1919, fix AppMasterSpec
+- #1723 add an experiment module to do cgroup CPU isolation.
+- #1913, add warning for detected loop in DAG.
+- #1896, move storm examples under integration test
+- #1897, increase akka logger start up timeout for unit test
+- #1843 Add a Rest service to launch a new worker
+- #1904, fixed "DAG canvas context menu cannot be displayed."
+- #1898: in integration test, there need a retry attempting for login
+- #1882: extract the tool tip string to externalized file
+- #1837, Use java.net.preferIPv4Stack to force IPv4
+- #1885, Shorten the table view when disabled in mobile.
+- #1883,URL redirection error when accessing index.html
+- #1874, Format the login failure message to more readable format.
+- #1876, Shell command yarnclient should use 1 as the the default count for "addWorker"
+- #1877, Fix several navigation issues on Mobile phone
+- #1830: removed cluster side menu and tuned main navbar
+- #1681: show application last error in overview page
+- #1866, use geardefault.conf to replace reference.conf to avoid confusion
+- #1767, Add docs and implementation to support storm 0.10
+- #1868: show correct data points when switch historical view and recent view.
+- #1864, Add robots.txt to disable search engine crawling
+- #1860, add licenses for included source and binary libraries.
+- #1804, fix UI authentication document page format
+
+Gearpump 0.7.4
+===================
+Change log:
+-------------------
+- #1247, add authentication for UI
+- #1855: when service is unavailable, do not query models without waiting.
+- #1833 update performance related doc
+- #1831, Services exits on bind failure
+- #1779: show critical path latency for application 
+- #1733 dynamic dag fall back to last dag version in case of Master HA
+- #1804, fix navbar on mobile
+- #1713 regression on HBaseSink
+- #1838 YARN failure trying to contact YarnAppMaster when launched in YARN
+
+Gearpump 0.7.3
+===================
+Change logs:
+-------------------
+- #1816: Akka GC problem. After fixing, performance gain 30%
+- #1820, http cache is not effective
+- #1817 Problems launching Gearpump in YARN environment
+
+Gearpump 0.7.2
+===================
+Change logs:
+-------------------
+- #1814: metrics data will not update
+- #1812 add gearpump.verbose-gc in gear.conf
+- #1754, use scala binary version in example jar name
+- #1804, polish documents
+- #1803 fix performance regression
+
+Gearpump 0.7.1
+===================
+Highlights:
+-------------------
+1. #1411. new UI experience. now the frontend UI can safely support applications with tens of thousands to tasks.
+2. #1514 Add Akka-stream 1.0 experimental module
+3. #1698, refactor on yarn experiment module, with bug fixes, and enhanced functions, like dynamically adding/removing machines.
+4. #1679, fix dynamic dag bug (fail to transit)
+5. #1547, add a SequenceFileSink
+
+Change logs:
+-------------------
+- #1761, add more source comments and fix several typo
+- #1799, amend two PROXY typos in files 
+- #1411: new UI to allow to scale to thousands of tasks.
+- #1794, split dispatchers of Task and Netty
+- #1018 transfer Any in Message
+- #1792, fix storm module config conflict
+- #1785, [yarn] UI daemon process cannot be terminated
+- #1789 fix DynamicDagSpec
+- #1784, document the limitation of yarnclient command line.
+- #1778, AppSubmitter "-config" option is not used
+- #1782, add doc to run storm over Gearpump application on yarn
+- #1774, remove MaxPermSize JVM option as JDK8 no longer support it.
+- #1772, When upload application in UI, custom config file is not effective
+- #1770, processor metrics is aggregated in wrong way
+- #1768, TaskFilterAggregator is not working
+- #1763, change all GearPump to Gearpump
+- #1411: metrics charts would not update after 15 seconds
+- #1756, add HistoryMetricsConfig for master info and worker info
+- #1754 standardize archive name
+- #1753 update server channel group name
+- #1747: storm spec failure due to parse application id
+- #1747: updated the way to parse application id in command-line
+- #1743, fixing some typo in the example folder
+- #1744, Separate global config and application specific config, allow to config log level for specific
+ class.
+- #1734, handle smoothly when more resources are allocated than required.
+- #1698, refactor on gearpump-yarn experiment module
+- #1716: enable code coverage check for master branch
+- #1720, support automatic integration test
+- #1719 unhandled PutKVSuccess in Master
+- #1714: some navbar visual issues
+- #1499, Aggregate the metrics on server
+- #1711: layout is more responsive on small devices
+- #1679 dynamic dag will fall back when replacing a processor failed
+- #1707, support html test report in integration test
+- #1670, regression, change taskActor back to use stashing.
+- #1703: task metrics in bar chart were empty
+- #1701: wrong dirty check of modify processor and more
+- #1384: rest service url was not set correctly
+- #1682: allow specify a transition time when changing parallelism
+- #1691: dashboard layout and textual changes and update to dashing…
+- #1640 YARN deployment - no easy way of obtaining master address… 
+- #1688, Reduce unimportant logs in travis UT console
+- #1671, make default timeout shorter to be more UI responsive.
+- #1685, Should not publish gearpump-integration-test to maven
+- #1683, Allow metrics to be aggregated before sending to UI
+- #1223: will mark application with a warning when stalling task de…
+- #1670, #1653, fix dynamic dag bug
+- #1659 add a rest api to terminate service process
+- #1672: when worker is killed, its detail page will no longer be updated
+- #1660 remove Try block,give debug info to user instead.
+- #1666: will should application details (and load metrics afterwards)
+- #1651, fix change processor's parallelism on dashboard
+- #1536, fix storm at least once support
+- #1655: added a test case for replacing a processor
+- #1653 fix replacing a processor
+- #1639 refine daemon's classpath
+- #1652, submit app with no arguments from dashboard returns warning
+- #1547 add a SequenceFileSink
+- #1424: when application is terminated, related status indicators …
+- #1645: parse appid in submission response better
+- #1514, add an experimental module to support akka-stream 1.0
+- #1643, fix UI timeout issue when metrics is disabled
+- #1632 Remove duplicate of repository
+- #1630, StormBoltOutputCollector skips reporting on ack disabled
+
 Gearpump 0.7.0
 ===================
 Highlights: 

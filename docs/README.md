@@ -22,12 +22,15 @@ ERROR:  While executing gem ... (Errno::EPERM)
 Kramdown is needed for Markdown processing and the Python based Pygments is used for syntax
 highlighting.
 
-# Build
+# How to Test
 
-Command `jekyll build` can be used to make the build.
+Command `jekyll build` can be used to make a test build.
 
-Command `jekyll serve --watch` can be used to for development. Jekyll will start a web server at
-`localhost:4000` and watch the docs directory for updates. Use this mode to preview changes locally.
+Command `jekyll serve --watch` can be used for debug purpose. Jekyll will start a web server at
+`localhost:4000` and watch the docs directory for updates. Use this mode to experiment commits and check changes locally.
+
+# How to Build
+Command `./build_doc.sh` can be used to create a full document folder under site/. 
 
 # Contribute
 

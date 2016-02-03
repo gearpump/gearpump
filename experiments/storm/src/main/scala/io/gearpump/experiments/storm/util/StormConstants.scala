@@ -28,4 +28,6 @@ object StormConstants {
   val SYSTEM_TICK_STREAM_ID = "__tick"
 
   val CHECKPOINT_INTERVAL_MILLIS = 2000  // 2 seconds
+
+  val STORM_SERIALIZATION_FRAMEWORK = "gearpump.storm.serialization-framework"
 }

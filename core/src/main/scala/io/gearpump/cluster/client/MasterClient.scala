@@ -20,6 +20,7 @@ package io.gearpump.cluster.client
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import akka.util.Timeout
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
 import io.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
@@ -31,10 +32,11 @@ import scala.concurrent.{ExecutionContext, Await, Future}
 import scala.util.{Failure, Success}
 
 /**
+ * Client to Master node.
  * Stateless, thread safe
  */
-class MasterClient(master : ActorRef) {
-  implicit val timeout = Constants.FUTURE_TIMEOUT
+class MasterClient(master : ActorRef, timeout: Timeout) {
+  implicit val masterClientTimeout = timeout
 
   def submitApplication(app : AppDescription, appJar: Option[AppJar]) : Int = {
     val result = Await.result( (master ? SubmitApplication(app, appJar)).asInstanceOf[Future[SubmitApplicationResult]], Duration.Inf)

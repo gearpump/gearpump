@@ -5,7 +5,7 @@ title: Gearpump High Availability Guide
 
 To support HA, we allow to start master on multiple nodes. They will form a quorum to decide consistency. For example, if we start master on 5 nodes and 2 nodes are down, then the cluster is still consistent and functional.
 
-Here is the steps to enable the HA mode:
+Here are the steps to enable the HA mode:
 
 ### 1. Configure.
 
@@ -30,10 +30,10 @@ to a list of master nodes. For example, if I have 3 master nodes (node1, node2, 
 ```
 
 #### Configure distributed storage to store application jars.
-In `conf/gear.conf`, For entry gearpump.jarstore.rootpath, please choose the storage folder for application jars. You need to make sure this jar storage is high availability. We support two storage system:
+In `conf/gear.conf`, For entry `gearpump.jarstore.rootpath`, please choose the storage folder for application jars. You need to make sure this jar storage is highly available. We support two storage systems:
 
   1). HDFS
-  You need to configure the gearpump.jarstore.rootpath like this
+  You need to configure the `gearpump.jarstore.rootpath` like this
 
 ```bash
   hdfs://host:port/path/
@@ -41,14 +41,14 @@ In `conf/gear.conf`, For entry gearpump.jarstore.rootpath, please choose the sto
 
   2). Shared NFS folder
   First you need to map the NFS directory to local directory(same path) on all machines of master nodes.
-Then you need to set the gearpump.jarstore.rootPath like this:
+Then you need to set the `gearpump.jarstore.rootPath` like this:
 
 ```bash
   file:///your_nfs_mapping_directory
 ```
 
   3). If you don't set this value, we will use the local directory of master node.
-  NOTE! This is not HA guarantee in this case, which means when one application goes down, we are not able to recover it.
+  NOTE! There is no HA guarantee in this case, which means we are unable to recover running applications when master goes down.
 
 ### 2. Start Daemon.
 
@@ -67,6 +67,6 @@ On node1, node2, node3, Start Master
 
 ### 3. Done!
 
-Now you have a high available HA cluster. You can kill any node, the master HA will take effect.
+Now you have a highly available HA cluster. You can kill any node, the master HA will take effect.
 
-**NOTE**: It can take up to 15 seconds for master node to fail-over. You can change the fail-over timeout time by adding config in gear.conf `master.akka.cluster.auto-down-unreachable-after=10s` or smaller value
+**NOTE**: It can take up to 15 seconds for master node to fail-over. You can change the fail-over timeout time by adding config in `gear.conf` `gearpump-master.akka.cluster.auto-down-unreachable-after=10s` or set it to a smaller value

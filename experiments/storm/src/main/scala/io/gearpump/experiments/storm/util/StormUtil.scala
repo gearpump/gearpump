@@ -29,7 +29,8 @@ import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBo
 import io.gearpump.experiments.storm.topology._
 import io.gearpump.experiments.storm.util.StormConstants._
 import io.gearpump.streaming.task.{TaskContext, TaskId}
-import org.json.simple.JSONValue
+import io.gearpump.util.Util
+import org.apache.storm.shade.org.json.simple.JSONValue
 
 object StormUtil {
 
@@ -118,14 +119,14 @@ object StormUtil {
 
   def ackEnabled(config: JMap[AnyRef, AnyRef]): Boolean = {
     if (config.containsKey(Config.TOPOLOGY_ACKER_EXECUTORS)) {
-      val ackers = config.get(Config.TOPOLOGY_ACKER_EXECUTORS)
-      if (ackers != null && ackers.asInstanceOf[Integer] == 0) {
-        false
-      } else {
-        true
-      }
+      getInt(config, Config.TOPOLOGY_ACKER_EXECUTORS).map(_ != 0).getOrElse(true)
     } else {
       false
     }
+  }
+
+  def getThriftPort: Int = {
+    Util.findFreePort.getOrElse(
+      throw new Exception("unable to find free port for thrift server"))
   }
 }

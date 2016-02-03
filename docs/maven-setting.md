@@ -5,7 +5,7 @@ title: Maven Setting
 description: Maven Setting
 ---
 
-To programming against this version, you need to add below artifact dependencies to your application's Maven setting:
+To program against this version, you need to add below artifact dependencies to your application's Maven setting:
 
 {% highlight xml %}
 <dependencies>
@@ -138,3 +138,29 @@ And you will need to add following repositories to get above dependencies resolv
 </repositories>
 {% endhighlight %}
 {% endif %}
+
+For SBT the configuration above, adding the two external modules as well, is equivalent to the following:
+
+```
+resolvers ++= Seq(
+  "Sonatype releases" at "http://oss.sonatype.org/content/repositories/releases/",
+  "Patrik at Bintray" at "http://dl.bintray.com/patriknw/maven",
+  "Cloudera repo" at "https://repository.cloudera.com/artifactory/cloudera-repos",
+  "vincent" at "http://dl.bintray.com/fvunicorn/maven",
+  "non" at "http://dl.bintray.com/non/maven",
+  "Maven repo" at "http://repo.maven.apache.org/maven2",
+  "Maven1 repo" at "http://repo1.maven.org/maven2",
+  "Maven2 repo" at "http://mvnrepository.com/artifact"
+)
+
+val gearpumpVersion = "{{ site.GEARPUMP_VERSION }}"
+
+libraryDependencies ++= Seq(
+  "com.github.intel-hadoop"                %  "gearpump-core_2.11"         % gearpumpVersion,
+  "com.github.intel-hadoop"                %  "gearpump-streaming_2.11"    % gearpumpVersion,
+  "com.github.intel-hadoop"                %% "gearpump-external-kafka"    % gearpumpVersion,
+  "com.github.intel-hadoop"                %% "gearpump-external-hbase"    % gearpumpVersion
+)
+```
+
+and you can put this in your `build.sbt` buildfile.

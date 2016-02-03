@@ -18,24 +18,37 @@
 
 package io.gearpump.services
 
-import java.net.URL
-import java.util.jar.Manifest
-import io.gearpump.util.Constants
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import io.gearpump.util.Util
+import akka.stream.{Materializer}
+import io.gearpump.util.{Constants, Util}
 
+/**
+ * static resource files.
+ */
+class StaticService(override val system: ActorSystem, supervisorPath: String)
+  extends BasicService {
 
-trait StaticService  {
+  private val version = Util.version
 
-  implicit def system: ActorSystem
+  override def prefix = Neutral
 
-  val version = Util.version
+  override def cache = true
 
-  // Optionally compresses the response with Gzip or Deflate, if the client accepts
-  // compressed responses.
-  val staticRoute = encodeResponse {
+  override def doRoute(implicit mat: Materializer) = {
+    path("version") {
+      get {ctx =>
+        ctx.complete(version)
+      }
+    } ~
+    // For YARN usage, we need to make sure supervisor-path
+    // can be accessed without authentication.
+    path("supervisor-actor-path") {
+      get {
+        complete(supervisorPath)
+      }
+    } ~
     pathEndOrSingleSlash {
       getFromResource("index.html")
     } ~
@@ -46,20 +59,6 @@ trait StaticService  {
       get {
         getFromResourceDirectory("META-INF/resources/webjars")
       }
-    } ~
-    path("version") {
-      get {
-        complete(version)
-      }
-    } ~
-    path("supervisor-actor-path") {
-      get {
-        complete(system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH))
-      }
-    } ~
-    path("terminate") {
-      system.shutdown()
-      complete(StatusCodes.NotFound)
     } ~
     path(Rest) { path =>
       getFromResource("%s" format path)

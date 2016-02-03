@@ -27,22 +27,16 @@ import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class MasterWatcherSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
-  override def config: Config = TestUtil.MASTER_CONFIG
-
-  override def beforeEach() = {
-    startActorSystem()
-  }
-
-  override def afterEach() = {
-    shutdownActorSystem()
-  }
+class MasterWatcherSpec extends FlatSpec with Matchers {
+  def config: Config = TestUtil.MASTER_CONFIG
 
   "MasterWatcher" should "kill itself when can not get a quorum" in {
-    val actorWatcher = TestProbe()(getActorSystem)
-    val mockMaster = TestProbe()(getActorSystem)
     val system = ActorSystem("ForMasterWatcher", config)
-    val masterWatcher = TestActorRef[MasterWatcher](Props(classOf[MasterWatcher], "watcher", mockMaster.ref))(system)
+
+    val actorWatcher = TestProbe()(system)
+    val mockMaster = TestProbe()(system)
+
+    val masterWatcher = system.actorOf(Props(classOf[MasterWatcher], "watcher", mockMaster.ref))
     actorWatcher watch masterWatcher
     actorWatcher.expectTerminated(masterWatcher, 5 seconds)
     system.shutdown()

@@ -19,27 +19,34 @@
 package io.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Route, _}
 import akka.stream.ActorMaterializer
+import akka.util.Timeout
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
 
-class RestServices(actorSystem: ActorSystem, val master: ActorRef) extends
-    StaticService with
-    MasterService with
-    WorkerService with
-    AppMasterService with
-    JarStoreProvider {
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem) extends RouteService {
+
+  implicit val timeout = Constants.FUTURE_TIMEOUT
+
+  private val config = system.settings.config
+
+  private val jarStoreService = JarStoreService.get(config)
+  jarStoreService.init(config, system)
+
   private val LOG = LogUtil.getLogger(getClass)
 
-  implicit def system: ActorSystem = actorSystem
+  private val securityEnabled = config.getBoolean(Constants.GEARPUMP_UI_SECURITY_ENABLED)
 
-  private def myExceptionHandler: ExceptionHandler = ExceptionHandler{
+  private val supervisorPath = system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
+
+  private val myExceptionHandler: ExceptionHandler = ExceptionHandler {
     case ex: Throwable => {
       extractUri { uri =>
         LOG.error(s"Request to $uri could not be handled normally", ex)
@@ -48,41 +55,40 @@ class RestServices(actorSystem: ActorSystem, val master: ActorRef) extends
     }
   }
 
-  def routes = handleExceptions(myExceptionHandler) {
-    masterRoute ~
-    workerRoute ~
-    appMasterRoute ~
-    // make sure staticRoute is the final one, as it will try to lookup resource in local path
-    // if there is no match in previous routes
-    staticRoute
+  // make sure staticRoute is the final one, as it will try to lookup resource in local path
+  // if there is no match in previous routes
+  private val static = new StaticService(system, supervisorPath).route
+
+  def supervisor: ActorRef = {
+    val actorRef = system.actorSelection(supervisorPath).resolveOne()
+    Await.result(actorRef, new Timeout(Duration.create(5, "seconds")).duration)
   }
 
-  private val jarStoreService = JarStoreService.get(system.settings.config)
-  jarStoreService.init(system.settings.config, system)
+  override def route: Route = {
+    if (securityEnabled) {
+      val security = new SecurityService(services, system)
+      handleExceptions(myExceptionHandler) {
+        security.route ~ static
+      }
+    } else {
+      handleExceptions(myExceptionHandler) {
+        services.route ~ static
+      }
+    }
+  }
 
-  override def getJarStoreService: JarStoreService = jarStoreService
-}
+  private def services: RouteService = {
 
-trait JarStoreProvider {
-  def getJarStoreService: JarStoreService
-}
+    val admin = new AdminService(system)
+    val masterService = new MasterService(master, jarStoreService, system)
+    val worker = new WorkerService(master, system)
+    val app = new AppMasterService(master, jarStoreService, system)
+    val sup = new SupervisorService(supervisor, system)
 
-object RestServices {
-  private val LOG = LogUtil.getLogger(getClass)
-
-  def apply(master:ActorRef)(implicit system:ActorSystem) {
-    implicit val executionContext = system.dispatcher
-    val services = new RestServices(system, master)
-    val config = system.settings.config
-    val port = config.getInt(Constants.GEARPUMP_SERVICE_HTTP)
-    val host = config.getString(Constants.GEARPUMP_SERVICE_HOST)
-
-    implicit val materializer = ActorMaterializer()
-
-    Http().bindAndHandle(Route.handlerFlow(services.routes), host, port)
-
-    val displayHost = if(host == "0.0.0.0") "127.0.0.1" else host
-    LOG.info(s"Please browse to http://$displayHost:$port to see the web UI")
-    println(s"Please browse to http://$displayHost:$port to see the web UI")
+    new RouteService {
+      override def route: Route = {
+        admin.route ~ sup.route ~ masterService.route ~ worker.route ~ app.route
+      }
+    }
   }
 }

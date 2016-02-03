@@ -3,16 +3,6 @@
  * See accompanying LICENSE file.
  */
 
-/* Reset to use specified fonts */
-* {
-  font-family: lato, roboto, 'helvetica neue', 'segoe ui', arial, helvetica, sans-serif;
-}
-
-/* Set default font size (depends on the font face) */
-body, .form-control {
-  font-size: 13px;
-}
-
 /* bolder text */
 .bold {
   font-weight: 500;
@@ -136,4 +126,18 @@ h4, table > caption {
   padding: 3px 6px;
   position: relative;
   top: -2px;
+}
+
+/* Empty table description (3 rules) */
+.table-no-data {
+  padding-bottom: 20px;
+}
+
+.table-no-data .glyphicon,
+.table-no-data-sm .glyphicon {
+  color: #bbb;
+}
+
+.table-no-data-sm .glyphicon {
+  margin-right: 6px;
 }

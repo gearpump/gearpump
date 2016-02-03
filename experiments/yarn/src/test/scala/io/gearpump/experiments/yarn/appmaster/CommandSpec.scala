@@ -82,7 +82,7 @@ class CommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   "AppMasterCommand" should "create correct command line" in {
     val version = "gearpump-0.1"
     val appmaster = AppMasterCommand(config, version, Array("arg1", "arg2", "arg3"))
-    val expected = "$JAVA_HOME/bin/java -Xmx512m -cp conf:pack/gearpump-0.1/conf:pack/gearpump-0.1/dashboard:pack/gearpump-0.1/lib/*:pack/gearpump-0.1/lib/daemon/*:pack/gearpump-0.1/lib/services/*:pack/gearpump-0.1/lib/yarn/*:$CLASSPATH -Dgearpump.home={{LOCAL_DIRS}}/{{CONTAINER_ID}}/pack/gearpump-0.1 -Dgearpump.binary-version-with-scala-version=gearpump-0.1 -Dgearpump.log.daemon.dir=<LOG_DIR> -Dgearpump.log.application.dir=<LOG_DIR>  io.gearpump.experiments.yarn.appmaster.YarnAppMaster  arg1 arg2 arg3 2>&1 | /usr/bin/tee -a <LOG_DIR>/stderr"
+    val expected = "$JAVA_HOME/bin/java -Xmx512m -cp conf:pack/gearpump-0.1/conf:pack/gearpump-0.1/dashboard:pack/gearpump-0.1/lib/*:pack/gearpump-0.1/lib/daemon/*:pack/gearpump-0.1/lib/services/*:pack/gearpump-0.1/lib/yarn/*:$CLASSPATH -Dgearpump.home={{LOCAL_DIRS}}/{{CONTAINER_ID}}/pack/gearpump-0.1 -Dgearpump.binary-version-with-scala-version=gearpump-0.1 -Dgearpump.log.daemon.dir=<LOG_DIR> -Dgearpump.log.application.dir=<LOG_DIR> -Dgearpump.hostname={{NM_HOST}}  io.gearpump.experiments.yarn.appmaster.YarnAppMaster  arg1 arg2 arg3 2>&1 | /usr/bin/tee -a <LOG_DIR>/stderr"
     assert(appmaster.get == expected)
   }
 }

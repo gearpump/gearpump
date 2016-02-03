@@ -1,6 +1,7 @@
 <div class="col-md-6">
   <property-table
     caption="{{executorName}}"
+    caption-tooltip="In runtime, every application instance is represented by a single AppMaster and a list of Executors. AppMaster represents the command and controls center of the Application instance. It communicates with user, master, worker, and executor to get the job done. Each executor is a parallel unit for distributed application. Typically AppMaster and Executor will be started as JVM processes on worker nodes."
     props-bind="overviewTable"
     prop-name-class="col-xs-4 bold"
     prop-value-class="col-xs-8 actor-path">
@@ -8,8 +9,8 @@
 </div>
 
 <div class="col-md-6">
-  <jvm-metrics
+  <jvm-metrics-view
     sampling-config="metricsConfig"
     query-metrics-fn-ref="queryMetricsFnRef">
-  </jvm-metrics>
+  </jvm-metrics-view>
 </div>

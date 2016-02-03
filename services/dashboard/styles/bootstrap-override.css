@@ -3,7 +3,7 @@
  * See accompanying LICENSE file.
  */
 
-/* .navbar-static-top will occupy50px (regarding current font size) */
+/* .navbar-fixed-top will occupy50px (regarding current font size) */
 body {
   padding-top: 50px; /*equals navbar height*/
 }
@@ -13,9 +13,13 @@ html, body {
   height: 100%;
 }
 
-/* Make navbar font more readable */
+/* Make navbar font more readable (2 rules) */
 .navbar-nav > li {
   font-weight: 500;
+}
+
+.navbar-nav > li,
+.dropdown-menu > li > a.header-menu {
   font-size: 1.35rem;
 }
 
@@ -52,20 +56,6 @@ html, body {
 /* Bugfix: Remove too large padding after path separator */
 .breadcrumb > li {
   padding-right: 7px;
-}
-
-/* Remove 1px border from stripped table (2 rules) */
-.table-striped tbody > tr:first-child td {
-  border-top: 0 none transparent;
-}
-
-.table-striped thead > tr > th {
-  border-bottom: 0 none transparent;
-}
-
-/* Table header column should not be wrapped */
-.table thead > tr > th {
-  white-space: nowrap;
 }
 
 /* Increase the distance of table footer and table body */
@@ -163,9 +153,15 @@ html, body {
   font-size: 0.95em;
 }
 
-/* Specify the size of modal dialog */
+/* Specify the style for the modal dialog */
 .modal-md {
-  width: 520px;
+  margin-top: 30px;
+}
+
+/* Smaller pager */
+.pager-sm > li > a {
+  padding: 3px 8px;
+  border-radius: 8px;
 }
 
 /* Make the feedback icon of a form input control clickable (2 rules) */
@@ -190,4 +186,9 @@ html, body {
 .alert-dismissable,
 .alert-dismissible {
   padding-right: 30px;
+}
+
+/* Fix cursor for dropdown menu button */
+a.dropdown-toggle {
+  cursor: pointer;
 }

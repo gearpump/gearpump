@@ -1,39 +1,35 @@
-<div class="panel panel-sm panel-default">
-  <div class="panel-heading">Message Send Throughput (msg/s)</div>
-  <div class="panel-body">
+<div class="row">
+
+  <div class="col-md-12">
+    <h5>Message Send Throughput (msg/s)</h5>
     <line-chart
       options-bind="::sendMessageRateChart.options"
       datasource-bind="sendMessageRateChart.data">
     </line-chart>
   </div>
-</div>
 
-<div class="panel panel-sm panel-default">
-  <div class="panel-heading">Message Receive Throughput (msg/s)</div>
-  <div class="panel-body">
+  <div class="col-md-12">
+    <h5>Message Receive Throughput (msg/s)</h5>
     <line-chart
       options-bind="::receiveMessageRateChart.options"
       datasource-bind="receiveMessageRateChart.data">
     </line-chart>
   </div>
-</div>
 
-<div class="panel panel-sm panel-default">
-  <div class="panel-heading">Average Message Processing Time (ms)</div>
-  <div class="panel-body">
+  <div class="col-md-12">
+    <h5>Average Message Processing Time (ms)</h5>
     <line-chart
       options-bind="::processingTimeChart.options"
       datasource-bind="processingTimeChart.data">
     </line-chart>
   </div>
-</div>
 
-<div class="panel panel-sm panel-default">
-  <div class="panel-heading">Average Message Receive Latency (ms)</div>
-  <div class="panel-body">
+  <div class="col-md-12">
+    <h5>Average Message Receive Latency (ms)</h5>
     <line-chart
       options-bind="::receiveLatencyChart.options"
       datasource-bind="receiveLatencyChart.data">
     </line-chart>
   </div>
+
 </div>

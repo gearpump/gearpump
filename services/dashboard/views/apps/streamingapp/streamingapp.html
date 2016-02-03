@@ -8,26 +8,28 @@
       </h4>
       <h5 ng-bind="app.description"></h5>
     </div>
-    <div class="col-sm-2 col-xs-4">
+    <div class="col-md-2 col-sm-3 col-xs-4">
+      <metrics
+        caption="Uptime"
+        help="Running for {{app.uptime|duration}}" remark-type="info"
+        value="{{uptimeCompact.value}}" unit="{{uptimeCompact.unit}}"></metrics>
+    </div>
+    <div class="col-md-2 col-sm-3 col-xs-8">
       <metrics
         ng-if="app.clock"
         caption="Application Clock"
-        help="{{appClockConcern}}" remark-type="warning" click-help="switchToDagTab()"
+        help="{{appClockConcern||whatIsAppClock}}" remark-type="{{appClockConcern ? 'warning' : 'info'}}"
+        click-help="switchToDagTab()"
         value="{{app.clock|date:'HH:mm:ss'}}"
         sub-text="{{app.clock|date:'yyyy/MM/dd'}}"></metrics>
       <metrics
         ng-if="!app.clock"
         caption="Application Clock"
+        help="{{whatIsAppClock}}" remark-type="info"
         value="not started"></metrics>
     </div>
-    <div class="col-sm-2 col-xs-4">
-      <metrics
-        caption="Up Time"
-        help="Running for {{app.uptime|duration}}" remark-type="info"
-        value="{{uptimeCompact.value}}" unit="{{uptimeCompact.unit}}"></metrics>
-    </div>
-    <div class="col-sm-2 col-xs-4">
-      <metrics value="{{dag.getNumOfProcessors()}}" unit="processor" unit-plural="processors"></metrics>
+    <div class="col-md-2 col-sm-3 col-xs-4">
+      <metrics value="{{dag.getProcessorCount()}}" unit="processor" unit-plural="processors"></metrics>
       <metrics value="{{size(app.executors)}}" unit="executor" unit-plural="executors"></metrics>
     </div>
   </div>

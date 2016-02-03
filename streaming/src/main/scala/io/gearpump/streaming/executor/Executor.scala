@@ -23,13 +23,12 @@ import java.lang.management.ManagementFactory
 import akka.actor.SupervisorStrategy.Resume
 import akka.actor._
 import com.typesafe.config.Config
-import io.gearpump.cluster.{ExecutorContext, UserConfig}
+import io.gearpump.cluster.{ClusterConfig, ExecutorContext, UserConfig}
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.AppMasterToExecutor.{MsgLostException, TasksChanged, TasksLaunched, _}
-import io.gearpump.streaming.Constants._
-import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask}
+import io.gearpump.streaming.ExecutorToAppMaster.{UnRegisterTask, MessageLoss, RegisterExecutor, RegisterTask}
 import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.executor.Executor._
 import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
@@ -68,6 +67,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private val systemConfig = context.system.settings.config
   private val serializerPool = getSerializerPool()
+  private val taskDispatcher = systemConfig.getString(Constants.GEARPUMP_TASK_DISPATCHER)
 
   private var state = State.ACTIVE
   private var transitionStart = 0L // state transition start, in unix time
@@ -123,7 +123,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     }
 
   private def launchTask(taskId: TaskId, argument: TaskArgument): ActorRef = {
-    launcher.launch(List(taskId), argument, context, serializerPool).values.head
+    launcher.launch(List(taskId), argument, context, serializerPool, taskDispatcher).values.head
   }
 
   private def assertVersion(expectVersion: Int, version: Int, clue: Any): Unit = {
@@ -143,7 +143,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         LOG.info(s"Launching Task $taskIds for app: $appId")
         val taskArgument = TaskArgument(version, processorDescription, subscribers)
         taskIds.foreach(taskArgumentStore.add(_, taskArgument))
-        val newAdded = launcher.launch(taskIds, taskArgument, context, serializerPool)
+        val newAdded = launcher.launch(taskIds, taskArgument, context, serializerPool, taskDispatcher)
         newAdded.foreach { newAddedTask =>
           context.watch(newAddedTask._2)
         }
@@ -264,6 +264,18 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           context.become(dynamicDagPhase1(change.dagVersion, List.empty[TaskId], List.empty[ChangeTask], List.empty[TaskId]))
           self forward change
         }
+
+      case StopTask(taskId) =>
+        // Old soldiers never die, they just fade away ;)
+        val fadeAwayTask = tasks.get(taskId)
+        if (fadeAwayTask.isDefined) {
+          context.stop(fadeAwayTask.get)
+        }
+        tasks -= taskId
+
+      case unRegister @ UnRegisterTask(taskId, _) =>
+        // send UnRegisterTask to AppMaster
+        appMaster ! unRegister
     }
   }
 
@@ -331,7 +343,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         jvmName = ManagementFactory.getRuntimeMXBean().getName())
 
     case query: QueryExecutorConfig =>
-      sender ! ExecutorConfig(systemConfig)
+      sender ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
     case HealthCheck =>
       context.system.scheduler.scheduleOnce(3 second)(HealthCheck)
       if (state != State.ACTIVE && (transitionEnd - transitionStart) > transitWarningThreshold) {
@@ -348,13 +360,13 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     pool.asInstanceOf[SerializationFramework]
   }
 
-  private def unHandled: Receive = {
+  private def unHandled(state: String): Receive = {
     case other =>
-      LOG.info(s"Received unknown message $other")
+      LOG.info(s"Received unknown message $other in state: $state")
   }
 
   private def box(receive: Receive): Receive = {
-    executorService orElse receive orElse unHandled
+    executorService orElse receive orElse unHandled(state)
   }
 }
 

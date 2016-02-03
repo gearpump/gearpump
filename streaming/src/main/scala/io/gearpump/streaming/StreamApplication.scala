@@ -24,7 +24,7 @@ import io.gearpump.streaming.task.Task
 import io.gearpump.TimeStamp
 import io.gearpump.cluster._
 import io.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription, PartitionerObject}
-import io.gearpump.util.{Graph, ReferenceEqual}
+import io.gearpump.util.{LogUtil, Graph, ReferenceEqual}
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -114,6 +114,7 @@ object LifeTime {
  */
 class StreamApplication(override val name : String,  val inputUserConfig: UserConfig, val dag: Graph[ProcessorDescription, PartitionerDescription])
   extends Application {
+
   require(!dag.hasDuplicatedEdge(), "Graph should not have duplicated edges")
 
   override def appMaster: Class[_ <: ApplicationMaster] = classOf[AppMaster]
@@ -134,9 +135,14 @@ case class ProcessorDescription(
 object StreamApplication {
 
   private val hashPartitioner = new HashPartitioner()
+  private val LOG = LogUtil.getLogger(getClass)
 
   def apply[T <: Processor[Task], P <: Partitioner] (name : String, dag: Graph[T, P], userConfig: UserConfig): StreamApplication = {
     import Processor._
+
+    if (dag.hasCycle()) {
+      LOG.warn(s"Detected cycles in DAG of application $name!")
+    }
 
     val indices = dag.topologicalOrderIterator.toList.zipWithIndex.toMap
     val graph = dag.mapVertex {processor =>

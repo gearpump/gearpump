@@ -33,13 +33,10 @@ import scala.concurrent.duration._
 /**
  * ExecutorSystem is also a type of resource, this class schedules ExecutorSystem for AppMaster.
  * AppMaster can use this class to directly request a live executor actor systems. The communication
- * IN the background with Master and Worker is hidden from AppMaster.
+ * in the background with Master and Worker is hidden from AppMaster.
  *
- * Plase use ExecutorSystemScheduler.props() to construct this actor
+ * Please use ExecutorSystemScheduler.props() to construct this actor
  *
- * @param appId
- * @param masterProxy
- * @param executorSystemLauncher
 */
 private[appmaster]
 class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,

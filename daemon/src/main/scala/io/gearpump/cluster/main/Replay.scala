@@ -29,7 +29,9 @@ object Replay extends AkkaApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "appid" -> CLIOption("<application id>", required = true),
-    "config" -> CLIOption("custom configuration file", required = false, defaultValue = None))
+    // For document purpose only, OPTION_CONFIG option is not used here.
+    // OPTION_CONFIG is parsed by parent shell command "Gear" transparently.
+    Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false, defaultValue = None))
 
   override val description = "Replay the application from current min clock(low watermark)"
 

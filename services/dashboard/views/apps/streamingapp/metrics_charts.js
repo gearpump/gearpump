@@ -12,89 +12,114 @@ angular.module('dashboard')
       restrict: 'E',
       templateUrl: 'views/apps/streamingapp/metrics_charts.html',
       scope: true, // inherit parent scope
-      controller: ['$scope', '$filter', '$interval', 'models', function($scope, $filter, $interval, models) {
+      controller: ['$scope', '$interval', 'helper', 'models', function($scope, $interval, helper, models) {
         'use strict';
 
         var metricsProvider = $scope.dag;
         var processorId;
+        $scope.chartGridClass = 'col-sm-12';
         if ($scope.processor) {
           processorId = $scope.processor.id;
+          $scope.chartGridClass = 'col-sm-6';
           $scope.sendThroughputMetricsCaption = 'Message Send Throughput';
           $scope.sendThroughputMetricsDescription = '';
           $scope.receiveThroughputMetricsCaption = 'Message Receive Throughput';
           $scope.receiveThroughputMetricsDescription = '';
+          $scope.messageLatencyMetricsCaption = 'Average Message Receive Latency';
+          $scope.messageLatencyMetricsDescription = '';
         }
         var sc = $scope.metricsConfig;
-        var currentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
+        var recentChartPoints = sc.retainRecentDataSeconds * 1000 / sc.retainRecentDataIntervalMs;
         var histChartPoints = sc.retainHistoryDataHours * 3600 * 1000 / sc.retainHistoryDataIntervalMs;
+        recentChartPoints--; // ProcessorFilter will actually reduce one point
+        histChartPoints--;
         var updateRecentMetricsPromise;
         $scope.$on('$destroy', function() {
           $interval.cancel(updateRecentMetricsPromise);
         });
 
         // part 1
-        var lineChartOptionBase = {
-          height: '108px',
-          visibleDataPointsNum: currentChartPoints,
-          data: _.times(currentChartPoints, function() {
-            return {x: '', y: '-'};
-          })
-        };
+        function createChart(unit, visibleDataPointsNum, dataPoints) {
+          return {
+            options: {
+              height: '108px',
+              margin: {right: 30},
+              seriesNames: [''],
+              yAxisLabelFormatter: helper.yAxisLabelFormatterWithoutValue0(),
+              visibleDataPointsNum: visibleDataPointsNum,
+              data: dataPoints,
+              valueFormatter: function(value) {
+                return helper.readableMetricValue(value) + ' ' + unit;
+              }
+            },
+            data: null
+          };
+        }
 
-        var throughputChartOptions = angular.merge({
-          valueFormatter: function(value) {
-            return $filter('number')(value, 0) + ' msg/s';
-          },
-          seriesNames: ['Throughput']
-        }, lineChartOptionBase);
+        function createThroughputChart(visibleDataPointsNum, dataPoints) {
+          return createChart('msg/s', visibleDataPointsNum, dataPoints);
+        }
 
-        $scope.sendThroughputChartOptions = angular.copy(throughputChartOptions);
-        $scope.receiveThroughputChartOptions = angular.copy(throughputChartOptions);
+        function createDurationChart(visibleDataPointsNum, dataPoints) {
+          return createChart('ms', visibleDataPointsNum, dataPoints);
+        }
 
-        var durationChartOptions = angular.merge({
-          valueFormatter: function(value) {
-            return $filter('number')(value, 3) + ' ms';
-          },
-          seriesNames: ['Duration']
-        }, lineChartOptionBase);
-
-        $scope.averageProcessingTimeChartOptions = angular.copy(durationChartOptions);
-        $scope.averageMessageReceiveLatencyChartOptions = angular.copy(durationChartOptions);
+        $scope.sendThroughputChart = createThroughputChart(recentChartPoints);
+        $scope.receiveThroughputChart = createThroughputChart(recentChartPoints);
+        $scope.averageProcessingTimeChart = createDurationChart(recentChartPoints);
+        $scope.messageReceiveLatencyChart = createDurationChart(recentChartPoints);
 
         function redrawMetricsCharts() {
 
-          function _batch(chartNameBase, fnName, data) {
-            // set null will rebuild historical chart
-            $scope[chartNameBase + 'HistChartOptions'] = null;
-
-            var chartData = metricsToChartData(metricsProvider[fnName](data,
-              $scope.metricsConfig.retainRecentDataIntervalMs, processorId));
-            if ($scope.showCurrentMetrics) {
-              $scope[chartNameBase + 'Data'] = chartData;
-            } else {
-              $scope[chartNameBase + 'HistChartOptions'] =
-                angular.extend({}, $scope[chartNameBase+ 'ChartOptions'], {
-                  visibleDataPointsNum: Math.max(chartData.length, histChartPoints),
-                  data: chartData
-                });
+          function _rebuildChartWithNewDataPoints(chartOptions, metrics) {
+            var all = !$scope.isShowingCurrentMetrics;
+            var dataPoints = metricsToChartData(metrics);
+            var visibleDataPointsNum = all ?
+              Math.max(dataPoints.length, histChartPoints) : recentChartPoints;
+            if (all && dataPoints.length < 2) {
+              // Hide chart data, if there is only one data point there, which looks very ugly.
+              visibleDataPointsNum = 0;
+              dataPoints = [];
             }
+            // Rebuild the chart
+            chartOptions.data = dataPoints;
+            chartOptions.visibleDataPointsNum = visibleDataPointsNum;
           }
 
-          if (!$scope.showCurrentMetrics) {
+          if (!$scope.isShowingCurrentMetrics) {
             $interval.cancel(updateRecentMetricsPromise);
           }
 
-          var queryMetricsPromise = $scope.showCurrentMetrics ?
+          var queryMetricsPromise = $scope.isShowingCurrentMetrics ?
             models.$get.appMetrics($scope.app.appId, $scope.metricsConfig.retainRecentDataIntervalMs) :
             models.$get.appHistMetrics($scope.app.appId);
+
           queryMetricsPromise.then(function(metrics) {
             var data = metrics.$data();
-            _batch('sendThroughput', 'toHistoricalMessageSendThroughputData', data);
-            _batch('receiveThroughput', 'toHistoricalMessageReceiveThroughputData', data);
-            _batch('averageProcessingTime', 'toHistoricalMessageAverageProcessingTimeData', data);
-            _batch('averageMessageReceiveLatency', 'toHistoricalAverageMessageReceiveLatencyData', data);
+            var timeResolution = $scope.isShowingCurrentMetrics ?
+              $scope.metricsConfig.retainRecentDataIntervalMs :
+              $scope.metricsConfig.retainHistoryDataIntervalMs;
+            metricsProvider.replaceHistoricalMetrics(data, timeResolution);
 
-            if ($scope.showCurrentMetrics) {
+            if (angular.isNumber(processorId)) {
+              _rebuildChartWithNewDataPoints($scope.sendThroughputChart.options,
+                metricsProvider.getProcessorHistoricalMessageSendThroughput(processorId));
+              _rebuildChartWithNewDataPoints($scope.receiveThroughputChart.options,
+                metricsProvider.getProcessorHistoricalMessageReceiveThroughput(processorId));
+              _rebuildChartWithNewDataPoints($scope.averageProcessingTimeChart.options,
+                metricsProvider.getProcessorHistoricalAverageMessageProcessingTime(processorId));
+              _rebuildChartWithNewDataPoints($scope.messageReceiveLatencyChart.options,
+                metricsProvider.getProcessorHistoricalAverageMessageReceiveLatency(processorId));
+            } else {
+              _rebuildChartWithNewDataPoints($scope.sendThroughputChart.options,
+                metricsProvider.getSourceProcessorHistoricalMessageSendThroughput());
+              _rebuildChartWithNewDataPoints($scope.receiveThroughputChart.options,
+                metricsProvider.getSinkProcessorHistoricalMessageReceiveThroughput());
+              _rebuildChartWithNewDataPoints($scope.messageReceiveLatencyChart.options,
+                metricsProvider.getHistoricalCriticalPathLatency());
+            }
+
+            if ($scope.isShowingCurrentMetrics) {
               updateRecentMetricsPromise = $interval(fillChartsWithCurrentMetrics,
                 sc.retainRecentDataIntervalMs);
             }
@@ -110,40 +135,24 @@ angular.module('dashboard')
           }
 
           var timeResolution = $scope.metricsConfig.retainRecentDataIntervalMs;
-          var metricTime = Math.floor(metricsProvider.metricsTime / timeResolution) * timeResolution;
-          $scope.sendThroughputData = _data($scope.currentMessageSendRate, metricTime);
-          $scope.receiveThroughputData = _data($scope.currentMessageReceiveRate, metricTime);
-          $scope.averageProcessingTimeData = _data($scope.averageProcessingTime, metricTime);
-          $scope.averageMessageReceiveLatencyData = _data($scope.averageMessageReceiveLatency, metricTime);
+          var metricTime = Math.floor(metricsProvider.metricsUpdateTime / timeResolution) * timeResolution;
+          $scope.sendThroughputChart.data = _data($scope.currentMessageSendRate, metricTime);
+          $scope.receiveThroughputChart.data = _data($scope.currentMessageReceiveRate, metricTime);
+          $scope.averageProcessingTimeChart.data = _data($scope.averageProcessingTime, metricTime);
+          $scope.messageReceiveLatencyChart.data = _data($scope.messageReceiveLatency, metricTime);
         }
 
         function metricsToChartData(metrics) {
           return _.map(metrics, function(value, timeString) {
             return {
-              x: moment(Number(timeString)).format('HH:mm:ss'),
-              y: value
+              x: helper.timeToChartTimeLabel(Number(timeString), /*shortForm=*/$scope.isShowingCurrentMetrics),
+              y: helper.metricRounded(value)
             };
           });
         }
 
-        // part 2
-        function updateCurrentMeterMetrics() {
-          var receivedMessages = metricsProvider.getReceivedMessages(processorId);
-          var sentMessages = metricsProvider.getSentMessages(processorId);
-
-          $scope.currentMessageSendRate = sentMessages.rate;
-          $scope.currentMessageReceiveRate = receivedMessages.rate;
-          $scope.totalSentMessages = sentMessages.total;
-          $scope.totalReceivedMessages = receivedMessages.total;
-        }
-
-        function updateCurrentHistogramMetrics() {
-          $scope.averageProcessingTime = metricsProvider.getMessageProcessingTime(processorId);
-          $scope.averageMessageReceiveLatency = metricsProvider.getMessageReceiveLatency(processorId);
-        }
-
-        $scope.showCurrentMetrics = true;
-        $scope.$watch('showCurrentMetrics', function(newVal, oldVal) {
+        $scope.isShowingCurrentMetrics = true;
+        $scope.$watch('isShowingCurrentMetrics', function(newVal, oldVal) {
           if (angular.equals(newVal, oldVal)) {
             return; // ignore initial notification
           }
@@ -152,19 +161,34 @@ angular.module('dashboard')
 
         // common watching
         var initial = true;
-        $scope.$watch('dag.metricsTime', function() {
-          // part 1
-          updateCurrentMeterMetrics();
-          updateCurrentHistogramMetrics();
-
-          // part 2
+        $scope.$watch('dag.metricsUpdateTime', function() {
           if (initial) {
             // note that, the latest metrics do not contain enough points for drawing charts, so
             // we request recent metrics from server.
             redrawMetricsCharts();
             initial = false;
           }
+
+          updateMetricCards();
         });
+
+        function updateMetricCards() {
+          var sentMessages, receivedMessages;
+          if (angular.isNumber(processorId)) {
+            sentMessages = metricsProvider.getProcessorSentMessages(processorId);
+            receivedMessages = metricsProvider.getProcessorReceivedMessages(processorId);
+            $scope.averageProcessingTime = metricsProvider.getProcessorAverageMessageProcessingTime(processorId);
+            $scope.messageReceiveLatency = metricsProvider.getProcessorMessageReceiveLatency(processorId);
+          } else {
+            sentMessages = metricsProvider.getSourceProcessorSentMessageTotalAndRate();
+            receivedMessages = metricsProvider.getSinkProcessorReceivedMessageTotalAndRate();
+            $scope.messageReceiveLatency = metricsProvider.getCriticalPathLatency();
+          }
+          $scope.currentMessageSendRate = sentMessages.rate;
+          $scope.currentMessageReceiveRate = receivedMessages.rate;
+          $scope.totalSentMessages = sentMessages.total;
+          $scope.totalReceivedMessages = receivedMessages.total;
+        }
       }]
     };
   })

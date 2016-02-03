@@ -19,6 +19,7 @@
 package io.gearpump.streaming.examples.kafka.wordcount
 
 import akka.actor.ActorSystem
+import io.gearpump.streaming.kafka.lib.KafkaSourceConfig
 import io.gearpump.streaming.{StreamApplication, Processor}
 import io.gearpump.streaming.kafka.{KafkaSink, KafkaStorageFactory, KafkaSource}
 import io.gearpump.streaming.sink.DataSinkProcessor
@@ -29,6 +30,7 @@ import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.partitioner.HashPartitioner
 import io.gearpump.util.Graph._
 import io.gearpump.util.{AkkaApp, Graph, LogUtil}
+import kafka.api.OffsetRequest
 import org.slf4j.Logger
 
 object KafkaWordCount extends AkkaApp with ArgumentsParser {
@@ -50,7 +52,9 @@ object KafkaWordCount extends AkkaApp with ArgumentsParser {
 
     val appConfig = UserConfig.empty
     val offsetStorageFactory = new KafkaStorageFactory("localhost:2181", "localhost:9092")
-    val source = new KafkaSource("topic1", "localhost:2181", offsetStorageFactory)
+    val kafkaSourceConfig = new KafkaSourceConfig()
+      .withConsumerTopics("topic1").withConsumerStartOffset(OffsetRequest.LatestTime)
+    val source = new KafkaSource(kafkaSourceConfig, offsetStorageFactory)
     val sourceProcessor = DataSourceProcessor(source, sourceNum)
     val split = Processor[Split](splitNum)
     val sum = Processor[Sum](sumNum)

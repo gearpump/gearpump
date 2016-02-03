@@ -23,8 +23,9 @@ package io.gearpump
  *
  * For example, if you take a picture, the time you take the picture is the
  * message's timestmap.
+  * @param msg Accept any type except Null, Nothing and Unit
  */
-case class Message(msg: AnyRef, timestamp: TimeStamp = Message.noTimeStamp)
+case class Message(msg: Any, timestamp: TimeStamp = Message.noTimeStamp)
 
 object Message {
   val noTimeStamp : TimeStamp = 0L

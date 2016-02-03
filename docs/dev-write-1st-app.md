@@ -20,16 +20,10 @@ An application is a Directed Acyclic Graph (DAG) of processors. In the wordcount
 
 #### About message type
 
-User are allowed to send message of type AnyRef(map to Object in java).
+User are allowed to send message of type Any(Accept any type except Null, Nothing and Unit).
 
 ```
-case class Message(msg: AnyRef, timestamp: TimeStamp = Message.noTimeStamp)
-```
-
-If user want to send primitive types like Int, Long, then he should box it explicitly with asInstanceOf. For example:
-
-```
-new Message(3.asInstanceOf[AnyRef])
+case class Message(msg: Any, timestamp: TimeStamp = Message.noTimeStamp)
 ```
 
 #### Split processor

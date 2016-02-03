@@ -9,26 +9,30 @@ The commands can be found at: "bin" folder of Gearpump binary.
 
 **NOTE:** on MS Windows platform, please use window shell gear.bat script instead. bash script doesn't work well in cygwin/mingw.
 
+### Creating an uber-jar
+
+If you use Maven you can have a look [here](https://maven.apache.org/plugins/maven-shade-plugin/) whereas SBT users may find [this](https://github.com/sbt/sbt-assembly) useful.
+
 ### Submit an new application
 
 You can use the command `gear` under the bin directory to submit, query and terminate an application:
 
 ```bash
-gear app [-namePrefix <application name prefix>] -jar xx.jar MainClass <arg1> <arg2> ...
+gear app [-namePrefix <application name prefix>] [-conf <custom gearpump config file>] -jar xx.jar MainClass <arg1> <arg2> ...
 ```
 
 ### List all running applications
 To list all running applications:
 
 ```bash
-gear info
+gear info  [-conf <custom gearpump config file>]
 ```
 
 ### Kill a running application
 To kill an application:
 
 ```bash
-gear kill -appid <application id>
+gear kill -appid <application id>  [-conf <custom gearpump config file>]
 ```
 
 ### Submit a storm application to Gearpump Cluster
@@ -44,9 +48,9 @@ storm -verbose -config storm.yaml -jar storm-starter-${STORM_VERSION}.jar storm.
 To start a Gearpump Cluster on YARN, you can:
 
 ```bash
-yarnclient launch -package /usr/lib/gearpump/gearpump-2.11-{{ site.GEARPUMP_VERSION }}.zip
+yarnclient launch -package /usr/lib/gearpump/gearpump-{{ site.SCALA_BINARY_VERSION }}-{{ site.GEARPUMP_VERSION }}.zip
 ```
-/usr/lib/gearpump/gearpump-2.11-{{ site.GEARPUMP_VERSION }}.zip should be available on HDFS.
+/usr/lib/gearpump/gearpump-{{ site.SCALA_BINARY_VERSION }}-{{ site.GEARPUMP_VERSION }}.zip should be available on HDFS.
 
 Please check [YARN Deployment Guide](deployment-yarn.html) for more information.
 
@@ -80,5 +84,8 @@ Please check [Deployment for Standalone mode](deployment-standalone.html) for mo
 To start UI server, you can:
 
 ```bash
-services
+services  [-master <host:port>]
 ```
+
+The default username and password is "admin:admin", you can check
+[UI Authentication](deployment-ui-authentication.html) to find how to manage users.

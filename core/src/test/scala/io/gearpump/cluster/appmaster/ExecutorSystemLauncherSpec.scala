@@ -20,6 +20,7 @@ package io.gearpump.cluster.appmaster
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.TestUtil
@@ -28,6 +29,7 @@ import io.gearpump.cluster.appmaster.ExecutorSystemLauncher._
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.Session
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, RegisterActorSystem}
+import io.gearpump.util.Constants
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 import scala.concurrent.duration._
@@ -39,9 +41,13 @@ class ExecutorSystemLauncherSpec  extends FlatSpec with Matchers with BeforeAndA
   val executorId = 0
   val url = "akka.tcp://worker@127.0.0.1:3000"
   val session = Session(null, null)
+  val launchExecutorSystemTimeout = 3000
+  val activeConfig = TestUtil.DEFAULT_CONFIG.
+    withValue(Constants.GEARPUMP_START_EXECUTOR_SYSTEM_TIMEOUT_MS,
+              ConfigValueFactory.fromAnyRef(launchExecutorSystemTimeout))
 
   override def beforeAll() = {
-    system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
+    system = ActorSystem("test", activeConfig)
   }
 
   override def afterAll() = {
@@ -89,7 +95,8 @@ class ExecutorSystemLauncherSpec  extends FlatSpec with Matchers with BeforeAndA
     val launcher = system.actorOf(Props(new ExecutorSystemLauncher(appId, session)))
     client.send(launcher, LaunchExecutorSystem(WorkerInfo(workerId, worker.ref), 0, Resource(1)))
     client.watch(launcher)
-    client.expectMsgType[LaunchExecutorSystemTimeout](30 seconds)
-    client.expectTerminated(launcher, 30 seconds)
+    val waitFor = launchExecutorSystemTimeout + 10000
+    client.expectMsgType[LaunchExecutorSystemTimeout](waitFor milliseconds)
+    client.expectTerminated(launcher, waitFor milliseconds)
   }
 }

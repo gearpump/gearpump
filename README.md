@@ -1,5 +1,7 @@
 
-## Gearpump [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
+## Gearpump  [![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://www.gearpump.io/download.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](https://github.com/gearpump/gearpump/blob/master/LICENSE)
+
+[![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
 
 Web site: http://gearpump.io
 
@@ -18,7 +20,7 @@ We model streaming within the Akka actor hierarchy.
 
 ![](https://raw.githubusercontent.com/gearpump/gearpump/master/docs/img/actor_hierarchy.png)
 
-Per initial benchmarks we are able to process 11 million messages/second (100 bytes per message) with a 17ms latency on a 4-node cluster.
+Per initial benchmarks we are able to process near 18 million messages/second (100 bytes per message) with a 8ms latency on a 4-node cluster.
 
 ![](https://raw.githubusercontent.com/gearpump/gearpump/master/docs/img/dashboard.png)
 
@@ -49,11 +51,11 @@ Check guide [Get Started](http://www.gearpump.io/releases/latest/submit-your-1st
 
 ```bash
   ## Please use scala 2.11 or 2.10
-  ## The target package path: target/gearpump-$VERSION.tar.gz
+  ## The target package path: output/target/gearpump-${version}.zip
   sbt clean +assembly +packArchiveZip
 ```
 
-  After the build, there will be a package file gearpump-${version}.tar.gz generated under target/ folder.
+  After the build, there will be a package file gearpump-${version}.zip generated under output/target/ folder.
 
   To build scala document, use
 ```bash
@@ -66,15 +68,15 @@ The build requires network connection. If you are behind an enterprise proxy, ma
 For windows:
 
 ```bash
-Set HTTP_PROXY=http://host:port
-set HTTPS_PROXT= http://host:port
+set HTTP_PROXY=http://host:port
+set HTTPS_PROXY= http://host:port
 ```
 
 For Linux:
 
 ```bash
 export HTTP_PROXY=http://host:port
-export HTTPS_PROXT= http://host:port
+export HTTPS_PROXY= http://host:port
 ```
 
 
@@ -136,10 +138,13 @@ weihua.jiang@intel.com
 
 ## License
 
-Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+Gearpump itself is licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+For library it used, please see [/LICENSE](https://github.com/gearpump/gearpump/blob/master/LICENSE)
 
 ## Acknowledgement
 
 The netty transport code work is based on [Apache Storm](http://storm.apache.org). Thanks Apache Storm contributors.
+
+The cgroup code work is based on [JStorm](https://github.com/alibaba/jstorm). Thanks JStorm contributors.
 
 Thanks to Jetbrains for providing [IntelliJ IDEA Free Open Source License](https://www.jetbrains.com/buy/opensource/?product=idea).

@@ -116,7 +116,7 @@ object StormOutputCollector {
       case Grouping._Fields.ALL =>
         new AllGrouper(targetTaskNum)
       case Grouping._Fields.CUSTOM_SERIALIZED =>
-        val customGrouping = Utils.deserialize(grouping.get_custom_serialized()).asInstanceOf[CustomStreamGrouping]
+        val customGrouping = Utils.javaDeserialize(grouping.get_custom_serialized, classOf[Serializable]).asInstanceOf[CustomStreamGrouping]
         val grouper = new CustomGrouper(customGrouping)
         grouper.prepare(topologyContext, globalStreamId, targetTasks)
         grouper

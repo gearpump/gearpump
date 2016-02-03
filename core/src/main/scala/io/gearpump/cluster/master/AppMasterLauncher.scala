@@ -41,6 +41,11 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
+/**
+ *
+ * AppMasterLauncher is a child Actor of AppManager, it is responsible
+ * to launch the AppMaster on the cluster.
+ */
 class AppMasterLauncher(
     appId : Int, executorId: Int, app : AppDescription,
     jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef])

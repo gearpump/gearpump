@@ -1,0 +1,15 @@
+<div>
+  <span style="display: inline-block;">
+  (Showing {{range.start + 1}} - {{range.stop + 1}} of {{count}} tasks)
+  </span>
+  <ul class="pager pager-sm" style="margin: 0 0 0 4px; display: inline-block; text-align: left">
+    <li ng-class="{disabled: range.start === 0}"
+        ng-click="switchTasks(-1)">
+      <a href="javascript:">Previous {{queryLimit}}</a>
+    </li>
+    <li ng-class="{disabled: range.stop === count - 1}"
+        ng-click="switchTasks(1)">
+      <a href="javascript:">Next {{queryLimit}}</a>
+    </li>
+  </ul>
+</div>

@@ -23,6 +23,7 @@ import java.util.Properties
 import io.gearpump.streaming.kafka.KafkaSource
 import io.gearpump.streaming.kafka.lib.grouper.{KafkaDefaultGrouper, KafkaGrouper}
 import io.gearpump.util.LogUtil
+import kafka.api.OffsetRequest
 import kafka.consumer.ConsumerConfig
 import org.slf4j.Logger
 
@@ -32,6 +33,7 @@ object KafkaSourceConfig {
 
   val ZOOKEEPER_CONNECT = "zookeeper.connect"
   val GROUP_ID = "group.id"
+  val CONSUMER_START_OFFSET = "kafka.consumer.start.offset"
   val CONSUMER_TOPICS = "kafka.consumer.topics"
   val FETCH_THRESHOLD = "kafka.consumer.fetch.threshold"
   val FETCH_SLEEP_MS = "kafka.consumer.fetch.sleep.ms"
@@ -44,6 +46,7 @@ object KafkaSourceConfig {
 
 /**
  * this class extends kafka kafka.consumer.ConsumerConfig with specific configs for [[KafkaSource]]
+ *
  * @param consumerProps kafka consumer config
  */
 class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends java.io.Serializable  {
@@ -84,7 +87,7 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
    * @return new KafkaConfig based on this but with [[io.gearpump.streaming.kafka.lib.KafkaSourceConfig.FETCH_SLEEP_MS]] set to given value
    */
   def withFetchSleepMS(sleepMS: Int): KafkaSourceConfig = {
-    consumerProps.setProperty(FETCH_SLEEP_MS, sleepMS + "")
+    consumerProps.setProperty(FETCH_SLEEP_MS, s"$sleepMS")
     KafkaSourceConfig(consumerProps)
   }
 
@@ -105,7 +108,7 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
    * @return new KafkaConfig based on this but with [[io.gearpump.streaming.kafka.lib.KafkaSourceConfig.FETCH_THRESHOLD]] set to give value
    */
   def withFetchThreshold(threshold: Int): KafkaSourceConfig = {
-    consumerProps.setProperty(FETCH_THRESHOLD, threshold + "")
+    consumerProps.setProperty(FETCH_THRESHOLD, s"$threshold")
     KafkaSourceConfig(consumerProps)
   }
 
@@ -139,6 +142,15 @@ class KafkaSourceConfig(val consumerProps: Properties = new Properties) extends 
   def getGrouper: KafkaGrouper = {
     Class.forName(Option(consumerProps.getProperty(GROUPER_CLASS)).getOrElse(classOf[KafkaDefaultGrouper].getName))
         .newInstance().asInstanceOf[KafkaGrouper]
+  }
+
+  def withConsumerStartOffset(earliestOrLatest: Long): KafkaSourceConfig = {
+    consumerProps.setProperty(CONSUMER_START_OFFSET, s"$earliestOrLatest")
+    KafkaSourceConfig(consumerProps)
+  }
+
+  def getConsumerStartOffset: Long = {
+    Option(consumerProps.getProperty(CONSUMER_START_OFFSET)).getOrElse(s"${OffsetRequest.EarliestTime}").toLong
   }
 }
 

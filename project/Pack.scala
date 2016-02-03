@@ -43,7 +43,8 @@ object Pack extends sbt.Build {
     settings = commonSettings ++ noPublish  ++
         packSettings ++
         Seq(
-          packMain := Map("gear" -> "io.gearpump.cluster.main.Gear",
+          packMain := Map(
+            "gear" -> "io.gearpump.cluster.main.Gear",
             "local" -> "io.gearpump.cluster.main.Local",
             "master" -> "io.gearpump.cluster.main.Master",
             "worker" -> "io.gearpump.cluster.main.Worker",
@@ -52,25 +53,31 @@ object Pack extends sbt.Build {
             "storm" -> "io.gearpump.experiments.storm.StormRunner"
           ),
           packJvmOpts := Map(
-            "local" -> Seq("-server", "-DlogFilename=local", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "master" -> Seq("-server", "-DlogFilename=master", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "worker" -> Seq("-server", "-DlogFilename=worker", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "services" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "yarnclient" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
-            "storm" -> Seq("-server", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost")
+            "gear" -> Seq("-Djava.net.preferIPv4Stack=true", "-Dgearpump.home=${PROG_HOME}"),
+            "local" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-DlogFilename=local", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "master" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-DlogFilename=master", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "worker" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-DlogFilename=worker", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "services" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "yarnclient" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-Dgearpump.home=${PROG_HOME}", "-Djava.rmi.server.hostname=localhost"),
+            "storm" -> Seq("-server", "-Djava.net.preferIPv4Stack=true", "-Dgearpump.home=${PROG_HOME}")
           ),
           packLibDir := Map(
             "lib" -> new ProjectsToPack(core.id, streaming.id),
-            "lib/daemon" -> new ProjectsToPack(daemon.id).exclude(core.id, streaming.id),
+            "lib/daemon" -> new ProjectsToPack(daemon.id, cgroup.id).exclude(core.id, streaming.id),
             "lib/yarn" -> new ProjectsToPack(yarn.id).exclude(services.id, daemon.id),
             "lib/services" -> new ProjectsToPack(services.id).exclude(daemon.id),
             "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id)
           ),
           packExclude := Seq(thisProjectRef.value.project),
+          //This is a work-around for https://github.com/gearpump/gearpump/issues/1816
+          //Will be removed in the future when Akka release a new version which includes the fix.
+          packExcludeJars := Seq(s"akka-actor_${scalaBinaryVersion.value}-$akkaVersion.jar"),
           packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
           packResourceDir += (baseDirectory.value / ".." / "yarnconf" -> "conf/yarnconf"),
+          packResourceDir += (baseDirectory.value / ".." / "unmanagedlibs" / scalaBinaryVersion.value -> "lib"),
           packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
           packResourceDir += (baseDirectory.value / ".." / "examples" / "target" / CrossVersion.binaryScalaVersion(scalaVersion.value) -> "examples"),
+          packResourceDir += (baseDirectory.value / ".." / "integrationtest" / "target" / CrossVersion.binaryScalaVersion(scalaVersion.value) -> "integrationtest"),
 
           // The classpath should not be expanded. Otherwise, the classpath maybe too long.
           // On windows, it may report shell error "command line too long"
@@ -85,7 +92,8 @@ object Pack extends sbt.Build {
             "storm" -> stormClassPath
           ),
 
-          packArchivePrefix := projectName + "-" + scalaBinaryVersion.value
+          packArchivePrefix := projectName + "-" + scalaBinaryVersion.value,
+          packArchiveExcludes := Seq("integrationtest")
 
         )
   ).dependsOn(core, streaming, services, yarn, storm)

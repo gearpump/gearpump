@@ -29,7 +29,7 @@ import io.gearpump.cluster._
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.partitioner.PartitionerDescription
-import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask}
+import io.gearpump.streaming.ExecutorToAppMaster.{UnRegisterTask, MessageLoss, RegisterExecutor, RegisterTask}
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.AppMaster._
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
@@ -73,7 +73,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private val address = ActorUtil.getFullPath(context.system, self.path)
 
-  private val dagManager = context.actorOf(Props(new DagManager(appContext.appId, userConfig,
+  private val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
+  private val dagManager = context.actorOf(Props(new DagManager(appContext.appId, userConfig, store,
     Some(getUpdatedDAG()))))
 
   private var taskManager: Option[ActorRef] = None
@@ -120,9 +121,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       ActorPathUtil.executorManagerActorName)
 
   for (dag <- getDAG) {
-    val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
     clockService = Some(context.actorOf(Props(new ClockService(dag, store))))
-    val jarScheduler = new JarScheduler(appId, app.name, systemConfig)
+    val jarScheduler = new JarScheduler(appId, app.name, systemConfig, context)
 
     taskManager = Some(context.actorOf(Props(new TaskManager(appContext.appId, dagManager,
       jarScheduler, executorManager, clockService.get, self, app.name))))
@@ -140,6 +140,10 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       taskManager.foreach(_ forward clock)
     case register: RegisterTask =>
       taskManager.foreach(_ forward register)
+    case unRegister: UnRegisterTask =>
+      taskManager.foreach(_ forward unRegister)
+      // check whether this processor dead, if it is, then we should remove it from clockService.
+      clockService.foreach(_ forward CheckProcessorDeath(unRegister.taskId.processorId))
     case replay: ReplayFromTimestampWindowTrailingEdge =>
       taskManager.foreach(_ forward replay)
     case messageLoss: MessageLoss =>
@@ -250,7 +254,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
     case query@ QueryExecutorConfig(executorId) =>
       val client = sender
       if (executorId == -1) {
-         sender ! ExecutorConfig(context.system.settings.config)
+        val systemConfig = context.system.settings.config
+        sender ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
       } else {
         ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
           map.get(executorId).foreach { executor =>

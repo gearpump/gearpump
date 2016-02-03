@@ -39,7 +39,7 @@ Gearpump is a message level streaming engine, which means every task in the DAG 
 
 #### High Performance message passing
 
-By implementing smart batching strategies, Gearpump is extremely effective in transferring small messages. In one test of 4 machines, the whole cluster throughput can reach 11 million messages per second, with message size of 100 bytes.
+By implementing smart batching strategies, Gearpump is extremely effective in transferring small messages. In one test of 4 machines, the whole cluster throughput can reach 18 million messages per second, with message size of 100 bytes.
 ![Dashboard](img/dashboard.png)
 
 #### High availability, No single point of failure

@@ -22,10 +22,10 @@ import java.io.{File, IOException}
 import java.net.InetAddress
 
 import akka.actor.{ActorRef, ActorSystem}
-import com.typesafe.config.Config
+import io.gearpump.cluster.ClientToMaster.{AddWorker, CommandResult, RemoveWorker}
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, AddWorker, ClusterInfo, CommandResult, GetActiveConfig, Kill, QueryClusterInfo, QueryVersion, RemoveWorker, Version}
+import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, ClusterInfo, GetActiveConfig, Kill, QueryClusterInfo, QueryVersion, Version}
 import io.gearpump.experiments.yarn.glue.Records.ApplicationId
 import io.gearpump.experiments.yarn.glue.{YarnClient, YarnConfig}
 import io.gearpump.util.ActorUtil.askActor
@@ -99,7 +99,7 @@ object ManageCluster extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     COMMAND -> CLIOption[String](s"<${commands.mkString("|")}>", required = true),
     APPID ->CLIOption[String]("<Application id, format: application_timestamp_id>", required = true),
-    COUNT -> CLIOption("<how many instance to add or remove>", required = false, defaultValue = Some(0)),
+    COUNT -> CLIOption("<how many instance to add or remove>", required = false, defaultValue = Some(1)),
     VERBOSE -> CLIOption("<print verbose log on console>", required = false, defaultValue = Some(false)),
     OUTPUT -> CLIOption("<output path for configuration file>", required = false, defaultValue = Some("")),
     CONTAINER -> CLIOption("<container id for master or worker>", required = false, defaultValue = Some(""))

@@ -9,7 +9,8 @@ object BuildExample extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ noPublish
-  ) aggregate (wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka, examples_storm, distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
+  ) aggregate (wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka,
+      distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
 
   lazy val wordcountJava = Project(
     id = "gearpump-examples-wordcountjava",
@@ -135,45 +136,6 @@ object BuildExample extends sbt.Build {
         )
   ) dependsOn(streaming % "test->test; provided", external_kafka)
 
-  lazy val examples_storm = Project(
-    id = "gearpump-examples-storm",
-    base = file("examples/streaming/storm"),
-        settings = commonSettings ++ noPublish ++ myAssemblySettings ++
-        Seq(
-          libraryDependencies ++= Seq(
-            "org.apache.storm" % "storm-core" % stormVersion % "provided"
-                exclude("clj-stacktrace", "clj-stacktrace")
-                exclude("ch.qos.logback", "logback-classic")
-                exclude("ch.qos.logback", "logback-core")
-                exclude("clj-time", "clj-time")
-                exclude("clout", "clout")
-                exclude("compojure", "compojure")
-                exclude("hiccup", "hiccup")
-                exclude("javax.servlet", "servlet-api")
-                exclude("jline", "jline")
-                exclude("joda-time", "joda-time")
-                exclude("org.clojure", "core.incubator")
-                exclude("org.clojure", "math.numeric-tower")
-                exclude("org.clojure", "tools.logging")
-                exclude("org.clojure", "tools.cli")
-                exclude("org.clojure", "tools.macro")
-                exclude("org.mortbay.jetty", "jetty-util")
-                exclude("org.mortbay.jetty", "jetty")
-                exclude("org.ow2.asm", "asm")
-                exclude("org.slf4j", "log4j-over-slf4j")
-                exclude("ring", "ring-core")
-                exclude("ring", "ring-devel")
-                exclude("ring", "ring-jetty-adapter")
-                exclude("ring", "ring-servlet"),
-            "org.apache.storm" % "storm-kafka" % stormVersion,
-            "org.apache.storm" % "storm-starter" % stormVersion,
-            "org.apache.kafka" %% "kafka" % kafkaVersion
-          ),
-          target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
-              CrossVersion.binaryScalaVersion(scalaVersion.value)
-        )
-  )
-
   lazy val stockcrawler = Project(
     id = "gearpump-examples-stockcrawler",
     base = file("examples/streaming/stockcrawler"),
@@ -219,7 +181,7 @@ object BuildExample extends sbt.Build {
   lazy val pagerank = Project(
     id = "gearpump-examples-pagerank",
     base = file("examples/pagerank"),
-    settings = commonSettings ++ noPublish ++ Seq(
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       mainClass in (Compile, packageBin) := Some("io.gearpump.experiments.pagerank.example.PageRankExample"),
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
         CrossVersion.binaryScalaVersion(scalaVersion.value)

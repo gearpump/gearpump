@@ -17,19 +17,18 @@
   <link rel="stylesheet" href="webjars/angular-ui-select/0.13.2/dist/select.min.css"/>
   <link rel="stylesheet" href="webjars/angular-loading-bar/0.8.0/build/loading-bar.min.css"/>
   <link rel="stylesheet" href="webjars/vis/4.7.0/dist/vis.min.css"/>
-  <link rel="stylesheet" href="webjars/dashing/0.3.8/dist/dashing.min.css"/>
+  <link rel="stylesheet" href="webjars/dashing/0.4.4/dist/dashing.min.css"/>
 
   <!-- Site styles -->
-  <link rel="stylesheet" href="webjars/dashing-deps/0.0.8/roboto/roboto.min.css"/>
+  <link rel="stylesheet" href="webjars/dashing-deps/0.1.2/roboto/roboto.min.css"/>
   <link rel="stylesheet" href="webjars/font-awesome/4.5.0/css/font-awesome.min.css"/>
   <link rel="stylesheet" href="styles/bootstrap-override.css"/>
-  <link rel="stylesheet" href="styles/bootstrap-doc.css"/><!-- todo: should be absorbed -->
   <link rel="stylesheet" href="styles/dashboard.css"/>
 </head>
 
 <body>
 <!-- app -->
-<div ng-app="dashboard">
+<div ng-app="dashboard" ng-strict-di>
   <!-- header and footer are defined in views/landing -->
   <header></header>
   <breadcrumbs></breadcrumbs>
@@ -43,7 +42,11 @@
 <!-- end of app -->
 
 <!-- Static Resources -->
+<script src="webjars/jquery/2.2.0/jquery.min.js"></script>
+<script src="webjars/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 <script src="webjars/angularjs/1.4.8/angular.min.js"></script>
+<script src="webjars/angularjs/1.4.8/angular-cookies.min.js"></script>
+<script src="webjars/angularjs/1.4.8/angular-touch.min.js"></script>
 <script src="webjars/angularjs/1.4.8/angular-animate.min.js"></script>
 <script src="webjars/angularjs/1.4.8/angular-sanitize.min.js"></script>
 <script src="webjars/angular-loading-bar/0.8.0/build/loading-bar.min.js"></script>
@@ -56,19 +59,24 @@
 <script src="webjars/momentjs/2.10.6/min/moment.min.js"></script>
 <script src="webjars/lodash/3.10.1/lodash.min.js"></script>
 <script src="webjars/vis/4.7.0/dist/vis.min.js"></script>
-<script src="webjars/ng-file-upload/5.0.9/ng-file-upload-shim.min.js"></script>
-<script src="webjars/ng-file-upload/5.0.9/ng-file-upload.min.js"></script>
+<script src="webjars/ng-file-upload/5.0.9/ng-file-upload-all.min.js"></script>
 <script src="webjars/clipboard.js/0.1.1/clipboard.js"></script>
-<script src="webjars/dashing-deps/0.0.8/echarts/2.2.7-compact/echarts-all.min.js"></script>
-<script src="webjars/dashing/0.3.8/dist/dashing.min.js"></script>
+<script src="webjars/dashing-deps/0.1.2/echarts/2.2.7-compact/echarts-all.min.js"></script>
+<script src="webjars/dashing/0.4.4/dist/dashing.min.js"></script>
 
 <!-- Application -->
 <script src="dashboard.js"></script>
+<script src="i18n.js"></script>
 <script src="services/models/models.js"></script>
 <script src="services/models/metrics.js"></script>
-<script src="services/models/streaming_dag.js"></script>
+<script src="services/models/metrics_provider.js"></script>
+<script src="services/models/dag.js"></script>
+<script src="services/models/streamingapp_metrics_provider.js"></script>
+<script src="services/models/streamingapp_dag.js"></script>
 <script src="services/locator.js"></script>
 <script src="services/restapi.js"></script>
+<script src="services/health_check_service.js"></script>
+<script src="services/login_check.js"></script>
 <script src="views/widgets/radio_group.js"></script>
 <script src="views/widgets/metrics_period_switcher.js"></script>
 <script src="views/landing/breadcrumbs.js"></script>
@@ -76,7 +84,7 @@
 <script src="views/cluster/master/master.js"></script>
 <script src="views/cluster/workers/workers_listview.js"></script>
 <script src="views/cluster/workers/worker/worker.js"></script>
-<script src="views/jvm/jvm_metrics.js"></script>
+<script src="views/jvm/jvm_metrics_view.js"></script>
 <script src="views/apps/apps.js"></script>
 <script src="views/apps/compose/compose.js"></script>
 <script src="views/apps/compose/popups/choose_processor.js"></script>
@@ -85,17 +93,21 @@
 <script src="views/apps/app/app.js"></script>
 <script src="views/apps/app/overview.js"></script>
 <script src="views/apps/app/executors_table.js"></script>
+<script src="views/apps/app/alerts_table.js"></script>
 <script src="views/apps/streamingapp/vis/network.js"></script>
 <script src="views/apps/streamingapp/vis/network_style.js"></script>
 <script src="views/apps/streamingapp/streamingapp.js"></script>
 <script src="views/apps/streamingapp/overview.js"></script>
 <script src="views/apps/streamingapp/metrics_charts.js"></script>
+<script src="views/apps/streamingapp/metrics_table.js"></script>
+<script src="views/apps/streamingapp/metric_selector.js"></script>
 <script src="views/apps/streamingapp/dag.js"></script>
 <script src="views/apps/streamingapp/popups/dag_edit.js"></script>
 <script src="views/apps/streamingapp/processor.js"></script>
 <script src="views/apps/streamingapp/processor_task_charts.js"></script>
+<script src="views/apps/streamingapp/processor_task_table.js"></script>
+<script src="views/apps/streamingapp/processor_task_pager.js"></script>
 <script src="views/apps/streamingapp/executor.js"></script>
-<script src="views/apps/streamingapp/metrics.js"></script>
 <script src="views/helper.js"></script>
 
 </body>

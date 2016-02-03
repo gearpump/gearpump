@@ -36,11 +36,17 @@
   <div class="navbar navbar-inverse navbar-fixed-top" id="topbar">
     <div class="container">
       <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
         <a class="navbar-brand" href="http://gearpump.io">Gearpump
           <span class="label label-primary" style="font-size: .6em">{{site.GEARPUMP_VERSION}}</span>
         </a>
       </div>
-      <div class="collapse navbar-collapse">
+      <div id="navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <li><a href="index.html">Overview</a></li>
 
@@ -62,16 +68,18 @@
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Deploying<b class="caret"></b></a>
             <ul class="dropdown-menu">
               <li class="dropdown-header">Deployment</li>
-              <li><a href="deployment-docker.html">Docker</a><li>
-              <li><a href="deployment-local.html">Local</a><li>
-              <li><a href="deployment-standalone.html">Standalone</a></li>
-              <li><a href="deployment-yarn.html">YARN</a></li>
+              <li><a href="deployment-local.html">Local Mode</a><li>
+              <li><a href="deployment-standalone.html">Standalone Mode</a></li>
+              <li><a href="deployment-yarn.html">YARN Mode</a></li>
+              <li><a href="deployment-docker.html">Docker Mode</a><li>
               <li class="divider"></li>
+              <li><a href="deployment-ui-authentication.html">UI Authentication</a></li>
               <li><a href="deployment-ha.html">High Availability</a></li>
               <li><a href="deployment-msg-delivery.html">Reliable Message Delivery</a></li>
               <li><a href="deployment-configuration.html">Configuration</a></li>
+              <li><a href="deployment-resource-isolation.html">Resource Isolation</a></li>
               <li class="divider"></li>
-              <li><a href="deployment-security.html">Security</a></li>
+              <li><a href="deployment-security.html">YARN Security Guide</a></li>
             </ul>
           </li>
 

@@ -19,115 +19,27 @@
 package io.gearpump.cluster
 
 import java.io.File
-import com.typesafe.config.{ConfigValueFactory, Config, ConfigFactory, ConfigParseOptions}
+import com.typesafe.config._
 import io.gearpump.util.Constants._
 import io.gearpump.util.{Util, FileUtils, Constants, LogUtil}
 import scala.collection.JavaConversions._
 
 /**
  *
- * For user application, you should use
+ * All Gearpump application should use this class to load configurations.
  *
- * ClusterConfig.default
+ * Compared with Akka built-in [[ConfigFactory]], this class will also
+ * resolve file gear.conf and geardefault.conf.
  *
- * To get akka config.
- *
+ * Overriding order:
+ *   System Properties
+ *     > Custom configuration file (by using system property -Dgearpump.config.file) >
+ *     > gear.conf
+ *     > geardefault.conf
+ *     > reference.conf
  */
-
-/**
- * Please use ClusterConfig.load to construct this object
- */
-class ClusterConfig private(systemProperties : Config, custom : Config,
-                masterConfig : Config, workerConfig: Config,
-                uiConfig: Config, base: Config,
-                windows: Config, all: Config) {
-  def master : Config = {
-
-    val config = systemProperties.withFallback(masterConfig.getConfig(MASTER))
-      .withFallback(custom).
-      withFallback(baseConfig).withFallback(all)
-    convert(config)
-  }
-
-  def worker : Config = {
-    val config = systemProperties.withFallback(workerConfig.getConfig(WORKER))
-      .withFallback(custom).
-      withFallback(baseConfig).withFallback(all)
-
-    convert(config)
-  }
-
-  def default : Config = {
-    val config = systemProperties.withFallback(custom)
-      .withFallback(baseConfig).withFallback(all)
-
-    convert(config)
-  }
-
-
-  def ui: Config = {
-    val config = systemProperties.withFallback(uiConfig.getConfig(UI))
-      .withFallback(custom)
-      .withFallback(baseConfig).withFallback(all)
-
-    convert(config)
-  }
-
-  private def baseConfig: Config = {
-    if (akka.util.Helpers.isWindows) {
-      windows.getConfig(WINDOWS).withFallback(base.getConfig(BASE))
-    } else {
-      base.getConfig(BASE)
-    }
-  }
-
-  private def convert(config: Config): Config = {
-    val hostName = config.getString(Constants.GEARPUMP_HOSTNAME)
-    config.withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(hostName))
-  }
-}
 
 object ClusterConfig {
-
-  val APPLICATION = "application.conf"
-  val LOG = LogUtil.getLogger(getClass)
-
-  /**
-   *
-   * File Override rule:
-   *
-   * System Property > Custom configuration(by using -Dgearpump.config.file)
-   * > gear.conf > gearpump binary reference.conf under resource folder > akka reference.conf
-   *
-   * Section Override rule:
-   *
-   * For master daemon: MASTER("master" section) > BASE("base" section)
-   * For worker daemon: WORKER > BASE
-   * For App(neither Master nor Worker): BASE
-   *
-   * We will first use "File override rule" to get a full config, then use
-   * "Section Override rule" to determine configuration for master, worker, executor,
-   * and etc..
-   *
-   */
-
-  /**
-   * try to load system property gearpump.config.file, or use configFile
-   *
-   *
-   */
-  private def load(configFile: String) : ClusterConfig = {
-    val file = Option(System.getProperty(GEARPUMP_CUSTOM_CONFIG_FILE))
-    file match {
-      case Some(path) =>
-        LOG.info("loading config file " + path + "..........")
-        load(ClusterConfigSource(path))
-      case None =>
-        LOG.info("loading config file application.conf...")
-        load(ClusterConfigSource(configFile))
-    }
-  }
-
   /**
    * alias for default
    * default is a reserved word for java
@@ -169,33 +81,78 @@ object ClusterConfig {
     load(configFile).ui
   }
 
-  private[gearpump] def load(source: ClusterConfigSource) : ClusterConfig = {
-    val user = source.getConfig
 
-    val cluster = ConfigFactory.parseResourcesAnySyntax("gear.conf",
-      ConfigParseOptions.defaults.setAllowMissing(true))
+  /**
+   * try to load system property gearpump.config.file, or use configFile
+   */
+  private def load(configFile: String) : Configs = {
+    val file = Option(System.getProperty(GEARPUMP_CUSTOM_CONFIG_FILE))
+    file match {
+      case Some(path) =>
+        LOG.info("loading config file " + path + "..........")
+        load(ClusterConfigSource(path))
+      case None =>
+        LOG.info("loading config file application.conf...")
+        load(ClusterConfigSource(configFile))
+    }
+  }
 
-    val custom = user.withFallback(cluster)
+  val APPLICATION = "application.conf"
+  val LOG = LogUtil.getLogger(getClass)
 
-    val cleaned = filterOutJvmReservedKeys(custom)
+  def saveConfig(conf : Config, file : File) : Unit = {
+    val serialized = conf.root().render()
+    FileUtils.write(file, serialized)
+  }
 
-    val all = ConfigFactory.load(cleaned)
+  def render(config: Config, concise: Boolean = false): String = {
+    if (concise) {
+      config.root().render(ConfigRenderOptions.concise().setFormatted(true))
+    } else {
+      config.root().render(ConfigRenderOptions.defaults())
+    }
+  }
 
-    val master = all.withOnlyPath(MASTER)
-    val base = all.withOnlyPath(BASE)
-    val worker = all.withOnlyPath(WORKER)
-    val ui = all.withOnlyPath(UI)
-    val windows = all.withOnlyPath(WINDOWS)
+  // filter JVM reserved keys and akka default reference.conf
+  def filterOutDefaultConfig(input: Config): Config = {
+    val updated = filterOutJvmReservedKeys(input)
+    Util.filterOutOrigin(updated, "reference.conf")
+  }
+
+  private[gearpump] def load(source: ClusterConfigSource) : Configs = {
 
     val systemProperties = getSystemProperties
 
-    new ClusterConfig(systemProperties = systemProperties,
-      custom  = cleaned, masterConfig  = master,
-      workerConfig = worker,
-      uiConfig = ui,
-      base = base,
-      windows = windows,
-      all = all)
+    val user = source.getConfig
+
+    val gear = ConfigFactory.parseResourcesAnySyntax("gear.conf",
+      ConfigParseOptions.defaults.setAllowMissing(true))
+
+    val gearDefault = ConfigFactory.parseResourcesAnySyntax("geardefault.conf",
+      ConfigParseOptions.defaults.setAllowMissing(true))
+
+    val all = systemProperties.withFallback(user).withFallback(gear).withFallback(gearDefault)
+
+    val windows = all.getConfig(WINDOWS_CONFIG)
+
+    var basic = all.withoutPath(MASTER_CONFIG).withoutPath(WORKER_CONFIG).
+      withoutPath(UI_CONFIG).withoutPath(WINDOWS_CONFIG)
+
+    if (akka.util.Helpers.isWindows) {
+      basic = windows.withFallback(basic)
+    }
+
+    val master = replaceHost(all.getConfig(MASTER_CONFIG).withFallback(basic))
+    val worker = replaceHost(all.getConfig(WORKER_CONFIG).withFallback(basic))
+    val ui = replaceHost(all.getConfig(UI_CONFIG).withFallback(basic))
+    val app = replaceHost(basic)
+
+    new Configs(master, worker, ui, app)
+  }
+
+  private def replaceHost(config: Config): Config = {
+    val hostName = config.getString(Constants.GEARPUMP_HOSTNAME)
+    config.withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(hostName))
   }
 
   val JVM_RESERVED_PROPERTIES = List(
@@ -209,11 +166,6 @@ object ClusterConfig {
     }
   }
 
-  def saveConfig(conf : Config, file : File) : Unit = {
-    val serialized = conf.root().render()
-    FileUtils.write(file, serialized)
-  }
-
   class ConfigValidationException(msg: String) extends Exception(msg: String)
 
   private def filterOutJvmReservedKeys(input: Config): Config = {
@@ -223,9 +175,5 @@ object ClusterConfig {
     filterJvmReservedKeys
   }
 
-  // filter
-  def filterOutDefaultConfig(input: Config): Config = {
-    val updated = filterOutJvmReservedKeys(input)
-    Util.filterOutOrigin(updated, "reference.conf")
-  }
+  protected class Configs (val master: Config, val worker: Config, val ui: Config, val default: Config)
 }

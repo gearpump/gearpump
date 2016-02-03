@@ -27,7 +27,7 @@ import kafka.message.MessageAndOffset
 import kafka.utils.Utils
 
 object KafkaConsumer {
-  def apply(topic: String, partition: Int, config: ConsumerConfig): KafkaConsumer = {
+  def apply(topic: String, partition: Int, startOffsetTime: Long, config: ConsumerConfig): KafkaConsumer = {
     val connectZk = KafkaUtil.connectZookeeper(config)
     val broker = KafkaUtil.getBroker(connectZk(), topic, partition)
     val soTimeout = config.socketTimeoutMs
@@ -46,7 +46,7 @@ object KafkaConsumer {
         case error => throw exceptionFor(error)
       }
     }
-    new KafkaConsumer(consumer, topic, partition, getIterator)
+    new KafkaConsumer(consumer, topic, partition, getIterator, startOffsetTime)
   }
 }
 
@@ -56,9 +56,10 @@ object KafkaConsumer {
 class KafkaConsumer(consumer: SimpleConsumer,
                     topic: String,
                     partition: Int,
-                    getIterator: (Long) => Iterator[MessageAndOffset]) {
+                    getIterator: (Long) => Iterator[MessageAndOffset],
+                    startOffsetTime: Long = OffsetRequest.EarliestTime) {
   private val earliestOffset = consumer
-    .earliestOrLatestOffset(TopicAndPartition(topic, partition), OffsetRequest.EarliestTime, -1)
+    .earliestOrLatestOffset(TopicAndPartition(topic, partition), startOffsetTime, -1)
   private var nextOffset: Long = earliestOffset
   private var iterator: Iterator[MessageAndOffset] = getIterator(nextOffset)
 

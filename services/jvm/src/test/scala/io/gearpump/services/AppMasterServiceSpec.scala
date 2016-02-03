@@ -19,15 +19,17 @@
 package io.gearpump.services
 
 import akka.actor.ActorRef
+import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.server.RouteResult
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import io.gearpump.cluster.AppMasterToMaster.GeneralAppMasterSummary
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
+import io.gearpump.cluster.TestUtil
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.util.LogUtil
@@ -39,8 +41,10 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
 
-class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMasterService
-  with Matchers with BeforeAndAfterAll with JarStoreProvider{
+class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
+  with Matchers with BeforeAndAfterAll {
+
+  override def testConfig: Config = TestUtil.UI_CONFIG
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
   def actorRefFactory = system
@@ -50,7 +54,11 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
 
   lazy val jarStoreService = JarStoreService.get(system.settings.config)
 
-  override def getJarStoreService: JarStoreService = jarStoreService
+  def jarStore: JarStoreService = jarStoreService
+
+  def master = mockMaster.ref
+
+  def appMasterRoute = new AppMasterService(master, jarStore, system).route
 
   mockAppMaster.setAutoPilot {
     new AutoPilot {
@@ -92,13 +100,16 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest with AppMast
     }
   }
 
-  def master = mockMaster.ref
-
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
     Get(s"/api/$REST_VERSION/appmaster/0?detail=false") ~> appMasterRoute ~> check{
       val responseBody = responseAs[String]
       read[AppMasterData](responseBody)
+
+      // check the header, should contains no-cache header.
+      // Cache-Control:no-cache, max-age=0
+      val noCache = header[`Cache-Control`].get.value()
+      assert(noCache == "no-cache, max-age=0")
     }
 
     Get(s"/api/$REST_VERSION/appmaster/0?detail=true") ~> appMasterRoute ~> check{

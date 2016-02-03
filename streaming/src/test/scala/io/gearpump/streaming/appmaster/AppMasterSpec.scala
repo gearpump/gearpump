@@ -19,7 +19,6 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit.{TestActorRef, TestProbe}
-import io.gearpump.streaming.task.{StartTime, TaskContext}
 import io.gearpump.Message
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
@@ -31,9 +30,9 @@ import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRunt
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import io.gearpump.jarstore.FilePath
-import io.gearpump.partitioner.{Partitioner, HashPartitioner}
+import io.gearpump.partitioner.HashPartitioner
+import io.gearpump.streaming.task.{StartTime, TaskContext, _}
 import io.gearpump.streaming.{Processor, StreamApplication}
-import io.gearpump.streaming.task._
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.scalatest._
@@ -92,8 +91,12 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     appMaster = registerAppMaster.asInstanceOf[RegisterAppMaster].appMaster
 
     mockMaster.reply(AppMasterRegistered(appId))
+    mockMaster.expectMsg(15 seconds, GetAppData(appId, "DAG"))
+    mockMaster.reply(GetAppDataResult("DAG", null))
     mockMaster.expectMsg(15 seconds, GetAppData(appId, "startClock"))
+
     mockMaster.reply(GetAppDataResult("startClock", 0L))
+
     mockMaster.expectMsg(15 seconds, RequestResource(appId, ResourceRequest(Resource(4))))
   }
 
@@ -122,6 +125,9 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       watcher.watch(mockMasterProxy)
       getActorSystem.stop(mockMasterProxy)
       watcher.expectTerminated(mockMasterProxy)
+      // Make sure the parent of mockMasterProxy has received the Terminated message.
+      // Issus address: https://github.com/gearpump/gearpump/issues/1919
+      Thread.sleep(2000)
 
       import scala.concurrent.duration._
       mockMasterProxy = getActorSystem.actorOf(Props(new MasterProxy(List(mockMaster.ref.path), 30 seconds)), AppMasterSpec.MOCK_MASTER_PROXY)

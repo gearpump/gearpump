@@ -21,19 +21,21 @@ package io.gearpump.util
 import java.util.concurrent.TimeUnit
 
 import io.gearpump.partitioner._
-import java.io.File
 
 object Constants {
   val MASTER_WATCHER = "masterwatcher"
   val SINGLETON_MANAGER = "singleton"
 
+  val MASTER_CONFIG = "gearpump-master"
+  val WORKER_CONFIG = "gearpump-worker"
+  val UI_CONFIG = "gearpump-ui"
+  val WINDOWS_CONFIG = "gearpump-windows"
+
   val MASTER = "master"
   val WORKER = "worker"
-  val WINDOWS = "windows"
-  val UI = "ui"
-  val BASE = "base"
 
   val GEARPUMP_WORKER_SLOTS = "gearpump.worker.slots"
+  val GEARPUMP_EXECUTOR_PROCESS_LAUNCHER = "gearpump.worker.executor-process-launcher"
   val GEARPUMP_SCHEDULING_SCHEDULER = "gearpump.scheduling.scheduler-class"
   val GEARPUMP_SCHEDULING_REQUEST = "gearpump.scheduling.requests"
   val GEARPUMP_TRANSPORT_SERIALIZER = "gearpump.transport.serializer"
@@ -41,6 +43,7 @@ object Constants {
   val GEARPUMP_SERIALIZERS = "gearpump.serializers"
   val GEARPUMP_TASK_DISPATCHER = "gearpump.task-dispatcher"
   val GEARPUMP_CLUSTER_MASTERS = "gearpump.cluster.masters"
+  val GEARPUMP_MASTERCLIENT_TIMEOUT = "gearpump.masterclient.timeout"
   val GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS = "gearpump.worker.executor-share-same-jvm-as-worker"
 
   val GEARPUMP_HOME = "gearpump.home"
@@ -68,6 +71,8 @@ object Constants {
   // please use your local timeout setting instead.
   val FUTURE_TIMEOUT = akka.util.Timeout(15, TimeUnit.SECONDS)
 
+  val GEARPUMP_START_EXECUTOR_SYSTEM_TIMEOUT_MS = "gearpump.start-executor-system-timeout-ms"
+
   val APPMASTER_DEFAULT_EXECUTOR_ID = -1
 
   val NETTY_BUFFER_SIZE = "gearpump.netty.buffer-size"
@@ -77,6 +82,7 @@ object Constants {
   val NETTY_MESSAGE_BATCH_SIZE = "gearpump.netty.message-batch-size"
   val NETTY_FLUSH_CHECK_INTERVAL = "gearpump.netty.flush-check-interval"
   val NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname"
+  val NETTY_DISPATCHER = "gearpump.netty.dispatcher"
 
   val GEARPUMP_USERNAME = "gearpump.username"
   val GEARPUMP_APPLICATION_ID = "gearpump.applicationId"
@@ -122,6 +128,7 @@ object Constants {
   val GEARPUMP_SERVICE_HTTP = "gearpump.services.http"
   val GEARPUMP_SERVICE_HOST = "gearpump.services.host"
   val GEARPUMP_SERVICE_SUPERVISOR_PATH = "gearpump.services.supervisor-actor-path"
+  val GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE = "gearpump.services.config-render-option-concise"
 
   //The partitioners provided by Gearpump
   val BUILTIN_PARTITIONERS = Array(
@@ -138,4 +145,10 @@ object Constants {
 
   val GEARPUMP_METRICS_MAX_LIMIT = "gearpump.metrics.akka.max-limit-on-query"
   val GEARPUMP_METRICS_AGGREGATORS = "gearpump.metrics.akka.metrics-aggregator-class"
+
+  val GEARPUMP_UI_SECURITY = "gearpump.ui-security"
+  val GEARPUMP_UI_SECURITY_ENABLED = "gearpump.ui-security.authentication-enabled"
+  val GEARPUMP_UI_AUTHENTICATOR_CLASS = "gearpump.ui-security.authenticator"
+
+  val PREFER_IPV4 = "java.net.preferIPv4Stack"
 }

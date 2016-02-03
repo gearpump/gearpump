@@ -34,6 +34,20 @@ import scala.util.Try
  */
 
 object ClientToMaster {
+  case object AddMaster
+  case class AddWorker(count: Int)
+  case class RemoveMaster(masterContainerId: String)
+  case class RemoveWorker(workerContainerId: String)
+  case class CommandResult(success: Boolean, exception: String = null) {
+    override def toString: String = {
+      val tag = getClass.getSimpleName
+      if (success) {
+        s"$tag(success)"
+      } else {
+        s"$tag(failure, $exception)"
+      }
+    }
+  }
   case class SubmitApplication(appDescription: AppDescription, appJar: Option[AppJar], username : String = System.getProperty("user.name"))
   case class RestartApplication(appId: Int)
   case class ShutdownApplication(appId: Int)

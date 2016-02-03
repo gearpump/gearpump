@@ -18,86 +18,82 @@
 
 package io.gearpump.services
 
-import java.io.File
-
-import akka.actor.{ActorRef}
+import akka.actor.{ActorSystem, ActorRef}
 import akka.http.scaladsl.model.{FormData, Multipart}
-import akka.http.scaladsl.server.{Route, Directive, StandardRoute}
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
-import akka.stream.ActorMaterializer
+import akka.stream.{Materializer, ActorMaterializer}
 import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
+import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
+import io.gearpump.jarstore.JarStoreService
 import io.gearpump.services.AppMasterService.Status
 import io.gearpump.streaming.AppMasterToMaster.StallingTasks
 import io.gearpump.streaming.appmaster.DagManager._
-import io.gearpump.streaming.appmaster.{DagManager, StreamAppMasterSummary}
+import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.util.ActorUtil.{askActor, askAppMaster}
-import io.gearpump.util.{FileDirective, Constants, Util}
+import io.gearpump.util.FileDirective._
+import io.gearpump.util.{Constants, Util}
 import upickle.default.{read, write}
 
 import scala.util.{Failure, Success, Try}
-import akka.actor.ActorSystem
-import akka.http.scaladsl.server.Directives._
-import scala.concurrent.{ExecutionContext}
-import FileDirective._
 
-trait AppMasterService  {
-  this: JarStoreProvider =>
+/**
+ * Management service for AppMaster
+ */
+class AppMasterService(val master: ActorRef,
+    val jarStore: JarStoreService, override val system: ActorSystem)
+  extends BasicService {
 
-  def master: ActorRef
-  implicit def system: ActorSystem
+  private val systemConfig = system.settings.config
+  private val concise = systemConfig.getBoolean(Constants.GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE)
 
-  def appMasterRoute = encodeResponse {
-    implicit val timeout = Constants.FUTURE_TIMEOUT
-    implicit def ec: ExecutionContext = system.dispatcher
-    implicit val materializer = ActorMaterializer()
-
-    pathPrefix("api" / s"$REST_VERSION" / "appmaster" / IntNumber ) { appId =>
-      path("dynamicdag") {
-        parameters(ParamMagnet("args")) { args: String =>
-
-          def replaceProcessor(dagOperation: DAGOperation): Route = {
-            onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
-              case Success(value) =>
-                complete(write(value))
-              case Failure(ex) =>
-                failWith(ex)
-            }
+  override def doRoute(implicit mat: Materializer) = pathPrefix("appmaster" / IntNumber) { appId =>
+    path("dynamicdag") {
+      parameters(ParamMagnet("args")) { args: String =>
+        def replaceProcessor(dagOperation: DAGOperation): Route = {
+          onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
+            case Success(value) =>
+              complete(write(value))
+            case Failure(ex) =>
+              failWith(ex)
           }
+        }
 
-          val msg = java.net.URLDecoder.decode(args)
-          val dagOperation = read[DAGOperation](msg)
-          (post & entity(as[Multipart.FormData])) { _ =>
-            uploadFile { fileMap =>
-              val jar = fileMap.get("jar").map(_.file)
-              if (jar.nonEmpty) {
-                dagOperation match {
-                  case replace: ReplaceProcessor =>
-                    val description = replace.newProcessorDescription.copy(jar = Util.uploadJar(jar.get, getJarStoreService))
-                    val dagOperationWithJar = replace.copy(newProcessorDescription = description)
-                    replaceProcessor(dagOperationWithJar)
-                }
-              } else {
-                replaceProcessor(dagOperation)
-              }
+        val msg = java.net.URLDecoder.decode(args)
+        val dagOperation = read[DAGOperation](msg)
+        (post & entity(as[Multipart.FormData])) { _ =>
+        uploadFile { fileMap =>
+          val jar = fileMap.get("jar").map(_.file)
+          if (jar.nonEmpty) {
+            dagOperation match {
+              case replace: ReplaceProcessor =>
+                val description = replace.newProcessorDescription.copy(jar = Util.uploadJar(jar.get, jarStore))
+                val dagOperationWithJar = replace.copy(newProcessorDescription = description)
+                replaceProcessor(dagOperationWithJar)
             }
-          } ~ (post & entity(as[FormData])) { _ =>
+          } else {
             replaceProcessor(dagOperation)
           }
         }
-      } ~
+      } ~ (post & entity(as[FormData])) { _ =>
+        replaceProcessor(dagOperation)
+      }
+      }
+    } ~
       path("stallingtasks") {
-        onComplete(askAppMaster[StallingTasks](master, appId, GetStallingTasks(appId))){
+        onComplete(askAppMaster[StallingTasks](master, appId, GetStallingTasks(appId))) {
           case Success(value) =>
             complete(write(value))
           case Failure(ex) => failWith(ex)
         }
-      }  ~
+      } ~
       path("errors") {
-        onComplete(askAppMaster[LastFailure](master, appId, GetLastFailure(appId))){
+        onComplete(askAppMaster[LastFailure](master, appId, GetLastFailure(appId))) {
           case Success(value) =>
             complete(write(value))
           case Failure(ex) => failWith(ex)
@@ -112,11 +108,11 @@ trait AppMasterService  {
               complete(write(Status(false, ex.getMessage)))
           }
         }
-      }~
+      } ~
       path("config") {
         onComplete(askActor[AppMasterConfig](master, QueryAppMasterConfig(appId))) {
           case Success(value: AppMasterConfig) =>
-            val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+            val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
             complete(config)
           case Failure(ex) =>
             failWith(ex)
@@ -127,7 +123,7 @@ trait AppMasterService  {
           val executorId = Integer.parseInt(executorIdString)
           onComplete(askAppMaster[ExecutorConfig](master, appId, QueryExecutorConfig(executorId))) {
             case Success(value) =>
-              val config = Option(value.config).map(_.root.render()).getOrElse("{}")
+              val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
               complete(config)
             case Failure(ex) =>
               failWith(ex)
@@ -145,8 +141,8 @@ trait AppMasterService  {
           }
         }
       } ~
-      path("metrics" / RestPath ) { path =>
-        parameterMap {optionMap =>
+      path("metrics" / RestPath) { path =>
+        parameterMap { optionMap =>
           parameter("aggregator" ? "") { aggregator =>
             parameter(ReadOption.Key ? ReadOption.ReadLatest) { readOption =>
               val query = QueryHistoryMetrics(path.head.toString, readOption, aggregator, optionMap)
@@ -191,29 +187,28 @@ trait AppMasterService  {
         }
       } ~
       pathEnd {
-          delete {
-            val writer = (result: ShutdownApplicationResult) => {
+        delete {
+          val writer = (result: ShutdownApplicationResult) => {
+            val output = if (result.appId.isSuccess) {
+              Map("status" -> "success", "info" -> null)
+            } else {
+              Map("status" -> "fail", "info" -> result.appId.failed.get.toString)
+            }
+            write(output)
+          }
+          onComplete(askActor[ShutdownApplicationResult](master, ShutdownApplication(appId))) {
+            case Success(result) =>
               val output = if (result.appId.isSuccess) {
                 Map("status" -> "success", "info" -> null)
               } else {
                 Map("status" -> "fail", "info" -> result.appId.failed.get.toString)
               }
-              write(output)
-            }
-            onComplete(askActor[ShutdownApplicationResult](master, ShutdownApplication(appId))) {
-              case Success(result) =>
-                val output = if (result.appId.isSuccess) {
-                  Map("status" -> "success", "info" -> null)
-                } else {
-                  Map("status" -> "fail", "info" -> result.appId.failed.get.toString)
-                }
-                complete(write(output))
-              case Failure(ex) =>
-                failWith(ex)
-            }
+              complete(write(output))
+            case Failure(ex) =>
+              failWith(ex)
           }
+        }
       }
-    }
   }
 }
 

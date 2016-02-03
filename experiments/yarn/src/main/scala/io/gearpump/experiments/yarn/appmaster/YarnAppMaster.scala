@@ -19,12 +19,12 @@
 package io.gearpump.experiments.yarn.appmaster
 
 import java.io.IOException
-import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.util.Timeout
-import com.typesafe.config.{Config, ConfigValueFactory}
+import com.typesafe.config.ConfigValueFactory
+import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.experiments.yarn.Constants._
@@ -36,16 +36,16 @@ import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.methods.GetMethod
 import org.slf4j.Logger
 
-class YarnAppMaster(akkaConf: Config, rmClient: RMClient, nmClient: NMClient,
+class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
                     packagePath: String, hdfsConfDir: String,
                     uiFactory: UIFactory)
   extends Actor {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
-
+  private val akkaConf = context.system.settings.config
   private val servicesEnabled = akkaConf.getString(SERVICES_ENABLED).toBoolean
   private var uiStarted = false
-  private val host = InetAddress.getLocalHost.getHostName
+  private val host = akkaConf.getString(Constants.GEARPUMP_HOSTNAME)
 
   val port = Util.findFreePort.get
 
@@ -166,10 +166,12 @@ class YarnAppMaster(akkaConf: Config, rmClient: RMClient, nmClient: NMClient,
       LOG.error("ShutdownApplication")
       nmClient.stop()
       rmClient.shutdownApplication()
+      context.stop(self)
     case ResourceManagerException(ex) =>
       LOG.error("ResourceManagerException: " + ex.getMessage, ex)
       nmClient.stop()
       rmClient.failApplication(ex)
+      context.stop(self)
     case Kill =>
       LOG.info("Kill: User asked to shutdown the application")
       sender ! CommandResult(success = true)
@@ -195,6 +197,10 @@ class YarnAppMaster(akkaConf: Config, rmClient: RMClient, nmClient: NMClient,
         worker.id.toString + s"(${worker.nodeId.toString})"
       }
       sender ! ClusterInfo(masterContainers, workerContainers)
+    case AddMaster =>
+      sender ! CommandResult(success = false, "Not Implemented")
+    case RemoveMaster(masterId) =>
+      sender ! CommandResult(success = false, "Not Implemented")
     case AddWorker(count) =>
       if (count == 0) {
         sender ! CommandResult(success = true)
@@ -287,8 +293,8 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
 
     val rmClient = new RMClient(yarnConf)
     val nmClient = new NMClient(yarnConf, akkaConf)
-    val appMaster = system.actorOf(Props(new YarnAppMaster(
-      akkaConf, rmClient, nmClient, packagePath, confDir, UIService)))
+    val appMaster = system.actorOf(Props(new YarnAppMaster(rmClient,
+      nmClient, packagePath, confDir, UIService)))
 
     val daemon = system.actorOf(Props(new Daemon(appMaster)))
     system.awaitTermination()
@@ -317,8 +323,6 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
   case object AppMasterRegistered
 
   case class GetActiveConfig(clientHost: String)
-  case class AddWorker(count: Int)
-  case class RemoveWorker(workerContainerId: String)
 
   case object QueryClusterInfo
   case class ClusterInfo(masters: List[String], workers: List[String]) {
@@ -333,16 +337,6 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
 
   case object Kill
   case class ActiveConfig(config: Config)
-  case class CommandResult(success: Boolean, exception: String = null) {
-    override def toString: String = {
-      val tag = getClass.getSimpleName
-      if (success) {
-        s"$tag(success)"
-      } else {
-        s"$tag(failure, $exception)"
-      }
-    }
-  }
 
   case object QueryVersion
 

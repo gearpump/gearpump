@@ -36,35 +36,28 @@ Name | Description
 
 
 ## Use of Connectors
+
 ### Use of `KafkaSource`
 To use `kafkaSource` in your application, you first need to add the `gearpump-external-Kafka` library dependency in your application:
-
-<div class="codetabs" markdown="1">
-<div data-lang="SBT" markdown="1">
 
 ```
 "com.github.intel-hadoop" %% "gearpump-external-kafka" % {{ site.GEARPUMP_VERSION }}
 ```
-</div>
-<div data-lang="Maven" markdown="1">
 
-```
+```xml
 <dependency>
   <groupId>com.github.intel-hadoop</groupId>
   <artifactId>gearpump-external-kafka</artifactId>
   <version>{{ site.GEARPUMP_VERSION }}</version>
 </dependency>
 ```
-</div>
-</div>
 
 To connect to Kafka, you need to provide following info:
  - the Zookeeper address
  - the Kafka topic
 
 Then, you can use `KafkaSource` in your application:
-<div class="codetabs" markdown="1">
-<div data-lang="Low Level API" markdown="1">
+
 ```scala
 
    //Specify the offset storage.
@@ -80,9 +73,8 @@ Then, you can use `KafkaSource` in your application:
    val reader = DataSourceProcessor(source, parallelism)
 ```
 
-</div>
-<div data-lang="High Level DSL" markdown="1">
-~~~scala
+```scala
+
   //specify the offset storage
   //here we use the same zookeeper as the offset storage (a set of corresponding topics will be created to store the offsets)
   //you are free to specify your own offset storage
@@ -90,57 +82,44 @@ Then, you can use `KafkaSource` in your application:
 
   val source = KafkaDSLUtil.createStream(app, parallelism, "Kafka Source", topics, zookeepers, offsetStorageFactory)
   ...
-~~~
-</div>
-</div>
+```
 
 ### Use of `HBaseSink`
 
 To use `HBaseSink` in your application, you first need to add the `gearpump-external-hbase` library dependency in your application:
 
-<div class="codetabs" markdown="1">
-<div data-lang="SBT" markdown="1">
 
 ```
 "com.github.intel-hadoop" %% "gearpump-external-hbase" % {{ site.GEARPUMP_VERSION }}
 ```
-</div>
-<div data-lang="Maven" markdown="1">
 
-```
+```xml
 <dependency>
   <groupId>com.github.intel-hadoop</groupId>
   <artifactId>gearpump-external-hbase</artifactId>
   <version>{{ site.GEARPUMP_VERSION }}</version>
 </dependency>
 ```
-</div>
-</div>
+
 
 To connect to HBase, you need to provide following info:
  - the HBase configuration to tell which HBase service to connect
  - the table name
 
 Then, you can use `HBaseSink` in your application:
-<div class="codetabs" markdown="1">
-<div data-lang="Low Level API" markdown="1">
+
 ```scala
    //create the HBase data sink
-   val sink = HBaseSink(tableName, configuration)
+   val sink = HBaseSink(UserConfig.empty, tableName, HBaseConfiguration.create())
 
    //create Gearpump Processor
-   val sinkProcessor = DataSinkProcessor(source, parallelism)
+   val sinkProcessor = DataSinkProcessor(sink, parallelism)
 ```
 
-</div>
-
-<div data-lang="High Level DSL" markdown="1">
-~~~scala
+```scala
   //assume stream is a normal `Stream` in DSL
-  stream.writeToHbase(tableName, parallelism, "write to HBase")
-~~~
-</div>
-</div>
+  stream.writeToHbase(UserConfig.empty, tableName, parallelism, "write to HBase")
+```
 
 You can tune the connection to HBase via the HBase configuration passed in. If not passed, Gearpump will try to check local classpath to find a valid HBase configuration (`hbase-site.xml`).
 
@@ -149,13 +128,13 @@ You can tune the connection to HBase via the HBase configuration passed in. If n
 To implement your own `DataSource`, you need to implement two things:
 
 1. The data source itself
-2. a helper class to make it easy use in DSL
+2. a helper class to easy the usage in a DSL
 
 ### Implement your own `DataSource`
 You need to implement a class derived from `io.gearpump.streaming.transaction.api.TimeReplayableSource`.
 
 ### Implement DSL helper (Optional)
-To make DSL easy of use this customized stream, it is better that if you can implement your own DSL helper.
+If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.
 You can refer `KafkaDSLUtil` as an example in Gearpump source.
 
 Below is some code snippet from `KafkaDSLUtil`:
@@ -186,20 +165,24 @@ To implement your own `DataSink`, you need to implement two things:
 You need to implement a class derived from `io.gearpump.streaming.sink.DataSink`.
 
 ### Implement DSL helper (Optional)
-To make DSL easy of use this customized stream, it is better that if you can implement your own DSL helper.
+If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.
 You can refer `HBaseDSLSink` as an example in Gearpump source.
 
-Below is some code snippet from `KafkaDSLUtil`:
+Below is some code snippet from `HBaseDSLSink`:
 
 ```scala
-class HBaseDSLSink[T: ClassTag](stream: Stream[T]) {
-  def writeToHbase(table: String, parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink(table), parallism, description)
+class HBaseDSLSink[T](stream: Stream[T]) {
+  def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String): Stream[T] = {
+    stream.sink(HBaseSink[T](userConfig, table), parallism, userConfig, description)
   }
+  
+  def writeToHbase(userConfig: UserConfig, configuration: Configuration, table: String, parallism: Int, description: String): Stream[T] = {
+    stream.sink(HBaseSink[T](userConfig, table, configuration), parallism, userConfig, description)
+  }  
 }
 
 object HBaseDSLSink {
-  implicit def streamToHBaseDSLSink[T: ClassTag](stream: Stream[T]): HBaseDSLSink[T] = {
+  implicit def streamToHBaseDSLSink[T](stream: Stream[T]): HBaseDSLSink[T] = {
     new HBaseDSLSink[T](stream)
   }
 }

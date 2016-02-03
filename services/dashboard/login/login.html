@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <!-- Standard Meta -->
+  <meta charset="utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+
+  <title>Login</title>
+
+  <link rel="stylesheet" href="../webjars/bootstrap/3.3.6/css/bootstrap.min.css"/>
+
+  <style type="text/css">
+    .login-form {
+      max-width: 330px;
+      padding: 35px 35px 20px 35px;
+      margin: 0 auto;
+      margin-top: 10px;
+
+      background-color: #ffffff;
+
+      -moz-box-shadow: 1px 4px 4px rgba(0, 0, 0, 0.3);
+      -webkit-box-shadow: 1px 4px 4px rgba(0, 0, 0, 0.3);
+      box-shadow: 1px 4px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .form-control {
+
+      position: relative;
+      font-size: 16px;
+      height: auto;
+      padding: 10px;
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .welcome-message {
+      color: #ffffff;
+
+      font-size: 18px;
+      font-weight: 400;
+      display: block;
+    }
+
+    .icon {
+      background-color: #555;
+      color: #ffffff;
+      font-size: 40px;
+      text-align: center;
+      padding: 30px 0px 10px 0px;
+    }
+
+    .error {
+      color: red;
+      word-break: break-all;
+    }
+
+    .container {
+      margin-bottom: 280px;
+    }
+
+  </style>
+
+  <title>Login</title>
+</head>
+
+<body  style="background-color: #555;">
+
+<h1 class="icon"><span class="glyphicon glyphicon-th" aria-hidden="true"/></h1>
+<h1 class="text-center welcome-message">Sign in to Gearpump</h1>
+
+<a href="../login" id = "loginUrl"></a>
+<a href="../logout" id = "logoutUrl"></a>
+<a href="../" id = "index"></a>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-4 col-md-offset-4 ">
+
+      <form id="loginForm" class="login-form" method="post">
+        <input type="text" class="form-control" name="username" placeholder="User Name" required autofocus />
+        <input type="password" class="form-control" name="password" placeholder="Password" required />
+        <button class="btn btn-lg btn-primary btn-block" type="button" onclick="login()">Sign In</button>
+        <div class="error" id="error"></div>
+
+        <a href="#" class="pull-left" style="margin-top: 15px;"><!--Need help? --></a>
+
+        <span class="clearfix" ></span>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="../webjars/jquery/2.2.0/jquery.min.js"></script>
+<script src="../webjars/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+<script src="login/login.js"></script>
+</body>
+</html>

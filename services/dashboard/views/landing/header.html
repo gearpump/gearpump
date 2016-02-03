@@ -1,7 +1,6 @@
 <nav class="navbar navbar-inverse navbar-fixed-top">
   <div class="navbar-header">
-    <button type="button" class="navbar-toggle collapsed"
-            bs-dropdown="dropdownMenuOptions" placement="bottom-right" html="true">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main_nav">
       <span class="sr-only">Toggle navigation</span>
       <span class="icon-bar"></span>
       <span class="icon-bar"></span>
@@ -12,22 +11,49 @@
             ng-bind="version"></span>
     </a>
   </div>
-  <div class="collapse navbar-collapse">
+  <div class="collapse navbar-collapse" id="main_nav">
     <ul class="nav navbar-nav" bs-navbar>
-      <li data-match-route="/cluster"><a href="#/cluster">
-        <span class="glyphicon glyphicon-th-large"></span>
-        Cluster</a>
+      <li role="placeholder"></li>
+      <li data-match-route="/cluster">
+        <a class="dropdown-toggle" data-toggle="dropdown">
+          <span class="fa fa-sitemap"></span>
+          Cluster
+          <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li ng-repeat="item in clusterMenuItems track by $index">
+            <a href="#/cluster/{{item.pathPatt}}" class="header-menu"
+               data-toggle="collapse" data-target=".in">
+              <span class="{{item.icon}}"></span> {{item.text}}</a>
+          </li>
+        </ul>
       </li>
-      <li data-match-route="/apps"><a href="#/apps">
-        <span class="glyphicon glyphicon-tasks"></span>
-        Applications</a></li>
+
+      <li data-match-route="/apps">
+        <a href="#/apps" data-toggle="collapse" data-target=".in">
+          <span class="fa fa-code"></span>
+          Applications</a>
+      </li>
     </ul>
-    <ul class="nav navbar-nav pull-right">
-      <li ng-repeat="item in links track by $index">
-        <a href="{{item.href}}" target="_blank">
-          <span class="{{item.icon}}"></span>
-          {{item.text}}
-        </a>
+
+
+    <ul class="dropdown nav navbar-nav navbar-right">
+      <li role="placeholder"></li>
+      <li>
+        <a class="dropdown-toggle" type="button" data-toggle="dropdown">
+          <span class="glyphicon glyphicon-user"></span>
+          {{username}}
+          <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          <li ng-repeat="item in userMenuItems track by $index"
+              ng-class="{'divider': item.isDivider}">
+            <a ng-if="!item.isDivider"
+               href="{{item.href}}" class="header-menu"
+               data-toggle="collapse" data-target=".in">
+              <span class="{{item.icon}}"></span>
+              {{item.text}}
+            </a>
+          </li>
+        </ul>
       </li>
     </ul>
   </div>

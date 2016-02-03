@@ -29,11 +29,11 @@ If you choose to build the package from source code yourself, you can follow the
 
 ```bash
   ## Please use scala 2.11
-  ## The target package path: target/gearpump-$VERSION.tar.gz
+  ## The target package path: output/target/gearpump-{{ site.SCALA_BINARY_VERSION }}-{{ site.GEARPUMP_VERSION }}.zip
   sbt clean assembly packArchiveZip
 ```
 
-  After the build, there will be a package file gearpump-${version}.tar.gz generated under target/ folder.
+  After the build, there will be a package file gearpump-{{ site.SCALA_BINARY_VERSION }}-{{ site.GEARPUMP_VERSION }}.zip generated under output/target/ folder.
 
   **NOTE:**
   Please set JAVA_HOME environment before the build.
@@ -55,24 +55,23 @@ The build requires network connection. If you are behind an enterprise proxy, ma
 For windows:
 
 ```bash
-Set HTTP_PROXY=http://host:port
-set HTTPS_PROXT= http://host:port
+set HTTP_PROXY=http://host:port
+set HTTPS_PROXY= http://host:port
 ```
 
 For Linux:
 
 ```bash
 export HTTP_PROXY=http://host:port
-export HTTPS_PROXT= http://host:port
+export HTTPS_PROXY= http://host:port
 ```
 
 ### Gearpump package structure
 
-You need to flatten the .tar.gz file to use it, on Linux, you can
+You need to flatten the `.zip` file to use it. On Linux, you can
 
 ```bash
-## please replace ${version} below with actual version used
-tar  -zxvf gearpump-${version}.tar.gz
+unzip gearpump-{{site.SCALA_BINARY_VERSION}}-{{site.GEARPUMP_VERSION}}.zip
 ```
 
 After decompression, the directory structure looks like picture 1.
@@ -86,6 +85,6 @@ script | function
 local | You can start the Gearpump cluster in single JVM(local mode), or in a distributed cluster(cluster mode). To start the cluster in local mode, you can use the local /local.bat helper scripts, it is very useful for developing or troubleshooting.
 master | To start Gearpump in cluster mode, you need to start one or more master nodes, which represent the global resource management center. master/master.bat is launcher script to boot the master node.
 worker | To start Gearpump in cluster mode, you also need to start several workers, with each worker represent a set of local resources. worker/worker.bat is launcher script to start the worker node.
-services | This script is used to start backend REST service and other services for frontend UI dashboard.
+services | This script is used to start backend REST service and other services for frontend UI dashboard (Default user "admin, admin").
 
 Please check [Command Line Syntax](commandline.html) for more information for each script.

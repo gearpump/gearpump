@@ -17,25 +17,30 @@
  */
 package io.gearpump.external.hbase
 
-import java.io.{ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.io.{File, ObjectInputStream, ObjectOutputStream}
 
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.Message
+import io.gearpump.util.{FileUtils, Constants}
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.{TableName, HBaseConfiguration}
-import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
+import org.apache.hadoop.hbase.client.{ConnectionFactory, Connection, Put}
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
+import org.apache.hadoop.security.UserGroupInformation
 
-class HBaseSink(userconfig: UserConfig, tableName: String) extends DataSink{
-  @transient lazy val configuration = HBaseConfiguration.create()
-  lazy val connection = HBaseSecurityUtil.getConnection(userconfig, configuration)
+class HBaseSink(userconfig: UserConfig, tableName: String, @transient var configuration: Configuration) extends DataSink{
+  lazy val connection = HBaseSink.getConnection(userconfig, configuration)
   lazy val table = connection.getTable(TableName.valueOf(tableName))
 
   override def open(context: TaskContext): Unit = {}
 
-    def insert(rowKey: String, columnGroup: String, columnName: String, value: String): Unit = {
+  def this(userconfig: UserConfig, tableName: String) = {
+    this(userconfig, tableName, HBaseConfiguration.create())
+  }
+
+  def insert(rowKey: String, columnGroup: String, columnName: String, value: String): Unit = {
     insert(Bytes.toBytes(rowKey), Bytes.toBytes(columnGroup), Bytes.toBytes(columnName), Bytes.toBytes(value))
   }
 
@@ -45,9 +50,9 @@ class HBaseSink(userconfig: UserConfig, tableName: String) extends DataSink{
     table.put(put)
   }
 
-  def put(msg: AnyRef): Unit = {
+  def put(msg: Any): Unit = {
     msg match {
-      case seq: Seq[AnyRef] =>
+      case seq: Seq[Any] =>
         seq.foreach(put)
       case tuple: (String, String, String, String) =>
         insert(tuple._1, tuple._2, tuple._3, tuple._4)
@@ -64,6 +69,18 @@ class HBaseSink(userconfig: UserConfig, tableName: String) extends DataSink{
     connection.close()
     table.close()
   }
+
+  private def writeObject(out: ObjectOutputStream): Unit = {
+    out.defaultWriteObject()
+    configuration.write(out)
+  }
+
+  private def readObject(in: ObjectInputStream): Unit = {
+    in.defaultReadObject()
+    val clientConf = new Configuration(false)
+    clientConf.readFields(in)
+    configuration = HBaseConfiguration.create(clientConf)
+  }
 }
 
 object HBaseSink {
@@ -74,5 +91,31 @@ object HBaseSink {
 
   def apply[T](userconfig: UserConfig, tableName: String): HBaseSink = {
     new HBaseSink(userconfig, tableName)
+  }
+
+  def apply[T](userconfig: UserConfig, tableName: String, configuration: Configuration): HBaseSink = {
+    new HBaseSink(userconfig, tableName, configuration)
+  }
+
+  private def getConnection(userConfig: UserConfig, configuration: Configuration): Connection = {
+    if(UserGroupInformation.isSecurityEnabled) {
+      val principal = userConfig.getString(Constants.GEARPUMP_KERBEROS_PRINCIPAL)
+      val keytabContent = userConfig.getBytes(Constants.GEARPUMP_KEYTAB_FILE)
+      if(principal.isEmpty || keytabContent.isEmpty) {
+        val errorMsg = s"HBase is security enabled, user should provide kerberos principal in " +
+          s"${Constants.GEARPUMP_KERBEROS_PRINCIPAL} and keytab file in ${Constants.GEARPUMP_KEYTAB_FILE}"
+        throw new Exception(errorMsg)
+      }
+      val keytabFile = File.createTempFile("login", ".keytab")
+      FileUtils.writeByteArrayToFile(keytabFile, keytabContent.get)
+      keytabFile.setExecutable(false)
+      keytabFile.setWritable(false)
+      keytabFile.setReadable(true, true)
+
+      UserGroupInformation.setConfiguration(configuration)
+      UserGroupInformation.loginUserFromKeytab(principal.get, keytabFile.getAbsolutePath)
+      keytabFile.delete()
+    }
+    ConnectionFactory.createConnection(configuration)
   }
 }

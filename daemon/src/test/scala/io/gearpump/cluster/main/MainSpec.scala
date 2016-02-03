@@ -63,8 +63,12 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
 
     val tempTestConf = convertTestConf(getHost, getPort)
 
+    val options = Array(
+      s"-D$GEARPUMP_CUSTOM_CONFIG_FILE=${tempTestConf.toString}",
+      s"-D${PREFER_IPV4}=true"
+    ) ++ getMasterListOption()
 
-    val worker = Util.startProcess(Array(s"-D$GEARPUMP_CUSTOM_CONFIG_FILE=${tempTestConf.toString}") ++ getMasterListOption(),
+    val worker = Util.startProcess(options,
       getContextClassPath,
       getMainClassName(Worker),
       Array.empty)
@@ -141,7 +145,8 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
   "Local" should "be started without exception" in {
     val port = Util.findFreePort.get
     val options = Array(s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=$getHost:$port",
-      s"-D${Constants.GEARPUMP_HOSTNAME}=$getHost")
+      s"-D${Constants.GEARPUMP_HOSTNAME}=$getHost",
+      s"-D${PREFER_IPV4}=true")
 
     val local = Util.startProcess(options,
       getContextClassPath,

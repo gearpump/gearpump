@@ -22,16 +22,17 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder', 'helper', 'models', 'master0',
-    function($scope, $ptb, helper, models, master0) {
+  .controller('MasterCtrl', ['$scope', '$propertyTableBuilder', 'i18n', 'helper', 'models', 'master0',
+    function($scope, $ptb, i18n, helper, models, master0) {
       'use strict';
 
+      $scope.whatIsMaster = i18n.terminology.master;
       $scope.masterInfoTable = [
         $ptb.text('JVM Info').help('Format: PID@hostname').done(),
         $ptb.text('Leader').done(),
         $ptb.text('Master Members').done(),
         $ptb.tag('Status').done(),
-        $ptb.duration('Up Time').done(),
+        $ptb.duration('Uptime').done(),
         $ptb.button('Quick Links').values([
           {href: master0.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
           helper.withClickToCopy({text: 'Home Dir.', class: 'btn-xs'}, master0.homeDirectory),

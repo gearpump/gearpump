@@ -6,7 +6,7 @@ import scala.util.Try
 
 
 /**
- * A Main class helper to load Akka configuration automatically
+ * A Main class helper to load Akka configuration automatically.
  */
 trait AkkaApp {
 

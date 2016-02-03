@@ -21,9 +21,10 @@ package io.gearpump.experiments.yarn.appmaster
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.{TestActorRef, TestProbe}
 import com.typesafe.config.ConfigFactory
+import io.gearpump.cluster.ClientToMaster.{AddWorker, CommandResult, RemoveWorker}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.experiments.yarn.Constants
-import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, AddWorker, AppMasterRegistered, ClusterInfo, CommandResult, ContainerStarted, ContainersAllocated, GetActiveConfig, Kill, QueryClusterInfo, QueryVersion, RemoveWorker, ResourceManagerException, Version}
+import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, AppMasterRegistered, ClusterInfo, ContainerStarted, ContainersAllocated, GetActiveConfig, Kill, QueryClusterInfo, QueryVersion, ResourceManagerException, Version}
 import io.gearpump.experiments.yarn.appmaster.YarnAppMasterSpec.UI
 import io.gearpump.experiments.yarn.glue.Records.{Container, Resource, _}
 import io.gearpump.experiments.yarn.glue.{NMClient, RMClient}
@@ -92,14 +93,14 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     system.awaitTermination()
   }
 
-  it should "start master, worker and UI on YARN" in {
+  private def startAppMaster: (TestActorRef[_ <: Actor], TestProbe, NMClient, RMClient) = {
     val rmClient = mock(classOf[RMClient])
     val nmClient = mock(classOf[NMClient])
     val ui = mock(classOf[UIFactory])
     when(ui.props(any[List[HostPort]], anyString, anyInt)).thenReturn(Props(new UI))
 
 
-    val appMaster = TestActorRef(Props(new YarnAppMaster(config, rmClient, nmClient, packagePath, configPath, ui)))
+    val appMaster = TestActorRef(Props(new YarnAppMaster(rmClient, nmClient, packagePath, configPath, ui)))
 
     verify(rmClient).start(appMaster)
     verify(nmClient).start(appMaster)
@@ -182,16 +183,27 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     client.expectMsgType[CommandResult]
     verify(nmClient).stopContainer(any[ContainerId], any[NodeId])
 
+    (appMaster, client: TestProbe, nmClient, rmClient)
+  }
+
+  it should "start master, worker and UI on YARN" in {
+    val (appMaster, client, nmClient, rmClient) = startAppMaster
+
     // kill the app
     appMaster.tell(Kill, client.ref)
     client.expectMsgType[CommandResult]
     verify(nmClient, times(1)).stop()
     verify(rmClient, times(1)).shutdownApplication()
 
+  }
+
+  it should "handle resource manager errors" in {
+    val (appMaster, client, nmClient, rmClient) = startAppMaster
+
     // on error
     val ex = new Exception
     appMaster.tell(ResourceManagerException(ex), client.ref)
-    verify(nmClient, times(2)).stop()
+    verify(nmClient, times(1)).stop()
     verify(rmClient, times(1)).failApplication(ex)
   }
 }

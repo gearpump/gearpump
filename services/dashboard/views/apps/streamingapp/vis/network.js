@@ -9,12 +9,15 @@ angular.module('dashboard')
     'use strict';
 
     function overrideOnContextEvent(network, callback) {
-      network.on('oncontext', function(args) {
+      var rightClickHandler = function(args) {
         function handleOnContext(data) {
+
+          // always disable the default context menu "Save image as, Copy Image..."
+          vis.util.preventDefault(args.event);
+
           if (callback) {
             callback(angular.merge(data, {pointer: args.pointer}));
           }
-          vis.util.preventDefault(args.event);
         }
 
         var selection = network.getNodeAt(args.pointer.DOM);
@@ -26,7 +29,12 @@ angular.module('dashboard')
             handleOnContext({edge: selection});
           }
         }
-      });
+      };
+
+      network.on('oncontext', rightClickHandler);
+
+      // 'load' is a touch-device only event, which is equivalent to right-click 'oncontext' event on PC.
+      network.on('hold', rightClickHandler);
     }
 
     function overrideHoverNodeEvent(network, callback) {

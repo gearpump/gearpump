@@ -23,11 +23,10 @@ import akka.actor.ActorSystem;
 import io.gearpump.cluster.Application;
 import io.gearpump.cluster.ApplicationMaster;
 import io.gearpump.cluster.UserConfig;
-import io.gearpump.partitioner.Partitioner;
+
 
 public class StreamApplication implements Application {
   private io.gearpump.streaming.StreamApplication app;
-
   /**
    * Create a streaming application
    * @param name name of the application

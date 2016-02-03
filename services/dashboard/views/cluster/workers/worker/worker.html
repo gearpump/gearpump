@@ -8,13 +8,13 @@
                    tooltip="{{worker.state}}"></indicator>
       </h4>
     </div>
-    <div class="col-sm-2 col-xs-4">
+    <div class="col-md-2 col-sm-3 col-xs-4">
       <metrics
-        caption="Up Time"
+        caption="Uptime"
         help="Running for {{worker.aliveFor|duration}}" remark-type="info"
         value="{{uptimeCompact.value}}" unit="{{uptimeCompact.unit}}"></metrics>
     </div>
-    <div class="col-sm-2 col-xs-4">
+    <div class="col-md-2 col-sm-3 col-xs-4">
       <metrics
         caption="Slots Usage"
         help="Slot is a minimal compute unit. The usage indicates the computation capacity."
@@ -31,6 +31,7 @@
 <div class="col-md-6">
   <property-table
     caption="Overview"
+    caption-tooltip="{{whatIsWorker}}"
     props-bind="overviewTable"
     prop-name-class="col-xs-4 bold"
     prop-value-class="col-xs-8 actor-path">
@@ -38,15 +39,20 @@
 
   <sortable-table
     caption="Executors"
+    caption-tooltip="{{whatIsExecutor}}"
     columns-bind="executorsTable.cols"
     records-bind="executorsTable.rows"
     pagination="4">
+    <div class="table-no-data-sm">
+      <h5><span class="glyphicon glyphicon-bullhorn"></span>
+        No application is running on this worker</h5>
+    </div>
   </sortable-table>
 </div>
 
 <div class="col-md-6">
-  <jvm-metrics
+  <jvm-metrics-view
     sampling-config="metricsConfig"
     query-metrics-fn-ref="queryMetricsFnRef">
-  </jvm-metrics>
+  </jvm-metrics-view>
 </div>

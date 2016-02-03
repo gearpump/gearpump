@@ -57,7 +57,7 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
     FileUtils.writeByteArrayToFile(file, data)
     val future = client.upload(file)
     import scala.concurrent.duration._
-    val path = Await.result(future, 10 seconds)
+    val path = Await.result(future, 30 seconds)
     file.delete()
     path
   }

@@ -18,6 +18,7 @@
 package io.gearpump.streaming.appmaster
 
 import com.typesafe.config.Config
+import io.gearpump.TimeStamp
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import io.gearpump.streaming.DAG
 import io.gearpump.streaming.appmaster.TaskLocator.{Locality, WorkerLocality}
