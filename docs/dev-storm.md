@@ -80,10 +80,10 @@ This section shows how to run an existing Storm jar in a local Gearpump cluster.
    bin/local
    ```
 
-2. start a local Gearpump Nimbus server 
+2. start a Gearpump Nimbus server 
 
-   Users need server's thrift port to submit topologies later. The thrift port is written to a yaml config file set with `-output` option. 
-   Users can provide an existing config file where only `nimbus.thrift.port` is overwritten. If not provided, a new file `app.yaml` is created with the config.
+   Users need server's address(`nimbus.host` and `nimbus.thrift.port`) to submit topologies later. The address is written to a yaml config file set with `-output` option. 
+   Users can provide an existing config file where only the address will be overwritten. If not provided, a new file `app.yaml` is created with the config.
 
    ```
    bin/storm nimbus -output [conf <custom yaml config>]
@@ -173,3 +173,52 @@ where
 * application config is submit from Storm application along with the topology 
 * component config is set in spout / bolt with `getComponentConfiguration`
 * custom file config is specified with the `-config` option when submitting Storm application from command line or uploaded from UI
+
+## StreamCQL Support
+
+[StreamCQL](https://github.com/HuaweiBigData/StreamCQL) is a Continuous Query Language on RealTime Computation System open sourced by Huawei.
+Since StreamCQL already supports Storm, it's straightforward to run StreamCQL over Gearpump.
+
+1. Install StreamCQL as in the official [README](https://github.com/HuaweiBigData/StreamCQL#install-streamcql)
+
+2. Launch Gearpump Nimbus Server as before 
+
+3. Go to the installed stream-cql-binary, and change following settings in `conf/streaming-site.xml` with the output Nimbus configs in Step 2.
+
+    ```xml
+    <property>
+      <name>streaming.storm.nimbus.host</name>
+      <value>${nimbus.host}</value>
+    </property>
+    <property>
+      <name>streaming.storm.nimbus.port</name>
+      <value>${nimbus.thrift.port}</value>
+    </property>
+    ```
+ 
+4. Open CQL client shell and execute a simple cql example
+   
+   ```
+   bin/cql
+   ```
+   
+   ```
+   Streaming> CREATE INPUT STREAM s
+       (id INT, name STRING, type INT)
+   SOURCE randomgen
+       PROPERTIES ( timeUnit = "SECONDS", period = "1",
+           eventNumPerperiod = "1", isSchedule = "true" );
+   
+   CREATE OUTPUT STREAM rs
+       (type INT, cc INT)
+   SINK consoleOutput;
+   
+   INSERT INTO STREAM rs SELECT type, COUNT(id) as cc
+       FROM s[RANGE 20 SECONDS BATCH]
+       WHERE id > 5 GROUP BY type;
+   
+   SUBMIT APPLICATION example;    
+   ```
+   
+5. Check the dashboard and you should see data flowing through a topology of 3 components
+

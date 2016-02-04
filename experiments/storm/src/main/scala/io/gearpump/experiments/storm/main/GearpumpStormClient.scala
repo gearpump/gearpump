@@ -50,7 +50,8 @@ object GearpumpStormClient extends AkkaApp with ArgumentsParser {
       s"-D${PREFER_IPV4}=true"
     )
 
-    val classPath = Array(s"${System.getProperty(GEARPUMP_HOME)}/lib/storm/*", jar)
+    val gearpumpHome = System.getProperty(GEARPUMP_HOME)
+    val classPath = Array(s"$gearpumpHome/lib/*", s"$gearpumpHome/lib/storm/*", jar)
     val process = Util.startProcess(stormOptions, classPath, topology, stormArgs)
 
     // wait till the process exit

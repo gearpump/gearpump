@@ -39,6 +39,7 @@ import io.gearpump.streaming.StreamApplication
 import io.gearpump.util.{AkkaApp, Constants, LogUtil}
 import org.apache.storm.shade.org.json.simple.JSONValue
 import org.apache.storm.shade.org.yaml.snakeyaml.Yaml
+import org.apache.storm.shade.org.yaml.snakeyaml.constructor.SafeConstructor
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
@@ -79,12 +80,8 @@ object GearpumpNimbus extends AkkaApp with ArgumentsParser {
     val outputConfig = Utils.findAndReadConfigFile(output, false).asInstanceOf[JMap[AnyRef, AnyRef]]
     updatedConfig.putAll(outputConfig)
     updatedConfig.putAll(thriftConfig)
-    // workaround that yaml dumps {nimbus.host: 127.0.0.1} instead of {nimbus.host: '127.0.0.1'}
-    // which can not be loaded
-    val nimbusHost = s"${Config.NIMBUS_HOST}: '${thriftConfig.get(Config.NIMBUS_HOST)}'"
-    updatedConfig.remove(Config.NIMBUS_HOST)
-    val yaml = new Yaml
-    val serialized = yaml.dumpAsMap(updatedConfig) ++ s"$nimbusHost\n"
+    val yaml = new Yaml(new SafeConstructor)
+    val serialized = yaml.dumpAsMap(updatedConfig)
     val writer = new FileWriter(new File(output))
     try {
       writer.write(serialized)
