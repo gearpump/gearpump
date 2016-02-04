@@ -1,0 +1,17 @@
+## Highlights:
+
+1. #1648 Support submit storm jar via dashboard
+2. Support StreamCQL over Gearpump
+
+## Change log:
+
+- #1924, fix storm test spec failure
+- #1926, fix client side configuration does not work in CGroup
+- #1648, support submit storm jar via rest interface
+- #1933, Fixes some of the documentation typos, adds SBT configuration
+- #1936, allow user to config kafka source start offset time
+- #1777, Dynamic DAG failed after changing parallelism for many times
+- #1932, Fix client config overwrites critical system config
+- #1895, make GearpumpNimbus a standalone service
+- #1910, enlarge timeout in MasterClient
+- #1952, document how to use StreamCQL over Gearpump
