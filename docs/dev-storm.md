@@ -185,7 +185,8 @@ Since StreamCQL already supports Storm, it's straightforward to run StreamCQL ov
 
 3. Go to the installed stream-cql-binary, and change following settings in `conf/streaming-site.xml` with the output Nimbus configs in Step 2.
 
-    ```xml
+
+   ```xml
     <property>
       <name>streaming.storm.nimbus.host</name>
       <value>${nimbus.host}</value>
@@ -194,7 +195,7 @@ Since StreamCQL already supports Storm, it's straightforward to run StreamCQL ov
       <name>streaming.storm.nimbus.port</name>
       <value>${nimbus.thrift.port}</value>
     </property>
-    ```
+   ```
  
 4. Open CQL client shell and execute a simple cql example
    
@@ -202,7 +203,7 @@ Since StreamCQL already supports Storm, it's straightforward to run StreamCQL ov
    bin/cql
    ```
    
-   ```
+   ```sql
    Streaming> CREATE INPUT STREAM s
        (id INT, name STRING, type INT)
    SOURCE randomgen
