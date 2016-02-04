@@ -26,7 +26,7 @@ import io.gearpump.cluster.master.{Master => MasterActor}
 import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
-import io.gearpump.util.{AkkaApp, ActorUtil, Constants, LogUtil, Util}
+import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
@@ -75,7 +75,6 @@ object Local extends AkkaApp with ArgumentsParser {
       )
 
       val master = system.actorOf(Props[MasterActor], MASTER)
-      val masterPath = ActorUtil.getSystemAddress(system).toString + s"/user/$MASTER"
 
       0.until(workerCount).foreach { id =>
         system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)
