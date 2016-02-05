@@ -28,7 +28,7 @@ angular.module('dashboard')
 
       $scope.whatIsMaster = i18n.terminology.master;
       $scope.masterInfoTable = [
-        $ptb.text('JVM Info').help('Format: PID@hostname').done(),
+        $ptb.text('JVM Info').done(),
         $ptb.text('Leader').done(),
         $ptb.text('Master Members').done(),
         $ptb.tag('Status').done(),

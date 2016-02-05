@@ -30,7 +30,7 @@ angular.module('dashboard')
       $scope.executorName = executor0.id === -1 ?
         'AppMaster' : ('Executor ' + executor0.id);
       $scope.overviewTable = [
-        $ptb.text('JVM Info').help('Format: PID@hostname').done(),
+        $ptb.text('JVM Info').done(),
         $ptb.text('Actor Path').done(),
         $ptb.link('Worker').done(),
         $ptb.number('Task Count').done(),
