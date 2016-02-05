@@ -14,7 +14,7 @@ angular.module('dashboard')
       scope: {
         metricName: '=',
         metricType: '=',
-        metricDescription: '='
+        metricDescription: '=?'
       },
       link: function(scope) {
         'use strict';

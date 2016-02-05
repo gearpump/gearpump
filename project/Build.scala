@@ -278,7 +278,8 @@ object Build extends sbt.Build {
       "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
       "com.lihaoyi" %% "upickle" % upickleVersion,
       "com.softwaremill" %% "akka-http-session" % "0.1.4",
-      "org.webjars" % "angularjs" % "1.4.8",
+      "org.webjars" % "angularjs" % "1.4.9",
+      "org.webjars.npm" % "angular-touch" % "1.5.0-rc.2", // angular 1.5 breaks ui-select, but we need ng-touch 1.5
       "org.webjars" % "angular-ui-router" % "0.2.15",
       "org.webjars" % "bootstrap" % "3.3.6",
       "org.webjars" % "d3js" % "3.5.6",
@@ -292,12 +293,12 @@ object Build extends sbt.Build {
       "org.webjars.bower" % "angular-motion" % "0.4.3",
       "org.webjars.bower" % "bootstrap-additions" % "0.3.1",
       "org.webjars.bower" % "angular-strap" % "2.3.5",
-      "org.webjars.bower" % "angular-ui-select" % "0.13.2",
+      "org.webjars.npm" % "ui-select" % "0.14.2",
       "org.webjars.bower" % "ng-file-upload" % "5.0.9",
       "org.webjars.bower" % "vis" % "4.7.0",
       "org.webjars.bower" % "clipboard.js" % "0.1.1",
       "org.webjars.npm" % "dashing-deps" % "0.1.2",
-      "org.webjars.npm" % "dashing" % "0.4.4"
+      "org.webjars.npm" % "dashing" % "0.4.5"
   ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
 
   lazy val serviceJSSettings = Seq(

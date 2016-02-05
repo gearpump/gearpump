@@ -36,7 +36,7 @@ angular.module('dashboard')
 
       $scope.whatIsWorker = i18n.terminology.worker;
       $scope.overviewTable = [
-        $ptb.text('JVM Info').help('Format: PID@hostname').done(),
+        $ptb.text('JVM Info').done(),
         $ptb.text('Actor Path').done(),
         $ptb.number('Slots Capacity').done(),
         $ptb.button('Quick Links').values([
