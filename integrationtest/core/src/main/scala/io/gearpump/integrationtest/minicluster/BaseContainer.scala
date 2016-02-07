@@ -29,8 +29,14 @@ class BaseContainer(val host: String, command: String,
                     tunnelPorts: Set[Int] = Set.empty) {
 
   private val IMAGE_NAME = "stanleyxu2005/gearpump-launcher"
-  private val SUT_LOCAL_PATH = "pwd".!!.trim + "/output/target/pack"
-  val SUT_HOME = "/opt/gearpump"
+  private val IMAGE_SUT_HOME = "/opt/gearpump"
+  private val IMAGE_LOG_HOME = "/var/log/gearpump"
+  private val LOCAL_SUT_HOME = "pwd".!!.trim + "/output/target/pack"
+  private val LOCAL_LOG_HOME = {
+    val dir = "/tmp/gearpump"
+    s"mkdir -p $dir".!!
+    s"mktemp -p $dir -d".!!.trim
+  }
 
   private val CLUSTER_OPTS = {
     masterAddrs.zipWithIndex.map { case (hostPort, index) =>
@@ -41,7 +47,9 @@ class BaseContainer(val host: String, command: String,
   def createAndStart(): String = {
     Docker.createAndStartContainer(host, IMAGE_NAME, command,
       environ = Map("JAVA_OPTS" -> CLUSTER_OPTS),
-      volumes = Map(SUT_LOCAL_PATH -> SUT_HOME),
+      volumes = Map(
+        LOCAL_SUT_HOME -> IMAGE_SUT_HOME,
+        LOCAL_LOG_HOME -> IMAGE_LOG_HOME),
       knownHosts = masterAddrs.map(_._1).filter(_ != host).toSet,
       tunnelPorts = tunnelPorts)
   }

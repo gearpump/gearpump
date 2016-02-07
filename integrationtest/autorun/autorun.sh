@@ -34,6 +34,8 @@ git checkout -q master
 
 # Define the variables
 DIST_DIR=output/target/pack
+LOG_DIR=/tmp/gearpump
+ATTACHMENT=everything.zip
 REPORT_DIR=report
 COMMIT_REV=''
 
@@ -51,7 +53,7 @@ function run_test_if_new_commit_found {
   COMMIT_REV=$NEW_COMMIT_REV
   COMMIT_LOG=$(git log -1)
 
-  rm -rf $DIST_DIR
+  rm -Rf $DIST_DIR $LOG_DIR $ATTACHMENT
   echo "Rebuild the project ..."
   sbt clean assembly packArchiveZip
   if [ $? -ne 0 ]; then
@@ -62,9 +64,9 @@ function run_test_if_new_commit_found {
   fi
 
   echo "Run tests ... (it will take couple of minutes or longer)"
-  sbt "it:test-only *Suite* -- -h $REPORT_DIR" | tee console.log
+  sbt "it:test-only *Suite* -- -h $REPORT_DIR" | tee $REPORT_DIR/console.out
   if [ $? -eq 0 ]; then
-    grep -q "sbt.TestsFailedException: Tests unsuccessful" console.log
+    grep -q "sbt.TestsFailedException: Tests unsuccessful" $REPORT_DIR/console.out
     if [ $? -ne 0 ]; then
       mail_to \
         "Gearpump test passed $COMMIT_REV" \
@@ -74,15 +76,14 @@ function run_test_if_new_commit_found {
   fi
 
   echo "Copy test logs into report directory ..."
-  SELECTION="$REPORT_DIR $DIST_DIR/logs console.log"
-  ZIP_FILES="$NEW_COMMIT_REV.zip"
-  zip -q -r $ZIP_FILES "$SELECTION"
-  rm -rf "$SELECTION"
+  SELECTION="$REPORT_DIR $LOG_DIR"
+  zip -q -r $ATTACHMENT $SELECTION
+  rm -Rf $SELECTION
 
   mail_to \
     "Gearpump test failed $COMMIT_REV" \
     "Integration test failed. Please check attached files.\n\n$COMMIT_LOG" \
-    -a $ZIP_FILES
+    -a $ATTACHMENT
 }
 
 while true; do

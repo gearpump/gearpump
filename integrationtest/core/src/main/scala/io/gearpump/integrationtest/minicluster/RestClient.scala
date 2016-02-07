@@ -53,13 +53,21 @@ class RestClient(host: String, port: Int) {
       Graph(vertexList, edgeList)
   }
 
+  private def decodeAs[T: upickle.default.Reader](expr: String): T = try {
+    read[T](expr)
+  } catch {
+    case ex: Throwable =>
+      LOG.error(ex)
+      throw ex
+  }
+
   def queryVersion(): String = {
     callFromRoot("version")
   }
 
   def listWorkers(): Array[WorkerSummary] = {
     val resp = callApi("master/workerlist")
-    read[List[WorkerSummary]](resp).toArray
+    decodeAs[List[WorkerSummary]](resp).toArray
   }
 
   def listRunningWorkers(): Array[WorkerSummary] = {
@@ -68,7 +76,7 @@ class RestClient(host: String, port: Int) {
 
   def listApps(): Array[AppMasterData] = {
     val resp = callApi("master/applist")
-    read[AppMastersData](resp).appMasters.toArray
+    decodeAs[AppMastersData](resp).appMasters.toArray
   }
 
   def listRunningApps(): Array[AppMasterData] = {
@@ -89,7 +97,7 @@ class RestClient(host: String, port: Int) {
       options :+= s"conf=@$config"
     }
     val resp = callApi(endpoint, options.map("-F " + _).mkString(" "))
-    val result = read[AppSubmissionResult](resp)
+    val result = decodeAs[AppSubmissionResult](resp)
     assert(result.success)
     true
   } catch {
@@ -100,7 +108,7 @@ class RestClient(host: String, port: Int) {
 
   def queryApp(appId: Int): AppMasterData = {
     val resp = callApi(s"appmaster/$appId")
-    read[AppMasterData](resp)
+    decodeAs[AppMasterData](resp)
   }
 
   def queryAppMasterConfig(appId: Int): Config = {
@@ -110,18 +118,18 @@ class RestClient(host: String, port: Int) {
 
   def queryStreamingAppDetail(appId: Int): StreamAppMasterSummary = {
     val resp = callApi(s"appmaster/$appId?detail=true")
-    upickle.default.read[StreamAppMasterSummary](resp)
+    decodeAs[StreamAppMasterSummary](resp)
   }
 
   def queryStreamingAppMetrics(appId: Int, current: Boolean, path: String = "processor*"): HistoryMetrics = {
     val args = if (current) "?readLatest=true" else ""
     val resp = callApi(s"appmaster/$appId/metrics/app$appId.$path$args")
-    upickle.default.read[HistoryMetrics](resp)
+    decodeAs[HistoryMetrics](resp)
   }
 
   def queryExecutorSummary(appId: Int, executorId: Int): ExecutorSummary = {
     val resp = callApi(s"appmaster/$appId/executor/$executorId")
-    upickle.default.read[ExecutorSummary](resp)
+    decodeAs[ExecutorSummary](resp)
   }
 
   def queryExecutorBrief(appId: Int): Array[ExecutorBrief] = {
@@ -131,7 +139,7 @@ class RestClient(host: String, port: Int) {
   def queryExecutorMetrics(appId: Int, current: Boolean): HistoryMetrics = {
     val args = if (current) "?readLatest=true" else ""
     val resp = callApi(s"appmaster/$appId/metrics/app$appId.executor*$args")
-    upickle.default.read[HistoryMetrics](resp)
+    decodeAs[HistoryMetrics](resp)
   }
 
   def queryExecutorConfig(appId: Int, executorId: Int): Config = {
@@ -141,13 +149,13 @@ class RestClient(host: String, port: Int) {
 
   def queryMaster(): MasterSummary = {
     val resp = callApi("master")
-    read[MasterData](resp).masterDescription
+    decodeAs[MasterData](resp).masterDescription
   }
 
   def queryMasterMetrics(current: Boolean): HistoryMetrics = {
     val args = if (current) "?readLatest=true" else ""
     val resp = callApi(s"master/metrics/master?$args")
-    upickle.default.read[HistoryMetrics](resp)
+    decodeAs[HistoryMetrics](resp)
   }
 
   def queryMasterConfig(): Config = {
@@ -158,7 +166,7 @@ class RestClient(host: String, port: Int) {
   def queryWorkerMetrics(workerId: Int, current: Boolean): HistoryMetrics = {
     val args = if (current) "?readLatest=true" else ""
     val resp = callApi(s"worker/$workerId/metrics/worker$workerId?$args")
-    upickle.default.read[HistoryMetrics](resp)
+    decodeAs[HistoryMetrics](resp)
   }
 
   def queryWorkerConfig(workerId: Int): Config = {
@@ -168,19 +176,19 @@ class RestClient(host: String, port: Int) {
 
   def queryBuiltInPartitioners(): Array[String] = {
     val resp = callApi("master/partitioners")
-    upickle.default.read[BuiltinPartitioners](resp).partitioners
+    decodeAs[BuiltinPartitioners](resp).partitioners
   }
 
   def uploadJar(localFilePath: String): AppJar = {
     val resp = callApi(s"master/uploadjar -F jar=@$localFilePath", CRUD_POST)
-    upickle.default.read[AppJar](resp)
+    decodeAs[AppJar](resp)
   }
 
   def replaceStreamingAppProcessor(appId: Int, replaceMe: ProcessorDescription): Boolean = try {
     val replaceOperation = new ReplaceProcessor(replaceMe.id, replaceMe)
     val args = upickle.default.write(replaceOperation)
     val resp = callApi(s"appmaster/$appId/dynamicdag?args=" + Util.encodeUriComponent(args), CRUD_POST)
-    upickle.default.read[DAGOperationResult](resp)
+    decodeAs[DAGOperationResult](resp)
     true
   } catch {
     case ex: Throwable =>
@@ -214,7 +222,7 @@ class RestClient(host: String, port: Int) {
 
   def restartApp(appId: Int): Boolean = try {
     val resp = callApi(s"appmaster/$appId/restart", CRUD_POST)
-    upickle.default.read[Status](resp).success
+    decodeAs[Status](resp).success
   } catch {
     case ex: Throwable =>
       LOG.warn(s"swallowed an exception: $ex")
