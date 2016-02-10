@@ -55,7 +55,7 @@ provided for the gearpump-hbase connector. Specifically, the `UserConfig` object
 
 ```scala
 val principal = "gearpump/fully.qualified.domain.name@YOUR-REALM.COM"
-val keytabContent = Files.toByteArray(new File("path_to_keytab_file))
+val keytabContent = Files.toByteArray(new File("path_to_keytab_file"))
 val appConfig = UserConfig.empty
       .withString("gearpump.kerberos.principal", principal)
       .withBytes("gearpump.keytab.file", keytabContent)

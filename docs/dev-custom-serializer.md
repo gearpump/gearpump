@@ -29,6 +29,19 @@ When you decide that you want to define a custom serializer, you can do this in 
 
 Please note that Gearpump shaded the original Kryo dependency. The package name ```com.esotericsoftware``` was relocated to ```io.gearpump.esotericsoftware```. So in the following customization, you should import corresponding shaded classes, the example code will show that part.
 
+In general you should use the shaded version of a library whenever possible in order to avoid binary incompatibilities, eg don't use:
+
+```scala
+   import com.google.common.io.Files
+```
+
+but rather
+
+```scala
+   import io.gearpump.google.common.io.Files
+```
+
+
 ##### System Level Serializer
 
 If the serializer is widely used, you can define a global serializer which is available to all applications(or worker or master) in the system.

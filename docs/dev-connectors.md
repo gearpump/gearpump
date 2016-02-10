@@ -104,7 +104,7 @@ To use `HBaseSink` in your application, you first need to add the `gearpump-exte
 
 To connect to HBase, you need to provide following info:
  - the HBase configuration to tell which HBase service to connect
- - the table name
+ - the table name (you must create the table yourself, see the [HBase documentation](https://hbase.apache.org/book.html))
 
 Then, you can use `HBaseSink` in your application:
 
@@ -122,6 +122,21 @@ Then, you can use `HBaseSink` in your application:
 ```
 
 You can tune the connection to HBase via the HBase configuration passed in. If not passed, Gearpump will try to check local classpath to find a valid HBase configuration (`hbase-site.xml`).
+
+Attention, due to the issue discussed [here](http://stackoverflow.com/questions/24456484/hbase-managed-zookeeper-suddenly-trying-to-connect-to-localhost-instead-of-zooke) you may need to create additional configuration for your HBase sink:
+
+```scala
+   def hadoopConfig = {
+     val conf = new Configuration()
+     conf.set("hbase.zookeeper.quorum", "zookeeperHost")
+     conf.set("hbase.zookeeper.property.clientPort", "2181")
+     conf
+   }
+```
+
+```scala
+   val sink = HBaseSink(UserConfig.empty, tableName, hadoopConfig)
+```
 
 ## How to implement your own `DataSource`
 
