@@ -45,10 +45,10 @@ angular.module('dashboard')
       };
 
       $scope.composeMenuOptions = [{
-        text: '<i class="glyphicon glyphicon-none"></i> <b>Submit Gearpump Application</b>',
+        text: '<i class="glyphicon glyphicon-none"></i> <b>Submit Gearpump Application...</b>',
         click: $scope.openSubmitGearAppDialog
       }, {
-        text: '<i class="glyphicon glyphicon-none"></i> Submit Storm Application',
+        text: '<i class="glyphicon glyphicon-none"></i> Submit Storm Application...',
         click: $scope.openSubmitStormAppDialog
       }, {
         text: '<i class="glyphicon glyphicon-pencil"></i> Compose DAG',

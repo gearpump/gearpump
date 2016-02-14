@@ -79,7 +79,7 @@ angular.module('dashboard')
         options: $vis.newOptions(/*height=*/'400px'),
         data: $vis.newData(),
         events: {
-          doubleClick: function(data) {
+          onDoubleClick: function(data) {
             if (data.nodes.length === 1) {
               var processor = $scope.visGraph.data.nodes.get(data.nodes[0]);
               $scope.chooseProcessor(processor);
@@ -90,7 +90,7 @@ angular.module('dashboard')
               $scope.chooseProcessor();
             }
           },
-          oncontext: function(data) {
+          onContext: function(data) {
             if (data.hasOwnProperty('node')) {
               $scope.selectItemModify = function() {
                 $scope.chooseProcessor($scope.visGraph.data.nodes.get(data.node));
@@ -111,7 +111,7 @@ angular.module('dashboard')
             var elem = document.getElementById('contextmenu');
             $contextmenu.popup(elem, data.pointer.DOM);
           },
-          ondeletepressed: function(selection) {
+          onDeletePressed: function(selection) {
             if (selection.nodes.length === 1) {
               deleteProcessor(selection.nodes[0]);
             } else if (selection.edges.length === 1) {

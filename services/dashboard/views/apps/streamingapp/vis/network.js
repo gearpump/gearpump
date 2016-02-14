@@ -8,25 +8,22 @@ angular.module('dashboard')
   .directive('visNetwork', [function() {
     'use strict';
 
-    function overrideOnContextEvent(network, callback) {
+    function handleOnContextEvent(network, callback) {
       var rightClickHandler = function(args) {
-        function handleOnContext(data) {
-
+        function handleCallback(data) {
           // always disable the default context menu "Save image as, Copy Image..."
           vis.util.preventDefault(args.event);
 
-          if (callback) {
-            callback(angular.merge(data, {pointer: args.pointer}));
-          }
+          callback(angular.merge(data, {pointer: args.pointer}));
         }
 
         var selection = network.getNodeAt(args.pointer.DOM);
         if (angular.isDefined(selection)) {
-          handleOnContext({node: selection});
+          handleCallback({node: selection});
         } else {
           selection = network.getEdgeAt(args.pointer.DOM);
           if (angular.isDefined(selection)) {
-            handleOnContext({edge: selection});
+            handleCallback({edge: selection});
           }
         }
       };
@@ -37,22 +34,19 @@ angular.module('dashboard')
       network.on('hold', rightClickHandler);
     }
 
-    function overrideHoverNodeEvent(network, callback) {
-      network.on('hoverNode', function(args) {
-          if (callback) {
-            var nodeId = parseInt(args.node);
-            var radius = network.findNode(nodeId)[0].options.size;
-            var position = network.getPositions([nodeId])[nodeId];
-            position = network.canvasToDOM(position);
-            callback({
-              node: nodeId,
-              radius: Math.ceil(radius),
-              position: position
-            });
-          }
-          vis.util.preventDefault(args.event);
-        }
-      );
+    function overrideHoverNodeCallback(network, callback) {
+      return function(args) {
+        var nodeId = parseInt(args.node);
+        var radius = network.findNode(nodeId)[0].options.size;
+        var position = network.getPositions([nodeId])[nodeId];
+        position = network.canvasToDOM(position);
+        callback({
+          node: nodeId,
+          radius: Math.ceil(radius),
+          position: position
+        });
+        vis.util.preventDefault(args.event);
+      };
     }
 
     function handleDeleteKeyPressed(network, callback) {
@@ -80,17 +74,28 @@ angular.module('dashboard')
 
         angular.forEach(scope.events, function(callback, name) {
           switch (name) {
-            case 'click':
-            case 'doubleClick':
-              network.on(name, callback);
+            case 'onClick':
+              network.on('click', callback);
               break;
-            case 'oncontext':
-              overrideOnContextEvent(network, callback);
+            case 'onDoubleClick':
+              network.on('doubleClick', callback);
               break;
-            case 'hoverNode':
-              overrideHoverNodeEvent(network, callback);
+            case 'onSelectNode':
+              network.on('selectNode', callback);
               break;
-            case 'ondeletepressed':
+            case 'onDeselectNode':
+              network.on('deselectNode', callback);
+              break;
+            case 'onHoverNode':
+              network.on('hoverNode', overrideHoverNodeCallback(network, callback));
+              break;
+            case 'onBlurNode':
+              network.on('blurNode', overrideHoverNodeCallback(network, callback));
+              break;
+            case 'onContext':
+              handleOnContextEvent(network, callback);
+              break;
+            case 'onDeletePressed':
               handleDeleteKeyPressed(network, callback);
               break;
           }
