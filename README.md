@@ -1,9 +1,7 @@
 
-## Gearpump  [![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://www.gearpump.io/download.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](https://github.com/gearpump/gearpump/blob/master/LICENSE)
+## Gearpump  [![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://www.gearpump.io/download.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](https://github.com/gearpump/gearpump/blob/master/LICENSE) [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
 
-[![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
-
-Web site: http://gearpump.io
+Online Demo Site: http://demo.gearpump.io/
 
 [![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](http://www.gearpump.io/download.html)
 
@@ -11,8 +9,7 @@ Gearpump is a lightweight real-time big data streaming engine. It is inspired by
 
 ![](https://raw.githubusercontent.com/gearpump/gearpump/master/docs/img/logo2.png)
 
-The	name	Gearpump	is	a	reference to	the	engineering term “gear	pump,”	which	is	a	super simple
-pump	that	consists of	only	two	gears,	but	is	very	powerful at	streaming water.
+The name Gearpump is a reference to the engineering term "gear pump", which is a super simple pump that consists of only two gears, but is very powerful at streaming water.
 
 ![](http://www.gearpump.io/img/dashboard.gif)
 
@@ -24,19 +21,18 @@ Per initial benchmarks we are able to process near 18 million messages/second (1
 
 ![](https://raw.githubusercontent.com/gearpump/gearpump/master/docs/img/dashboard.png)
 
-For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/releases/latest/performance-report.html)
+For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/releases/latest/performance-report.html).
 
-## Design Document
+## Useful Resources
 
-There is a 20 pages technical paper on typesafe blog, with technical highlights https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka
-
-## Introduction and Motivation
-
-Check [Introduction](http://www.gearpump.io/overview.html)
-
-## Getting Started
-
-Check guide [Get Started](http://www.gearpump.io/releases/latest/submit-your-1st-application.html)
+* Read the [Introduction on TypeSafe's Blog](https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka)
+* Learn the [Basic Concepts](http://www.gearpump.io/releases/latest/basic-concepts.html)
+* How to [Develop your first application](http://www.gearpump.io/releases/latest/dev-write-1st-app.html)
+* How to [Submit your first application](http://www.gearpump.io/releases/latest/submit-your-1st-application.html)
+* Explore the [Maven dependencies](http://www.gearpump.io/releases/latest/maven-setting.html)
+* Explore the [Document site](http://gearpump.io)
+* Explore the [User List](https://groups.google.com/forum/#!forum/gearpump-user)
+* Report an [issue](https://github.com/gearpump/gearpump/issues)
 
 ## How to Build
 
@@ -79,43 +75,8 @@ export HTTP_PROXY=http://host:port
 export HTTPS_PROXY= http://host:port
 ```
 
-
 ## How to run Gearpump integration test
-Gearpump has an integration test system which is based on Docker.
-
-### Prerequisite of integration test
-To run Gearpump integration test, we first must have Docker installed in your PATH.
-
-And you need to have Docker well configured if you are behind firewall.
-You can run command `docker pull stanleyxu2005/gpct-jdk8` to check whether you have Docker installed and well configured.
-
-#### Set docker proxy if you behind a firewall
-In ubuntu, you can modify file `/etc/default/docker` and enable the http_proxy setting.
-
-### Run integration test
-After Docker well configured, you can run the whole integration test via command:
-```bash
-sbt it:test
-```
-
-## Concepts
-
-Check guide [Concepts](http://www.gearpump.io/releases/latest/basic-concepts.html)
-
-## How to write a Gearpump Application
-
-Check guide [Streaming Application Developer Guide](http://www.gearpump.io/releases/latest/dev-write-1st-app.html)
-
-
-# Maven dependencies
-
-Check [Maven settings](http://www.gearpump.io/releases/latest/maven-setting.html)
-
-## Further information
-
-- Document site [gearpump.io](http://gearpump.io)
-- User List: [gearpump-user](https://groups.google.com/forum/#!forum/gearpump-user).
-- Report issues: [issue tracker](https://github.com/gearpump/gearpump/issues)
+Gearpump has an integration test system which is based on Docker. Please check [the instructions](integrationtest/README.md).
 
 ## Contributors (time order)
 
@@ -129,17 +90,15 @@ Check [Maven settings](http://www.gearpump.io/releases/latest/maven-setting.html
 * [Tomasz Targonski](https://github.com/TomaszT)
 * [Sun Kewei](https://github.com/skw1992)
 
-## Contacts:
+## Contacts
 
-Please use the google user list if possible. For things that are not OK to be shared in maillist, please contact:
-xiang.zhong@intel.com
-kam.d.kasravi@intel.com
-weihua.jiang@intel.com
+Please use the google user list if possible. For things that are not OK to be shared in mailing list, please contact:
+[Sean Zhong](mailto:xiang.zhong@intel.com), [Kam Kasravi](mailto:kam.d.kasravi@intel.com) or [Weihua Jiang](mailto:weihua.jiang@intel.com).
 
 ## License
 
-Gearpump itself is licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
-For library it used, please see [/LICENSE](https://github.com/gearpump/gearpump/blob/master/LICENSE)
+Gearpump itself is licensed under the [Apache License (2.0)](http://www.apache.org/licenses/LICENSE-2.0).
+For library it used, please see [LICENSE](https://github.com/gearpump/gearpump/blob/master/LICENSE).
 
 ## Acknowledgement
 
@@ -147,4 +106,4 @@ The netty transport code work is based on [Apache Storm](http://storm.apache.org
 
 The cgroup code work is based on [JStorm](https://github.com/alibaba/jstorm). Thanks JStorm contributors.
 
-Thanks to Jetbrains for providing [IntelliJ IDEA Free Open Source License](https://www.jetbrains.com/buy/opensource/?product=idea).
+Thanks to Jetbrains for providing a [IntelliJ IDEA Free Open Source License](https://www.jetbrains.com/buy/opensource/?product=idea).
