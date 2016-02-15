@@ -21,7 +21,17 @@ angular.module('dashboard')
     function($scope, $state, $modal, $contextmenu, $vis) {
       'use strict';
 
-      // todo: while metrics is not available, keep loading, otherwise the bandwidth is not calculable.
+      $scope.activeProcessorId = -1;
+      $scope.processorActionMenu = [{
+        text: '<i class="glyphicon glyphicon-stats"></i> <b>View Details</b>',
+        click: 'view()'
+      }, {
+        text: '<i class="glyphicon glyphicon-none"></i> Change Parallelism...',
+        click: 'modify({parallelism:true})'
+      }, {
+        text: '<i class="glyphicon glyphicon-none"></i> Change More...',
+        click: 'modify()'
+      }];
 
       var editorDialog = $modal({
         templateUrl: "views/apps/streamingapp/popups/dag_edit.html",
@@ -30,6 +40,11 @@ angular.module('dashboard')
         scope: $scope,
         controller: 'StreamingAppDagEditCtrl'
       });
+
+      $scope.view = function() {
+        var options = {processorId: $scope.activeProcessorId};
+        $state.go('streamingapp.processor', options);
+      };
 
       $scope.modify = function(options) {
         $scope.modifyOptions = options;
@@ -40,27 +55,40 @@ angular.module('dashboard')
         options: $vis.newHierarchicalLayoutOptions({depth: $scope.dag.hierarchyDepth()}),
         data: $vis.newData(),
         events: {
-          doubleClick: function(data) {
+          onDoubleClick: function(data) {
             if (data.nodes.length === 1) {
               var processorId = Number(data.nodes[0]);
               $state.go('streamingapp.processor', {processorId: processorId});
             }
           },
-          oncontext: function(data) {
+          onContext: function(data) {
             if (data.hasOwnProperty('node')) {
-              var processorId = Number(data.node);
-              $scope.activeProcessor = $scope.dag.getProcessor(processorId);
-              showProcessorOperationsContextMenu(processorId, data.pointer.DOM);
+              $scope.activeProcessorId = Number(data.node);
+              $scope.$apply();
+              showProcessorOperationsContextMenu(data.pointer.DOM);
             }
+          },
+          onSelectNode: function(data) {
+            if (data.nodes.length === 1) {
+              $scope.activeProcessorId = Number(data.nodes[0]);
+              $scope.$apply();
+            }
+          },
+          onDeselectNode: function() {
+            $scope.activeProcessorId = -1;
+            $scope.$apply();
+          },
+          onHoverNode: function() {
+            $('html,body').css('cursor', 'pointer');
+          },
+          onBlurNode: function() {
+            $('html,body').css('cursor', 'default');
           }
         }
       };
 
-      function showProcessorOperationsContextMenu(processorId, position) {
+      function showProcessorOperationsContextMenu(position) {
         var elem = document.getElementById('dag-node-menu');
-        $scope.view = function() {
-          $state.go('streamingapp.processor', {processorId: processorId});
-        };
         $contextmenu.popup(elem, position);
       }
 

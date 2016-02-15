@@ -10,7 +10,7 @@ angular.module('dashboard')
 
     return {
       restrict: 'E',
-      templateUrl: 'views/widgets/radio_group.html',
+      templateUrl: 'widgets/radio_group.html',
       replace: true,
       scope: {
         ngModel: '=',

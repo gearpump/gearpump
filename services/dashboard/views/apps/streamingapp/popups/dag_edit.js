@@ -11,7 +11,7 @@ angular.module('dashboard')
       var options = $scope.modifyOptions || {};
       $scope.changeParallelismOnly = options.parallelism;
 
-      var processor = $scope.activeProcessor;
+      var processor = $scope.dag.getProcessor($scope.activeProcessorId);
       $scope.processorId = processor.id;
       $scope.taskClass = processor.taskClass;
       $scope.description = processor.description;

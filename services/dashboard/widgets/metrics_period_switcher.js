@@ -10,7 +10,7 @@ angular.module('dashboard')
 
     return {
       restrict: 'E',
-      templateUrl: 'views/widgets/metrics_period_switcher.html',
+      templateUrl: 'widgets/metrics_period_switcher.html',
       scope: {
         pastHours: '=',
         viewCurrent: '='
