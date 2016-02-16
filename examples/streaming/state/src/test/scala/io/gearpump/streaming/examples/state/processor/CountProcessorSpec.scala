@@ -21,8 +21,9 @@ package io.gearpump.streaming.examples.state.processor
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.state.impl.{InMemoryCheckpointStoreFactory, PersistentStateConfig}
-import io.gearpump.streaming.task.{StartTime, ReportCheckpointClock}
+import io.gearpump.streaming.state.api.PersistentTask
+import io.gearpump.streaming.state.impl.PersistentStateConfig
+import io.gearpump.streaming.task.ReportCheckpointClock
 import io.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
@@ -33,6 +34,8 @@ import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
 
+import scala.concurrent.duration._
+
 class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
 
   property("CountProcessor should update state") {
@@ -42,13 +45,14 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
     implicit val system = ActorSystem("test")
 
     val longGen = Gen.chooseNum[Long](1, 1000)
-    forAll(longGen, longGen) {
-      (data: Long, num: Long) =>
+    forAll(longGen) {
+      (num: Long) =>
 
         val conf = UserConfig.empty
           .withBoolean(PersistentStateConfig.STATE_CHECKPOINT_ENABLE, true)
           .withLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS, num)
           .withValue[CheckpointStoreFactory](PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY, new InMemoryCheckpointStoreFactory)
+
         val count = new CountProcessor(taskContext, conf)
 
         val appMaster = TestProbe()(system)
@@ -57,19 +61,22 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
         count.onStart(StartTime(0L))
         appMaster.expectMsg(ReportCheckpointClock(taskContext.taskId, 0L))
 
-        for (i <- 1L to num) {
-          when(taskContext.upstreamMinClock).thenReturn(0L)
-          count.onNext(Message("" + data, 0L))
+
+        for (i <- 0L to num) {
+          count.onNext(Message("", i))
+          count.state.get shouldBe Some(i + 1)
         }
+        // next checkpoint time is at num
+        // not yet
+        when(taskContext.upstreamMinClock).thenReturn(0L)
+        count.onNext(PersistentTask.CHECKPOINT)
+        appMaster.expectNoMsg(10 milliseconds)
 
-        count.state.get shouldBe Some(num)
-
+        // time to checkpoint
         when(taskContext.upstreamMinClock).thenReturn(num)
-        count.onNext(Message("" + data, num))
+        count.onNext(PersistentTask.CHECKPOINT)
+        // only the state before checkpoint time is checkpointed
         appMaster.expectMsg(ReportCheckpointClock(taskContext.taskId, num))
-
-
-        count.state.get shouldBe Some(num + 1)
     }
 
     system.shutdown()

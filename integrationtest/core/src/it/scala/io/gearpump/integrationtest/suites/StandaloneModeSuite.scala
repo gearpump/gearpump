@@ -33,7 +33,8 @@ class StandaloneModeSuite extends Suites(
   new ExampleSpec,
   new DynamicDagSpec,
   new StabilitySpec,
-  new StormCompatibilitySpec
+  new StormCompatibilitySpec,
+  new MessageDeliverySpec
 
 ) with BeforeAndAfterAll {
 

@@ -27,15 +27,15 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.Message
 
 class CountProcessor(taskContext: TaskContext, conf: UserConfig)
-  extends PersistentTask[Long](taskContext, conf) {
+  extends PersistentTask[Int](taskContext, conf) {
 
-  override def persistentState: PersistentState[Long] = {
-    import com.twitter.algebird.Monoid.longMonoid
-    new NonWindowState[Long](new AlgebirdMonoid(longMonoid), new ChillSerializer[Long])
+  override def persistentState: PersistentState[Int] = {
+    import com.twitter.algebird.Monoid.intMonoid
+    new NonWindowState[Int](new AlgebirdMonoid(intMonoid), new ChillSerializer[Int])
   }
 
-  override def processMessage(state: PersistentState[Long], message: Message): Unit = {
-    state.update(message.timestamp, 1L)
+  override def processMessage(state: PersistentState[Int], message: Message): Unit = {
+    state.update(message.timestamp, 1)
   }
 }
 

@@ -17,17 +17,17 @@
  */
 package io.gearpump.integrationtest.kafka
 
-import com.twitter.bijection.Injection
+import io.gearpump.streaming.serializer.ChillSerializer
 import kafka.api.FetchRequestBuilder
 import kafka.consumer.SimpleConsumer
 import kafka.utils.Utils
-
 import scala.util.{Failure, Success}
 
 class SimpleKafkaReader(verifier: ResultVerifier, topic: String, partition: Int = 0,
   host: String, port: Int) {
 
   private val consumer = new SimpleConsumer(host, port, 100000, 64 * 1024, "")
+  private val serializer = new ChillSerializer[Int]
   private var offset = 0L
 
   def read(): Unit = {
@@ -36,7 +36,7 @@ class SimpleKafkaReader(verifier: ResultVerifier, topic: String, partition: Int 
     ).messageSet(topic, partition)
 
     for (messageAndOffset <- messageSet) {
-      Injection.invert[String, Array[Byte]](Utils.readBytes(messageAndOffset.message.payload)) match {
+      serializer.deserialize(Utils.readBytes(messageAndOffset.message.payload)) match {
         case Success(msg) =>
           offset = messageAndOffset.nextOffset
           verifier.onNext(msg)
