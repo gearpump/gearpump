@@ -19,31 +19,31 @@ package io.gearpump.streaming.examples.transport
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Props, Actor}
 import akka.actor.Actor._
+import akka.actor.{Actor, Props}
 import akka.io.IO
 import akka.pattern.ask
-import io.gearpump.streaming.{ProcessorId, StreamApplication, ProcessorDescription, DAG}
-import io.gearpump.streaming.appmaster.AppMaster
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
-import QueryServer.{GetAllRecords, WebServer}
 import io.gearpump.partitioner.PartitionerDescription
-import AppMaster.{TaskActorRef, LookupTaskActorRef}
+import io.gearpump.streaming.appmaster.AppMaster
+import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
+import io.gearpump.streaming.examples.transport.QueryServer.{GetAllRecords, WebServer}
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
+import io.gearpump.streaming.{DAG, ProcessorDescription, ProcessorId, StreamApplication}
 import io.gearpump.util.Graph
 import spray.can.Http
 import spray.http.StatusCodes
-import spray.routing.HttpService
-import upickle.default.{read, write}
 import spray.json._
+import spray.routing.HttpService
+import upickle.default.write
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf){
-  import taskContext.{appMaster, appId}
   import system.dispatcher
+  import taskContext.appMaster
 
   var inspector: (ProcessorId, ProcessorDescription) = null
   implicit val timeOut = akka.util.Timeout(3, TimeUnit.SECONDS)

@@ -23,32 +23,28 @@ import java.io.{File, IOException}
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
-import akka.stream.{Materializer, ActorMaterializer}
-import com.typesafe.config.{ConfigRenderOptions, Config}
+import akka.stream.Materializer
+import com.typesafe.config.Config
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
-import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryMasterConfig}
+import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ReadOption}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig, SubmitApplicationResultValue}
-import io.gearpump.cluster.{ClusterConfig, UserConfig}
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.cluster.main.AppSubmitter
 import io.gearpump.cluster.worker.WorkerSummary
+import io.gearpump.cluster.{ClusterConfig, UserConfig}
 import io.gearpump.jarstore.JarStoreService
+import io.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
 import io.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
 import io.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplication}
-import io.gearpump.util.ActorUtil.{askActor, _}
-import io.gearpump.util.Constants._
-import io.gearpump.util.FileDirective._
-import io.gearpump.util.{Graph, Constants, Util, FileUtils}
 import io.gearpump.util.ActorUtil._
-import io.gearpump.services.MasterService.{SubmitApplicationRequest, BuiltinPartitioners}
+import io.gearpump.util.FileDirective._
+import io.gearpump.util.{Constants, Graph, Util}
 
 import scala.collection.JavaConversions._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class MasterService(val master: ActorRef,
     val jarStore: JarStoreService, override val system: ActorSystem)

@@ -21,7 +21,14 @@ package io.gearpump.partitioner
 import io.gearpump.Message
 
 class BroadcastPartitioner extends MulticastPartitioner {
-  override def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): List[Int] = {
-    (0 until partitionNum).toList
+  private var lastPartitionNum = -1
+  private var partitions = Array.empty[Int]
+
+  override def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): Array[Int] = {
+    if (partitionNum != lastPartitionNum) {
+      partitions = (0 until partitionNum).toArray
+      lastPartitionNum = partitionNum
+    }
+    partitions
   }
 }

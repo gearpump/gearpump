@@ -43,8 +43,8 @@ class StormOutputCollectorSpec extends PropSpec with PropertyChecks with Matcher
       (timestamp: TimeStamp, streamId: String, values: JList[AnyRef]) =>
         val targets = mock[JMap[String, JMap[String, Grouping]]]
         val taskToComponent = mock[JMap[Integer, String]]
-        val getTargetPartitionsFn = mock[(String, JList[AnyRef]) => (Map[String, List[Int]], JList[Integer])]
-        val targetPartitions = mock[Map[String, List[Int]]]
+        val getTargetPartitionsFn = mock[(String, JList[AnyRef]) => (Map[String, Array[Int]], JList[Integer])]
+        val targetPartitions = mock[Map[String, Array[Int]]]
         val targetStormTaskIds = mock[JList[Integer]]
         when(getTargetPartitionsFn(streamId, values)).thenReturn((targetPartitions, targetStormTaskIds))
         val taskContext = MockUtil.mockTaskContext
@@ -75,8 +75,8 @@ class StormOutputCollectorSpec extends PropSpec with PropertyChecks with Matcher
         val targets = mock[JMap[String, JMap[String, Grouping]]]
         val taskToComponent = mock[JMap[Integer, String]]
         when(taskToComponent.get(id)).thenReturn(target)
-        val getTargetPartitionsFn = mock[(String, JList[AnyRef]) => (Map[String, List[Int]], JList[Integer])]
-        val targetPartitions = mock[Map[String, List[Int]]]
+        val getTargetPartitionsFn = mock[(String, JList[AnyRef]) => (Map[String, Array[Int]], JList[Integer])]
+        val targetPartitions = mock[Map[String, Array[Int]]]
         val targetStormTaskIds = mock[JList[Integer]]
         when(getTargetPartitionsFn(streamId, values)).thenReturn((targetPartitions, targetStormTaskIds))
         val taskContext = MockUtil.mockTaskContext
@@ -89,7 +89,7 @@ class StormOutputCollectorSpec extends PropSpec with PropertyChecks with Matcher
         when(targets.containsKey(streamId)).thenReturn(true)
         stormOutputCollector.setTimestamp(timestamp)
         stormOutputCollector.emitDirect(id, streamId, values)
-        val partitions = List(StormUtil.stormTaskIdToGearpump(id).index)
+        val partitions = Array(StormUtil.stormTaskIdToGearpump(id).index)
         verify(taskContext, times(1)).output(MockUtil.argMatch[Message]({
           case Message(tuple: GearpumpTuple, t) =>
             val expected = new GearpumpTuple(values, stormTaskId, streamId, Map(target -> partitions))

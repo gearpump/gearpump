@@ -41,9 +41,9 @@ trait UnicastPartitioner extends Partitioner {
 }
 
 trait MulticastPartitioner extends Partitioner {
-  def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): List[Int]
+  def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): Array[Int]
 
-  def getPartitions(msg: Message, partitionNum: Int): List[Int] = {
+  def getPartitions(msg: Message, partitionNum: Int): Array[Int] = {
     getPartitions(msg, partitionNum, Partitioner.UNKNOWN_PARTITION_ID)
   }
 }
