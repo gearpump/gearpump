@@ -20,19 +20,22 @@ package io.gearpump.integrationtest.kafka
 import scala.collection.mutable
 
 trait ResultVerifier {
-  def onNext(msg: String): Unit
+  def onNext(num: Int): Unit
 }
 
 class MessageLossDetector(totalNum: Int) extends ResultVerifier {
   private val bitSets = new mutable.BitSet(totalNum)
 
-  override def onNext(msg: String): Unit = {
-    val num = msg.toInt
+  override def onNext(num: Int): Unit = {
     bitSets.add(num)
   }
 
   def allReceived: Boolean = {
     1.to(totalNum).forall(bitSets)
+  }
+
+  def received(num: Int): Boolean = {
+    bitSets(num)
   }
 
 }

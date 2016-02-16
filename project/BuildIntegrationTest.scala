@@ -34,7 +34,8 @@ object BuildIntegrationTest extends sbt.Build {
         streaming % "test->test; provided",
         services % "test->test; provided",
         external_kafka,
-        storm
+        storm,
+        external_serializer
       )
 
   // integration test for Storm 0.9.x
