@@ -89,6 +89,7 @@ Gearpump has an integration test system which is based on Docker. Please check [
 * [Stanley Xu](https://github.com/stanleyxu2005)
 * [Tomasz Targonski](https://github.com/TomaszT)
 * [Sun Kewei](https://github.com/skw1992)
+* [Gong Yu](https://github.com/pangolulu)
 
 ## Contacts
 
