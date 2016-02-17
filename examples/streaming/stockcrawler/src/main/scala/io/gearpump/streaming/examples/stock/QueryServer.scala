@@ -21,29 +21,29 @@ package io.gearpump.streaming.examples.stock
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Props, Actor}
-import akka.io.IO
-import io.gearpump.streaming.ProcessorId
-import io.gearpump.streaming.appmaster.{ProcessorSummary, StreamAppMasterSummary, AppMaster}
-import AppMaster.{TaskActorRef, LookupTaskActorRef}
 import akka.actor.Actor._
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
+import akka.actor.{Actor, Props}
+import akka.io.IO
+import akka.pattern.ask
 import io.gearpump.Message
 import io.gearpump.cluster.MasterToAppMaster.AppMasterDataDetailRequest
 import io.gearpump.cluster.UserConfig
-import QueryServer.WebServer
-import akka.pattern.ask
+import io.gearpump.streaming.ProcessorId
+import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
+import io.gearpump.streaming.appmaster.{AppMaster, ProcessorSummary, StreamAppMasterSummary}
+import io.gearpump.streaming.examples.stock.QueryServer.WebServer
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 import spray.can.Http
-import spray.http.{StatusCodes}
-import spray.routing.HttpService
-import upickle.default.{read, write}
+import spray.http.StatusCodes
 import spray.json._
+import spray.routing.HttpService
+import upickle.default.write
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf){
-  import taskContext.{appMaster, appId}
+  import taskContext.{appId, appMaster}
 
   import ExecutionContext.Implicits.global
 

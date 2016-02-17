@@ -20,34 +20,26 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
-import io.gearpump.streaming.AppMasterToExecutor.{StartAllTasks, TaskLocationsReceived, StartDynamicDag, TaskLocationsReady, TaskRegistered, LaunchTasks}
-import io.gearpump.streaming.{ProcessorId, DAG, LifeTime, ProcessorDescription}
-import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
-import io.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
-import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAGSuccess, ChangeToNewDAG}
-import io.gearpump.streaming.appmaster.DagManager.{TaskLaunchData, GetLatestDAG, NewDAGDeployed, WatchChange}
-import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorResourceUsageSummary, SetTaskManager, StartExecutorsTimeOut, StartExecutors}
-import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
-import io.gearpump.streaming.task.{StartTime, TaskContext, GetStartClock, Subscriber}
-import io.gearpump.{TimeStamp, Message}
 import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.{AppJar, TestUtil, UserConfig}
 import io.gearpump.jarstore.FilePath
 import io.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
+import io.gearpump.streaming.AppMasterToExecutor.{LaunchTasks, StartAllTasks, StartDynamicDag, TaskLocationsReady, TaskLocationsReceived, TaskRegistered}
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
-import io.gearpump.streaming.appmaster.ExecutorManager._
+import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorResourceUsageSummary, SetTaskManager, StartExecutors, _}
 import io.gearpump.streaming.appmaster.JarScheduler.ResourceRequestDetail
 import io.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
-import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
 import io.gearpump.streaming.executor.Executor.RestartTasks
-import io.gearpump.streaming.task._
+import io.gearpump.streaming.task.{StartTime, TaskContext, _}
+import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, ProcessorId}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
+import io.gearpump.{Message, TimeStamp}
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 

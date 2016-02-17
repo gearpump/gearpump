@@ -66,12 +66,12 @@ object StormOutputCollector {
       targets: JMap[String, JMap[String, Grouping]],
       streamGroupers: Map[String, Grouper],
       componentToProcessorId: Map[String, ProcessorId],
-      values: JList[AnyRef]): (Map[String, List[Int]], JList[Integer]) ={
+      values: JList[AnyRef]): (Map[String, Array[Int]], JList[Integer]) ={
     val ret: JList[Integer] = new JArrayList[Integer](targets.size)
 
     @annotation.tailrec
     def getRecur(iter: JIterator[String],
-        accum: Map[String, List[Int]]): Map[String, List[Int]] = {
+        accum: Map[String, Array[Int]]): Map[String, Array[Int]] = {
       if (iter.hasNext) {
         val target = iter.next
         val grouper = streamGroupers(streamId)
@@ -85,7 +85,7 @@ object StormOutputCollector {
         accum
       }
     }
-    val targetPartitions = getRecur(targets.get(streamId).keySet().iterator, Map.empty[String, List[Int]])
+    val targetPartitions = getRecur(targets.get(streamId).keySet().iterator, Map.empty[String, Array[Int]])
     (targetPartitions, ret)
   }
 
@@ -156,7 +156,7 @@ class StormOutputCollector(
     stormTaskId: Int,
     taskToComponent: JMap[Integer, String],
     targets: JMap[String, JMap[String, Grouping]],
-    getTargetPartitionsFn: (String, JList[AnyRef]) => (Map[String, List[Int]], JList[Integer]),
+    getTargetPartitionsFn: (String, JList[AnyRef]) => (Map[String, Array[Int]], JList[Integer]),
     val taskContext: TaskContext,
     private var timestamp: TimeStamp) {
   import io.gearpump.experiments.storm.util.StormOutputCollector._
@@ -196,7 +196,7 @@ class StormOutputCollector(
     if (targets.containsKey(streamId)) {
       val target = taskToComponent.get(id)
       val partition = stormTaskIdToGearpump(id).index
-      val targetPartitions = Map(target -> List(partition))
+      val targetPartitions = Map(target -> Array(partition))
       val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
       taskContext.output(Message(tuple, timestamp))
     }

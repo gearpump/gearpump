@@ -38,14 +38,14 @@ sealed trait Grouper {
    * @param values storm tuple values
    * @return a list of gearpump partitions
    */
-  def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int]
+  def getPartitions(taskId: Int, values: JList[AnyRef]): Array[Int]
 }
 
 /**
  * GlobalGrouper always returns partition 0
  */
 class GlobalGrouper extends Grouper {
-  override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = List(0)
+  override def getPartitions(taskId: Int, values: JList[AnyRef]): Array[Int] = Array(0)
 }
 
 /**
@@ -55,9 +55,9 @@ class GlobalGrouper extends Grouper {
 class NoneGrouper(numTasks: Int) extends Grouper {
   private val random = new Random
 
-  override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = {
+  override def getPartitions(taskId: Int, values: JList[AnyRef]): Array[Int] = {
     val partition = StormUtil.mod(random.nextInt, numTasks)
-    List(partition)
+    Array(partition)
   }
 }
 
@@ -71,7 +71,7 @@ class ShuffleGrouper(numTasks: Int) extends Grouper {
   private var index = -1
   private var partitions = List.empty[Int]
 
-  override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = {
+  override def getPartitions(taskId: Int, values: JList[AnyRef]): Array[Int] = {
     index += 1
     if (partitions.isEmpty) {
       partitions = 0.until(numTasks).toList
@@ -80,7 +80,7 @@ class ShuffleGrouper(numTasks: Int) extends Grouper {
       index = 0
       partitions = random.shuffle(partitions)
     }
-    List(partitions(index))
+    Array(partitions(index))
   }
 }
 
@@ -92,10 +92,10 @@ class ShuffleGrouper(numTasks: Int) extends Grouper {
  */
 class FieldsGrouper(outFields: Fields, groupFields: Fields, numTasks: Int) extends Grouper {
 
-  override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = {
+  override def getPartitions(taskId: Int, values: JList[AnyRef]): Array[Int] = {
     val hash = outFields.select(groupFields, values).hashCode()
     val partition = StormUtil.mod(hash, numTasks)
-    List(partition)
+    Array(partition)
   }
 }
 
@@ -104,9 +104,10 @@ class FieldsGrouper(outFields: Fields, groupFields: Fields, numTasks: Int) exten
  * @param numTasks number of target tasks
  */
 class AllGrouper(numTasks: Int) extends Grouper {
+  val partitions = (0 until numTasks).toArray
 
-  override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = {
-    (0 until numTasks).toList
+  override def getPartitions(taskId: Int, values: JList[AnyRef]): Array[Int] = {
+    partitions
   }
 }
 
@@ -120,8 +121,8 @@ class CustomGrouper(grouping: CustomStreamGrouping) extends Grouper {
     grouping.prepare(topologyContext, globalStreamId, targetTasks)
   }
 
-  override def getPartitions(taskId: Int, values: JList[AnyRef]): List[Int] = {
-    grouping.chooseTasks(taskId, values).map(StormUtil.stormTaskIdToGearpump(_).index).toList
+  override def getPartitions(taskId: Int, values: JList[AnyRef]): Array[Int] = {
+    grouping.chooseTasks(taskId, values).map(StormUtil.stormTaskIdToGearpump(_).index).toArray
   }
 }
 

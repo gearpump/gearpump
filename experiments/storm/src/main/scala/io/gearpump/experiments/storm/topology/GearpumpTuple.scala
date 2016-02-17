@@ -34,7 +34,7 @@ private[storm] class GearpumpTuple(
     val values: JList[AnyRef],
     val sourceTaskId: Integer,
     val sourceStreamId: String,
-    @transient val targetPartitions: Map[String, List[Int]]) extends Serializable {
+    @transient val targetPartitions: Map[String, Array[Int]]) extends Serializable {
   /**
    * creates a Storm [[Tuple]] to be passed to a Storm component
    * this is needed for each incoming message

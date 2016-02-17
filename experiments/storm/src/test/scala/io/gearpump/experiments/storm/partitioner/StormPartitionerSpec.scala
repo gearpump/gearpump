@@ -32,17 +32,17 @@ class StormPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
   property("StormPartitioner should get partitions directed by message and target") {
     val idGen = Gen.chooseNum[Int](0, Int.MaxValue)
     val componentsGen = Gen.listOf[String](Gen.alphaStr).map(_.distinct).suchThat(_.size > 1)
-    val partitionsGen = Gen.listOf[Int](idGen).suchThat(_.nonEmpty).map(_.distinct.sorted)
+    val partitionsGen = Gen.listOf[Int](idGen).suchThat(_.nonEmpty).map(_.distinct.sorted.toArray)
     val tupleFactoryGen = for {
       values <- Gen.listOf[String](Gen.alphaStr).map(_.asJava.asInstanceOf[JList[AnyRef]])
       sourceTaskId <- idGen
       sourceStreamId <- Gen.alphaStr
-    } yield (targetPartitions: Map[String, List[Int]]) => {
+    } yield (targetPartitions: Map[String, Array[Int]]) => {
         new GearpumpTuple(values, new Integer(sourceTaskId), sourceStreamId, targetPartitions)
       }
 
     forAll(tupleFactoryGen, idGen, componentsGen, partitionsGen) {
-      (tupleFactory: Map[String, List[Int]] => GearpumpTuple, id: Int, components: List[String], partitions: List[Int]) =>
+      (tupleFactory: Map[String, Array[Int]] => GearpumpTuple, id: Int, components: List[String], partitions: Array[Int]) =>
         val currentPartitionId = id
         val targetPartitions = components.init.map(c => (c, partitions)).toMap
         val tuple = tupleFactory(targetPartitions)

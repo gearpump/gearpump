@@ -21,7 +21,7 @@ package io.gearpump.experiments.storm.partitioner
 import io.gearpump.Message
 import io.gearpump.experiments.storm.topology.GearpumpTuple
 import io.gearpump.experiments.storm.util.StormOutputCollector
-import io.gearpump.partitioner.{MulticastPartitioner, Partitioner}
+import io.gearpump.partitioner.{Partitioner, MulticastPartitioner}
 
 /**
  * this is a partitioner bound to a target Storm component
@@ -38,9 +38,9 @@ import io.gearpump.partitioner.{MulticastPartitioner, Partitioner}
  */
 private[storm] class StormPartitioner(target: String) extends MulticastPartitioner {
 
-  override def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): List[Int] = {
+  override def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): Array[Int] = {
     val stormTuple = msg.msg.asInstanceOf[GearpumpTuple]
-    stormTuple.targetPartitions.getOrElse(target, List(Partitioner.UNKNOWN_PARTITION_ID))
+    stormTuple.targetPartitions.getOrElse(target, Array(Partitioner.UNKNOWN_PARTITION_ID))
   }
 }
 
