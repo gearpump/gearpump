@@ -194,7 +194,7 @@ object OpTranslator {
     }
 
     override def onStart(startTime: StartTime): Unit = {
-      source.open(taskContext, Some(startTime.startTime))
+      source.open(taskContext, startTime.startTime)
       self ! Message("start", System.currentTimeMillis())
     }
 

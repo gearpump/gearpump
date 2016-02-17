@@ -142,7 +142,7 @@ class KafkaSource(
     }
   }
 
-  override def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {
+  override def open(context: TaskContext, startTime: Long): Unit = {
     import context.{appId, appName, parallelism, taskId}
 
     val topics = config.getConsumerTopics
@@ -158,12 +158,11 @@ class KafkaSource(
       tp -> new KafkaOffsetManager(storage)
     }.toMap
 
-    setStartTime(startTime)
+    setStartTime(Option(startTime))
   }
 
-  override def read(batchSize: Int): List[Message] = {
-    val messageBuffer = ArrayBuffer.empty[Message]
-
+  override def read(batchSize: Int): Iterator[Message] = {
+    val messageBuffer = new ArrayBuffer[Message](batchSize)
     fetchThread.foreach {
       fetch =>
         var count = 0
@@ -172,7 +171,7 @@ class KafkaSource(
           count += 1
         }
     }
-    messageBuffer.toList
+    messageBuffer.toIterator
   }
 
   private def filterMessage(kafkaMsg: KafkaMessage): Option[Message] = {

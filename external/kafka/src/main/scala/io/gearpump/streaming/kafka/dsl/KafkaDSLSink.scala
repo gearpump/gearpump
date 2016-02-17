@@ -23,21 +23,23 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl
 import io.gearpump.streaming.kafka.KafkaSink
 
+import scala.language.implicitConversions
+
 class KafkaDSLSink[T](stream: dsl.Stream[T]) {
   def writeToKafka(
       topic: String,
       bootstrapServers: String,
-      parallism: Int,
+      parallelism: Int,
       description: String): dsl.Stream[T] = {
-    stream.sink(new KafkaSink(topic, bootstrapServers), parallism, UserConfig.empty, description)
+    stream.sink(new KafkaSink(topic, bootstrapServers), parallelism, UserConfig.empty, description)
   }
 
   def writeToKafka(
       topic: String,
       properties: Properties,
-      parallism: Int,
+      parallelism: Int,
       description: String): dsl.Stream[T] = {
-    stream.sink(new KafkaSink(topic, properties), parallism, UserConfig.empty, description)
+    stream.sink(new KafkaSink(topic, properties), parallelism, UserConfig.empty, description)
   }
 }
 
