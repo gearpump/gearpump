@@ -111,11 +111,11 @@ class CollectionDataSource[T](seq: Seq[T]) extends DataSource {
     }
   }
 
-  override def read(batchSize: Int): List[Message] = {
-    readOne()
+  override def read(batchSize: Int): Iterator[Message] = {
+    readOne().toIterator
   }
 
   override def close(): Unit = {}
 
-  override def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {}
+  override def open(context: TaskContext, startTime: TimeStamp): Unit = {}
 }

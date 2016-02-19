@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,38 +18,28 @@
 
 package io.gearpump.streaming.source
 
+import io.gearpump.Message
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.{TimeStamp, Message}
+import io.gearpump.streaming.javaapi.source.{DataSource => JavaSource}
 
-/**
- * interface to implement custom source where data is read into the system.
- * a DataSource could be a message queue like kafka or simply data generation source.
- *
- * an example would be like
- * {{{
- *  GenStringSource extends DataSource {
- *
- *    def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {}
- *
- *    def read(batchSize: Int): List[Message] = {
- *      List.fill(batchSize)(Message("message"))
- *    }
- *
- *    def close(): Unit = {}
- *  }
- * }}}
- *
- * subclass is required to be serializable
- */
-trait DataSource extends java.io.Serializable {
-
+class JavaDataSource(javaSource: JavaSource) extends DataSource {
   /**
    * open connection to data source
    * invoked in onStart() method of [[io.gearpump.streaming.source.DataSourceTask]]
    * @param context is the task context at runtime
    * @param startTime is the start time of system
    */
-  def open(context: TaskContext, startTime: Long): Unit
+  override def open(context: TaskContext, startTime: Long): Unit = {
+    javaSource.open(context, startTime)
+  }
+
+  /**
+   * close connection to data source.
+   * invoked in onStop() method of [[io.gearpump.streaming.source.DataSourceTask]]
+   */
+  override def close(): Unit = {
+    javaSource.close()
+  }
 
   /**
    * read a number of messages from data source.
@@ -57,11 +47,17 @@ trait DataSource extends java.io.Serializable {
    * @param batchSize max number of messages to read
    * @return an iterator of messages wrapped in [[io.gearpump.Message]]
    */
-  def read(batchSize: Int): Iterator[Message]
+  override def read(batchSize: Int): Iterator[Message] = {
+    new Iterator[Message] {
+      val iterator: java.util.Iterator[Message] = javaSource.read(batchSize)
 
-  /**
-   * close connection to data source.
-   * invoked in onStop() method of [[io.gearpump.streaming.source.DataSourceTask]]
-   */
-  def close(): Unit
+      override def hasNext: Boolean = {
+        iterator.hasNext
+      }
+
+      override def next(): Message = {
+        iterator.next()
+      }
+    }
+  }
 }

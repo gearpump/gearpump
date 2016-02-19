@@ -26,6 +26,7 @@ import io.gearpump.streaming.sink.DataSinkTask;
 import io.gearpump.streaming.source.DataSource;
 import io.gearpump.streaming.source.DataSourceProcessor;
 import io.gearpump.streaming.source.DataSourceTask;
+import io.gearpump.streaming.source.JavaDataSource;
 
 public class Processor<T extends io.gearpump.streaming.task.Task> implements io.gearpump.streaming.Processor<T> {
   private Class<T> _taskClass;
@@ -58,7 +59,7 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
 
   /**
    * Create a Source Processor
-   * @param source    the data source itself
+   * @param source        the data source itself
    * @param parallelism   the parallelism of this processor
    * @param description   the description of this processor
    * @param taskConf      the configuration of this processor
@@ -68,6 +69,50 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
   public static Processor<DataSourceTask> source(DataSource source, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
     io.gearpump.streaming.Processor<DataSourceTask> p = DataSourceProcessor.apply(source, parallelism, description, taskConf, system);
     return new Processor(p);
+  }
+
+  /**
+   * Create a Source Processor
+   * @param source        the data source itself
+   * @param batchSize     maximum number of messages to read
+   * @param parallelism   the parallelism of this processor
+   * @param description   the description of this processor
+   * @param taskConf      the configuration of this processor
+   * @param system        actor system
+   * @return              the new created source processor
+   */
+  public static Processor<DataSourceTask> source(DataSource source, int batchSize, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
+    io.gearpump.streaming.Processor<DataSourceTask> p = DataSourceProcessor.apply(source, batchSize, parallelism, description, taskConf, system);
+    return new Processor(p);
+  }
+
+  /**
+   * Create a Source Processor
+   * @param source        the data source itself
+   * @param parallelism   the parallelism of this processor
+   * @param description   the description of this processor
+   * @param taskConf      the configuration of this processor
+   * @param system        actor system
+   * @return              the new created source processor
+   */
+  public static Processor<DataSourceTask> source(io.gearpump.streaming.javaapi.source.DataSource source,
+      int parallelism, String description, UserConfig taskConf, ActorSystem system) {
+    return source(new JavaDataSource(source), parallelism, description, taskConf, system);
+  }
+
+  /**
+   * Create a Source Processor
+   * @param source        the data source itself
+   * @param batchSize     maximum number of messages to read
+   * @param parallelism   the parallelism of this processor
+   * @param description   the description of this processor
+   * @param taskConf      the configuration of this processor
+   * @param system        actor system
+   * @return              the new created source processor
+   */
+  public static Processor<DataSourceTask> source(io.gearpump.streaming.javaapi.source.DataSource source,
+      int batchSize, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
+    return source(new JavaDataSource(source), batchSize, parallelism, description, taskConf, system);
   }
 
   public Processor(io.gearpump.streaming.Processor<T> processor) {

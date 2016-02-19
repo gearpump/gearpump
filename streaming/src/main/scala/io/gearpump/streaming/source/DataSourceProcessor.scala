@@ -36,11 +36,39 @@ import io.gearpump.cluster.UserConfig
  * }}}
  */
 object DataSourceProcessor {
+  /**
+   * Create a Source Processor
+   * @param dataSource    the data source itself
+   * @param parallelism   the parallelism of this processor
+   * @param description   the description of this processor
+   * @param taskConf      the configuration of this processor
+   * @param system        actor system
+   * @return              the new created source processor
+   */
   def apply(dataSource: DataSource,
             parallelism: Int,
             description: String = "",
             taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem): Processor[DataSourceTask] = {
     Processor[DataSourceTask](parallelism, description = description,
       taskConf.withValue[DataSource](DataSourceTask.DATA_SOURCE, dataSource))
+  }
+
+  /**
+   * Create a Source Processor
+   * @param dataSource    the data source itself
+   * @param batchSize     maximum number of messages to read
+   * @param parallelism   the parallelism of this processor
+   * @param description   the description of this processor
+   * @param taskConf      the configuration of this processor
+   * @param system        actor system
+   * @return              the new created source processor
+   */
+  def apply(dataSource: DataSource,
+            batchSize: Int,
+            parallelism: Int,
+            description: String,
+            taskConf: UserConfig)(implicit system: ActorSystem): Processor[DataSourceTask] = {
+    Processor[DataSourceTask](parallelism, description = description,
+      taskConf.withValue[DataSource](DataSourceTask.DATA_SOURCE, dataSource).withInt(DataSourceTask.BATCH_SIZE, batchSize))
   }
 }

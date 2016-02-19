@@ -24,6 +24,7 @@ import io.gearpump.cluster.UserConfig
 
 object DataSourceTask {
   val DATA_SOURCE = "data_source"
+  val BATCH_SIZE = "batch_size"
 }
 
 /**
@@ -40,13 +41,13 @@ class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(contex
   import DataSourceTask._
 
   private val source = conf.getValue[DataSource](DATA_SOURCE).get
-  private val batchSize = conf.getInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE).getOrElse(1000)
+  private val batchSize = conf.getInt(BATCH_SIZE).getOrElse(1000)
   private var startTime = 0L
 
   override def onStart(newStartTime: StartTime): Unit = {
     startTime = newStartTime.startTime
     LOG.info(s"opening data source at $startTime")
-    source.open(context, Some(startTime))
+    source.open(context, startTime)
     self ! Message("start", System.currentTimeMillis())
   }
 
