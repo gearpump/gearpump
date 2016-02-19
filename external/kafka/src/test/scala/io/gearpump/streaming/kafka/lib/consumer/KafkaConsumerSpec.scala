@@ -16,10 +16,9 @@
  * limitations under the License.
  */
 
-package io.gearpump.streaming.kafka.lib
+package io.gearpump.streaming.kafka.lib.consumer
 
 import com.twitter.bijection.Injection
-import io.gearpump.streaming.kafka.lib.consumer.KafkaConsumer
 import kafka.api.OffsetRequest
 import kafka.common.TopicAndPartition
 import kafka.consumer.SimpleConsumer

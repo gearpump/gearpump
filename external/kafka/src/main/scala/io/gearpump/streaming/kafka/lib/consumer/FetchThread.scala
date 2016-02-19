@@ -34,28 +34,31 @@ object FetchThread {
             fetchSleepMS: Long,
             startOffsetTime: Long,
             consumerConfig: ConsumerConfig): FetchThread = {
-    val consumers: Map[TopicAndPartition, KafkaConsumer] = topicAndPartitions.map {
-      tp =>
-        tp -> KafkaConsumer(tp.topic, tp.partition, startOffsetTime, consumerConfig)
-    }.toMap
+    val createConsumer = (tp: TopicAndPartition) =>
+      KafkaConsumer(tp.topic, tp.partition, startOffsetTime, consumerConfig)
+
     val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
-    new FetchThread(consumers, incomingQueue, fetchThreshold, fetchSleepMS)
+    new FetchThread(topicAndPartitions, createConsumer, incomingQueue, fetchThreshold, fetchSleepMS)
   }
 }
 
 /**
  * A thread to fetch messages from multiple kafka [[TopicAndPartition]]s and puts them
  * onto a queue, which is asynchronously polled by a consumer
- * @param consumers [[KafkaConsumer]]s by kafka [[TopicAndPartition]]s
+ *
+ * @param createConsumer given a [[TopicAndPartition]], create a [[KafkaConsumer]] to connect to it
  * @param incomingQueue a queue to buffer incoming messages
  * @param fetchThreshold above which thread should stop fetching messages
  * @param fetchSleepMS interval to sleep when no more messages or hitting fetchThreshold
  */
-private[kafka] class FetchThread(consumers: Map[TopicAndPartition, KafkaConsumer],
+private[kafka] class FetchThread(topicAndPartitions: Array[TopicAndPartition],
+                                 createConsumer: TopicAndPartition => KafkaConsumer,
                                  incomingQueue: LinkedBlockingQueue[KafkaMessage],
                                  fetchThreshold: Int,
                                  fetchSleepMS: Long) extends Thread {
   import FetchThread._
+
+  private var consumers: Map[TopicAndPartition, KafkaConsumer] = createAllConsumers
 
   def setStartOffset(tp: TopicAndPartition, startOffset: Long): Unit = {
     consumers(tp).setStartOffset(startOffset)
@@ -67,10 +70,29 @@ private[kafka] class FetchThread(consumers: Map[TopicAndPartition, KafkaConsumer
 
   override def run(): Unit = {
     try {
-      while (!Thread.currentThread.isInterrupted) {
-        val hasMoreMessages = fetchMessage
-        if (!hasMoreMessages || incomingQueue.size >= fetchThreshold) {
-          Thread.sleep(fetchSleepMS)
+      var nextOffsets = Map.empty[TopicAndPartition, Long]
+      var reset = false
+      val sleeper = new ExponentialBackoffSleeper(
+        backOffMultiplier = 2.0,
+        initialDurationMs = 100L,
+        maximumDurationMs = 10000L)
+      while (!Thread.currentThread().isInterrupted) {
+        try {
+          if (reset) {
+            nextOffsets = consumers.mapValues(_.getNextOffset)
+            resetConsumers(nextOffsets)
+            reset = false
+          }
+          val hasMoreMessages = fetchMessage
+          sleeper.reset()
+          if (!hasMoreMessages || incomingQueue.size >= fetchThreshold) {
+            Thread.sleep(fetchSleepMS)
+          }
+        } catch {
+          case exception: Exception =>
+            LOG.warn(s"resetting consumers due to $exception")
+            reset = true
+            sleeper.sleep()
         }
       }
     } catch {
@@ -97,6 +119,18 @@ private[kafka] class FetchThread(consumers: Map[TopicAndPartition, KafkaConsumer
       } else {
         true
       }
+    }
+  }
+
+  private def createAllConsumers: Map[TopicAndPartition, KafkaConsumer] = {
+    topicAndPartitions.map(tp => tp -> createConsumer(tp)).toMap
+  }
+
+  private def resetConsumers(nextOffsets: Map[TopicAndPartition, Long]): Unit = {
+    consumers.values.foreach(_.close())
+    consumers = createAllConsumers
+    consumers.foreach { case (tp, consumer) =>
+      consumer.setStartOffset(nextOffsets(tp))
     }
   }
 }

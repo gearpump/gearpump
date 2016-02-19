@@ -92,6 +92,8 @@ class KafkaConsumer(consumer: SimpleConsumer,
     hasNextHelper(iterator, newIterator = false)
   }
 
+  def getNextOffset: Long = nextOffset
+
   def close(): Unit = {
     consumer.close()
   }
