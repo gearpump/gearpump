@@ -333,6 +333,9 @@ object Build extends sbt.Build {
     base = file("experiments/akkastream"),
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
+        libraryDependencies ++= Seq(
+          "org.json4s" %% "json4s-jackson" % "3.2.11"
+        ),
         mainClass in (Compile, packageBin) := Some("akka.stream.gearpump.example.Test")
       )
   ) dependsOn (streaming % "test->test; provided", daemon % "test->test; provided")
