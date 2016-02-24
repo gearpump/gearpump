@@ -46,7 +46,7 @@ object GearpumpStormClient extends AkkaApp with ArgumentsParser {
     val stormOptions = Array(
       s"-Dstorm.options=${getThriftOptions(stormConfig)}",
       s"-Dstorm.jar=$jar",
-      s"-Dstorm.config.file=$stormConfig",
+      s"-Dstorm.conf.file=$stormConfig",
       s"-D${PREFER_IPV4}=true"
     )
 

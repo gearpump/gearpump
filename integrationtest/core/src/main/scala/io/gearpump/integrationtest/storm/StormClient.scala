@@ -18,46 +18,37 @@
 
 package io.gearpump.integrationtest.storm
 
-
 import backtype.storm.utils.{Utils, DRPCClient}
-import io.gearpump.integrationtest.Docker
-import io.gearpump.integrationtest.minicluster.BaseContainer
-import org.apache.log4j.Logger
+import io.gearpump.integrationtest.{Util, Docker}
+import io.gearpump.integrationtest.minicluster.{RestClient, BaseContainer}
 
+class StormClient(masterAddrs: Seq[(String, Int)], restClient: RestClient) {
 
-class StormClient(masterAddrs: Seq[(String, Int)]) {
-
-  private val LOG = Logger.getLogger(getClass)
-  private val STORM_HOST = "storm0"
-  private val STORM_NIMBUS = "/opt/start storm nimbus"
-  private val STORM_APP = "/opt/start storm app"
-  private val STORM_DRPC = "storm-drpc"
-  private val CONFIG_FILE = "storm.yaml"
+  private val CONFIG_FILE = "/opt/gearpump/storm.yaml"
+  private val DRPC_HOST = "storm0"
   private val DRPC_PORT = 3772
   private val DRPC_INVOCATIONS_PORT = 3773
+  private val STORM_DRPC = "storm-drpc"
+  private val NIMBUS_HOST = "storm1"
+  private val STORM_NIMBUS = "storm nimbus"
+  private val STORM_APP = "/opt/start storm app"
 
-  private val container = new BaseContainer(STORM_HOST, STORM_DRPC, masterAddrs,
+  private val drpcContainer = new BaseContainer(DRPC_HOST, STORM_DRPC, masterAddrs,
     tunnelPorts = Set(DRPC_PORT, DRPC_INVOCATIONS_PORT))
+  private val nimbusContainer = new BaseContainer(NIMBUS_HOST, s"$STORM_NIMBUS -output $CONFIG_FILE", masterAddrs)
 
   def start(): Unit = {
-    container.createAndStart()
-    startNimbus
+    drpcContainer.createAndStart()
+    nimbusContainer.createAndStart()
   }
 
-  private def startNimbus: String = {
-    Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_NIMBUS -output $CONFIG_FILE")
-  }
-
-  def submitStormApp(jar: String, mainClass: String, args: String = ""): Int = {
-    try {
-      Docker.execAndCaptureOutput(STORM_HOST, s"$STORM_APP -config $CONFIG_FILE " +
-        s"-jar $jar $mainClass $args").split("\n")
-        .filter(_.contains("The application id is ")).head.split(" ").last.toInt
-    } catch {
-      case ex: Throwable =>
-        LOG.warn(s"swallowed an exception: $ex")
-        -1
-    }
+  def submitStormApp(jar: String, mainClass: String, args: String, appName: String): Int = {
+    Util.retryUntil({
+      Docker.exec(NIMBUS_HOST, s"$STORM_APP -config $CONFIG_FILE " +
+        s"-jar $jar $mainClass $args")
+      restClient.listRunningApps().exists(_.appName == appName)
+    })
+    restClient.listRunningApps().filter(_.appName == appName).head.appId
   }
 
   def getDRPCClient(drpcServerIp: String): DRPCClient = {
@@ -66,7 +57,8 @@ class StormClient(masterAddrs: Seq[(String, Int)]) {
   }
 
   def shutDown(): Unit = {
-    container.killAndRemove()
+    drpcContainer.killAndRemove()
+    nimbusContainer.killAndRemove()
   }
 
 }

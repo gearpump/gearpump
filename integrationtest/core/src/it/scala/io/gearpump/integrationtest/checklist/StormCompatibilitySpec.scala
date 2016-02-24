@@ -26,7 +26,7 @@ import io.gearpump.integrationtest.{TestSpecBase, Util}
   */
 class StormCompatibilitySpec extends TestSpecBase {
 
-  private lazy val stormClient = new StormClient(cluster.getMastersAddresses)
+  private lazy val stormClient = new StormClient(cluster.getMastersAddresses, restClient)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -74,27 +74,33 @@ class StormCompatibilitySpec extends TestSpecBase {
 
   "Storm over Gearpump" should withStorm {
     stormVersion =>
-      s"support basic topologies ($stormVersion)" in {
+     s"support basic topologies ($stormVersion)" in {
         val stormJar = getStormJar(stormVersion)
         val topologyName = getTopologyName("exclamation", stormVersion)
+
         // exercise
-        val appId = stormClient.submitStormApp(stormJar,
-          mainClass = "storm.starter.ExclamationTopology", args = topologyName)
+        val appId = stormClient.submitStormApp(
+          jar = stormJar,
+          mainClass = "storm.starter.ExclamationTopology",
+          args = topologyName,
+          appName = topologyName)
 
         // verify
-        val actual = expectAppIsRunning(appId, topologyName)
-        Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
+        Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
       }
 
       s"support to run a python version of wordcount ($stormVersion)" in {
         val stormJar = getStormJar(stormVersion)
         val topologyName = getTopologyName("wordcount", stormVersion)
+
         // exercise
-        val appId = stormClient.submitStormApp(stormJar,
-          mainClass = "storm.starter.WordCountTopology", args = topologyName)
+        val appId = stormClient.submitStormApp(
+          jar = stormJar,
+          mainClass = "storm.starter.WordCountTopology",
+          args = topologyName,
+          appName = topologyName)
 
         // verify
-        expectAppIsRunning(appId, topologyName)
         Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
       }
 
@@ -104,8 +110,11 @@ class StormCompatibilitySpec extends TestSpecBase {
         // input (user and follower) data are already prepared in memory
         val stormJar = getStormJar(stormVersion)
         val topologyName = getTopologyName("reach", stormVersion)
-        stormClient.submitStormApp(stormJar,
-          mainClass = "storm.starter.ReachTopology", args = topologyName)
+        stormClient.submitStormApp(
+          jar = stormJar,
+          mainClass = "storm.starter.ReachTopology",
+          args = topologyName,
+          appName = topologyName)
         val drpcClient = stormClient.getDRPCClient(cluster.getNetworkGateway)
 
         // verify
@@ -119,13 +128,16 @@ class StormCompatibilitySpec extends TestSpecBase {
       s"support tick tuple ($stormVersion)" in {
         val stormJar = getStormJar(stormVersion)
         val topologyName = getTopologyName("slidingWindowCounts", stormVersion)
+
         // exercise
-        val appId = stormClient.submitStormApp(stormJar,
-          mainClass = "storm.starter.RollingTopWords", args = s"$topologyName remote")
+        val appId = stormClient.submitStormApp(
+          jar = stormJar,
+          mainClass = "storm.starter.RollingTopWords",
+          args = s"$topologyName remote",
+          appName = topologyName)
 
         // verify
-        val actual = expectAppIsRunning(appId, topologyName)
-        Util.retryUntil(restClient.queryStreamingAppDetail(actual.appId).clock > 0)
+        Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
       }
 
       s"support at-least-once semantics with Storm's Kafka connector ($stormVersion)" in {
@@ -142,8 +154,6 @@ class StormCompatibilitySpec extends TestSpecBase {
             val brokerList = kafkaCluster.getBrokerListConnectString
             val sourceTopic = "topic1"
             val sinkTopic = "topic2"
-            val appsCount = restClient.listApps().length
-            val appId = appsCount + 1
 
             val args = Array("-topologyName", topologyName, "-sourceTopic", sourceTopic,
               "-sinkTopic", sinkTopic, "-zookeeperConnect", zookeeper, "-brokerList", brokerList,
@@ -155,11 +165,12 @@ class StormCompatibilitySpec extends TestSpecBase {
             // generate number sequence (1, 2, 3, ...) to the topic
             withDataProducer(sourceTopic, brokerList) { producer =>
 
-              stormClient.submitStormApp(stormJar,
+              val appId = stormClient.submitStormApp(
+                jar = stormJar,
                 mainClass = stormKafkaTopology,
-                args = args.mkString(" "))
+                args = args.mkString(" "),
+                appName = topologyName)
 
-              expectAppIsRunning(appId, topologyName)
               Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
 
               // kill executor and verify at-least-once is guaranteed on application restart
