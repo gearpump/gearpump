@@ -21,13 +21,14 @@ package akka.stream.gearpump.example
 import java.io.{File, FileInputStream}
 import java.util.zip.GZIPInputStream
 
+import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.gearpump.{GearAttributes, GearpumpMaterializer}
 import akka.stream.gearpump.graph.GraphCutter
-import akka.stream.io.{Framing, InputStreamSource}
+import akka.stream.gearpump.{GearAttributes, GearpumpMaterializer}
 import akka.stream.scaladsl._
+import akka.stream.{ClosedShape, IOResult}
 import akka.util.ByteString
-import io.gearpump.cluster.main.{CLIOption, ArgumentsParser}
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.util.AkkaApp
 import org.json4s.JsonAST.JString
 
@@ -64,15 +65,17 @@ object WikipediaApp extends ArgumentsParser with AkkaApp {
 
     val elements = source(input).via(parseJson(langs))
 
-    val g = FlowGraph.closed(count) { implicit b =>
-      sinkCount => {
-        import FlowGraph.Implicits._
-
-        val broadcast = b.add(Broadcast[WikidataElement](2))
-        elements ~> broadcast ~> logEveryNSink(1000)
-                    broadcast ~> checkSameTitles(langs.toSet) ~> sinkCount
+    val g = RunnableGraph.fromGraph(
+      GraphDSL.create(count) { implicit b =>
+        sinkCount => {
+          import GraphDSL.Implicits._
+          val broadcast = b.add(Broadcast[WikidataElement](2))
+          elements ~> broadcast ~> logEveryNSink(1000)
+          broadcast ~> checkSameTitles(langs.toSet) ~> sinkCount
+          ClosedShape
+        }
       }
-    }
+    )
 
     g.run().onComplete { x =>
       x match {
@@ -84,24 +87,25 @@ object WikipediaApp extends ArgumentsParser with AkkaApp {
     system.awaitTermination()
   }
 
-  def source(file: File): Source[String, Future[Long]] = {
+  def source(file: File): Source[String, Future[IOResult]] = {
     val compressed = new GZIPInputStream(new FileInputStream(file), 65536)
-    InputStreamSource(() => compressed)
+    StreamConverters.fromInputStream(() => compressed)
       .via(Framing.delimiter(ByteString("\n"), Int.MaxValue))
       .map(x => x.decodeString("utf-8"))
   }
 
-  def parseJson(langs: Seq[String])(implicit ec: ExecutionContext): Flow[String, WikidataElement, Unit] =
-    Flow[String].mapAsyncUnordered(8)(line => Future(parseItem(langs, line))).collect {
+  def parseJson(langs: Seq[String])(implicit ec: ExecutionContext): Flow[String, WikidataElement, NotUsed] =
+    Flow[String].mapAsyncUnordered(8)(line => Future(parseItem(langs, line))).collect({
       case Some(v) => v
-    }
+    })
 
   def parseItem(langs: Seq[String], line: String): Option[WikidataElement] = {
     import org.json4s.jackson.JsonMethods
     Try(JsonMethods.parse(line)).toOption.flatMap { json =>
       json \ "id" match {
         case JString(itemId) =>
-          val sites = for {
+
+          val sites:Seq[(String,String)] = for {
             lang <- langs
             JString(title) <- json \ "sitelinks" \ s"${lang}wiki" \ "title"
           } yield lang -> title
@@ -120,7 +124,7 @@ object WikipediaApp extends ArgumentsParser with AkkaApp {
     x + 1
   }
 
-  def checkSameTitles(langs: Set[String]): Flow[WikidataElement, Boolean, Unit] = Flow[WikidataElement]
+  def checkSameTitles(langs: Set[String]): Flow[WikidataElement, Boolean, NotUsed] = Flow[WikidataElement]
     .filter(_.sites.keySet == langs)
     .map { x =>
       val titles = x.sites.values

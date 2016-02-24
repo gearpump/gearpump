@@ -19,16 +19,15 @@
 package akka.stream.gearpump.graph
 
 import akka.actor.ActorSystem
-import akka.stream.ModuleGraph.Edge
+import akka.stream.gearpump.GearpumpMaterializer.Edge
 import akka.stream.gearpump.materializer.RemoteMaterializerImpl
 import akka.stream.gearpump.module.{SinkBridgeModule, SourceBridgeModule}
 import akka.stream.gearpump.task.SinkBridgeTask.SinkBridgeTaskClient
 import akka.stream.gearpump.task.SourceBridgeTask.SourceBridgeTaskClient
 import akka.stream.impl.StreamLayout.Module
-import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.cluster.embedded.{EmbeddedCluster}
-import io.gearpump.streaming.{StreamApplication, ProcessorId}
+import io.gearpump.cluster.embedded.EmbeddedCluster
+import io.gearpump.streaming.ProcessorId
 import io.gearpump.util.Graph
 
 /**
@@ -36,7 +35,7 @@ import io.gearpump.util.Graph
  * [[RemoteGraph]] is a [[SubGraph]] of the application DSL Graph, which only
  *  contain modules that can be materialized in remote Gearpump cluster.
  *
- * @param graph
+ * @param graph Graph
  */
 class RemoteGraph(override val graph: Graph[Module, Edge]) extends SubGraph
 

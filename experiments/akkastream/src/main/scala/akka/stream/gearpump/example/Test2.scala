@@ -19,11 +19,10 @@
 package akka.stream.gearpump.example
 
 import akka.actor.{Actor, ActorSystem, Props}
-import akka.stream.ActorMaterializer
 import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.scaladsl.{GearSink, GearSource}
-import akka.stream.scaladsl.{Flow, FlowGraph, Sink, Source}
-import io.gearpump.cluster.ClusterConfig
+import akka.stream.scaladsl._
+import akka.stream.{ActorMaterializer, ClosedShape}
 
 /**
   *
@@ -51,12 +50,14 @@ object Test2 {
     val externalSource = Source(List("red hat", "yellow sweater", "blue jack", "red apple", "green plant", "blue sky"))
     val externalSink = Sink.actorRef(echo, "COMPLETE")
 
-    val graph = FlowGraph.closed() { implicit b =>
-      import FlowGraph.Implicits._
-      externalSource ~> Sink(entry)
-      Source(exit) ~> externalSink
-    }
-    graph.run()(actorMaterializer)
+    RunnableGraph.fromGraph(
+      GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
+        externalSource ~> Sink.fromSubscriber(entry)
+        Source.fromPublisher(exit) ~> externalSink
+        ClosedShape
+      }
+    )
 
     system.awaitTermination()
   }

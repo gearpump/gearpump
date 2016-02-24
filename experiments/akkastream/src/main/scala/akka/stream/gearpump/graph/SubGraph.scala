@@ -19,7 +19,7 @@
 package akka.stream.gearpump.graph
 
 import akka.actor.ActorSystem
-import akka.stream.ModuleGraph.Edge
+import akka.stream.gearpump.GearpumpMaterializer.Edge
 import akka.stream.impl.StreamLayout.Module
 import io.gearpump.util.Graph
 

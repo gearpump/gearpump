@@ -19,13 +19,15 @@
 package akka.stream.gearpump.example
 
 import akka.actor.{Actor, ActorSystem, Props}
+import akka.stream.ClosedShape
 import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.graph.GraphCutter
-import akka.stream.scaladsl.{Unzip, Source, FlowGraph, Sink}
-import io.gearpump.cluster.ClusterConfig
+import akka.stream.scaladsl._
+
+import scala.util.{Failure, Success}
 
 /**
- test fanout
+  * test fanout
  */
 object Test5 {
 
@@ -41,20 +43,22 @@ object Test5 {
 
     val source = Source(List(("male", "24"), ("female", "23")))
 
-    val graph = FlowGraph.closed() { implicit b =>
-      import FlowGraph.Implicits._
-      val unzip = b.add(Unzip[String, String]())
+    val g = RunnableGraph.fromGraph(
+      GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
+        val unzip = b.add(Unzip[String, String]())
 
-      val sink1 = Sink.actorRef(echo, "COMPLETE")
-      val sink2 = Sink.actorRef(echo, "COMPLETE")
+        val sink1 = Sink.actorRef(echo, "COMPLETE")
+        val sink2 = Sink.actorRef(echo, "COMPLETE")
 
-      source ~> unzip.in
-      unzip.out0 ~> sink1
-      unzip.out1 ~> sink1
-    }
-
-    graph.run()
-
+        source ~> unzip.in
+        unzip.out0 ~> sink1
+        unzip.out1 ~> sink1
+        ClosedShape
+      }
+    )
+    g.run()
+    system.shutdown()
     system.awaitTermination()
   }
 
