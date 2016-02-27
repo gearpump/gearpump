@@ -16,13 +16,11 @@
  * limitations under the License.
  */
 
-package io.gearpump.streaming.kafka.lib
+package io.gearpump.streaming.kafka.lib.consumer
 
 import java.util.concurrent.LinkedBlockingQueue
 
-import io.gearpump.streaming.kafka.lib.consumer.{FetchThread, KafkaMessage, KafkaConsumer}
 import kafka.common.TopicAndPartition
-import io.gearpump.streaming.kafka.lib.consumer.KafkaConsumer
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
@@ -39,8 +37,9 @@ class FetchThreadSpec extends PropSpec with PropertyChecks with Matchers with Mo
       (fetchThreshold: Int, fetchSleepMS: Int, startOffset: Long) =>
       val topicAndPartition = mock[TopicAndPartition]
       val consumer = mock[KafkaConsumer]
+      val createConsumer =  (tp: TopicAndPartition) => consumer
       val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
-      val fetchThread = new FetchThread(Map(topicAndPartition -> consumer),
+      val fetchThread = new FetchThread(Array(topicAndPartition), createConsumer,
         incomingQueue, fetchThreshold, fetchSleepMS)
       fetchThread.setStartOffset(topicAndPartition, startOffset)
       verify(consumer).setStartOffset(startOffset)
@@ -57,11 +56,11 @@ class FetchThreadSpec extends PropSpec with PropertyChecks with Matchers with Mo
        startOffset: Long, topicAndPartition: TopicAndPartition) =>
         val message = mock[KafkaMessage]
         val consumer = mock[KafkaConsumer]
+        val createConsumer = (tp: TopicAndPartition) => consumer
         when(consumer.hasNext).thenReturn(true)
         when(consumer.next).thenReturn(message)
         val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
-        val fetchThread = new FetchThread(
-          Map(topicAndPartition -> consumer),
+        val fetchThread = new FetchThread(Array(topicAndPartition), createConsumer,
           incomingQueue, fetchThreshold, fetchSleepMS)
 
         0.until(messageNum) foreach { _ =>
@@ -75,10 +74,11 @@ class FetchThreadSpec extends PropSpec with PropertyChecks with Matchers with Mo
   property("FetchThread poll should try to retrieve and remove the head of incoming queue") {
     val topicAndPartition = mock[TopicAndPartition]
     val consumer = mock[KafkaConsumer]
+    val createConsumer = (tp: TopicAndPartition) => consumer
     val kafkaMsg = mock[KafkaMessage]
     val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
     incomingQueue.put(kafkaMsg)
-    val fetchThread = new FetchThread(Map(topicAndPartition -> consumer), incomingQueue, 0, 0)
+    val fetchThread = new FetchThread(Array(topicAndPartition), createConsumer, incomingQueue, 0, 0)
     fetchThread.poll shouldBe Some(kafkaMsg)
     fetchThread.poll shouldBe None
   }
@@ -87,22 +87,22 @@ class FetchThreadSpec extends PropSpec with PropertyChecks with Matchers with Mo
     tp <- topicAndPartitionGen
     hasNext <- Gen.oneOf(true, false)
   } yield (tp, hasNext)
-  val tpAndHasNextListGen = Gen.listOf[(TopicAndPartition, Boolean)](tpAndHasNextGen) suchThat (_.size > 0)
+  val tpHasNextMapGen = Gen.listOf[(TopicAndPartition, Boolean)](tpAndHasNextGen).map(_.toMap) suchThat (_.nonEmpty)
   property("FetchThread fetchMessage should return false when there are no more messages from any TopicAndPartition") {
-    forAll(tpAndHasNextListGen, nonNegativeGen) {
-      (tps: List[(TopicAndPartition, Boolean)], fetchSleepMS: Int) =>
-      val tpAndIterators = tps.map { case (tp, hasNext) =>
+    forAll(tpHasNextMapGen, nonNegativeGen) {
+      (tpHasNextMap: Map[TopicAndPartition, Boolean], fetchSleepMS: Int) =>
+        val createConsumer = (tp: TopicAndPartition) => {
           val consumer = mock[KafkaConsumer]
           val kafkaMsg = mock[KafkaMessage]
+          val hasNext = tpHasNextMap(tp)
           when(consumer.hasNext).thenReturn(hasNext)
           when(consumer.next).thenReturn(kafkaMsg)
-          tp -> consumer
-      }.toMap
-
-      val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
-      val fetchThread = new FetchThread(
-        tpAndIterators, incomingQueue, tpAndIterators.size + 1, fetchSleepMS)
-      fetchThread.fetchMessage shouldBe tps.map(_._2).reduce(_ || _)
+          consumer
+        }
+        val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
+        val fetchThread = new FetchThread(tpHasNextMap.keys.toArray,
+          createConsumer, incomingQueue, tpHasNextMap.size + 1, fetchSleepMS)
+        fetchThread.fetchMessage shouldBe tpHasNextMap.values.reduce(_ || _)
     }
   }
 }
