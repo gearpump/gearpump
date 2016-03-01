@@ -18,6 +18,9 @@
 
 package io.gearpump.streaming.kafka.util
 
+import java.util.Properties
+
+import kafka.admin.AdminUtils
 import kafka.common.KafkaException
 import kafka.server.{KafkaConfig => KafkaServerConfig, KafkaServer}
 import kafka.utils.{Utils, TestUtils}
@@ -44,10 +47,16 @@ trait KafkaServerHarness extends ZookeeperHarness {
     super.tearDown
   }
 
-  def createTopicUntilLeaderIsElected(topic: String, partitions: Int, replicas: Int) = {
+  def createTopicUntilLeaderIsElected(topic: String, partitions: Int, replicas: Int, timeout: Long = 10000) = {
     val zkClient = connectZk()
     try {
-      TestUtils.createTopic(zkClient, topic, partitions, replicas, servers)
+      // create topic
+      AdminUtils.createTopic(zkClient, topic, partitions, replicas, new Properties)
+      // wait until the update metadata request for new topic reaches all servers
+      (0 until partitions).map { case i =>
+        TestUtils.waitUntilMetadataIsPropagated(servers, topic, i, timeout)
+        i -> TestUtils.waitUntilLeaderIsElectedOrChanged(zkClient, topic, i, timeout)
+      }.toMap
     } catch {
       case e: Exception => throw e
     } finally {
