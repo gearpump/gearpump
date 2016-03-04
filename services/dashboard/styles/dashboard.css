@@ -120,6 +120,11 @@ h4, table > caption {
   color: #fff !important;
 }
 
+/* Add extra margin to heading text */
+.btn-group-after-heading {
+  margin-left: 16px;
+}
+
 /* Small badge for version label */
 .navbar-brand > span {
   font-size: .6em;

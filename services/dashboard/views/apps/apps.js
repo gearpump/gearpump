@@ -22,8 +22,8 @@ angular.module('dashboard')
         });
     }])
 
-  .controller('AppsCtrl', ['$scope', '$modal', '$state', '$sortableTableBuilder', 'apps0',
-    function($scope, $modal, $state, $stb, apps0) {
+  .controller('AppsCtrl', ['$scope', '$modal', '$state', '$sortableTableBuilder', '$dialogs', 'apps0',
+    function($scope, $modal, $state, $stb, $dialogs, apps0) {
       'use strict';
 
       var submitWindow = $modal({
@@ -91,13 +91,17 @@ angular.module('dashboard')
               kill: {
                 text: 'Kill', class: 'btn-xs', disabled: !app.isRunning,
                 click: function() {
-                  app.terminate();
+                  $dialogs.confirm('Are you sure to kill this application?', function() {
+                    app.terminate();
+                  });
                 }
               },
               restart: {
                 text: 'Restart', class: 'btn-xs', disabled: !app.isRunning,
                 click: function() {
-                  app.restart();
+                  $dialogs.confirm('Are you sure to restart this application?', function() {
+                    app.restart();
+                  });
                 }
               }
             };

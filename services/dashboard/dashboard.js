@@ -61,6 +61,14 @@
     });
   }])
 
+  // configure dashing
+  .config(['dashing.i18n', function(i18n) {
+    'use strict';
+
+    i18n.confirmationYesButtonText = 'OK';
+    i18n.confirmationNoButtonText = 'Cancel';
+  }])
+
   // disable logging for production
   .config(['$compileProvider', function($compileProvider) {
     'use strict';

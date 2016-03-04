@@ -279,7 +279,7 @@ object Build extends sbt.Build {
       "com.lihaoyi" %% "upickle" % upickleVersion,
       "com.softwaremill" %% "akka-http-session" % "0.1.4",
       "org.webjars" % "angularjs" % "1.4.9",
-      "org.webjars.npm" % "angular-touch" % "1.5.0-rc.2", // angular 1.5 breaks ui-select, but we need ng-touch 1.5
+      "org.webjars.npm" % "angular-touch" % "1.5.0", // angular 1.5 breaks ui-select, but we need ng-touch 1.5
       "org.webjars" % "angular-ui-router" % "0.2.15",
       "org.webjars" % "bootstrap" % "3.3.6",
       "org.webjars" % "d3js" % "3.5.6",
@@ -298,7 +298,7 @@ object Build extends sbt.Build {
       "org.webjars.bower" % "vis" % "4.7.0",
       "org.webjars.bower" % "clipboard.js" % "0.1.1",
       "org.webjars.npm" % "dashing-deps" % "0.1.2",
-      "org.webjars.npm" % "dashing" % "0.4.5"
+      "org.webjars.npm" % "dashing" % "0.4.6"
   ).map(_.exclude("org.scalamacros", "quasiquotes_2.10")).map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
 
   lazy val serviceJSSettings = Seq(
