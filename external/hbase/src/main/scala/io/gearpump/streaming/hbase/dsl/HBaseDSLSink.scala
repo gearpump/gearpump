@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.external.hbase.dsl
+package io.gearpump.streaming.hbase.dsl
 
+import io.gearpump.streaming.hbase.HBaseSink
 import org.apache.hadoop.conf.Configuration
 import io.gearpump.cluster.UserConfig
-import io.gearpump.external.hbase.HBaseSink
 import io.gearpump.streaming.dsl.Stream
 import Stream.Sink
 
