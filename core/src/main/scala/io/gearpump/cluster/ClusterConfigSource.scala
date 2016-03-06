@@ -48,8 +48,6 @@ object ClusterConfigSource {
         config = ConfigFactory.parseResourcesAnySyntax(filePath,
           ConfigParseOptions.defaults.setAllowMissing(true))
       }
-      config
-
       new ClusterConfigSourceImpl(config)
     }
   }
