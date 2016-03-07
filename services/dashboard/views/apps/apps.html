@@ -4,10 +4,11 @@
     <div class="col-md-6 col-sm-6">
       <span class="table-caption-ext pull-left">Applications</span>
       <!-- dropdown button -->
-      <div class="btn-group">
-        <span class="btn btn-xs btn-primary dropdown-toggle pull-left" data-toggle="dropdown"
-              style="margin-left: 6px; color: white"
-              bs-dropdown="composeMenuOptions" html="true">Create
+      <div class="btn-group btn-group-after-heading">
+        <span class="btn btn-xs btn-default dropdown-toggle pull-left" data-toggle="dropdown"
+              bs-dropdown="composeMenuOptions" html="true">
+          <span class="fa fa-plus"></span>
+          Add
           <span class="caret"></span>
         </span>
       </div>
@@ -16,7 +17,9 @@
        <!--FILTER-->
     </div>
     <div class="col-md-3 hidden-sm hidden-xs">
-      <searchbox ng-model="search" placeholder="Search Anything"></searchbox>
+      <searchbox
+        ng-show="appsTable.rows && appsTable.rows.length > 0"
+        ng-model="search" placeholder="Search Applications"></searchbox>
     </div>
   </div>
   <!-- end of control toolbar -->
