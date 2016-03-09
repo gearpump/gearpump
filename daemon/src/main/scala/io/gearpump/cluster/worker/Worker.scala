@@ -25,7 +25,7 @@ import java.util.concurrent.{Executors, TimeUnit}
 
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ConfigValueFactory, Config, ConfigFactory}
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
@@ -48,6 +48,7 @@ import org.slf4j.Logger
 
 import scala.concurrent.{Future, Promise, ExecutionContext}
 import scala.concurrent.duration._
+import java.net.{URL, URLClassLoader}
 import scala.util.{Try, Success, Failure}
 
 /**
@@ -339,10 +340,15 @@ private[cluster] object Worker {
       if (executorConfig.getBoolean(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS)) {
         new ExecutorHandler {
           val exitPromise = Promise[Int]()
-          val app = context.actorOf(Props(new InJvmExecutor(launch, exitPromise)))
+          val config = executorConfig.
+            withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(Util.findFreePort.get))
+          val system = ActorSystem("Embedded" + ctx.hashCode().toString, config, classLoaderWithAppJar(ctx))
+          val app = system.actorOf(Props(new InJvmExecutor(launch, exitPromise)))
 
           override def destroy = {
-            context.stop(app)
+            system.stop(app)
+            system.shutdown()
+            system.awaitTermination()
           }
           override def exitValue : Future[Int] = {
             exitPromise.future
@@ -351,6 +357,16 @@ private[cluster] object Worker {
       } else {
         createProcess(ctx)
       }
+    }
+
+    private def classLoaderWithAppJar(ctx: ExecutorJVMConfig): ClassLoader = {
+      val jarPath = ctx.jar.map { appJar =>
+        val tempFile = File.createTempFile(appJar.name, ".jar")
+        jarStoreService.copyToLocalFile(tempFile, appJar.filePath)
+        new URL("file:" + tempFile)
+      }
+      val urls = if(jarPath.nonEmpty) Array(jarPath.get) else Array.empty[URL]
+      new URLClassLoader(urls, Thread.currentThread().getContextClassLoader())
     }
 
     private def createProcess(ctx: ExecutorJVMConfig): ExecutorHandler = {
