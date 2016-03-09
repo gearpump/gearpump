@@ -26,6 +26,7 @@ object TaskUtil {
    * @return resolved class
    */
   def loadClass(className: String): Class[_<:Task] = {
-    Class.forName(className).asSubclass(classOf[Task])
+    val loader = Thread.currentThread().getContextClassLoader()
+    loader.loadClass(className).asSubclass(classOf[Task])
   }
 }

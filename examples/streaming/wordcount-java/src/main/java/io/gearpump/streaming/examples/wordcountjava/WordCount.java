@@ -22,7 +22,7 @@ import com.typesafe.config.Config;
 import io.gearpump.cluster.ClusterConfig;
 import io.gearpump.cluster.UserConfig;
 import io.gearpump.cluster.client.ClientContext;
-import io.gearpump.cluster.local.LocalCluster;
+import io.gearpump.cluster.embedded.EmbeddedCluster;
 import io.gearpump.partitioner.HashPartitioner;
 import io.gearpump.partitioner.Partitioner;
 import io.gearpump.streaming.javaapi.Graph;
@@ -31,11 +31,11 @@ import io.gearpump.streaming.javaapi.StreamApplication;
 
 public class WordCount {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InterruptedException {
     main(ClusterConfig.defaultConfig(), args);
   }
 
-  public static void main(Config akkaConf, String[] args) {
+  public static void main(Config akkaConf, String[] args) throws InterruptedException {
 
     // For split task, we config to create two tasks
     int splitTaskNumber = 2;
@@ -58,9 +58,12 @@ public class WordCount {
     StreamApplication app = new StreamApplication("wordcountJava", conf, graph);
 
 
-    LocalCluster localCluster = null;
-    if (System.getProperty("DEBUG") != null) {
-      localCluster = new LocalCluster(akkaConf);
+    EmbeddedCluster localCluster = null;
+
+    Boolean debugMode = System.getProperty("DEBUG") != null;
+
+    if (debugMode) {
+      localCluster = new EmbeddedCluster(akkaConf);
       localCluster.start();
     }
 
@@ -75,6 +78,11 @@ public class WordCount {
     }
 
     masterClient.submit(app);
+
+    if (debugMode) {
+      Thread.sleep(30 * 1000); // sleep for 30 seconds.
+    }
+
     masterClient.close();
 
     if (localCluster != null) {

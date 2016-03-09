@@ -29,7 +29,7 @@ object Constants {
   val MASTER_CONFIG = "gearpump-master"
   val WORKER_CONFIG = "gearpump-worker"
   val UI_CONFIG = "gearpump-ui"
-  val WINDOWS_CONFIG = "gearpump-windows"
+  val LINUX_CONFIG = "gearpump-linux" // linux or Mac
 
   val MASTER = "master"
   val WORKER = "worker"

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.gearpump.cluster.local
+package io.gearpump.cluster.embedded
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.{ConfigValueFactory, Config}
@@ -32,7 +32,7 @@ import scala.collection.JavaConverters._
 /**
  * Create a in-process cluster with single worker
  */
-class LocalCluster(inputConfig: Config) {
+class EmbeddedCluster(inputConfig: Config) {
 
   private val workerCount: Int = 1
   private var _master: ActorRef = null
@@ -66,7 +66,8 @@ class LocalCluster(inputConfig: Config) {
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
       withValue(GEARPUMP_CLUSTER_MASTERS, ConfigValueFactory.fromIterable(List(s"127.0.0.1:$port").asJava)).
       withValue(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS, ConfigValueFactory.fromAnyRef(true)).
-      withValue(GEARPUMP_METRIC_ENABLED, ConfigValueFactory.fromAnyRef(true))
+      withValue(GEARPUMP_METRIC_ENABLED, ConfigValueFactory.fromAnyRef(true)).
+      withValue("akka.actor.provider", ConfigValueFactory.fromAnyRef("akka.cluster.ClusterActorRefProvider"))
     config
   }
 
@@ -81,8 +82,8 @@ class LocalCluster(inputConfig: Config) {
   }
 }
 
-object LocalCluster{
-  def apply(): LocalCluster = {
-    new LocalCluster(ClusterConfig.master())
+object EmbeddedCluster{
+  def apply(): EmbeddedCluster = {
+    new EmbeddedCluster(ClusterConfig.master())
   }
 }

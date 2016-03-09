@@ -27,7 +27,7 @@ import akka.stream.gearpump.task.SourceBridgeTask.SourceBridgeTaskClient
 import akka.stream.impl.StreamLayout.Module
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.cluster.local.LocalCluster
+import io.gearpump.cluster.embedded.{EmbeddedCluster}
 import io.gearpump.streaming.{StreamApplication, ProcessorId}
 import io.gearpump.util.Graph
 
@@ -49,7 +49,7 @@ object RemoteGraph {
    */
   class RemoteGraphMaterializer(useInProcessCluster: Boolean, system: ActorSystem) extends SubGraphMaterializer {
     private val local = if (useInProcessCluster) {
-      val cluster = LocalCluster()
+      val cluster = EmbeddedCluster()
       cluster.start
       Some(cluster)
     } else {

@@ -18,7 +18,7 @@
 
 package io.gearpump.streaming.examples.wordcount
 
-import io.gearpump.cluster.local.LocalCluster
+import io.gearpump.cluster.embedded.{EmbeddedCluster}
 import io.gearpump.streaming.{StreamApplication, Processor}
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
@@ -34,8 +34,10 @@ object WordCount extends AkkaApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(1)),
-    "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1))
-    )
+    "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1)),
+    "debug" -> CLIOption[Boolean]("<true|false>", required = false, defaultValue = Some(false)),
+    "sleep" -> CLIOption[Int]("how many seconds to sleep for debug mode", required = false, defaultValue = Some(30))
+   )
 
   def application(config: ParseResult) : StreamApplication = {
     val splitNum = config.getInt("split")
@@ -51,8 +53,11 @@ object WordCount extends AkkaApp with ArgumentsParser {
   override def main(akkaConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
 
-    val localCluster = if (System.getProperty("DEBUG") != null) {
-      val cluster = new LocalCluster(akkaConf: Config)
+    val debugMode = config.getBoolean("debug")
+    val sleepSeconds = config.getInt("sleep")
+
+    val localCluster = if (debugMode) {
+      val cluster = new EmbeddedCluster(akkaConf: Config)
       cluster.start
       Some(cluster)
     } else {
@@ -66,6 +71,11 @@ object WordCount extends AkkaApp with ArgumentsParser {
 
     val app = application(config)
     context.submit(app)
+
+    if (debugMode) {
+      Thread.sleep(sleepSeconds * 1000) // sleep for 30 seconds for debugging.
+    }
+
     context.close()
     localCluster.map(_.stop)
   }

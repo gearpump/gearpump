@@ -86,6 +86,14 @@ class CommandLineSpec extends TestSpecBase {
       success shouldBe false
     }
 
+    "the EmbededCluster can be used as embedded cluster in process" in {
+      // setup
+      val args = "-debug true -sleep 10"
+      val appId = expectSubmitAppSuccess(wordCountJar, args)
+      var success = commandLineClient.killApp(appId)
+      success shouldBe true
+    }
+
     "should fail when attempting to kill a non-exist application" in {
       // setup
       val freeAppId = getNextAvailableAppId
@@ -110,7 +118,7 @@ class CommandLineSpec extends TestSpecBase {
     commandLineClient.listApps().length + 1
   }
 
-  private def expectSubmitAppSuccess(jar: String): Int = {
+  private def expectSubmitAppSuccess(jar: String, args: String = ""): Int = {
     val appId = commandLineClient.submitApp(jar)
     appId should not equal -1
     appId
