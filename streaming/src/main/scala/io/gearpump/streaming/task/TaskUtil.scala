@@ -19,13 +19,13 @@
 package io.gearpump.streaming.task
 
 object TaskUtil {
-
   /**
    * Resolve a classname to a Task class.
    * @param className  the class name to resolve
    * @return resolved class
    */
   def loadClass(className: String): Class[_<:Task] = {
-    Class.forName(className).asSubclass(classOf[Task])
+    val classLoader = Thread.currentThread().getContextClassLoader
+    classLoader.loadClass(className).asSubclass(classOf[Task])
   }
 }
