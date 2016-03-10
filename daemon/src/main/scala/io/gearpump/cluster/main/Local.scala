@@ -21,7 +21,6 @@ package io.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
-import io.gearpump.cluster.local.LocalCluster
 import io.gearpump.cluster.master.{Master => MasterActor}
 import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import io.gearpump.util.Constants._

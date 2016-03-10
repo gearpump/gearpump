@@ -133,13 +133,15 @@ object ClusterConfig {
 
     val all = systemProperties.withFallback(user).withFallback(gear).withFallback(gearDefault)
 
-    val windows = all.getConfig(WINDOWS_CONFIG)
+    val linux = all.getConfig(LINUX_CONFIG)
 
     var basic = all.withoutPath(MASTER_CONFIG).withoutPath(WORKER_CONFIG).
-      withoutPath(UI_CONFIG).withoutPath(WINDOWS_CONFIG)
+      withoutPath(UI_CONFIG).withoutPath(LINUX_CONFIG)
 
-    if (akka.util.Helpers.isWindows) {
-      basic = windows.withFallback(basic)
+    if (!akka.util.Helpers.isWindows) {
+
+      // Change the akka.scheduler.tick-duration to 10ms for Linux or Mac
+      basic = linux.withFallback(basic)
     }
 
     val master = replaceHost(all.getConfig(MASTER_CONFIG).withFallback(basic))
