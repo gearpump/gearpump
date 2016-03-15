@@ -19,8 +19,8 @@
 package io.gearpump.services
 
 import akka.actor.{ActorSystem}
-import akka.http.scaladsl.model.RemoteAddress
-import akka.http.scaladsl.model.headers.HttpChallenge
+import akka.http.scaladsl.model.{Uri, StatusCodes, RemoteAddress}
+import akka.http.scaladsl.model.headers.{HttpCookiePair, HttpCookie, HttpChallenge}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
@@ -31,10 +31,12 @@ import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session._
 import com.typesafe.config.Config
 import io.gearpump.services.SecurityService.{User, UserSession}
+import io.gearpump.services.security.oauth2.OAuth2Authenticator
 import io.gearpump.util.{Constants, LogUtil}
 import upickle.default.{write}
 import io.gearpump.security.{Authenticator => BaseAuthenticator}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /**
  * When user cannot be authenticated, will reject with 401 AuthenticationFailedRejection
@@ -71,6 +73,23 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     authenticator
   }
 
+  private def configToMap(config : Config, path: String) = {
+    import scala.collection.JavaConverters._
+    config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) => k -> v.toString }
+  }
+
+  private val oauth2Providers: Map[String, String] = {
+    if (config.getBoolean(Constants.GEARPUMP_UI_OAUTH2_AUTHENTICATOR_ENABLED)) {
+      val map = configToMap(config, Constants.GEARPUMP_UI_OAUTH2_AUTHENTICATORS)
+      map.keys.toList.map { key =>
+        val iconPath = config.getString(s"${Constants.GEARPUMP_UI_OAUTH2_AUTHENTICATORS}.$key.icon")
+        (key, iconPath)
+      }.toMap
+    } else {
+      Map.empty[String, String]
+    }
+  }
+
   private def authenticate(user: String, pass: String)(implicit ec: ExecutionContext): Future[Option[UserSession]] = {
     authenticator.authenticate(user, pass, ec).map{ result =>
       if (result.authenticated) {
@@ -97,11 +116,18 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     }
   }
 
-  private def login(session: UserSession, ip: String): Route = {
-    setSession(session) { ctx =>
+  private def login(session: UserSession, ip: String, redirectToRoot: Boolean = false): Route = {
+    setSession(session) {
       val user = session.user
-      LOG.info(s"user $user login from $ip")
-      ctx.complete(write(new User(user)))
+      val maxAgeMs = 1000 * sessionConfig.clientSessionMaxAgeSeconds.getOrElse(24 * 3600L) // default 1 day
+      setCookie(HttpCookie.fromPair(HttpCookiePair("username", user), path = Some("/"), maxAge = Some(maxAgeMs))) {
+        LOG.info(s"user $user login from $ip")
+        if (redirectToRoot) {
+          redirect(Uri("/"), StatusCodes.TemporaryRedirect)
+        } else {
+          complete(write(new User(user)))
+        }
+      }
     }
   }
 
@@ -129,7 +155,6 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     }
   }
 
-
   private val unknownIp: Directive1[RemoteAddress] = {
     Directive[Tuple1[RemoteAddress]]{ inner =>
       inner(new Tuple1(RemoteAddress.Unknown))
@@ -141,22 +166,68 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     extractExecutionContext{implicit ec: ExecutionContext =>
     extractMaterializer{implicit mat: Materializer =>
     (extractClientIP | unknownIp) { ip =>
-     path("login") {
-        get {
-          pathEndOrSingleSlash {
+     pathPrefix("login") {
+       pathEndOrSingleSlash {
+          get {
             getFromResource("login/login.html")
+          } ~
+          post {
+            // Guest account don't have permission to submit new application in UI
+            formField(FieldMagnet('username.as[String])) {user: String =>
+              formFields(FieldMagnet('password.as[String])) {pass: String =>
+                val result = authenticate(user, pass)
+                onSuccess(result){
+                  case Some(session) =>
+                    login(session, ip.toString)
+                  case None =>
+                    authenticationFailed
+                }
+              }
+            }
           }
         } ~
-        post {
-          // Guest account don't have permission to submit new application in UI
-          formField(FieldMagnet('username.as[String])) {user: String =>
-            formFields(FieldMagnet('password.as[String])) {pass: String =>
-              val result = authenticate(user, pass)
-              onSuccess(result){
-                case Some(session) =>
-                  login(session, ip.toString)
-                case None =>
-                  authenticationFailed
+        path ("oauth2" / "providers") {
+          // respond with a list of OAuth2 providers.
+          complete(write(oauth2Providers))
+        } ~
+        // Support OAUTH Authentication
+        pathPrefix ("oauth2"/ Segment) {providerName =>
+        // Resolve OAUTH Authentication Provider
+        val oauthService = OAuth2Authenticator.get(config, providerName)
+
+          if (oauthService == null) {
+            // OAuth2 is disabled.
+            complete(StatusCodes.NotFound)
+          } else {
+
+            def loginWithOAuth2Parameters(parameters: Map[String, String]): Route = {
+              val result = oauthService.authenticate(parameters)
+              onComplete(result){
+                case Success(session) =>
+                  login(session, ip.toString, redirectToRoot = true)
+                case Failure(ex) => {
+                  LOG.info(s"Failed to login user from ${ip.toString}", ex)
+                  failWith(ex)
+                }
+              }
+            }
+
+            path ("authorize") {
+              // redirect to OAuth2 service provider for authorization.
+              redirect(Uri(oauthService.getAuthorizationUrl), StatusCodes.TemporaryRedirect)
+            } ~
+            path ("accesstoken") {
+              post {
+                // Guest account don't have permission to submit new application in UI
+                formField(FieldMagnet('accesstoken.as[String])) {accesstoken: String =>
+                  loginWithOAuth2Parameters(Map("accesstoken" -> accesstoken))
+                }
+              }
+            } ~
+            path("callback") {
+              // Login with authorization code or access token.
+              parameterMap {parameters =>
+                loginWithOAuth2Parameters(parameters)
               }
             }
           }

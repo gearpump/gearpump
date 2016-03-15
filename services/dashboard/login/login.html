@@ -41,6 +41,18 @@
       border-bottom-right-radius: 0;
     }
 
+    .social-login {
+
+      position: relative;
+      font-size: 14px;
+      height: auto;
+
+      margin-top: 10px;
+      margin-bottom: 10px;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
     .welcome-message {
       color: #ffffff;
 
@@ -88,6 +100,8 @@
         <input type="text" class="form-control" name="username" placeholder="User Name" required autofocus />
         <input type="password" class="form-control" name="password" placeholder="Password" required />
         <button class="btn btn-lg btn-primary btn-block" type="button" onclick="login()">Sign In</button>
+
+        <div class="social-login" id="social_login"></div>
         <div class="error" id="error"></div>
 
         <a href="#" class="pull-left" style="margin-top: 15px;"><!--Need help? --></a>

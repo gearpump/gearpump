@@ -147,8 +147,20 @@ object Constants {
   val GEARPUMP_METRICS_AGGREGATORS = "gearpump.metrics.akka.metrics-aggregator-class"
 
   val GEARPUMP_UI_SECURITY = "gearpump.ui-security"
-  val GEARPUMP_UI_SECURITY_ENABLED = "gearpump.ui-security.authentication-enabled"
+  val GEARPUMP_UI_SECURITY_AUTHENTICATION_ENABLED = "gearpump.ui-security.authentication-enabled"
   val GEARPUMP_UI_AUTHENTICATOR_CLASS = "gearpump.ui-security.authenticator"
+  // OAuth Authentication Factory for UI server.
+  val GEARPUMP_UI_OAUTH2_AUTHENTICATOR_ENABLED = "gearpump.ui-security.oauth2-authenticator-enabled"
+  val GEARPUMP_UI_OAUTH2_AUTHENTICATORS = "gearpump.ui-security.oauth2-authenticators"
+  val GEARPUMP_UI_OAUTH2_AUTHENTICATOR_CLASS = "class"
+  val GEARPUMP_UI_OAUTH2_AUTHENTICATOR_CALLBACK = "callback"
+  val GEARPUMP_UI_OAUTH2_AUTHENTICATOR_CLIENT_ID = "clientid"
+  val GEARPUMP_UI_OAUTH2_AUTHENTICATOR_CLIENT_SECRET = "clientsecret"
+  val GEARPUMP_UI_OAUTH2_AUTHENTICATOR_DEFAULT_USER_ROLE = "default-userrole"
+  val GEARPUMP_UI_OAUTH2_AUTHENTICATOR_AUTHORIZATION_CODE = "code"
+  val GEARPUMP_UI_OAUTH2_AUTHENTICATOR_ACCESS_TOKEN = "accesstoken"
 
   val PREFER_IPV4 = "java.net.preferIPv4Stack"
+
+
 }

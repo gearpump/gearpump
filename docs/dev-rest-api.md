@@ -12,6 +12,9 @@ To disable Authentication, you can set `gearpump-ui.gearpump.ui-security.authent
 in gear.conf, please check [UI Authentication](deployment-ui-authentication.html) for details.
 
 ### How to authenticate if Authentication is enabled.
+
+#### For User-Password based authentication
+
 If Authentication is enabled, then you need to login before calling REST API.
 
 ```
@@ -28,9 +31,56 @@ curl --cookie outputAuthenticationCookie.txt http://127.0.0.1/api/v1.0/master
 
 for more information, please check [UI Authentication](deployment-ui-authentication.html).
 
+#### For OAuth2 based authentication
+
+For OAuth2 based authentication, it requires you to have an access token in place.
+
+Different OAuth2 service provider have different way to return an access token.
+
+**For Google**, you can refer to [OAuth Doc](https://developers.google.com/identity/protocols/OAuth2).
+
+**For CloudFoundry UAA**, you can use the uaac command to get the access token.
+
+```
+$ uaac target http://login.gearpump.gotapaas.eu/
+$ uaac token get <user_email_address>
+
+### Find access token
+$ uaac context
+
+[0]*[http://login.gearpump.gotapaas.eu]
+
+  [0]*[<user_email_address>]
+      user_id: 34e33a79-42c6-479b-a8c1-8c471ff027fb
+      client_id: cf
+      token_type: bearer
+      access_token: eyJhbGciOiJSUzI1NiJ9.eyJqdGkiOiI
+      expires_in: 599
+      scope: password.write openid cloud_controller.write cloud_controller.read
+      jti: 74ea49e4-1001-4757-9f8d-a66e52a27557
+```
+
+For more information on uaac, please check [UAAC guide](https://docs.cloudfoundry.org/adminguide/uaa-user-management.html)
+
+Now, we have the access token, then let's login to Gearpump UI server with this access token:
+
+```
+## Please replace cloudfoundryuaa with actual OAuth2 service name you have configured in gear.conf
+curl  -X POST  --data accesstoken=eyJhbGciOiJSUzI1NiJ9.eyJqdGkiOiI --cookie-jar outputAuthenticationCookie.txt http://127.0.0.1:8090/login/oauth2/cloudfoundryuaa/accesstoken
+```
+
+This will use user  `user_email_address` to login, and store the authentication cookie to file outputAuthenticationCookie.txt.
+
+In All subsequent Rest API calls, you need to add the authentication cookie. For example
+
+```
+curl --cookie outputAuthenticationCookie.txt http://127.0.0.1/api/v1.0/master
+```
+
+**NOTE:** You can default the default permission level for OAuth2 user. for more information,
+please check [UI Authentication](deployment-ui-authentication.html).
 
 ## Query version
-
 
 ### GET version
 
