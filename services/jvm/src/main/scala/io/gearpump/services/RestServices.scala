@@ -42,7 +42,7 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
 
   private val LOG = LogUtil.getLogger(getClass)
 
-  private val securityEnabled = config.getBoolean(Constants.GEARPUMP_UI_SECURITY_ENABLED)
+  private val securityEnabled = config.getBoolean(Constants.GEARPUMP_UI_SECURITY_AUTHENTICATION_ENABLED)
 
   private val supervisorPath = system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
 
