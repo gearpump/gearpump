@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.streaming.dsl.example
 
-import io.gearpump.streaming.dsl.StreamApp
+package io.gearpump.streaming.examples.wordcount.dsl
+
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import StreamApp._
-import com.typesafe.config.Config
+import io.gearpump.streaming.dsl.StreamApp
+import io.gearpump.streaming.dsl.StreamApp._
 import io.gearpump.util.AkkaApp
 
 object WordCount extends AkkaApp with ArgumentsParser{
