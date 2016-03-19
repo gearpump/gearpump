@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.external.hbase
+package io.gearpump.streaming.hbase
 
 import java.io.{File, ObjectInputStream, ObjectOutputStream}
 
