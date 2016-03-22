@@ -100,10 +100,10 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 
 
     // we expect to receive two ackRequest for two downstream tasks
-    val ackRequestForTask0 = AckRequest(taskId, 100, session)
+    val ackRequestForTask0 = AckRequest(taskId, 200, session)
     verify(transport, times(1)).transport(ackRequestForTask0, TaskId(1,0))
 
-    val ackRequestForTask1 = AckRequest(taskId, 100, session)
+    val ackRequestForTask1 = AckRequest(taskId, 200, session)
     verify(transport, times(1)).transport(ackRequestForTask1, TaskId(1, 1))
   }
 
