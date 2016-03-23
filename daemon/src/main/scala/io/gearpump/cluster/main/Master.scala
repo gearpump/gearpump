@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.cluster.ClusterEvent._
+import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.cluster.{Cluster, Member, MemberStatus}
 import akka.contrib.datareplication.DataReplication
-import akka.contrib.pattern.{ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.{Master => MasterActor}
@@ -90,21 +90,18 @@ object Master extends AkkaApp with ArgumentsParser {
 
     //start master proxy
     val masterProxy = system.actorOf(ClusterSingletonProxy.props(
-      singletonPath = s"/user/${SINGLETON_MANAGER}/${MASTER_WATCHER}/${MASTER}",
-      role = Some(MASTER)),
-      name = MASTER)
+      singletonManagerPath = s"/user/${SINGLETON_MANAGER}/${MASTER_WATCHER}/${MASTER}",
+      settings = ClusterSingletonProxySettings(system).withSingletonName(MASTER).withRole(Some(MASTER))))
 
     //start singleton manager
     val singletonManager = system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[MasterWatcher], MASTER, masterProxy),
-      singletonName = MASTER_WATCHER,
       terminationMessage = PoisonPill,
-      role = Some(MASTER)),
-      name = SINGLETON_MANAGER)
+      settings = ClusterSingletonManagerSettings(system).withSingletonName(MASTER).withRole((Some(MASTER)))))
 
     LOG.info(s"master proxy is started at ${masterProxy.path}")
 
-    val mainThread = Thread.currentThread();
+    val mainThread = Thread.currentThread()
     Runtime.getRuntime().addShutdownHook(new Thread() {
       override def run() : Unit = {
         if (!system.isTerminated) {
@@ -120,7 +117,7 @@ object Master extends AkkaApp with ArgumentsParser {
             case ex : Exception => //ignore
           }
           system.shutdown()
-          mainThread.join();
+          mainThread.join()
         }
       }
     });

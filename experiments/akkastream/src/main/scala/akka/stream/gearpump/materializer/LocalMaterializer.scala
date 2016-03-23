@@ -18,15 +18,15 @@
 
 package akka.stream.gearpump.materializer
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
+import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.{ActorCell, ActorRef, ActorSystem, Deploy, LocalActorRef, PoisonPill, Props, RepointableActorRef}
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
-import akka.stream.ModuleGraph.Edge
+import akka.stream.gearpump.GearpumpMaterializer.Edge
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.{FlowNameCounter, StreamSupervisor}
-import akka.stream.{ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Attributes, ClosedShape, Graph => AkkaGraph, MaterializationContext, ModuleGraph, Optimizations}
+import akka.stream.impl.{FlowNames, SeqActorName, StreamSupervisor}
+import akka.stream.{ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Attributes, ClosedShape, MaterializationContext, ModuleGraph, Graph => AkkaGraph}
 import io.gearpump.util.Graph
 
 import scala.concurrent.{Await, ExecutionContextExecutor}
@@ -38,14 +38,12 @@ import scala.concurrent.{Await, ExecutionContextExecutor}
  * It is functional equivalent to [[akka.stream.impl.ActorMaterializerImpl]]
  *
  *
- * @param system
- * @param settings
- * @param dispatchers
- * @param supervisor
- * @param haveShutDown
- * @param flowNameCounter
- * @param namePrefix
- * @param optimizations
+ * @param system ActorSystem
+ * @param settings ActorMaterializerSettings
+ * @param dispatchers Dispatchers
+ * @param supervisor ActorRef
+ * @param haveShutDown AtomicBoolean
+ * @param flowNames SeqActorName
  */
 abstract class LocalMaterializer(
     val system: ActorSystem,
@@ -53,9 +51,7 @@ abstract class LocalMaterializer(
     dispatchers: Dispatchers,
     val supervisor: ActorRef,
     val haveShutDown: AtomicBoolean,
-    flowNameCounter: AtomicLong,
-    namePrefix: String,
-    optimizations: Optimizations) extends ActorMaterializer {
+    flowNames: SeqActorName) extends ActorMaterializer {
 
   override def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings = {
     import ActorAttributes._
@@ -101,12 +97,6 @@ abstract class LocalMaterializer(
 
   def materialize(graph: Graph[Module, Edge], inputMatValues: Map[Module, Any]): Map[Module, Any]
 
-  override def materialize[Mat](runnableGraph: AkkaGraph[ClosedShape, Mat]): Mat = {
-    val graph = ModuleGraph(runnableGraph)
-    val matValues = materialize(graph.graph, Map.empty[Module, Any])
-    graph.resolve(matValues)
-  }
-
   override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val dispatcher =
       if (props.deploy.dispatcher == Deploy.NoDispatcherGiven) effectiveSettings(context.effectiveAttributes).dispatcher
@@ -117,13 +107,13 @@ abstract class LocalMaterializer(
 
 object LocalMaterializer {
 
-  def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None, optimizations: Optimizations = Optimizations.none)(implicit system: ActorSystem): LocalMaterializerImpl  = {
+  def apply(materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(implicit system: ActorSystem): LocalMaterializerImpl  = {
 
     val settings = materializerSettings getOrElse ActorMaterializerSettings(system)
-    apply(settings, namePrefix.getOrElse("flow"), optimizations)(system)
+    apply(settings, namePrefix.getOrElse("flow"))(system)
   }
 
-  def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String, optimizations: Optimizations)(implicit system: ActorSystem): LocalMaterializerImpl = {
+  def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String)(implicit system: ActorSystem): LocalMaterializerImpl = {
     val haveShutDown = new AtomicBoolean(false)
 
     new LocalMaterializerImpl(
@@ -132,8 +122,6 @@ object LocalMaterializer {
       system.dispatchers,
       system.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher)),
       haveShutDown,
-      FlowNameCounter(system).counter,
-      namePrefix,
-      optimizations)
+      FlowNames(system).name.copy(namePrefix))
   }
 }

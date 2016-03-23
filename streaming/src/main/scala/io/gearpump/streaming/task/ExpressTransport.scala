@@ -19,12 +19,12 @@
 package io.gearpump.streaming.task
 
 import akka.actor.{ActorRef, ExtendedActorSystem}
-import io.gearpump.serializer.SerializationFramework
-import io.gearpump.transport.netty.TaskMessage
-import io.gearpump.transport.{Express, HostPort}
+import akka.util.Timeout
 import io.gearpump.Message
+import io.gearpump.transport.Express
+import io.gearpump.transport.netty.TaskMessage
 
-import scala.collection.mutable
+import scala.concurrent.Await
 
 /**
  * ExpressTransport wire the networking function from default akka
@@ -43,7 +43,9 @@ trait ExpressTransport {
   lazy val sourceId = TaskId.toLong(taskId)
 
   lazy val sessionRef: ActorRef = {
-    system.actorFor(s"/session#$sessionId")
+    import scala.concurrent.duration._
+    implicit val timeout = Timeout(5 seconds)
+    Await.result(system.actorSelection(s"/session#$sessionId").resolveOne(), timeout.duration)
   }
 
   def transport(msg : AnyRef, remotes : TaskId *): Unit = {

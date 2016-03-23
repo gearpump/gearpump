@@ -31,6 +31,8 @@ import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.util.MaterializedValueOps
 import akka.stream.impl.StreamLayout._
 import akka.stream.impl._
+import akka.stream.impl.fusing.GraphStageModule
+import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
 import akka.stream.{Graph => AkkaGraph}
 
 import scala.collection.mutable
@@ -95,7 +97,6 @@ import scala.collection.mutable
  *  [[ModuleGraph]] doesn't have thjis problem. [[ModuleGraph]] does a transformation on the Module
  *  Tree to make sure each Atomic Module [[ModuleGraph]] is unique.
  *
- *
  * @param graph a Graph of Atomic modules.
  * @param mat is a function of:
  *             input => materialized value of each Atomic module
@@ -146,6 +147,37 @@ object ModuleGraph {
     private def publishers: mutable.Map[OutPort, (OutPort, Module)] = publishersStack.head
     private def currentLayout: Module = moduleStack.head
 
+    // Enters a copied module and establishes a scope that prevents internals to leak out and interfere with copies
+    // of the same module.
+    // We don't store the enclosing CopiedModule itself as state since we don't use it anywhere else than exit and enter
+    private def enterScope(enclosing: CopiedModule): Unit = {
+      subscribersStack ::= mutable.Map.empty.withDefaultValue(null)
+      publishersStack ::= mutable.Map.empty.withDefaultValue(null)
+      moduleStack ::= enclosing.copyOf
+    }
+
+    // Exits the scope of the copied module and propagates Publishers/Subscribers to the enclosing scope assigning
+    // them to the copied ports instead of the original ones (since there might be multiple copies of the same module
+    // leading to port identity collisions)
+    // We don't store the enclosing CopiedModule itself as state since we don't use it anywhere else than exit and enter
+    private def exitScope(enclosing: CopiedModule): Unit = {
+      val scopeSubscribers = subscribers
+      val scopePublishers = publishers
+      subscribersStack = subscribersStack.tail
+      publishersStack = publishersStack.tail
+      moduleStack = moduleStack.tail
+
+      // When we exit the scope of a copied module,  pick up the Subscribers/Publishers belonging to exposed ports of
+      // the original module and assign them to the copy ports in the outer scope that we will return to
+      enclosing.copyOf.shape.inlets.iterator.zip(enclosing.shape.inlets.iterator).foreach {
+        case (original, exposed) => assignPort(exposed, scopeSubscribers(original))
+      }
+
+      enclosing.copyOf.shape.outlets.iterator.zip(enclosing.shape.outlets.iterator).foreach {
+        case (original, exposed) => assignPort(exposed, scopePublishers(original))
+      }
+    }
+
     private val graph = Graph.empty[Module, Edge]
 
     private def copyAtomicModule[T <: Module](module: T, parentAttributes: Attributes): T = {
@@ -193,8 +225,6 @@ object ModuleGraph {
 
       for (submodule <- module.subModules) {
         submodule match {
-          case mv: MaterializedValueSource[_] =>
-            materializedValueSources :+= mv
           case atomic if atomic.isAtomic =>
             materializedValues.put(atomic, materializeAtomic(atomic, currentAttributes))
           case copied: CopiedModule =>
@@ -203,6 +233,12 @@ object ModuleGraph {
             exitScope(copied)
           case composite =>
             materializedValues.put(composite, materializeComposite(composite, currentAttributes))
+          case graphStageModule: GraphStageModule =>
+            graphStageModule.stage match {
+              case mv: MaterializedValueSource[_] =>
+                materializedValueSources :+= mv
+              case _ =>
+            }
         }
       }
 
@@ -210,8 +246,8 @@ object ModuleGraph {
 
       materializedValueSources.foreach{module =>
         val matAttribute = new MaterializedValueSourceAttribute(mat)
-        val copied = copyAtomicModule(module, parentAttributes and Attributes(matAttribute))
-        assignPort(module.shape.outlet, (copied.shape.outlet, copied))
+        val copied = copyAtomicModule(module.module, parentAttributes and Attributes(matAttribute))
+        assignPort(module.shape.out, (copied.shape.outlets.head, copied))
         graph.addVertex(copied)
         materializedValues.put(copied, Atomic(copied))
       }
@@ -252,37 +288,6 @@ object ModuleGraph {
         val in = currentLayout.downstreams(out)
         val subscriber = subscribers(in)
         if (subscriber ne null) addEdge(publisher, subscriber)
-      }
-    }
-
-    // Enters a copied module and establishes a scope that prevents internals to leak out and interfere with copies
-    // of the same module.
-    // We don't store the enclosing CopiedModule itself as state since we don't use it anywhere else than exit and enter
-    private def enterScope(enclosing: CopiedModule): Unit = {
-      subscribersStack ::= mutable.Map.empty.withDefaultValue(null)
-      publishersStack ::= mutable.Map.empty.withDefaultValue(null)
-      moduleStack ::= enclosing.copyOf
-    }
-
-    // Exits the scope of the copied module and propagates Publishers/Subscribers to the enclosing scope assigning
-    // them to the copied ports instead of the original ones (since there might be multiple copies of the same module
-    // leading to port identity collisions)
-    // We don't store the enclosing CopiedModule itself as state since we don't use it anywhere else than exit and enter
-    private def exitScope(enclosing: CopiedModule): Unit = {
-      val scopeSubscribers = subscribers
-      val scopePublishers = publishers
-      subscribersStack = subscribersStack.tail
-      publishersStack = publishersStack.tail
-      moduleStack = moduleStack.tail
-
-      // When we exit the scope of a copied module,  pick up the Subscribers/Publishers belonging to exposed ports of
-      // the original module and assign them to the copy ports in the outer scope that we will return to
-      enclosing.copyOf.shape.inlets.iterator.zip(enclosing.shape.inlets.iterator).foreach {
-        case (original, exposed) => assignPort(exposed, scopeSubscribers(original))
-      }
-
-      enclosing.copyOf.shape.outlets.iterator.zip(enclosing.shape.outlets.iterator).foreach {
-        case (original, exposed) => assignPort(exposed, scopePublishers(original))
       }
     }
 

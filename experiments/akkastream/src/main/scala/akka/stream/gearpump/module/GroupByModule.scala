@@ -27,10 +27,10 @@ import akka.stream.impl.StreamLayout.Module
  *
  * Group the T value groupBy function
  *
- * @param f
- * @param attributes
- * @tparam T
- * @tparam Group
+ * @param groupBy T => Group
+ * @param attributes Attributes
+ * @tparam T type
+ * @tparam Group type
  */
 case class GroupByModule[T, Group](val groupBy: T => Group, val attributes: Attributes = Attributes.name("groupByModule")) extends FlowModule[T, T, Unit]{
 

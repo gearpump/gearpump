@@ -37,11 +37,11 @@ trait GearpumpTaskModule extends Module
 
 /**
  * This is used to represent the Gearpump Data Source
- * @param source
- * @param conf
- * @param shape
- * @param attributes
- * @tparam T
+ * @param source DataSource
+ * @param conf UserConfig
+ * @param shape SourceShape[T}
+ * @param attributes Attributes
+ * @tparam T type
  */
 final case class SourceTaskModule[T](
    source: DataSource,
@@ -63,17 +63,17 @@ final case class SourceTaskModule[T](
     val thatN = attr.nameOrDefault(null)
 
     if ((thatN eq null) || thisN == thatN) shape
-    else shape.copy(outlet = Outlet(thatN + ".out"))
+    else shape.copy(out = Outlet(thatN + ".out"))
   }
 }
 
 /**
  * This is used to represent the Gearpump Data Sink
- * @param sink
- * @param conf
- * @param shape
- * @param attributes
- * @tparam IN
+ * @param sink DataSink
+ * @param conf UserConfig
+ * @param shape SinkShape[IN]
+ * @param attributes Attributes
+ * @tparam IN type
  */
 final case class SinkTaskModule[IN](
     sink: DataSink,
@@ -95,18 +95,18 @@ final case class SinkTaskModule[IN](
     val thatN = attr.nameOrDefault(null)
 
     if ((thatN eq null) || thisN == thatN) shape
-    else shape.copy(inlet = Inlet(thatN + ".out"))
+    else shape.copy(in = Inlet(thatN + ".out"))
   }
 }
 
 /**
  * This is to represent the Gearpump Processor which has exact one input and one output
- * @param processor
- * @param conf
- * @param attributes
- * @tparam IN
- * @tparam OUT
- * @tparam Unit
+ * @param processor Class[_ <: Task]
+ * @param conf UserConfig
+ * @param attributes Attributes
+ * @tparam IN type
+ * @tparam OUT type
+ * @tparam Unit void
  */
 case class ProcessorModule[IN, OUT, Unit](
     processor: Class[_ <: Task],

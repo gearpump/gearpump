@@ -18,15 +18,16 @@
 
 package akka.stream.gearpump.graph
 
-import akka.stream.ModuleGraph
-import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.GearAttributes
 import akka.stream.gearpump.GearAttributes.{Local, Location, Remote}
+import akka.stream.gearpump.GearpumpMaterializer.Edge
 import akka.stream.gearpump.graph.GraphCutter.Strategy
-import akka.stream.gearpump.module.{GroupByModule, BridgeModule, DummyModule, GearpumpTaskModule, SinkBridgeModule, SourceBridgeModule}
-import akka.stream.impl.Stages.{TimerTransform, DirectProcessor}
-import akka.stream.impl.StreamLayout.{MaterializedValueNode, Module}
-import akka.stream.impl.{MaterializedValueSource, SinkModule, SourceModule}
+import akka.stream.gearpump.module._
+import akka.stream.impl.Stages.DirectProcessor
+import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.fusing.GraphStageModule
+import akka.stream.impl.fusing.GraphStages.{MaterializedValueSource, SimpleLinearGraphStage}
+import akka.stream.impl.{SinkModule, SourceModule}
 import io.gearpump.util.Graph
 
 /**
@@ -53,18 +54,17 @@ import io.gearpump.util.Graph
  *       \|              /
  *         AtomicModule3
  *
- *
- * @see [[ModuleGraph]] for more information of how Graph is organized.
+  * @see [[akka.stream.impl.MaterializerSession]] for more information of how Graph is organized.
  *
  */
 class GraphCutter(strategy: Strategy) {
-  def cut(moduleGraph: ModuleGraph[_]): List[SubGraph] = {
-    val graph = removeDummyModule(moduleGraph.graph)
+  def cut(moduleGraph: Graph[Module, Edge]): List[SubGraph] = {
+    val graph = removeDummyModule(moduleGraph)
     val tags = tag(graph, strategy)
-    doCut(graph, tags, moduleGraph.mat)
+    doCut(graph, tags)
   }
 
-  private def doCut(graph: Graph[Module, Edge], tags: Map[Module, Location], mat: MaterializedValueNode): List[SubGraph] = {
+  private def doCut(graph: Graph[Module, Edge], tags: Map[Module, Location]): List[SubGraph] = {
     val local = Graph.empty[Module, Edge]
     val remote = Graph.empty[Module, Edge]
 
@@ -152,11 +152,18 @@ object GraphCutter {
       Local
     case sink: SinkModule[_, _] =>
       Local
-    case matValueSource: MaterializedValueSource[_] =>
-      Local
+    case graphStageModule: GraphStageModule =>
+      //TODO kasravi review
+      graphStageModule.stage match {
+        case matValueSource: MaterializedValueSource[_] =>
+          Local
+        case _ =>
+          Local
+      }
     case direct: DirectProcessor =>
       Local
-    case time: TimerTransform =>
+      //TODO kasravi Review was TimerTransform
+    case time: SimpleLinearGraphStage[_] =>
       // render to local as it requires a timer.
       Local
   }

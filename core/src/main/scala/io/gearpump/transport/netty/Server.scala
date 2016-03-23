@@ -21,6 +21,7 @@ package io.gearpump.transport.netty
 import java.util
 
 import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
+import akka.util.Timeout
 import io.gearpump.transport.ActorLookupById
 import io.gearpump.util.LogUtil
 import org.jboss.netty.channel._
@@ -28,8 +29,8 @@ import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
-import scala.collection.immutable.{IntMap, LongMap}
-import scala.concurrent.Future
+import scala.collection.immutable.IntMap
+import scala.concurrent.{Await, Future}
 
 class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, deserializeFlag : Boolean) extends Actor {
   private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = name)
@@ -116,7 +117,10 @@ object Server {
 
     def translateToActorRef(sessionId : Int): ActorRef = {
       if(!taskIdtoActorRef.contains(sessionId)){
-        val actorRef = context.system.actorFor(s"/session#$sessionId")
+        import scala.concurrent.duration._
+        implicit val timeout = Timeout(5 seconds)
+        val actorRef = Await.result(context.system.actorSelection(s"/session#$sessionId").resolveOne(), timeout.duration)
+
         taskIdtoActorRef += sessionId -> actorRef
       }
       taskIdtoActorRef.get(sessionId).get
