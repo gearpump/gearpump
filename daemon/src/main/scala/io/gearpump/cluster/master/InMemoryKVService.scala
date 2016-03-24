@@ -18,65 +18,78 @@
 
 package io.gearpump.cluster.master
 
-import akka.actor._
-import akka.contrib.datareplication.LWWMap
-import akka.contrib.datareplication.Replicator._
-import akka.pattern.ask
+import java.util.concurrent.TimeUnit
 
-import scala.concurrent.Future
+import akka.actor._
+import akka.cluster.Cluster
+import akka.cluster.ddata.{DistributedData, LWWMap, Key, LWWMapKey}
+import akka.cluster.ddata.Replicator._
+import io.gearpump.util.{LogUtil}
+import org.slf4j.Logger
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration.Duration
 
 /**
  * A replicated simple in-memory KV service.
  */
-class InMemoryKVService extends Actor with Stash with ClusterReplication {
+class InMemoryKVService extends Actor with Stash {
   import InMemoryKVService._
 
-  def receive : Receive = kvService orElse stateChangeListener
+  private val KV_SERVICE = "gearpump_kvservice"
 
-  override def preStart(): Unit = {
-    replicator ! Subscribe(STATE, self)
+  private val LOG: Logger = LogUtil.getLogger(getClass)
+  private val replicator = DistributedData(context.system).replicator
+  private implicit val cluster = Cluster(context.system)
+
+  //optimize write path, we can tolerate one master down for recovery.
+  private val timeout = Duration(15, TimeUnit.SECONDS)
+  private val readMajority = ReadMajority(timeout)
+  private val writeMajority = WriteMajority(timeout)
+
+  private def groupKey(group: String): LWWMapKey[Any] = {
+    LWWMapKey[Any](KV_SERVICE + "_" + group)
   }
 
-  override def postStop(): Unit = {
-    replicator ! Unsubscribe(STATE, self)
-  }
+  def receive : Receive = kvService
+
   def kvService : Receive = {
+
     case GetKV(group: String, key : String) =>
-      val client = sender
-      (replicator ? new Get(KVService + group, ReadFrom(readQuorum), TIMEOUT, None)).asInstanceOf[Future[GetResponse]].map {
-        case GetSuccess(_, appData: LWWMap, _) =>
-          LOG.info(s"Successfully retrived group: $group")
-          client ! GetKVSuccess(key, appData.get(key).orNull)
-        case x: NotFound =>
-          LOG.info(s"We cannot find group $group")
-          client ! GetKVSuccess(key, null)
-        case x : GetFailure =>
-          LOG.error(s"Failed to get application $key data, the request key is $key")
-          client ! GetKVFailed(new Exception(x.getClass.getName))
-        case GetSuccess(_, x, _) =>
-          LOG.error(s"Got unexpected response when get key $key, the response is $x")
-          client ! GetKVFailed(new Exception(x.getClass.getName))
-      }
+      val request = Request(sender(), key)
+      replicator ! Get(groupKey(group), readMajority, Some(request))
+    case success@ GetSuccess(group: LWWMapKey[Any], Some(request: Request)) =>
+      val appData = success.get(group)
+      LOG.info(s"Successfully retrived group: ${group.id}")
+      request.client ! GetKVSuccess(request.key, appData.get(request.key).orNull)
+    case NotFound(group: LWWMapKey[Any], Some(request: Request)) =>
+      LOG.info(s"We cannot find group $group")
+      request.client ! GetKVSuccess(request.key, null)
+    case GetFailure(group: LWWMapKey[Any], Some(request: Request)) =>
+      val error = s"Failed to get application data, the request key is ${request.key}"
+      LOG.error(error)
+      request.client ! GetKVFailed(new Exception(error))
 
     case PutKV(group: String, key: String, value: Any) =>
-      val client = sender
-
-      val update = Update(KVService + group, LWWMap(),
-        WriteTo(writeQuorum), TIMEOUT) {map =>
+      val request = Request(sender(), key)
+      val update = Update(groupKey(group), LWWMap(), writeMajority, Some(request)) {map =>
         map + (key -> value)
       }
+      replicator ! update
+    case UpdateSuccess(group: LWWMapKey[Any], Some(request: Request)) =>
+        request.client ! PutKVSuccess
+    case ModifyFailure(group: LWWMapKey[Any], error, cause, Some(request: Request)) =>
+      request.client ! PutKVFailed(request.key, new Exception(error, cause))
+    case UpdateTimeout(group: LWWMapKey[Any], Some(request: Request)) =>
+      request.client ! PutKVFailed(request.key, new TimeoutException())
 
-      val putFuture = (replicator ? update).asInstanceOf[Future[UpdateResponse]]
-
-      putFuture.map {
-        case UpdateSuccess(key, _) =>
-          client ! PutKVSuccess
-        case fail: UpdateFailure =>
-          client ! PutKVFailed(key, value, new Exception(fail.getClass.getName))
-      }
-    case DeleteKVGroup(group: String) =>
-      val client = sender
-      replicator ? Update(KVService + group, LWWMap(), WriteTo(writeQuorum), TIMEOUT)( _ => LWWMap())
+    case delete@ DeleteKVGroup(group: String) =>
+      replicator ! Delete(groupKey(group), writeMajority)
+    case DeleteSuccess(group) =>
+      LOG.info(s"KV Group ${group.id} is deleted")
+    case ReplicationDeleteFailure(group) =>
+      LOG.error(s"Failed to delete KV Group ${group.id}...")
+    case DataDeleted(group) =>
+      LOG.error(s"Group ${group.id} is deleted, you can no longer put/get/delete this group...")
   }
 }
 
@@ -96,9 +109,13 @@ object InMemoryKVService {
 
   case class DeleteKVGroup(group: String)
 
+  case class GroupDeleted(group: String) extends GetKVResult with PutKVResult
+
   trait PutKVResult
 
   case object PutKVSuccess extends PutKVResult
 
-  case class PutKVFailed(key: String, value: Any, ex: Throwable) extends PutKVResult
+  case class PutKVFailed(key: String, ex: Throwable) extends PutKVResult
+
+  case class Request(client: ActorRef, key: String)
 }

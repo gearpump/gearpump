@@ -38,7 +38,7 @@ class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   val dag = DAG(graph)
   implicit var system: ActorSystem = null
   val appId = 0
-  val userConfig = UserConfig.empty.withValue(StreamApplication.DAG, graph)
+  lazy val userConfig = UserConfig.empty.withValue(StreamApplication.DAG, graph)
 
   "DagManager" should {
     import io.gearpump.streaming.appmaster.ClockServiceSpec.Store

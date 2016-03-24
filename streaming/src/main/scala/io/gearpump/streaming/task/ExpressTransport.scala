@@ -25,7 +25,7 @@ import io.gearpump.transport.{Express, HostPort}
 import io.gearpump.Message
 
 import scala.collection.mutable
-
+import io.gearpump.util.AkkaHelper
 /**
  * ExpressTransport wire the networking function from default akka
  * networking to customized implementation [[Express]].
@@ -43,7 +43,7 @@ trait ExpressTransport {
   lazy val sourceId = TaskId.toLong(taskId)
 
   lazy val sessionRef: ActorRef = {
-    system.actorFor(s"/session#$sessionId")
+    AkkaHelper.actorFor(system, s"/session#$sessionId")
   }
 
   def transport(msg : AnyRef, remotes : TaskId *): Unit = {

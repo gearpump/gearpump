@@ -24,15 +24,14 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.Uri.{Query, Path}
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, MediaTypes, Multipart, _}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
-import akka.stream.io.{SynchronousFileSink, SynchronousFileSource}
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Sink, Source, FileIO}
 import io.gearpump.jarstore.FilePath
 import io.gearpump.util.FileDirective._
 import io.gearpump.util.FileServer.Port
@@ -65,7 +64,7 @@ class FileServer(system: ActorSystem, host: String, port: Int = 0, rootDirectory
       pathEndOrSingleSlash {
         extractUri { uri =>
           val upload = uri.withPath(Uri.Path("/upload")).toString()
-          val entity = HttpEntity(MediaTypes.`text/html`,
+          val entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
             s"""
             |
             |<h2>Please specify a file to upload:</h2>
@@ -123,7 +122,7 @@ object FileServer {
         HttpRequest(HttpMethods.POST, uri = target, entity = entity)
       }
 
-      val response = Source(request).via(httpClient).runWith(Sink.head)
+      val response = Source.fromFuture(request).via(httpClient).runWith(Sink.head)
       response.flatMap{some =>
         Unmarshal(some).to[String]
       }.map{path =>
@@ -132,17 +131,17 @@ object FileServer {
     }
 
     def download(remoteFile: FilePath, saveAs: File): Future[Unit] = {
-      val downoad = server.withPath(Path("/download")).withQuery("file" -> remoteFile.path)
+      val downoad = server.withPath(Path("/download")).withQuery(Query("file" -> remoteFile.path))
       //download file to local
       val response = Source.single(HttpRequest(uri = downoad)).via(httpClient).runWith(Sink.head)
       val downloaded = response.flatMap { response =>
-        response.entity.dataBytes.runWith(SynchronousFileSink(saveAs))
+        response.entity.dataBytes.runWith(FileIO.toFile(saveAs))
       }
       downloaded.map(written => Unit)
     }
 
     private def entity(file: File)(implicit ec: ExecutionContext): Future[RequestEntity] = {
-      val entity =  HttpEntity(MediaTypes.`application/octet-stream`, file.length(), SynchronousFileSource(file, chunkSize = 100000))
+      val entity =  HttpEntity(MediaTypes.`application/octet-stream`, file.length(), FileIO.fromFile(file, chunkSize = 100000))
       val body = Source.single(
         Multipart.FormData.BodyPart(
           "uploadfile",

@@ -19,9 +19,9 @@ script:
     then sbt -jvm-opts project/travis/jvmopts clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
   fi  
 jdk:
-- oraclejdk7
+- oraclejdk8
 scala:
-- 2.11.5
+- 2.11.8
 cache:
   directories:
   - $HOME/.m2
