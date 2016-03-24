@@ -9,7 +9,7 @@ object BuildExample extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ noPublish
-  ) aggregate (wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka,
+  ) aggregate (wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka, streamingkmeans,
       distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
 
   lazy val wordcountJava = Project(
@@ -32,6 +32,17 @@ object BuildExample extends sbt.Build {
           target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
               CrossVersion.binaryScalaVersion(scalaVersion.value)
         )
+  ) dependsOn (streaming % "test->test; provided", daemon % "test->test; provided")
+
+  lazy val streamingkmeans = Project(
+    id = "gearpump-examples-streamingkmeans",
+    base = file("examples/streaming/streamingkmeans"),
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+      Seq(
+        mainClass in (Compile, packageBin) := Some("io.gearpump.streaming.examples.streamingkmeans.StreamingKmeansExample"),
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+          CrossVersion.binaryScalaVersion(scalaVersion.value)
+      )
   ) dependsOn (streaming % "test->test; provided", daemon % "test->test; provided")
 
   lazy val sol = Project(
