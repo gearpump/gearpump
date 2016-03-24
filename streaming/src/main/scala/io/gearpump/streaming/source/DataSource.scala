@@ -29,10 +29,14 @@ import io.gearpump.{TimeStamp, Message}
  * {{{
  *  GenStringSource extends DataSource {
  *
- *    def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {}
+ *    def open(context: TaskContext, startTime: TimeStamp): Unit = {}
  *
- *    def read(batchSize: Int): List[Message] = {
- *      List.fill(batchSize)(Message("message"))
+ *    def advance(): Boolean = {
+ *      true
+ *    }
+ *
+ *    def read(): Message = {
+ *      Message("message")
  *    }
  *
  *    def close(): Unit = {}
@@ -45,23 +49,27 @@ trait DataSource extends java.io.Serializable {
 
   /**
    * open connection to data source
-   * invoked in onStart() method of [[io.gearpump.streaming.source.DataSourceTask]]
    * @param context is the task context at runtime
    * @param startTime is the start time of system
    */
-  def open(context: TaskContext, startTime: Option[TimeStamp]): Unit
+  def open(context: TaskContext, startTime: Long): Unit
 
   /**
-   * read a number of messages from data source.
-   * invoked in each onNext() method of [[io.gearpump.streaming.source.DataSourceTask]]
-   * @param batchSize max number of messages to read
-   * @return a list of messages wrapped in [[io.gearpump.Message]]
+   * move to the next record. This should be called after open and before reading each record
+   * @return whether next record is available
    */
-  def read(batchSize: Int): List[Message]
+  def advance(): Boolean
+
+  /**
+   * read the record moved to by last advance.
+   * multiple reads without an advance returns the same record.
+   * java.util.NoSuchElementException is thrown if last advance returns false.
+   * @return a [[io.gearpump.Message]]
+   */
+  def read(): Message
 
   /**
    * close connection to data source.
-   * invoked in onStop() method of [[io.gearpump.streaming.source.DataSourceTask]]
    */
   def close(): Unit
 }
