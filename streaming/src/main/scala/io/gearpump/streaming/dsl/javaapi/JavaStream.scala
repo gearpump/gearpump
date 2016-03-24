@@ -50,7 +50,7 @@ class JavaStream[T](val stream: Stream[T]) {
     stream.log()
   }
 
-  def merge(other: JavaStream[T], description: String = null): JavaStream[T] = {
+  def merge(other: JavaStream[T], description: String): JavaStream[T] = {
     new JavaStream[T](stream.merge(other.stream, description))
   }
 
