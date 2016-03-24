@@ -156,8 +156,8 @@ private[cluster] class Master extends Actor with Stash {
   def kvServiceMsgHandler: Receive = {
     case PutKVSuccess =>
       //Skip
-    case PutKVFailed(key, value, exception) =>
-      LOG.error(s"Put value $value with key $key to InMemoryKVService failed.\n" + ExceptionUtils.getStackTrace(exception))
+    case PutKVFailed(key, exception) =>
+      LOG.error(s"Put KV of key $key to InMemoryKVService failed.\n" + ExceptionUtils.getStackTrace(exception))
   }
 
   def metricsService : Receive = {
@@ -286,7 +286,7 @@ private[cluster] class Master extends Actor with Stash {
 }
 
 object Master {
-  final val MASTER_GROUP = "-1"
+  final val MASTER_GROUP = "master_group"
 
   final val WORKER_ID = "next_worker_id"
 

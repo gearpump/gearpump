@@ -22,7 +22,7 @@ import java.util
 
 import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import io.gearpump.transport.ActorLookupById
-import io.gearpump.util.LogUtil
+import io.gearpump.util.{LogUtil, AkkaHelper}
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
@@ -116,7 +116,9 @@ object Server {
 
     def translateToActorRef(sessionId : Int): ActorRef = {
       if(!taskIdtoActorRef.contains(sessionId)){
-        val actorRef = context.system.actorFor(s"/session#$sessionId")
+
+        // A fake ActorRef for performance optimization.
+        val actorRef = AkkaHelper.actorFor(context.system, s"/session#$sessionId")
         taskIdtoActorRef += sessionId -> actorRef
       }
       taskIdtoActorRef.get(sessionId).get

@@ -25,7 +25,7 @@ import akka.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
-import akka.stream.io.{SynchronousFileSink, SynchronousFileSource}
+import akka.stream.scaladsl.FileIO
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -75,6 +75,8 @@ object FileDirective {
             ctx => {
               filesFuture.map(map => inner(Tuple1(map))).flatMap(route => route(ctx))
             }
+
+
           }
         }
       }
@@ -88,7 +90,7 @@ object FileDirective {
     val responseEntity = HttpEntity(
       MediaTypes.`application/octet-stream`,
       file.length,
-      SynchronousFileSource(file, CHUNK_SIZE))
+      FileIO.fromFile(file, CHUNK_SIZE))
     complete(responseEntity)
   }
 
@@ -100,10 +102,10 @@ object FileDirective {
 
             //reserve the suffix
             val targetPath = File.createTempFile(s"userfile_${p.name}_", s"${p.filename.getOrElse("")}", rootDirectory)
-            val written = p.entity.dataBytes.runWith(SynchronousFileSink(targetPath))
+            val written = p.entity.dataBytes.runWith(FileIO.toFile(targetPath))
             written.map(written =>
-              if (written > 0) {
-                Map(p.name -> FileInfo(p.filename.get, targetPath, written))
+              if (written.count > 0) {
+                Map(p.name -> FileInfo(p.filename.get, targetPath, written.count))
               } else {
                 Map.empty[Name, FileInfo]
               })

@@ -23,7 +23,7 @@ import java.io.IOException
 import akka.actor.{ActorRef, ActorSystem}
 import io.gearpump.experiments.yarn.glue.Records.ApplicationId
 import io.gearpump.experiments.yarn.glue.YarnClient
-import io.gearpump.util.LogUtil
+import io.gearpump.util.{AkkaHelper, LogUtil}
 import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.methods.GetMethod
 import org.slf4j.Logger
@@ -52,7 +52,7 @@ class AppMasterResolver(yarnClient: YarnClient, system: ActorSystem) {
     if (status == 200) {
       val response = get.getResponseBodyAsString
       LOG.info("Successfully resolved AppMaster address: " + response)
-      system.actorFor(response)
+      AkkaHelper.actorFor(system, response)
     } else {
       throw new IOException("Fail to resolve AppMaster address, please make sure " +
         s"${report.getOriginalTrackingUrl} is accessible...")

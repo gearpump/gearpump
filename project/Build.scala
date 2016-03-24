@@ -19,7 +19,7 @@ object Build extends sbt.Build {
 
   val copySharedSourceFiles = TaskKey[Unit]("copied shared services source code")
 
-  val akkaVersion = "2.3.12"
+  val akkaVersion = "2.4.2"
   val kryoVersion = "0.3.2"
   val clouderaVersion = "2.6.0-cdh5.4.2"
   val clouderaHBaseVersion = "1.0.0-cdh5.4.2"
@@ -37,7 +37,7 @@ object Build extends sbt.Build {
   val slf4jVersion = "1.7.7"
   val gsCollectionsVersion = "6.2.0"
 
-  val crossScalaVersionNumbers = Seq("2.10.5", "2.11.5")
+  val crossScalaVersionNumbers = Seq("2.11.8")
   val scalaVersionNumber = crossScalaVersionNumbers.last
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
@@ -48,7 +48,6 @@ object Build extends sbt.Build {
   val scalazVersion = "7.1.1"
   val algebirdVersion = "0.9.0"
   val chillVersion = "0.6.0"
-
   val distDirectory = "output"
   val projectName = "gearpump"
 
@@ -56,7 +55,7 @@ object Build extends sbt.Build {
       ++ Pack.projects.toList).toSeq
 
 
-  val commonSettings = Seq(jacoco.settings:_*) ++ sonatypeSettings  ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++
+  val commonSettings = Seq(jacoco.settings:_*) ++ sonatypeSettings ++
     Seq(
         resolvers ++= Seq(
           "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
@@ -69,8 +68,8 @@ object Build extends sbt.Build {
           "clockfly" at "http://dl.bintray.com/clockfly/maven",
           "vincent" at "http://dl.bintray.com/fvunicorn/maven",
           "clojars" at "http://clojars.org/repo"
-        ),
-        addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
+        )
+        // ,addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
     ) ++
     Seq(
       scalaVersion := scalaVersionNumber,
@@ -133,23 +132,19 @@ object Build extends sbt.Build {
 
   val daemonDependencies = Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-contrib" % akkaVersion
-        exclude("com.typesafe.akka", "akka-persistence-experimental_2.11"),
       "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
-      "com.typesafe.akka" %% "akka-http-experimental" % "1.0",
-      "com.typesafe.akka" %% "akka-http-core-experimental" % "1.0",
-      "com.typesafe.akka" %% "akka-stream-experimental" % "1.0",
-      "com.typesafe.akka" %% "akka-http-spray-json-experimental"% "1.0",
+      "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
+      "com.typesafe.akka" %% "akka-http-experimental" % akkaVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json-experimental"% akkaVersion,
       "commons-logging" % "commons-logging" % commonsLoggingVersion,
-      "com.github.patriknw" %% "akka-data-replication" % dataReplicationVersion,
+      "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
       "org.apache.hadoop" % "hadoop-common" % clouderaVersion  % "provided"
     )
   )
 
   val streamingDependencies = Seq(
     libraryDependencies ++= Seq(
-      "com.github.intel-hadoop" % "gearpump-shaded-gs-collections" % gsCollectionsVersion,
-      "com.typesafe.akka" %% "akka-stream-experimental" % "1.0"
+      "com.github.intel-hadoop" % "gearpump-shaded-gs-collections" % gsCollectionsVersion
     )
   )
 
@@ -160,9 +155,24 @@ object Build extends sbt.Build {
         "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
         "com.github.intel-hadoop" % "gearpump-shaded-guava" % guavaVersion,
         "commons-lang" % "commons-lang" % commonsLangVersion,
-        "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-        "com.typesafe.akka" %% "akka-remote" % akkaVersion,
-        "com.typesafe.akka" %% "akka-agent" % akkaVersion,
+
+        /**
+         * Override Netty version 3.10.3.Final used by Akka 2.4.2 to work-around netty hang issue
+         * (https://github.com/gearpump/gearpump/issues/2020)
+         *
+         * Akka 2.4.2 by default use Netty 3.10.3.Final, which has a serious issue which can hang the
+         * network. The same issue also happens in version range (3.10.0.Final, 3.10.5.Final)
+         * Netty 3.10.6.Final have this issue fixed, however, we find there is a 20% performance drop.
+         * So we decided to downgrade netty to 3.8.0.Final (Same version used in akka 2.3.12).
+         *
+         * @see https://github.com/gearpump/gearpump/pull/2017 for more discussions.
+         */
+        "io.netty" % "netty" % "3.8.0.Final",
+        "com.typesafe.akka" %% "akka-remote" % akkaVersion
+          exclude("io.netty", "netty"),
+
+          "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+          "com.typesafe.akka" %% "akka-agent" % akkaVersion,
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
         "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
         "com.github.intel-hadoop" %% "gearpump-shaded-akka-kryo" % kryoVersion,
@@ -172,16 +182,12 @@ object Build extends sbt.Build {
         "org.mockito" % "mockito-core" % mockitoVersion % "test",
         "junit" % "junit" % junitVersion % "test"
       ),
-     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
-     libraryDependencies ++= (
-        if (scalaVersion.value.startsWith("2.10")) List("org.scalamacros" %% "quasiquotes" % "2.1.0-M5")
-        else List("org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3")
-      )
+     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _)
   )
 
   lazy val javadocSettings = Seq(
-    addCompilerPlugin("org.spark-project" %% "genjavadoc-plugin" %
-      "0.9-spark0" cross CrossVersion.full),
+    addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" %
+      "0.9" cross CrossVersion.full),
     scalacOptions += s"-P:genjavadoc:out=${target.value}/java"
   )
 
@@ -217,7 +223,7 @@ object Build extends sbt.Build {
     base = file("."),
     settings = commonSettings ++ noPublish ++ gearpumpUnidocSetting
   ).aggregate(core, daemon, streaming,  services, external_kafka, external_monoid, external_serializer,
-      examples, storm, akkastream, yarn, external_hbase, packProject, external_hadoopfs, 
+      examples, storm, yarn, external_hbase, packProject, external_hadoopfs,
       integration_test).settings(Defaults.itSettings : _*)
 
   lazy val core = Project(
@@ -274,13 +280,14 @@ object Build extends sbt.Build {
 
   lazy val serviceJvmSettings = commonSettings ++ noPublish ++ Seq(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-http-testkit-experimental"% "1.0" % "test",
+      "com.typesafe.akka" %% "akka-http-testkit"% akkaVersion % "test",
       "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
       "com.lihaoyi" %% "upickle" % upickleVersion,
       "com.softwaremill" %% "akka-http-session" % "0.1.4",
-      "com.typesafe.akka" %% "akka-http-spray-json-experimental"% "1.0",
+      "com.typesafe.akka" %% "akka-http-spray-json-experimental"% akkaVersion,
       "com.github.scribejava" % "scribejava-apis" % "2.4.0",
-      "com.ning" % "async-http-client" % "1.9.33",
+      "com.ning" % "async-http-client" % "1.9.33"
+        exclude("io.netty", "netty"),
       "org.webjars" % "angularjs" % "1.4.9",
       "org.webjars.npm" % "angular-touch" % "1.5.0", // angular 1.5 breaks ui-select, but we need ng-touch 1.5
       "org.webjars" % "angular-ui-router" % "0.2.15",

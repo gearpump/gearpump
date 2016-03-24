@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.cluster.ClusterEvent._
+import akka.cluster.ddata.DistributedData
 import akka.cluster.{Cluster, Member, MemberStatus}
-import akka.contrib.datareplication.DataReplication
-import akka.contrib.pattern.{ClusterSingletonManager, ClusterSingletonProxy}
+import akka.cluster.singleton.{ClusterSingletonManagerSettings, ClusterSingletonProxySettings, ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.{Master => MasterActor}
@@ -85,26 +85,28 @@ object Master extends AkkaApp with ArgumentsParser {
     LOG.info(s"Starting Master Actor system $ip:$port, master list: ${masters.mkString(";")}")
     val system = ActorSystem(MASTER, masterConfig)
 
-    val replicator = DataReplication(system).replicator
+    val replicator = DistributedData(system).replicator
     LOG.info(s"Replicator path: ${replicator.path}")
-
-    //start master proxy
-    val masterProxy = system.actorOf(ClusterSingletonProxy.props(
-      singletonPath = s"/user/${SINGLETON_MANAGER}/${MASTER_WATCHER}/${MASTER}",
-      role = Some(MASTER)),
-      name = MASTER)
 
     //start singleton manager
     val singletonManager = system.actorOf(ClusterSingletonManager.props(
-      singletonProps = Props(classOf[MasterWatcher], MASTER, masterProxy),
-      singletonName = MASTER_WATCHER,
+      singletonProps = Props(classOf[MasterWatcher], MASTER),
       terminationMessage = PoisonPill,
-      role = Some(MASTER)),
+      settings = ClusterSingletonManagerSettings(system).withSingletonName(MASTER_WATCHER).withRole(MASTER)),
       name = SINGLETON_MANAGER)
+
+    //start master proxy
+    val masterProxy = system.actorOf(ClusterSingletonProxy.props(
+      singletonManagerPath = s"/user/${SINGLETON_MANAGER}",
+      // The effective singleton is s"${MASTER_WATCHER}/$MASTER" instead of s"${MASTER_WATCHER}".
+      // Master will only be created when there is a majority of machines started.
+      settings = ClusterSingletonProxySettings(system).withSingletonName(s"${MASTER_WATCHER}/$MASTER").withRole(MASTER)),
+      name = MASTER
+    )
 
     LOG.info(s"master proxy is started at ${masterProxy.path}")
 
-    val mainThread = Thread.currentThread();
+    val mainThread = Thread.currentThread()
     Runtime.getRuntime().addShutdownHook(new Thread() {
       override def run() : Unit = {
         if (!system.isTerminated) {
@@ -120,16 +122,16 @@ object Master extends AkkaApp with ArgumentsParser {
             case ex : Exception => //ignore
           }
           system.shutdown()
-          mainThread.join();
+          mainThread.join()
         }
       }
-    });
+    })
 
     system.awaitTermination()
   }
 }
 
-class MasterWatcher(role: String, masterProxy : ActorRef) extends Actor  with ActorLogging {
+class MasterWatcher(role: String) extends Actor  with ActorLogging {
   import context.dispatcher
 
   val cluster = Cluster(context.system)
@@ -192,7 +194,6 @@ class MasterWatcher(role: String, masterProxy : ActorRef) extends Actor  with Ac
 
   def waitForShutdown : Receive = {
     case MasterWatcher.Shutdown => {
-      context.system.stop(masterProxy)
       cluster.unsubscribe(self)
       cluster.leave(cluster.selfAddress)
       context.stop(self)

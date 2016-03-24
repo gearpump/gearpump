@@ -65,6 +65,7 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with
 
   it should "produce 3 messages" in {
     val context: ClientContext = mock[ClientContext]
+    when(context.system).thenReturn(system)
     val app = StreamApp("dsl", context)
     val list = List[String](
       "0",

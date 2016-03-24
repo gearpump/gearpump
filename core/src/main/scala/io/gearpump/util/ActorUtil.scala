@@ -87,6 +87,7 @@ object ActorUtil {
   def launchExecutorOnEachWorker(master: ActorRef, executorJvmConfig: ExecutorSystemJvmConfig,
     sender: ActorRef)(implicit executor : scala.concurrent.ExecutionContext) = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
+
     (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]].map { list =>
       val resources = list.workers.map {
         workerId => ResourceRequest(Resource(1), workerId, relaxation = Relaxation.SPECIFICWORKER)

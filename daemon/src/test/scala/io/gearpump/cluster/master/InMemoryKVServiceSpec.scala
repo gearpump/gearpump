@@ -23,6 +23,7 @@ import akka.testkit.TestProbe
 import io.gearpump.cluster.master.InMemoryKVService._
 import io.gearpump.cluster.{MasterHarness, TestUtil}
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import scala.concurrent.duration._
 
 class InMemoryKVServiceSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
@@ -54,7 +55,11 @@ class InMemoryKVServiceSpec extends FlatSpec with Matchers with BeforeAndAfterEa
 
     client.send(kvService, DeleteKVGroup(group))
 
+    // after DeleteGroup, it no longer accept Get and Put
     client.send(kvService, GetKV(group, "key"))
-    client.expectMsg(GetKVSuccess("key", null))
+    client.expectNoMsg(3 seconds)
+
+    client.send(kvService, PutKV(group, "key", 3))
+    client.expectNoMsg(3 seconds)
   }
 }

@@ -15,23 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.cluster
 
-import akka.actor.ActorRef
-import io.gearpump.cluster.master.Master.MasterInfo
-import io.gearpump.cluster.scheduler.Resource
+package io.gearpump.util;
 
-/**
- * Cluster Bootup Flow
- */
-object WorkerToMaster {
-  case object RegisterNewWorker
-  case class RegisterWorker(workerId: Int)
-  case class ResourceUpdate(worker: ActorRef, workerId: Int, resource: Resource)
-}
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
 
-object MasterToWorker {
-  case class WorkerRegistered(workerId : Int, masterInfo: MasterInfo)
-  case class UpdateResourceFailed(reason : String = null, ex: Throwable = null)
-  case object UpdateResourceSucceed
+public class AkkaHelper {
+
+  /**
+   * Helper util to access the private[akka] system.actorFor method
+   *
+   * This is used for performance optimization, we encode the session Id
+   * in the ActorRef path. Session Id is used to identity sender Task.
+   */
+  public static ActorRef actorFor(ActorSystem system, String path) {
+    return system.actorFor(path);
+  }
 }

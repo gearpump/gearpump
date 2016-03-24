@@ -24,7 +24,6 @@ import akka.actor.ActorRef
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Cache-Control`, `Set-Cookie`}
-import akka.stream.io.SynchronousFileSource
 import akka.stream.scaladsl.Source
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.TestProbe
@@ -44,6 +43,7 @@ import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import scala.concurrent.{Future, ExecutionContext}
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
+import akka.stream.scaladsl.FileIO
 
 class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
   Matchers with BeforeAndAfterAll {
@@ -168,7 +168,9 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
   }
 
   private def entity(file: File)(implicit ec: ExecutionContext): Future[RequestEntity] = {
-    val entity =  HttpEntity(MediaTypes.`application/octet-stream`, file.length(), SynchronousFileSource(file, chunkSize = 100000))
+    val entity =  HttpEntity(MediaTypes.`application/octet-stream`, file.length(),
+      FileIO.fromFile(file, chunkSize = 100000))
+
     val body = Source.single(
       Multipart.FormData.BodyPart(
         "file",

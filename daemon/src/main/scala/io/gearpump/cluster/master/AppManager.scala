@@ -241,7 +241,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
       (kvService ? PutKV(appId.toString, key, value)).asInstanceOf[Future[PutKVResult]].map {
         case PutKVSuccess =>
           client ! AppDataSaved
-        case PutKVFailed(k, v, ex) =>
+        case PutKVFailed(k, ex) =>
           client ! SaveAppDataFailed
       }
     case GetAppData(appId, key) =>

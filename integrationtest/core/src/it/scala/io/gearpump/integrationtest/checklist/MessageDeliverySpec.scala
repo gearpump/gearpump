@@ -44,7 +44,7 @@ class MessageDeliverySpec extends TestSpecBase {
             val appId = restClient.getNextAvailableAppId()
 
             val stateJar = cluster.queryBuiltInExampleJars("state-").head
-            val success = restClient.submitApp(stateJar, args)
+            val success = restClient.submitApp(stateJar, executorNum = 1, args = args)
             success shouldBe true
 
             // verify #1
