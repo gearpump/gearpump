@@ -19,8 +19,11 @@
 package io.gearpump.streaming.examples.state
 
 import akka.actor.ActorSystem
+import io.gearpump.streaming.kafka.{KafkaSink, KafkaSource, KafkaStorageFactory}
+import io.gearpump.streaming.sink.DataSinkProcessor
+import io.gearpump.streaming.source.DataSourceProcessor
 import io.gearpump.streaming.{StreamApplication, Processor}
-import io.gearpump.streaming.examples.state.processor.{CountProcessor, NumberGeneratorProcessor}
+import io.gearpump.streaming.examples.state.processor.CountProcessor
 import io.gearpump.streaming.hadoop.HadoopCheckpointStoreFactory
 import io.gearpump.streaming.hadoop.lib.rotation.FileSizeRotation
 import io.gearpump.streaming.state.impl.PersistentStateConfig
@@ -33,15 +36,29 @@ import io.gearpump.util.{AkkaApp, Graph}
 import org.apache.hadoop.conf.Configuration
 
 object MessageCountApp extends AkkaApp with ArgumentsParser {
+  val SOURCE_TASK = "sourceTask"
+  val COUNT_TASK = "countTask"
+  val SINK_TASK = "sinkTask"
+  val SOURCE_TOPIC = "sourceTopic"
+  val SINK_TOPIC = "sinkTopic"
+  val ZOOKEEPER_CONNECT = "zookeeperConnect"
+  val BROKER_LIST = "brokerList"
+  val DEFAULT_FS = "defaultFS"
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "gen" -> CLIOption("<how many gen tasks>", required = false, defaultValue = Some(1)),
-    "count" -> CLIOption("<how mange count tasks", required = false, defaultValue = Some(1))
+    SOURCE_TASK -> CLIOption[Int]("<how many kafka source tasks>", required = false, defaultValue = Some(1)),
+    COUNT_TASK -> CLIOption("<how many count tasks>", required = false, defaultValue = Some(1)),
+    SINK_TASK -> CLIOption[Int]("<how many kafka sink tasks>", required = false, defaultValue = Some(1)),
+    SOURCE_TOPIC -> CLIOption[String]("<kafka source topic>", required = true),
+    SINK_TOPIC -> CLIOption[String]("<kafka sink topic>", required = true),
+    ZOOKEEPER_CONNECT -> CLIOption[String]("<Zookeeper connect string, e.g. localhost:2181/kafka>", required = true),
+    BROKER_LIST -> CLIOption[String]("<Kafka broker list, e.g. localhost:9092>", required = true),
+    DEFAULT_FS -> CLIOption[String]("<name of the default file system, e.g. hdfs://localhost:9000>", required = true)
   )
 
   def application(config: ParseResult)(implicit system: ActorSystem) : StreamApplication = {
     val hadoopConfig = new Configuration
-    hadoopConfig.set("fs.defaultFS", "hdfs://localhost:9000")
+    hadoopConfig.set("fs.defaultFS", config.getString(DEFAULT_FS))
     val checkpointStoreFactory = new HadoopCheckpointStoreFactory("MessageCount", hadoopConfig,
       // rotate on 1KB
       new FileSizeRotation(1000))
@@ -50,10 +67,18 @@ object MessageCountApp extends AkkaApp with ArgumentsParser {
       .withLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS, 1000L)
       .withValue(PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY, checkpointStoreFactory)
 
-    val gen = Processor[NumberGeneratorProcessor](config.getInt("gen"))
-    val count = Processor[CountProcessor](config.getInt("count"), taskConf = taskConfig)
+    val zookeeperConnect = config.getString(ZOOKEEPER_CONNECT)
+    val brokerList = config.getString(BROKER_LIST)
+    val offsetStorageFactory = new KafkaStorageFactory(zookeeperConnect, brokerList)
+    val sourceTopic = config.getString(SOURCE_TOPIC)
+    val kafkaSource = new KafkaSource(sourceTopic, zookeeperConnect, offsetStorageFactory)
+    val sourceProcessor = DataSourceProcessor(kafkaSource, config.getInt(SOURCE_TASK))
+    val countProcessor = Processor[CountProcessor](config.getInt(COUNT_TASK), taskConf = taskConfig)
+    val kafkaSink = new KafkaSink(config.getString(SINK_TOPIC), brokerList)
+    val sinkProcessor = DataSinkProcessor(kafkaSink, config.getInt(SINK_TASK))
     val partitioner = new HashPartitioner()
-    val app = StreamApplication("MessageCount", Graph(gen ~ partitioner ~> count), UserConfig.empty)
+    val graph = Graph(sourceProcessor ~ partitioner ~> countProcessor ~ partitioner ~> sinkProcessor)
+    val app = StreamApplication("MessageCount", graph, UserConfig.empty)
     app
   }
 

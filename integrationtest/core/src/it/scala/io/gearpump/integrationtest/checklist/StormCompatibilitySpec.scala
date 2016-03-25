@@ -17,7 +17,7 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.kafka.{KafkaCluster, MessageLossDetector, NumericalDataProducer, SimpleKafkaReader}
+import io.gearpump.integrationtest.kafka.{KafkaCluster, MessageLossDetector, SimpleKafkaReader}
 import io.gearpump.integrationtest.storm.StormClient
 import io.gearpump.integrationtest.{TestSpecBase, Util}
 
@@ -41,27 +41,6 @@ class StormCompatibilitySpec extends TestSpecBase {
   def withStorm(testCode: String => Unit): Unit = {
     testCode("09")
     testCode("010")
-  }
-
-  def withKafkaCluster(testCode: KafkaCluster => Unit): Unit = {
-    val kafkaCluster = new KafkaCluster(cluster.getNetworkGateway, "kafka")
-    try {
-      kafkaCluster.start()
-      testCode(kafkaCluster)
-    } finally {
-      kafkaCluster.shutDown()
-    }
-  }
-
-  def withDataProducer(topic: String, brokerList: String)
-      (testCode: NumericalDataProducer => Unit): Unit = {
-    val producer = new NumericalDataProducer(topic, brokerList)
-    try {
-      producer.start()
-      testCode(producer)
-    } finally {
-      producer.stop()
-    }
   }
 
   def getTopologyName(name: String, stormVersion: String): String = {
@@ -146,7 +125,8 @@ class StormCompatibilitySpec extends TestSpecBase {
         val topologyName = getTopologyName("storm_kafka", stormVersion)
         val stormKafkaTopology = s"io.gearpump.integrationtest.storm.Storm${stormVersion}KafkaTopology"
 
-        withKafkaCluster {
+        import KafkaCluster._
+        withKafkaCluster(cluster) {
           kafkaCluster =>
             val sourcePartitionNum = 2
             val sinkPartitionNum = 1

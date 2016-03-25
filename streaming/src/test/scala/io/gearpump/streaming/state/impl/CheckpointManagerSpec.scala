@@ -40,7 +40,6 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
         checkpointManager.recover(timestamp)
 
         verify(checkpointStore).recover(timestamp)
-        checkpointManager.getCheckpointTime - timestamp should be <= checkpointInterval
     }
   }
 
@@ -69,22 +68,21 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
   }
 
   property("CheckpointManager should update checkpoint time according to max message timestamp") {
-    val timestampListGen = Gen.containerOf[Array, TimeStamp](timestampGen) suchThat (_.nonEmpty)
-    forAll(timestampListGen, checkpointIntervalGen) {
-      (timestamps: Array[TimeStamp], checkpointInterval: Long) =>
+    forAll(timestampGen, checkpointIntervalGen) {
+      (timestamp: TimeStamp, checkpointInterval: Long) =>
         val checkpointStore = mock[CheckpointStore]
         val checkpointManager =
           new CheckpointManager(checkpointInterval, checkpointStore)
-        timestamps.foreach(checkpointManager.update)
-        val maxTimestamp = timestamps.max
-        checkpointManager.getMaxMessageTime shouldBe maxTimestamp
+        checkpointManager.update(timestamp)
+        checkpointManager.getMaxMessageTime shouldBe timestamp
 
-        val checkpointTime = checkpointManager.getCheckpointTime
+        val checkpointTime = checkpointManager.getCheckpointTime.get
+        timestamp should (be < checkpointTime and be >= (checkpointTime - checkpointInterval))
+
         checkpointManager.checkpoint(checkpointTime, Array.empty[Byte])
         verify(checkpointStore).persist(MockitoMatchers.eq(checkpointTime),
           MockitoMatchers.anyObject[Array[Byte]]())
-        val newCheckpointTime = checkpointManager.updateCheckpointTime()
-        maxTimestamp should (be < newCheckpointTime and be >= (newCheckpointTime - checkpointInterval))
+        checkpointManager.getCheckpointTime shouldBe empty
     }
   }
 

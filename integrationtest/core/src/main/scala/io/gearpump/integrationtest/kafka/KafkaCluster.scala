@@ -17,8 +17,34 @@
  */
 package io.gearpump.integrationtest.kafka
 
+import io.gearpump.integrationtest.minicluster.MiniCluster
 import io.gearpump.integrationtest.{Docker, Util}
 import org.apache.log4j.Logger
+
+object KafkaCluster {
+
+  def withKafkaCluster(cluster: MiniCluster)(testCode: KafkaCluster => Unit): Unit = {
+    val kafkaCluster = new KafkaCluster(cluster.getNetworkGateway, "kafka")
+    try {
+      kafkaCluster.start()
+      testCode(kafkaCluster)
+    } finally {
+      kafkaCluster.shutDown()
+    }
+  }
+
+  def withDataProducer(topic: String, brokerList: String)
+                      (testCode: NumericalDataProducer => Unit): Unit = {
+    val producer = new NumericalDataProducer(topic, brokerList)
+    try {
+      producer.start()
+      testCode(producer)
+    } finally {
+      producer.stop()
+    }
+  }
+
+}
 
 /**
  * This class maintains a single node Kafka cluster with integrated Zookeeper.

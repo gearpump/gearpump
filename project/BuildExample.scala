@@ -176,7 +176,7 @@ object BuildExample extends sbt.Build {
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
     )
-  ) dependsOn (streaming % "test->test; provided", external_hadoopfs, external_monoid, external_serializer)
+  ) dependsOn (streaming % "test->test; provided", external_hadoopfs, external_monoid, external_serializer, external_kafka)
 
   lazy val pagerank = Project(
     id = "gearpump-examples-pagerank",

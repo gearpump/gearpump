@@ -19,7 +19,7 @@ package io.gearpump.integrationtest.kafka
 
 import java.util.Properties
 
-import com.twitter.bijection.Injection
+import io.gearpump.streaming.serializer.ChillSerializer
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.log4j.Logger
@@ -29,6 +29,7 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
   private val LOG = Logger.getLogger(getClass)
   private val producer = createProducer
   private val WRITE_SLEEP_NANOS = 10
+  private val serializer = new ChillSerializer[Int]
   var lastWriteNum = 0
 
   def start(): Unit = {
@@ -54,7 +55,7 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
       try {
         while (!Thread.currentThread.isInterrupted) {
           lastWriteNum += 1
-          val msg = Injection[String, Array[Byte]](lastWriteNum.toString)
+          val msg = serializer.serialize(lastWriteNum)
           val record = new ProducerRecord[Array[Byte], Array[Byte]](topic, msg)
           producer.send(record)
           Thread.sleep(0, WRITE_SLEEP_NANOS)

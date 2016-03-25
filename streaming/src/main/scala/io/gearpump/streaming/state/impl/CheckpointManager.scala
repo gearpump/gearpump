@@ -21,40 +21,39 @@ package io.gearpump.streaming.state.impl
 import io.gearpump.TimeStamp
 import io.gearpump.streaming.transaction.api.CheckpointStore
 
-
 class CheckpointManager(checkpointInterval: Long,
     checkpointStore: CheckpointStore) {
 
-  private var maxMessageTime = 0L
-  private var checkpointTime = checkpointInterval
-  private var lastCheckpointTime = 0L
+  private var maxMessageTime: Long = 0L
+  private var checkpointTime: Option[Long] = None
 
   def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
-    checkpointTime = (timestamp / checkpointInterval + 1) * checkpointInterval
     checkpointStore.recover(timestamp)
   }
 
-  def checkpoint(timestamp: TimeStamp, checkpoint: Array[Byte]): Unit = {
+  def checkpoint(timestamp: TimeStamp, checkpoint: Array[Byte]): Option[TimeStamp] = {
     checkpointStore.persist(timestamp, checkpoint)
-    lastCheckpointTime = checkpointTime
+    checkpointTime = checkpointTime.collect { case time if maxMessageTime > time =>
+     time + (1 + (maxMessageTime - time) / checkpointInterval) * checkpointInterval
+    }
+
+    checkpointTime
   }
 
-  def update(messageTime: TimeStamp): Unit = {
+  def update(messageTime: TimeStamp): Option[TimeStamp] = {
     maxMessageTime = Math.max(maxMessageTime, messageTime)
+    if (checkpointTime.isEmpty) {
+      checkpointTime = Some((1 + messageTime / checkpointInterval) * checkpointInterval)
+    }
+
+    checkpointTime
   }
 
   def shouldCheckpoint(upstreamMinClock: TimeStamp): Boolean = {
-    upstreamMinClock >= checkpointTime && checkpointTime > lastCheckpointTime
+    checkpointTime.exists(time => upstreamMinClock >= time)
   }
 
-  def getCheckpointTime: TimeStamp = checkpointTime
-
-  def updateCheckpointTime(): TimeStamp = {
-    if (maxMessageTime >= checkpointTime) {
-      checkpointTime += (1 + (maxMessageTime - checkpointTime) / checkpointInterval) * checkpointInterval
-    }
-    checkpointTime
-  }
+  def getCheckpointTime: Option[TimeStamp] = checkpointTime
 
   def close(): Unit = {
     checkpointStore.close()

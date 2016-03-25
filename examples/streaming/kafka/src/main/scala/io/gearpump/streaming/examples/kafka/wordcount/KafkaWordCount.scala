@@ -37,10 +37,10 @@ object KafkaWordCount extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "source" -> CLIOption[Int]("<hom many kafka producer tasks>", required = false, defaultValue = Some(1)),
+    "source" -> CLIOption[Int]("<how many kafka source tasks>", required = false, defaultValue = Some(1)),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(1)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1)),
-    "sink" -> CLIOption[Int]("<hom many kafka processor tasks", required = false, defaultValue = Some(1))
+    "sink" -> CLIOption[Int]("<how many kafka sink tasks>", required = false, defaultValue = Some(1))
     )
 
   def application(config: ParseResult, system: ActorSystem) : StreamApplication = {
