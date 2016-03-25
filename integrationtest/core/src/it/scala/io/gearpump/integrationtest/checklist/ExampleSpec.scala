@@ -32,7 +32,7 @@ class ExampleSpec extends TestSpecBase {
       val mainClass = "io.gearpump.examples.distributedshell.DistributedShell"
       val clientClass = "io.gearpump.examples.distributedshell.DistributedShellClient"
       val appId = restClient.getNextAvailableAppId()
-      val success = restClient.submitApp(distShellJar, mainClass)
+      val success = restClient.submitApp(distShellJar, cluster.getWorkerHosts.length, mainClass)
       success shouldBe true
       expectAppIsRunning(appId, "DistributedShell")
       val args = Array(
@@ -43,7 +43,8 @@ class ExampleSpec extends TestSpecBase {
       val expectedHostNames = cluster.getWorkerHosts.map(Docker.execAndCaptureOutput(_, "hostname"))
 
       def verify(): Boolean = {
-        val result = commandLineClient.submitAppAndCaptureOutput(distShellJar, args.mkString(" ")).split("\n").
+        val workerNum = cluster.getWorkerHosts.length
+        val result = commandLineClient.submitAppAndCaptureOutput(distShellJar, workerNum, args.mkString(" ")).split("\n").
           filterNot(line => line.startsWith("[INFO]") || line.isEmpty)
         expectedHostNames.forall(result.contains)
       }
@@ -59,7 +60,7 @@ class ExampleSpec extends TestSpecBase {
     "can submit immediately after killing a former one" in {
       // setup
       val formerAppId = restClient.getNextAvailableAppId()
-      val formerSubmissionSuccess = restClient.submitApp(wordCountJar)
+      val formerSubmissionSuccess = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length)
       formerSubmissionSuccess shouldBe true
       expectAppIsRunning(formerAppId, wordCountName)
       Util.retryUntil(restClient.queryStreamingAppDetail(formerAppId).clock > 0)
@@ -67,7 +68,7 @@ class ExampleSpec extends TestSpecBase {
 
       // exercise
       val appId = formerAppId + 1
-      val success = restClient.submitApp(wordCountJar)
+      val success = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length)
       success shouldBe true
       expectAppIsRunning(appId, wordCountName)
     }
@@ -97,7 +98,7 @@ class ExampleSpec extends TestSpecBase {
     "can obtain application clock and the clock will keep changing" in {
       // setup
       val appId = restClient.getNextAvailableAppId()
-      val success = restClient.submitApp(jar)
+      val success = restClient.submitApp(jar, cluster.getWorkerHosts.length)
       success shouldBe true
       expectAppIsRunning(appId, appName)
 
@@ -110,7 +111,7 @@ class ExampleSpec extends TestSpecBase {
     "can change the parallelism and description of a processor" in {
       // setup
       val appId = restClient.getNextAvailableAppId()
-      val formerSubmissionSuccess = restClient.submitApp(jar)
+      val formerSubmissionSuccess = restClient.submitApp(jar, cluster.getWorkerHosts.length)
       formerSubmissionSuccess shouldBe true
       expectAppIsRunning(appId, appName)
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors

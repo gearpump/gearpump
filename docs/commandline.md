@@ -18,7 +18,7 @@ If you use Maven you can have a look [here](https://maven.apache.org/plugins/mav
 You can use the command `gear` under the bin directory to submit, query and terminate an application:
 
 ```bash
-gear app [-namePrefix <application name prefix>] [-conf <custom gearpump config file>] -jar xx.jar MainClass <arg1> <arg2> ...
+gear app [-namePrefix <application name prefix>] [-executors <number of executors to launch>] [-conf <custom gearpump config file>] -jar xx.jar MainClass <arg1> <arg2> ...
 ```
 
 ### List all running applications

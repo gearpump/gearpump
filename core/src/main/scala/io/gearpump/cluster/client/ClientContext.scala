@@ -22,22 +22,20 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
-import com.typesafe.config.{ConfigFactory, Config}
-import io.gearpump.cluster.MasterToAppMaster.{ReplayFromTimestampWindowTrailingEdge, AppMastersData}
+import com.typesafe.config.{ConfigValueFactory, Config}
+import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, ReplayFromTimestampWindowTrailingEdge}
 import io.gearpump.cluster.MasterToClient.ReplayApplicationResult
 import io.gearpump.cluster._
 import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.jarstore.{FilePath, JarStoreService}
+import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
 import scala.collection.JavaConversions._
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
-import scala.concurrent.Future
 import scala.util.Try
-
 
 /**
  * ClientContext is a user facing util to submit/manage an application.
@@ -75,33 +73,30 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
    * "gearpump.app.jar" if defined. Otherwise, will assume the jar is on
    * the target runtime classpath, and will not send it.
    */
-  def submit(app : Application) : Int = {
+  def submit(app: Application): Int = {
     submit(app, System.getProperty(GEARPUMP_APP_JAR))
   }
 
-
-  def submit(app : Application, jar: String) : Int = {
-    import app.{name, appMaster, userConfig}
-    val submissionConfig = getSubmissionConfig(config)
-    val appDescription = AppDescription(name, appMaster.getName, userConfig, submissionConfig)
-    submit(appDescription, jar)
+  def submit(app: Application, jar: String): Int = {
+    submit(app, jar, getExecutorNum())
   }
 
-  import scala.collection.JavaConverters._
-  private def getSubmissionConfig(config: Config): Config = {
-    ClusterConfig.filterOutDefaultConfig(config)
-  }
-
-  private def submit(app : AppDescription, jarPath: String) : Int = {
+  def submit(app: Application, jar: String, executorNum: Int): Int = {
     val client = getMasterClient
     val appName = checkAndAddNamePrefix(app.name, System.getProperty(GEARPUMP_APP_NAME_PREFIX))
-    val updatedApp = AppDescription(appName, app.appMaster, app.userConfig, app.clusterConfig)
-    if (jarPath == null) {
-      client.submitApplication(updatedApp, None)
-    } else {
-      val appJar = loadFile(jarPath)
-      client.submitApplication(updatedApp, Option(appJar))
-    }
+    val submissionConfig = getSubmissionConfig(config)
+      .withValue(APPLICATION_EXECUTOR_NUMBER, ConfigValueFactory.fromAnyRef(executorNum))
+    val appDescription = AppDescription(appName, app.appMaster.getName, app.userConfig, submissionConfig)
+    val appJar = Option(jar).map(loadFile)
+    client.submitApplication(appDescription, appJar)
+  }
+
+  private def getExecutorNum(): Int = {
+    Try(System.getProperty(APPLICATION_EXECUTOR_NUMBER).toInt).getOrElse(1)
+  }
+
+  private def getSubmissionConfig(config: Config): Config = {
+    ClusterConfig.filterOutDefaultConfig(config)
   }
 
   def replayFromTimestampWindowTrailingEdge(appId : Int): ReplayApplicationResult = {

@@ -70,20 +70,14 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
 
   def resourceAllocationMessageHandler: Receive = {
     case ResourceAllocatedForSession(allocations, session) =>
-
       if (isSessionAlive(session)) {
-        val groupedResource = allocations.groupBy(_.worker).mapValues {
-          _.reduce((resourceA, resourceB) =>
-            resourceA.copy(resource = (resourceA.resource + resourceB.resource)))
-        }.toArray
-
-        groupedResource.map((workerAndResources) => {
-          val ResourceAllocation(resource, worker, workerId) = workerAndResources._2
+        allocations.foreach { resourceAllocation =>
+          val ResourceAllocation(resource, worker, workerId) = resourceAllocation
 
           val launcher = context.actorOf(executorSystemLauncher(appId, session))
           launcher ! LaunchExecutorSystem(WorkerInfo(workerId, worker), currentSystemId, resource)
           currentSystemId = currentSystemId + 1
-        })
+        }
       }
     case ResourceAllocationTimeOut(session) =>
       if (isSessionAlive(session)) {

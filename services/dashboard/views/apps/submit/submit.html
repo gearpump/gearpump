@@ -41,6 +41,10 @@
               ng-model="conf" accept-pattern="{{confFileSuffix}}"></form-control>
             <!-- input 3 -->
             <form-control
+              type="integer" min="1" label="Executor Number" ng-hide="isStormApp"
+              ng-model="executorNum"></form-control>
+            <!-- input 4 -->
+            <form-control
               type="text" label="Arguments"
               help="Application specific launch arguments (optional). E.g. WordCount can use &quot;-split 2 -sum 1&quot;"
               ng-model="launchArgs"></form-control>
