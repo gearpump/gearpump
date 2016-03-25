@@ -187,7 +187,7 @@ class Subscription(
 
   def sendAckRequestOnStallingTime(stallingTime: TimeStamp): Unit = {
     minClockValue.indices.foreach { i =>
-      if (minClockValue(i) == stallingTime && allowSendingMoreMessages) {
+      if (minClockValue(i) == stallingTime && pendingMessageCount(i) > 0 && allowSendingMoreMessages) {
         sendAckRequest(i)
         sendLatencyProbe(i)
       }
