@@ -146,3 +146,15 @@ h4, table > caption {
 .table-no-data-sm .glyphicon {
   margin-right: 6px;
 }
+
+/* Split multiple paragraphs in tooltip (2 rules) */
+.tooltip-inner > p {
+  text-align: left;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  margin: 0;
+}
+
+.tooltip-inner > p:not(:first-child) {
+  border-top: 1px dashed rgba(150,150,150,.7);
+}

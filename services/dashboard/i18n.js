@@ -9,8 +9,8 @@ angular.module('dashboard')
  */
   .constant('i18n', {
     terminology: {
-      master: 'Every cluster has one or more Master node. Master node is responsible to manage global resources of the cluster.',
-      worker: 'Worker node is responsible to manage local resources on single machine',
+      master: 'Master node is responsible to manage global resources of the cluster. Every cluster has one or more Master nodes.',
+      worker: 'Worker node is responsible to manage local resources on single machine. Every cluster can have one or more worker nodes.',
       workerExecutor: 'Executor JVMs running on current worker node.',
       appClock: 'Application clock tracks minimum clock of all message timestamps. Message timestamp is immutable since birth. It denotes the moment when message is generated.',
       appExecutor: 'In runtime, every application instance is represented by a single AppMaster and a list of Executors. AppMaster represents the command and controls center of the Application instance. It communicates with user, master, worker, and executor to get the job done. Each executor is a parallel unit for distributed application. Typically AppMaster and Executor will be started as JVM processes on worker nodes.',

@@ -76,15 +76,6 @@ angular.module('dashboard')
           return $http.get(restapiV1Root + path, {timeout: conf.restapiQueryTimeout});
         },
 
-        /** Get data from server periodically until an user cancellation or scope exit. */
-        repeatUntil: function(url, scope, onData) {
-          // TODO: Once `subscribe` is turned to websocket push model, there is no need to have this method
-          this.subscribe(url, scope,
-            function(data) {
-              return !onData || onData(data);
-            });
-        },
-
         /** Kill a running application */
         killApp: function(appId) {
           var url = restapiV1Root + 'appmaster/' + appId;

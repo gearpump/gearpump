@@ -57,7 +57,11 @@
     'use strict';
 
     angular.extend($tooltipProvider.defaults, {
-      html: true
+      html: true,
+      viewport: {
+        selector: 'body',
+        padding: 4
+      }
     });
   }])
 

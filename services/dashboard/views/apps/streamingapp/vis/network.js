@@ -37,12 +37,10 @@ angular.module('dashboard')
     function overrideHoverNodeCallback(network, callback) {
       return function(args) {
         var nodeId = parseInt(args.node);
-        var radius = network.findNode(nodeId)[0].options.size;
-        var position = network.getPositions([nodeId])[nodeId];
-        position = network.canvasToDOM(position);
+        var position = network.getBoundingBox(nodeId);
+        position = network.canvasToDOM({x: position.left, y: position.top});
         callback({
           node: nodeId,
-          radius: Math.ceil(radius),
           position: position
         });
         vis.util.preventDefault(args.event);

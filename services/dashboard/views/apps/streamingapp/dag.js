@@ -77,18 +77,17 @@ angular.module('dashboard')
           onDeselectNode: function() {
             $scope.activeProcessorId = -1;
             $scope.$apply();
-          },
-          onHoverNode: function() {
-            $('html,body').css('cursor', 'pointer');
-          },
-          onBlurNode: function() {
-            $('html,body').css('cursor', 'default');
           }
         }
       };
 
+      $scope.switchShowBandwidthOption = function() {
+        $scope.showBandwidth = !$scope.showBandwidth;
+        redrawGraph($scope.dag.getWeightedDagView());
+      };
+
       function showProcessorOperationsContextMenu(position) {
-        var elem = document.getElementById('dag-node-menu');
+        var elem = document.getElementById('node-menu');
         $contextmenu.popup(elem, position);
       }
 
@@ -115,7 +114,7 @@ angular.module('dashboard')
             var visNode = visNodes.get(processor.id);
             var size = d3.round(suggestRadiusFn(weight), 1);
             var concern = data.processorStallingTasks.hasOwnProperty(processor.id);
-            var color = $vis.nodeColor(concern);
+            var color = concern ? $vis.nodeColor.concerned : $vis.nodeColor.normal;
             if (!visNode || visNode.label !== label || visNode.size !== size ||
               (visNode.color && visNode.color !== color)) {
               diff.push({
@@ -142,20 +141,23 @@ angular.module('dashboard')
             var bandwidth = data.edgeBandwidths[edgeId];
             var visEdge = visEdges.get(edgeId);
             var width = d3.round(suggestEdgeWidthFn(bandwidth), 1);
-            if (!visEdge || visEdge.width !== width) {
-              diff.push({
-                id: edgeId, from: edge.from, to: edge.to,
+            if (!visEdge || visEdge.width !== width || ($scope.showBandwidth ^ visEdge.label)) {
+              var changes = {
+                id: draw._getEdgeId(edge.from, edge.to), from: edge.from, to: edge.to,
                 width: width,
                 hoverWidth: 0 /*delta*/,
                 selectionWidth: 0 /*delta*/,
+                label: bandwidth,
                 arrows: {
                   to: {scaleFactor: d3.round(suggestEdgeArrowSizeFn(bandwidth), 1)}
                 },
                 color: angular.merge({
                     opacity: d3.round(suggestEdgeOpacityFn(bandwidth), 1)
-                  }, $vis.edgeColorSet(bandwidth > 0)
+                  }, bandwidth > 0 ? $vis.edgeColor.normal : $vis.edgeColor.inactive
                 )
-              });
+              };
+              changes.label = $scope.showBandwidth ? bandwidth : '';
+              diff.push(changes);
             }
           });
           if (diff.length) {
@@ -163,9 +165,37 @@ angular.module('dashboard')
           }
         },
 
+        markCriticalPaths: function(visNodes, visEdges, criticalPaths) {
+          _.forEach(criticalPaths, function(criticalPath) {
+            draw.markCriticalPath(visNodes, visEdges, criticalPath);
+          });
+        },
+
+        markCriticalPath: function(visNodes, visEdges, processorIds) {
+          for (var i = 0; i < processorIds.length; i++) {
+            var processorId = processorIds[i];
+            visNodes.update({
+              id: processorId,
+              color: $vis.nodeColor.criticalPath
+            });
+
+            if (i > 0) {
+              var predecessorId = processorIds[i - 1];
+              visEdges.update({
+                id: draw._getEdgeId(predecessorId, processorId),
+                color: $vis.edgeColor.criticalPath
+              });
+            }
+          }
+        },
+
         _rangeMapper: function(dict, range) {
           var values = d3.values(dict);
           return d3.scale.linear().domain(d3.extent(values)).range(range);
+        },
+
+        _getEdgeId: function(from, to) {
+          return from + '_' + to;
         }
       };
 
@@ -179,6 +209,7 @@ angular.module('dashboard')
           draw.removeDeadElements(visEdges, dagData.edges);
           draw.updateVisGraphNodes(visNodes, dagData);
           draw.updateVisGraphEdges(visEdges, dagData);
+          draw.markCriticalPaths(visNodes, visEdges, dagData.criticalPaths);
         } finally {
           visNodes.setOptions({queue: false});
           visEdges.setOptions({queue: false});

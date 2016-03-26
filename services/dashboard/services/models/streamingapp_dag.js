@@ -86,12 +86,17 @@ angular.module('io.gearpump.models')
           bandwidths[key] = this._calculateEdgeBandwidth(edge);
         }, this);
 
+        var criticalPathAndLatency = this._getCriticalPathsAndLatency();
+        var showCriticalPath = criticalPathAndLatency.latency > 0 && viewProvider.paths.length > 1;
+
         return {
           processors: processors,
           processorStallingTasks: this.stallingTasks,
           processorWeights: weights,
           edges: edges,
-          edgeBandwidths: bandwidths
+          edgeBandwidths: bandwidths,
+          paths: viewProvider.paths,
+          criticalPaths: showCriticalPath ? criticalPathAndLatency.paths : []
         };
       },
 
@@ -139,8 +144,12 @@ angular.module('io.gearpump.models')
 
       /** Return the latency on critical path. */
       getCriticalPathLatency: function() {
-        var criticalPathAndLatency = this.dagLogicalView.calculateCriticalPathAndLatency(this.metricsProvider);
-        return criticalPathAndLatency.latency;
+        return this._getCriticalPathsAndLatency().latency;
+      },
+
+      /** Return an array of critical paths (usually only one path) and the latency for travelling the whole path. */
+      _getCriticalPathsAndLatency: function() {
+        return this.dagLogicalView.calculateCriticalPathAndLatency(this.metricsProvider);
       },
 
       /** Return the average message processing time of particular processor. */
