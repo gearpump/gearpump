@@ -20,6 +20,9 @@
 package io.gearpump.services
 
 import java.io.{File, IOException}
+import java.nio.file.Files
+import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.StandardOpenOption.{WRITE, APPEND}
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
@@ -109,38 +112,41 @@ class MasterService(val master: ActorRef,
     } ~
     path("submitapp") {
       post {
-        parameters('executorNum.as[Int] ? 1, 'args ? "") { (executorNum, args) =>
-          uploadFile { fileMap =>
-            val jar = fileMap.get("jar").map(_.file)
-            val userConf = fileMap.get("conf").map(_.file)
-            onComplete(Future(
-              MasterService.submitGearApp(jar, executorNum, args, systemConfig, userConf)
-            )) {
-              case Success(success) =>
-                val response = MasterService.AppSubmissionResult(success)
-                complete(write(response))
-              case Failure(ex) =>
-                failWith(ex)
-            }
+        uploadFile { form =>
+          val jar = form.getFile("jar").map(_.file)
+          val configFile = form.getFile("configfile").map(_.file)
+          val configString = form.getValue("configstring").getOrElse("")
+          val executorCount = form.getValue("executorcount").getOrElse("1").toInt
+          val args = form.getValue("args").getOrElse("")
+
+          val mergedConfigFile = mergeConfig(configFile, configString)
+
+          onComplete(Future(
+            MasterService.submitGearApp(jar, executorCount, args, systemConfig, mergedConfigFile)
+          )) {
+            case Success(success) =>
+              val response = MasterService.AppSubmissionResult(success)
+              complete(write(response))
+            case Failure(ex) =>
+              failWith(ex)
           }
         }
       }
     } ~
     path("submitstormapp") {
       post {
-        parameters('executorNum.as[Int] ? 1, 'args ? "") { (executorNum, args) =>
-          uploadFile { fileMap =>
-            val jar = fileMap.get("jar").map(_.file)
-            val stormConf = fileMap.get("conf").map(_.file)
-            onComplete(Future(
-              MasterService.submitStormApp(jar, stormConf, args, systemConfig)
-            )) {
-              case Success(success) =>
-                val response = MasterService.AppSubmissionResult(success)
-                complete(write(response))
-              case Failure(ex) =>
-                failWith(ex)
-            }
+        uploadFile { form =>
+          val jar = form.getFile("jar").map(_.file)
+          val configFile = form.getFile("configfile").map(_.file)
+          val args = form.getValue("args").getOrElse("")
+          onComplete(Future(
+            MasterService.submitStormApp(jar, configFile, args, systemConfig)
+          )) {
+            case Success(success) =>
+              val response = MasterService.AppSubmissionResult(success)
+              complete(write(response))
+            case Failure(ex) =>
+              failWith(ex)
           }
         }
       }
@@ -171,8 +177,8 @@ class MasterService(val master: ActorRef,
       }
     } ~
     path("uploadjar") {
-      uploadFile { fileMap =>
-        val jar = fileMap.get("jar").map(_.file)
+      uploadFile { form =>
+        val jar = form.getFile("jar").map(_.file)
         if (jar.isEmpty) {
           complete(write(
             MasterService.Status(success = false, reason = "Jar file not found")))
@@ -185,6 +191,22 @@ class MasterService(val master: ActorRef,
     path("partitioners") {
       get {
         complete(write(BuiltinPartitioners(Constants.BUILTIN_PARTITIONERS.map(_.getName))))
+      }
+    }
+  }
+
+  private def mergeConfig(configFile: Option[File], configString: String): Option[File] = {
+    if (configString == null || configString.isEmpty) {
+      configFile
+    } else {
+      configFile match {
+        case Some(file) =>
+          Files.write(file.toPath, ("\n" + configString).getBytes(UTF_8), APPEND)
+          Some(file)
+        case None =>
+          val file = File.createTempFile("\"userfile_configstring_", ".conf")
+          Files.write(file.toPath, configString.getBytes(UTF_8), WRITE)
+          Some(file)
       }
     }
   }

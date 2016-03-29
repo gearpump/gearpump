@@ -89,13 +89,18 @@ class RestClient(host: String, port: Int) {
 
   def submitApp(jar: String, executorNum: Int, args: String = "", config: String = ""): Boolean = try {
     var endpoint = "master/submitapp"
-    if (args.length > 0) {
-      endpoint += s"?executorNum=${executorNum}&args=" + Util.encodeUriComponent(args)
-    }
+
     var options = Seq(s"jar=@$jar")
     if (config.length > 0) {
       options :+= s"conf=@$config"
     }
+
+    options :+= s"executorcount=$executorNum"
+
+    if (args != null && !args.isEmpty) {
+      options :+= "args=\"" + args + "\""
+    }
+
     val resp = callApi(endpoint, options.map("-F " + _).mkString(" "))
     val result = decodeAs[AppSubmissionResult](resp)
     assert(result.success)
