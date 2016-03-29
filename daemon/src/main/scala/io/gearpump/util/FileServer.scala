@@ -52,8 +52,20 @@ class FileServer(system: ActorSystem, host: String, port: Int = 0, rootDirectory
 
   val route: Route = {
     path("upload") {
-      uploadFileTo(rootDirectory) { fileMap =>
-        complete(fileMap.head._2.file.getName)
+      uploadFileTo(rootDirectory) { form =>
+        val fileName = form.fields.headOption.flatMap{pair =>
+          val (_, fileInfo) = pair
+          fileInfo match {
+            case Left(file) => Option(file.file).map(_.getName)
+            case Right(_) => None
+          }
+        }
+
+        if (fileName.isDefined) {
+          complete(fileName.get)
+        } else {
+          failWith(new Exception("File not found in the uploaded form"))
+        }
       }
     } ~
       path("download") {

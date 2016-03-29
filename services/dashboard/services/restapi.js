@@ -118,9 +118,9 @@ angular.module('dashboard')
         },
 
         /** Submit an user defined application with user configuration */
-        submitUserApp: function(files, formFormNames, executorNum, args, onComplete) {
+        submitUserApp: function(files, fileFieldNames, executorNum, args, onComplete) {
           return self._submitApp(restapiV1Root + 'master/submitapp',
-            files, formFormNames, executorNum, args, onComplete);
+            files, fileFieldNames, executorNum, args, onComplete);
         },
 
         /** Submit a Storm application */
@@ -129,13 +129,16 @@ angular.module('dashboard')
             files, formFormNames, executorNum, args, onComplete);
         },
 
-        _submitApp: function(url, files, formFormNames, executorNum, args, onComplete) {
-          var params = '?executorNum=' + executorNum + '&args=' + encodeURIComponent(args);
+        _submitApp: function(url, files, fileFieldNames, executorNum, args, onComplete) {
           var upload = Upload.upload({
-            url: url + params,
+            url: url,
             method: 'POST',
             file: files,
-            fileFormDataName: formFormNames
+            fileFormDataName: fileFieldNames,
+            fields: {
+              "executorcount": executorNum,
+              "args": args
+            }
           });
 
           upload.then(function(response) {
