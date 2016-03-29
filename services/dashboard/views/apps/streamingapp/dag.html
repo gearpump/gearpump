@@ -2,10 +2,18 @@
   <div class="panel panel-sm panel-default">
     <div class="panel-heading">DAG
       <remark class="pull-right" type="info"
-              tooltip="<b>Right click (or long press on touch device)</b> on a processor will show all available operations. <b>Double click</b> a processor will show its details.">Instructions</remark>
+              tooltip="<p><b>Right click (or long press on touch device)</b> on a processor will show all available operations.</p><p><b>Double click</b> a processor will show its details.</p>">Instructions</remark>
     </div>
-    <div class="panel-body">
-      <div class="cm-container" id="dag-node-menu"
+    <div class="panel-body" id="dag-viewport">
+      <div class="btn-group btn-group-xs pull-right" role="group">
+        <button type="button" class="btn btn-default"
+                ng-class="{active: !showBandwidth}"
+                ng-click="switchShowBandwidthOption()">Hide Bandwidth</button>
+        <button type="button" class="btn btn-default"
+                ng-class="{active: showBandwidth}"
+                ng-click="switchShowBandwidthOption()">Show Bandwidth</button>
+      </div>
+      <div class="cm-container" id="node-menu"
            bs-dropdown="processorActionMenu" html="true"></div>
       <vis-network
         data="visGraph.data"

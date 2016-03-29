@@ -41,7 +41,8 @@
               ng-model="conf" accept-pattern="{{confFileSuffix}}"></form-control>
             <!-- input 3 -->
             <form-control
-              type="integer" min="1" label="Executor Number" ng-hide="isStormApp"
+              ng-if="!isStormApp"
+              type="integer" min="1" label="Executor Count"
               ng-model="executorNum"></form-control>
             <!-- input 4 -->
             <form-control

@@ -11,6 +11,20 @@ angular.module('dashboard')
     var fontFace = 'lato,roboto,"helvetica neue","segoe ui",arial,helvetica,sans-serif';
     var maxNodeRadius = 16;
 
+    function nodeColorSet(border, background) {
+      var colorSet = {
+        border: border,
+        background: background
+      };
+      var result = colorSet;
+      result.hover = colorSet;
+      result.highlight = colorSet;
+      return result;
+    }
+
+    var concernedNodeColor = nodeColorSet('rgb(138,1,12)', 'rgb(248,106,91)');
+    var criticalPathNodeColor = nodeColorSet('rgb(220,131,5)', 'rgb(250,161,35)');
+
     var self = {
       newOptions: function(height) {
         return {
@@ -70,20 +84,13 @@ angular.module('dashboard')
       nodeRadiusRange: function() {
         return [3, 16];
       },
-      nodeColor: function(concern) {
-        var colorSet = concern ? {
-          border: 'rgb(138,1,12)',
-          background: 'rgb(248,106,91)'
-        } : {
+      nodeColor: {
+        normal: {
           border: '#2B7CE9',
           background: '#D2E5FF'
-        };
-        var result = colorSet;
-        if (concern) {
-          result.hover = colorSet;
-          result.highlight = colorSet;
-        }
-        return result;
+        },
+        concerned: concernedNodeColor,
+        criticalPath: criticalPathNodeColor
       },
       edgeWidthRange: function() {
         return [1, 5];
@@ -94,16 +101,22 @@ angular.module('dashboard')
       edgeOpacityRange: function() {
         return [0.4, 1];
       },
-      edgeColorSet: function(alive) {
-        return alive ? {
+      edgeColor: {
+        normal: {
           color: '#2B7CE9',
           hover: '#2B7CE9',
           highlight: '#2B7CE9'
-        } : {
+        },
+        inactive: {
           color: 'rgb(195,195,195)',
           hover: 'rgb(166,166,166)',
           highlight: 'rgb(166,166,166)'
-        };
+        },
+        criticalPath: {
+          color: 'rgb(250,161,35)',
+          hover: 'rgb(220,131,5)',
+          highlight: 'rgb(220,131,5)'
+        }
       },
       /** Return label of processor name */
       processorNameAsLabel: function(processor) {
