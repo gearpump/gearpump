@@ -34,9 +34,8 @@ class MasterWatcherSpec extends FlatSpec with Matchers {
     val system = ActorSystem("ForMasterWatcher", config)
 
     val actorWatcher = TestProbe()(system)
-    val mockMaster = TestProbe()(system)
 
-    val masterWatcher = system.actorOf(Props(classOf[MasterWatcher], "watcher", mockMaster.ref))
+    val masterWatcher = system.actorOf(Props(classOf[MasterWatcher], "watcher"))
     actorWatcher watch masterWatcher
     actorWatcher.expectTerminated(masterWatcher, 5 seconds)
     system.shutdown()

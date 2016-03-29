@@ -61,21 +61,21 @@ class SecurityServiceSpec extends FlatSpec with ScalatestRouteTest  with Matcher
       assert(header[`Set-Cookie`].isDefined)
       val httpCookie = header[`Set-Cookie`].get.cookie
       assert(httpCookie.name == "gearpump_token")
-      cookie = new HttpCookiePair(httpCookie.name, httpCookie.value)
+      cookie = HttpCookiePair.apply(httpCookie.name, httpCookie.value)
     }
 
     // after authentication, everything is fine.
-    Get("/resource") ~>  addHeader(Cookie(cookie)) ~> security.route ~> check {
+    Get("/resource").addHeader(Cookie(cookie)) ~> security.route ~> check {
       responseAs[String] shouldEqual "OK"
     }
 
     // however, guest cannot access high-permission operations, like POST.
-    Post("/resource") ~> addHeader(Cookie(cookie)) ~> security.route ~> check {
+      Post("/resource").addHeader(Cookie(cookie)) ~> security.route ~> check {
       assert(rejection == AuthorizationFailedRejection)
     }
 
     // logout, should clear the session
-    Post(s"/logout") ~> addHeader(Cookie(cookie)) ~> security.route ~> check{
+    Post(s"/logout").addHeader(Cookie(cookie)) ~> security.route ~> check{
       assert("{\"user\":\"guest\"}" == responseAs[String])
       assert(status.intValue() == 200)
       assert(header[`Set-Cookie`].isDefined)
@@ -106,21 +106,21 @@ class SecurityServiceSpec extends FlatSpec with ScalatestRouteTest  with Matcher
       assert(header[`Set-Cookie`].isDefined)
       val httpCookie = header[`Set-Cookie`].get.cookie
       assert(httpCookie.name == "gearpump_token")
-      cookie = new HttpCookiePair(httpCookie.name, httpCookie.value)
+      cookie = HttpCookiePair(httpCookie.name, httpCookie.value)
     }
 
     // after authentication, everything is fine.
-    Get("/resource") ~>  addHeader(Cookie(cookie)) ~> security.route ~> check {
+    Get("/resource").addHeader(Cookie(cookie)) ~> security.route ~> check {
       responseAs[String] shouldEqual "OK"
     }
 
     // Not like guest, admimn can also access POST
-    Post("/resource") ~> addHeader(Cookie(cookie)) ~> security.route ~> check {
+    Post("/resource").addHeader(Cookie(cookie)) ~> security.route ~> check {
       responseAs[String] shouldEqual "OK"
     }
 
     // logout, should clear the session
-    Post(s"/logout") ~> addHeader(Cookie(cookie)) ~> security.route ~> check{
+    Post(s"/logout").addHeader(Cookie(cookie)) ~> security.route ~> check{
       assert("{\"user\":\"admin\"}" == responseAs[String])
       assert(status.intValue() == 200)
       assert(header[`Set-Cookie`].isDefined)

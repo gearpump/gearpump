@@ -31,7 +31,7 @@ import io.gearpump.experiments.yarn.Constants._
 import io.gearpump.experiments.yarn.glue.Records._
 import io.gearpump.experiments.yarn.glue.{NMClient, RMClient, YarnConfig}
 import io.gearpump.transport.HostPort
-import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
+import io.gearpump.util._
 import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.methods.GetMethod
 import org.slf4j.Logger
@@ -359,7 +359,7 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
     }
 
     if (status == 200) {
-      system.actorFor(get.getResponseBodyAsString)
+      AkkaHelper.actorFor(system, get.getResponseBodyAsString)
     } else {
       throw new IOException("Fail to resolve AppMaster address, please make sure " +
         s"${report.getOriginalTrackingUrl} is accessible...")

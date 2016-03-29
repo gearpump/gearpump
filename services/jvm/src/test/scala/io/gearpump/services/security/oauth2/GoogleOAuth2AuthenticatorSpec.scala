@@ -19,9 +19,9 @@
 package io.gearpump.services.security.oauth2
 
 import akka.actor.ActorSystem
-import akka.http.javadsl.model.HttpEntityStrict
+import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.Uri.{Query, Path}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
@@ -55,7 +55,7 @@ class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
   google.init(configString)
 
   it should "generate the correct authorization request" in {
-    val parameters = Uri(google.getAuthorizationUrl()).query.toMap
+    val parameters = Uri(google.getAuthorizationUrl()).query().toMap
     assert(parameters("response_type") == "code")
     assert(parameters("client_id") == configMap("clientid"))
     assert(parameters("redirect_uri") == configMap("callback"))
@@ -70,10 +70,10 @@ class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
 
     def accessTokenEndpoint(request: HttpRequest) = {
 
-      assert(request.entity.contentType().mediaType.value == "application/x-www-form-urlencoded")
+      assert(request.entity.contentType.mediaType.value == "application/x-www-form-urlencoded")
 
-      val body = request.entity.asInstanceOf[HttpEntityStrict].data().decodeString("UTF-8")
-      val form = Uri./.withQuery(body).query.toMap
+      val body = request.entity.asInstanceOf[Strict].data.decodeString("UTF-8")
+      val form = Uri./.withQuery(Query(body)).query().toMap
 
       assert(form("client_id") == configMap("clientid"))
       assert(form("client_secret") == configMap("clientsecret"))
@@ -95,7 +95,7 @@ class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
     }
 
     def protectedResourceEndpoint(request: HttpRequest) = {
-      assert(request.getUri().parameter("access_token").get == accessToken)
+      assert(request.getUri().query().get("access_token").get == accessToken)
       val response =s"""
            |{
            |   "kind": "plus#person",
