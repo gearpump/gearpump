@@ -88,11 +88,11 @@ angular.module('io.gearpump.models', [])
           var obj = wrapper.masterDescription;
           angular.merge(obj, {
             // upickle conversion
-            cluster: _.map(obj.cluster, function(tuple) {
-              return tuple.join(':');
+            cluster: _.map(obj.cluster, function(node) {
+              return node.host + ":" + node.port;
             }),
             jvm: decoder._jvm(obj.jvmName),
-            leader: obj.leader.join(':'),
+            leader: obj.leader.host + ":" + obj.leader.port,
             // extra properties/methods
             isHealthy: obj.masterStatus === 'synced',
             configLink: restapi.masterConfigLink()
