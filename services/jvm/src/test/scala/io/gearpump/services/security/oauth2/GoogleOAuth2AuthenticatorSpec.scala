@@ -51,8 +51,11 @@ class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
 
   val configString = ConfigFactory.parseMap(configMap.asJava)
 
-  private val google = new MockGoogleAuthenticator(serverHost)
-  google.init(configString)
+  private lazy val google = {
+    val google = new MockGoogleAuthenticator(serverHost)
+    google.init(configString, system.dispatcher)
+    google
+  }
 
   it should "generate the correct authorization request" in {
     val parameters = Uri(google.getAuthorizationUrl()).query().toMap

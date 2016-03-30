@@ -21,7 +21,7 @@ package io.gearpump.services
 import akka.actor.{ActorSystem}
 import akka.http.scaladsl.model.{Uri, StatusCodes, RemoteAddress}
 import akka.http.scaladsl.model.headers.{HttpCookiePair, HttpCookie, HttpChallenge}
-import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing}
+import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsRejected, CredentialsMissing}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
@@ -55,10 +55,9 @@ import scala.util.{Failure, Success}
  */
 class SecurityService(inner: RouteService, implicit val system: ActorSystem) extends RouteService {
 
-  // Use scheme "xBasic" to avoid popping up web browser native authentication box.
-  private val challenge = HttpChallenge(scheme = "xBasic", realm = "gearpump", params = Map.empty)
+  // Use scheme "GearpumpBasic" to avoid popping up web browser native authentication box.
+  private val challenge = HttpChallenge(scheme = "GearpumpBasic", realm = "gearpump", params = Map.empty)
 
-  private val authFailedRejection = AuthenticationFailedRejection(CredentialsMissing, challenge)
   val LOG = LogUtil.getLogger(getClass, "AUDIT")
 
   private val config = system.settings.config
@@ -100,8 +99,12 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     }
   }
 
-  private def authenticationFailed: Route = {
-    reject(authFailedRejection)
+  private def rejectMissingCredentials: Route = {
+    reject(AuthenticationFailedRejection(CredentialsMissing, challenge))
+  }
+
+  private def rejectWrongCredentials: Route = {
+    reject(AuthenticationFailedRejection(CredentialsRejected, challenge))
   }
 
   private def requireAuthentication(inner: UserSession => Route): Route = {
@@ -111,7 +114,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
           inner(session)
         }
         case None =>
-          authenticationFailed
+          rejectMissingCredentials
       }
     }
   }
@@ -180,7 +183,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
                   case Some(session) =>
                     login(session, ip.toString)
                   case None =>
-                    authenticationFailed
+                    rejectWrongCredentials
                 }
               }
             }
@@ -193,7 +196,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
         // Support OAUTH Authentication
         pathPrefix ("oauth2"/ Segment) {providerName =>
         // Resolve OAUTH Authentication Provider
-        val oauthService = OAuth2Authenticator.get(config, providerName)
+        val oauthService = OAuth2Authenticator.get(config, providerName, ec)
 
           if (oauthService == null) {
             // OAuth2 is disabled.
@@ -207,7 +210,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
                   login(session, ip.toString, redirectToRoot = true)
                 case Failure(ex) => {
                   LOG.info(s"Failed to login user from ${ip.toString}", ex)
-                  failWith(ex)
+                  rejectWrongCredentials
                 }
               }
             }

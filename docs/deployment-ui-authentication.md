@@ -218,17 +218,21 @@ To use Google OAuth2 Authenticator, there are several steps:
 #### Step1: Register your application to UAA with `uaac`
 
 1. Check tutorial on uaac at [https://docs.cloudfoundry.org/adminguide/uaa-user-management.html](https://docs.cloudfoundry.org/adminguide/uaa-user-management.html)
-2. Open a bash shell, and login in as user admin by
+2. Open a bash shell, set the UAA server by command `uaac target`
+    ```
+      uaac target [your uaa server url]
+    ```
+3. Login in as user admin by
 
    ```
      uaac token client get admin -s MyAdminPassword
    ```
-3. Create a new Application (Client) in UAA,
+4. Create a new Application (Client) in UAA,
    ```
     uaac client add [your_client_id]
-      --scope openid
+      --scope "openid cloud_controller.read"
       --authorized_grant_types "authorization_code client_credentials refresh_token"
-      --authorities openid
+      --authorities "openid cloud_controller.read"
       --redirect_uri [your_redirect_url]
       --autoapprove true
       --secret [your_client_secret]
@@ -251,6 +255,14 @@ To enable OAuth2 authentication, the Gearpump UI server should have network acce
 For guide of how to configure web proxy for UI server, please refer to please refer to section "Enable web proxy for UI server" above.
 
 #### Step4: Restart the UI server and try to click the CloudFoundry login icon on UI server.
+
+#### Step5: You can also enable additional authenticator for CloudFoundry UAA by setting config:
+
+```
+additional-authenticator-enabled = true
+```
+
+Please see description in gear.conf for more information.
 
 #### Extends OAuth2Authenticator to support new Authorization service like Facebook, or Twitter.
 

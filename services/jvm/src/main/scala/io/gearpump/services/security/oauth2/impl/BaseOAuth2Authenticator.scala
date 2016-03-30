@@ -35,7 +35,8 @@ import io.gearpump.util.Constants._
 import io.gearpump.util.Util
 
 import scala.collection.mutable.StringBuilder
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 /**
  * Uses Ning AsyncClient to connect to OAuth2 service.
@@ -64,12 +65,14 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
     new BaseApi20(authorizeUrl, accessTokenEndpoint)
   }
 
-  private var oauthService: OAuth20Service = null
+  protected var oauthService: OAuth20Service = null
+
+  protected var executionContext: ExecutionContext = null
 
   private var defaultPermissionLevel = Authenticator.Guest.permissionLevel
 
   // Synchronization ensured by the caller
-  override def init(config: Config): Unit = {
+  override def init(config: Config, executionContext: ExecutionContext): Unit = {
     if (this.oauthService == null) {
       val callback = config.getString(GEARPUMP_UI_OAUTH2_AUTHENTICATOR_CALLBACK)
       val clientId = config.getString(GEARPUMP_UI_OAUTH2_AUTHENTICATOR_CLIENT_ID)
@@ -84,6 +87,7 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
         }
       }
       this.oauthService = buildOAuth2Service(clientId, clientSecret, callback)
+      this.executionContext = executionContext
     }
   }
 
@@ -101,60 +105,66 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
     oauthService.getAuthorizationUrl()
   }
 
-  override def authenticate(parameters: Map[String, String]): Future[UserSession] = {
 
+  protected def authenticateWithAccessToken(accessToken: OAuth2AccessToken): Future[UserSession] = {
     val promise = Promise[UserSession]()
-    val code = parameters.get(GEARPUMP_UI_OAUTH2_AUTHENTICATOR_AUTHORIZATION_CODE)
-    val accessToken = parameters.get(GEARPUMP_UI_OAUTH2_AUTHENTICATOR_ACCESS_TOKEN)
-
-    def authenticateWithAccessToken(accessToken: OAuth2AccessToken): Unit = {
-
-      val request = new OAuthRequestAsync(Verb.GET, protectedResourceUrl, oauthService)
-      oauthService.signRequest(accessToken, request)
-      request.sendAsync {
-        new OAuthAsyncRequestCallback[Response] {
-          override def onCompleted(response: Response): Unit = {
-            try {
-              val user = extractUserName(response.getBody)
-              promise.success(new UserSession(user, defaultPermissionLevel))
-            } catch {
-              case ex: Throwable =>
-                promise.failure(ex)
-            }
+    val request = new OAuthRequestAsync(Verb.GET, protectedResourceUrl, oauthService)
+    oauthService.signRequest(accessToken, request)
+    request.sendAsync {
+      new OAuthAsyncRequestCallback[Response] {
+        override def onCompleted(response: Response): Unit = {
+          try {
+            val user = extractUserName(response.getBody)
+            promise.success(new UserSession(user, defaultPermissionLevel))
+          } catch {
+            case ex: Throwable =>
+              promise.failure(ex)
           }
+        }
 
-          override def onThrowable(throwable: Throwable): Unit = {
-            promise.failure(throwable)
-          }
+        override def onThrowable(throwable: Throwable): Unit = {
+          promise.failure(throwable)
         }
       }
     }
+    promise.future
+  }
 
-    def authenticateWithAuthorizationCode(code: String): Unit = {
-      oauthService.getAccessTokenAsync(code,
+  protected def authenticateWithAuthorizationCode(code: String): Future[UserSession] = {
 
-        new OAuthAsyncRequestCallback[OAuth2AccessToken] {
-          override def onCompleted(accessToken: OAuth2AccessToken): Unit = {
-            authenticateWithAccessToken(accessToken)
+    implicit val ec: ExecutionContext = executionContext
+
+    val promise = Promise[UserSession]()
+    oauthService.getAccessTokenAsync(code,
+
+      new OAuthAsyncRequestCallback[OAuth2AccessToken] {
+        override def onCompleted(accessToken: OAuth2AccessToken): Unit = {
+          authenticateWithAccessToken(accessToken).onComplete{
+            case Success(user) => promise.success(user)
+            case Failure(ex) => promise.failure(ex)
           }
+        }
 
-          override def onThrowable(throwable: Throwable): Unit = {
-            promise.failure(throwable)
-          }
-        })
-    }
+        override def onThrowable(throwable: Throwable): Unit = {
+          promise.failure(throwable)
+        }
+      })
+    promise.future
+  }
+
+  override def authenticate(parameters: Map[String, String]): Future[UserSession] = {
+
+    val code = parameters.get(GEARPUMP_UI_OAUTH2_AUTHENTICATOR_AUTHORIZATION_CODE)
+    val accessToken = parameters.get(GEARPUMP_UI_OAUTH2_AUTHENTICATOR_ACCESS_TOKEN)
 
     if (accessToken.isDefined) {
       authenticateWithAccessToken(new OAuth2AccessToken(accessToken.get))
-    }
-    else if (code.isDefined) {
+    } else if (code.isDefined) {
       authenticateWithAuthorizationCode(code.get)
     } else {
       // Fails authentication if code not exist
-      promise.failure(new Exception("Fail to authenticate user as there is no code parameter in URL"))
+      Future.failed(new Exception("Fail to authenticate user as there is no code parameter in URL"))
     }
-
-    promise.future
   }
 
   private def buildOAuth2Service(clientId: String, clientSecret: String, callback: String): OAuth20Service = {
@@ -179,6 +189,7 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
     service
   }
+
 }
 
 object BaseOAuth2Authenticator {
