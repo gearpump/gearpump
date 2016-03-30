@@ -27,7 +27,7 @@ angular.module('dashboard')
         var fileFormNames = ['jar'];
         if ($scope.conf) {
           files.push($scope.conf);
-          fileFormNames.push('conf');
+          fileFormNames.push('configfile');
         }
         $scope.uploading = true;
         submitFn(files, fileFormNames, $scope.executorNum, $scope.launchArgs, function(response) {

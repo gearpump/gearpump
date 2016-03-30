@@ -67,8 +67,9 @@ class AppMasterService(val master: ActorRef,
         val msg = java.net.URLDecoder.decode(args)
         val dagOperation = read[DAGOperation](msg)
         (post & entity(as[Multipart.FormData])) { _ =>
-        uploadFile { fileMap =>
-          val jar = fileMap.get("jar").map(_.file)
+        uploadFile { form =>
+          val jar = form.getFile("jar").map(_.file)
+
           if (jar.nonEmpty) {
             dagOperation match {
               case replace: ReplaceProcessor =>
