@@ -22,7 +22,7 @@ import com.typesafe.config.Config
 import io.gearpump.services.SecurityService.UserSession
 import io.gearpump.util.Constants
 import io.gearpump.util.Constants._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  *
@@ -72,8 +72,9 @@ trait OAuth2Authenticator {
    * @note '''Thread-Safety''': Framework ensures this call is synchronized.
    *
    * @param config Client Id, client secret, callback URL and etc..
+   * @param executionContext ExecutionContext from hosting environment.
    */
-  def init(config: Config): Unit
+  def init(config: Config, executionContext: ExecutionContext): Unit
 
   /**
    * Returns the OAuth Authorization URL so for redirection to that address to do OAuth2
@@ -115,7 +116,7 @@ object OAuth2Authenticator {
    * @param provider, Name for the OAuth2 Authentication Service.
    * @return Returns null if the OAuth2 Authentication is disabled.
    */
-  def get(config: Config, provider: String): OAuth2Authenticator = {
+  def get(config: Config, provider: String, executionContext: ExecutionContext): OAuth2Authenticator = {
 
     if (providers.contains(provider)) {
       providers(provider)
@@ -131,7 +132,7 @@ object OAuth2Authenticator {
             val authenticatorClass = authenticatorConfig.getString(GEARPUMP_UI_OAUTH2_AUTHENTICATOR_CLASS)
             val clazz = Thread.currentThread().getContextClassLoader.loadClass(authenticatorClass)
             val authenticator = clazz.newInstance().asInstanceOf[OAuth2Authenticator]
-            authenticator.init(authenticatorConfig)
+            authenticator.init(authenticatorConfig, executionContext)
             providers += provider -> authenticator
             authenticator
           }
