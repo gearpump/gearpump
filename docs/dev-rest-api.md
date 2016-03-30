@@ -112,16 +112,8 @@ Sample Response:
 ```
 {
   "masterDescription": {
-    "leader": [
-      "master@127.0.0.1",
-      3000
-    ],
-    "cluster": [
-      [
-        "127.0.0.1",
-        3000
-      ]
-    ],
+    "leader":{"host":"master@127.0.0.1","port":3000},
+    "cluster":[{"host":"127.0.0.1","port":3000}]
     "aliveFor": "642941",
     "logFile": "/Users/foobar/gearpump/logs",
     "jarStore": "jarstore/",
@@ -566,6 +558,81 @@ Sample Response:
         }
     }]
 }
+```
+
+## Supervisor Service
+
+Supervisor service allows user to add or remove a worker machine.
+
+### POST api/v1.0/supervisor/status
+Query whether the supervisor service is enabled. If Supervisor service is disabled, you are not allowed to use API like addworker/removeworker.
+
+Example:
+
+```bash
+curl -X POST [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/supervisor/status
+```
+
+Sample Response:
+
+```
+{"enabled":true}
+```
+
+
+
+### GET api/v1.0/supervisor
+Get the supervisor path
+
+Example:
+
+```bash
+curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/supervisor
+```
+
+Sample Response:
+
+```
+{path: "supervisor actor path"}
+```
+
+### POST api/v1.0/supervisor/addworker/&lt;worker-count&gt;
+Add workerCount new workers in the cluster. It will use the low level resource scheduler like
+YARN to start new containers and then boot Gearpump worker process.
+
+Example:
+
+```bash
+curl -X POST [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/supervisor/addworker/2
+
+```
+
+Sample Response:
+
+```
+{success: true}
+```
+
+### POST api/v1.0/supervisor/removeworker/&lt;worker-id&gt;
+Remove single worker instance by specifying a worker Id.
+
+
+**NOTE:* Use with caution!
+
+**NOTE:** All executors JVMs under this worker JVM will also be destroyed. It will trigger failover for all
+applications that have executor started under this worker.
+
+Example:
+
+```bash
+curl -X POST [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/supervisor/removeworker/3
+
+```
+
+Sample Response:
+
+```
+{success: true}
 ```
 
 ## Application service

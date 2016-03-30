@@ -20,63 +20,91 @@ package io.gearpump.services
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
+import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData, GetAllWorkers}
 import io.gearpump.cluster.ClientToMaster._
+import io.gearpump.services.SupervisorService.{Path, Status}
 import io.gearpump.util.ActorUtil._
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import upickle.default.{read, write}
 
-
-class SupervisorService(val supervisor: ActorRef, override val system: ActorSystem)
+class SupervisorService(val master: ActorRef, val supervisor: ActorRef, override val system: ActorSystem)
   extends BasicService {
 
   import upickle.default.write
 
+  /**
+   * TODO: Add additional check to ensure the user have enough authorization to add/remove a worker machine
+   */
+  private def authorize(internal: Route): Route = {
+    if (supervisor == null) {
+      failWith(new Exception("API not enabled, cannot find a valid supervisor! Please make sure Gearpump is " +
+        "running on top of YARN or other resource managers"))
+    } else {
+      internal
+    }
+  }
+
   override def doRoute(implicit mat: Materializer) = pathPrefix("supervisor") {
     pathEnd {
       get {
-        complete(write(supervisor.path.toString))
+        val path = if (supervisor == null) {
+          null
+        } else {
+          supervisor.path.toString
+        }
+        complete(write(Path(path)))
       }
     } ~
-    path("addworker" / IntNumber) { count =>
+    path("status") {
       post {
-        onComplete(askActor[CommandResult](supervisor, AddWorker(count))) {
-          case Success(value) =>
-            complete(write(value))
-          case Failure(ex) =>
-            failWith(ex)
+        if (supervisor == null) {
+          complete(write(Status(enabled = false)))
+        } else {
+          complete(write(Status(enabled = true)))
         }
       }
     } ~
-      path("addmaster") {
-        post {
-          onComplete(askActor[CommandResult](supervisor, AddMaster)) {
+    path("addworker" / IntNumber) { workerCount =>
+      post {
+        authorize {
+          onComplete(askActor[CommandResult](supervisor, AddWorker(workerCount))) {
             case Success(value) =>
               complete(write(value))
             case Failure(ex) =>
               failWith(ex)
           }
         }
-      } ~
-        path("removemaster" / Segment) { uriPath =>
-          post {
-            onComplete(askActor[CommandResult](supervisor, RemoveMaster(uriPath))) {
-              case Success(value) =>
-                complete(write(value))
-              case Failure(ex) =>
-                failWith(ex)
+      }
+    } ~
+    path("removeworker" / IntNumber) { workerId =>
+      post {
+        authorize {
+
+          def future(): Future[CommandResult] = {
+            askWorker[WorkerData](master, workerId, GetWorkerData(workerId)).flatMap{workerData =>
+              val containerId = workerData.workerDescription.resourceManagerContainerId
+              askActor[CommandResult](supervisor, RemoveWorker(containerId))
             }
           }
-        } ~
-        path("removeworker" / Segment) { uriPath =>
-          post {
-            onComplete(askActor[CommandResult](supervisor, RemoveWorker(uriPath))) {
-              case Success(value) =>
-                complete(write(value))
-              case Failure(ex) =>
-                failWith(ex)
-            }
+
+          onComplete[CommandResult](future()) {
+            case Success(value) =>
+              complete(write(value))
+            case Failure(ex) =>
+              failWith(ex)
           }
         }
+      }
+    }
   }
+}
+
+object SupervisorService{
+  case class Status(enabled: Boolean)
+
+  case class Path(path: String)
 }

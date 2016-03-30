@@ -57,6 +57,15 @@ object Constants {
   val GEARPUMP_LOG_APPLICATION_DIR = "gearpump.log.application.dir"
   val HADOOP_CONF = "hadoopConf"
 
+
+  // Id used to identity Master JVM process in low level resource manager like YARN.
+  // In YARN, it means the container Id.
+  val GEARPUMP_MASTER_RESOURCE_MANAGER_CONTAINER_ID = "gearpump.master-resource-manager-container-id"
+
+  // Id used to identity Worker JVM process in low level resource manager like YARN.
+  // In YARN, it means the container Id.
+  val GEARPUMP_WORKER_RESOURCE_MANAGER_CONTAINER_ID = "gearpump.worker-resource-manager-container-id"
+
   // true or false
   val GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM = "gearpump.remote-debug-executor-jvm"
   val GEARPUMP_REMOTE_DEBUG_PORT = "gearpump.remote-debug-port"
