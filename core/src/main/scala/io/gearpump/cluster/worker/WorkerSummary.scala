@@ -34,10 +34,12 @@ case class WorkerSummary(
   availableSlots: Int,
   homeDirectory: String,
   jvmName: String,
+  // Id used to uniquely identity this worker process in low level resource manager like YARN.
+  resourceManagerContainerId: String,
   historyMetricsConfig: HistoryMetricsConfig = null)
 
 object WorkerSummary{
-  def empty = WorkerSummary(-1, "", "", 0L, "", Array.empty[ExecutorSlots], 0, 0, "", jvmName = "")
+  def empty = WorkerSummary(-1, "", "", 0L, "", Array.empty[ExecutorSlots], 0, 0, "", jvmName = "", resourceManagerContainerId = "")
 }
 
 case class ExecutorSlots(appId: Int, executorId: Int, slots: Int)

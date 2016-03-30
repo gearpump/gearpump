@@ -194,6 +194,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
         resource.slots,
         userDir,
         jvmName = ManagementFactory.getRuntimeMXBean().getName(),
+        resourceManagerContainerId = systemConfig.getString(Constants.GEARPUMP_WORKER_RESOURCE_MANAGER_CONTAINER_ID),
         historyMetricsConfig = getHistoryMetricsConfig)
       )
     case ChangeExecutorResource(appId, executorId, usedResource) =>

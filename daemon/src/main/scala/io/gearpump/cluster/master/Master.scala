@@ -185,12 +185,12 @@ private[cluster] class Master extends Actor with Stash {
     case GetMasterData =>
       val aliveFor = System.currentTimeMillis() - birth
       val logFileDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
-      val userDir = System.getProperty("user.dir");
+      val userDir = System.getProperty("user.dir")
 
       val masterDescription =
         MasterSummary(
-          hostPort.toTuple,
-          getMasterClusterList.map(_.toTuple),
+          MasterNode(hostPort.host, hostPort.port),
+          getMasterClusterList.map(hostPort => MasterNode(hostPort.host, hostPort.port)),
           aliveFor,
           logFileDir,
           jarStoreRootPath,

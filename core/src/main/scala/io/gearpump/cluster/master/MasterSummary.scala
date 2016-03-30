@@ -25,12 +25,15 @@ object MasterStatus {
   val UnSynced = "unsynced"
 }
 
+
+case class MasterNode(host: String, port: Int)
+
 /**
  * Master information for REST API call
  */
 case class MasterSummary(
-  leader: (String, Int),
-  cluster: List[(String, Int)],
+  leader: MasterNode,
+  cluster: List[MasterNode],
   aliveFor: Long,
   logFile: String,
   jarStore: String,

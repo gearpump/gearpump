@@ -60,8 +60,12 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
   private val static = new StaticService(system, supervisorPath).route
 
   def supervisor: ActorRef = {
-    val actorRef = system.actorSelection(supervisorPath).resolveOne()
-    Await.result(actorRef, new Timeout(Duration.create(5, "seconds")).duration)
+    if (supervisorPath == null || supervisorPath.isEmpty()) {
+      null
+    } else {
+      val actorRef = system.actorSelection(supervisorPath).resolveOne()
+      Await.result(actorRef, new Timeout(Duration.create(5, "seconds")).duration)
+    }
   }
 
   override def route: Route = {
@@ -83,7 +87,7 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
     val masterService = new MasterService(master, jarStoreService, system)
     val worker = new WorkerService(master, system)
     val app = new AppMasterService(master, jarStoreService, system)
-    val sup = new SupervisorService(supervisor, system)
+    val sup = new SupervisorService(master, supervisor, system)
 
     new RouteService {
       override def route: Route = {
