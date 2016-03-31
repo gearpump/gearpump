@@ -2,10 +2,21 @@
   <!-- control toolbar -->
   <div class="row">
     <div class="col-md-6">
-      <span class="table-caption-ext">Workers</span>
+      <span class="table-caption-ext pull-left">Workers</span>
+      <!-- dropdown button -->
+      <div ng-if="isSupervisor"
+           class="btn-group btn-group-after-heading">
+        <span class="btn btn-xs btn-default pull-left"
+              ng-click="showAddWorkerDialog()">
+          <span class="fa fa-plus"></span>
+          Add</span>
+      </div>
     </div>
-    <div class="col-md-3 col-md-offset-3 hidden-sm hidden-xs">
-      <searchbox ng-model="search" placeholder="Search Anything"></searchbox>
+    <div class="col-md-3 col-sm-6 text-right">
+      <!--FILTER-->
+    </div>
+    <div class="col-md-3 hidden-sm hidden-xs">
+      <searchbox ng-model="search" placeholder="Search Workers"></searchbox>
     </div>
   </div>
   <!-- end of control toolbar -->

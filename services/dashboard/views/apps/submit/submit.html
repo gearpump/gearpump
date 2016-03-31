@@ -10,7 +10,7 @@
         <p style="padding-top: 4px; padding-bottom: 14px;">Application will be launched immediately,
           after the JAR file is uploaded.</p>
 
-        <div ng-show="shouldNoticeSubmitFailed">
+        <div ng-if="shouldNoticeSubmitFailed">
           <div class="alert alert-danger alert-dismissible" role="alert">
             <button type="button" class="close" data-dismiss="alert"
                     ng-click="shouldNoticeSubmitFailed=false">
@@ -41,8 +41,9 @@
               ng-model="conf" accept-pattern="{{confFileSuffix}}"></form-control>
             <!-- input 3 -->
             <form-control
-              type="integer" min="1" label="Executor Count" ng-hide="isStormApp"
-              help="How many JVM processes to start for this job in the whole cluster. E.g. set it as 12 will start 12 executor processes spanning across the cluster"
+              ng-if="!isStormApp"
+              type="integer" min="1" label="Executors"
+              help="The number of executor (JVM) processes to be spawned in the cluster."
               ng-model="executorNum"></form-control>
             <!-- input 4 -->
             <form-control

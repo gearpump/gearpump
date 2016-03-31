@@ -18,28 +18,33 @@ angular.module('dashboard')
           resolve: {
             workers0: ['models', function(models) {
               return models.$get.workers();
+            }],
+            supervisor0: ['models', function(models) {
+              return models.$get.supervisor();
             }]
           }
         });
     }])
 
-  .controller('WorkersListViewCtrl', ['$scope', '$sortableTableBuilder', 'workers0',
-    function($scope, $stb, workers0) {
+  .controller('WorkersListViewCtrl', ['$scope', '$modal', '$sortableTableBuilder', '$dialogs',
+    'restapi', 'workers0', 'supervisor0',
+    function($scope, $modal, $stb, $dialogs, restapi, workers0, supervisor0) {
       'use strict';
 
+      $scope.isSupervisor = (supervisor0.path||'').length > 0;
       $scope.workersTable = {
         cols: [
           // group 1/3 (4-col)
           $stb.indicator().key('state').canSort('state.condition+"_"+aliveFor').styleClass('td-no-padding').done(),
-          $stb.link('ID').key('id').canSort().sortDefaultDescent().styleClass('col-md-1').done(),
-          $stb.text('Address').key('akkaAddr').canSort().styleClass('col-md-1').done(),
-          $stb.text('JVM Info').key('jvm').styleClass('col-md-2 hidden-xs').done(),
+          $stb.link('ID').key('id').canSort().sortDefaultDescent().done(),
+          $stb.text('JVM Info').key('jvm').styleClass('col-md-1').done(),
+          $stb.text('Address').key('akkaAddr').canSort().styleClass('col-md-3 hidden-xs').done(),
           // group 2/3 (5-col)
           $stb.number('Executors').key('executors').canSort().styleClass('col-md-1 hidden-xs').done(),
           $stb.progressbar('Slots Usage').key('slots').sortBy('slots.usage').styleClass('col-md-1').done(),
           $stb.duration('Uptime').key('aliveFor').canSort().styleClass('col-md-3 hidden-sm hidden-xs').done(),
           // group 3/3 (3-col)
-          $stb.button('Quick Links').key(['detail', 'conf']).styleClass('col-md-3').done()
+          $stb.button('Quick Links').key(['detail', 'conf', 'kill']).styleClass('col-md-3').done()
         ],
         rows: null
       };
@@ -56,7 +61,27 @@ angular.module('dashboard')
               slots: {current: worker.slots.used, max: worker.slots.total, usage: worker.slots.usage},
               executors: worker.executors.length || 0,
               detail: {href: worker.pageUrl, text: 'Details', class: 'btn-xs btn-primary'},
-              conf: {href: worker.configLink, target: '_blank', text: 'Config', class: 'btn-xs'}
+              conf: {href: worker.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
+              kill: {
+                text: 'Kill', class: 'btn-xs',
+                disabled: !$scope.isSupervisor,
+                click: function() {
+                  $dialogs.confirm('Are you sure to kill this worker?', function() {
+                    restapi.removeWorker(worker.workerId,
+                      function handleResponse(response) {
+                        if (response.success) {
+                          window.location.reload();
+                        } else {
+                          $dialogs.notice(response.error, 'Something went wrong');
+                        }
+                      },
+                      function handleException(ex) {
+                        $dialogs.notice(ex, 'Something went wrong');
+                      }
+                    );
+                  });
+                }
+              },
             };
           }));
       }
@@ -65,5 +90,17 @@ angular.module('dashboard')
       workers0.$subscribe($scope, function(data) {
         updateTable(data);
       });
+
+      var addWorkerDialog = $modal({
+        templateUrl: 'views/cluster/workers/add_worker.html',
+        controller: 'AddWorkerCtrl',
+        backdrop: 'static',
+        keyboard: true,
+        show: false
+      });
+
+      $scope.showAddWorkerDialog = function() {
+        addWorkerDialog.$promise.then(addWorkerDialog.show);
+      };
     }])
 ;
