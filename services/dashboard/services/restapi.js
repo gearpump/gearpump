@@ -187,6 +187,35 @@ angular.module('dashboard')
           });
         },
 
+        /** Add a new worker */
+        addWorker: function(onComplete) {
+          var count = 1;
+          var url = restapiV1Root + 'supervisor/addworker/' + count;
+          return $http.post(url).then(function(response) {
+            if (angular.isFunction(onComplete)) {
+              onComplete(decodeSuccessResponse(response.data));
+            }
+          }, function(response) {
+            if (angular.isFunction(onComplete)) {
+              onComplete(decodeErrorResponse(response.data));
+            }
+          });
+        },
+
+        /** Remove a new worker */
+        removeWorker: function(workerId, onComplete) {
+          var url = restapiV1Root + 'supervisor/removeworker/' + workerId;
+          return $http.post(url).then(function(response) {
+            if (angular.isFunction(onComplete)) {
+              onComplete(decodeSuccessResponse(response.data));
+            }
+          }, function(response) {
+            if (angular.isFunction(onComplete)) {
+              onComplete(decodeErrorResponse(response.data));
+            }
+          });
+        },
+
         /** Replace a dag processor at runtime */
         replaceDagProcessor: function(files, formFormNames, appId, oldProcessorId, newProcessorDescription, onComplete) {
           var url = restapiV1Root + 'appmaster/' + appId + '/dynamicdag';
