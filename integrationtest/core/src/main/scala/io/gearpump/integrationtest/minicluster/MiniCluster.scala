@@ -17,6 +17,8 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import java.io.IOException
+
 import io.gearpump.cluster.master.MasterNode
 import io.gearpump.integrationtest.{Docker, Util}
 import org.apache.log4j.Logger
@@ -49,18 +51,36 @@ class MiniCluster {
   private var workers: ListBuffer[String] = ListBuffer.empty
 
   def start(workerNum: Int = 2): Unit = {
-    // Masters' membership cannot be modified at runtime
+
+    // Kill master
+    MASTER_ADDRS.foreach{case (host, _) =>
+      if (Docker.containerExists(host)) {
+        Docker.killAndRemoveContainer(host)
+      }
+    }
+
+    // Kill existing workers
+    workers ++= (0 until workerNum).map("worker" + _)
+    workers.foreach{ worker =>
+      if (Docker.containerExists(worker)) {
+        Docker.killAndRemoveContainer(worker)
+      }
+    }
+
+    // Start Masters
     MASTER_ADDRS.foreach({ case (host, port) =>
       addMasterNode(host, port)
     })
+
+    // Start Workers
+    workers.foreach{worker =>
+      val container = new BaseContainer(worker, "worker", MASTER_ADDRS)
+      container.createAndStart()
+    }
+
+    // Check cluster status
     expectRestClientAuthenticated()
     expectClusterAvailable()
-
-    // Workers' membership can be modified at runtime
-    (0 to workerNum - 1).foreach(index => {
-      val host = "worker" + index
-      addWorkerNode(host)
-    })
   }
 
   private def addMasterNode(host: String, port: Int): Unit = {
@@ -69,31 +89,35 @@ class MiniCluster {
   }
 
   def addWorkerNode(host: String): Unit = {
-    val container = new BaseContainer(host, "worker", MASTER_ADDRS)
-    container.createAndStart()
-    workers += host
+    if (workers.find(_ == host).isEmpty) {
+      val container = new BaseContainer(host, "worker", MASTER_ADDRS)
+      container.createAndStart()
+      workers += host
+    } else {
+      throw new IOException(s"Cannot add new worker $host, as worker with same hostname already exists")
+    }
   }
 
   /**
    * @throws RuntimeException if rest client is not authenticated after N attempts
    */
   private def expectRestClientAuthenticated(): Unit = {
-    Util.retryUntil({
+    Util.retryUntil(()=>{
       restClient.login()
       LOG.info("rest client has been authenticated")
       true
-    })
+    }, "login successfully")
   }
 
   /**
    * @throws RuntimeException if service is not available after N attempts
    */
   private def expectClusterAvailable(): Unit = {
-    Util.retryUntil({
+    Util.retryUntil(()=>{
       val response = restClient.queryMaster()
       LOG.info(s"cluster is now available with response: $response.")
       response.aliveFor > 0
-    })
+    }, "cluster running")
   }
 
   def isAlive: Boolean = {
@@ -101,7 +125,7 @@ class MiniCluster {
   }
 
   def getNetworkGateway: String = {
-    Docker.execAndCaptureOutput(MASTER_ADDRS.head._1, "ip route").split("\\s+")(2)
+    Docker.getNetworkGateway(MASTER_ADDRS.head._1)
   }
 
   def shutDown(): Unit = {
@@ -124,9 +148,9 @@ class MiniCluster {
 
   def restart(): Unit = {
     shutDown()
-    Util.retryUntil(
-      !(getMasterHosts ++ getWorkerHosts).exists(Docker.containerExists))
-    LOG.info("all containers have been killed. restarting...")
+    Util.retryUntil(()=>
+      !(getMasterHosts ++ getWorkerHosts).exists(Docker.containerExists), "all docker containers killed")
+    LOG.info("all docker containers have been killed. restarting...")
     start()
   }
 
@@ -146,9 +170,8 @@ class MiniCluster {
     Docker.containerIsRunning(host)
   }
 
-  private def builtInJarsUnder(folder: String) = {
-    Docker.execAndCaptureOutput(getMasterHosts.head, s"find $SUT_HOME/$folder")
-      .split("\n").filter(_.endsWith(".jar"))
+  private def builtInJarsUnder(folder: String): Array[String] = {
+    Docker.findJars(getMasterHosts.head, s"$SUT_HOME/$folder")
   }
 
   private def queryBuiltInJars(folder: String, subtext: String): Seq[String] = {
@@ -162,5 +185,4 @@ class MiniCluster {
   def queryBuiltInITJars(subtext: String): Seq[String] = {
     queryBuiltInJars("integrationtest", subtext)
   }
-
 }

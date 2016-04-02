@@ -176,13 +176,14 @@ object Build extends sbt.Build {
         "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
         "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
         "com.github.intel-hadoop" %% "gearpump-shaded-akka-kryo" % kryoVersion,
+        "org.scala-lang" % "scala-reflect" % scalaVersionNumber,
+        "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
         "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
         "org.mockito" % "mockito-core" % mockitoVersion % "test",
         "junit" % "junit" % junitVersion % "test"
-      ),
-     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _)
+      )
   )
 
   lazy val javadocSettings = Seq(

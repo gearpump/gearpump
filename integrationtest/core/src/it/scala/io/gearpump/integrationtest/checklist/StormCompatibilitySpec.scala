@@ -26,7 +26,12 @@ import io.gearpump.integrationtest.{TestSpecBase, Util}
   */
 class StormCompatibilitySpec extends TestSpecBase {
 
-  private lazy val stormClient = new StormClient(cluster.getMastersAddresses, restClient)
+  private lazy val stormClient = {
+    new StormClient(cluster, restClient)
+  }
+
+  val `version0.9` = "09"
+  val `version0.10` = "010"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -39,8 +44,8 @@ class StormCompatibilitySpec extends TestSpecBase {
   }
 
   def withStorm(testCode: String => Unit): Unit = {
-    testCode("09")
-    testCode("010")
+    testCode(`version0.9`)
+    testCode(`version0.10`)
   }
 
   def getTopologyName(name: String, stormVersion: String): String = {
@@ -65,7 +70,7 @@ class StormCompatibilitySpec extends TestSpecBase {
           appName = topologyName)
 
         // verify
-        Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+        Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
       }
 
       s"support to run a python version of wordcount ($stormVersion)" in {
@@ -80,7 +85,7 @@ class StormCompatibilitySpec extends TestSpecBase {
           appName = topologyName)
 
         // verify
-        Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+        Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
       }
 
       s"support DRPC ($stormVersion)" in {
@@ -97,9 +102,9 @@ class StormCompatibilitySpec extends TestSpecBase {
         val drpcClient = stormClient.getDRPCClient(cluster.getNetworkGateway)
 
         // verify
-        Util.retryUntil {
+        Util.retryUntil(()=>{
           drpcClient.execute("reach", "notaurl.com") == "0"
-        }
+        }, "drpc reach == 0")
         drpcClient.execute("reach", "foo.com/blog/1") shouldEqual "16"
         drpcClient.execute("reach", "engineering.twitter.com/blog/5") shouldEqual "14"
       }
@@ -116,7 +121,7 @@ class StormCompatibilitySpec extends TestSpecBase {
           appName = topologyName)
 
         // verify
-        Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+        Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
       }
 
       s"support at-least-once semantics with Storm's Kafka connector ($stormVersion)" in {
@@ -151,12 +156,13 @@ class StormCompatibilitySpec extends TestSpecBase {
                 args = args.mkString(" "),
                 appName = topologyName)
 
-              Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+              Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0,  "app running")
 
               // kill executor and verify at-least-once is guaranteed on application restart
               val executorToKill = restClient.queryExecutorBrief(appId).map(_.executorId).max
               restClient.killExecutor(appId, executorToKill) shouldBe true
-              Util.retryUntil(restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill)
+              Util.retryUntil(()=>restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill,
+                s"executor $executorToKill killed")
 
               // verify no message loss
               val detector = new
@@ -165,10 +171,10 @@ class StormCompatibilitySpec extends TestSpecBase {
                       SimpleKafkaReader(detector, sinkTopic, host = kafkaCluster.advertisedHost,
                         port = kafkaCluster.advertisedPort)
 
-              Util.retryUntil {
+              Util.retryUntil (()=>{
                 kafkaReader.read()
                 detector.allReceived
-              }
+              }, "all kafka message read")
             }
         }
       }

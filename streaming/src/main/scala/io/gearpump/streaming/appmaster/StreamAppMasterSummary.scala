@@ -28,22 +28,22 @@ import io.gearpump.util.Graph
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 
 case class StreamAppMasterSummary(
+    appType: String = "streaming",
     appId: Int,
     appName: String = null,
-    processors: Map[ProcessorId, ProcessorSummary],
-    // hiearachy level for each processor
-    processorLevels: Map[ProcessorId, Int],
-    dag: Graph[ProcessorId, String] = null,
     actorPath: String = null,
-    clock: TimeStamp = 0,
-    executors: List[ExecutorBrief] = null,
+    clock: TimeStamp = 0L,
     status: AppMasterStatus = MasterToAppMaster.AppMasterActive,
     startTime: TimeStamp = 0L,
     uptime: TimeStamp = 0L,
     user: String = null,
-    appType: String = "streaming",
     homeDirectory: String = "",
     logFile: String = "",
+    dag: Graph[ProcessorId, String] = null,
+    executors: List[ExecutorBrief] = null,
+    processors: Map[ProcessorId, ProcessorSummary] = Map.empty[ProcessorId, ProcessorSummary],
+    // hiearachy level for each processor
+    processorLevels: Map[ProcessorId, Int] = Map.empty[ProcessorId, Int],
     historyMetricsConfig: HistoryMetricsConfig = null)
   extends AppMasterSummary
 

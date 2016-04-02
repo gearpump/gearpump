@@ -17,12 +17,15 @@
  */
 package io.gearpump.integrationtest
 
+import org.apache.commons.lang.text.{StrMatcher, StrTokenizer}
 import org.apache.log4j.Logger
+import org.apache.storm.shade.org.eclipse.jetty.util.QuotedStringTokenizer
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.sys.process._
+import scala.collection.JavaConversions._
 
 /**
  * The class is used to execute command in a shell
@@ -32,10 +35,19 @@ object ShellExec {
   private val LOG = Logger.getLogger(getClass)
   private val PROCESS_TIMEOUT = 2.minutes
 
-  def exec(command: String, sender: String, timeout: Duration = PROCESS_TIMEOUT): Boolean = {
-    LOG.debug(s"$sender -> `$command`")
+  /**
+   * The builtin command line parser by ProcessBuilder (implicit sys.process) don't
+   * respect the quote chars (' and ")
+   */
+  private def splitQuotedString(str: String): List[String] = {
+    val splitter = new QuotedStringTokenizer(str, " \t\n\r")
+    splitter.asInstanceOf[java.util.Enumeration[String]].toList
+  }
 
-    val p = command.run()
+  def exec(command: String, sender: String, timeout: Duration = PROCESS_TIMEOUT): Boolean = {
+    LOG.debug(s"$sender => `$command`")
+
+    val p = splitQuotedString(command).run()
     val f = Future(blocking(p.exitValue())) // wrap in Future
     val retval = try {
         Await.result(f, timeout)
@@ -46,7 +58,7 @@ object ShellExec {
           p.exitValue()
       }
 
-    LOG.debug(s"$sender <- exit $retval")
+    LOG.debug(s"$sender <= exit $retval")
     retval == 0
   }
 
@@ -56,7 +68,7 @@ object ShellExec {
     val buf = new StringBuilder
     val processLogger = ProcessLogger((o: String) => buf.append(o).append("\n"),
       (e: String) => buf.append(e).append("\n"))
-    val p = command.run(processLogger)
+    val p = splitQuotedString(command).run(processLogger)
     val f = Future(blocking(p.exitValue())) // wrap in Future
     val retval = try {
         Await.result(f, timeout)
@@ -66,9 +78,9 @@ object ShellExec {
           p.exitValue()
       }
     val output = buf.toString().trim
-    val PREVIEW_MAX_LENGTH = 1024
+    val PREVIEW_MAX_LENGTH = 200
     val preview = if (output.length > PREVIEW_MAX_LENGTH)
-      output.substring(0, PREVIEW_MAX_LENGTH) + "\n..." else output
+      output.substring(0, PREVIEW_MAX_LENGTH) + "..." else output
 
     LOG.debug(s"$sender <= `$preview` exit $retval")
     if (retval != 0) {

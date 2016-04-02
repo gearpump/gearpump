@@ -29,7 +29,7 @@ class CommandLineClient(host: String) {
   private val LOG = Logger.getLogger(getClass)
 
   def listApps(): Array[String] = {
-    execAndCaptureOutput("gear info").split("\n").filter(
+    gearCommand(host, "gear info").split("\n").filter(
       _.startsWith("application: ")
     )
   }
@@ -50,15 +50,16 @@ class CommandLineClient(host: String) {
   }
 
   def submitAppAndCaptureOutput(jar: String, executorNum: Int, args: String = ""): String = {
-    execAndCaptureOutput(s"gear app -verbose true -jar $jar -executors $executorNum $args")
+    gearCommand(host, s"gear app -verbose true -jar $jar -executors $executorNum $args")
   }
 
   def submitApp(jar: String, args: String = ""): Int = {
+    LOG.debug(s"|=> Submit Application $jar...")
     submitAppUse("gear app", jar, args)
   }
 
   private def submitAppUse(launcher: String, jar: String, args: String = ""): Int = try {
-    execAndCaptureOutput(s"$launcher -jar $jar $args").split("\n")
+    gearCommand(host, s"$launcher -jar $jar $args").split("\n")
       .filter(_.contains("The application id is ")).head.split(" ").last.toInt
   } catch {
     case ex: Throwable =>
@@ -67,15 +68,16 @@ class CommandLineClient(host: String) {
   }
 
   def killApp(appId: Int): Boolean = {
-    exec(s"gear kill -appid $appId")
+    tryGearCommand(host, s"gear kill -appid $appId")
   }
 
-  private def exec(command: String): Boolean = {
-    Docker.exec(host, s"/opt/start $command")
+  private def gearCommand(container: String, command: String): String = {
+    LOG.debug(s"|=> Gear command $command in container $container...")
+    Docker.execute(container, s"/opt/start $command")
   }
 
-  private def execAndCaptureOutput(command: String): String = {
-    Docker.execAndCaptureOutput(host, s"/opt/start $command")
+  private def tryGearCommand(container: String, command: String): Boolean = {
+    LOG.debug(s"|=> Gear command $command in container $container...")
+    Docker.executeSilently(container, s"/opt/start $command")
   }
-
 }

@@ -199,22 +199,22 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
         }
 
         StreamAppMasterSummary(
-          appId,
-          app.name,
-          processors,
-          graph.vertexHierarchyLevelMap(),
-          graph.mapEdge {(node1, edge, node2) =>
-            edge.partitionerFactory.name
-          },
-          address,
-          clock,
-          executors,
+          appId = appId,
+          appName = app.name,
+          actorPath = address,
+          clock = clock,
           status = MasterToAppMaster.AppMasterActive,
           startTime = startTime,
           uptime = System.currentTimeMillis() - startTime,
           user = username,
           homeDirectory = userDir,
           logFile = logFile.getAbsolutePath,
+          processors = processors,
+          processorLevels = graph.vertexHierarchyLevelMap(),
+          dag = graph.mapEdge {(node1, edge, node2) =>
+            edge.partitionerFactory.name
+          },
+          executors = executors,
           historyMetricsConfig = getHistoryMetricsConfig
         )
       }

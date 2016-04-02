@@ -44,6 +44,11 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
     producer.close()
   }
 
+  /** How many message we have written in total*/
+  def producedNumbers: Range = {
+    Range(1, lastWriteNum + 1)
+  }
+
   private def createProducer: KafkaProducer[Array[Byte], Array[Byte]] = {
     val properties = new Properties()
     properties.setProperty("bootstrap.servers", bootstrapServers)
@@ -62,7 +67,7 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
         }
       } catch {
         case ex: InterruptedException =>
-          LOG.info("message producing is stopped by an interrupt")
+          LOG.error("message producing is stopped by an interrupt")
       }
     }
   })

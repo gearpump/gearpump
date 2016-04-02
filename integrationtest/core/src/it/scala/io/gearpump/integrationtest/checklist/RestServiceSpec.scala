@@ -104,7 +104,7 @@ class RestServiceSpec extends TestSpecBase {
 
       // exercise
       expectMetricsAvailable(
-        restClient.queryStreamingAppMetrics(appId, current = true).metrics.nonEmpty)
+        restClient.queryStreamingAppMetrics(appId, current = true).metrics.nonEmpty, "metrics available")
       val actual = restClient.queryStreamingAppMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.processor*"
       actual.metrics.foreach(metric => {
@@ -116,7 +116,7 @@ class RestServiceSpec extends TestSpecBase {
       expectMetricsAvailable({
         val laterMetrics = restClient.queryStreamingAppMetrics(appId, current = true).metrics
         laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
-      })
+      }, "metrics available")
     }
 
     "can obtain application corresponding executors' metrics and the metrics will keep changing" in {
@@ -128,7 +128,7 @@ class RestServiceSpec extends TestSpecBase {
 
       // exercise
       expectMetricsAvailable(
-        restClient.queryExecutorMetrics(appId, current = true).metrics.nonEmpty)
+        restClient.queryExecutorMetrics(appId, current = true).metrics.nonEmpty, "metrics available")
       val actual = restClient.queryExecutorMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.executor*"
       actual.metrics.foreach(metric => {
@@ -140,7 +140,7 @@ class RestServiceSpec extends TestSpecBase {
       expectMetricsAvailable({
         val laterMetrics = restClient.queryExecutorMetrics(appId, current = true).metrics
         laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
-      })
+      }, "metrics available")
     }
   }
 
@@ -194,10 +194,10 @@ class RestServiceSpec extends TestSpecBase {
 
       // exercise
       var runningWorkers: Array[WorkerSummary] = Array.empty
-      Util.retryUntil({
+      Util.retryUntil(()=>{
         runningWorkers = restClient.listRunningWorkers()
         runningWorkers.length == expectedWorkersCount
-      })
+      }, "all workers running")
       runningWorkers.foreach { worker =>
         worker.state shouldEqual MasterToAppMaster.AppMasterActive
       }
@@ -207,12 +207,13 @@ class RestServiceSpec extends TestSpecBase {
       // setup
       restartClusterRequired = true
       val formerWorkersCount = cluster.getWorkerHosts.length
-      Util.retryUntil(restClient.listRunningWorkers().length == formerWorkersCount)
+      Util.retryUntil(()=>restClient.listRunningWorkers().length == formerWorkersCount,
+        "all workers running")
       val workerName = "newWorker"
 
       // exercise
       cluster.addWorkerNode(workerName)
-      Util.retryUntil(restClient.listRunningWorkers().length > formerWorkersCount)
+      Util.retryUntil(()=>restClient.listRunningWorkers().length > formerWorkersCount, "new worker added")
       cluster.getWorkerHosts.length shouldEqual formerWorkersCount + 1
       restClient.listRunningWorkers().length shouldEqual formerWorkersCount + 1
     }
@@ -231,7 +232,7 @@ class RestServiceSpec extends TestSpecBase {
     "can obtain master's metrics and the metrics will keep changing" in {
       // exercise
       expectMetricsAvailable(
-        restClient.queryMasterMetrics(current = true).metrics.nonEmpty)
+        restClient.queryMasterMetrics(current = true).metrics.nonEmpty, "metrics available")
       val actual = restClient.queryMasterMetrics(current = true)
       actual.path shouldEqual s"master"
       actual.metrics.foreach(metric => {
@@ -243,7 +244,7 @@ class RestServiceSpec extends TestSpecBase {
       expectMetricsAvailable({
         val laterMetrics = restClient.queryMasterMetrics(current = true).metrics
         laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
-      })
+      }, "metrics available")
     }
 
     "can obtain workers' metrics and the metrics will keep changing" in {
@@ -251,7 +252,7 @@ class RestServiceSpec extends TestSpecBase {
       restClient.listRunningWorkers().foreach { worker =>
         val workerId = worker.workerId
         expectMetricsAvailable(
-          restClient.queryWorkerMetrics(workerId, current = true).metrics.nonEmpty)
+          restClient.queryWorkerMetrics(workerId, current = true).metrics.nonEmpty, "metrics available")
         val actual = restClient.queryWorkerMetrics(workerId, current = true)
         actual.path shouldEqual s"worker$workerId"
         actual.metrics.foreach(metric => {
@@ -263,7 +264,7 @@ class RestServiceSpec extends TestSpecBase {
         expectMetricsAvailable({
           val laterMetrics = restClient.queryWorkerMetrics(workerId, current = true).metrics
           laterMetrics.nonEmpty && laterMetrics.toString() != formerMetricsDump
-        })
+        }, "metrics available")
       }
     }
   }
@@ -328,7 +329,7 @@ class RestServiceSpec extends TestSpecBase {
       val originAppDetail = restClient.queryStreamingAppDetail(originAppId)
 
       // exercise
-      Util.retryUntil(restClient.restartApp(originAppId))
+      Util.retryUntil(()=>restClient.restartApp(originAppId), "app restarted")
       val killedApp = restClient.queryApp(originAppId)
       killedApp.appId shouldEqual originAppId
       killedApp.status shouldEqual MasterToAppMaster.AppMasterInActive
@@ -351,10 +352,10 @@ class RestServiceSpec extends TestSpecBase {
     actualApp.status shouldEqual MasterToAppMaster.AppMasterInActive
   }
 
-  private def expectMetricsAvailable(condition: => Boolean): Unit = {
+  private def expectMetricsAvailable(condition: => Boolean, conditionDescription: String): Unit = {
     val config = restClient.queryMasterConfig()
     val reportInterval = Duration(config.getString("gearpump.metrics.report-interval-ms") + "ms")
-    Util.retryUntil(condition, interval = reportInterval)
+    Util.retryUntil(()=>condition, conditionDescription, interval = reportInterval)
   }
 
 }

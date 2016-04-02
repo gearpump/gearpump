@@ -25,9 +25,11 @@ trait ResultVerifier {
 
 class MessageLossDetector(totalNum: Int) extends ResultVerifier {
   private val bitSets = new mutable.BitSet(totalNum)
+  var result = List.empty[Int]
 
   override def onNext(num: Int): Unit = {
     bitSets.add(num)
+    result :+= num
   }
 
   def allReceived: Boolean = {

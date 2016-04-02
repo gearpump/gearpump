@@ -17,14 +17,18 @@
  */
 package io.gearpump.integrationtest.checklist
 
+import io.gearpump.integrationtest.Docker._
 import io.gearpump.integrationtest.{Docker, TestSpecBase, Util}
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.ProcessorSummary
+import org.apache.log4j.Logger
 
 /**
  * The test spec will perform destructive operations to check the stability
  */
 class ExampleSpec extends TestSpecBase {
+
+  private val LOG = Logger.getLogger(getClass)
 
   "distributed shell" should {
     "execute commands on machines where its executors are running" in {
@@ -40,7 +44,8 @@ class ExampleSpec extends TestSpecBase {
         "-appid", appId.toString,
         "-command", "hostname"
       )
-      val expectedHostNames = cluster.getWorkerHosts.map(Docker.execAndCaptureOutput(_, "hostname"))
+
+      val expectedHostNames = cluster.getWorkerHosts.map(Docker.getHostName(_))
 
       def verify(): Boolean = {
         val workerNum = cluster.getWorkerHosts.length
@@ -49,7 +54,8 @@ class ExampleSpec extends TestSpecBase {
         expectedHostNames.forall(result.contains)
       }
 
-      Util.retryUntil(verify())
+      Util.retryUntil(()=>verify(),
+        s"executors started on all expected hosts ${expectedHostNames.mkString(", ")}")
     }
   }
 
@@ -63,7 +69,7 @@ class ExampleSpec extends TestSpecBase {
       val formerSubmissionSuccess = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length)
       formerSubmissionSuccess shouldBe true
       expectAppIsRunning(formerAppId, wordCountName)
-      Util.retryUntil(restClient.queryStreamingAppDetail(formerAppId).clock > 0)
+      Util.retryUntil(()=>restClient.queryStreamingAppDetail(formerAppId).clock > 0, "app running")
       restClient.killApp(formerAppId)
 
       // exercise
@@ -103,9 +109,10 @@ class ExampleSpec extends TestSpecBase {
       expectAppIsRunning(appId, appName)
 
       // exercise
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app submitted")
       val formerClock = restClient.queryStreamingAppDetail(appId).clock
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > formerClock)
+      Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > formerClock,
+        "app clock is advancing")
     }
 
     "can change the parallelism and description of a processor" in {
@@ -126,10 +133,10 @@ class ExampleSpec extends TestSpecBase {
       val success = restClient.replaceStreamingAppProcessor(appId, replaceMe)
       success shouldBe true
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
-      Util.retryUntil({
+      Util.retryUntil(()=>{
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
         laterProcessors.size == formerProcessors.size + 1
-      })
+      }, "new process added")
       val laterProcessor0 = laterProcessors.get(expectedProcessorId).get
       laterProcessor0.parallelism shouldEqual expectedParallelism
       laterProcessor0.description shouldEqual expectedDescription

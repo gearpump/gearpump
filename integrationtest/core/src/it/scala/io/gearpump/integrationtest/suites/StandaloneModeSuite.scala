@@ -26,16 +26,14 @@ import org.scalatest._
  * Launch a Gearpump cluster in standalone mode and run all test specs
  */
 class StandaloneModeSuite extends Suites(
-
   new CommandLineSpec,
-  new ConnectorKafkaSpec,
   new RestServiceSpec,
   new ExampleSpec,
   new DynamicDagSpec,
-  new StabilitySpec,
   new StormCompatibilitySpec,
+  new StabilitySpec,
+  new ConnectorKafkaSpec,
   new MessageDeliverySpec
-
 ) with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
@@ -48,5 +46,4 @@ class StandaloneModeSuite extends Suites(
     MiniClusterProvider.get.shutDown()
     super.afterAll()
   }
-
 }
