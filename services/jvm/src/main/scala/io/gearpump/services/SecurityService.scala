@@ -34,9 +34,11 @@ import io.gearpump.services.SecurityService.{User, UserSession}
 import io.gearpump.services.security.oauth2.OAuth2Authenticator
 import io.gearpump.util.{Constants, LogUtil}
 import upickle.default.{write}
+import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.security.{Authenticator => BaseAuthenticator}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
+
 
 /**
  * When user cannot be authenticated, will reject with 401 AuthenticationFailedRejection

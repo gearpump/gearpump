@@ -18,6 +18,7 @@
 package io.gearpump.cluster
 
 import akka.actor.ActorRef
+import io.gearpump.WorkerId
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
 
@@ -26,12 +27,12 @@ import io.gearpump.cluster.scheduler.Resource
  */
 object WorkerToMaster {
   case object RegisterNewWorker
-  case class RegisterWorker(workerId: Int)
-  case class ResourceUpdate(worker: ActorRef, workerId: Int, resource: Resource)
+  case class RegisterWorker(workerId: WorkerId)
+  case class ResourceUpdate(worker: ActorRef, workerId: WorkerId, resource: Resource)
 }
 
 object MasterToWorker {
-  case class WorkerRegistered(workerId : Int, masterInfo: MasterInfo)
+  case class WorkerRegistered(workerId : WorkerId, masterInfo: MasterInfo)
   case class UpdateResourceFailed(reason : String = null, ex: Throwable = null)
   case object UpdateResourceSucceed
 }

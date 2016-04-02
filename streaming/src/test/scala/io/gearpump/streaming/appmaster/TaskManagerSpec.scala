@@ -39,7 +39,7 @@ import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, ProcessorId}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import io.gearpump.{Message, TimeStamp}
+import io.gearpump.{WorkerId, Message, TimeStamp}
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
@@ -65,7 +65,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   val appId = 0
 
   val resource = Resource(2)
-  val workerId = 0
+  val workerId = WorkerId(0, 0L)
   val executorId = 0
 
   override def beforeEach(): Unit = {
@@ -166,7 +166,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // step2: Get Additional Resource Request
     when(scheduler.getRequestDetails())
-        .thenReturn(Future{Array(ResourceRequestDetail(mockJar, Array(ResourceRequest(resource))))})
+        .thenReturn(Future{Array(ResourceRequestDetail(mockJar, Array(ResourceRequest(resource, WorkerId.unspecified))))})
 
     // step3: DAG changed. Start transit from ApplicationReady -> DynamicDAG
     dagManager.expectMsg(GetLatestDAG)

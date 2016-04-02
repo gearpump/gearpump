@@ -23,7 +23,7 @@ import io.gearpump.cluster.TestUtil
 import akka.http.scaladsl.testkit.{ScalatestRouteTest, RouteTestTimeout}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
-
+import io.gearpump.services.util.UpickleUtil._
 import scala.concurrent.duration._
 
 import scala.util.Try

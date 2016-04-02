@@ -19,7 +19,7 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor._
 import com.typesafe.config.Config
-import io.gearpump.TimeStamp
+import io.gearpump.{WorkerId, TimeStamp}
 import io.gearpump.streaming.task.{StartClock, TaskId}
 import io.gearpump.streaming.{ProcessorDescription, DAG}
 import io.gearpump.cluster.AppJar
@@ -52,7 +52,7 @@ class JarScheduler(appId : Int, appName: String, config: Config, factory: ActorR
     (actor ? GetRequestDetails).asInstanceOf[Future[Array[ResourceRequestDetail]]]
   }
 
-  def scheduleTask(appJar: AppJar, workerId: Int, executorId: Int, resource: Resource): Future[List[TaskId]] = {
+  def scheduleTask(appJar: AppJar, workerId: WorkerId, executorId: Int, resource: Resource): Future[List[TaskId]] = {
     (actor ? ScheduleTask(appJar, workerId, executorId, resource)).asInstanceOf[Future[List[TaskId]]]
   }
 
@@ -71,7 +71,7 @@ object JarScheduler{
 
   case object GetRequestDetails
 
-  case class ScheduleTask(appJar: AppJar, workerId: Int, executorId: Int, resource: Resource)
+  case class ScheduleTask(appJar: AppJar, workerId: WorkerId, executorId: Int, resource: Resource)
 
   case class ExecutorFailed(executorId: Int)
 

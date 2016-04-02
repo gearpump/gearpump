@@ -18,6 +18,7 @@
 package io.gearpump.cluster.scheduler
 
 import akka.actor.ActorRef
+import io.gearpump.WorkerId
 
 case class Resource(slots : Int) {
   def +(other : Resource): Resource = Resource(slots + other.slots)
@@ -51,9 +52,9 @@ object Relaxation extends Enumeration{
 
 import Relaxation._
 import Priority._
-case class ResourceRequest(resource: Resource,  workerId: Int = 0, priority: Priority = NORMAL, relaxation: Relaxation = ANY, executorNum: Int = 1)
+case class ResourceRequest(resource: Resource,  workerId: WorkerId, priority: Priority = NORMAL, relaxation: Relaxation = ANY, executorNum: Int = 1)
 
-case class ResourceAllocation(resource : Resource, worker : ActorRef, workerId : Int)
+case class ResourceAllocation(resource : Resource, worker : ActorRef, workerId : WorkerId)
 
 object Resource {
   def empty = new Resource(0)

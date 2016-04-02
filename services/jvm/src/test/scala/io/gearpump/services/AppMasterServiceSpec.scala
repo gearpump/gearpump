@@ -37,7 +37,7 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
 import upickle.default.read
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-
+import io.gearpump.services.util.UpickleUtil._
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
 

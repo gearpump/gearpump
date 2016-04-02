@@ -19,6 +19,7 @@ package io.gearpump.examples.distributedshell
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import io.gearpump.WorkerId
 import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommandResult
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
@@ -34,7 +35,7 @@ class ShellExecutorSpec extends WordSpec with Matchers {
   "ShellExecutor" should {
     "execute the shell command and return the result" in {
       val executorId = 1
-      val workerId = 2
+      val workerId = WorkerId(2, 0L)
       val appId = 0
       val appName = "app"
       val resource = Resource(1)

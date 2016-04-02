@@ -19,7 +19,7 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit.{TestActorRef, TestProbe}
-import io.gearpump.Message
+import io.gearpump.{WorkerId, Message}
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.ClientToMaster.ShutdownApplication
@@ -46,7 +46,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   var appMaster: ActorRef = null
 
   val appId = 0
-  val workerId = 1
+  val workerId = WorkerId(1, 0L)
   val resource = Resource(1)
   val taskDescription1 = Processor[TaskA](2)
   val taskDescription2 = Processor[TaskB](2)
@@ -97,7 +97,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
     mockMaster.reply(GetAppDataResult("startClock", 0L))
 
-    mockMaster.expectMsg(15 seconds, RequestResource(appId, ResourceRequest(Resource(4))))
+    mockMaster.expectMsg(15 seconds, RequestResource(appId, ResourceRequest(Resource(4), workerId = WorkerId.unspecified)))
   }
 
   override def afterEach() = {
@@ -115,7 +115,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(resource, mockWorker.ref, workerId))))
       mockWorker.expectMsgClass(classOf[LaunchExecutor])
       mockWorker.reply(ExecutorLaunchRejected(""))
-      mockMaster.expectMsg(RequestResource(appId, ResourceRequest(resource)))
+      mockMaster.expectMsg(RequestResource(appId, ResourceRequest(resource, WorkerId.unspecified)))
     }
 
     "find a new master when lost connection with master" in {

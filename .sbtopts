@@ -1,3 +1,4 @@
 -J-XX:+CMSClassUnloadingEnabled
 -J-XX:+UseConcMarkSweepGC
 -J-Xss6M
+-J-XX:MaxMetaspaceSize=512m

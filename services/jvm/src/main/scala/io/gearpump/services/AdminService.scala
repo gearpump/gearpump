@@ -23,7 +23,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.{Materializer}
 import io.gearpump.util.{Constants, Util}
-
+import io.gearpump.services.util.UpickleUtil._
 /**
  * AdminService is for cluster-wide managements. it is not related with
  * specific application.

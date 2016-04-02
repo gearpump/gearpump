@@ -82,7 +82,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   private val systemConfig = context.system.settings.config
   private var lastFailure = LastFailure(0L, null)
 
-  private val appMasterBrief = ExecutorBrief(APPMASTER_DEFAULT_EXECUTOR_ID, self.path.toString, Option(appContext.workerInfo).map(_.workerId).getOrElse(-1), "active")
+  private val appMasterBrief = ExecutorBrief(APPMASTER_DEFAULT_EXECUTOR_ID,
+    self.path.toString, Option(appContext.workerInfo).map(_.workerId).getOrElse(WorkerId.unspecified), "active")
 
   private val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
 
@@ -93,7 +94,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private val appMasterExecutorSummary = ExecutorSummary(
     APPMASTER_DEFAULT_EXECUTOR_ID,
-    Option(appContext.workerInfo).map(_.workerId).getOrElse(-1),
+    Option(appContext.workerInfo).map(_.workerId).getOrElse(WorkerId.unspecified),
     self.path.toString,
     logFile.getAbsolutePath,
     status = "Active",
@@ -334,6 +335,6 @@ object AppMaster {
 
   class ServiceNotAvailableException(reason: String) extends Exception(reason)
 
-  case class ExecutorBrief(executorId: ExecutorId, executor: String, workerId: Int, status: String)
+  case class ExecutorBrief(executorId: ExecutorId, executor: String, workerId: WorkerId, status: String)
 
 }

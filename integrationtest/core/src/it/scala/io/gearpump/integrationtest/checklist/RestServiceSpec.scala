@@ -183,7 +183,7 @@ class RestServiceSpec extends TestSpecBase {
     "retrieve 1 master for a non-HA cluster" in {
       // exercise
       val masterSummary = restClient.queryMaster()
-      masterSummary.cluster shouldEqual cluster.getMastersAddresses
+      masterSummary.cluster.map(_.toTuple) shouldEqual cluster.getMastersAddresses
       masterSummary.aliveFor should be > 0L
       masterSummary.masterStatus shouldEqual MasterStatus.Synced
     }

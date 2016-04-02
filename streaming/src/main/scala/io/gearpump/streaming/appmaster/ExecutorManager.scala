@@ -22,6 +22,7 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import io.gearpump.cluster.appmaster.WorkerInfo
@@ -167,7 +168,7 @@ private[appmaster] object ExecutorManager {
 
   case object GetExecutorInfo
 
-  case class ExecutorStarted(executorId: Int, resource: Resource, workerId: Int, boundedJar: Option[AppJar])
+  case class ExecutorStarted(executorId: Int, resource: Resource, workerId: WorkerId, boundedJar: Option[AppJar])
   case class ExecutorStopped(executorId: Int)
 
   case class SetTaskManager(taskManager: ActorRef)

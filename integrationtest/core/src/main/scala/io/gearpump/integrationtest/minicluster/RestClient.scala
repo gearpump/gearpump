@@ -18,6 +18,7 @@
 package io.gearpump.integrationtest.minicluster
 
 import com.typesafe.config.{Config, ConfigFactory}
+import io.gearpump.WorkerId
 import io.gearpump.cluster.{AppJar, MasterToAppMaster}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.cluster.MasterToClient.HistoryMetrics
@@ -36,6 +37,7 @@ import io.gearpump.util.{Constants, Graph}
 import org.apache.log4j.Logger
 import upickle.Js
 import upickle.default._
+import io.gearpump.services.util.UpickleUtil._
 
 /**
  * A REST client to operate a Gearpump cluster
@@ -168,14 +170,14 @@ class RestClient(host: String, port: Int) {
     ConfigFactory.parseString(resp)
   }
 
-  def queryWorkerMetrics(workerId: Int, current: Boolean): HistoryMetrics = {
+  def queryWorkerMetrics(workerId: WorkerId, current: Boolean): HistoryMetrics = {
     val args = if (current) "?readLatest=true" else ""
-    val resp = callApi(s"worker/$workerId/metrics/worker$workerId?$args")
+    val resp = callApi(s"worker/${WorkerId.render(workerId)}/metrics/worker$workerId?$args")
     decodeAs[HistoryMetrics](resp)
   }
 
-  def queryWorkerConfig(workerId: Int): Config = {
-    val resp = callApi(s"worker/$workerId/config")
+  def queryWorkerConfig(workerId: WorkerId): Config = {
+    val resp = callApi(s"worker/${WorkerId.render(workerId)}/config")
     ConfigFactory.parseString(resp)
   }
 

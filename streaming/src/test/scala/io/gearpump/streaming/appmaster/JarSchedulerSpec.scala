@@ -19,6 +19,7 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
+import io.gearpump.WorkerId
 import io.gearpump.streaming.{ProcessorDescription, DAG}
 import io.gearpump.cluster.{TestUtil, AppJar}
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
@@ -49,13 +50,13 @@ class JarSchedulerSpec extends WordSpec with Matchers {
       implicit val dispatcher = system.dispatcher
       val manager = new JarScheduler(0, "APP", TestUtil.DEFAULT_CONFIG, system)
       manager.setDag(dag, Future{0L})
-      val requests = Array(ResourceRequest(Resource(2)))
+      val requests = Array(ResourceRequest(Resource(2), WorkerId.unspecified))
       val result = Await.result(manager.getRequestDetails(), 15 seconds)
       assert(result.length == 1)
       assert(result.head.jar == mockJar1)
       assert(result.head.requests.deep == requests.deep)
 
-      val tasks = Await.result(manager.scheduleTask(mockJar1, 0, 0, Resource(2)), 15 seconds)
+      val tasks = Await.result(manager.scheduleTask(mockJar1, WorkerId(0, 0L), 0, Resource(2)), 15 seconds)
       assert(tasks.contains(TaskId(0, 0)))
       assert(tasks.contains(TaskId(1, 0)))
 

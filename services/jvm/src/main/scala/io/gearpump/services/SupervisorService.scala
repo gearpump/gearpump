@@ -22,6 +22,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData, GetAllWorkers}
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.services.SupervisorService.{Path, Status}
@@ -30,6 +31,7 @@ import io.gearpump.util.ActorUtil._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import upickle.default.{read, write}
+import io.gearpump.services.util.UpickleUtil._
 
 class SupervisorService(val master: ActorRef, val supervisor: ActorRef, override val system: ActorSystem)
   extends BasicService {
@@ -80,10 +82,10 @@ class SupervisorService(val master: ActorRef, val supervisor: ActorRef, override
         }
       }
     } ~
-    path("removeworker" / IntNumber) { workerId =>
+    path("removeworker" / Segment) { workerIdString =>
       post {
         authorize {
-
+          val workerId = WorkerId.parse(workerIdString)
           def future(): Future[CommandResult] = {
             askWorker[WorkerData](master, workerId, GetWorkerData(workerId)).flatMap{workerData =>
               val containerId = workerData.workerDescription.resourceManagerContainerId

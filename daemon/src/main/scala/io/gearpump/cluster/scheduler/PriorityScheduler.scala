@@ -19,6 +19,7 @@
 package io.gearpump.cluster.scheduler
 
 import akka.actor.ActorRef
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.scheduler.Relaxation._
@@ -104,7 +105,7 @@ class PriorityScheduler extends Scheduler {
     resourceRequests = resourceRequests.filter(_.appId != appId)
   }
 
-  private def allocateFairly(resources: mutable.HashMap[Int, (ActorRef, Resource)], request: ResourceRequest): List[ResourceAllocation] = {
+  private def allocateFairly(resources: mutable.HashMap[WorkerId, (ActorRef, Resource)], request: ResourceRequest): List[ResourceAllocation] = {
     val workerNum = resources.size
     var allocations = List.empty[ResourceAllocation]
     var totalAvailable = Resource(resources.values.map(_._2.slots).sum)

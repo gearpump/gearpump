@@ -20,7 +20,7 @@ package io.gearpump.cluster
 
 import akka.actor.ActorRef
 import com.typesafe.config.Config
-import io.gearpump.TimeStamp
+import io.gearpump.{WorkerId, TimeStamp}
 import io.gearpump.cluster.MasterToAppMaster.AppMasterStatus
 import io.gearpump.cluster.master.MasterSummary
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
@@ -53,7 +53,7 @@ object ClientToMaster {
   case class ShutdownApplication(appId: Int)
   case class ResolveAppId(appId: Int)
 
-  case class ResolveWorkerId(workerId: Int)
+  case class ResolveWorkerId(workerId: WorkerId)
 
   case object GetJarStoreServer
 
@@ -61,7 +61,7 @@ object ClientToMaster {
 
   case class QueryAppMasterConfig(appId: Int)
 
-  case class QueryWorkerConfig(workerId: Int)
+  case class QueryWorkerConfig(workerId: WorkerId)
 
   case object QueryMasterConfig
 
@@ -144,7 +144,7 @@ object AppMasterToMaster {
     extends AppMasterSummary
 
   case object GetAllWorkers
-  case class GetWorkerData(workerId: Int)
+  case class GetWorkerData(workerId: WorkerId)
   case class WorkerData(workerDescription: WorkerSummary)
 
   case object GetMasterData
@@ -181,7 +181,7 @@ object MasterToAppMaster {
 
   case class ReplayFromTimestampWindowTrailingEdge(appId: Int)
 
-  case class WorkerList(workers: List[Int])
+  case class WorkerList(workers: List[WorkerId])
 }
 
 object AppMasterToWorker {
