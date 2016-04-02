@@ -125,7 +125,7 @@ object StormUtil {
     }
   }
 
-  def getThriftPort: Int = {
+  def getThriftPort(): Int = {
     Util.findFreePort.getOrElse(
       throw new Exception("unable to find free port for thrift server"))
   }

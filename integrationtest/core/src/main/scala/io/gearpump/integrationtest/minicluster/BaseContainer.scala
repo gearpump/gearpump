@@ -17,6 +17,8 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import java.io.File
+
 import io.gearpump.integrationtest.Docker
 
 import scala.sys.process._
@@ -29,10 +31,10 @@ class BaseContainer(val host: String, command: String,
                     tunnelPorts: Set[Int] = Set.empty) {
 
   private val IMAGE_NAME = "stanleyxu2005/gearpump-launcher"
-  private val IMAGE_SUT_HOME = "/opt/gearpump"
-  private val IMAGE_LOG_HOME = "/var/log/gearpump"
-  private val LOCAL_SUT_HOME = "pwd".!!.trim + "/output/target/pack"
-  private val LOCAL_LOG_HOME = {
+  private val DOCKER_IMAGE_GEARPUMP_HOME = "/opt/gearpump"
+  private val DOCKER_IMAGE_LOG_HOME = "/var/log/gearpump"
+  private val HOST_GEARPUMP_HOME = "pwd".!!.trim + "/output/target/pack"
+  private val HOST_LOG_HOME = {
     val dir = "/tmp/gearpump"
     s"mkdir -p $dir".!!
     s"mktemp -p $dir -d".!!.trim
@@ -48,8 +50,8 @@ class BaseContainer(val host: String, command: String,
     Docker.createAndStartContainer(host, IMAGE_NAME, command,
       environ = Map("JAVA_OPTS" -> CLUSTER_OPTS),
       volumes = Map(
-        LOCAL_SUT_HOME -> IMAGE_SUT_HOME,
-        LOCAL_LOG_HOME -> IMAGE_LOG_HOME),
+        HOST_GEARPUMP_HOME -> DOCKER_IMAGE_GEARPUMP_HOME,
+        HOST_LOG_HOME -> DOCKER_IMAGE_LOG_HOME),
       knownHosts = masterAddrs.map(_._1).filter(_ != host).toSet,
       tunnelPorts = tunnelPorts)
   }

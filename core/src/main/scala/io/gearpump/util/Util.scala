@@ -66,7 +66,7 @@ object Util {
                    arguments : Array[String]) : RichProcess = {
     val java = System.getProperty("java.home") + "/bin/java"
     val command = List(java) ++ options ++ List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
-    LOG.info(s"Starting executor process java $mainClass ${arguments.mkString(" ")}; options: ${options.mkString(" ")}")
+    LOG.info(s"Starting executor process java $mainClass ${arguments.mkString(" ")} \n ${options.mkString(" ")}")
     val logger = new ProcessLogRedirector()
     val process = Process(command).run(logger)
     new RichProcess(process, logger)

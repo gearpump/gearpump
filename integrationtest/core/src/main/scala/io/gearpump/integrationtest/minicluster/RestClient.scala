@@ -39,6 +39,8 @@ import upickle.Js
 import upickle.default._
 import io.gearpump.services.util.UpickleUtil._
 
+import scala.reflect.ClassTag
+
 /**
  * A REST client to operate a Gearpump cluster
  */
@@ -55,16 +57,16 @@ class RestClient(host: String, port: Int) {
       Graph(vertexList, edgeList)
   }
 
-  private def decodeAs[T: upickle.default.Reader](expr: String): T = try {
+  private def decodeAs[T](expr: String)(implicit reader: upickle.default.Reader[T], classTag: ClassTag[T]): T = try {
     read[T](expr)
   } catch {
     case ex: Throwable =>
-      LOG.error(ex)
+      LOG.error(s"Failed to decode Rest response to ${classTag.runtimeClass.getSimpleName}")
       throw ex
   }
 
   def queryVersion(): String = {
-    callFromRoot("version")
+    curl("version")
   }
 
   def listWorkers(): Array[WorkerSummary] = {
@@ -240,16 +242,15 @@ class RestClient(host: String, port: Int) {
   private val CRUD_DELETE = "-X DELETE"
 
   private def callApi(endpoint: String, option: String = ""): String = {
-    callFromRoot(s"api/v1.0/$endpoint", Array(option, s"--cookie $cookieFile"))
+    curl(s"api/v1.0/$endpoint", Array(option, s"--cookie $cookieFile"))
   }
 
-  private def callFromRoot(endpoint: String, options: Array[String] = Array.empty[String]): String = {
-    Docker.execAndCaptureOutput(host, s"curl -s ${options.mkString(" ")} http://$host:$port/$endpoint")
+  private def curl(endpoint: String, options: Array[String] = Array.empty[String]): String = {
+    Docker.curl(host, s"http://$host:$port/$endpoint", options)
   }
 
   def login(): Unit = {
-    callFromRoot("login", Array(CRUD_POST, s"--cookie-jar $cookieFile",
+    curl("login", Array(CRUD_POST, s"--cookie-jar $cookieFile",
       "--data username=admin", "--data password=admin"))
   }
-
 }
