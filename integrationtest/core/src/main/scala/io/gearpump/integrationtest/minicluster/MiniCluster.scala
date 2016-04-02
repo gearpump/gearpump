@@ -17,6 +17,7 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import io.gearpump.cluster.master.MasterNode
 import io.gearpump.integrationtest.{Docker, Util}
 import org.apache.log4j.Logger
 
@@ -32,15 +33,15 @@ class MiniCluster {
 
   private val REST_SERVICE_PORT = 8090
   private val MASTER_PORT = 3000
-  private val MASTER_ADDRS = {
+  private val MASTER_ADDRS: List[(String, Int)] = {
     (0 to 0).map(index =>
       ("master" + index, MASTER_PORT)
-    )
+    ).toList
   }
 
-  lazy val commandLineClient = new CommandLineClient(getMasterHosts.head)
+  lazy val commandLineClient: CommandLineClient = new CommandLineClient(getMasterHosts.head)
 
-  lazy val restClient = {
+  lazy val restClient: RestClient = {
     val client = new RestClient(getMasterHosts.head, REST_SERVICE_PORT)
     client
   }
@@ -129,16 +130,16 @@ class MiniCluster {
     start()
   }
 
-  def getMastersAddresses = {
+  def getMastersAddresses: List[(String, Int)] = {
     MASTER_ADDRS
   }
 
-  def getMasterHosts = {
+  def getMasterHosts: List[String] = {
     MASTER_ADDRS.map({ case (host, port) => host })
   }
 
-  def getWorkerHosts = {
-    workers
+  def getWorkerHosts: List[String] = {
+    workers.toList
   }
 
   def nodeIsOnline(host: String): Boolean = {

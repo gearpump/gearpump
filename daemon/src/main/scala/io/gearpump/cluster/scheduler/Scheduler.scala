@@ -20,7 +20,7 @@ package io.gearpump.cluster.scheduler
 import akka.actor.{Actor, ActorRef}
 import io.gearpump.cluster.MasterToWorker.UpdateResourceSucceed
 import io.gearpump.util.LogUtil
-import io.gearpump.TimeStamp
+import io.gearpump.{WorkerId, TimeStamp}
 import io.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, UpdateResourceSucceed, WorkerRegistered}
 import io.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import io.gearpump.cluster.master.Master.WorkerTerminated
@@ -35,7 +35,7 @@ import scala.collection.mutable
  */
 abstract class Scheduler extends Actor{
   val LOG: Logger = LogUtil.getLogger(getClass)
-  protected var resources = new mutable.HashMap[Int, (ActorRef, Resource)]
+  protected var resources = new mutable.HashMap[WorkerId, (ActorRef, Resource)]
 
   def handleScheduleMessage : Receive = {
     case WorkerRegistered(id, _) =>

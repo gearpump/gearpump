@@ -39,7 +39,7 @@ import io.gearpump.util.ActorUtil.{askActor, askAppMaster}
 import io.gearpump.util.FileDirective._
 import io.gearpump.util.{Constants, Util}
 import upickle.default.{read, write}
-
+import io.gearpump.services.util.UpickleUtil._
 import scala.util.{Failure, Success, Try}
 
 /**

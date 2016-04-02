@@ -18,13 +18,14 @@
 package io.gearpump.cluster.worker
 
 import akka.actor.ActorRef
+import io.gearpump.WorkerId
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 
 /**
  * Worker summary information for REST API.
  */
 case class WorkerSummary(
-  workerId: Int,
+  workerId: WorkerId,
   state: String,
   actorPath: String,
   aliveFor: Long,
@@ -39,7 +40,7 @@ case class WorkerSummary(
   historyMetricsConfig: HistoryMetricsConfig = null)
 
 object WorkerSummary{
-  def empty = WorkerSummary(-1, "", "", 0L, "", Array.empty[ExecutorSlots], 0, 0, "", jvmName = "", resourceManagerContainerId = "")
+  def empty = WorkerSummary(WorkerId.unspecified, "", "", 0L, "", Array.empty[ExecutorSlots], 0, 0, "", jvmName = "", resourceManagerContainerId = "")
 }
 
 case class ExecutorSlots(appId: Int, executorId: Int, slots: Int)

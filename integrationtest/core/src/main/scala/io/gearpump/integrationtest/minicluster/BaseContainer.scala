@@ -25,7 +25,7 @@ import scala.sys.process._
  * A helper to instantiate the base image for different usage.
  */
 class BaseContainer(val host: String, command: String,
-                    masterAddrs: Seq[(String, Int)],
+                    masterAddrs: List[(String, Int)],
                     tunnelPorts: Set[Int] = Set.empty) {
 
   private val IMAGE_NAME = "stanleyxu2005/gearpump-launcher"

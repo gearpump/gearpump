@@ -21,6 +21,7 @@ package io.gearpump.cluster.appmaster
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigValueFactory
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.TestUtil
@@ -36,7 +37,7 @@ import scala.concurrent.duration._
 
 class ExecutorSystemLauncherSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
-  val workerId = 0
+  val workerId: WorkerId = WorkerId(0, 0L)
   val appId = 0
   val executorId = 0
   val url = "akka.tcp://worker@127.0.0.1:3000"

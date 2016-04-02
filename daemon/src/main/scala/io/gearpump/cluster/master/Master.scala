@@ -40,6 +40,8 @@ import io.gearpump.transport.HostPort
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util._
+import io.gearpump.WorkerId
+
 import org.apache.commons.lang.exception.ExceptionUtils
 import org.slf4j.Logger
 
@@ -64,7 +66,7 @@ private[cluster] class Master extends Actor with Stash {
 
   private var scheduler : ActorRef = null
 
-  private var workers = new immutable.HashMap[ActorRef, Int]
+  private var workers = new immutable.HashMap[ActorRef, WorkerId]
 
   private val birth = System.currentTimeMillis()
 
@@ -109,6 +111,8 @@ private[cluster] class Master extends Actor with Stash {
     case GetKVSuccess(_, result) =>
       if(result != null) {
         this.nextWorkerId = result.asInstanceOf[Int]
+      } else {
+        LOG.warn("Cannot find existing state in the distributed cluster...")
       }
       context.become(receiveHandler)
       unstashAll()
@@ -132,9 +136,11 @@ private[cluster] class Master extends Actor with Stash {
 
   def workerMsgHandler : Receive = {
     case RegisterNewWorker =>
-      val workerId = nextWorkerId
+      val workerId = WorkerId(nextWorkerId, System.currentTimeMillis())
       nextWorkerId += 1
       kvService ! PutKV(MASTER_GROUP, WORKER_ID, nextWorkerId)
+      val workerHostname = ActorUtil.getHostname(sender())
+      LOG.info(s"Register new from $workerHostname ....")
       self forward RegisterWorker(workerId)
 
     case RegisterWorker(id) =>
@@ -143,7 +149,7 @@ private[cluster] class Master extends Actor with Stash {
       scheduler forward WorkerRegistered(id, MasterInfo(self, birth))
       workers += (sender() -> id)
       val workerHostname = ActorUtil.getHostname(sender())
-      LOG.info(s"Register Worker $id from $workerHostname ....")
+      LOG.info(s"Register Worker with id $id from $workerHostname ....")
     case resourceUpdate : ResourceUpdate =>
       scheduler forward resourceUpdate
   }
@@ -290,7 +296,7 @@ object Master {
 
   final val WORKER_ID = "next_worker_id"
 
-  case class WorkerTerminated(workerId: Int)
+  case class WorkerTerminated(workerId: WorkerId)
 
   case class MasterInfo(master: ActorRef, startTime : Long = 0L)
 

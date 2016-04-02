@@ -21,6 +21,7 @@ package io.gearpump.util
 import akka.actor.Actor.Receive
 import akka.actor._
 import akka.pattern.ask
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.GetAllWorkers
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ResolveWorkerId}
 import io.gearpump.cluster.MasterToAppMaster.WorkerList
@@ -110,7 +111,7 @@ object ActorUtil {
     appmaster.flatMap(askActor[T](_, msg))
   }
 
-  def askWorker[T](master: ActorRef, workerId: Int, msg: Any)(implicit ex: ExecutionContext): Future[T] = {
+  def askWorker[T](master: ActorRef, workerId: WorkerId, msg: Any)(implicit ex: ExecutionContext): Future[T] = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
     val worker =  askActor[ResolveWorkerIdResult](master, ResolveWorkerId(workerId)).flatMap { result =>
       if (result.worker.isSuccess) {

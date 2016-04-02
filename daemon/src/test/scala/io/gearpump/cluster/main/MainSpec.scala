@@ -17,23 +17,12 @@
  */
 package io.gearpump.cluster.main
 
-import java.util.concurrent.TimeUnit
-
-import akka.testkit.TestProbe
-import io.gearpump.cluster.ClientToMaster.ResolveAppId
 import io.gearpump.cluster.MasterToAppMaster.{ReplayFromTimestampWindowTrailingEdge, AppMastersDataRequest}
-import io.gearpump.cluster.TestUtil
-import io.gearpump.cluster.main.{Local, Replay, Kill, Worker}
-import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.util.{Constants, Util}
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication}
 import io.gearpump.cluster.MasterToAppMaster._
 import io.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ReplayApplicationResult, ShutdownApplicationResult}
-import io.gearpump.cluster.MasterToWorker.WorkerRegistered
 import io.gearpump.cluster.WorkerToMaster.RegisterNewWorker
-import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.cluster.{MasterHarness, TestUtil}
-import io.gearpump.transport.HostPort
 import io.gearpump.util.Constants._
 import io.gearpump.util.{Constants, LogUtil, Util}
 import org.scalatest._

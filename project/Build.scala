@@ -317,8 +317,8 @@ object Build extends sbt.Build {
     checksums := Seq(""),
     requiresDOM := true,
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "upickle" % upickleVersion,
-      "com.lihaoyi" %%% "utest" % "0.3.1"
+//      "com.lihaoyi" %%% "upickle" % upickleVersion,
+//      "com.lihaoyi" %%% "utest" % "0.3.1"
     ),
     scalaJSStage in Global := FastOptStage,
     testFrameworks += new TestFramework("utest.runner.Framework"),

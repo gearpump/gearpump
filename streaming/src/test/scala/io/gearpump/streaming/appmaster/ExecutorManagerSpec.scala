@@ -22,7 +22,7 @@ import akka.actor._
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import io.gearpump.streaming.appmaster.ExecutorManager.ExecutorStarted
-import io.gearpump.TestProbeUtil
+import io.gearpump.{WorkerId, TestProbeUtil}
 import io.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import io.gearpump.cluster._
 import io.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
@@ -72,7 +72,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val executorManager = system.actorOf(Props(new ExecutorManager(userConfig, appMasterContext, executorFactory, ConfigFactory.empty, appName)))
 
     taskManager.send(executorManager, SetTaskManager(taskManager.ref))
-    val resourceRequest = Array(ResourceRequest(resource))
+    val resourceRequest = Array(ResourceRequest(resource, WorkerId.unspecified))
 
     //start executors
     taskManager.send(executorManager, StartExecutors(resourceRequest, appJar.get))
@@ -104,7 +104,7 @@ class ExecutorManagerSpec  extends FlatSpec with Matchers with BeforeAndAfterAll
     val (master, executor, taskManager, executorManager) = startExecutorSystems
     val executorSystemDaemon = TestProbe()
     val worker = TestProbe()
-    val workerId = 0
+    val workerId = WorkerId(0, 0L)
     val workerInfo = WorkerInfo(workerId, worker.ref)
     val executorSystem = ExecutorSystem(0, null, executorSystemDaemon.ref,
       resource, workerInfo)

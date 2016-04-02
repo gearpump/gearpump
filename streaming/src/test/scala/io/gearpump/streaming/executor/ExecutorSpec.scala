@@ -19,6 +19,7 @@ package io.gearpump.streaming.executor
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import io.gearpump.WorkerId
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
@@ -39,7 +40,7 @@ import scala.language.postfixOps
 class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   val appId = 0
   val executorId = 0
-  val workerId = 0
+  val workerId = WorkerId(0, 0L)
   var appMaster: TestProbe = null
   implicit var system: ActorSystem = null
   val userConf = UserConfig.empty

@@ -18,7 +18,7 @@
 package io.gearpump.streaming.appmaster
 
 import com.typesafe.config.Config
-import io.gearpump.TimeStamp
+import io.gearpump.{WorkerId, TimeStamp}
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import io.gearpump.streaming.DAG
 import io.gearpump.streaming.appmaster.TaskLocator.{Locality, WorkerLocality}
@@ -53,7 +53,7 @@ trait TaskScheduler {
    * @param executorId which executorId this resource belongs to.
    * @return a list of tasks
    */
-  def schedule(workerId : Int, executorId: Int, resource: Resource) : List[TaskId]
+  def schedule(workerId : WorkerId, executorId: Int, resource: Resource) : List[TaskId]
 
   /**
    * This notify the scheduler that {executorId} is failed, and expect a set of
@@ -74,7 +74,7 @@ trait TaskScheduler {
 }
 
 object TaskScheduler {
-  case class Location(workerId: Int, executorId: Int)
+  case class Location(workerId: WorkerId, executorId: Int)
 
   class TaskStatus(val taskId: TaskId, val preferLocality: Locality, var allocation: Location)
 }
@@ -100,11 +100,9 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
     fetchResourceRequests(fromOneWorker = false)
   }
 
-  val WORKER_NO_PREFERENCE = 0
-
   import Relaxation._
   private def fetchResourceRequests(fromOneWorker: Boolean = false): Array[ResourceRequest] ={
-    var workersResourceRequest = Map.empty[Int, Resource]
+    var workersResourceRequest = Map.empty[WorkerId, Resource]
 
     tasks.filter(_.allocation == null).foreach{task =>
       task.preferLocality match {
@@ -112,7 +110,7 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
           val current = workersResourceRequest.getOrElse(workerId, Resource.empty)
           workersResourceRequest += workerId -> (current + Resource(1))
         case _ =>
-          val workerId = WORKER_NO_PREFERENCE
+          val workerId = WorkerId.unspecified
           val current = workersResourceRequest.getOrElse(workerId, Resource.empty)
           workersResourceRequest += workerId -> (current + Resource(1))
       }
@@ -120,15 +118,15 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
 
     workersResourceRequest.map {workerIdAndResource =>
       val (workerId, resource) = workerIdAndResource
-      if (workerId == WORKER_NO_PREFERENCE) {
-        ResourceRequest(resource, executorNum = executorNum)
+      if (workerId == WorkerId.unspecified) {
+        ResourceRequest(resource, workerId = WorkerId.unspecified, executorNum = executorNum)
       } else {
         ResourceRequest(resource, workerId, relaxation = SPECIFICWORKER)
       }
     }.toArray
   }
 
-  override def schedule(workerId : Int, executorId: Int, resource: Resource) : List[TaskId] = {
+  override def schedule(workerId : WorkerId, executorId: Int, resource: Resource) : List[TaskId] = {
     var scheduledTasks = List.empty[TaskId]
     val location = Location(workerId, executorId)
     // schedule tasks for specific worker
@@ -163,7 +161,7 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
     // clean the location of failed tasks
     failedTasks.foreach(_.allocation = null)
 
-    Array(ResourceRequest(Resource(failedTasks.length), relaxation = ONEWORKER))
+    Array(ResourceRequest(Resource(failedTasks.length), workerId = WorkerId.unspecified, relaxation = ONEWORKER))
   }
 
   override def scheduledTasks(executorId: Int): List[TaskId] = {

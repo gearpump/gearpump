@@ -20,6 +20,7 @@ package io.gearpump.cluster.master
 
 import akka.actor._
 import akka.testkit.TestProbe
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.AppMasterToWorker.{ShutdownExecutor, LaunchExecutor}
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
@@ -53,8 +54,8 @@ class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     appMasterLauncher = getActorSystem.actorOf(AppMasterLauncher.props(appId, executorId,
       TestUtil.dummyApp, None, "username", master.ref, Some(client.ref)))
     watcher watch appMasterLauncher
-    master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1))))
-    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, 0)))
+    master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified)))
+    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, WorkerId(0, 0L))))
     master.reply(resource)
     worker.expectMsgType[LaunchExecutor]
   }
@@ -76,9 +77,9 @@ class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEa
 
   "AppMasterLauncher" should "reallocate resource if executor launch rejected" in {
     worker.reply(ExecutorLaunchRejected(""))
-    master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1))))
+    master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified)))
 
-    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, 0)))
+    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, WorkerId(0, 0L))))
     master.reply(resource)
     worker.expectMsgType[LaunchExecutor]
 

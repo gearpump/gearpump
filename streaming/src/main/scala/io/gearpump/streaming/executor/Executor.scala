@@ -23,6 +23,7 @@ import java.lang.management.ManagementFactory
 import akka.actor.SupervisorStrategy.Resume
 import akka.actor._
 import com.typesafe.config.Config
+import io.gearpump.WorkerId
 import io.gearpump.cluster.{ClusterConfig, ExecutorContext, UserConfig}
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
@@ -412,7 +413,7 @@ object Executor {
 
   case class ExecutorSummary(
     id: Int,
-    workerId: Int,
+    workerId: WorkerId,
     actorPath: String,
     logFile: String,
     status: String,
@@ -422,7 +423,7 @@ object Executor {
   )
 
   object ExecutorSummary {
-    def empty: ExecutorSummary = ExecutorSummary(0, 0, "", "", "", 1, null, jvmName = "")
+    def empty: ExecutorSummary = ExecutorSummary(0, WorkerId.unspecified, "", "", "", 1, null, jvmName = "")
   }
 
   case class GetExecutorSummary(executorId: Int)

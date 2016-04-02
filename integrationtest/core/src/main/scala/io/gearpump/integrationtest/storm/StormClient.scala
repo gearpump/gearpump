@@ -22,7 +22,7 @@ import backtype.storm.utils.{Utils, DRPCClient}
 import io.gearpump.integrationtest.{Util, Docker}
 import io.gearpump.integrationtest.minicluster.{RestClient, BaseContainer}
 
-class StormClient(masterAddrs: Seq[(String, Int)], restClient: RestClient) {
+class StormClient(masterAddrs: List[(String, Int)], restClient: RestClient) {
 
   private val CONFIG_FILE = "/opt/gearpump/storm.yaml"
   private val DRPC_HOST = "storm0"
