@@ -122,6 +122,9 @@ angular.module('io.gearpump.models', [])
             configLink: restapi.workerConfigLink(obj.workerId)
           });
         },
+        supervisor: function(obj) {
+          return obj;
+        },
         apps: function(wrapper) {
           var objs = wrapper.appMasters;
           return decoder._asAssociativeArray(objs, decoder.appSummary, 'appId');
@@ -361,6 +364,10 @@ angular.module('io.gearpump.models', [])
         },
         _workerMetrics: function(workerId, args) {
           return getter._metrics('worker/' + workerId + '/metrics/', 'worker' + workerId, args);
+        },
+        supervisor: function() {
+          return get('supervisor',
+            decoder.supervisor);
         },
         apps: function() {
           return get('master/applist',
