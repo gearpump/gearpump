@@ -237,6 +237,7 @@ To use Google OAuth2 Authenticator, there are several steps:
       --autoapprove true
       --secret [your_client_secret]
    ```
+
 #### Step2: Configure the OAuth2 information in gear.conf
 
 1. Enable OAuth2 authentication by setting `gearpump.ui-security.oauth2-authenticator-enabled` as true.
