@@ -287,8 +287,7 @@ object Build extends sbt.Build {
       "com.softwaremill" %% "akka-http-session" % "0.1.4",
       "com.typesafe.akka" %% "akka-http-spray-json-experimental"% akkaVersion,
       "com.github.scribejava" % "scribejava-apis" % "2.4.0",
-      "com.ning" % "async-http-client" % "1.9.33"
-        exclude("io.netty", "netty"),
+      "com.ning" % "async-http-client" % "1.9.33",
       "org.webjars" % "angularjs" % "1.4.9",
       "org.webjars.npm" % "angular-touch" % "1.5.0", // angular 1.5 breaks ui-select, but we need ng-touch 1.5
       "org.webjars" % "angular-ui-router" % "0.2.15",
